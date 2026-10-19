@@ -60,7 +60,7 @@ public class TimelineDocumentStoreLostEditTests : IDisposable
         var path = IoPath.Combine(_workspace, "plan.tml");
         await File.WriteAllTextAsync(path, Text, TestContext.Current.CancellationToken);
         var store = new TimelineDocumentStore(new FileWriter());
-        var entry = store.GetOrLoad(path);
+        var entry = await store.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
         var element = entry.Model.Elements.Single(candidate => candidate.Id == "aaa");
         TimelineWriter.SetBegin(entry.Document, element, "2026-03-01");
 
@@ -70,7 +70,7 @@ public class TimelineDocumentStoreLostEditTests : IDisposable
 
         // Act: the notification for an EARLIER write of this same file lands now. The store's own
         // guard is already cleared, so this is exactly what the bridge does with it.
-        store.Reload(path);
+        await store.ReloadAsync(path, TestContext.Current.CancellationToken);
         var error = await store.SaveAsync(path, entry.Document, TestContext.Current.CancellationToken);
 
         // Assert.

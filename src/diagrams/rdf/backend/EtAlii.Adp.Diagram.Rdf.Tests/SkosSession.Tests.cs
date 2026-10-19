@@ -130,10 +130,10 @@ public class SkosSessionTests : IDisposable
         // Act: load through the scheme reading, then ask the store as the graph reading would.
         var session = Open(body, registrationPath: null);
         _ = await session.BaselineAsync(TestContext.Current.CancellationToken);
-        var entry = store.GetOrLoad(body);
+        var entry = await store.GetOrLoadAsync(body, TestContext.Current.CancellationToken);
 
         // Assert: the same parsed entry serves both - reference-equal, not merely equivalent.
-        Assert.Same(entry, store.GetOrLoad(body));
+        Assert.Same(entry, await store.GetOrLoadAsync(body, TestContext.Current.CancellationToken));
         Assert.True(entry.IsUsable);
     }
 

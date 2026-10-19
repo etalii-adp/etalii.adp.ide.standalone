@@ -3,6 +3,7 @@ using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
+using Xunit;
 using IoPath = System.IO.Path;
 
 namespace EtAlii.Adp.Diagram.Mindmap.Tests;
@@ -57,7 +58,7 @@ internal sealed class MindmapTestProject : IDisposable
 
     public MindmapContextPropertyProvider Properties => _services.GetRequiredService<MindmapContextPropertyProvider>();
 
-    public MindmapDocument Document => Documents.GetOrLoad(BodyPath);
+    public async Task<MindmapDocument> DocumentAsync() => await Documents.GetOrLoadAsync(BodyPath, TestContext.Current.CancellationToken);
 
     /// <summary>The resolved hierarchy level for the registration file - what a node selection nests under.</summary>
     public ContextResolvedLevel FileLevel() => new(
@@ -69,8 +70,8 @@ internal sealed class MindmapTestProject : IDisposable
         new MindmapTestProjectNullResolver());
 
     /// <summary>A provider target for one node, as the resolver would build it.</summary>
-    public ContextTarget NodeTarget(string nodeId) =>
-        new(ContextScope.DiagramElement, BodyPath, Document.Find(nodeId)?.HasChildren ?? false, SourceId: default, Root, WatchId, nodeId);
+    public async Task<ContextTarget> NodeTargetAsync(string nodeId) =>
+        new(ContextScope.DiagramElement, BodyPath, (await DocumentAsync()).Find(nodeId)?.HasChildren ?? false, SourceId: default, Root, WatchId, nodeId);
 
     public static ContextSource Element(string nodeId) => new() { ElementId = new ElementId { Value = nodeId } };
 

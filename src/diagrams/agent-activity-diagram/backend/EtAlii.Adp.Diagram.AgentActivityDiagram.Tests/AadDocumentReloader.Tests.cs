@@ -11,7 +11,7 @@ public sealed class AadDocumentReloaderTests : DocumentReloaderContract<IAadDocu
 
     protected override IAadDocumentStore CreateStore() => new AadDocumentStore(new FileWriter());
 
-    protected override bool IsEmpty(IAadDocumentStore store, string path) => store.GetOrLoad(path).Model.Elements.Count == 0;
+    protected override async Task<bool> IsEmptyAsync(IAadDocumentStore store, string path, CancellationToken cancellationToken) => (await store.GetOrLoadAsync(path, cancellationToken)).Model.Elements.Count == 0;
 
     protected override void OnChanged(IAadDocumentStore store, Action<string> changed) =>
         store.Changed += (_, args) => changed(args.Path);

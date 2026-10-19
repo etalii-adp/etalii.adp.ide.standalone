@@ -34,7 +34,7 @@ public sealed class TimelineDocumentStoreTests : DocumentStoreContract<ITimeline
         var store = new TimelineDocumentStore(new FileWriter());
 
         // Act.
-        var entry = store.GetOrLoad(body);
+        var entry = await store.GetOrLoadAsync(body, TestContext.Current.CancellationToken);
         var saved = await store.SaveAsync(body, entry.Document, TestContext.Current.CancellationToken);
 
         // Assert: what the file holds is unknown, so the empty model is not written over it.
@@ -45,7 +45,7 @@ public sealed class TimelineDocumentStoreTests : DocumentStoreContract<ITimeline
     }
 
     [Fact]
-    public void ATimelineThatIsNotYaml_IsOneProblemAtTheLineTheReaderStopped()
+    public async Task ATimelineThatIsNotYaml_IsOneProblemAtTheLineTheReaderStopped()
     {
         // Arrange.
         using var folder = TestFolder.Create("timeline-store");
@@ -54,7 +54,7 @@ public sealed class TimelineDocumentStoreTests : DocumentStoreContract<ITimeline
         var store = new TimelineDocumentStore(new FileWriter());
 
         // Act.
-        var entry = store.GetOrLoad(body);
+        var entry = await store.GetOrLoadAsync(body, TestContext.Current.CancellationToken);
 
         // Assert: the reader stops at the fourth line, `label: one: two`; a problem's line is zero-based.
         var problem = Assert.Single(entry.Problems);

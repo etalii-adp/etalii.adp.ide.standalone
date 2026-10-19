@@ -26,17 +26,17 @@ public class TimelineDocumentStoreSharedReadTests : IDisposable
     }
 
     [Fact]
-    public void GetOrLoad_ReadsADocumentAnEditorIsStillWriting()
+    public async Task GetOrLoad_ReadsADocumentAnEditorIsStillWriting()
     {
         // Arrange: the handle every save holds - write access, sharing only reads, the mode
         // File.WriteAllText opens with.
         const string text = "timeline: 1\nelements:\n  - id: aaa\n    label: Period\n    begin: 2026-01-05\n    end: 2026-02-13\n    row: 0\n";
         var path = IoPath.Combine(_workspace, "plan.tml");
-        File.WriteAllText(path, text);
-        using var editor = new FileStream(path, FileMode.Open, FileAccess.Write, FileShare.Read);
+        await File.WriteAllTextAsync(path, text, TestContext.Current.CancellationToken);
+        await using var editor = new FileStream(path, FileMode.Open, FileAccess.Write, FileShare.Read);
 
         // Act.
-        var entry = new TimelineDocumentStore(new FileWriter()).GetOrLoad(path);
+        var entry = await new TimelineDocumentStore(new FileWriter()).GetOrLoadAsync(path, TestContext.Current.CancellationToken);
 
         // Assert: the document itself, not the empty fallback.
         Assert.True(entry.IsUsable);
@@ -44,14 +44,14 @@ public class TimelineDocumentStoreSharedReadTests : IDisposable
     }
 
     [Fact]
-    public void GetOrLoad_ADocumentThatIsNotYaml_CarriesTheReasonAndTheLineItStoppedAt()
+    public async Task GetOrLoad_ADocumentThatIsNotYaml_CarriesTheReasonAndTheLineItStoppedAt()
     {
         // Arrange: the corpus's one document that is not YAML, whose fourth line maps a key twice.
         var path = IoPath.Combine(_workspace, "unparseable.tml");
         File.Copy(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", "findings", "unparseable.tml"), path);
 
         // Act.
-        var entry = new TimelineDocumentStore(new FileWriter()).GetOrLoad(path);
+        var entry = await new TimelineDocumentStore(new FileWriter()).GetOrLoadAsync(path, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.False(entry.IsUsable);

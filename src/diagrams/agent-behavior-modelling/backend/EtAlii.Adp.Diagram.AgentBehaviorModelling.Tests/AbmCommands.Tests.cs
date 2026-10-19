@@ -103,7 +103,7 @@ public sealed class AbmCommandsTests : IDisposable
     public async Task EveryRefusal_WritesNothing_AndSaysWhy(string refusal, string saying)
     {
         // Arrange: the cache is loaded, so an in-place edit would have somewhere to hide.
-        var cachedBefore = _store.GetOrLoad(Body).Document.Text;
+        var cachedBefore = (await _store.GetOrLoadAsync(Body, TestContext.Current.CancellationToken)).Document.Text;
 
         // Act.
         var result = await _dispatcher.DispatchAsync(RefusalNamed(refusal), TestContext.Current.CancellationToken);
@@ -112,6 +112,6 @@ public sealed class AbmCommandsTests : IDisposable
         Assert.False(result.IsSuccess);
         Assert.Contains(saying, result.Error, StringComparison.Ordinal);
         Assert.Equal(_original, await File.ReadAllBytesAsync(Body, TestContext.Current.CancellationToken));
-        Assert.Equal(cachedBefore, _store.GetOrLoad(Body).Document.Text);
+        Assert.Equal(cachedBefore, (await _store.GetOrLoadAsync(Body, TestContext.Current.CancellationToken)).Document.Text);
     }
 }

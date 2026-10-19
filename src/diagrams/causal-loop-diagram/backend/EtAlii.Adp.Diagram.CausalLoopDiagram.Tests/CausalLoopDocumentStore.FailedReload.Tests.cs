@@ -40,18 +40,18 @@ public class CausalLoopDocumentStoreFailedReloadTests : IDisposable
         var path = IoPath.Combine(_workspace, "loop.cld");
         await File.WriteAllTextAsync(path, Text, TestContext.Current.CancellationToken);
         var store = new CausalLoopDocumentStore(new FileWriter());
-        Assert.True(store.GetOrLoad(path).IsUsable);
+        Assert.True((await store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).IsUsable);
 
         // Arrange, continued: a reload that cannot read the body.
         await using (new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None))
         {
-            store.Reload(path);
+            await store.ReloadAsync(path, TestContext.Current.CancellationToken);
         }
 
         // Assert, first: the store still holds the diagram - the failed read did not replace it.
         // This is what keeps the canvas drawn, and it is asserted on its own because the save
         // refusal below would protect the file even without it.
-        var held = store.GetOrLoad(path);
+        var held = await store.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
         Assert.True(held.IsUsable, $"The failed reload replaced the last good diagram: {held.Unreadable}");
 
         // Act: whatever triggers the next save, once the file is readable again.
@@ -62,7 +62,7 @@ public class CausalLoopDocumentStoreFailedReloadTests : IDisposable
     }
 
     [Fact]
-    public void ABodyThatIsReallyDeleted_IsNoLongerDrawn_NotTheLastDiagramKeptAlive()
+    public async Task ABodyThatIsReallyDeleted_IsNoLongerDrawn_NotTheLastDiagramKeptAlive()
     {
         // The other half of keeping the last good diagram. DiagramDocumentReloadBridge documents
         // that "a body that is gone is an empty diagram, not the last one kept alive". A missing
@@ -70,14 +70,14 @@ public class CausalLoopDocumentStoreFailedReloadTests : IDisposable
         // store must stop holding the diagram that was deleted. Gone is the watcher's Deleted event,
         // which a publish in flight never raises.
         var path = IoPath.Combine(_workspace, "loop.cld");
-        File.WriteAllText(path, Text);
+        await File.WriteAllTextAsync(path, Text, TestContext.Current.CancellationToken);
         var store = new CausalLoopDocumentStore(new FileWriter());
-        Assert.True(store.GetOrLoad(path).IsUsable);
+        Assert.True((await store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).IsUsable);
 
         File.Delete(path);
-        store.BodyDeleted(path);
+        await store.BodyDeletedAsync(path, TestContext.Current.CancellationToken);
 
-        var after = store.GetOrLoad(path);
+        var after = await store.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
         Assert.False(after is { IsUsable: true, Model.Variables.Count: > 0 }, "The deleted diagram is still held as if it existed.");
     }
 
@@ -92,13 +92,13 @@ public class CausalLoopDocumentStoreFailedReloadTests : IDisposable
         var origin = new ToolOrigin("test", "causal-loop");
         using var events = new ProjectFileEvents();
         using var bridge = new DiagramDocumentReloadBridge([new DiagramDocumentReloader<ICausalLoopDocumentStore>(origin, store)], events);
-        Assert.True(store.GetOrLoad(path).IsUsable);
+        Assert.True((await store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).IsUsable);
         bridge.Track(ProjectRoot.From(_workspace), path, registrationPath: null, origin);
 
         File.Delete(path);
 
         Assert.True(
-            await Eventually.TrueAsync(() => store.GetOrLoad(path).Model.Variables.Count == 0, TestContext.Current.CancellationToken),
+            await Eventually.TrueAsync(() => store.Get(path)?.Model.Variables.Count == 0, TestContext.Current.CancellationToken),
             "The deletion did not empty the diagram within the timeout.");
     }
 
@@ -114,10 +114,10 @@ public class CausalLoopDocumentStoreFailedReloadTests : IDisposable
 
         await using (new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None))
         {
-            Assert.False(store.GetOrLoad(path).IsUsable, "The arrangement failed: the first read succeeded.");
+            Assert.False((await store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).IsUsable, "The arrangement failed: the first read succeeded.");
         }
 
-        var answer = await store.SaveAsync(path, store.GetOrLoad(path).Document, TestContext.Current.CancellationToken);
+        var answer = await store.SaveAsync(path, (await store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Document, TestContext.Current.CancellationToken);
 
         Assert.NotEqual("", answer.Error);
         Assert.Equal(Text, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));

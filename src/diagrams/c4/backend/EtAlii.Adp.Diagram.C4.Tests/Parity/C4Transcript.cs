@@ -166,6 +166,8 @@ internal static class C4Transcript
             }
 
             await using var session = new Session(folder, body);
+
+            await session.ReadAsync(cancellationToken);
             await WriteRegistrationsAsync(json, session, cancellationToken);
             await WriteReadingsAsync(json, session, cancellationToken);
             await WriteEditsAsync(json, session, cancellationToken);
@@ -541,7 +543,10 @@ internal static class C4Transcript
 
         public C4ContextPropertyProvider Properties { get; }
 
-        public C4Workspace Model => Documents.GetOrLoad(Body).Model;
+        /// <summary>Opens the document, as the diagram's first open does; the readings and edits read what it holds.</summary>
+        public async Task ReadAsync(CancellationToken cancellationToken) => await Documents.GetOrLoadAsync(Body, cancellationToken);
+
+        public C4Workspace Model => Documents.Get(Body)!.Model;
 
         public IHistoryStack Stack => History.Get(Folder);
 

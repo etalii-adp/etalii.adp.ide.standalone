@@ -47,22 +47,22 @@ public class TimelineDocumentStoreSelfWriteTests : IDisposable
         var path = IoPath.Combine(_workspace, "plan.tml");
         await File.WriteAllTextAsync(path, Text, TestContext.Current.CancellationToken);
         var store = new TimelineDocumentStore(new FileWriter());
-        var entry = store.GetOrLoad(path);
+        var entry = await store.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
         var changes = 0;
         store.Changed += (_, _) => changes++;
         Assert.Equal("", (await store.SaveAsync(path, entry.Document, TestContext.Current.CancellationToken)).Error);
         Assert.Equal(1, changes);
 
-        store.Reload(path);
+        await store.ReloadAsync(path, TestContext.Current.CancellationToken);
 
         Assert.Equal(1, changes);
 
         // And the control: an edit from outside after that save still reaches the sessions.
         await File.WriteAllTextAsync(path, Text.Replace("Period", "Phase", StringComparison.Ordinal), TestContext.Current.CancellationToken);
-        store.Reload(path);
+        await store.ReloadAsync(path, TestContext.Current.CancellationToken);
 
         Assert.Equal(2, changes);
-        Assert.Contains("label: Phase", store.GetOrLoad(path).Document.Text, StringComparison.Ordinal);
+        Assert.Contains("label: Phase", (await store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Document.Text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -72,19 +72,19 @@ public class TimelineDocumentStoreSelfWriteTests : IDisposable
         var path = IoPath.Combine(_workspace, "plan.tml");
         await File.WriteAllTextAsync(path, Text, TestContext.Current.CancellationToken);
         var store = new TimelineDocumentStore(new FileWriter());
-        _ = store.GetOrLoad(path);
+        _ = await store.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
 
         var saving = 1;
         var damaged = 0;
         var reloads = 0;
-        var reloader = Task.Run(() =>
+        var reloader = Task.Run(async () =>
         {
             // ReSharper disable once AccessToModifiedClosure - Reason: reading the latest `saving` is the point: the loop runs until the test's Volatile.Write(ref saving, 0) after its 2000 saves, and the test then awaits the reloader.
             while (Volatile.Read(ref saving) == 1)
             {
-                store.Reload(path);
+                await store.ReloadAsync(path, TestContext.Current.CancellationToken);
                 reloads++;
-                var entry = store.GetOrLoad(path);
+                var entry = await store.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
                 if (!entry.IsUsable || entry.Document.Text != Text)
                 {
                     damaged++;
@@ -96,7 +96,7 @@ public class TimelineDocumentStoreSelfWriteTests : IDisposable
         var refused = 0;
         for (var i = 0; i < 2000; i++)
         {
-            if ((await store.SaveAsync(path, store.GetOrLoad(path).Document, TestContext.Current.CancellationToken)).Failed)
+            if ((await store.SaveAsync(path, (await store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Document, TestContext.Current.CancellationToken)).Failed)
             {
                 refused++;
             }

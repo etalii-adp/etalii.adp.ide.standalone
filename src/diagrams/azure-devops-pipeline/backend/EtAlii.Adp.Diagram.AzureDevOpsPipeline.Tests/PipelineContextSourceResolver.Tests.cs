@@ -290,7 +290,7 @@ public class PipelineContextSourceResolverTests : IDisposable
         using var tracking = Resolver().Track(ShortGuid.NewShortGuid(), _workspace, level, updated => reported = updated);
 
         // Act.
-        var entry = _store.GetOrLoad(_workspace, BodyOf(path));
+        var entry = await _store.GetOrLoadAsync(_workspace, BodyOf(path), TestContext.Current.CancellationToken);
         var stage = entry.Model.Stages.Single(candidate => candidate.Name == "Build");
         PipelineBodyEdits.Rename(entry.Document, stage.Id, "Built");
         await _store.SaveAsync(_workspace, BodyOf(path), entry, TestContext.Current.CancellationToken);
@@ -310,7 +310,7 @@ public class PipelineContextSourceResolverTests : IDisposable
 
         // Act.
         await File.WriteAllTextAsync(BodyOf(path), "stages:\n  - stage: Build\n    jobs:\n      - job: Compile\n        steps:\n          - script: x\n", TestContext.Current.CancellationToken);
-        _store.Reload(BodyOf(path));
+        await _store.ReloadAsync(BodyOf(path), TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Single(reported);
@@ -345,7 +345,7 @@ public class PipelineContextSourceResolverTests : IDisposable
         using var tracking = Resolver().Track(ShortGuid.NewShortGuid(), _workspace, level, _ => reported++);
 
         // Act.
-        _store.GetOrLoad(_workspace, BodyOf(theirs));
+        await _store.GetOrLoadAsync(_workspace, BodyOf(theirs), TestContext.Current.CancellationToken);
         await _store.TouchAsync(_workspace, BodyOf(theirs), TestContext.Current.CancellationToken);
 
         // Assert.
@@ -389,9 +389,9 @@ public class PipelineContextSourceResolverTests : IDisposable
     /// and <see cref="PipelineElementMapper.EdgeId"/> - never a re-spelled format, which could only
     /// agree with the mapper by coincidence.
     /// </summary>
-    private IReadOnlyList<PipelineEdge> DrawnEdges(string registration)
+    private async Task<IReadOnlyList<PipelineEdge>> DrawnEdgesAsync(string registration)
     {
-        var model = _store.GetOrLoad(_workspace, BodyOf(registration)).Model;
+        var model = (await _store.GetOrLoadAsync(_workspace, BodyOf(registration), TestContext.Current.CancellationToken)).Model;
         return
         [
             .. PipelineGraphBuilder.OfStages(model).Edges,
@@ -406,7 +406,7 @@ public class PipelineContextSourceResolverTests : IDisposable
         // backend's answer - so an arrow this resolver cannot name is an arrow that can never be
         // selected (centralized-selection Requirements 2.1, 2.2).
         var path = Write("azure-pipelines", Arrows);
-        var edges = DrawnEdges(path);
+        var edges = await DrawnEdgesAsync(path);
         Assert.Contains(edges, edge => edge.IsImplicit);
         Assert.Contains(edges, edge => edge.IsBroken);
         Assert.Contains(edges, edge => edge is { IsImplicit: false, IsBroken: false, ToId: "Deploy" });
@@ -433,7 +433,7 @@ public class PipelineContextSourceResolverTests : IDisposable
         // dependsOn, or implied by its place - so the waiting side is what it answers as, the way
         // ansible's edges answer as their declaring side.
         var path = Write("azure-pipelines", Arrows);
-        var edge = DrawnEdges(path).Single(candidate => candidate.FromId == fromId && candidate.ToId == toId);
+        var edge = (await DrawnEdgesAsync(path)).Single(candidate => candidate.FromId == fromId && candidate.ToId == toId);
 
         // Act.
         var resolved = Assert.IsType<ResolvedContextLevel>(await ResolveAsync(path, PipelineElementMapper.EdgeId(edge)));
@@ -462,7 +462,7 @@ public class PipelineContextSourceResolverTests : IDisposable
     {
         // Arrange: Track shares Find, so an arrow is followed the way an element is (3.3).
         var path = Write("azure-pipelines", Arrows);
-        var edge = DrawnEdges(path).Single(candidate => candidate is { FromId: "Test", ToId: "Deploy" });
+        var edge = (await DrawnEdgesAsync(path)).Single(candidate => candidate is { FromId: "Test", ToId: "Deploy" });
         var level = Assert.IsType<ResolvedContextLevel>(await ResolveAsync(path, PipelineElementMapper.EdgeId(edge))).Level;
         var reported = new List<IReadOnlyList<string>?>();
         using var tracking = Resolver().Track(ShortGuid.NewShortGuid(), _workspace, level, reported.Add);
@@ -470,7 +470,7 @@ public class PipelineContextSourceResolverTests : IDisposable
         // Act: an edit elsewhere, then one that removes the dependency.
         await _store.TouchAsync(_workspace, BodyOf(path), TestContext.Current.CancellationToken);
         await File.WriteAllTextAsync(BodyOf(path), Arrows.Replace("- Test", "", StringComparison.Ordinal), TestContext.Current.CancellationToken);
-        _store.Reload(BodyOf(path));
+        await _store.ReloadAsync(BodyOf(path), TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal(2, reported.Count);

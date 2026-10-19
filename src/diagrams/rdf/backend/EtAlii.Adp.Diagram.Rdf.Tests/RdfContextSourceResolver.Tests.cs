@@ -29,7 +29,7 @@ public sealed class RdfContextSourceResolverTests : DiagramElementSourceResolver
             _store,
             new RdfReading(new RdfElementMapper()).Drawn);
 
-    protected override void Reload(string body) => _store.Reload(body);
+    protected override Task ReloadAsync(string body, CancellationToken cancellationToken) => _store.ReloadAsync(body, cancellationToken);
 
     protected override string ElementId => "res:http://example.org/alice";
 

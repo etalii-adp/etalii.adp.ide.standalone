@@ -38,21 +38,21 @@ public class CausalLoopDocumentStoreSelfWriteTests : IDisposable
         var path = IoPath.Combine(_workspace, "loop.cld");
         await File.WriteAllTextAsync(path, Text, TestContext.Current.CancellationToken);
         var store = new CausalLoopDocumentStore(new FileWriter());
-        _ = store.GetOrLoad(path);
+        _ = await store.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
 
         var saving = 1;
         var damaged = 0;
         var reloads = 0;
         string? first = null;
-        var reloader = Task.Run(() =>
+        var reloader = Task.Run(async () =>
         {
             // ReSharper disable once AccessToModifiedClosure - Reason: Used in a test case which is acceptable.
             while (Volatile.Read(ref saving) == 1)
             {
                 // What the reload bridge does when the watcher reports the path.
-                store.Reload(path);
+                await store.ReloadAsync(path, TestContext.Current.CancellationToken);
                 reloads++;
-                var entry = store.GetOrLoad(path);
+                var entry = await store.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
                 if (!entry.IsUsable || entry.Document.Text != Text)
                 {
                     damaged++;
@@ -65,7 +65,7 @@ public class CausalLoopDocumentStoreSelfWriteTests : IDisposable
         var refused = 0;
         for (var i = 0; i < 2000; i++)
         {
-            if ((await store.SaveAsync(path, store.GetOrLoad(path).Document, TestContext.Current.CancellationToken)).Failed)
+            if ((await store.SaveAsync(path, (await store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Document, TestContext.Current.CancellationToken)).Failed)
             {
                 refused++;
             }

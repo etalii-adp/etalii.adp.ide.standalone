@@ -11,7 +11,7 @@ public sealed class C4DocumentReloaderTests : DocumentReloaderContract<IC4Docume
 
     protected override IC4DocumentStore CreateStore() => new C4DocumentStore(new FileWriter());
 
-    protected override bool IsEmpty(IC4DocumentStore store, string path) => store.GetOrLoad(path).Model.Elements.Count == 0;
+    protected override async Task<bool> IsEmptyAsync(IC4DocumentStore store, string path, CancellationToken cancellationToken) => (await store.GetOrLoadAsync(path, cancellationToken)).Model.Elements.Count == 0;
 
     protected override void OnChanged(IC4DocumentStore store, Action<string> changed) =>
         store.Changed += (_, args) => changed(args.Path);

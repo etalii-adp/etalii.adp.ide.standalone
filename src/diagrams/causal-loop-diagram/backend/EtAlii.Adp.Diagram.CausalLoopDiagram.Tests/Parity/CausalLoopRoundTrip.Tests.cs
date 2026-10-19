@@ -36,7 +36,7 @@ public sealed class CausalLoopRoundTripTests : IDisposable
         var store = new CausalLoopDocumentStore(new FileWriter());
 
         // Act.
-        var saved = await store.SaveAsync(path, store.GetOrLoad(path).Document, TestContext.Current.CancellationToken);
+        var saved = await store.SaveAsync(path, (await store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Document, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.False(saved.Failed, saved.Error);

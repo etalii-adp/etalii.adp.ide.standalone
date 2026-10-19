@@ -11,9 +11,9 @@ public sealed class SankeyDocumentReloaderTests : DocumentReloaderContract<ISank
 
     protected override ISankeyDocumentStore CreateStore() => new SankeyDocumentStore(new FileWriter());
 
-    protected override bool IsEmpty(ISankeyDocumentStore store, string path)
+    protected override async Task<bool> IsEmptyAsync(ISankeyDocumentStore store, string path, CancellationToken cancellationToken)
     {
-        var model = store.GetOrLoad(path).Model;
+        var model = (await store.GetOrLoadAsync(path, cancellationToken)).Model;
         return model.Nodes.Count == 0 && model.Flows.Count == 0;
     }
 

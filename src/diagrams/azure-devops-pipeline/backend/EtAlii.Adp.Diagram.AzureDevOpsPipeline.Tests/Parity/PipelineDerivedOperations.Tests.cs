@@ -49,7 +49,7 @@ public class PipelineDerivedOperationsTests
         var workspace = folder.Path;
         var body = Path.Combine(folder.Path, document.InFolder);
         var original = await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken);
-        var entry = new PipelineDocumentStore(new FileWriter()).GetOrLoad(folder.Path, body);
+        var entry = await new PipelineDocumentStore(new FileWriter()).GetOrLoadAsync(folder.Path, body, TestContext.Current.CancellationToken);
         if (!entry.IsUsable) return;
 
         var model = entry.Model;
@@ -113,7 +113,7 @@ public class PipelineDerivedOperationsTests
             await File.WriteAllBytesAsync(body, original, TestContext.Current.CancellationToken);
             var store = new PipelineDocumentStore(new FileWriter());
             var result = await new PipelineTestDispatcher(store).DispatchAsync(command(workspace), TestContext.Current.CancellationToken);
-            var actual = result.IsSuccess ? Pipeline(new PipelineDocumentStore(new FileWriter()).GetOrLoad(workspace, body).Model) : $"refused: {result.Error}";
+            var actual = result.IsSuccess ? Pipeline((await new PipelineDocumentStore(new FileWriter()).GetOrLoadAsync(workspace, body, TestContext.Current.CancellationToken)).Model) : $"refused: {result.Error}";
 
             if (actual == $"refused: {ThroughAMerge}" && expected != actual) return;
             if (written is { IsUsable: false })

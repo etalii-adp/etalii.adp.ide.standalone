@@ -11,9 +11,9 @@ public sealed class SupplyChainDocumentReloaderTests : DocumentReloaderContract<
 
     protected override ISupplyChainDocumentStore CreateStore() => new SupplyChainDocumentStore(new FileWriter());
 
-    protected override bool IsEmpty(ISupplyChainDocumentStore store, string path)
+    protected override async Task<bool> IsEmptyAsync(ISupplyChainDocumentStore store, string path, CancellationToken cancellationToken)
     {
-        var model = store.GetOrLoad(path).Model;
+        var model = (await store.GetOrLoadAsync(path, cancellationToken)).Model;
         return model.Groups.Count == 0 && model.Nodes.Count == 0 && model.Flows.Count == 0;
     }
 

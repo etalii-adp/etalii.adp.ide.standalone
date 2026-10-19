@@ -67,7 +67,7 @@ public class AddC4ElementTests : IDisposable
         await _history.ExecuteAsync(
             new AddC4ElementCommand(_bodyPath, kind, name, parentId), TestContext.Current.CancellationToken);
 
-    private C4Workspace Workspace() => _documents.GetOrLoad(_bodyPath).Model;
+    private async Task<C4Workspace> WorkspaceAsync() => (await _documents.GetOrLoadAsync(_bodyPath, TestContext.Current.CancellationToken)).Model;
 
     private string OnDisk() => File.ReadAllText(_bodyPath);
 
@@ -79,7 +79,7 @@ public class AddC4ElementTests : IDisposable
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
-        var added = Assert.Single(Workspace().Elements, element => element.Name == "Payments");
+        var added = Assert.Single((await WorkspaceAsync()).Elements, element => element.Name == "Payments");
         Assert.Equal(C4ElementKind.SoftwareSystem, added.Kind);
         Assert.Null(added.ParentId);
     }
@@ -92,7 +92,7 @@ public class AddC4ElementTests : IDisposable
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
-        var added = Assert.Single(Workspace().Elements, element => element.Name == "Api");
+        var added = Assert.Single((await WorkspaceAsync()).Elements, element => element.Name == "Api");
         Assert.Equal("s", added.ParentId);
         // C4 requires a technology on a container, so one is written for the user to replace
         // rather than left out for the validator to complain about.
@@ -111,7 +111,7 @@ public class AddC4ElementTests : IDisposable
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
-        var added = Assert.Single(Workspace().Elements, element => element.Name == "Controller");
+        var added = Assert.Single((await WorkspaceAsync()).Elements, element => element.Name == "Controller");
         Assert.Equal("web", added.ParentId);
         Assert.Contains("\"React\" {", OnDisk(), StringComparison.Ordinal);
     }
@@ -196,8 +196,8 @@ public class AddC4ElementTests : IDisposable
         // Assert.
         // Numbered rather than randomised: an identifier is what a human reads in the diff.
         Assert.True(result.IsSuccess, result.Error);
-        Assert.NotNull(Workspace().Find("payments"));
-        Assert.NotNull(Workspace().Find("payments2"));
+        Assert.NotNull((await WorkspaceAsync()).Find("payments"));
+        Assert.NotNull((await WorkspaceAsync()).Find("payments2"));
     }
 
     [Fact]
@@ -212,7 +212,7 @@ public class AddC4ElementTests : IDisposable
         Assert.Equal(before, OnDisk());
 
         await _history.RedoAsync(TestContext.Current.CancellationToken);
-        Assert.NotNull(Workspace().Find("payments"));
+        Assert.NotNull((await WorkspaceAsync()).Find("payments"));
     }
 
     [Fact]
@@ -243,7 +243,7 @@ public class AddC4ElementTests : IDisposable
         // forbids and what the whole line-surgery approach exists to avoid.
         await AddAsync(C4ElementKind.Component, "Controller", parentId: "web");
 
-        var document = _documents.GetOrLoad(_bodyPath).Document;
+        var document = (await _documents.GetOrLoadAsync(_bodyPath, TestContext.Current.CancellationToken)).Document;
         var opened = document.CodeLines().Single(line => line.Code.Contains("container \"Web\"", StringComparison.Ordinal));
         document.InsertLine(opened.Number + 1, "                // Components arrive here as the design settles.");
         await _documents.SaveAsync(_bodyPath, document, TestContext.Current.CancellationToken);

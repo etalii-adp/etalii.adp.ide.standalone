@@ -65,7 +65,7 @@ public class C4DocumentStoreLostEditTests : IDisposable
         var path = IoPath.Combine(_workspace, "sample.dsl");
         await File.WriteAllTextAsync(path, Sample, TestContext.Current.CancellationToken);
         var store = new C4DocumentStore(new FileWriter());
-        var document = store.GetOrLoad(path).Document;
+        var document = (await store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Document;
         document.ReplaceLine(3, EditedLine);
 
         // The edit is in memory and nowhere else yet, which is this test's precondition.
@@ -73,7 +73,7 @@ public class C4DocumentStoreLostEditTests : IDisposable
 
         // Act: the notification for an EARLIER write of this same file lands now. The store's own
         // self-write guard is already cleared, so this is exactly what the reload bridge does.
-        store.Reload(path);
+        await store.ReloadAsync(path, TestContext.Current.CancellationToken);
         var error = await store.SaveAsync(path, document, TestContext.Current.CancellationToken);
 
         // Assert.

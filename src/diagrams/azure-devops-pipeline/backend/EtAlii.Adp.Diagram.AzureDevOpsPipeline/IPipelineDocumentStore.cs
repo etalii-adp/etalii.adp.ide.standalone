@@ -26,12 +26,8 @@ public interface IPipelineDocumentStore : IDiagramDocumentStore
     /// <summary>
     /// The pipeline at <paramref name="path"/>, loaded once and kept. A file that is not there yet
     /// yields an empty document rather than throwing, so a diagram whose body has not been written
-    /// still opens and the first save creates it.
+    /// still opens and the first save creates it. Read without blocking a thread.
     /// </summary>
-    DocumentEntry<PipelineBody, PipelineModel> GetOrLoad(string rootPath, string path);
-
-    /// <inheritdoc cref="GetOrLoad"/>
-    /// <remarks>Reads without blocking a thread, for a caller that can wait.</remarks>
     ValueTask<DocumentEntry<PipelineBody, PipelineModel>> GetOrLoadAsync(string rootPath, string path, CancellationToken cancellationToken);
 
     /// <summary>

@@ -18,7 +18,7 @@ public sealed class DependencyGraphContextSourceResolverTests : DiagramElementSo
     protected override IContextSourceResolver CreateResolver() =>
         new DependencyGraphContextSourceResolver(new DiagramFileRouter(new DependencyGraphOnlyCatalog()), _store, new DependencyGraphElementMapper());
 
-    protected override void Reload(string body) => _store.Reload(body);
+    protected override Task ReloadAsync(string body, CancellationToken cancellationToken) => _store.ReloadAsync(body, cancellationToken);
 
     protected override string ElementId => "k7Qv2mXa";
 

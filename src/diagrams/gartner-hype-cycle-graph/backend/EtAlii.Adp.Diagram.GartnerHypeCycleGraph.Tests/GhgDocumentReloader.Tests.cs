@@ -11,9 +11,9 @@ public sealed class GhgDocumentReloaderTests : DocumentReloaderContract<IGhgDocu
 
     protected override IGhgDocumentStore CreateStore() => new GhgDocumentStore(new FileWriter());
 
-    protected override bool IsEmpty(IGhgDocumentStore store, string path)
+    protected override async Task<bool> IsEmptyAsync(IGhgDocumentStore store, string path, CancellationToken cancellationToken)
     {
-        var model = store.GetOrLoad(path).Model;
+        var model = (await store.GetOrLoadAsync(path, cancellationToken)).Model;
         return model.Trends.Count == 0 && model.Influences.Count == 0;
     }
 

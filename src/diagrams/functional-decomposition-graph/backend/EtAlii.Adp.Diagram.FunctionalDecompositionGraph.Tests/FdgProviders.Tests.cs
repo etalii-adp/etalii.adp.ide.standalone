@@ -235,7 +235,7 @@ public sealed class FdgProvidersTests : IDisposable
         // Assert.
         Assert.Contains("could not be read", Assert.IsType<ContextExecutionFailed>(added).Message, StringComparison.Ordinal);
         Assert.Equal(broken, await File.ReadAllTextAsync(Body, TestContext.Current.CancellationToken));
-        var entry = _store.GetOrLoad(Body);
+        var entry = await _store.GetOrLoadAsync(Body, TestContext.Current.CancellationToken);
         Assert.StartsWith("The document could not be read as YAML: ", entry.Unreadable, StringComparison.Ordinal);
         Assert.Equal(entry.Model.Problems, entry.Problems);
     }

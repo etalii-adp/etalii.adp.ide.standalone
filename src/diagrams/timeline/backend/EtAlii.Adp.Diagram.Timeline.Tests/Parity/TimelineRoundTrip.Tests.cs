@@ -58,7 +58,7 @@ public sealed class TimelineRoundTripTests : IDisposable
         var store = new TimelineDocumentStore(new FileWriter());
 
         // Act.
-        var entry = store.GetOrLoad(path);
+        var entry = await store.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
         var saved = await store.SaveAsync(path, entry.Document, TestContext.Current.CancellationToken);
 
         // Assert: written back as it was; a document that could not be read is not written at all.

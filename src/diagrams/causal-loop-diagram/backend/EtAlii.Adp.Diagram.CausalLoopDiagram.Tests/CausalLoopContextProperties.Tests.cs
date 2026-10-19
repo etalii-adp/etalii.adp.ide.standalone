@@ -312,7 +312,7 @@ public class CausalLoopContextPropertiesTests : IDisposable
         // Arrange.
         await File.WriteAllTextAsync(_path, Corpus.Replace(
             "link births -> population +", "link births -> population", StringComparison.Ordinal), TestContext.Current.CancellationToken);
-        _store.Reload(_path);
+        await _store.ReloadAsync(_path, TestContext.Current.CancellationToken);
 
         // Act.
         var computed = (await Describe("loop:R1")).Row(CausalLoopContextPropertyProvider.LoopComputedProperty);
@@ -346,7 +346,7 @@ public class CausalLoopContextPropertiesTests : IDisposable
             _path,
             await File.ReadAllTextAsync(example, TestContext.Current.CancellationToken),
             TestContext.Current.CancellationToken);
-        _store.Reload(_path);
+        await _store.ReloadAsync(_path, TestContext.Current.CancellationToken);
 
         var history = _provider.GetRequiredService<IHistoryStackStore>().Get(_root);
         var removed = await history.ExecuteAsync(new RemoveLoopCommand(_path, "R2"), TestContext.Current.CancellationToken);
@@ -407,7 +407,7 @@ public class CausalLoopContextPropertiesTests : IDisposable
             after);
         Assert.Equal(
             ["onCallLoad", "fatigue", "attrition", "teamSize"],
-            Assert.Single(_store.GetOrLoad(_path).Model.Loops, loop => loop.Identifier == "R3").Variables);
+            Assert.Single((await _store.GetOrLoadAsync(_path, TestContext.Current.CancellationToken)).Model.Loops, loop => loop.Identifier == "R3").Variables);
 
         // The undo puts the bytes back, and what it hands back to redo is the command the grid
         // dispatched - which is how this test knows which command that was.

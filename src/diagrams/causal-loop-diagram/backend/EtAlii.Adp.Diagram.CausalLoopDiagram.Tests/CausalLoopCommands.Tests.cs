@@ -209,7 +209,7 @@ public class CausalLoopCommandsTests : IDisposable
     public async Task RemovingAVariable_TakesTheLinksAndLoopsThatNamedIt_AndSaysHowMany()
     {
         // Arrange.
-        var entry = _store.GetOrLoad(_path);
+        var entry = await _store.GetOrLoadAsync(_path, TestContext.Current.CancellationToken);
 
         // Act.
         var count = CausalLoopDefinition.RemovalConfirmation(entry, "variable:births")?.Message;
@@ -294,15 +294,15 @@ public class CausalLoopCommandsTests : IDisposable
 
         // Assert. A loop is claimed, named R for the reinforcing polarity two positive links give.
         Assert.True(result.IsSuccess, result.Error);
-        var loop = Assert.Single(_store.GetOrLoad(path).Model.Loops);
+        var loop = Assert.Single((await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model.Loops);
         Assert.StartsWith("R", loop.Identifier, StringComparison.Ordinal);
         Assert.Equal(new[] { "a", "b" }, loop.Variables.OrderBy(variable => variable, StringComparer.Ordinal));
 
         // The link and its loop are one edit: undo removes both.
         var restore = Assert.IsType<RestoreDocumentCommand<ICausalLoopDocumentStore>>(result.Inverse);
         await new RestoreDocumentCommandHandler<ICausalLoopDocumentStore>(_store, new FileWriter()).ExecuteAsync(restore, TestContext.Current.CancellationToken);
-        Assert.Empty(_store.GetOrLoad(path).Model.Loops);
-        Assert.Single(_store.GetOrLoad(path).Model.Links);
+        Assert.Empty((await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model.Loops);
+        Assert.Single((await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model.Links);
     }
 
     [Fact]
@@ -316,7 +316,7 @@ public class CausalLoopCommandsTests : IDisposable
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
-        Assert.Empty(_store.GetOrLoad(path).Model.Loops);
+        Assert.Empty((await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model.Loops);
     }
 
     [Fact]
@@ -333,7 +333,7 @@ public class CausalLoopCommandsTests : IDisposable
 
         // Assert. R1 untouched; exactly one new loop, over the three-variable cycle.
         Assert.True(result.IsSuccess, result.Error);
-        var loops = _store.GetOrLoad(path).Model.Loops;
+        var loops = (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model.Loops;
         Assert.Equal(2, loops.Count);
         Assert.Contains(loops, loop => loop.Identifier == "R1");
         Assert.Contains(loops, loop => loop.Identifier != "R1" && loop.Variables.Count == 3);
@@ -372,7 +372,7 @@ public class CausalLoopCommandsTests : IDisposable
         var text = OnCallExample();
         Assert.Contains(R3AsShipped, text, StringComparison.Ordinal);
         await File.WriteAllTextAsync(_path, text, TestContext.Current.CancellationToken);
-        _store.Reload(_path);
+        await _store.ReloadAsync(_path, TestContext.Current.CancellationToken);
         var result = await new SetLoopMembershipCommandHandler(_store).ExecuteAsync(
             new SetLoopMembershipCommand(_path, "R3", variables), TestContext.Current.CancellationToken);
         return (result, text, await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken));
@@ -412,7 +412,7 @@ public class CausalLoopCommandsTests : IDisposable
         // Arrange.
         var text = OnCallExample();
         await File.WriteAllTextAsync(_path, text, TestContext.Current.CancellationToken);
-        _store.Reload(_path);
+        await _store.ReloadAsync(_path, TestContext.Current.CancellationToken);
         var command = new SetLoopMembershipCommand(_path, "R3", ["onCallLoad", "fatigue", "attrition", "teamSize"]);
 
         // Act.

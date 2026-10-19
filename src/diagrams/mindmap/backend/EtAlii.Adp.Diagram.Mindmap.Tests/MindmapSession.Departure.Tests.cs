@@ -90,7 +90,7 @@ public sealed class MindmapSessionDepartureTests : IDisposable
         Assert.True(visible.Count > 1);
         var pushes = new List<IReadOnlyList<DiagramDelta>>();
         session.Changed += (_, args) => pushes.Add(args.Deltas);
-        var document = _documents.GetOrLoad(_bodyPath);
+        var document = await _documents.GetOrLoadAsync(_bodyPath, TestContext.Current.CancellationToken);
 
         // Act: the SAME unchanged document, announced first as one node's update, then as a reload.
         await _documents.SaveAsync(_bodyPath, document, new MindmapNodeUpdated(ContextService), TestContext.Current.CancellationToken);
@@ -115,7 +115,7 @@ public sealed class MindmapSessionDepartureTests : IDisposable
         _ = await session.BaselineAsync(TestContext.Current.CancellationToken);
         var pushes = new List<IReadOnlyList<DiagramDelta>>();
         session.Changed += (_, args) => pushes.Add(args.Deltas);
-        var document = _documents.GetOrLoad(_bodyPath);
+        var document = await _documents.GetOrLoadAsync(_bodyPath, TestContext.Current.CancellationToken);
 
         // Act: a command's edit of one node, saved with the kind it announces.
         document.SetText(document.Find(ContextService)!, "Context service, renamed");
@@ -139,7 +139,7 @@ public sealed class MindmapSessionDepartureTests : IDisposable
         Assert.DoesNotContain(HiddenInAFoldedBranch, delivered);
         var pushes = new List<IReadOnlyList<DiagramDelta>>();
         session.Changed += (_, args) => pushes.Add(args.Deltas);
-        var document = _documents.GetOrLoad(_bodyPath);
+        var document = await _documents.GetOrLoadAsync(_bodyPath, TestContext.Current.CancellationToken);
 
         // Act: a command removes a node inside the folded branch and announces what it removed.
         document.Remove(document.Find(HiddenInAFoldedBranch)!);

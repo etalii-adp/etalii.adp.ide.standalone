@@ -111,7 +111,7 @@ public sealed class SupplyChainSessionTests : IDisposable
         // Arrange.
         using var history = new History.HistoryStack(new SupplyChainTestDispatcher(_store));
         await using var session = new SupplyChainSession(_watchId, _folder.Body, _store, new SupplyChainElementMapper(), _selections, history);
-        var before = SupplyChainLayout.Of(_store.GetOrLoad(_folder.Body).Model);
+        var before = SupplyChainLayout.Of((await _store.GetOrLoadAsync(_folder.Body, TestContext.Current.CancellationToken)).Model);
         var frame = before.GroupBoxes["central-africa"];
 
         // Act.

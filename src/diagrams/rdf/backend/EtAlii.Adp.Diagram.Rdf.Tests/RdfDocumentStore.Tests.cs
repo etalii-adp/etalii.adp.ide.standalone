@@ -44,7 +44,7 @@ public class RdfDocumentStoreTests : IDisposable
         // Arrange.
         var path = CopyFixture(name);
         var original = await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken);
-        var entry = _store.GetOrLoad(path);
+        var entry = await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
 
         // Act. Nothing is edited between the load and the save, which is what makes this test about
         // byte identity rather than about edits surviving - see the LostEdit test beside it for the
@@ -57,10 +57,10 @@ public class RdfDocumentStoreTests : IDisposable
     }
 
     [Fact]
-    public void AMissingFile_OpensAsAnEmptyUsableDocument()
+    public async Task AMissingFile_OpensAsAnEmptyUsableDocument()
     {
         // Arrange & act.
-        var entry = _store.GetOrLoad(IoPath.Combine(_root, "not-yet.ttl"));
+        var entry = await _store.GetOrLoadAsync(IoPath.Combine(_root, "not-yet.ttl"), TestContext.Current.CancellationToken);
 
         // Assert.
         // A freshly created diagram opens, and the first save creates the file.
@@ -77,7 +77,7 @@ public class RdfDocumentStoreTests : IDisposable
         var original = await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken);
 
         // Act.
-        var entry = _store.GetOrLoad(path);
+        var entry = await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
         var refusal = await _store.SaveAsync(path, entry.Document, TestContext.Current.CancellationToken);
 
         // Assert.
@@ -92,14 +92,14 @@ public class RdfDocumentStoreTests : IDisposable
     }
 
     [Fact]
-    public void OneDocumentIsLoadedOnce_AndSharedByEveryReading()
+    public async Task OneDocumentIsLoadedOnce_AndSharedByEveryReading()
     {
         // Arrange.
         var path = CopyFixture("constructs.ttl");
 
         // Act.
-        var first = _store.GetOrLoad(path);
-        var second = _store.GetOrLoad(path);
+        var first = await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
+        var second = await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
 
         // Assert.
         // Reference equality: two readings of one file share one document and one model.
@@ -107,36 +107,36 @@ public class RdfDocumentStoreTests : IDisposable
     }
 
     [Fact]
-    public void ReloadAfterAnExternalChange_ReplacesTheEntryAndTellsTheSessions()
+    public async Task ReloadAfterAnExternalChange_ReplacesTheEntryAndTellsTheSessions()
     {
         // Arrange.
         var path = CopyFixture("crlf-line-endings.ttl");
-        _store.GetOrLoad(path);
-        File.WriteAllText(path, "@prefix ex: <http://example.org/> .\r\nex:x ex:y ex:z .\r\n");
+        await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(path, "@prefix ex: <http://example.org/> .\r\nex:x ex:y ex:z .\r\n", TestContext.Current.CancellationToken);
         DocumentChangedEventArgs? raised = null;
         _store.Changed += (_, args) => raised = args;
 
         // Act.
-        _store.Reload(path);
+        await _store.ReloadAsync(path, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.NotNull(raised);
         Assert.Equal(path, raised.Path);
-        var triple = Assert.Single(_store.GetOrLoad(raised.Path).Model.Triples);
+        var triple = Assert.Single((await _store.GetOrLoadAsync(raised.Path, TestContext.Current.CancellationToken)).Model.Triples);
         Assert.Equal("http://example.org/x", Assert.IsType<IriTerm>(triple.Subject).Iri);
     }
 
     [Fact]
-    public void ForgettingADocument_MakesTheNextOpenReadAfresh()
+    public async Task ForgettingADocument_MakesTheNextOpenReadAfresh()
     {
         // Arrange.
         var path = CopyFixture("crlf-line-endings.ttl");
-        var before = _store.GetOrLoad(path);
-        File.WriteAllText(path, "@prefix ex: <http://example.org/> .\r\nex:x ex:y ex:z .\r\n");
+        var before = await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(path, "@prefix ex: <http://example.org/> .\r\nex:x ex:y ex:z .\r\n", TestContext.Current.CancellationToken);
 
         // Act.
         _store.Forget(path);
-        var after = _store.GetOrLoad(path);
+        var after = await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.NotSame(before, after);

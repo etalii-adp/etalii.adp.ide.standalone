@@ -53,7 +53,7 @@ public class MindmapDocumentStoreLostEditTests : IDisposable
         // GetOrLoad, edit the document, then ask the store to save.
         var bodyPath = IoPath.Combine(_root, "design.mm");
         await File.WriteAllTextAsync(bodyPath, Map, TestContext.Current.CancellationToken);
-        var document = _store.GetOrLoad(bodyPath);
+        var document = await _store.GetOrLoadAsync(bodyPath, TestContext.Current.CancellationToken);
         document.SetText(document.Find("ID_1")!, "Design, renamed");
 
         // The edit is in memory and nowhere else yet, which is this test's precondition.
@@ -61,7 +61,7 @@ public class MindmapDocumentStoreLostEditTests : IDisposable
 
         // Act: the notification for an EARLIER write of this same file lands now. The store's own
         // self-write guard is already cleared, so this is exactly what the watcher does with it.
-        _store.Reload(bodyPath);
+        await _store.ReloadAsync(bodyPath, TestContext.Current.CancellationToken);
         var saved = await _store.SaveAsync(bodyPath, document, new MindmapNodeUpdated("ID_1"), TestContext.Current.CancellationToken);
 
         // Assert.

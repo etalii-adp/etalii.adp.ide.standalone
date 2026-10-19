@@ -307,7 +307,7 @@ public class DatabricksSessionTests : IDisposable
         await File.WriteAllTextAsync(body, "resources:\r\n  jobs:\r\n    j:\r\n      name: J\r\n      tasks:\r\n"
             + "        - task_key: near\r\n          notebook_task:\r\n            notebook_path: notebooks/near\r\n"
             + "        - task_key: far\r\n          notebook_task:\r\n            notebook_path: notebooks/far-edited\r\n", TestContext.Current.CancellationToken);
-        _provider.GetRequiredService<IDatabricksDocumentStore>().Reload(body);
+        await _provider.GetRequiredService<IDatabricksDocumentStore>().ReloadAsync(body, TestContext.Current.CancellationToken);
 
         // Assert.
         // The change path and the viewport path have to agree about what this connection holds.

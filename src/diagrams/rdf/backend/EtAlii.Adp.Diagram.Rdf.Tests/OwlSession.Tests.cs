@@ -168,7 +168,7 @@ public class OwlSessionTests : IDisposable
 
         // Act: a change to the file, reloaded through the one store both readings share.
         await File.AppendAllTextAsync(body, ":Calzone a owl:Class .\r\n", TestContext.Current.CancellationToken);
-        _provider.GetRequiredService<IRdfDocumentStore>().Reload(body);
+        await _provider.GetRequiredService<IRdfDocumentStore>().ReloadAsync(body, TestContext.Current.CancellationToken);
 
         // Assert: both sessions heard the same document change.
         Assert.True(rdfHeard);

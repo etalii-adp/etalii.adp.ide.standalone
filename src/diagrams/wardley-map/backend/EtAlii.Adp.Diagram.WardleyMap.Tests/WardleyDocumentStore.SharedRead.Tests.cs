@@ -22,17 +22,17 @@ public sealed class WardleyDocumentStoreSharedReadTests : IDisposable
     }
 
     [Fact]
-    public void GetOrLoad_ReadsADocumentAnEditorIsStillWriting()
+    public async Task GetOrLoad_ReadsADocumentAnEditorIsStillWriting()
     {
         // Arrange: the handle every save holds - write access, sharing only reads, the mode
         // File.WriteAllText opens with.
         const string text = "title Shared\ncomponent A [0.5, 0.5]\n";
         var path = IoPath.Combine(_folder, "map.owm");
-        File.WriteAllText(path, text);
-        using var editor = new FileStream(path, FileMode.Open, FileAccess.Write, FileShare.Read);
+        await File.WriteAllTextAsync(path, text, TestContext.Current.CancellationToken);
+        await using var editor = new FileStream(path, FileMode.Open, FileAccess.Write, FileShare.Read);
 
         // Act.
-        var document = new WardleyDocumentStore(new FileWriter()).GetOrLoad(path).Document;
+        var document = (await new WardleyDocumentStore(new FileWriter()).GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Document;
 
         // Assert: the map itself, not the empty fallback.
         Assert.Equal(text, document.Text);

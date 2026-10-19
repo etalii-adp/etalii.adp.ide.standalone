@@ -133,7 +133,7 @@ public class CausalLoopContextActionsTests : IDisposable
     {
         // Arrange.
         await File.WriteAllTextAsync(_path, "causal-loop 1\r\nvariable alone \"Alone\"\r\n", TestContext.Current.CancellationToken);
-        _store.Reload(_path);
+        await _store.ReloadAsync(_path, TestContext.Current.CancellationToken);
 
         // Act.
         var arrange = Assert.Single(
@@ -264,7 +264,7 @@ public class CausalLoopContextActionsTests : IDisposable
             action => action.Id == CausalLoopContextActionProvider.ToggleDelayActionId);
 
         await File.WriteAllTextAsync(_path, Corpus.Replace("link population -> births +", "link population -> births + delayed", StringComparison.Ordinal), TestContext.Current.CancellationToken);
-        _store.Reload(_path);
+        await _store.ReloadAsync(_path, TestContext.Current.CancellationToken);
 
         var after = Assert.Single(
             await Discover("link:population|births"),
@@ -292,7 +292,7 @@ public class CausalLoopContextActionsTests : IDisposable
             TestContext.Current.CancellationToken);
 
         var written = await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken);
-        _store.Reload(_path);
+        await _store.ReloadAsync(_path, TestContext.Current.CancellationToken);
 
         var after = Assert.Single(
             await Discover("link:population|births"),
@@ -320,8 +320,8 @@ public class CausalLoopContextActionsTests : IDisposable
         // Assert. Not a dialog; a variable appears, named by the module.
         Assert.IsNotType<ContextExecutionRequiresInput>(result);
         Assert.IsType<ContextExecutionCompleted>(result);
-        _store.Reload(_path);
-        Assert.Contains(_store.GetOrLoad(_path).Model.Variables, variable => variable.Id == "variable1");
+        await _store.ReloadAsync(_path, TestContext.Current.CancellationToken);
+        Assert.Contains((await _store.GetOrLoadAsync(_path, TestContext.Current.CancellationToken)).Model.Variables, variable => variable.Id == "variable1");
     }
 
     [Fact]
@@ -344,8 +344,8 @@ public class CausalLoopContextActionsTests : IDisposable
         await _actions.CommitAsync(
             Target("variable:births"), CausalLoopContextActionProvider.RenameVariableActionId,
             "Newborns", "", TestContext.Current.CancellationToken);
-        _store.Reload(_path);
-        var model = _store.GetOrLoad(_path).Model;
+        await _store.ReloadAsync(_path, TestContext.Current.CancellationToken);
+        var model = (await _store.GetOrLoadAsync(_path, TestContext.Current.CancellationToken)).Model;
         Assert.Contains(model.Variables, variable => variable is { Id: "births", Display: "Newborns" });
         Assert.Contains(model.Links, link => link.From == "births" || link.To == "births");
     }
@@ -370,8 +370,8 @@ public class CausalLoopContextActionsTests : IDisposable
 
         // Assert.
         Assert.IsType<ContextExecutionCompleted>(result);
-        _store.Reload(freshPath);
-        var model = _store.GetOrLoad(freshPath).Model;
+        await _store.ReloadAsync(freshPath, TestContext.Current.CancellationToken);
+        var model = (await _store.GetOrLoadAsync(freshPath, TestContext.Current.CancellationToken)).Model;
         Assert.Contains(model.Links, link => link is { From: "b", To: "a" });
         // And the reverse link closes a loop, which the same edit claimed.
         Assert.Single(model.Loops);
@@ -472,7 +472,7 @@ public class CausalLoopContextActionsTests : IDisposable
     {
         // Arrange.
         await File.WriteAllTextAsync(_path, Corpus + "variable deaths \"Deaths\"\r\n", TestContext.Current.CancellationToken);
-        _store.Reload(_path);
+        await _store.ReloadAsync(_path, TestContext.Current.CancellationToken);
 
         // Act.
         var asked = await _actions.ExecuteAsync(

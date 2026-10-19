@@ -27,16 +27,16 @@ public class MindmapDocumentStoreSharedReadTests : IDisposable
     }
 
     [Fact]
-    public void GetOrLoad_ReadsAMapAnEditorIsStillWriting()
+    public async Task GetOrLoad_ReadsAMapAnEditorIsStillWriting()
     {
         // Arrange: the handle every save holds - write access, sharing only reads, the mode
         // File.WriteAllText opens with.
         var bodyPath = IoPath.Combine(_root, "held.mm");
-        File.WriteAllText(bodyPath, "<map version=\"freeplane 1.11.5\"><node TEXT=\"RootX\"/></map>");
-        using var editor = new FileStream(bodyPath, FileMode.Open, FileAccess.Write, FileShare.Read);
+        await File.WriteAllTextAsync(bodyPath, "<map version=\"freeplane 1.11.5\"><node TEXT=\"RootX\"/></map>", TestContext.Current.CancellationToken);
+        await using var editor = new FileStream(bodyPath, FileMode.Open, FileAccess.Write, FileShare.Read);
 
         // Act.
-        var document = _store.GetOrLoad(bodyPath);
+        var document = await _store.GetOrLoadAsync(bodyPath, TestContext.Current.CancellationToken);
 
         // Assert: the map itself, not the empty fallback named after the file.
         Assert.Equal("RootX", document.Root.Text);

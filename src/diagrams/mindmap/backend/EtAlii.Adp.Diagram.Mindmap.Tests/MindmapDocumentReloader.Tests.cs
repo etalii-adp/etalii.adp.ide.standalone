@@ -17,7 +17,7 @@ public sealed class MindmapDocumentReloaderTests : DocumentReloaderContract<IMin
 
     protected override IMindmapDocumentStore CreateStore() => new MindmapDocumentStore(new FileWriter());
 
-    protected override bool IsEmpty(IMindmapDocumentStore store, string path) => store.GetOrLoad(path).Root.Children.Count == 0;
+    protected override async Task<bool> IsEmptyAsync(IMindmapDocumentStore store, string path, CancellationToken cancellationToken) => (await store.GetOrLoadAsync(path, cancellationToken)).Root.Children.Count == 0;
 
     protected override void OnChanged(IMindmapDocumentStore store, Action<string> changed) =>
         store.Changed += (_, args) => changed(args.BodyPath);
@@ -31,14 +31,14 @@ public sealed class MindmapDocumentReloaderTests : DocumentReloaderContract<IMin
         File.Copy(Example, body);
         var store = new MindmapDocumentStore(new FileWriter());
         IDiagramDocumentReloader reloader = new DiagramDocumentReloader<IMindmapDocumentStore>(Origin, store);
-        Assert.NotEmpty(store.GetOrLoad(body).Root.Children);
+        Assert.NotEmpty((await store.GetOrLoadAsync(body, TestContext.Current.CancellationToken)).Root.Children);
         File.Delete(body);
 
         // Act.
         await reloader.BodyDeletedAsync(folder.Path, body, TestContext.Current.CancellationToken);
 
         // Assert: what a first open of a missing body shows (R2.5).
-        var cleared = store.GetOrLoad(body);
+        var cleared = await store.GetOrLoadAsync(body, TestContext.Current.CancellationToken);
         Assert.Empty(cleared.Root.Children);
         Assert.Equal("design", cleared.Root.Text);
     }
@@ -52,7 +52,7 @@ public sealed class MindmapDocumentReloaderTests : DocumentReloaderContract<IMin
         File.Copy(Example, body);
         var store = new MindmapDocumentStore(new FileWriter());
         IDiagramDocumentReloader reloader = new DiagramDocumentReloader<IMindmapDocumentStore>(Origin, store);
-        Assert.NotEmpty(store.GetOrLoad(body).Root.Children);
+        Assert.NotEmpty((await store.GetOrLoadAsync(body, TestContext.Current.CancellationToken)).Root.Children);
         var told = 0;
         store.Changed += (_, _) => told++;
 
@@ -64,7 +64,7 @@ public sealed class MindmapDocumentReloaderTests : DocumentReloaderContract<IMin
 
         // Assert: the last good map is kept, not replaced by an empty one (R2.4), and since nothing a
         // session shows has changed, no session is told.
-        Assert.NotEmpty(store.GetOrLoad(body).Root.Children);
+        Assert.NotEmpty((await store.GetOrLoadAsync(body, TestContext.Current.CancellationToken)).Root.Children);
         Assert.Equal(0, told);
     }
 }

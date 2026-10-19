@@ -24,7 +24,7 @@ public sealed class C4ContextSourceResolverTests : DiagramElementSourceResolverC
 
     protected override IContextSourceResolver CreateResolver() => Resolver();
 
-    protected override void Reload(string body) => _store.Reload(body);
+    protected override Task ReloadAsync(string body, CancellationToken cancellationToken) => _store.ReloadAsync(body, cancellationToken);
 
     protected override string ElementId => "tracking";
 
@@ -71,7 +71,7 @@ public sealed class C4ContextSourceResolverTests : DiagramElementSourceResolverC
         var body = folder.Combine("courier.dsl");
         File.Copy(Example, body);
         var registration = SelectedIn(body);
-        var workspace = _store.GetOrLoad(body).Model;
+        var workspace = (await _store.GetOrLoadAsync(body, TestContext.Current.CancellationToken)).Model;
         var modelIds = workspace.Relationships.Select(relationship => relationship.Id).ToHashSet(StringComparer.Ordinal);
         var elevated = workspace.Views
             .SelectMany(view => _mapper.Visible(workspace, view, DiagramViewport.Unbounded))

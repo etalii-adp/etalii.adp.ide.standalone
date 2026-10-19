@@ -127,6 +127,8 @@ internal static partial class MindmapTranscript
             await File.WriteAllBytesAsync(body, bytes, cancellationToken);
 
             using var session = new Session(folder, body, TranscriptText.Decode(bytes));
+
+            await session.ReadAsync(cancellationToken);
             await WriteReadingsAsync(json, session, cancellationToken);
             await WriteEditsAsync(json, session, cancellationToken);
         }
@@ -338,7 +340,6 @@ internal static partial class MindmapTranscript
                 .AddCommands().AddHierarchyCommandHandlers()
                 .AddMindmapCommands()
                 .BuildServiceProvider();
-            Learn();
         }
 
         public string Folder { get; }
@@ -361,17 +362,25 @@ internal static partial class MindmapTranscript
 
         public MindmapContextPropertyProvider Properties => _services.GetRequiredService<MindmapContextPropertyProvider>();
 
-        public MindmapDocument? TryDocument()
+        /// <summary>
+        /// Opens the document, as the diagram's first open does, and masks the ids the open assigned; a
+        /// document that cannot be read holds nothing.
+        /// </summary>
+        public async Task ReadAsync(CancellationToken cancellationToken)
         {
             try
             {
-                return Documents.GetOrLoad(Body);
+                await Documents.GetOrLoadAsync(Body, cancellationToken);
             }
             catch (MindmapFormatException)
             {
-                return null;
+                // What the transcript records of it is that it holds nothing.
             }
+
+            Learn();
         }
+
+        public MindmapDocument? TryDocument() => Documents.Get(Body);
 
         public ContextTarget Target(string elementId, bool flipped = false) =>
             new(ContextScope.DiagramElement, Body, TryDocument()?.Find(elementId)?.HasChildren ?? false, SourceId: default, Folder, flipped ? FlippedWatch : Watch, elementId);

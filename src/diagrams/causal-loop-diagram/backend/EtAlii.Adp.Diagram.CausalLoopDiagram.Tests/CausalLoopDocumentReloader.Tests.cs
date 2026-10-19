@@ -11,7 +11,7 @@ public sealed class CausalLoopDocumentReloaderTests : DocumentReloaderContract<I
 
     protected override ICausalLoopDocumentStore CreateStore() => new CausalLoopDocumentStore(new FileWriter());
 
-    protected override bool IsEmpty(ICausalLoopDocumentStore store, string path) => store.GetOrLoad(path).Model.Variables.Count == 0;
+    protected override async Task<bool> IsEmptyAsync(ICausalLoopDocumentStore store, string path, CancellationToken cancellationToken) => (await store.GetOrLoadAsync(path, cancellationToken)).Model.Variables.Count == 0;
 
     protected override void OnChanged(ICausalLoopDocumentStore store, Action<string> changed) =>
         store.Changed += (_, args) => changed(args.Path);

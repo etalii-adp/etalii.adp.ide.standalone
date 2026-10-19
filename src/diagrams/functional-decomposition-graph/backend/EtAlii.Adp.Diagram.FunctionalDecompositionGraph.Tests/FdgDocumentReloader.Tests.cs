@@ -11,9 +11,9 @@ public sealed class FdgDocumentReloaderTests : DocumentReloaderContract<IFdgDocu
 
     protected override IFdgDocumentStore CreateStore() => new FdgDocumentStore(new FileWriter());
 
-    protected override bool IsEmpty(IFdgDocumentStore store, string path)
+    protected override async Task<bool> IsEmptyAsync(IFdgDocumentStore store, string path, CancellationToken cancellationToken)
     {
-        var model = store.GetOrLoad(path).Model;
+        var model = (await store.GetOrLoadAsync(path, cancellationToken)).Model;
         return model.Elements.Count == 0 && model.Connections.Count == 0;
     }
 

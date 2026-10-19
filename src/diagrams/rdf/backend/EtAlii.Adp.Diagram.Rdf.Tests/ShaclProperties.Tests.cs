@@ -65,31 +65,31 @@ public class ShaclPropertiesTests : IDisposable
         GC.SuppressFinalize(this);
     }
 
-    private DocumentEntry<LineDocument, RdfModel> Entry() => _provider.GetRequiredService<IRdfDocumentStore>().GetOrLoad(_body);
+    private async Task<DocumentEntry<LineDocument, RdfModel>> EntryAsync() => await _provider.GetRequiredService<IRdfDocumentStore>().GetOrLoadAsync(_body, TestContext.Current.CancellationToken);
 
     private ContextTarget Target(string elementId, ToolOrigin? origin) =>
         new(ContextScope.DiagramElement, _body, false, ShortGuid.NewShortGuid(), _root, default, elementId) { Origin = origin };
 
     private const string CardId = "res:http://example.org/PersonShape";
 
-    private IReadOnlyList<ContextPropertyDefinition> Grid() =>
-        ShaclProperties.Describe(Entry(), Target(CardId, ServiceCollectionAddShaclExtension.ShaclOrigin))!;
+    private async Task<IReadOnlyList<ContextPropertyDefinition>> GridAsync() =>
+        ShaclProperties.Describe(await EntryAsync(), Target(CardId, ServiceCollectionAddShaclExtension.ShaclOrigin))!;
 
     [Fact]
-    public void TheGrid_AnswersForItsOwnOriginOnly()
+    public async Task TheGrid_AnswersForItsOwnOriginOnly()
     {
-        Assert.NotNull(ShaclProperties.Describe(Entry(), Target(CardId, ServiceCollectionAddShaclExtension.ShaclOrigin)));
+        Assert.NotNull(ShaclProperties.Describe(await EntryAsync(), Target(CardId, ServiceCollectionAddShaclExtension.ShaclOrigin)));
 
         // Two readings over one .ttl produce byte-identical targets, so the element id cannot say
         // whose grid this is - only the origin can, exactly as it does for the action cases.
-        Assert.Null(ShaclProperties.Describe(Entry(), Target(CardId, ServiceCollectionAddRdfExtension.RdfOrigin)));
-        Assert.Null(ShaclProperties.Describe(Entry(), Target(CardId, ServiceCollectionAddSkosExtension.SkosOrigin)));
+        Assert.Null(ShaclProperties.Describe(await EntryAsync(), Target(CardId, ServiceCollectionAddRdfExtension.RdfOrigin)));
+        Assert.Null(ShaclProperties.Describe(await EntryAsync(), Target(CardId, ServiceCollectionAddSkosExtension.SkosOrigin)));
     }
 
     [Fact]
-    public void ACard_ShowsItsIdentityAnnotationsAndFlags()
+    public async Task ACard_ShowsItsIdentityAnnotationsAndFlags()
     {
-        var rows = Grid();
+        var rows = await GridAsync();
 
         Assert.Equal("http://example.org/PersonShape", rows.Row("shacl.iri").Value);
         Assert.Equal("Person", rows.Row("shacl.name").Value);
@@ -101,9 +101,9 @@ public class ShaclPropertiesTests : IDisposable
     }
 
     [Fact]
-    public void OnlyTheTwoAnnotationsRequirement5WritesAreEditable()
+    public async Task OnlyTheTwoAnnotationsRequirement5WritesAreEditable()
     {
-        var rows = Grid();
+        var rows = await GridAsync();
 
         // Requirement 6.3 permits editing only where Requirement 5 does, and Requirement 5's
         // writers are gestures: targets, rows, activation, rename and removal all live on the
@@ -119,9 +119,9 @@ public class ShaclPropertiesTests : IDisposable
     }
 
     [Fact]
-    public void ABlankRootedRow_IsFullyReadableAndRefusedWithTheOneSentence()
+    public async Task ABlankRootedRow_IsFullyReadableAndRefusedWithTheOneSentence()
     {
-        var row = Grid().Row("shacl.row:0");
+        var row = (await GridAsync()).Row("shacl.row:0");
 
         // Requirement 4.1: the anonymous property shape has no identity, yet everything it says
         // is legible here - path, datatype, cardinality.
@@ -135,9 +135,9 @@ public class ShaclPropertiesTests : IDisposable
     }
 
     [Fact]
-    public void AnAbsentTarget_ReadsAsAFactRatherThanAFinding()
+    public async Task AnAbsentTarget_ReadsAsAFactRatherThanAFinding()
     {
-        var row = Grid().Row("shacl.target:0");
+        var row = (await GridAsync()).Row("shacl.target:0");
 
         Assert.Equal("Target class", row.Label);
 
@@ -149,9 +149,9 @@ public class ShaclPropertiesTests : IDisposable
     }
 
     [Fact]
-    public void ASparqlConstraint_ShowsItsQueryTextAndSaysItIsNotRun()
+    public async Task ASparqlConstraint_ShowsItsQueryTextAndSaysItIsNotRun()
     {
-        var row = Grid().Row("shacl.sparql:0");
+        var row = (await GridAsync()).Row("shacl.sparql:0");
 
         // Requirement 1.7: the text is readable, extracted and nothing more.
         Assert.Equal("SELECT $this WHERE { $this ex:name ?n }", row.Value);
@@ -164,7 +164,7 @@ public class ShaclPropertiesTests : IDisposable
     {
         var before = await File.ReadAllTextAsync(_body, TestContext.Current.CancellationToken);
         var command = ShaclProperties.CommandFor(
-            Entry(), Target(CardId, ServiceCollectionAddShaclExtension.ShaclOrigin), "shacl.name", "Human");
+            await EntryAsync(), Target(CardId, ServiceCollectionAddShaclExtension.ShaclOrigin), "shacl.name", "Human");
         Assert.NotNull(command);
 
         var history = _provider.GetRequiredService<IHistoryStackStore>().Get(_root);
@@ -178,11 +178,11 @@ public class ShaclPropertiesTests : IDisposable
     }
 
     [Fact]
-    public void ABlankCard_IsReadableThroughoutAndWritableNowhere()
+    public async Task ABlankCard_IsReadableThroughoutAndWritableNowhere()
     {
-        var blank = Assert.Single(ShaclProjection.Project(Entry().Model).Cards, card => card.Blank);
+        var blank = Assert.Single(ShaclProjection.Project((await EntryAsync()).Model).Cards, card => card.Blank);
         var target = Target(blank.Id, ServiceCollectionAddShaclExtension.ShaclOrigin);
-        var rows = ShaclProperties.Describe(Entry(), target)!;
+        var rows = ShaclProperties.Describe(await EntryAsync(), target)!;
 
         Assert.NotEmpty(rows);
         Assert.All(rows, row => Assert.False(row.IsEditable));
@@ -190,16 +190,16 @@ public class ShaclPropertiesTests : IDisposable
 
         // The gate refuses the write independently of the grid, so an edit dispatched directly
         // cannot land behind the read-only flags.
-        Assert.Null(ShaclProperties.CommandFor(Entry(), target, "shacl.name", "anything"));
+        Assert.Null(ShaclProperties.CommandFor(await EntryAsync(), target, "shacl.name", "anything"));
     }
 
     [Fact]
-    public void ARowThatIsNotThisReadingsCard_GetsNoGridAtAll()
+    public async Task ARowThatIsNotThisReadingsCard_GetsNoGridAtAll()
     {
         // A resource the file mentions but does not state to be a shape keeps the family's rows;
         // the shapes grid must decline rather than describe it as an empty shape.
         Assert.Null(ShaclProperties.Describe(
-            Entry(),
+            await EntryAsync(),
             Target("res:http://example.org/Person", ServiceCollectionAddShaclExtension.ShaclOrigin)));
     }
 }

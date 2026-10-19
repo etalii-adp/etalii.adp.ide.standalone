@@ -51,7 +51,7 @@ public class MindmapDocumentStoreFailedSaveTests : IDisposable
         // Arrange: a loaded map, an edit made in memory, and the file held open so the write fails.
         var bodyPath = IoPath.Combine(_root, "design.mm");
         await File.WriteAllTextAsync(bodyPath, Map, TestContext.Current.CancellationToken);
-        var document = _store.GetOrLoad(bodyPath);
+        var document = await _store.GetOrLoadAsync(bodyPath, TestContext.Current.CancellationToken);
         var node = document.Find("ID_1")!;
         document.SetText(node, "Design, renamed");
 
@@ -69,7 +69,7 @@ public class MindmapDocumentStoreFailedSaveTests : IDisposable
         // ...and the edit is still in memory, so the user retries rather than retypes. THIS is the
         // half that matters to somebody using the app: the file on disk is untouched, and the
         // document ADP holds is the edited one.
-        Assert.Equal("Design, renamed", _store.GetOrLoad(bodyPath).Find("ID_1")!.Text);
+        Assert.Equal("Design, renamed", (await _store.GetOrLoadAsync(bodyPath, TestContext.Current.CancellationToken)).Find("ID_1")!.Text);
         Assert.Contains("TEXT=\"Design\"", await File.ReadAllTextAsync(bodyPath, TestContext.Current.CancellationToken), StringComparison.Ordinal);
     }
 
@@ -80,7 +80,7 @@ public class MindmapDocumentStoreFailedSaveTests : IDisposable
         // above and break every edit in the product.
         var bodyPath = IoPath.Combine(_root, "design.mm");
         await File.WriteAllTextAsync(bodyPath, Map, TestContext.Current.CancellationToken);
-        var document = _store.GetOrLoad(bodyPath);
+        var document = await _store.GetOrLoadAsync(bodyPath, TestContext.Current.CancellationToken);
         document.SetText(document.Find("ID_1")!, "Design, renamed");
 
         var saved = await _store.SaveAsync(bodyPath, document, new MindmapNodeUpdated("ID_1"), TestContext.Current.CancellationToken);

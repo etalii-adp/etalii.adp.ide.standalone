@@ -181,7 +181,7 @@ public class TimelineContextActionProviderTests : IDisposable
         var input = Assert.IsType<ContextExecutionRequiresInput>(ask);
         Assert.Equal("Period", input.Request.InitialValue);
         Assert.True(commit.Completed, commit.Error);
-        Assert.Equal("Renamed", _store.GetOrLoad(path).Model.Elements[0].Label);
+        Assert.Equal("Renamed", (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model.Elements[0].Label);
     }
 
     [Fact]
@@ -233,13 +233,13 @@ public class TimelineContextActionProviderTests : IDisposable
 
         // Act.
         var commit = await _actions.CommitAsync(Target(path, "bbb"), TimelineContextActionProvider.GiveEndActionId, "2026-03-01", "", CancellationToken.None);
-        var after = _store.GetOrLoad(path).Model.Elements.Single(element => element.Id == "bbb").IsPeriod;
+        var after = (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model.Elements.Single(element => element.Id == "bbb").IsPeriod;
         await _historyStacks.Get(_workspace).UndoAsync(CancellationToken.None);
 
         // Assert.
         Assert.True(commit.Completed, commit.Error);
         Assert.True(after);
-        Assert.False(_store.GetOrLoad(path).Model.Elements.Single(element => element.Id == "bbb").IsPeriod);
+        Assert.False((await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model.Elements.Single(element => element.Id == "bbb").IsPeriod);
     }
 
     [Fact]
@@ -276,7 +276,7 @@ public class TimelineContextActionProviderTests : IDisposable
 
         // Assert.
         Assert.IsType<ContextExecutionCompleted>(result);
-        var added = _store.GetOrLoad(path).Model.Elements.Single(element => element.Label == "New moment");
+        var added = (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model.Elements.Single(element => element.Label == "New moment");
         Assert.Equal("2026-07-01", added.Begin.Text);
         Assert.Equal(5, added.Row);
         Assert.False(added.IsPeriod);
@@ -306,13 +306,13 @@ public class TimelineContextActionProviderTests : IDisposable
 
         // Act.
         var commit = await _actions.CommitAsync(Target(path, "ccc"), TimelineContextActionProvider.DisconnectActionId, "", "", CancellationToken.None);
-        var afterDisconnect = _store.GetOrLoad(path).Model.Connections.Count;
+        var afterDisconnect = (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model.Connections.Count;
         await _historyStacks.Get(_workspace).UndoAsync(CancellationToken.None);
 
         // Assert.
         Assert.True(commit.Completed, commit.Error);
         Assert.Equal(0, afterDisconnect);
-        Assert.Single(_store.GetOrLoad(path).Model.Connections);
+        Assert.Single((await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model.Connections);
     }
 
     [Fact]
@@ -398,7 +398,7 @@ public class TimelineActionRealityTests : IDisposable
         // Act.
         var result = await _actions.ExecuteAsync(
             Target(path, GestureIds.RowPlacement(0, 0)), TimelineContextActionProvider.ArrangeActionId, CancellationToken.None);
-        var rows = _store.GetOrLoad(path).Model.Elements.Select(element => element.Row).ToList();
+        var rows = (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model.Elements.Select(element => element.Row).ToList();
 
         // Assert: arranged onto the first row.
         Assert.IsType<ContextExecutionCompleted>(result);
@@ -418,7 +418,7 @@ public class TimelineActionRealityTests : IDisposable
 
         // Assert.
         Assert.IsType<ContextExecutionCompleted>(result);
-        Assert.Empty(_store.GetOrLoad(path).Model.Elements);
+        Assert.Empty((await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model.Elements);
     }
 
     [Fact]
@@ -430,7 +430,7 @@ public class TimelineActionRealityTests : IDisposable
 
         // Assert.
         Assert.IsType<ContextExecutionCompleted>(result);
-        Assert.False(_store.GetOrLoad(path).Model.Elements.Single().IsPeriod);
+        Assert.False((await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model.Elements.Single().IsPeriod);
     }
 }
 
@@ -489,7 +489,7 @@ public class TimelineRelationGestureTests : IDisposable
 
         // Assert.
         Assert.IsType<ContextExecutionCompleted>(result);
-        var relation = _store.GetOrLoad(path).Model.Connections.Single();
+        var relation = (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model.Connections.Single();
         Assert.Equal("aaa", relation.From);
         Assert.Equal("bbb", relation.To);
     }
@@ -507,7 +507,7 @@ public class TimelineRelationGestureTests : IDisposable
             Target(path, GestureIds.Relation("aaa", GestureIds.RowPlacement(seconds, 3))),
             TimelineContextActionProvider.ConnectActionId,
             CancellationToken.None);
-        var model = _store.GetOrLoad(path).Model;
+        var model = (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model;
         var added = model.Elements.Single(element => element.Label == "New element");
         await _historyStacks.Get(_workspace).UndoAsync(CancellationToken.None);
 
@@ -535,7 +535,7 @@ public class TimelineRelationGestureTests : IDisposable
             Target(path, GestureIds.Relation(GestureIds.RowPlacement(seconds, 2), "aaa")),
             TimelineContextActionProvider.ConnectActionId,
             CancellationToken.None);
-        var model = _store.GetOrLoad(path).Model;
+        var model = (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model;
         var added = model.Elements.Single(element => element.Label == "New element");
         await _historyStacks.Get(_workspace).UndoAsync(CancellationToken.None);
 
@@ -625,7 +625,7 @@ public class TimelineRelationGestureTests : IDisposable
 
         // Assert.
         Assert.IsType<ContextExecutionCompleted>(result);
-        var model = _store.GetOrLoad(path).Model;
+        var model = (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model;
         var added = model.Elements.Single(element => element.Label == "New element");
         Assert.Equal("2026-01-26", added.Begin.Text); // aaa ends 2026-01-20, plus six days
         Assert.Equal("2026-02-09", added.End!.Text);  // a fortnight long
@@ -644,7 +644,7 @@ public class TimelineRelationGestureTests : IDisposable
 
         // Assert.
         Assert.IsType<ContextExecutionCompleted>(result);
-        var model = _store.GetOrLoad(path).Model;
+        var model = (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model;
         var added = model.Elements.Single(element => element.Label == "New element");
         Assert.Equal("2026-01-01", added.Begin.Text);
         Assert.Equal(1, added.Row);

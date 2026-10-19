@@ -50,16 +50,16 @@ public class C4SharedReadTests : IDisposable
         """;
 
     [Fact]
-    public void GetOrLoad_ReadsADocumentAnEditorIsStillWriting()
+    public async Task GetOrLoad_ReadsADocumentAnEditorIsStillWriting()
     {
         // Arrange: the handle every save holds - write access, sharing only reads, the mode
         // File.WriteAllText opens with.
         var path = IoPath.Combine(_root, "model.dsl");
-        File.WriteAllText(path, Model);
-        using var editor = new FileStream(path, FileMode.Open, FileAccess.Write, FileShare.Read);
+        await File.WriteAllTextAsync(path, Model, TestContext.Current.CancellationToken);
+        await using var editor = new FileStream(path, FileMode.Open, FileAccess.Write, FileShare.Read);
 
         // Act.
-        var document = _documents.GetOrLoad(path).Document;
+        var document = (await _documents.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Document;
 
         // Assert: the model itself, not the empty fallback.
         Assert.Equal(Model, document.Text);

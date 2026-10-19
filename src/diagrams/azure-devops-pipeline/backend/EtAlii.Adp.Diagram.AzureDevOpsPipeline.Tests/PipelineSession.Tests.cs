@@ -242,7 +242,7 @@ public class PipelineSessionTests : IDisposable
         session.Changed += (_, args) => pushed.Add(args);
 
         // Act.
-        var entry = _store.GetOrLoad(_workspace, path);
+        var entry = await _store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken);
         var build = entry.Model.Stages.Single(stage => stage.Name == "Build");
         PipelineBodyEdits.Rename(entry.Document, build.Id, "Build it all");
         await _store.SaveAsync(_workspace, path, entry, TestContext.Current.CancellationToken);
@@ -265,7 +265,7 @@ public class PipelineSessionTests : IDisposable
         session.Changed += (_, args) => pushed = args;
 
         // Act.
-        var entry = _store.GetOrLoad(_workspace, path);
+        var entry = await _store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken);
         var build = entry.Model.Stages.Single(stage => stage.Name == "Build");
         PipelineBodyEdits.Rename(entry.Document, build.Id, "Build it all");
         await _store.SaveAsync(_workspace, path, entry, TestContext.Current.CancellationToken);
@@ -292,7 +292,7 @@ public class PipelineSessionTests : IDisposable
 
         // Act.
         await File.WriteAllTextAsync(path, "stages:\n  - stage: Build\n    jobs:\n      - job: Compile\n        steps:\n          - script: x\n", TestContext.Current.CancellationToken);
-        _store.Reload(path);
+        await _store.ReloadAsync(path, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.NotNull(pushed);
@@ -312,7 +312,7 @@ public class PipelineSessionTests : IDisposable
 
         // Act.
         await File.WriteAllTextAsync(path, TwoStages + "\n  - stage: Ship\n    jobs:\n      - job: Deploy\n        steps:\n          - script: q\n", TestContext.Current.CancellationToken);
-        _store.Reload(path);
+        await _store.ReloadAsync(path, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.NotNull(pushed);
@@ -332,7 +332,7 @@ public class PipelineSessionTests : IDisposable
         session.Changed += (_, _) => pushed++;
 
         // Act.
-        _store.GetOrLoad(_workspace, theirs);
+        await _store.GetOrLoadAsync(_workspace, theirs, TestContext.Current.CancellationToken);
         await _store.TouchAsync(_workspace, theirs, TestContext.Current.CancellationToken);
 
         // Assert.
@@ -359,7 +359,7 @@ public class PipelineSessionTests : IDisposable
         session.Changed += (_, args) => pushed.Add(args);
 
         // Act.
-        _store.GetOrLoad(_workspace, theirs);
+        await _store.GetOrLoadAsync(_workspace, theirs, TestContext.Current.CancellationToken);
         await _store.TouchAsync(_workspace, theirs, TestContext.Current.CancellationToken);
         var pushedForTheirs = pushed.Count;
         await _store.TouchAsync(_workspace, mine, TestContext.Current.CancellationToken);

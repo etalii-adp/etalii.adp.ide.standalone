@@ -34,15 +34,15 @@ public class PipelineSharedReadTests : IDisposable
     }
 
     [Fact]
-    public void GetOrLoad_ReadsADocumentAnEditorIsStillWriting()
+    public async Task GetOrLoad_ReadsADocumentAnEditorIsStillWriting()
     {
         // Arrange: the handle every save holds - write access, sharing only reads, the mode
         // File.WriteAllText opens with.
         var full = Write("azure-pipelines.yml", Simple);
-        using var editor = new FileStream(full, FileMode.Open, FileAccess.Write, FileShare.Read);
+        await using var editor = new FileStream(full, FileMode.Open, FileAccess.Write, FileShare.Read);
 
         // Act.
-        var entry = new PipelineDocumentStore(new FileWriter()).GetOrLoad(_workspace, full);
+        var entry = await new PipelineDocumentStore(new FileWriter()).GetOrLoadAsync(_workspace, full, TestContext.Current.CancellationToken);
 
         // Assert: the document itself, not the empty fallback.
         Assert.True(entry.IsUsable);

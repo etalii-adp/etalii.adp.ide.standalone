@@ -15,10 +15,10 @@ public class PipelineDerivedRowsTests
 
     [Theory]
     [MemberData(nameof(Documents))]
-    public void EveryRow_IsTheHandWrittenOne(string path)
+    public async Task EveryRow_IsTheHandWrittenOne(string path)
     {
         // Arrange.
-        using var reading = PipelineReadings.Open(path);
+        using var reading = await PipelineReadings.OpenAsync(path, TestContext.Current.CancellationToken);
 
         // Act and assert.
         foreach (var target in reading.Targets)

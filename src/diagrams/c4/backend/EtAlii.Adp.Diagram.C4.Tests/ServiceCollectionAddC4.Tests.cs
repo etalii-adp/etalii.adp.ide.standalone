@@ -29,7 +29,7 @@ public class ServiceCollectionAddC4Tests
         var reloader = Assert.Single(provider.GetServices<IDiagramDocumentReloader>(), candidate => candidate.Origin == new ToolOrigin("c4", type));
         var changed = new List<string>();
         store.Changed += (_, args) => changed.Add(args.Path);
-        Assert.NotEmpty(store.GetOrLoad(body).Model.Elements);
+        Assert.NotEmpty((await store.GetOrLoadAsync(body, TestContext.Current.CancellationToken)).Model.Elements);
         File.Delete(body);
 
         // Act.
@@ -37,7 +37,7 @@ public class ServiceCollectionAddC4Tests
 
         // Assert: the deletion reached the store the sessions read, and ended its model.
         Assert.Equal([body], changed);
-        Assert.Empty(store.GetOrLoad(body).Model.Elements);
+        Assert.Empty((await store.GetOrLoadAsync(body, TestContext.Current.CancellationToken)).Model.Elements);
     }
 
     [Theory]

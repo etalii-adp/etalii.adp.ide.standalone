@@ -37,28 +37,28 @@ public class SparqlDocumentStoreTests : IDisposable
     [InlineData("groups.rq")]
     [InlineData("crlf-line-endings.rq")]
     [InlineData("no-trailing-newline.rq")]
-    public void LoadingAndReloading_LeaveTheFileByteIdentical(string name)
+    public async Task LoadingAndReloading_LeaveTheFileByteIdentical(string name)
     {
         // Arrange.
         var path = CopyFixture(name);
-        var original = File.ReadAllBytes(path);
+        var original = await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken);
 
         // Act.
-        var entry = _store.GetOrLoad(path);
-        _store.Reload(path);
+        var entry = await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
+        await _store.ReloadAsync(path, TestContext.Current.CancellationToken);
         _store.Forget(path);
-        _store.GetOrLoad(path);
+        await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.True(entry.IsUsable);
-        Assert.Equal(original, File.ReadAllBytes(path));
+        Assert.Equal(original, await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
-    public void AMissingFile_OpensUnavailableNamingTheTextEditor()
+    public async Task AMissingFile_OpensUnavailableNamingTheTextEditor()
     {
         // Arrange & act.
-        var entry = _store.GetOrLoad(IoPath.Combine(_root, "not-there.rq"));
+        var entry = await _store.GetOrLoadAsync(IoPath.Combine(_root, "not-there.rq"), TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.False(entry.IsUsable);
@@ -67,13 +67,13 @@ public class SparqlDocumentStoreTests : IDisposable
     }
 
     [Fact]
-    public void AFileThatDoesNotParse_OpensUnavailableWithItsReason()
+    public async Task AFileThatDoesNotParse_OpensUnavailableWithItsReason()
     {
         // Arrange.
         var path = CopyFixture("broken.rq");
 
         // Act.
-        var entry = _store.GetOrLoad(path);
+        var entry = await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.False(entry.IsUsable);
@@ -85,13 +85,13 @@ public class SparqlDocumentStoreTests : IDisposable
     }
 
     [Fact]
-    public void AnUpdateDocument_OpensUnavailableNamingSparqlUpdate()
+    public async Task AnUpdateDocument_OpensUnavailableNamingSparqlUpdate()
     {
         // Arrange.
         var path = CopyFixture("update-document.rq");
 
         // Act.
-        var entry = _store.GetOrLoad(path);
+        var entry = await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.False(entry.IsUsable);
@@ -99,38 +99,38 @@ public class SparqlDocumentStoreTests : IDisposable
     }
 
     [Fact]
-    public void AnExternalChange_ReachesTheEntryThroughReload()
+    public async Task AnExternalChange_ReachesTheEntryThroughReload()
     {
         // Arrange.
         var path = CopyFixture("crlf-line-endings.rq");
-        var before = _store.GetOrLoad(path);
+        var before = await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
         Assert.Single(before.Model.Where.Patterns);
 
         DocumentChangedEventArgs? raised = null;
         _store.Changed += (_, args) => raised = args;
 
         // Act.
-        File.WriteAllText(path, "PREFIX ex: <http://example.org/>\r\nSELECT ?s\r\nWHERE { ?s ex:p ?o . ?s ex:q ?o2 }\r\n");
-        _store.Reload(path);
+        await File.WriteAllTextAsync(path, "PREFIX ex: <http://example.org/>\r\nSELECT ?s\r\nWHERE { ?s ex:p ?o . ?s ex:q ?o2 }\r\n", TestContext.Current.CancellationToken);
+        await _store.ReloadAsync(path, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.NotNull(raised);
         Assert.Equal(path, raised.Path);
-        Assert.Equal(2, _store.GetOrLoad(path).Model.Where.Patterns.Count);
+        Assert.Equal(2, (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model.Where.Patterns.Count);
     }
 
     [Fact]
-    public void LoadingIsOnce_UntilForgotten()
+    public async Task LoadingIsOnce_UntilForgotten()
     {
         // Arrange.
         var path = CopyFixture("lf-line-endings.rq");
-        var first = _store.GetOrLoad(path);
+        var first = await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
 
         // Act: an unseen external change is invisible until reload or forget - the entry is kept.
-        File.WriteAllText(path, "ASK { ?s ?p ?o }");
-        var second = _store.GetOrLoad(path);
+        await File.WriteAllTextAsync(path, "ASK { ?s ?p ?o }", TestContext.Current.CancellationToken);
+        var second = await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
         _store.Forget(path);
-        var third = _store.GetOrLoad(path);
+        var third = await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Same(first, second);

@@ -166,6 +166,8 @@ internal static class CausalLoopTranscript
             json.WriteString("registration", registration is null ? "none" : $"{Path.GetFileName(registration)}, sha256 {TranscriptText.Sha256(await File.ReadAllBytesAsync(registration, cancellationToken))}");
 
             await using var session = new Session(folder, body, registration);
+
+            await session.ReadAsync(cancellationToken);
             await WriteReadingsAsync(json, session, bytes, cancellationToken);
             await WriteEditsAsync(json, session, cancellationToken);
         }
@@ -499,7 +501,10 @@ internal static class CausalLoopTranscript
 
         public CausalLoopContextPropertyProvider ReadOnlyProperties { get; }
 
-        public CausalLoopModel Model => Store.GetOrLoad(Body).Model;
+        /// <summary>Opens the document, as the diagram's first open does; the readings and edits read what it holds.</summary>
+        public async Task ReadAsync(CancellationToken cancellationToken) => await Store.GetOrLoadAsync(Body, cancellationToken);
+
+        public CausalLoopModel Model => Store.Get(Body)!.Model;
 
         public ContextTarget Target(string elementId) =>
             ContextTarget.ForElement(Body, elementId, Folder, _watchId, Diagram.CausalLoop.Origin);

@@ -102,7 +102,7 @@ public class TimelineToolboxTests : IDisposable
 
         // Assert.
         Assert.IsType<ContextExecutionCompleted>(result);
-        var added = _store.GetOrLoad(path).Model.Elements.Single();
+        var added = (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model.Elements.Single();
         Assert.Equal("2026-09-01", added.Begin.Text);
         Assert.Equal(3, added.Row);
         Assert.True(added.IsPeriod);

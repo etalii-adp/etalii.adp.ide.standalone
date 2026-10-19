@@ -54,7 +54,7 @@ public class DatabricksDocumentStoreMissingBodyTests : IDisposable
     }
 
     [Fact]
-    public void ABodyThatDoesNotExistYet_OpensEmptyWithoutBeingReportedAsAFailure()
+    public async Task ABodyThatDoesNotExistYet_OpensEmptyWithoutBeingReportedAsAFailure()
     {
         // Arrange: a path inside a real folder, deliberately never written.
         var path = IoPath.Combine(_workspace, "not-created-yet.yml");
@@ -62,7 +62,7 @@ public class DatabricksDocumentStoreMissingBodyTests : IDisposable
 
         // Act.
         using var capture = LogCapture.Start();
-        var entry = new DatabricksDocumentStore(new FileWriter()).GetOrLoad(path);
+        var entry = await new DatabricksDocumentStore(new FileWriter()).GetOrLoadAsync(path, TestContext.Current.CancellationToken);
 
         // Assert: the outcome...
         Assert.NotNull(entry);
@@ -76,14 +76,14 @@ public class DatabricksDocumentStoreMissingBodyTests : IDisposable
     }
 
     [Fact]
-    public void AnExistingBody_StillLoadsItsContent()
+    public async Task AnExistingBody_StillLoadsItsContent()
     {
         // The other half, so the guard above cannot be satisfied by a store that reads nothing.
         var path = IoPath.Combine(_workspace, "real.yml");
-        File.WriteAllText(path, "bundle:\r\n  name: sample\r\n");
+        await File.WriteAllTextAsync(path, "bundle:\r\n  name: sample\r\n", TestContext.Current.CancellationToken);
 
         using var capture = LogCapture.Start();
-        var entry = new DatabricksDocumentStore(new FileWriter()).GetOrLoad(path);
+        var entry = await new DatabricksDocumentStore(new FileWriter()).GetOrLoadAsync(path, TestContext.Current.CancellationToken);
 
         Assert.Contains("name: sample", entry.Document.Text, StringComparison.Ordinal);
         Assert.Empty(capture.Warnings);

@@ -43,12 +43,12 @@ internal sealed class PipelineReadings : IDisposable
     public static IEnumerable<string> Paths() => PipelineCorpus.Documents().Select(document => document.Relative);
 
     /// <summary>Opens the corpus document at <paramref name="path"/> in a copy of its folder.</summary>
-    public static PipelineReadings Open(string path)
+    public static async Task<PipelineReadings> OpenAsync(string path, CancellationToken cancellationToken)
     {
         var document = PipelineCorpus.Documents().Single(candidate => candidate.Relative == path);
         var folder = Path.Combine(Path.GetTempPath(), "EtAlii.Adp.PipelineReadings", Guid.NewGuid().ToString("N"));
         PipelineCorpus.CopyFolder(Path.Combine(PipelineCorpus.SourceFolder, document.Root), folder);
-        var entry = new PipelineDocumentStore(new FileWriter()).GetOrLoad(folder, Path.Combine(folder, document.InFolder));
+        var entry = await new PipelineDocumentStore(new FileWriter()).GetOrLoadAsync(folder, Path.Combine(folder, document.InFolder), cancellationToken);
         return new PipelineReadings(folder, entry);
     }
 

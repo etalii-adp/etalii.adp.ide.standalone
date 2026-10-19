@@ -37,7 +37,7 @@ public class CommandsTests : IDisposable
         TestFolder.TryDelete(_root);
     }
 
-    private MindmapDocument Document => _documents.GetOrLoad(_bodyPath);
+    private async Task<MindmapDocument> DocumentAsync() => await _documents.GetOrLoadAsync(_bodyPath, TestContext.Current.CancellationToken);
 
     private string OnDisk => File.ReadAllText(_bodyPath);
 
@@ -62,21 +62,21 @@ public class CommandsTests : IDisposable
     public async Task AddChild_AppendsLast_AndUndoRemovesExactlyThatNode()
     {
         // Arrange.
-        var before = Document.ToText();
+        var before = (await DocumentAsync()).ToText();
 
         var result = await Run(new AddChildNodeCommand(_bodyPath, "ID_411002937", "ID_new", "Logging"));
 
         // Act and assert, step by step.
         Assert.True(result.IsSuccess, result.Error);
-        Assert.Equal("Logging", Document.Find("ID_411002937")!.Children[^1].Text);
+        Assert.Equal("Logging", (await DocumentAsync()).Find("ID_411002937")!.Children[^1].Text);
         Assert.Contains("Logging", OnDisk, StringComparison.Ordinal);
 
         await Undo();
-        Assert.Equal(before, Document.ToText());
+        Assert.Equal(before, (await DocumentAsync()).ToText());
         Assert.Equal(before, OnDisk);
 
         await Redo();
-        Assert.Equal("ID_new", Document.Find("ID_411002937")!.Children[^1].Id);
+        Assert.Equal("ID_new", (await DocumentAsync()).Find("ID_411002937")!.Children[^1].Id);
     }
 
     // ---- add sibling ---------------------------------------------------------------------------
@@ -85,22 +85,22 @@ public class CommandsTests : IDisposable
     public async Task AddSibling_InsertsAfter_AndRoundTripsThroughUndo()
     {
         // Arrange.
-        var before = Document.ToText();
+        var before = (await DocumentAsync()).ToText();
 
         await Run(new AddSiblingNodeCommand(_bodyPath, "ID_88117420", "ID_new", "Projects"));
 
         // Act and assert, step by step.
-        Assert.Equal(["Context service", "Projects", "Commands & history", "Hierarchy"], Document.Find("ID_411002937")!.Children.Select(child => child.Text));
+        Assert.Equal(["Context service", "Projects", "Commands & history", "Hierarchy"], (await DocumentAsync()).Find("ID_411002937")!.Children.Select(child => child.Text));
 
         await Undo();
-        Assert.Equal(before, Document.ToText());
+        Assert.Equal(before, (await DocumentAsync()).ToText());
     }
 
     [Fact]
     public async Task AddSibling_OfTheRoot_IsRejectedWithoutAnException()
     {
         // Act.
-        var result = await Run(new AddSiblingNodeCommand(_bodyPath, Document.Root.Id, "ID_new", "x"));
+        var result = await Run(new AddSiblingNodeCommand(_bodyPath, (await DocumentAsync()).Root.Id, "ID_new", "x"));
 
         // Assert.
         Assert.False(result.IsSuccess);
@@ -114,17 +114,17 @@ public class CommandsTests : IDisposable
     {
         // Arrange.
         // Hierarchy is the third child of Backend. Move it to be the first child of Client.
-        var before = Document.ToText();
+        var before = (await DocumentAsync()).ToText();
 
         await Run(new MoveNodeCommand(_bodyPath, "ID_88117425", "ID_411002938", 0));
 
         // Act and assert, step by step.
-        Assert.Equal("ID_88117425", Document.Find("ID_411002938")!.Children[0].Id);
-        Assert.Equal(2, Document.Find("ID_88117425")!.Children.Count); // the subtree came along
+        Assert.Equal("ID_88117425", (await DocumentAsync()).Find("ID_411002938")!.Children[0].Id);
+        Assert.Equal(2, (await DocumentAsync()).Find("ID_88117425")!.Children.Count); // the subtree came along
 
         await Undo();
-        Assert.Equal(before, Document.ToText());
-        Assert.Equal(2, Document.Find("ID_88117425")!.IndexInParent); // back at its old index, not just its old parent
+        Assert.Equal(before, (await DocumentAsync()).ToText());
+        Assert.Equal(2, (await DocumentAsync()).Find("ID_88117425")!.IndexInParent); // back at its old index, not just its old parent
     }
 
     [Fact]
@@ -142,7 +142,7 @@ public class CommandsTests : IDisposable
     public async Task Move_TheRoot_IsRejected()
     {
         // Act.
-        var result = await Run(new MoveNodeCommand(_bodyPath, Document.Root.Id, "ID_411002937", 0));
+        var result = await Run(new MoveNodeCommand(_bodyPath, (await DocumentAsync()).Root.Id, "ID_411002937", 0));
 
         // Assert.
         Assert.False(result.IsSuccess);
@@ -155,22 +155,22 @@ public class CommandsTests : IDisposable
     {
         // Arrange.
         // The deepest test of all (Requirement 7.4): ids, text, notes, links and order survive.
-        var before = Document.ToText();
+        var before = (await DocumentAsync()).ToText();
 
         // Arrange, continued.
         await Run(new RemoveNodeCommand(_bodyPath, "ID_411002937")); // Backend, with 8 descendants, notes and links
 
         // Arrange, continued.
-        Assert.Null(Document.Find("ID_411002937"));
-        Assert.Null(Document.Find("ID_88117420"));
+        Assert.Null((await DocumentAsync()).Find("ID_411002937"));
+        Assert.Null((await DocumentAsync()).Find("ID_88117420"));
 
         // Act.
         await Undo();
 
         // Assert.
-        Assert.Equal(before, Document.ToText());
+        Assert.Equal(before, (await DocumentAsync()).ToText());
         Assert.Equal(before, OnDisk);
-        Assert.Equal("../../../../backend/EtAlii.Adp.Backend/Context/ContextServiceImpl.cs", Document.Find("ID_88117420")!.Link);
+        Assert.Equal("../../../../backend/EtAlii.Adp.Backend/Context/ContextServiceImpl.cs", (await DocumentAsync()).Find("ID_88117420")!.Link);
     }
 
     [Fact]
@@ -184,18 +184,18 @@ public class CommandsTests : IDisposable
         await Redo();
 
         // Assert.
-        Assert.Null(Document.Find("ID_88117425"));
+        Assert.Null((await DocumentAsync()).Find("ID_88117425"));
     }
 
     [Fact]
     public async Task Remove_TheRoot_IsRejected()
     {
         // Act.
-        var result = await Run(new RemoveNodeCommand(_bodyPath, Document.Root.Id));
+        var result = await Run(new RemoveNodeCommand(_bodyPath, (await DocumentAsync()).Root.Id));
 
         // Assert.
         Assert.False(result.IsSuccess);
-        Assert.NotNull(Document.Root);
+        Assert.NotNull((await DocumentAsync()).Root);
     }
 
     // ---- text, notes, link -----------------------------------------------------------------
@@ -205,13 +205,13 @@ public class CommandsTests : IDisposable
     {
         // Arrange.
         await Run(new SetNodeTextCommand(_bodyPath, "ID_88117422", "renamed"));
-        Assert.Equal("renamed", Document.Find("ID_88117422")!.Text);
+        Assert.Equal("renamed", (await DocumentAsync()).Find("ID_88117422")!.Text);
 
         // Act.
         await Undo();
 
         // Assert.
-        Assert.Equal("ICommand", Document.Find("ID_88117422")!.Text);
+        Assert.Equal("ICommand", (await DocumentAsync()).Find("ID_88117422")!.Text);
     }
 
     [Fact]
@@ -229,17 +229,17 @@ public class CommandsTests : IDisposable
     public async Task SetNotes_UndoRemovesANoteThatWasNotThere()
     {
         // Arrange.
-        var before = Document.ToText();
+        var before = (await DocumentAsync()).ToText();
 
         // Arrange, continued.
         await Run(new SetNodeNotesCommand(_bodyPath, "ID_88117422", "a note"));
-        Assert.Equal("a note", Document.Find("ID_88117422")!.Notes);
+        Assert.Equal("a note", (await DocumentAsync()).Find("ID_88117422")!.Notes);
 
         // Act.
         await Undo();
 
         // Assert.
-        Assert.Equal(before, Document.ToText());
+        Assert.Equal(before, (await DocumentAsync()).ToText());
     }
 
     [Fact]
@@ -247,13 +247,13 @@ public class CommandsTests : IDisposable
     {
         // Arrange.
         await Run(new SetNodeLinkCommand(_bodyPath, "ID_88117422", "../x.cs"));
-        Assert.Equal("../x.cs", Document.Find("ID_88117422")!.Link);
+        Assert.Equal("../x.cs", (await DocumentAsync()).Find("ID_88117422")!.Link);
 
         // Act.
         await Undo();
 
         // Assert.
-        Assert.Null(Document.Find("ID_88117422")!.Link);
+        Assert.Null((await DocumentAsync()).Find("ID_88117422")!.Link);
     }
 
     [Fact]
@@ -261,13 +261,13 @@ public class CommandsTests : IDisposable
     {
         // Arrange.
         await Run(new SetNodeLinkCommand(_bodyPath, "ID_88117420", null));
-        Assert.Null(Document.Find("ID_88117420")!.Link);
+        Assert.Null((await DocumentAsync()).Find("ID_88117420")!.Link);
 
         // Act.
         await Undo();
 
         // Assert.
-        Assert.Equal("../../../../backend/EtAlii.Adp.Backend/Context/ContextServiceImpl.cs", Document.Find("ID_88117420")!.Link);
+        Assert.Equal("../../../../backend/EtAlii.Adp.Backend/Context/ContextServiceImpl.cs", (await DocumentAsync()).Find("ID_88117420")!.Link);
     }
 
     // ---- the rules every handler shares ------------------------------------------------
@@ -305,7 +305,7 @@ public class CommandsTests : IDisposable
         // Arrange.
         // Requirement 2.5: a registration with no body is recoverable, not broken.
         var fresh = IoPath.Combine(_root, "fresh.mm");
-        var root = _documents.GetOrLoad(fresh).Root;
+        var root = (await _documents.GetOrLoadAsync(fresh, TestContext.Current.CancellationToken)).Root;
         Assert.False(File.Exists(fresh), "opening must not write");
 
         // Act.
@@ -321,8 +321,8 @@ public class CommandsTests : IDisposable
     public async Task Save_NeverLeavesAScratchFileBehind_AndPersistsAssignedIds()
     {
         // Arrange and act.
-        _ = Document;
-        await _documents.SaveAsync(_bodyPath, _documents.GetOrLoad(_bodyPath), MindmapStructureChanged.Nothing, TestContext.Current.CancellationToken);
+        _ = await DocumentAsync();
+        await _documents.SaveAsync(_bodyPath, await _documents.GetOrLoadAsync(_bodyPath, TestContext.Current.CancellationToken), MindmapStructureChanged.Nothing, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Empty(Directory.GetFiles(_root, "~adp-*"));
@@ -330,6 +330,6 @@ public class CommandsTests : IDisposable
         // now carry ids (Requirement 3.4), and nothing else changed.
         var saved = MindmapDocument.Parse(OnDisk, assignMissingIds: false);
         Assert.All(saved.Nodes, node => Assert.NotEqual("", node.Id));
-        Assert.Equal(Document.ToText(), OnDisk);
+        Assert.Equal((await DocumentAsync()).ToText(), OnDisk);
     }
 }

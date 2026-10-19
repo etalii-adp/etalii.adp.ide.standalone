@@ -61,7 +61,7 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
 
     public event EventHandler<DocumentChangedEventArgs>? Changed;
 
-    public DocumentEntry<PipelineBody, PipelineModel> GetOrLoad(string rootPath, string path)
+    private DocumentEntry<PipelineBody, PipelineModel> GetOrLoad(string rootPath, string path)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);
         ArgumentException.ThrowIfNullOrWhiteSpace(path);

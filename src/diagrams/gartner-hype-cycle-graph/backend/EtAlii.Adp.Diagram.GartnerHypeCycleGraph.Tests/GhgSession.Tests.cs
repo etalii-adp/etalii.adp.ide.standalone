@@ -98,11 +98,11 @@ public sealed class GhgSessionTests : IDisposable
         await using var session = Open();
         await session.BaselineAsync(TestContext.Current.CancellationToken);
 
-        Edit(document => GhgWriter.SetDescription(document, Trend(document, "railways"), "Something else entirely."));
+        await EditAsync(document => GhgWriter.SetDescription(document, Trend(document, "railways"), "Something else entirely."));
 
         Assert.Empty(_raised);
 
-        Edit(document => GhgWriter.SetName(document, Trend(document, "railways"), "Railroads"));
+        await EditAsync(document => GhgWriter.SetName(document, Trend(document, "railways"), "Railroads"));
 
         var changed = Assert.Single(Assert.IsType<DiagramAddDelta>(Assert.Single(Assert.Single(_raised).Deltas)).Elements);
         Assert.Equal("Railroads", TrendPayload(changed).Name);
@@ -115,7 +115,7 @@ public sealed class GhgSessionTests : IDisposable
         await using var session = Open();
         var before = (await session.BaselineAsync(TestContext.Current.CancellationToken)).AddedElements().Count;
 
-        Edit(document => GhgWriter.SetPhases(document, Trend(document, "steam-engine"), 1));
+        await EditAsync(document => GhgWriter.SetPhases(document, Trend(document, "steam-engine"), 1));
 
         var changed = Assert.Single(Assert.IsType<DiagramAddDelta>(Assert.Single(Assert.Single(_raised).Deltas)).Elements);
         Assert.Equal(1, TrendPayload(changed).Phases);
@@ -153,12 +153,12 @@ public sealed class GhgSessionTests : IDisposable
     private static GhgTrend Trend(GhgBody document, string id) =>
         GhgParser.Parse(document).Trends.Single(trend => trend.Id == id);
 
-    private void Edit(Func<GhgBody, EditOutcome> edit)
+    private async Task EditAsync(Func<GhgBody, EditOutcome> edit)
     {
-        var document = GhgBody.Parse(File.ReadAllText(Body));
+        var document = GhgBody.Parse(await File.ReadAllTextAsync(Body, TestContext.Current.CancellationToken));
         Assert.True(edit(document).WasApplied);
-        File.WriteAllText(Body, document.Text);
-        _store.Reload(Body);
+        await File.WriteAllTextAsync(Body, document.Text, TestContext.Current.CancellationToken);
+        await _store.ReloadAsync(Body, TestContext.Current.CancellationToken);
     }
 
     private static GhgTrendPayload TrendPayload(DiagramElement element) =>

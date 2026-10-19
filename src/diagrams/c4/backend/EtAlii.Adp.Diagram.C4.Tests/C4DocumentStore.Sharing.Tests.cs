@@ -47,7 +47,7 @@ public class C4DocumentStoreSharingTests : IDisposable
         """;
 
     [Fact]
-    public void TwoOpensOfOnePath_ShareOneDocument()
+    public async Task TwoOpensOfOnePath_ShareOneDocument()
     {
         // Act.
         // The whole point: an edit through one view must be visible to another without a
@@ -55,18 +55,18 @@ public class C4DocumentStoreSharingTests : IDisposable
         var path = Write("model.dsl", Sample);
 
         // Assert.
-        Assert.Same(_store.GetOrLoad(path).Document, _store.GetOrLoad(path).Document);
+        Assert.Same((await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Document, (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Document);
     }
 
     [Fact]
-    public void AMissingFile_OpensAsAnEmptyDocument_RatherThanThrowing()
+    public async Task AMissingFile_OpensAsAnEmptyDocument_RatherThanThrowing()
     {
         // Act.
-        var document = _store.GetOrLoad(IoPath.Combine(_root, "not-written-yet.dsl")).Document;
+        var document = (await _store.GetOrLoadAsync(IoPath.Combine(_root, "not-written-yet.dsl"), TestContext.Current.CancellationToken)).Document;
 
         // Assert.
         Assert.DoesNotContain(document.Lines, line => line.Text.Length > 0);
-        Assert.Empty(_store.GetOrLoad(IoPath.Combine(_root, "not-written-yet.dsl")).Model.Elements);
+        Assert.Empty((await _store.GetOrLoadAsync(IoPath.Combine(_root, "not-written-yet.dsl"), TestContext.Current.CancellationToken)).Model.Elements);
     }
 
     [Fact]
@@ -74,10 +74,10 @@ public class C4DocumentStoreSharingTests : IDisposable
     {
         // Arrange.
         var path = Write("model.dsl", Sample);
-        _store.GetOrLoad(path);
+        await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
 
         // Act.
-        await _store.SaveAsync(path, _store.GetOrLoad(path).Document, TestContext.Current.CancellationToken);
+        await _store.SaveAsync(path, (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Document, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal(Sample, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
@@ -88,7 +88,7 @@ public class C4DocumentStoreSharingTests : IDisposable
     {
         // Arrange.
         var path = Write("model.dsl", Sample);
-        var document = _store.GetOrLoad(path).Document;
+        var document = (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Document;
         var line = document.CodeLines().First(l => l.Code.Contains("softwareSystem", StringComparison.Ordinal));
         document.ReplaceLine(line.Number, line.Text.Replace("\"System\"", "\"Renamed\"", StringComparison.Ordinal));
 
@@ -105,13 +105,13 @@ public class C4DocumentStoreSharingTests : IDisposable
     {
         // Arrange.
         var path = Write("model.dsl", Sample);
-        var document = _store.GetOrLoad(path).Document;
+        var document = (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Document;
         var line = document.CodeLines().First(l => l.Code.Contains("softwareSystem", StringComparison.Ordinal));
         document.ReplaceLine(line.Number, line.Text.Replace("\"System\"", "\"Renamed\"", StringComparison.Ordinal));
 
         // Act.
         string? raised = null;
-        _store.Changed += (_, args) => raised = _store.GetOrLoad(args.Path).Model.Find("s")!.Name;
+        _store.Changed += (_, args) => raised = _store.Get(args.Path)!.Model.Find("s")!.Name;
         await _store.SaveAsync(path, document, TestContext.Current.CancellationToken);
 
         // Assert.
@@ -123,13 +123,13 @@ public class C4DocumentStoreSharingTests : IDisposable
     {
         // Arrange and act.
         var path = Write("model.dsl", Sample);
-        var document = _store.GetOrLoad(path).Document;
+        var document = (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Document;
         var line = document.CodeLines().First(l => l.Code.Contains("softwareSystem", StringComparison.Ordinal));
         document.ReplaceLine(line.Number, line.Text.Replace("\"System\"", "\"Renamed\"", StringComparison.Ordinal));
         await _store.SaveAsync(path, document, TestContext.Current.CancellationToken);
 
         // Assert.
-        Assert.Equal("Renamed", _store.GetOrLoad(path).Model.Find("s")!.Name);
+        Assert.Equal("Renamed", (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model.Find("s")!.Name);
     }
 
     [Fact]
@@ -153,10 +153,10 @@ public class C4DocumentStoreSharingTests : IDisposable
     {
         // Arrange.
         var path = IoPath.Combine(_root, "nested", "model.dsl");
-        _store.GetOrLoad(path);
+        await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
 
         // Act.
-        await _store.SaveAsync(path, _store.GetOrLoad(path).Document, TestContext.Current.CancellationToken);
+        await _store.SaveAsync(path, (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Document, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.True(File.Exists(path));

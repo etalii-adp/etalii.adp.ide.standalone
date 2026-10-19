@@ -120,7 +120,7 @@ public class DependencyGraphToolboxTests : IDisposable
 
         // Assert.
         Assert.IsType<ContextExecutionCompleted>(result);
-        var added = _store.GetOrLoad(path).Model.Elements.Single();
+        var added = (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model.Elements.Single();
         Assert.Equal(612.5d, added.X);
         Assert.Equal(3, added.Row);
     }

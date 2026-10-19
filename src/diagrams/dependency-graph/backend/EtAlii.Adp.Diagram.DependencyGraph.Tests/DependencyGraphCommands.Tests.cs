@@ -96,7 +96,7 @@ public class DependencyGraphCommandsTests : IDisposable
         // Assert.
         Assert.True(atOrigin.IsSuccess, atOrigin.Error);
         Assert.True(toTheLeft.IsSuccess, toTheLeft.Error);
-        var model = _store.GetOrLoad(path).Model;
+        var model = (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model;
         Assert.Equal(0d, model.Elements.Single(element => element.Id == "zero0001").X);
         Assert.Equal(-400d, model.Elements.Single(element => element.Id == "neg00001").X);
     }
@@ -140,7 +140,7 @@ public class DependencyGraphCommandsTests : IDisposable
         // Act.
         var result = await History.ExecuteAsync(
             new RemoveDependencyGraphElementCommand(path, "aaa"), TestContext.Current.CancellationToken);
-        var afterRemove = _store.GetOrLoad(path).Model;
+        var afterRemove = (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model;
         await History.UndoAsync(TestContext.Current.CancellationToken);
 
         // Assert.
@@ -163,7 +163,7 @@ public class DependencyGraphCommandsTests : IDisposable
 
         // Assert.
         Assert.True(redo.IsSuccess, redo.Error);
-        Assert.DoesNotContain("aaa", _store.GetOrLoad(path).Model.Elements.Select(element => element.Id));
+        Assert.DoesNotContain("aaa", (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model.Elements.Select(element => element.Id));
     }
 
     [Fact]
@@ -191,7 +191,7 @@ public class DependencyGraphCommandsTests : IDisposable
 
         // Act.
         await History.ExecuteAsync(new RenameDependencyGraphElementCommand(path, "aaa", "Renamed"), TestContext.Current.CancellationToken);
-        var renamed = _store.GetOrLoad(path).Model.Elements.Single(element => element.Id == "aaa");
+        var renamed = (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model.Elements.Single(element => element.Id == "aaa");
         await History.UndoAsync(TestContext.Current.CancellationToken);
 
         // Assert.
@@ -209,7 +209,7 @@ public class DependencyGraphCommandsTests : IDisposable
         // Act.
         var result = await History.ExecuteAsync(
             new SetDependencyGraphPlacementCommand(path, "aaa", 812.5, 6), TestContext.Current.CancellationToken);
-        var moved = _store.GetOrLoad(path).Model.Elements.Single(element => element.Id == "aaa");
+        var moved = (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model.Elements.Single(element => element.Id == "aaa");
         await History.UndoAsync(TestContext.Current.CancellationToken);
 
         // Assert.
@@ -267,7 +267,7 @@ public class DependencyGraphCommandsTests : IDisposable
         // Assert.
         // A connect that normalised its ends - sorting them, or always writing the selected node
         // first - would reverse dependencies while leaving a graph that still draws.
-        var added = _store.GetOrLoad(path).Model.Relations.Single(relation => relation.Id == "ddd");
+        var added = (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model.Relations.Single(relation => relation.Id == "ddd");
         Assert.Equal("bbb", added.From);
         Assert.Equal("aaa", added.To);
     }
@@ -299,7 +299,7 @@ public class DependencyGraphCommandsTests : IDisposable
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
-        Assert.Equal(2, _store.GetOrLoad(path).Model.Relations.Count);
+        Assert.Equal(2, (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model.Relations.Count);
     }
 
     [Fact]
@@ -324,9 +324,9 @@ public class DependencyGraphCommandsTests : IDisposable
 
         // Act.
         await History.ExecuteAsync(new DisconnectDependencyGraphRelationCommand(path, "ccc"), TestContext.Current.CancellationToken);
-        var afterDisconnect = _store.GetOrLoad(path).Model.Relations.Count;
+        var afterDisconnect = (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model.Relations.Count;
         await History.UndoAsync(TestContext.Current.CancellationToken);
-        var restored = _store.GetOrLoad(path).Model.Relations.FirstOrDefault(relation => relation.Id == "ccc");
+        var restored = (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model.Relations.FirstOrDefault(relation => relation.Id == "ccc");
 
         // Assert.
         Assert.Equal(0, afterDisconnect);
@@ -363,7 +363,7 @@ public class DependencyGraphCommandsTests : IDisposable
         var result = await History.ExecuteAsync(
             new AddConnectedDependencyGraphElementCommand(path, "aaa", "new00001", "rel00001", 900, 3),
             TestContext.Current.CancellationToken);
-        var created = _store.GetOrLoad(path).Model;
+        var created = (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model;
         await History.UndoAsync(TestContext.Current.CancellationToken);
 
         // Assert.
@@ -390,7 +390,7 @@ public class DependencyGraphCommandsTests : IDisposable
             TestContext.Current.CancellationToken);
 
         // Assert.
-        var relation = _store.GetOrLoad(path).Model.Relations.Single(candidate => candidate.Id == "rel00002");
+        var relation = (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model.Relations.Single(candidate => candidate.Id == "rel00002");
         Assert.Equal("new00002", relation.From);
         Assert.Equal("aaa", relation.To);
     }

@@ -20,7 +20,7 @@ public sealed class DatabricksDocumentReloaderTests : DocumentReloaderContract<I
 
     protected override IDatabricksDocumentStore CreateStore() => new DatabricksDocumentStore(new FileWriter());
 
-    protected override bool IsEmpty(IDatabricksDocumentStore store, string path) => store.GetOrLoad(path).Model.Bundle.Name == "";
+    protected override async Task<bool> IsEmptyAsync(IDatabricksDocumentStore store, string path, CancellationToken cancellationToken) => (await store.GetOrLoadAsync(path, cancellationToken)).Model.Bundle.Name == "";
 
     protected override void OnChanged(IDatabricksDocumentStore store, Action<string> changed) =>
         store.Changed += (_, args) => changed(args.Path);
@@ -41,7 +41,7 @@ public sealed class DatabricksDocumentReloaderTests : DocumentReloaderContract<I
         var body = folder.Combine("databricks.yml");
         File.Copy(Example, body);
         var store = provider.GetRequiredService<IDatabricksDocumentStore>();
-        store.GetOrLoad(body);
+        await store.GetOrLoadAsync(body, TestContext.Current.CancellationToken);
         await File.WriteAllTextAsync(body, "bundle:\r\n  name: replaced\r\n", TestContext.Current.CancellationToken);
         var reloader = provider.GetServices<IDiagramDocumentReloader>().Single(candidate => candidate.Origin == new ToolOrigin("databricks", type));
 
@@ -49,7 +49,7 @@ public sealed class DatabricksDocumentReloaderTests : DocumentReloaderContract<I
         await reloader.ReloadAsync(folder.Path, body, TestContext.Current.CancellationToken);
 
         // Assert.
-        Assert.Equal("replaced", store.GetOrLoad(body).Model.Bundle.Name);
+        Assert.Equal("replaced", (await store.GetOrLoadAsync(body, TestContext.Current.CancellationToken)).Model.Bundle.Name);
     }
 
     [Fact]
@@ -61,7 +61,7 @@ public sealed class DatabricksDocumentReloaderTests : DocumentReloaderContract<I
         File.Copy(Example, body);
         var store = new DatabricksDocumentStore(new FileWriter());
         IDiagramDocumentReloader reloader = new DiagramDocumentReloader<IDatabricksDocumentStore>(Origin, store);
-        Assert.Equal("lakehouse-nightly", store.GetOrLoad(body).Model.Bundle.Name);
+        Assert.Equal("lakehouse-nightly", (await store.GetOrLoadAsync(body, TestContext.Current.CancellationToken)).Model.Bundle.Name);
         var told = 0;
         store.Changed += (_, _) => told++;
 
@@ -73,7 +73,7 @@ public sealed class DatabricksDocumentReloaderTests : DocumentReloaderContract<I
 
         // Assert: the last good bundle is kept, not replaced by an empty one (R2.4), and since
         // nothing a session shows has changed, no session is told.
-        Assert.Equal("lakehouse-nightly", store.GetOrLoad(body).Model.Bundle.Name);
+        Assert.Equal("lakehouse-nightly", (await store.GetOrLoadAsync(body, TestContext.Current.CancellationToken)).Model.Bundle.Name);
         Assert.Equal(0, told);
     }
 }

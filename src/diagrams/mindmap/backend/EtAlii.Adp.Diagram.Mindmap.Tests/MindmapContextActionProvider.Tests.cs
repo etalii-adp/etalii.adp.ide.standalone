@@ -11,14 +11,14 @@ public class MindmapContextActionProviderTests : IDisposable
     public void Dispose() => _project.Dispose();
 
     private async Task<IReadOnlyList<ContextActionDefinition>> Discover(string nodeId) =>
-        (await _project.Provider.DiscoverAsync(_project.NodeTarget(nodeId), TestContext.Current.CancellationToken))
+        (await _project.Provider.DiscoverAsync(await _project.NodeTargetAsync(nodeId), TestContext.Current.CancellationToken))
             .Actions();
 
-    private ValueTask<ContextExecutionResult> Execute(string nodeId, string actionId) =>
-        _project.Provider.ExecuteAsync(_project.NodeTarget(nodeId), actionId, TestContext.Current.CancellationToken);
+    private async Task<ContextExecutionResult> Execute(string nodeId, string actionId) =>
+        await _project.Provider.ExecuteAsync(await _project.NodeTargetAsync(nodeId), actionId, TestContext.Current.CancellationToken);
 
-    private ValueTask<ContextCommitResult> Commit(string nodeId, string actionId, string value) =>
-        _project.Provider.CommitAsync(_project.NodeTarget(nodeId), actionId, value, "", TestContext.Current.CancellationToken);
+    private async Task<ContextCommitResult> Commit(string nodeId, string actionId, string value) =>
+        await _project.Provider.CommitAsync(await _project.NodeTargetAsync(nodeId), actionId, value, "", TestContext.Current.CancellationToken);
 
     // ---- what is offered -----------------------------------------------------------------
 
@@ -40,7 +40,7 @@ public class MindmapContextActionProviderTests : IDisposable
     public async Task Discover_TheRoot_OffersNoSiblingAndNoDelete()
     {
         // Act.
-        var ids = (await Discover(_project.Document.Root.Id)).Select(action => action.Id).ToList();
+        var ids = (await Discover((await _project.DocumentAsync()).Root.Id)).Select(action => action.Id).ToList();
 
         // Assert.
         Assert.DoesNotContain(MindmapContextActionProvider.AddSiblingActionId, ids);
@@ -161,7 +161,7 @@ public class MindmapContextActionProviderTests : IDisposable
     public async Task Execute_AddChild_CreatesTheNodeAtOnce_NamedFromItsSiblings()
     {
         // Arrange. The fixture's root has children; the new one joins them.
-        var root = _project.Document.Root;
+        var root = (await _project.DocumentAsync()).Root;
         var before = root.Children.Count;
 
         // Act.
@@ -171,7 +171,7 @@ public class MindmapContextActionProviderTests : IDisposable
         // Assert. The node is in the document BEFORE anybody answers the prompt - that is what
         // makes the prompt an inline editor over something visible rather than a dialog.
         Assert.Equal(before + 1, root.Children.Count);
-        var added = _project.Document.Find(result.Request.InlineLabelElementId);
+        var added = (await _project.DocumentAsync()).Find(result.Request.InlineLabelElementId);
         Assert.NotNull(added);
 
         // Named, not blank, and the prompt opens on that same name so the editor is prefilled
@@ -189,14 +189,14 @@ public class MindmapContextActionProviderTests : IDisposable
     {
         // The uniqueness pass, end to end: accept both defaults and the second must still be
         // distinguishable from the first, in the tree and to anything looking one up by text.
-        var root = _project.Document.Root;
+        var root = (await _project.DocumentAsync()).Root;
 
         var first = Assert.IsType<ContextExecutionRequiresInput>(await Execute(root.Id, MindmapContextActionProvider.AddChildActionId));
         var second = Assert.IsType<ContextExecutionRequiresInput>(await Execute(root.Id, MindmapContextActionProvider.AddChildActionId));
 
         Assert.NotEqual(
-            _project.Document.Find(first.Request.InlineLabelElementId)!.Text,
-            _project.Document.Find(second.Request.InlineLabelElementId)!.Text);
+            (await _project.DocumentAsync()).Find(first.Request.InlineLabelElementId)!.Text,
+            (await _project.DocumentAsync()).Find(second.Request.InlineLabelElementId)!.Text);
     }
 
     [Fact]
@@ -207,7 +207,7 @@ public class MindmapContextActionProviderTests : IDisposable
 
         // Assert.
         Assert.IsType<ContextExecutionCompleted>(result);
-        Assert.Null(_project.Document.Find("ID_88117422"));
+        Assert.Null((await _project.DocumentAsync()).Find("ID_88117422"));
         Assert.True(_project.History.CanUndo);
     }
 
@@ -220,7 +220,7 @@ public class MindmapContextActionProviderTests : IDisposable
         // Assert.
         Assert.Contains("9 nodes", result.Request.Message, StringComparison.Ordinal);
         Assert.True(result.Request.Danger);
-        Assert.NotNull(_project.Document.Find("ID_411002937"));
+        Assert.NotNull((await _project.DocumentAsync()).Find("ID_411002937"));
     }
 
     [Fact]
@@ -246,7 +246,7 @@ public class MindmapContextActionProviderTests : IDisposable
         await Execute("ID_411002937", MindmapContextActionProvider.ToggleFoldActionId);
 
         // Act.
-        var other = _project.Views.For(ShortGuid.NewShortGuid(), _project.BodyPath, _project.Document);
+        var other = _project.Views.For(ShortGuid.NewShortGuid(), _project.BodyPath, (await _project.DocumentAsync()));
 
         // Assert.
         Assert.False(other.IsFolded("ID_411002937"));
@@ -260,10 +260,10 @@ public class MindmapContextActionProviderTests : IDisposable
 
         // Act and assert, step by step.
         Assert.IsType<ContextExecutionCompleted>(result);
-        Assert.Null(_project.Document.Find("ID_88117420")!.Link);
+        Assert.Null((await _project.DocumentAsync()).Find("ID_88117420")!.Link);
 
         await _project.History.UndoAsync(TestContext.Current.CancellationToken);
-        Assert.NotNull(_project.Document.Find("ID_88117420")!.Link);
+        Assert.NotNull((await _project.DocumentAsync()).Find("ID_88117420")!.Link);
     }
 
     [Fact]
@@ -291,7 +291,7 @@ public class MindmapContextActionProviderTests : IDisposable
 
         // Assert.
         Assert.True(result.Completed, result.Error);
-        Assert.Equal("a child", _project.Document.Find("ID_88117422")!.Children.Single().Text);
+        Assert.Equal("a child", (await _project.DocumentAsync()).Find("ID_88117422")!.Children.Single().Text);
         Assert.True(_project.History.CanUndo);
     }
 
@@ -303,7 +303,7 @@ public class MindmapContextActionProviderTests : IDisposable
 
         // Assert.
         Assert.True(result.Completed, result.Error);
-        Assert.Equal("", _project.Document.Find("ID_88117422")!.Text);
+        Assert.Equal("", (await _project.DocumentAsync()).Find("ID_88117422")!.Text);
     }
 
     [Fact]
@@ -315,7 +315,7 @@ public class MindmapContextActionProviderTests : IDisposable
 
         // Assert.
         Assert.True(result.Completed, result.Error);
-        Assert.Equal("architecture.mm", _project.Document.Find("ID_88117422")!.Link);
+        Assert.Equal("architecture.mm", (await _project.DocumentAsync()).Find("ID_88117422")!.Link);
     }
 
     [Fact]

@@ -56,7 +56,7 @@ public class CausalLoopDocumentStoreLostEditTests : IDisposable
         var path = IoPath.Combine(_workspace, "loop.cld");
         await File.WriteAllTextAsync(path, Text, TestContext.Current.CancellationToken);
         var store = new CausalLoopDocumentStore(new FileWriter());
-        var entry = store.GetOrLoad(path);
+        var entry = await store.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
         var added = CausalLoopEdits.AddVariable(entry.Document, "c", "Gamma");
 
         // A refusal here would make the rest of the test vacuous, so it is asserted rather than
@@ -68,7 +68,7 @@ public class CausalLoopDocumentStoreLostEditTests : IDisposable
 
         // Act: the notification for an EARLIER write of this same file lands now. The store's own
         // self-write guard is already cleared, so this is exactly what the reload bridge does.
-        store.Reload(path);
+        await store.ReloadAsync(path, TestContext.Current.CancellationToken);
         var error = await store.SaveAsync(path, entry.Document, TestContext.Current.CancellationToken);
 
         // Assert.

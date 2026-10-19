@@ -28,10 +28,10 @@ public sealed class WardleyDocumentStoreTests : DocumentStoreContract<IWardleyDo
     protected override bool IsEmpty(WardleyMap model) => model.Components.Count == 0;
 
     [Fact]
-    public void AnEntry_CarriesTheLinesItsParserPassedOver()
+    public async Task AnEntry_CarriesTheLinesItsParserPassedOver()
     {
         // Act.
-        var entry = new WardleyDocumentStore(new FileWriter()).GetOrLoad(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", "unmodelled-statements.owm"));
+        var entry = await new WardleyDocumentStore(new FileWriter()).GetOrLoadAsync(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", "unmodelled-statements.owm"), TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.True(entry.IsUsable);

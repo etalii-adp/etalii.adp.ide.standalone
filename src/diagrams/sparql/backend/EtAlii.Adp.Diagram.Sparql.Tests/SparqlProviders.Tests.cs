@@ -176,12 +176,12 @@ public class SparqlProvidersTests : IDisposable
         var target = TargetFor(body, SparqlElementMapper.HeaderId);
         var level = new ContextResolvedLevel(new ContextSource(), ["Query"], ContextScope.DiagramElement, target, new ContextLevelDetail(), resolver);
         IReadOnlyList<string>? reported = null;
-        _documents.GetOrLoad(body);
+        await _documents.GetOrLoadAsync(body, TestContext.Current.CancellationToken);
         using var track = resolver.Track(target.WatchId, _root, level, path => reported = path);
 
         // Act: the text editor makes it an ASK.
         await File.WriteAllTextAsync(body, "ASK { ?s ?p ?o }", TestContext.Current.CancellationToken);
-        _documents.Reload(body);
+        await _documents.ReloadAsync(body, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.NotNull(reported);
@@ -189,7 +189,7 @@ public class SparqlProvidersTests : IDisposable
 
         // Act: then into something that does not parse.
         await File.WriteAllTextAsync(body, "ASK { ?s undeclared:p ?o }", TestContext.Current.CancellationToken);
-        _documents.Reload(body);
+        await _documents.ReloadAsync(body, TestContext.Current.CancellationToken);
 
         // Assert: a plain "Query", not the SELECT its empty model would otherwise be called.
         Assert.Equal(["Query"], reported);

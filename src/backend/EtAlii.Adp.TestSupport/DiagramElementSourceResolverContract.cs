@@ -32,7 +32,7 @@ public abstract class DiagramElementSourceResolverContract : IDisposable
     protected abstract IContextSourceResolver CreateResolver();
 
     /// <summary>Tells the resolver's store that the body at <paramref name="body"/> changed on disk.</summary>
-    protected abstract void Reload(string body);
+    protected abstract Task ReloadAsync(string body, CancellationToken cancellationToken);
 
     /// <summary>An element of <see cref="Example"/> that has a name.</summary>
     protected abstract string ElementId { get; }
@@ -183,10 +183,10 @@ public abstract class DiagramElementSourceResolverContract : IDisposable
 
         // Act: renamed while tracked, then renamed again after it was let go.
         var renamed = await RenameAsync(Body, "Renamed once", cancellationToken);
-        Reload(Body);
+        await ReloadAsync(Body, cancellationToken);
         tracking.Dispose();
         await RenameAsync(Body, "Renamed twice", cancellationToken);
-        Reload(Body);
+        await ReloadAsync(Body, cancellationToken);
 
         // Assert.
         Assert.Equal([renamed], seen);

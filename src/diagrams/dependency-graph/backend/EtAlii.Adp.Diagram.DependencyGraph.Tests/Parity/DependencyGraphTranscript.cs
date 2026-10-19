@@ -134,6 +134,7 @@ internal static partial class DependencyGraphTranscript
             var body = Path.Combine(folder, Path.GetFileNameWithoutExtension(name) + Diagram.DocumentExtension);
             await File.WriteAllBytesAsync(body, bytes, cancellationToken);
             using var session = new Session(folder, body);
+            await session.ReadAsync(cancellationToken);
             await WriteReadingsAsync(json, session, bytes, cancellationToken);
             await WriteEditsAsync(json, name, session, cancellationToken);
         }
@@ -389,7 +390,10 @@ internal static partial class DependencyGraphTranscript
 
         public DependencyGraphContextPropertyProvider ReadOnlyProperties { get; }
 
-        public DislModel Model => Store.GetOrLoad(Body).Model;
+        /// <summary>Opens the document, as the diagram's first open does; the readings and edits read what it holds.</summary>
+        public async Task ReadAsync(CancellationToken cancellationToken) => await Store.GetOrLoadAsync(Body, cancellationToken);
+
+        public DislModel Model => Store.Get(Body)!.Model;
 
         public ContextTarget Target(string elementId) =>
             ContextTarget.ForElement(Body, elementId, Folder, origin: Diagram.DependencyGraph.Origin);

@@ -134,7 +134,7 @@ public sealed class SankeyCommandsTests : IDisposable
         }
 
         var bytesBefore = await File.ReadAllBytesAsync(Body, TestContext.Current.CancellationToken);
-        var cachedBefore = _store.GetOrLoad(Body).Document.Text;
+        var cachedBefore = (await _store.GetOrLoadAsync(Body, TestContext.Current.CancellationToken)).Document.Text;
         var command = RefusalNamed(refusal);
 
         // Act.
@@ -144,7 +144,7 @@ public sealed class SankeyCommandsTests : IDisposable
         Assert.False(result.IsSuccess);
         Assert.Contains(saying, result.Error, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(bytesBefore, await File.ReadAllBytesAsync(Body, TestContext.Current.CancellationToken));
-        Assert.Equal(cachedBefore, _store.GetOrLoad(Body).Document.Text);
+        Assert.Equal(cachedBefore, (await _store.GetOrLoadAsync(Body, TestContext.Current.CancellationToken)).Document.Text);
     }
 
     [Fact]

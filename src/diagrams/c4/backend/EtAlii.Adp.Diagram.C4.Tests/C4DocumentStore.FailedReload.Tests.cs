@@ -51,20 +51,20 @@ public class C4DocumentStoreFailedReloadTests : IDisposable
         var body = IoPath.Combine(_root, "model.dsl");
         await File.WriteAllTextAsync(body, Model, TestContext.Current.CancellationToken);
         var store = new C4DocumentStore(new FileWriter());
-        Assert.NotEmpty(store.GetOrLoad(body).Model.Elements);
+        Assert.NotEmpty((await store.GetOrLoadAsync(body, TestContext.Current.CancellationToken)).Model.Elements);
 
         // Arrange, continued: a reload that cannot read the body.
         await using (new FileStream(body, FileMode.Open, FileAccess.Read, FileShare.None))
         {
-            store.Reload(body);
+            await store.ReloadAsync(body, TestContext.Current.CancellationToken);
         }
 
         // Assert, first: the store still holds the model - the failed read did not replace it.
         // Asserted on its own because the save refusal would protect the file even without it.
-        Assert.NotEmpty(store.GetOrLoad(body).Model.Elements);
+        Assert.NotEmpty((await store.GetOrLoadAsync(body, TestContext.Current.CancellationToken)).Model.Elements);
 
         // Act: whatever triggers the next save, once the file is readable again.
-        await store.SaveAsync(body, store.GetOrLoad(body).Document, TestContext.Current.CancellationToken);
+        await store.SaveAsync(body, (await store.GetOrLoadAsync(body, TestContext.Current.CancellationToken)).Document, TestContext.Current.CancellationToken);
 
         // Assert: the real model is still on disk.
         var onDisk = await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken);
@@ -84,17 +84,17 @@ public class C4DocumentStoreFailedReloadTests : IDisposable
 
         await using (new FileStream(body, FileMode.Open, FileAccess.Read, FileShare.None))
         {
-            Assert.Empty(store.GetOrLoad(body).Model.Elements); // the arrangement: the first read failed
+            Assert.Empty((await store.GetOrLoadAsync(body, TestContext.Current.CancellationToken)).Model.Elements); // the arrangement: the first read failed
         }
 
-        var answer = await store.SaveAsync(body, store.GetOrLoad(body).Document, TestContext.Current.CancellationToken);
+        var answer = await store.SaveAsync(body, (await store.GetOrLoadAsync(body, TestContext.Current.CancellationToken)).Document, TestContext.Current.CancellationToken);
 
         Assert.NotEqual("", answer.Error);
         Assert.Equal(Model, await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken));
     }
 
     [Fact]
-    public void ABodyThatIsReallyDeleted_EndsAsAnEmptyModel_NotTheLastOneKeptAlive()
+    public async Task ABodyThatIsReallyDeleted_EndsAsAnEmptyModel_NotTheLastOneKeptAlive()
     {
         // The other half of keeping the last good model, and the reason it cannot be the whole
         // rule. DiagramDocumentReloadBridge documents that "a body that is gone is an empty
@@ -103,14 +103,14 @@ public class C4DocumentStoreFailedReloadTests : IDisposable
         // other way. A missing body is confirmed gone - by the watcher's Deleted event, which a
         // publish in flight never raises - before it is treated as gone.
         var body = IoPath.Combine(_root, "model.dsl");
-        File.WriteAllText(body, Model);
+        await File.WriteAllTextAsync(body, Model, TestContext.Current.CancellationToken);
         var store = new C4DocumentStore(new FileWriter());
-        Assert.NotEmpty(store.GetOrLoad(body).Model.Elements);
+        Assert.NotEmpty((await store.GetOrLoadAsync(body, TestContext.Current.CancellationToken)).Model.Elements);
 
         File.Delete(body);
-        store.BodyDeleted(body);
+        await store.BodyDeletedAsync(body, TestContext.Current.CancellationToken);
 
-        Assert.Empty(store.GetOrLoad(body).Model.Elements);
+        Assert.Empty((await store.GetOrLoadAsync(body, TestContext.Current.CancellationToken)).Model.Elements);
     }
 
     [Fact]
@@ -125,13 +125,13 @@ public class C4DocumentStoreFailedReloadTests : IDisposable
         var origin = new ToolOrigin("test", "c4");
         using var events = new ProjectFileEvents();
         using var bridge = new DiagramDocumentReloadBridge([new DiagramDocumentReloader<IC4DocumentStore>(origin, store)], events);
-        Assert.NotEmpty(store.GetOrLoad(body).Model.Elements);
+        Assert.NotEmpty((await store.GetOrLoadAsync(body, TestContext.Current.CancellationToken)).Model.Elements);
         bridge.Track(ProjectRoot.From(_root), body, registrationPath: null, origin);
 
         File.Delete(body);
 
         Assert.True(
-            await Eventually.TrueAsync(() => store.GetOrLoad(body).Model.Elements.Count == 0, TestContext.Current.CancellationToken),
+            await Eventually.TrueAsync(() => store.Get(body)?.Model.Elements.Count == 0, TestContext.Current.CancellationToken),
             "The deletion did not empty the model within the timeout.");
     }
 
@@ -147,13 +147,13 @@ public class C4DocumentStoreFailedReloadTests : IDisposable
         var origin = new ToolOrigin("test", "c4");
         using var events = new ProjectFileEvents();
         using var bridge = new DiagramDocumentReloadBridge([new DiagramDocumentReloader<IC4DocumentStore>(origin, store)], events);
-        Assert.NotEmpty(store.GetOrLoad(body).Model.Elements);
+        Assert.NotEmpty((await store.GetOrLoadAsync(body, TestContext.Current.CancellationToken)).Model.Elements);
         var changes = 0;
         var emptied = 0;
         store.Changed += (_, args) =>
         {
             Interlocked.Increment(ref changes);
-            if (store.GetOrLoad(args.Path).Model.Elements.Count == 0)
+            if (store.Get(args.Path)?.Model.Elements.Count == 0)
             {
                 Interlocked.Increment(ref emptied);
             }
@@ -172,7 +172,7 @@ public class C4DocumentStoreFailedReloadTests : IDisposable
         Assert.False(
             await Eventually.TrueAsync(() => Volatile.Read(ref emptied) > 0, TestContext.Current.CancellationToken, TimeSpan.FromSeconds(1)),
             $"{emptied} of {changes} changes after 50 external saves emptied the model.");
-        Assert.NotEmpty(store.GetOrLoad(body).Model.Elements);
+        Assert.NotEmpty((await store.GetOrLoadAsync(body, TestContext.Current.CancellationToken)).Model.Elements);
     }
 
     [Fact]
@@ -183,8 +183,8 @@ public class C4DocumentStoreFailedReloadTests : IDisposable
         var body = IoPath.Combine(_root, "new.dsl");
         var store = new C4DocumentStore(new FileWriter());
 
-        Assert.Empty(store.GetOrLoad(body).Model.Elements);
-        var answer = await store.SaveAsync(body, store.GetOrLoad(body).Document, TestContext.Current.CancellationToken);
+        Assert.Empty((await store.GetOrLoadAsync(body, TestContext.Current.CancellationToken)).Model.Elements);
+        var answer = await store.SaveAsync(body, (await store.GetOrLoadAsync(body, TestContext.Current.CancellationToken)).Document, TestContext.Current.CancellationToken);
 
         Assert.Equal("", answer.Error);
         Assert.True(File.Exists(body), "A new, empty model was not saved.");

@@ -131,14 +131,14 @@ public sealed class GhgCommandsTests : IDisposable
     public async Task EveryRefusal_WritesNothing_AndSaysWhy(string refusal, string saying)
     {
         // The cache is loaded, so an in-place edit would have somewhere to hide.
-        var cachedBefore = _store.GetOrLoad(Body).Document.Text;
+        var cachedBefore = (await _store.GetOrLoadAsync(Body, TestContext.Current.CancellationToken)).Document.Text;
 
         var result = await _dispatcher.DispatchAsync(RefusalNamed(refusal), TestContext.Current.CancellationToken);
 
         Assert.False(result.IsSuccess);
         Assert.Contains(saying, result.Error, StringComparison.Ordinal);
         Assert.Equal(_original, await File.ReadAllBytesAsync(Body, TestContext.Current.CancellationToken));
-        Assert.Equal(cachedBefore, _store.GetOrLoad(Body).Document.Text);
+        Assert.Equal(cachedBefore, (await _store.GetOrLoadAsync(Body, TestContext.Current.CancellationToken)).Document.Text);
     }
 
     /// <summary>The task's guard: deleting a trend with two influences restores all three on one undo.</summary>
@@ -276,7 +276,7 @@ public sealed class GhgCommandsTests : IDisposable
         DocumentEntry<GhgBody, GhgModel> entry;
         await using (new FileStream(Body, FileMode.Open, FileAccess.Read, FileShare.None))
         {
-            entry = store.GetOrLoad(Body);
+            entry = await store.GetOrLoadAsync(Body, TestContext.Current.CancellationToken);
         }
 
         Assert.False(entry.IsUsable);

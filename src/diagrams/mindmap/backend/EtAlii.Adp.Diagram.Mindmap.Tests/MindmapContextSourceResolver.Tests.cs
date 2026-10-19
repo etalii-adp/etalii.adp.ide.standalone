@@ -68,7 +68,7 @@ public class MindmapContextSourceResolverTests : IDisposable
         // Requirement 10.5 and DISL's revealExpands default: a selection expands its collapsed
         // ancestors. Hierarchy is folded in the file; fold RootFolderWatcher under it too, so
         // the selected leaf sits under two folds.
-        var document = _project.Document;
+        var document = (await _project.DocumentAsync());
         _project.Views.Toggle(_project.WatchId, _project.BodyPath, document, "ID_88117427");
         var toggled = new List<(string NodeId, bool Folded)>();
         _project.Views.FoldToggled += (_, args) => toggled.Add((args.NodeId, args.Folded));

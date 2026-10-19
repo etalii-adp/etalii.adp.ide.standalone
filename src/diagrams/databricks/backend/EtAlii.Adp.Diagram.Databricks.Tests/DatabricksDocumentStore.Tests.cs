@@ -44,7 +44,7 @@ public sealed class DatabricksDocumentStoreTests : DocumentStoreContract<IDatabr
         File.Copy(Fixture(name), path);
         var original = await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken);
         var store = new DatabricksDocumentStore(new FileWriter());
-        var entry = store.GetOrLoad(path);
+        var entry = await store.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
 
         // Act. Nothing is edited between the load and the save, which is what makes this test about
         // byte identity rather than about edits surviving - see the LostEdit test beside it for the
@@ -57,13 +57,13 @@ public sealed class DatabricksDocumentStoreTests : DocumentStoreContract<IDatabr
     }
 
     [Fact]
-    public void AMissingFile_OpensAsAnEmptyUsableDocument()
+    public async Task AMissingFile_OpensAsAnEmptyUsableDocument()
     {
         // Arrange.
         using var folder = TestFolder.Create("databricks-store");
 
         // Act.
-        var entry = new DatabricksDocumentStore(new FileWriter()).GetOrLoad(folder.Combine("not-yet.yml"));
+        var entry = await new DatabricksDocumentStore(new FileWriter()).GetOrLoadAsync(folder.Combine("not-yet.yml"), TestContext.Current.CancellationToken);
 
         // Assert: a freshly created diagram opens, and the first save creates the file.
         Assert.True(entry.IsUsable);
@@ -82,7 +82,7 @@ public sealed class DatabricksDocumentStoreTests : DocumentStoreContract<IDatabr
         var store = new DatabricksDocumentStore(new FileWriter());
 
         // Act.
-        var entry = store.GetOrLoad(path);
+        var entry = await store.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
         var saved = await store.SaveAsync(path, entry.Document, TestContext.Current.CancellationToken);
 
         // Assert: the broken file is never made worse - the save is refused with the reason.
@@ -96,10 +96,10 @@ public sealed class DatabricksDocumentStoreTests : DocumentStoreContract<IDatabr
     }
 
     [Fact]
-    public void OneFile_ServesAllThreeReadings()
+    public async Task OneFile_ServesAllThreeReadings()
     {
         // Arrange & act.
-        var entry = new DatabricksDocumentStore(new FileWriter()).GetOrLoad(Example);
+        var entry = await new DatabricksDocumentStore(new FileWriter()).GetOrLoadAsync(Example, TestContext.Current.CancellationToken);
 
         // Assert: a databricks.yml is a bundle that also declares a job and a pipeline inline - one
         // entry serves whichever diagram type opens it.
@@ -109,23 +109,23 @@ public sealed class DatabricksDocumentStoreTests : DocumentStoreContract<IDatabr
     }
 
     [Fact]
-    public void Reload_PicksUpAnExternalChange_AndSaysSo()
+    public async Task Reload_PicksUpAnExternalChange_AndSaysSo()
     {
         // Arrange.
         using var folder = TestFolder.Create("databricks-store");
         var path = folder.Combine("crlf-line-endings.yml");
         File.Copy(Fixture("crlf-line-endings.yml"), path);
         var store = new DatabricksDocumentStore(new FileWriter());
-        store.GetOrLoad(path);
-        File.WriteAllText(path, "bundle:\r\n  name: replaced\r\n");
+        await store.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(path, "bundle:\r\n  name: replaced\r\n", TestContext.Current.CancellationToken);
         string? heard = null;
         store.Changed += (_, args) => heard = args.Path;
 
         // Act.
-        store.Reload(path);
+        await store.ReloadAsync(path, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal(path, heard);
-        Assert.Equal("replaced", store.GetOrLoad(path).Model.Bundle.Name);
+        Assert.Equal("replaced", (await store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model.Bundle.Name);
     }
 }

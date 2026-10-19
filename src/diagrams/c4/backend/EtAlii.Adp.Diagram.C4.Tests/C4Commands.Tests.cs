@@ -135,7 +135,7 @@ public class C4CommandsTests : IDisposable
     public async Task SetRelationshipDescription_RelabelsTheRelationship()
     {
         // Arrange.
-        var relationshipId = _documents.GetOrLoad(_bodyPath).Model.Relationships.Single().Id;
+        var relationshipId = (await _documents.GetOrLoadAsync(_bodyPath, TestContext.Current.CancellationToken)).Model.Relationships.Single().Id;
 
         // Act.
         var result = await _history.ExecuteAsync(
@@ -151,7 +151,7 @@ public class C4CommandsTests : IDisposable
     public async Task SetRelationshipTechnology_SetsTheProtocol()
     {
         // Arrange.
-        var relationshipId = _documents.GetOrLoad(_bodyPath).Model.Relationships.Single().Id;
+        var relationshipId = (await _documents.GetOrLoadAsync(_bodyPath, TestContext.Current.CancellationToken)).Model.Relationships.Single().Id;
 
         // Act.
         await _history.ExecuteAsync(

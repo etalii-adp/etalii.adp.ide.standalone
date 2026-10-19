@@ -124,6 +124,7 @@ internal static class PipelineTranscript
             PipelineCorpus.CopyFolder(Path.Combine(PipelineCorpus.SourceFolder, document.Root), folder);
             var body = Path.Combine(folder, document.InFolder);
             using var session = new Session(folder, body);
+            await session.ReadAsync(cancellationToken);
             await WriteReadingsAsync(json, session, bytes, cancellationToken);
             await WriteEditsAsync(json, session, cancellationToken);
         }
@@ -407,7 +408,10 @@ internal static class PipelineTranscript
 
         public PipelineContextPropertyProvider Properties { get; }
 
-        public PipelineModel Model => Store.GetOrLoad(Folder, Body).Model;
+        /// <summary>Opens the document, as the diagram's first open does; the readings and edits read what it holds.</summary>
+        public async Task ReadAsync(CancellationToken cancellationToken) => await Store.GetOrLoadAsync(Folder, Body, cancellationToken);
+
+        public PipelineModel Model => Store.In(Folder).Get(Body)!.Model;
 
         public ContextTarget Target(string elementId) =>
             ContextTarget.ForElement(Body, elementId, Folder, _watchId, Diagram.Pipeline.Origin);

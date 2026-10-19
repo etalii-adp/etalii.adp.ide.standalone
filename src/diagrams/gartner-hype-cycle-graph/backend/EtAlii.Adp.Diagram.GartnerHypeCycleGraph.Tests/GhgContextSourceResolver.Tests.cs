@@ -15,7 +15,7 @@ public sealed class GhgContextSourceResolverTests : DiagramElementSourceResolver
     protected override IContextSourceResolver CreateResolver() =>
         new GhgContextSourceResolver(new DiagramFileRouter(new GhgOnlyCatalog()), _store, new GhgElementMapper());
 
-    protected override void Reload(string body) => _store.Reload(body);
+    protected override Task ReloadAsync(string body, CancellationToken cancellationToken) => _store.ReloadAsync(body, cancellationToken);
 
     protected override string ElementId => "steam-engine";
 

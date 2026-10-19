@@ -29,14 +29,14 @@ public sealed class WardleyDocumentStoreSharingTests : IDisposable
     }
 
     [Fact]
-    public void GetOrLoad_ReturnsTheSameInstance_SoTwoSessionsShareOneDocument()
+    public async Task GetOrLoad_ReturnsTheSameInstance_SoTwoSessionsShareOneDocument()
     {
         // Arrange.
         var path = Write("map.owm", "title Shared\n");
 
         // Act.
-        var first = _store.GetOrLoad(path).Document;
-        var second = _store.GetOrLoad(path).Document;
+        var first = (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Document;
+        var second = (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Document;
 
         // Assert. Requirement 10.6 - an edit through one connection must be visible to another
         // without a reload, which only holds if they hold one document between them.
@@ -44,13 +44,13 @@ public sealed class WardleyDocumentStoreSharingTests : IDisposable
     }
 
     [Fact]
-    public void GetOrLoad_OpensAMissingFileAsAnEmptyDocument_RatherThanThrowing()
+    public async Task GetOrLoad_OpensAMissingFileAsAnEmptyDocument_RatherThanThrowing()
     {
         // Arrange. Requirement 2.4 - the `.owm` sibling may not have been written yet.
         var path = IoPath.Combine(_folder, "absent.owm");
 
         // Act.
-        var document = _store.GetOrLoad(path).Document;
+        var document = (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Document;
 
         // Assert.
         Assert.Equal("", document.Text);
@@ -61,7 +61,7 @@ public sealed class WardleyDocumentStoreSharingTests : IDisposable
     {
         // Arrange.
         var path = Write("map.owm", "title Before\n");
-        var document = _store.GetOrLoad(path).Document;
+        var document = (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Document;
         WardleyWriter.ReplaceLine(document, 1, "title After");
 
         // Act.
@@ -80,7 +80,7 @@ public sealed class WardleyDocumentStoreSharingTests : IDisposable
         var path = Write("map.owm", text);
 
         // Act.
-        var document = _store.GetOrLoad(path).Document;
+        var document = (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Document;
         await _store.SaveAsync(path, document, TestContext.Current.CancellationToken);
 
         // Assert.
@@ -92,7 +92,7 @@ public sealed class WardleyDocumentStoreSharingTests : IDisposable
     {
         // Arrange. Requirement 2.4 - the sibling is created on the first save.
         var path = IoPath.Combine(_folder, "new.owm");
-        var document = _store.GetOrLoad(path).Document;
+        var document = (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Document;
         WardleyWriter.InsertLine(document, 1, "title Created");
 
         // Act.
@@ -107,11 +107,11 @@ public sealed class WardleyDocumentStoreSharingTests : IDisposable
     }
 
     [Fact]
-    public void Touch_RaisesChanged_WithoutWritingAnything()
+    public async Task Touch_RaisesChanged_WithoutWritingAnything()
     {
         // Arrange.
         var path = Write("map.owm", "title X\n");
-        WardleyWriter.ReplaceLine(_store.GetOrLoad(path).Document, 1, "title Edited in memory");
+        WardleyWriter.ReplaceLine((await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Document, 1, "title Edited in memory");
         var raised = 0;
         _store.Changed += (_, _) => raised++;
 
@@ -120,19 +120,19 @@ public sealed class WardleyDocumentStoreSharingTests : IDisposable
 
         // Assert. The file is untouched; only the sessions are told to re-deliver.
         Assert.Equal(1, raised);
-        Assert.Equal("title X\n", File.ReadAllText(path));
+        Assert.Equal("title X\n", await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
-    public void GetOrLoad_IsCaseInsensitiveOnPath_SoOneFileIsOneDocument()
+    public async Task GetOrLoad_IsCaseInsensitiveOnPath_SoOneFileIsOneDocument()
     {
         // Arrange. Windows hands the same file back under either casing; two entries for it
         // would be two documents drifting apart.
         var path = Write("Map.owm", "title X\n");
 
         // Act.
-        var first = _store.GetOrLoad(path).Document;
-        var second = _store.GetOrLoad(path.Replace("Map.owm", "map.owm", StringComparison.Ordinal)).Document;
+        var first = (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Document;
+        var second = (await _store.GetOrLoadAsync(path.Replace("Map.owm", "map.owm", StringComparison.Ordinal), TestContext.Current.CancellationToken)).Document;
 
         // Assert.
         Assert.Same(first, second);
@@ -142,9 +142,9 @@ public sealed class WardleyDocumentStoreSharingTests : IDisposable
     [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
-    public void GetOrLoad_RefusesAPathThatIsNotOne(string? path)
+    public async Task GetOrLoad_RefusesAPathThatIsNotOne(string? path)
     {
         // Act and assert.
-        Assert.ThrowsAny<ArgumentException>(() => _store.GetOrLoad(path!).Document);
+        await Assert.ThrowsAnyAsync<ArgumentException>(async () => await _store.GetOrLoadAsync(path!, TestContext.Current.CancellationToken));
     }
 }

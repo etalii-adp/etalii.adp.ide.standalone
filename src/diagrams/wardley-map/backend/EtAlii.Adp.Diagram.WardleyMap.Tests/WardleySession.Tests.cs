@@ -123,7 +123,7 @@ public sealed class WardleySessionTests : IDisposable
         var path = Write("component Alpha [0.9, 0.1]\ncomponent Beta [0.1, 0.9]\n");
         var session = Editable(path);
         await session.BaselineAsync(TestContext.Current.CancellationToken);
-        var beta = IdOfFarCorner(path);
+        var beta = await IdOfFarCornerAsync(path);
 
         // Act. First look at the corner Alpha is in, then at the corner Beta is in.
         var narrowed = session.UpdateView(new DiagramViewport(0d, 0d, 0.4d, 0.4d));
@@ -162,7 +162,7 @@ public sealed class WardleySessionTests : IDisposable
 
         // Act. Move Alpha, which is the component inside the viewport, and leave Beta where it is.
         await File.WriteAllTextAsync(path, "component Alpha [0.85, 0.15]\ncomponent Beta [0.1, 0.9]\n", TestContext.Current.CancellationToken);
-        _documents.Reload(path);
+        await _documents.ReloadAsync(path, TestContext.Current.CancellationToken);
 
         // Assert. The edit arrives, and Beta - culled by the viewport a moment ago - does not come
         // back with it.
@@ -186,7 +186,7 @@ public sealed class WardleySessionTests : IDisposable
 
         // Act. Look only at Beta's corner - the far one from that placeholder position.
         var deltas = session.UpdateView(corner);
-        var held = Visible(path, corner);
+        var held = await VisibleAsync(path, corner);
 
         // Assert. Nothing was culled: the axis and the link are still held, and so is Alpha, pulled
         // in as the link's other endpoint - a link delivered with one end missing draws to nothing.
@@ -197,15 +197,15 @@ public sealed class WardleySessionTests : IDisposable
     }
 
     /// <summary>What a viewport admits, asked of the mapper directly.</summary>
-    private IReadOnlyList<DiagramElement> Visible(string path, DiagramViewport viewport)
+    private async Task<IReadOnlyList<DiagramElement>> VisibleAsync(string path, DiagramViewport viewport)
     {
-        var map = _documents.GetOrLoad(path).Model;
+        var map = (await _documents.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model;
         return _mapper.Visible(map, _documents.Identities(path), viewport);
     }
 
     /// <summary>The id of the component in the bottom-right of the map, found by its position.</summary>
-    private string IdOfFarCorner(string path) =>
-        Visible(path, DiagramViewport.Unbounded)
+    private async Task<string> IdOfFarCornerAsync(string path) =>
+        (await VisibleAsync(path, DiagramViewport.Unbounded))
             .Single(element => element is { Type: WardleyElementTypes.Element, X: > 0.5d })
             .Id;
 
@@ -367,7 +367,7 @@ public sealed class WardleySessionTests : IDisposable
 
         // Act.
         await File.WriteAllTextAsync(path, "component Alpha [0.2, 0.8]\n", TestContext.Current.CancellationToken);
-        _documents.Reload(path);
+        await _documents.ReloadAsync(path, TestContext.Current.CancellationToken);
 
         // Assert. One add carrying the element in its new state, never a remove and an add.
         var add = Assert.Single(received.OfType<DiagramAddDelta>());
@@ -389,8 +389,8 @@ public sealed class WardleySessionTests : IDisposable
         session.Changed += (_, _) => raised++;
 
         // Act.
-        _documents.GetOrLoad(other);
-        _documents.Reload(other);
+        await _documents.GetOrLoadAsync(other, TestContext.Current.CancellationToken);
+        await _documents.ReloadAsync(other, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal(0, raised);
@@ -409,7 +409,7 @@ public sealed class WardleySessionTests : IDisposable
         // Act.
         await session.DisposeAsync();
         await File.WriteAllTextAsync(path, "component Alpha [0.2, 0.8]\n", TestContext.Current.CancellationToken);
-        _documents.Reload(path);
+        await _documents.ReloadAsync(path, TestContext.Current.CancellationToken);
 
         // Assert. A disposed session must not keep receiving, or a closed tab holds the
         // document alive and answers for a connection that has gone.

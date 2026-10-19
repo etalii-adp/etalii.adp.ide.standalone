@@ -72,7 +72,7 @@ public sealed class SankeySessionTests : IDisposable
         // Arrange.
         using var history = new HistoryStack(new SankeyTestDispatcher(_store));
         await using var session = new SankeySession(_folder.Body, _store, new SankeyElementMapper(), history);
-        var layout = SankeyLayout.Of(_store.GetOrLoad(_folder.Body).Model);
+        var layout = SankeyLayout.Of((await _store.GetOrLoadAsync(_folder.Body, TestContext.Current.CancellationToken)).Model);
         var cafes = layout.Boxes["cafes"];
         var packaged = layout.Boxes["packaged"];
 
@@ -93,7 +93,7 @@ public sealed class SankeySessionTests : IDisposable
         var original = await File.ReadAllBytesAsync(_folder.Body, TestContext.Current.CancellationToken);
         using var history = new HistoryStack(new SankeyTestDispatcher(_store));
         await using var session = new SankeySession(_folder.Body, _store, new SankeyElementMapper(), history);
-        var box = SankeyLayout.Of(_store.GetOrLoad(_folder.Body).Model).Boxes["wholesale"];
+        var box = SankeyLayout.Of((await _store.GetOrLoadAsync(_folder.Body, TestContext.Current.CancellationToken)).Model).Boxes["wholesale"];
 
         // Act.
         var refusal = await session.MoveElementToAsync("wholesale", box.X + 200, box.Y + 5, TestContext.Current.CancellationToken);
@@ -186,7 +186,7 @@ public sealed class SankeySessionTests : IDisposable
 
     private async Task DragCafesBelowPackaged(SankeySession session)
     {
-        var layout = SankeyLayout.Of(_store.GetOrLoad(_folder.Body).Model);
+        var layout = SankeyLayout.Of((await _store.GetOrLoadAsync(_folder.Body, TestContext.Current.CancellationToken)).Model);
         var cafes = layout.Boxes["cafes"];
         var refusal = await session.MoveElementToAsync("cafes", cafes.X, layout.Boxes["packaged"].CenterY + 1 - (cafes.Height / 2), TestContext.Current.CancellationToken);
         Assert.Equal("", refusal);
