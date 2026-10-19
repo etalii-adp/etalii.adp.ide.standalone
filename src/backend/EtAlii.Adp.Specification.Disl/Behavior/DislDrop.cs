@@ -21,8 +21,8 @@ public abstract record DislDropOutcome
     /// <summary>No target matched and <c>elsewhere</c> is <paramref name="What"/>: <c>"create"</c>, <c>"ignore"</c> or <c>"menu"</c>.</summary>
     public sealed record Elsewhere(string What) : DislDropOutcome;
 
-    /// <summary>The drop is placed by geometry, by the parent placement <paramref name="Placement"/>, which consults no target.</summary>
-    public sealed record Placed(string Placement) : DislDropOutcome;
+    /// <summary>The drop is placed by geometry, by the parent placement its <c>place</c> names, which consults no target.</summary>
+    public sealed record Placed : DislDropOutcome;
 }
 
 /// <summary>
@@ -61,7 +61,7 @@ public static class DislDrop
 
         if (OperationInterpreter.Tool(specification, toolId) is not var (tool, pointer)) return null;
         if (!tool.TryGetProperty("drop", out var drop) || drop.ValueKind != JsonValueKind.Object) return WithoutDrop(specification, tool, dropTarget);
-        if (DislJson.String(drop, "place") is { } placement) return new DislDropOutcome.Placed(placement);
+        if (DislJson.String(drop, "place") is not null) return new DislDropOutcome.Placed();
 
         var dropAt = DislJson.Pointer(pointer, "drop");
         if (drop.TryGetProperty("targets", out var targets) && targets.ValueKind == JsonValueKind.Array)

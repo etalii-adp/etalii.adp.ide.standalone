@@ -58,9 +58,9 @@ public class DislDropTests
         var onCanvas = DislDrop.Resolve(Specification, "anywhere", diagram, null);
 
         // Assert.
-        Assert.Equal(new DislDropOutcome.Target("operation", "addTop", box), onBox);
-        Assert.Equal(new DislDropOutcome.Target("operation", "addTop", crate), onCrate);
-        Assert.Equal(new DislDropOutcome.Target("operation", "addTop", null), onCanvas);
+        Assert.Equal(("operation", "addTop", box), Landing(onBox));
+        Assert.Equal(("operation", "addTop", crate), Landing(onCrate));
+        Assert.Equal(("operation", "addTop", (DislElement?)null), Landing(onCanvas));
     }
 
     [Fact]
@@ -75,7 +75,7 @@ public class DislDropTests
         var onCanvas = DislDrop.Resolve(Specification, "inBox", diagram, null);
 
         // Assert.
-        Assert.Equal(new DislDropOutcome.Target("operation", "addInside", box), onBox);
+        Assert.Equal(("operation", "addInside", box), Landing(onBox));
         Assert.Equal(new DislDropOutcome.Refused("Not on a Crate."), onCrate);
         Assert.Equal(new DislDropOutcome.Refused("Drop it on a box."), onCanvas);
     }
@@ -101,7 +101,7 @@ public class DislDropTests
         var worded = DislDrop.Resolve(Specification, "worded", diagram, crate);
 
         // Assert.
-        Assert.Equal(new DislDropOutcome.Elsewhere("ignore"), ignored);
+        Assert.Equal("ignore", Assert.IsType<DislDropOutcome.Elsewhere>(ignored).What);
         Assert.Equal(new DislDropOutcome.Refused(DislDrop.DefaultRefusal), worded);
     }
 
@@ -116,8 +116,15 @@ public class DislDropTests
         var onCrate = DislDrop.Resolve(Specification, "plain", diagram, crate);
 
         // Assert.
-        Assert.Equal(new DislDropOutcome.Target("operation", "addInside", box), onBox);
-        Assert.Equal(new DislDropOutcome.Target("operation", "addInside", null), onCrate);
+        Assert.Equal(("operation", "addInside", box), Landing(onBox));
+        Assert.Equal(("operation", "addInside", (DislElement?)null), Landing(onCrate));
+    }
+
+    /// <summary>What a drop that matched a target runs, and on what.</summary>
+    private static (string Kind, string? Operation, DislElement? On) Landing(DislDropOutcome? outcome)
+    {
+        var target = Assert.IsType<DislDropOutcome.Target>(outcome);
+        return (target.Kind, target.Operation, target.On);
     }
 
     [Fact]

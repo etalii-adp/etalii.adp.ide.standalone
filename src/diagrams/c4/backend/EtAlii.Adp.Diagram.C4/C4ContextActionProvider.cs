@@ -221,7 +221,7 @@ public sealed class C4ContextActionProvider(IHistoryStackStore historyStacks, IC
         var created = C4Definitions.Creation(model, C4Disl.FileOf(bodyPath), C4Definitions.ViewOf(model, origin), origin, operation, parentId, value, identifier);
         return created is { } creation && creation.Id == identifier
             ? new AddC4ElementCommand(bodyPath, kind, value, creation.ParentId is null ? "" : parentId, identifier)
-            : new AddC4ElementCommand(bodyPath, kind, value, parentId, "");
+            : new AddC4ElementCommand(bodyPath, kind, value, parentId);
     }
 
     private static string Spell(C4ElementKind kind) => kind switch

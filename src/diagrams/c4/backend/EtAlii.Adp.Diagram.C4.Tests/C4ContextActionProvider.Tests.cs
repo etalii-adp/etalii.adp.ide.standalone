@@ -294,12 +294,9 @@ public class C4ContextActionProviderTests : IDisposable
         }
 
         // Assert.
-        Assert.All(owners, owner =>
-        {
-            Assert.NotNull(owner);
-            Assert.False(owner.Action.Available);
-            Assert.Equal("That element is no longer in this model.", owner.Action.UnavailableReason);
-        });
+        Assert.Equal(
+            ["That element is no longer in this model.", "That element is no longer in this model.", "That element is no longer in this model.", "That element is no longer in this model."],
+            owners.Select(owner => owner is { Action.Available: false } ? owner.Action.UnavailableReason : "(not refused)"));
     }
 
     /// <summary>How the context service resolves a toolbox entry dropped on <paramref name="target"/>.</summary>
