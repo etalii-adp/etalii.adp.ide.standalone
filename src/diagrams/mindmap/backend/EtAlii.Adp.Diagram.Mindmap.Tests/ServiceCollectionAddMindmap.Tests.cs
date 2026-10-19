@@ -59,7 +59,7 @@ public class ServiceCollectionAddMindmapTests
         var factory = new DiagramSessionFactories(provider.GetServices<IDiagramSessionFactory>()).Find(Diagram.Mindmap.Origin)!;
 
         // Act.
-        await using var session = factory.Open(ShortGuid.NewShortGuid(), "root", IoPath.Combine("Fixtures", "architecture.mm"), null);
+        await using var session = factory.Open(ShortGuid.NewShortGuid(), ProjectRoot.From("root"), IoPath.Combine("Fixtures", "architecture.mm"), null);
 
         // Assert.
         Assert.IsType<MindmapSession>(session);

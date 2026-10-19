@@ -52,7 +52,7 @@ public class SparqlSessionTests : IDisposable
     {
         var factory = _provider.GetServices<IDiagramSessionFactory>()
             .Single(candidate => candidate.Origin == ServiceCollectionAddSparqlExtension.SparqlOrigin);
-        return factory.Open(ShortGuid.NewShortGuid(), _root, bodyPath, registrationPath);
+        return factory.Open(ShortGuid.NewShortGuid(), ProjectRoot.From(_root), bodyPath, registrationPath);
     }
 
     /// <summary>

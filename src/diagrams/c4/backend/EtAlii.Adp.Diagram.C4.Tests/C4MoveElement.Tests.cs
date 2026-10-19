@@ -58,7 +58,7 @@ public class C4MoveElementTests : IDisposable
     private C4Session Open() => (C4Session)_services
         .GetServices<IDiagramSessionFactory>()
         .First(factory => factory.Origin.Key == "c4/system-landscape")
-        .Open(ShortGuid.NewShortGuid(), _root, _bodyPath, null);
+        .Open(ShortGuid.NewShortGuid(), ProjectRoot.From(_root), _bodyPath, null);
 
     [Fact]
     public async Task ADrag_RecordsThePositionInTheSidecar_AndLeavesTheDocumentAlone()

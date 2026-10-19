@@ -57,7 +57,7 @@ public class ZeroWritesTests : IDisposable
 
         // Act.
         // Everything this module can be asked to do short of a drag, in a user's order.
-        await using (var session = factory.Open(ShortGuid.NewShortGuid(), _root, registration, registration))
+        await using (var session = factory.Open(ShortGuid.NewShortGuid(), ProjectRoot.From(_root), registration, registration))
         {
             await session.BaselineAsync(TestContext.Current.CancellationToken);
             session.UpdateView(new DiagramViewport(-50, -50, 200, 200));
@@ -127,7 +127,7 @@ public class ZeroWritesTests : IDisposable
         var registration = IoPath.Combine(_root, "helm-chart.adp");
         var factory = new HelmSessionFactory(
             _store, new HelmElementMapper(), _provider.GetRequiredService<IHistoryStackStore>());
-        await using var session = factory.Open(ShortGuid.NewShortGuid(), _root, registration, registration);
+        await using var session = factory.Open(ShortGuid.NewShortGuid(), ProjectRoot.From(_root), registration, registration);
         await session.BaselineAsync(TestContext.Current.CancellationToken);
 
         // Act and assert.

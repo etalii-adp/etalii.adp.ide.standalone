@@ -5,11 +5,11 @@ namespace EtAlii.Adp.Sessions;
 // Modules read the members their session needs: supply-chain the watch id, c4 the registration.
 /// <summary>What a session is opened on: the connection, the project, the body and the registration it was opened through.</summary>
 /// <param name="WatchId">The connection that opened the session.</param>
-/// <param name="RootPath">The root path of the project.</param>
+/// <param name="Root">The root of the project.</param>
 /// <param name="BodyPath">The path to the diagram body file.</param>
 /// <param name="RegistrationPath">The <c>.adp</c> file it was opened through, or null for a body opened without one.</param>
 [UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
-public sealed record DiagramSessionOpening(ShortGuid WatchId, string RootPath, string BodyPath, string? RegistrationPath);
+public sealed record DiagramSessionOpening(ShortGuid WatchId, ProjectRoot Root, string BodyPath, string? RegistrationPath);
 
 /// <summary>
 /// An <see cref="IDiagramSessionFactory"/> made from a delegate, so a module registers how its
@@ -40,6 +40,6 @@ public sealed class DiagramSessionFactory : IDiagramSessionFactory
     public ToolOrigin Origin { get; }
 
     /// <inheritdoc />
-    public IDiagramSession Open(ShortGuid watchId, string rootPath, string bodyPath, string? registrationPath) =>
-        _open(_services, new DiagramSessionOpening(watchId, rootPath, bodyPath, registrationPath));
+    public IDiagramSession Open(ShortGuid watchId, ProjectRoot root, string bodyPath, string? registrationPath) =>
+        _open(_services, new DiagramSessionOpening(watchId, root, bodyPath, registrationPath));
 }

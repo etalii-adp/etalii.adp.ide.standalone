@@ -35,7 +35,7 @@ public sealed class HelmSessionFactory : IDiagramSessionFactory
 
     public ToolOrigin Origin => Diagram.HelmCharts.Origin;
 
-    public IDiagramSession Open(ShortGuid watchId, string rootPath, string bodyPath, string? registrationPath)
+    public IDiagramSession Open(ShortGuid watchId, ProjectRoot root, string bodyPath, string? registrationPath)
     {
         _ = watchId;
         ArgumentException.ThrowIfNullOrWhiteSpace(bodyPath);
@@ -54,6 +54,6 @@ public sealed class HelmSessionFactory : IDiagramSessionFactory
             _store,
             _mapper,
             // The project's history, so a drag on this canvas is one undo away like every other edit.
-            _historyStacks.Get(ProjectRoot.From(rootPath)));
+            _historyStacks.Get(root));
     }
 }

@@ -208,7 +208,7 @@ public class ShippedExampleModelsTests(HostFixture host) : IClassFixture<HostFix
             {
                 var bodyPath = routed.BodyPath ?? routed.RegistrationPath!;
                 var watchId = ShortGuid.NewShortGuid();
-                await using var session = factory.Open(watchId, workspace, bodyPath, routed.RegistrationPath);
+                await using var session = factory.Open(watchId, ProjectRoot.From(workspace), bodyPath, routed.RegistrationPath);
                 var baseline = await session.BaselineAsync(TestContext.Current.CancellationToken);
                 if (Expansions.TryGetValue(name, out var expand))
                 {

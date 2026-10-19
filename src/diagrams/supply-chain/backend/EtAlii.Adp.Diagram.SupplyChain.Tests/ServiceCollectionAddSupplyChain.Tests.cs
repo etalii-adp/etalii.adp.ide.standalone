@@ -45,7 +45,7 @@ public sealed class ServiceCollectionAddSupplyChainTests
         var factory = new DiagramSessionFactories(provider.GetServices<IDiagramSessionFactory>()).Find(Diagram.SupplyChain.Origin)!;
 
         // Act.
-        await using var session = factory.Open(ShortGuid.NewShortGuid(), "root", SupplyChainExamples.Automotive, null);
+        await using var session = factory.Open(ShortGuid.NewShortGuid(), ProjectRoot.From("root"), SupplyChainExamples.Automotive, null);
 
         // Assert.
         Assert.IsType<SupplyChainSession>(session);

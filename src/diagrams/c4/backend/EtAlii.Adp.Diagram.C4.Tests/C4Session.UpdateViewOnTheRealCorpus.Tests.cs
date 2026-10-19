@@ -140,5 +140,5 @@ public class C4SessionUpdateViewOnTheRealCorpusTests : IDisposable
 
     private C4Session Open(string bodyPath, string? registrationPath) =>
         (C4Session)new C4SessionFactory(new ToolOrigin("c4", "system-landscape"), _documents, _mapper, _historyStacks)
-            .Open(ShortGuid.NewShortGuid(), _root, bodyPath, registrationPath);
+            .Open(ShortGuid.NewShortGuid(), ProjectRoot.From(_root), bodyPath, registrationPath);
 }

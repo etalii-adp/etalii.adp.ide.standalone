@@ -80,7 +80,7 @@ public class C4SharedReadTests : IDisposable
 
         // Act.
         await using var session = (C4Session)new C4SessionFactory(new ToolOrigin("c4", "container"), _documents, _mapper, _historyStacks)
-            .Open(ShortGuid.NewShortGuid(), _root, body, adp);
+            .Open(ShortGuid.NewShortGuid(), ProjectRoot.From(_root), body, adp);
 
         // Assert.
         Assert.Equal("containers", (await session.ViewAsync(TestContext.Current.CancellationToken))!.Key);

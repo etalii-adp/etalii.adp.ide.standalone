@@ -27,10 +27,10 @@ public class ServiceCollectionAddDiagramSessionTests
 
         // Act.
         var factory = new DiagramSessionFactories(provider.GetServices<IDiagramSessionFactory>()).Find(Origin);
-        factory!.Open(watch, "root", "root/body.test", "root/body.adp");
+        factory!.Open(watch, ProjectRoot.From("root"), "root/body.test", "root/body.adp");
 
         // Assert.
-        Assert.Equal(new DiagramSessionOpening(watch, "root", "root/body.test", "root/body.adp"), opened);
+        Assert.Equal(new DiagramSessionOpening(watch, ProjectRoot.From("root"), "root/body.test", "root/body.adp"), opened);
         Assert.Same(registered, given!.GetRequiredService<object>());
     }
 }

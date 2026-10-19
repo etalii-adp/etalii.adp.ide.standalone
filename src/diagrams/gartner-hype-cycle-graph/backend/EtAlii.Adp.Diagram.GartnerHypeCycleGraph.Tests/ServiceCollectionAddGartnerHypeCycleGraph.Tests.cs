@@ -44,7 +44,7 @@ public sealed class ServiceCollectionAddGartnerHypeCycleGraphTests
         var factory = new DiagramSessionFactories(provider.GetServices<IDiagramSessionFactory>()).Find(Diagram.HypeCycleGraph.Origin)!;
 
         // Act.
-        await using var session = factory.Open(ShortGuid.NewShortGuid(), "root", GhgModuleFiles.Example, null);
+        await using var session = factory.Open(ShortGuid.NewShortGuid(), ProjectRoot.From("root"), GhgModuleFiles.Example, null);
 
         // Assert.
         Assert.IsType<GhgSession>(session);

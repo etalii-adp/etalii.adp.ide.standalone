@@ -44,7 +44,7 @@ public sealed class ServiceCollectionAddSankeyTests
         var factory = new DiagramSessionFactories(provider.GetServices<IDiagramSessionFactory>()).Find(Diagram.Sankey.Origin)!;
 
         // Act.
-        await using var session = factory.Open(ShortGuid.NewShortGuid(), "root", SankeyExamples.BrightwaterCoffee, null);
+        await using var session = factory.Open(ShortGuid.NewShortGuid(), ProjectRoot.From("root"), SankeyExamples.BrightwaterCoffee, null);
 
         // Assert.
         Assert.IsType<SankeySession>(session);

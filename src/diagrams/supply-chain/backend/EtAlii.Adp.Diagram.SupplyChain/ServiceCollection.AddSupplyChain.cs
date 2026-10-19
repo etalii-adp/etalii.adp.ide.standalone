@@ -34,7 +34,7 @@ public static class ServiceCollectionAddSupplyChainExtension
             provider.GetRequiredService<ISupplyChainDocumentStore>(),
             provider.GetRequiredService<SupplyChainElementMapper>(),
             provider.GetRequiredService<SupplyChainSelections>(),
-            provider.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(opening.RootPath))));
+            provider.GetRequiredService<IHistoryStackStore>().Get(opening.Root)));
         services.AddDiagramDocumentReloader<ISupplyChainDocumentStore>(Diagram.SupplyChain.Origin);
         services.AddSingleton<IContextSourceResolver, SupplyChainContextSourceResolver>();
 

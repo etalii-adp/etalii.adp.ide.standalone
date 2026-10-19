@@ -67,7 +67,7 @@ public interface IDiagramSessionFactory
     /// <summary>
     /// A session for the diagram whose body is at <paramref name="bodyPath"/>, seen by the
     /// connection <paramref name="watchId"/> within the project rooted at
-    /// <paramref name="rootPath"/>.
+    /// <paramref name="root"/>.
     /// </summary>
     /// <param name="bodyPath">The path to the diagram body file.</param>
     /// <param name="registrationPath">
@@ -77,6 +77,6 @@ public interface IDiagramSessionFactory
     /// that knowledge in the module where it belongs (c4-diagrams Requirement 2.4).
     /// </param>
     /// <param name="watchId">The connection that opened this session.</param>
-    /// <param name="rootPath">The root path of the project.</param>
-    IDiagramSession Open(ShortGuid watchId, string rootPath, string bodyPath, string? registrationPath);
+    /// <param name="root">The root of the project.</param>
+    IDiagramSession Open(ShortGuid watchId, ProjectRoot root, string bodyPath, string? registrationPath);
 }

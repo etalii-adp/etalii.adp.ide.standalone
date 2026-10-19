@@ -27,7 +27,7 @@ public static class ServiceCollectionAddSankeyExtension
             opening.BodyPath,
             provider.GetRequiredService<ISankeyDocumentStore>(),
             provider.GetRequiredService<SankeyElementMapper>(),
-            provider.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(opening.RootPath))));
+            provider.GetRequiredService<IHistoryStackStore>().Get(opening.Root)));
         services.AddDiagramDocumentReloader<ISankeyDocumentStore>(Diagram.Sankey.Origin);
         services.AddSingleton<IContextSourceResolver, SankeyContextSourceResolver>();
 

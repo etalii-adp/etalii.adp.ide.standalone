@@ -39,7 +39,7 @@ public sealed class ServiceCollectionAddAgentActivityDiagramTests
         var factory = new DiagramSessionFactories(provider.GetServices<IDiagramSessionFactory>()).Find(Diagram.AgentActivity.Origin)!;
 
         // Act.
-        await using var session = factory.Open(ShortGuid.NewShortGuid(), "root", AadDocumentStoreTests.OneDay, null);
+        await using var session = factory.Open(ShortGuid.NewShortGuid(), ProjectRoot.From("root"), AadDocumentStoreTests.OneDay, null);
 
         // Assert.
         Assert.IsType<AadSession>(session);

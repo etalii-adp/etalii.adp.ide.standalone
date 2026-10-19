@@ -70,7 +70,7 @@ public class NoWriterSweepTests : IDisposable
         var target = ContextTarget.ForElement(body, "var:x", ProjectRoot.From(_root), ShortGuid.NewShortGuid());
 
         // Act: everything the module can be asked to do, in one pass.
-        await using (var session = factory.Open(ShortGuid.NewShortGuid(), _root, body, registration))
+        await using (var session = factory.Open(ShortGuid.NewShortGuid(), ProjectRoot.From(_root), body, registration))
         {
             // 1. A full render.
             var baseline = Assert.Single(await session.BaselineAsync(TestContext.Current.CancellationToken));
@@ -135,7 +135,7 @@ public class NoWriterSweepTests : IDisposable
             .Single(candidate => candidate.Origin == ServiceCollectionAddSparqlExtension.SparqlOrigin);
 
         // Act.
-        await using var session = factory.Open(ShortGuid.NewShortGuid(), _root, body, registration);
+        await using var session = factory.Open(ShortGuid.NewShortGuid(), ProjectRoot.From(_root), body, registration);
         await session.BaselineAsync(TestContext.Current.CancellationToken);
         await session.MoveElementToAsync("var:name", 120, 80, CancellationToken.None);
 
