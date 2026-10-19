@@ -1,5 +1,6 @@
 ﻿using System.Threading.Channels;
 using EtAlii.Adp.Context.Wire;
+using EtAlii.Adp.Documents.Wire;
 
 namespace EtAlii.Adp.Context;
 
@@ -19,4 +20,10 @@ internal sealed class ContextSelectionStoreEntry
 
     /// <summary>The project this connection belongs to; a project-actions push reaches only matching entries.</summary>
     public ProjectRoot Root { get; set; }
+
+    /// <summary>
+    /// The problems this connection was last sent, on its baseline or by a push. A push of the same
+    /// set again is not sent: the connection already has it.
+    /// </summary>
+    public ProjectProblems? LastProblems { get; set; }
 }

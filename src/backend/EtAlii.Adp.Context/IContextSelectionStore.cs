@@ -56,7 +56,9 @@ public interface IContextSelectionStore
     /// <summary>
     /// Writes one problems message to every connection in <paramref name="root"/>'s
     /// project, and to none in another - the reason two viewers of one project cannot
-    /// disagree about what is wrong (errors-and-warnings-panel Requirements 1.1, 6.4).
+    /// disagree about what is wrong (errors-and-warnings-panel Requirements 1.1, 6.4). A
+    /// connection that was last sent the same set, on its baseline or by a push, is not sent it
+    /// again.
     /// </summary>
     void PushProblems(ProjectRoot root, ProjectProblems problems);
 
