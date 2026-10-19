@@ -7386,17 +7386,17 @@
         },
         {
           "do": "commit databricks.add-library:notebook on pipeline = \"parity/notebook\"",
-          "answer": "refused: This list is written on one line; write it as one item per line in the text editor to edit it here.",
+          "answer": "refused: This list is written on one line, which this diagram cannot change yet; edit it in the text editor.",
           "unchanged": true
         },
         {
           "do": "commit databricks.add-library:file on pipeline = \"parity/file.py\"",
-          "answer": "refused: This list is written on one line; write it as one item per line in the text editor to edit it here.",
+          "answer": "refused: This list is written on one line, which this diagram cannot change yet; edit it in the text editor.",
           "unchanged": true
         },
         {
           "do": "commit databricks.add-library:glob on pipeline = \"parity/**\"",
-          "answer": "refused: This list is written on one line; write it as one item per line in the text editor to edit it here.",
+          "answer": "refused: This list is written on one line, which this diagram cannot change yet; edit it in the text editor.",
           "unchanged": true
         },
         {
@@ -7406,7 +7406,7 @@
         },
         {
           "do": "commit databricks.add-library:notebook on pipeline = \"*star\"",
-          "answer": "refused: This list is written on one line; write it as one item per line in the text editor to edit it here.",
+          "answer": "refused: This list is written on one line, which this diagram cannot change yet; edit it in the text editor.",
           "unchanged": true
         },
         {
@@ -7662,17 +7662,17 @@
         },
         {
           "do": "execute databricks.add-task:notebook on new:120,80",
-          "answer": "refused: This list is written on one line; write it as one item per line in the text editor to edit it here.",
+          "answer": "refused: This list is written on one line, which this diagram cannot change yet; edit it in the text editor.",
           "unchanged": true
         },
         {
           "do": "execute databricks.add-task:python on new:120,80",
-          "answer": "refused: This list is written on one line; write it as one item per line in the text editor to edit it here.",
+          "answer": "refused: This list is written on one line, which this diagram cannot change yet; edit it in the text editor.",
           "unchanged": true
         },
         {
           "do": "execute databricks.add-task:condition on new:120,80",
-          "answer": "refused: This list is written on one line; write it as one item per line in the text editor to edit it here.",
+          "answer": "refused: This list is written on one line, which this diagram cannot change yet; edit it in the text editor.",
           "unchanged": true
         },
         {
@@ -7692,27 +7692,27 @@
         },
         {
           "do": "commit databricks.add-task:notebook on  = \"parity_task\"",
-          "answer": "refused: This list is written on one line; write it as one item per line in the text editor to edit it here.",
+          "answer": "refused: This list is written on one line, which this diagram cannot change yet; edit it in the text editor.",
           "unchanged": true
         },
         {
           "do": "insert a wheel task",
-          "answer": "refused: This list is written on one line; write it as one item per line in the text editor to edit it here.",
+          "answer": "refused: This list is written on one line, which this diagram cannot change yet; edit it in the text editor.",
           "unchanged": true
         },
         {
           "do": "insert a sql task",
-          "answer": "refused: This list is written on one line; write it as one item per line in the text editor to edit it here.",
+          "answer": "refused: This list is written on one line, which this diagram cannot change yet; edit it in the text editor.",
           "unchanged": true
         },
         {
           "do": "insert a pipeline task",
-          "answer": "refused: This list is written on one line; write it as one item per line in the text editor to edit it here.",
+          "answer": "refused: This list is written on one line, which this diagram cannot change yet; edit it in the text editor.",
           "unchanged": true
         },
         {
           "do": "insert a run-job task",
-          "answer": "refused: This list is written on one line; write it as one item per line in the text editor to edit it here.",
+          "answer": "refused: This list is written on one line, which this diagram cannot change yet; edit it in the text editor.",
           "unchanged": true
         },
         {
@@ -7866,17 +7866,17 @@
         },
         {
           "do": "commit databricks.add-library:notebook on pipeline = \"parity/notebook\"",
-          "answer": "refused: This list is written on one line; write it as one item per line in the text editor to edit it here.",
+          "answer": "refused: This list is written on one line, which this diagram cannot change yet; edit it in the text editor.",
           "unchanged": true
         },
         {
           "do": "commit databricks.add-library:file on pipeline = \"parity/file.py\"",
-          "answer": "refused: This list is written on one line; write it as one item per line in the text editor to edit it here.",
+          "answer": "refused: This list is written on one line, which this diagram cannot change yet; edit it in the text editor.",
           "unchanged": true
         },
         {
           "do": "commit databricks.add-library:glob on pipeline = \"parity/**\"",
-          "answer": "refused: This list is written on one line; write it as one item per line in the text editor to edit it here.",
+          "answer": "refused: This list is written on one line, which this diagram cannot change yet; edit it in the text editor.",
           "unchanged": true
         },
         {
@@ -7886,7 +7886,7 @@
         },
         {
           "do": "commit databricks.add-library:notebook on pipeline = \"*star\"",
-          "answer": "refused: This list is written on one line; write it as one item per line in the text editor to edit it here.",
+          "answer": "refused: This list is written on one line, which this diagram cannot change yet; edit it in the text editor.",
           "unchanged": true
         },
         {
@@ -7901,12 +7901,12 @@
         },
         {
           "do": "execute databricks.remove-library on library:transformations/one",
-          "answer": "refused: This list is written on one line; write it as one item per line in the text editor to edit it here.",
+          "answer": "refused: This list is written on one line, which this diagram cannot change yet; edit it in the text editor.",
           "unchanged": true
         },
         {
           "do": "execute databricks.remove-library on library:transformations/two.py",
-          "answer": "refused: This list is written on one line; write it as one item per line in the text editor to edit it here.",
+          "answer": "refused: This list is written on one line, which this diagram cannot change yet; edit it in the text editor.",
           "unchanged": true
         },
         {
@@ -8342,7 +8342,7 @@
         },
         {
           "do": "execute databricks.disconnect:a on task:b",
-          "answer": "refused: This list is written on one line; write it as one item per line in the text editor to edit it here.",
+          "answer": "refused: This list is written on one line, which this diagram cannot change yet; edit it in the text editor.",
           "unchanged": true
         },
         {
@@ -8352,7 +8352,7 @@
         },
         {
           "do": "execute databricks.remove-edge on edge:a->b",
-          "answer": "refused: This list is written on one line; write it as one item per line in the text editor to edit it here.",
+          "answer": "refused: This list is written on one line, which this diagram cannot change yet; edit it in the text editor.",
           "unchanged": true
         },
         {
@@ -8362,7 +8362,7 @@
         },
         {
           "do": "execute databricks.connect on rel:task:c->task:b",
-          "answer": "refused: This list is written on one line; write it as one item per line in the text editor to edit it here.",
+          "answer": "refused: This list is written on one line, which this diagram cannot change yet; edit it in the text editor.",
           "unchanged": true
         },
         {
@@ -16460,17 +16460,17 @@
         },
         {
           "do": "commit databricks.add-library:notebook on pipeline = \"parity/notebook\"",
-          "answer": "refused: This list is written on one line; write it as one item per line in the text editor to edit it here.",
+          "answer": "refused: This list is written on one line, which this diagram cannot change yet; edit it in the text editor.",
           "unchanged": true
         },
         {
           "do": "commit databricks.add-library:file on pipeline = \"parity/file.py\"",
-          "answer": "refused: This list is written on one line; write it as one item per line in the text editor to edit it here.",
+          "answer": "refused: This list is written on one line, which this diagram cannot change yet; edit it in the text editor.",
           "unchanged": true
         },
         {
           "do": "commit databricks.add-library:glob on pipeline = \"parity/**\"",
-          "answer": "refused: This list is written on one line; write it as one item per line in the text editor to edit it here.",
+          "answer": "refused: This list is written on one line, which this diagram cannot change yet; edit it in the text editor.",
           "unchanged": true
         },
         {
@@ -16480,7 +16480,7 @@
         },
         {
           "do": "commit databricks.add-library:notebook on pipeline = \"*star\"",
-          "answer": "refused: This list is written on one line; write it as one item per line in the text editor to edit it here.",
+          "answer": "refused: This list is written on one line, which this diagram cannot change yet; edit it in the text editor.",
           "unchanged": true
         },
         {
@@ -16495,12 +16495,12 @@
         },
         {
           "do": "execute databricks.remove-library on library:transformations/a",
-          "answer": "refused: This list is written on one line; write it as one item per line in the text editor to edit it here.",
+          "answer": "refused: This list is written on one line, which this diagram cannot change yet; edit it in the text editor.",
           "unchanged": true
         },
         {
           "do": "execute databricks.remove-library on library:transformations/b.py",
-          "answer": "refused: This list is written on one line; write it as one item per line in the text editor to edit it here.",
+          "answer": "refused: This list is written on one line, which this diagram cannot change yet; edit it in the text editor.",
           "unchanged": true
         },
         {

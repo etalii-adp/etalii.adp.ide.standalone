@@ -21,7 +21,7 @@ internal static partial class DatabricksSplices
     /// splice of whole lines cannot add to it or take from it without breaking the file, so the edit
     /// is refused before anything is written.
     /// </summary>
-    public const string OneLineListRefusal = "This list is written on one line; write it as one item per line in the text editor to edit it here.";
+    public const string OneLineListRefusal = "This list is written on one line, which this diagram cannot change yet; edit it in the text editor.";
 
     /// <summary>
     /// Whether the document is written in JSON's flow syntax - which the pipeline settings file
