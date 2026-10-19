@@ -95,12 +95,21 @@ public sealed partial class ContextService
             return new ExecuteActionResponse { Accepted = true };
         }
 
+        return Prompt(request, root.Value, target, owner, execution);
+    }
+
+    /// <summary>
+    /// Puts the question an action asks on the connection's watch stream, as an interaction its
+    /// answer is submitted to; refused when nothing listens there any more.
+    /// </summary>
+    private ExecuteActionResponse Prompt(ExecuteActionRequest request, ProjectRoot root, ContextTarget target, ContextActionOwner owner, ContextExecutionResult execution)
+    {
         var interactionId = (ShortGuid)request.InteractionId;
 
         // The root is captured with the interaction because SubmitInteraction carries only an
         // interaction id: without it, a commit that creates something could not report where it
         // landed in the project-relative terms the contract allows.
-        var rootPath = root.Value.FullPath;
+        var rootPath = root.FullPath;
 
         // WHAT THE ANSWER WILL BE APPLIED TO, which is not always what the question was asked
         // about. An input request may name an element whose label it edits and an action to
@@ -121,23 +130,7 @@ public sealed partial class ContextService
             : target with { ElementId = input.InlineLabelElementId };
         var commitActionId = string.IsNullOrEmpty(input?.CommitActionId) ? owner.Action.Id : input.CommitActionId;
 
-        // A file dialog's tree is built once, here: what the provider's predicate accepts now is
-        // both what the dialog shows and the only thing its submission may be.
-        var fileDialog = execution is ContextExecutionRequiresFile requiresFile ? ContextWire.ToProto(requiresFile.Request, rootPath) : null;
-
-        _contextInteractionStore.Begin(new ContextInteraction
-        {
-            Id = interactionId,
-            WatchId = request.WatchId,
-            Target = commitTarget,
-            ActionId = commitActionId,
-            Provider = owner.Provider,
-            RootPath = rootPath,
-            Offered = fileDialog?.Pinned.Concat(fileDialog.Files).SelectMany(ContextWire.Selectable).ToHashSet(StringComparer.Ordinal),
-        });
-
-        var prompt = ContextWire.PromptOf(interactionId, execution, fileDialog);
-
+        var prompt = BeginInteraction(interactionId, request.WatchId, commitTarget, commitActionId, owner.Provider, rootPath, execution);
         if (!_contextInteractionStore.TryPush(request.WatchId, prompt))
         {
             _contextInteractionStore.Complete(interactionId);
@@ -246,19 +239,8 @@ public sealed partial class ContextService
             // target and provider, answered under the action id the provider gave it. It rides
             // this response and not the watch stream, so the client can put it where the answered
             // dialog was without the two crossing.
-            var nextId = ShortGuid.NewShortGuid();
-            var nextFile = next is ContextExecutionRequiresFile nextRequiresFile ? ContextWire.ToProto(nextRequiresFile.Request, interaction.RootPath) : null;
-            _contextInteractionStore.Begin(new ContextInteraction
-            {
-                Id = nextId,
-                WatchId = interaction.WatchId,
-                Target = interaction.Target,
-                ActionId = commit.NextActionId.Length > 0 ? commit.NextActionId : interaction.ActionId,
-                Provider = interaction.Provider,
-                RootPath = interaction.RootPath,
-                Offered = nextFile?.Pinned.Concat(nextFile.Files).SelectMany(ContextWire.Selectable).ToHashSet(StringComparer.Ordinal),
-            });
-            response.NextPrompt = ContextWire.PromptOf(nextId, next, nextFile);
+            var nextActionId = commit.NextActionId.Length > 0 ? commit.NextActionId : interaction.ActionId;
+            response.NextPrompt = BeginInteraction(ShortGuid.NewShortGuid(), interaction.WatchId, interaction.Target, nextActionId, interaction.Provider, interaction.RootPath, next);
         }
 
         if (commit.CreatedFullPath.Length > 0)
@@ -274,6 +256,34 @@ public sealed partial class ContextService
         _contextInteractionStore.Complete(request.InteractionId);
         _logger.Debug("Interaction {InteractionId} was cancelled", request.InteractionId);
         return Task.FromResult(new CancelInteractionResponse());
+    }
+
+    /// <summary>
+    /// Begins the interaction a prompt asks, and returns the prompt. A file dialog's tree is built
+    /// once, here: what the provider's predicate accepts now is both what the dialog shows and the
+    /// only thing its submission may be.
+    /// </summary>
+    private ContextPrompt BeginInteraction(
+        ShortGuid interactionId,
+        Documents.Wire.ShortGuid watchId,
+        ContextTarget target,
+        string actionId,
+        IContextActionProvider provider,
+        string rootPath,
+        ContextExecutionResult execution)
+    {
+        var fileDialog = execution is ContextExecutionRequiresFile requiresFile ? ContextWire.ToProto(requiresFile.Request, rootPath) : null;
+        _contextInteractionStore.Begin(new ContextInteraction
+        {
+            Id = interactionId,
+            WatchId = watchId,
+            Target = target,
+            ActionId = actionId,
+            Provider = provider,
+            RootPath = rootPath,
+            Offered = fileDialog?.Pinned.Concat(fileDialog.Files).SelectMany(ContextWire.Selectable).ToHashSet(StringComparer.Ordinal),
+        });
+        return ContextWire.PromptOf(interactionId, execution, fileDialog);
     }
 
     private static ExecuteActionResponse Rejected(string error) => new() { Accepted = false, Error = error };
