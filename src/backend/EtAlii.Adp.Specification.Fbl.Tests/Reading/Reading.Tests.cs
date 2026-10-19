@@ -1,5 +1,6 @@
 using System.Text;
 using EtAlii.Adp.Specification.Fbl.Documents;
+using EtAlii.Adp.Specification.Fbl.Expressions;
 using EtAlii.Adp.Specification.Fbl.History;
 using EtAlii.Adp.Specification.Fbl.Planning;
 using EtAlii.Adp.Specification.Fbl.Registration;
@@ -40,6 +41,21 @@ public class ReadingTests
 
         // Assert.
         Assert.Equal(["a:Special", "b:Plain"], model.Elements.Select(e => $"{e.Id}:{e.Type}"));
+    }
+
+    [Fact]
+    public void AReadingEvaluatesTheProgramItsRuleKeptAsTheBindingLoaded()
+    {
+        // Arrange: the rule's kept program for "'loaded'" is replaced, which only a reading that uses the kept program sees.
+        var binding = Inline("""[{ "name": "item", "type": "Item", "at": "/items/*", "id": { "from": { "key": "id" } }, "attributes": { "label": { "value": "'loaded'" } } }]""");
+        var rule = Assert.Single(binding.Elements);
+        rule.Keep(CelContext.Scalars, "'loaded'", FblCel.Compile("'kept'", CelContext.Scalars));
+
+        // Act.
+        var model = Read("items:\n  - id: a\n", binding);
+
+        // Assert: not compiled again for the reading.
+        Assert.Equal("kept", Assert.Single(model.Elements).Attributes["label"]);
     }
 
     [Fact]

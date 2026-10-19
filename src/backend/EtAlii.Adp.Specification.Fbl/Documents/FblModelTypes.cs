@@ -1,6 +1,8 @@
-namespace EtAlii.Adp.Specification.Fbl.Documents;
-
 using System.Text.Json;
+using EtAlii.Adp.Specification.Cel;
+using EtAlii.Adp.Specification.Fbl.Expressions;
+
+namespace EtAlii.Adp.Specification.Fbl.Documents;
 
 /// <summary>A loaded FBL document (FBL §2.1): its version and its bindings by name.</summary>
 public sealed class FblDocument
@@ -170,6 +172,18 @@ public sealed partial class Rule
 
     public string? ReadOnly { get; init; }
 
+    /// <summary>
+    /// The programs of this rule's expressions, compiled once as the binding loads (FBL §14.1 step 8),
+    /// by the context they were compiled for and their text. A reading uses them in place of compiling
+    /// the expression again.
+    /// </summary>
+    private readonly Dictionary<(CelContext Context, string Expression), CelProgram> _programs = [];
+
+    internal void Keep(CelContext context, string expression, CelProgram program) => _programs[(context, expression)] = program;
+
+    /// <summary>The program <paramref name="expression"/> was compiled to for <paramref name="context"/> as the binding loaded; null when it was not.</summary>
+    internal CelProgram? Program(CelContext context, string expression) => _programs.GetValueOrDefault((context, expression));
+
     public AttributeBinding? Attribute(string name) => Attributes.FirstOrDefault(a => a.Key == name).Value;
 
     /// <summary>A placeholder of an <c>emit</c> text: an attribute's name, or <c>id</c>, in braces.</summary>
@@ -196,6 +210,27 @@ public sealed partial class Rule
             if (wire is not null && !order.Contains(wire)) order.Add(wire);
         }
         return order;
+    }
+
+    /// <summary>
+    /// The order keys are written in (FBL §6.1): the <see cref="WireOrder"/>, then the keys of the rule's
+    /// bindings in binding order, the id's, the source's, the target's and the attributes'. With
+    /// <paramref name="child"/>, the keys of the bindings under that <c>child</c> mapping only.
+    /// </summary>
+    public List<string> KeyOrder(string? child)
+    {
+        var order = new List<string>();
+        if (child is null) order.AddRange(WireOrder());
+        Add(Id?.From);
+        Add(Source);
+        Add(Target);
+        foreach ((_, AttributeBinding binding) in Attributes) Add(binding);
+        return order;
+
+        void Add(Slot? slot)
+        {
+            if (slot?.Key is { } key && slot.Child == child && !order.Contains(key)) order.Add(key);
+        }
     }
 }
 

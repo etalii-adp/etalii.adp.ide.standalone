@@ -239,7 +239,7 @@ internal static class EditPlanner
             if (rule.IsRelation && name is "source" or "target") continue;
             values[name] = value;
         }
-        if (rule.Insert!.When is { } when && !reading.InsertAllowed(when, values))
+        if (rule.Insert!.When is { } when && !reading.InsertAllowed(rule, when, values))
         {
             Planning.Plan.Refuse($"This {add.Type} cannot be added to the file.");
         }
