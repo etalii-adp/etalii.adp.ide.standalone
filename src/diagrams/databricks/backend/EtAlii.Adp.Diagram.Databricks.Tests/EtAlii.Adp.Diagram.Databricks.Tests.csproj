@@ -25,6 +25,8 @@
       compares against the file it copied, so the copy must not be rewritten under a running test.
     -->
     <Content Include="Fixtures\**" CopyToOutputDirectory="PreserveNewest" />
+    <!-- A copy of the job definition and its provenance, which the comparison of the cycle rule loads until the module bundles its definitions. -->
+    <Content Include="Definitions\**" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>
