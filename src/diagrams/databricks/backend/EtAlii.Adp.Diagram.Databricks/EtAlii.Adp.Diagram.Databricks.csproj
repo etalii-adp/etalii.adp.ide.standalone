@@ -32,6 +32,16 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!--
+      The three DISL definitions bundled from etalii-adp/etalii.adp (src/diagrams/tools/bundle-disl.sh), one per
+      tool type, each with its <definition>.provenance.json, the resource BundledDefinition.Load looks for beside it.
+      Nothing derives from them yet.
+    -->
+    <EmbeddedResource Include="..\..\definition\*.dis" LogicalName="%(Filename)%(Extension)" />
+    <EmbeddedResource Include="..\..\definition\*.provenance.json" LogicalName="%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="EtAlii.Adp.Diagram.Databricks.Tests" />
   </ItemGroup>
 

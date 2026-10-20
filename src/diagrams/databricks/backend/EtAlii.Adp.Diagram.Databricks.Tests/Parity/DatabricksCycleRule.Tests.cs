@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-using System.Text.Json;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Specification.Disl;
 using Xunit;
@@ -15,9 +13,9 @@ namespace EtAlii.Adp.Diagram.Databricks.Tests.Parity;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>The definition is a copy</b> of <c>definitions/diagrams/databricks-job.dis</c> in etalii.adp, with its provenance
-/// beside it, until the module bundles its definitions (task 5); its recorded sha256 is checked, so the copy cannot
-/// drift silently.
+/// <b>The definition is the one the module embeds</b>, <c>definition/databricks-job.dis</c> as
+/// <c>src/diagrams/tools/bundle-disl.sh</c> bundled it, loaded by <see cref="BundledDefinition.Load(System.Reflection.Assembly, string)"/>,
+/// which refuses bytes that do not hash to the sha256 its provenance records.
 /// </para>
 /// <para>
 /// <b>The model is built from the module's reading</b>, one task node per task with a key and one dependency per
@@ -29,22 +27,11 @@ public class DatabricksCycleRuleTests
 {
     private const string Cycle = "databricks.cycle";
 
-    private static string Definitions { get; } = IoPath.Combine(AppContext.BaseDirectory, "Definitions");
-
     private static string Fixtures { get; } = IoPath.Combine(AppContext.BaseDirectory, "Fixtures");
 
     private static string Lakehouse { get; } = RepositoryPaths.Under("src", "diagrams", "databricks", "examples", "lakehouse");
 
-    private static async Task<DislSpecification> JobDefinition()
-    {
-        var bytes = await File.ReadAllBytesAsync(IoPath.Combine(Definitions, "databricks-job.dis"), TestContext.Current.CancellationToken);
-        await using var provenance = File.OpenRead(IoPath.Combine(Definitions, "databricks-job.provenance.json"));
-        using var recorded = await JsonDocument.ParseAsync(provenance, cancellationToken: TestContext.Current.CancellationToken);
-        Assert.Equal(recorded.RootElement.GetProperty("sha256").GetString(), Convert.ToHexStringLower(SHA256.HashData(bytes)));
-
-        var result = DislLoader.Load(bytes);
-        return result.Specification ?? throw new InvalidOperationException("The job definition does not load: " + string.Join("; ", result.Diagnostics));
-    }
+    private static DislSpecification JobDefinition() => BundledDefinition.Load(typeof(Diagram).Assembly, "databricks-job.dis").Specification;
 
     /// <summary>Every file of the corpus, by a name a failure can show.</summary>
     public static TheoryData<string> Corpus()
@@ -108,7 +95,7 @@ public class DatabricksCycleRuleTests
     public async Task TheDefinitionsCycleRule_ReportsTheTasksTheModuleReports(string file)
     {
         // Arrange.
-        var specification = await JobDefinition();
+        var specification = JobDefinition();
 
         // Act.
         var jobs = await Jobs(file);
@@ -128,7 +115,7 @@ public class DatabricksCycleRuleTests
     public async Task TheComparison_HasSomethingToCompare(string file, string expected)
     {
         // Arrange.
-        var specification = await JobDefinition();
+        var specification = JobDefinition();
 
         // Act.
         var job = Assert.Single(await Jobs(file));
