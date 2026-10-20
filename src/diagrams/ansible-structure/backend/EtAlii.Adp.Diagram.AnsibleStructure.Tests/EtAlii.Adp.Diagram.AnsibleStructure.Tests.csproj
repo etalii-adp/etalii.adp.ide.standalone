@@ -16,6 +16,8 @@
     <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Context\EtAlii.Adp.Context.csproj" />
     <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.History\EtAlii.Adp.History.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Diagram.AnsibleStructure\EtAlii.Adp.Diagram.AnsibleStructure.csproj" />
+    <!-- The module's flows over the real host (code-structure T303). -->
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.TestSupport.Host\EtAlii.Adp.TestSupport.Host.csproj" />
   </ItemGroup>
 
   <ItemGroup>

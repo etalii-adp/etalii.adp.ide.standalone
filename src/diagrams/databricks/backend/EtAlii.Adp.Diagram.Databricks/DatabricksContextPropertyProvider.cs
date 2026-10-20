@@ -15,6 +15,11 @@ namespace EtAlii.Adp.Diagram.Databricks;
 /// last simulated run, which only ever changes client-side because simulations never reach the
 /// backend (Requirement 8). Every write goes through the standard SetProperty path and the
 /// project's history - never written by the panel (Requirement 10.5).
+/// <para>
+/// <b>The rows are the definitions'</b> (databricks-disl-fbl Requirement 3.1): <see cref="DatabricksDefinition.Rows"/>
+/// derives them, their read-only reasons and the two rows every selection wears from the forms of the three bundled
+/// definitions, with the ids of their <c>x-databricks</c> blocks. What a set does stays here.
+/// </para>
 /// </remarks>
 public sealed class DatabricksContextPropertyProvider : DiagramPropertyProvider<LineDocument, DatabricksModel>
 {
@@ -23,9 +28,6 @@ public sealed class DatabricksContextPropertyProvider : DiagramPropertyProvider<
 
     /// <summary>A task's type, read-only: the type is which *_task mapping the file carries.</summary>
     public const string TaskTypeProperty = "databricks.task-type";
-
-    /// <summary>A task's principal source, read-only in the grid.</summary>
-    private const string TaskSourceProperty = "databricks.task-source";
 
     /// <summary>A task's run_if, editable; empty means the default ALL_SUCCESS.</summary>
     public const string RunIfProperty = "databricks.run-if";
@@ -45,14 +47,6 @@ public sealed class DatabricksContextPropertyProvider : DiagramPropertyProvider<
     /// <summary>The last simulated run, read-only; the client narrates it (Requirement 8).</summary>
     public const string LastSimulatedRunProperty = "databricks.last-simulated-run";
 
-    private const string IdentityGroup = "Identity";
-    private const string ExecutionGroup = "Execution";
-    private const string WorkspaceGroup = "Workspace";
-    private const string RenameViaMenu = "Rename through the context menu, so every depends_on reference follows the key.";
-    private const string TypeIsTheFile = "The type is which *_task mapping the file carries; change it in the file.";
-    private const string WorkspacePlaceholder = "Not connected — a placeholder for the real workspace connection.";
-    private const string SimulationIsClientSide = "Simulated runs play on the canvas and never touch the file.";
-
     public DatabricksContextPropertyProvider(IHistoryStackStore historyStacks, IDatabricksDocumentStore documents)
         : base(historyStacks, documents)
     {
@@ -62,60 +56,12 @@ public sealed class DatabricksContextPropertyProvider : DiagramPropertyProvider<
     protected override bool IsBody(string path) => DatabricksSelection.CouldBeFamilyFile(path);
 
     /// <inheritdoc />
-    /// <remarks>Of the resource the target's registration names (finding B3).</remarks>
-    protected override IReadOnlyList<ContextPropertyDefinition> Describe(ContextTarget target, DocumentEntry<LineDocument, DatabricksModel> entry)
-    {
-        ArgumentNullException.ThrowIfNull(target);
-        ArgumentNullException.ThrowIfNull(entry);
-
-        var model = DatabricksSelection.ReadingOf(entry.Model, target);
-        var elementId = target.ElementId;
-        if (DatabricksSelection.TaskOf(model, elementId) is { } selected)
-        {
-            return
-            [
-                new ContextPropertyDefinition(TaskKeyProperty, "Key", selected.Task.Key, ReadOnlyReason: RenameViaMenu, Group: IdentityGroup),
-                new ContextPropertyDefinition(TaskTypeProperty, "Type", selected.Task.Type, ReadOnlyReason: TypeIsTheFile, Group: IdentityGroup),
-                new ContextPropertyDefinition(TaskSourceProperty, "Source", selected.Task.Source, ReadOnlyReason: TypeIsTheFile, Group: IdentityGroup),
-                new ContextPropertyDefinition(RunIfProperty, "Run if", selected.Task.RunIf, Group: ExecutionGroup),
-                new ContextPropertyDefinition(ClusterProperty, "Cluster", selected.Task.ClusterKey, Group: ExecutionGroup),
-                .. Placeholders(),
-            ];
-        }
-
-        if (DatabricksSelection.IsBundle(elementId))
-        {
-            return
-            [
-                new ContextPropertyDefinition(BundleNameProperty, "Name", model.Bundle.Name, Group: IdentityGroup),
-                .. Placeholders(),
-            ];
-        }
-
-        if (DatabricksSelection.IsPipelineNode(elementId) && model.Pipelines.FirstOrDefault() is { } pipeline)
-        {
-            return
-            [
-                new ContextPropertyDefinition($"{PipelineScalarPrefix}name", "Name", pipeline.Name, Group: IdentityGroup),
-                new ContextPropertyDefinition($"{PipelineScalarPrefix}catalog", "Catalog", pipeline.Catalog, Group: IdentityGroup),
-                new ContextPropertyDefinition($"{PipelineScalarPrefix}schema", "Schema", pipeline.Schema, Group: IdentityGroup),
-                new ContextPropertyDefinition($"{PipelineScalarPrefix}channel", "Channel", pipeline.Channel, Group: ExecutionGroup),
-                .. Placeholders(),
-            ];
-        }
-
-        if (DatabricksSelection.TargetOf(model, elementId) is { } frame)
-        {
-            return
-            [
-                new ContextPropertyDefinition(TaskKeyProperty, "Target", frame.Name, ReadOnlyReason: "The target's key is the file's structure.", Group: IdentityGroup),
-                new ContextPropertyDefinition(TaskTypeProperty, "Mode", frame.Mode, ReadOnlyReason: "Change the mode in the file.", Group: IdentityGroup),
-                .. Placeholders(),
-            ];
-        }
-
-        return [];
-    }
+    /// <remarks>
+    /// Derived from the form of the reading that holds the target (<see cref="DatabricksDefinition.Rows"/>), with its
+    /// read-only reasons, of the resource the target's registration names (finding B3).
+    /// </remarks>
+    protected override IReadOnlyList<ContextPropertyDefinition> Describe(ContextTarget target, DocumentEntry<LineDocument, DatabricksModel> entry) =>
+        DatabricksDefinition.Rows(target, entry);
 
     /// <inheritdoc />
     /// <remarks>Through the project's history and out through the delta stream (Requirement 10.5).</remarks>
@@ -155,11 +101,4 @@ public sealed class DatabricksContextPropertyProvider : DiagramPropertyProvider<
             ? DiagramPropertyChange.Refused($"'{propertyId}' cannot be edited on this selection.")
             : DiagramPropertyChange.By(command);
     }
-
-    /// <summary>The two rows every selection wears; see the class remarks.</summary>
-    private static IEnumerable<ContextPropertyDefinition> Placeholders() =>
-    [
-        new(WorkspaceProperty, "Workspace connection", "Not connected", ReadOnlyReason: WorkspacePlaceholder, Group: WorkspaceGroup),
-        new(LastSimulatedRunProperty, "Last simulated run", "", ReadOnlyReason: SimulationIsClientSide, Group: WorkspaceGroup),
-    ];
 }

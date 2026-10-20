@@ -5,64 +5,15 @@ namespace EtAlii.Adp.Diagram.Databricks;
 /// drop commits (databricks-diagrams Requirement 9). There is no second implementation for a
 /// drop to disagree with - the drop and the menu run the same command, via placement ids.
 /// </summary>
+/// <remarks>
+/// Derived from the toolbox of the type's bundled DISL definition (<see cref="DatabricksDefinition.Toolbox"/>), with the
+/// ids of its <c>x-databricks</c> block (databricks-disl-fbl Requirement 3.1).
+/// </remarks>
 public sealed class DatabricksToolboxProvider(ToolOrigin origin) : IDiagramToolboxProvider
 {
     /// <inheritdoc />
     public ToolOrigin Origin { get; } = origin;
 
     /// <inheritdoc />
-    public IReadOnlyList<ToolboxItemDefinition> Items { get; } = origin.Type switch
-    {
-        "job" =>
-        [
-            new ToolboxItemDefinition(
-                "databricks.toolbox.notebook-task",
-                "Notebook task",
-                "mdi-notebook-outline",
-                "Runs a notebook. Drop on the canvas where it should sit.",
-                $"{DatabricksContextActionProvider.AddTaskActionPrefix}notebook"),
-            new ToolboxItemDefinition(
-                "databricks.toolbox.python-task",
-                "Python task",
-                "mdi-language-python",
-                "Runs a Python file. Drop on the canvas where it should sit.",
-                $"{DatabricksContextActionProvider.AddTaskActionPrefix}python"),
-            new ToolboxItemDefinition(
-                "databricks.toolbox.condition-task",
-                "Condition task",
-                "mdi-call-split",
-                "Branches on a condition; downstream edges follow its true or false outcome.",
-                $"{DatabricksContextActionProvider.AddTaskActionPrefix}condition"),
-        ],
-        "pipeline" =>
-        [
-            new ToolboxItemDefinition(
-                "databricks.toolbox.notebook-library",
-                "Notebook library",
-                "mdi-notebook-outline",
-                "A notebook the pipeline's transformations come from.",
-                $"{DatabricksContextActionProvider.AddLibraryActionPrefix}notebook"),
-            new ToolboxItemDefinition(
-                "databricks.toolbox.file-library",
-                "File library",
-                "mdi-file-code-outline",
-                "A source file the pipeline's transformations come from.",
-                $"{DatabricksContextActionProvider.AddLibraryActionPrefix}file"),
-        ],
-        _ =>
-        [
-            new ToolboxItemDefinition(
-                "databricks.toolbox.job-resource",
-                "Job",
-                "mdi-transit-connection-horizontal",
-                "A job resource skeleton, complete with a starter task.",
-                $"{DatabricksContextActionProvider.AddResourceActionPrefix}jobs"),
-            new ToolboxItemDefinition(
-                "databricks.toolbox.pipeline-resource",
-                "Pipeline",
-                "mdi-pipe",
-                "A pipeline resource skeleton, complete with a starter library.",
-                $"{DatabricksContextActionProvider.AddResourceActionPrefix}pipelines"),
-        ],
-    };
+    public IReadOnlyList<ToolboxItemDefinition> Items { get; } = DatabricksDefinition.Toolbox(origin);
 }

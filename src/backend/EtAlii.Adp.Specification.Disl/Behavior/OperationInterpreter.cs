@@ -385,7 +385,7 @@ public static class OperationInterpreter
         return null;
     }
 
-    private static Cel.CelMap Map(IReadOnlyDictionary<string, object?>? values)
+    internal static Cel.CelMap Map(IReadOnlyDictionary<string, object?>? values)
     {
         var map = new Cel.CelMap();
         foreach ((string key, object? value) in values ?? new Dictionary<string, object?>()) map[key] = value;
