@@ -41,6 +41,61 @@ public class TypedToolboxMenusFormsTests
     }
 
     [Fact]
+    public void EveryExpressionOfTheToolboxMenusAndForms_HoldsTheProgramTheLoaderCompiled()
+    {
+        var specification = Load("""
+            "toolbox": {
+              "groups": [ { "id": "g", "tools": [ { "id": "drop", "creates": "Thing", "label": { "cel": "'Drop'" }, "initial": { "name": { "cel": "tool" } },
+                "drop": { "targets": [ { "on": "canvas", "kind": "select", "args": { "at": "position.x" } } ], "elsewhere": "refuse",
+                  "refusal": [ { "message": "No.", "when": "dropTarget == null" } ] } } ] } ],
+              "contextMenus": [ { "for": "Thing", "when": "true", "tools": [ { "operation": "op", "forEach": "[1]", "visible": "item > 0", "args": { "n": "item" },
+                "label": { "cel": "'Pick'" }, "unavailable": [ { "message": "No.", "when": "false" } ], "enabled": "true" } ] } ]
+            },
+            "forms": { "f": { "for": "Thing", "items": [
+              { "attribute": "name", "visible": "true", "display": { "cel": "self.name" }, "options": "['a']", "optionLabel": "item", "initial": "'x'",
+                "validate": [ { "rule": "value != ''" } ], "parse": { "accepts": "value != ''", "write": [ { "set": { "name": "value" } } ] } } ] } },
+            "behavior": { "operations": { "op": { "label": { "cel": "'Op'" }, "actions": [] } } }
+            """);
+
+        var tool = Assert.IsType<DislPaletteItem.Entry>(Assert.Single(specification.Toolbox.Palette)).Tool;
+        var drop = tool.Drop!;
+        var menu = Assert.Single(specification.Toolbox.ContextMenus);
+        var entry = Assert.Single(menu.Tools);
+        var item = Assert.Single(specification.Forms.Named("f")!.Items!);
+        var parse = item.Parse!;
+        (string Pointer, Cel.CelProgram? Program)[] fields =
+        [
+            ("/toolbox/groups/0/tools/0/label/cel", Assert.IsType<DislMessage.Cel>(tool.Label).Expression.Program),
+            ("/toolbox/groups/0/tools/0/initial/name/cel", Assert.Single(tool.Initial).Expression!.Program),
+            ("/toolbox/groups/0/tools/0/drop/targets/0/args/at", Assert.Single(Assert.Single(drop.Targets).Arguments).Value.Program),
+            ("/toolbox/groups/0/tools/0/drop/refusal/0/when", Assert.IsType<DislReason.While>(Assert.Single(drop.Refusal!)).When!.Program),
+            ("/toolbox/contextMenus/0/when", menu.When!.Program),
+            ("/toolbox/contextMenus/0/tools/0/forEach", entry.ForEach!.Program),
+            ("/toolbox/contextMenus/0/tools/0/visible", entry.Visible!.Program),
+            ("/toolbox/contextMenus/0/tools/0/args/n", Assert.Single(entry.Arguments).Value.Program),
+            ("/toolbox/contextMenus/0/tools/0/label/cel", Assert.IsType<DislMessage.Cel>(entry.Label).Expression.Program),
+            ("/toolbox/contextMenus/0/tools/0/unavailable/0/when", Assert.IsType<DislReason.While>(Assert.Single(entry.Unavailable)).When!.Program),
+            ("/toolbox/contextMenus/0/tools/0/enabled", entry.Enabled!.Program),
+            ("/behavior/operations/op/label/cel", Assert.IsType<DislMessage.Cel>(specification.Operations.Find("op")!.Label).Expression.Program),
+            ("/forms/f/items/0/visible", item.Visible!.Program),
+            ("/forms/f/items/0/display/cel", item.Display!.Program),
+            ("/forms/f/items/0/options", item.Options!.Expression.Program),
+            ("/forms/f/items/0/optionLabel", item.OptionLabel!.Program),
+            ("/forms/f/items/0/initial", item.Initial!.Program),
+            ("/forms/f/items/0/validate/0/rule", Assert.Single(item.Validations).Rule!.Program),
+            ("/forms/f/items/0/parse/accepts", parse.Accepts!.Program),
+            ("/forms/f/items/0/parse/write/0/set/name", Assert.IsType<DislActionValue.Expression>(Assert.Single(Assert.IsType<DislAction.Set>(Assert.Single(parse.Write!.Actions)).Values).Value).Field.Program),
+        ];
+
+        foreach ((string pointer, Cel.CelProgram? program) in fields)
+        {
+            var compiled = specification.ExpressionAt(pointer)?.Program;
+            Assert.True(compiled is not null, $"The loader compiled nothing at {pointer}.");
+            Assert.True(ReferenceEquals(compiled, program), $"The record at {pointer} does not hold the program the loader compiled.");
+        }
+    }
+
+    [Fact]
     public void AToolboxThatIsNotAnObject_HasNoPalette_AndThrowsWhereItsMembersAreRead()
     {
         var specification = Load(""" "toolbox": 5 """);
