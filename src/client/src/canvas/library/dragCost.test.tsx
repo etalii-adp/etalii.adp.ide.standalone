@@ -6,6 +6,7 @@ import type { DiagramModel } from "./api/diagramModel";
 import { DiagramViewProvider } from "@client/shell/panels/DiagramViewContext";
 import { DiagramToolboxProvider } from "@client/shell/panels/DiagramToolboxContext";
 import { pointer } from "@client/canvas/library/testing/canvasHarness";
+import { perFrameCostRatio } from "@client/canvas/library/testing/frameCost";
 
 /**
  * The guard on drag-and-drop-centralization's Requirement 1: a gesture's per-frame cost is
@@ -161,7 +162,7 @@ describe("drag cost", () => {
 
   it("per-frame cost is flat across model sizes: the small/large ratio stays within tolerance", () => {
     // Both models measured in ONE run and compared as a ratio (Requirements 3.1, 3.2).
-    // Each frame is timed ALONE and the MEDIAN single frame taken, across three mounts.
+    // Each frame is timed ALONE and the MEDIAN single frame taken, across three mounts of each.
     // The estimator matters, and two wrong ones were measured before this one:
     // - the whole-window minimum (the first shipped version) inflates under parallel-gate
     //   contention, because the scheduler preempts inside every thirty-frame window - it
@@ -179,30 +180,38 @@ describe("drag cost", () => {
     // to on 2026-10-08 by Peter's ruling, after CI runners read the honest ratio at 4.2, 4.5
     // and 4.01. Re-run against the new tolerance that day, the sabotage read 24.32
     // (reposition) and 21.35 (pan) - still a failing guard over broken code.
-    const perFrame = (count: number, gesture: "reposition" | "pan"): number => {
-      const samples: number[] = [];
-      for (let repetition = 0; repetition < 3; repetition++) {
-        const counts = new Map<string, number>();
-        const { container, unmount } = mountCanvas(counts, count);
-        const target =
-          gesture === "reposition"
-            ? container.querySelector('[data-element-id="el-0"]')!
-            : container.querySelector("svg.library-canvas-surface")!;
-        fireEvent(target, pointer("pointerdown", { clientX: 10, clientY: 10 }));
-        for (let frame = 1; frame <= FRAMES; frame++) {
-          const started = performance.now();
-          fireEvent(target, pointer("pointermove", { clientX: 10 + frame * 3, clientY: 10 + frame * 2 }));
-          samples.push(performance.now() - started);
-        }
-        fireEvent(target, pointer("pointerup", { clientX: 200, clientY: 200 }));
-        unmount();
-      }
-      samples.sort((a, b) => a - b);
-      return samples[Math.floor(samples.length / 2)];
-    };
+    //
+    // The two sizes are mounted side by side and their frames alternate (perFrameCostRatio):
+    // timed one size after the other, a change in the runner's load between the two blocks went
+    // straight into the ratio, which read 8.92 in stability run 16 of 2026-10-20 with nothing
+    // wrong (T312). `testing/frameCost.test.ts` guards that measurement on a clock it drives.
+    // Measured side by side on 2026-10-20, the honest ratio read 1.8 to 2.6 for the reposition and
+    // 0.9 to 1.1 for the pan, six CPU spinners or none, and the restored per-frame canvas state
+    // write read 17.9 to 22.8 and 19.1 to 21.1 - still more than twice the tolerance.
+    const ratio = (gesture: "reposition" | "pan"): number =>
+      perFrameCostRatio(
+        (size) => {
+          const { container, unmount } = mountCanvas(new Map<string, number>(), size === "large" ? LARGE : SMALL);
+          const target =
+            gesture === "reposition"
+              ? container.querySelector('[data-element-id="el-0"]')!
+              : container.querySelector("svg.library-canvas-surface")!;
+          fireEvent(target, pointer("pointerdown", { clientX: 10, clientY: 10 }));
+          return {
+            frame: (frame) => {
+              fireEvent(target, pointer("pointermove", { clientX: 10 + frame * 3, clientY: 10 + frame * 2 }));
+            },
+            end: () => {
+              fireEvent(target, pointer("pointerup", { clientX: 200, clientY: 200 }));
+              unmount();
+            },
+          };
+        },
+        { frames: FRAMES, repetitions: 3 },
+      );
 
-    const repositionRatio = perFrame(LARGE, "reposition") / Math.max(perFrame(SMALL, "reposition"), 0.001);
-    const panRatio = perFrame(LARGE, "pan") / Math.max(perFrame(SMALL, "pan"), 0.001);
+    const repositionRatio = ratio("reposition");
+    const panRatio = ratio("pan");
 
     expect(repositionRatio).toBeLessThan(RATIO_TOLERANCE);
     expect(panRatio).toBeLessThan(RATIO_TOLERANCE);
