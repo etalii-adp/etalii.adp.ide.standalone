@@ -1,5 +1,3 @@
-using EtAlii.Adp.Diagram;
-using EtAlii.Adp.Diagram.HelmChart;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.Problems;
@@ -8,7 +6,7 @@ using Microsoft.Extensions.Time.Testing;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Diagram.HelmChart.Tests;
 
 /// <summary>
 /// Validation of the second folder-subject diagram, end to end through core's own machinery:
@@ -49,7 +47,7 @@ public class HelmValidationFlowTests : IDisposable
         var services = new ServiceCollection();
         services.AddSingleton<TimeProvider>(_clock);
         services.AddSingleton<IDiagramDefinitionCatalog>(
-            new TestDiagramDefinitionCatalog(Diagram.HelmChart.Diagram.HelmCharts));
+            new TestDiagramDefinitionCatalog(Diagram.HelmCharts));
         services.AddSingleton<DiagramFileRouter>();
         services.AddSingleton<DiagramValidators>();
         services.AddSingleton<ProjectValidator>();

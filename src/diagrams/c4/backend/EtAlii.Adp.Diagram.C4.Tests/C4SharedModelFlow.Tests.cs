@@ -6,7 +6,7 @@ using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 using Path = EtAlii.Adp.Documents.Wire.Path;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Diagram.C4.Tests;
 
 /// <summary>
 /// C4's central premise, over the real host: two <c>.adp</c> files naming one <c>.dsl</c> are
@@ -130,7 +130,7 @@ public class C4SharedModelFlowTests(HostFixture host) : IClassFixture<HostFixtur
     {
         var elements = await BaselineAsync(client, headers, projectId, fileName);
         var view = elements.Single(element => element.Type == "c4/model+view");
-        return Diagram.C4.C4ViewPayload.Parser.ParseFrom(view.Payload.Value.Span).Title;
+        return C4ViewPayload.Parser.ParseFrom(view.Payload.Value.Span).Title;
     }
 
     /// <summary>Opens a diagram and reads the one add that carries its baseline.</summary>

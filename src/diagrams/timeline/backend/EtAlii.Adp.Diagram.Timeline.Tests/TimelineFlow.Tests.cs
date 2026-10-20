@@ -1,6 +1,5 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Context.Wire;
-using EtAlii.Adp.Diagram.Timeline;
 using EtAlii.Adp.Diagram.Wire;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy.Wire;
@@ -9,7 +8,7 @@ using Grpc.Core;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Diagram.Timeline.Tests;
 
 /// <summary>
 /// The timeline arc over the real host: a bare <c>.tml</c> that routes on sight, opens, streams

@@ -15,6 +15,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.History\EtAlii.Adp.History.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Diagram.HelmChart\EtAlii.Adp.Diagram.HelmChart.csproj" />
+    <!-- The module's flows over the real host (code-structure T303). -->
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.TestSupport.Host\EtAlii.Adp.TestSupport.Host.csproj" />
   </ItemGroup>
 
   <ItemGroup>

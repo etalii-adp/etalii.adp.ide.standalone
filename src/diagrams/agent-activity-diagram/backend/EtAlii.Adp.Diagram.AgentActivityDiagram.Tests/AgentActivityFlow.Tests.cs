@@ -1,6 +1,5 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Context.Wire;
-using EtAlii.Adp.Diagram.AgentActivityDiagram;
 using EtAlii.Adp.Diagram.Wire;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy.Wire;
@@ -12,7 +11,7 @@ using ContextService = EtAlii.Adp.Context.Wire.ContextService;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 using Path = EtAlii.Adp.Documents.Wire.Path;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Diagram.AgentActivityDiagram.Tests;
 
 /// <summary>
 /// The agent activity diagram over the real host (agent-activity-diagram Requirement 8): what an

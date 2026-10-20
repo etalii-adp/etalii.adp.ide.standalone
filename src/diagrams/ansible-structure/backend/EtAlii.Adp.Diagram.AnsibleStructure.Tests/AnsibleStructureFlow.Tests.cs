@@ -1,4 +1,3 @@
-using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Diagram.Wire;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.History;
@@ -6,12 +5,10 @@ using EtAlii.Adp.TestSupport.Host;
 using Grpc.Core;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
-using DiagramService = EtAlii.Adp.Diagram.Wire.DiagramService;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 using Path = EtAlii.Adp.Documents.Wire.Path;
-using Wire = EtAlii.Adp.Diagram.AnsibleStructure.Wire;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Diagram.AnsibleStructure.Tests;
 
 /// <summary>
 /// The Ansible structure diagram against the real host: a folder registered by one <c>.adp</c>,
