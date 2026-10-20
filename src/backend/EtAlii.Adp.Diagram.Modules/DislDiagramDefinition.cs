@@ -1,5 +1,4 @@
 using System.Reflection;
-using System.Text.Json;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Specification.Disl;
@@ -156,17 +155,10 @@ public sealed class DislDiagramDefinition
         var reasons = new Dictionary<string, string>(StringComparer.Ordinal);
         if (operations.Count == 0) return reasons;
 
-        var declared = Specification.Root.GetProperty("behavior").GetProperty("operations");
         foreach (var name in operations)
         {
-            var sentence = declared.TryGetProperty(name, out var operation)
-                && operation.TryGetProperty("unavailable", out var unavailable)
-                && unavailable.ValueKind == JsonValueKind.Array
-                    ? unavailable.EnumerateArray()
-                        .Select(reason => reason.TryGetProperty("message", out var message) && message.ValueKind == JsonValueKind.String ? message.GetString() : null)
-                        .FirstOrDefault(message => message is not null)
-                    : null;
-            reasons[name] = sentence ?? throw new InvalidOperationException($"The definition's {name} states no unavailable sentence to carry while it is available.");
+            reasons[name] = Specification.Operations.Find(name)?.Sentence()
+                ?? throw new InvalidOperationException($"The definition's {name} states no unavailable sentence to carry while it is available.");
         }
 
         return reasons;

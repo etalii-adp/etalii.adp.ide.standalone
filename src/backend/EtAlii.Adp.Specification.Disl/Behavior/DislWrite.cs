@@ -33,7 +33,7 @@ public static class DislWrite
     {
         ArgumentNullException.ThrowIfNull(specification);
         ArgumentNullException.ThrowIfNull(change);
-        var map = DislTypeMap.Of(specification);
+        var map = specification.TypeMap;
         return change switch
         {
             DislChange.Create create => new ModelChange.Add(

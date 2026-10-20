@@ -17,11 +17,11 @@ internal static class DislFieldReader
     public static DislExpressionField Expression(DislSpecification specification, JsonElement json, string pointer)
     {
         (string? source, string at) = Source(json, pointer);
-        return new DislExpressionField(pointer, source, source is null ? null : specification.ExpressionAt(at)?.Program);
+        return new DislExpressionField(pointer, source, source is null ? null : specification.CompiledAt(at, source));
     }
 
     /// <summary>The CEL of an Expression property and the pointer the loader compiled it at; no source for any other value.</summary>
-    public static (string? Source, string At) Source(JsonElement json, string pointer) => json.ValueKind switch
+    private static (string? Source, string At) Source(JsonElement json, string pointer) => json.ValueKind switch
     {
         JsonValueKind.String => (json.GetString(), pointer),
         JsonValueKind.Object when DislJson.String(json, "cel") is { } cel => (cel, DislJson.Pointer(pointer, "cel")),
@@ -76,6 +76,25 @@ internal static class DislFieldReader
         try
         {
             json.TryGetProperty("", out _);
+            return null;
+        }
+        catch (InvalidOperationException e)
+        {
+            return e.Message;
+        }
+    }
+
+    /// <summary>
+    /// The message reading <paramref name="json"/> as an integer throws when it is not a number, as System.Text.Json words it;
+    /// null for a number. A position the runtime read as an integer, and that threw at run time when it was something
+    /// else, keeps that message, so that it still throws, at the same moment.
+    /// </summary>
+    public static string? NotANumber(JsonElement json)
+    {
+        if (json.ValueKind == JsonValueKind.Number) return null;
+        try
+        {
+            json.TryGetInt64(out _);
             return null;
         }
         catch (InvalidOperationException e)

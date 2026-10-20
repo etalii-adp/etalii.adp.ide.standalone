@@ -69,7 +69,7 @@ public static class ConstraintEvaluator
     private sealed class Run(DislSpecification specification, DislDiagram diagram, DislConstraintOptions options)
     {
         private readonly List<(DislFinding Finding, int Reading, int? Position)> _found = [];
-        private readonly JsonElement _constraints = specification.Root.TryGetProperty("constraints", out var constraints) && constraints.ValueKind == JsonValueKind.Object ? constraints : default;
+        private readonly DislConstraints _constraints = specification.Constraints;
         private readonly CelMap _env = (options.Env ?? new DislEnv()).ToCel();
         private readonly HashSet<string> _unparseable = new(StringComparer.Ordinal);
 
@@ -178,29 +178,26 @@ public static class ConstraintEvaluator
         /// <summary>The live invariants, in declaration order, each per scope element in model order.</summary>
         public void Rules()
         {
-            if (_constraints.ValueKind != JsonValueKind.Object || !_constraints.TryGetProperty("rules", out var rules) || rules.ValueKind != JsonValueKind.Array) return;
-            var defaultTiming = _constraints.TryGetProperty("defaults", out var defaults) ? DislJson.Strings(defaults, "timing") : [];
-            var defaultSeverity = _constraints.ValueKind == JsonValueKind.Object && defaults.ValueKind == JsonValueKind.Object ? DislJson.String(defaults, "severity") : null;
-            var index = 0;
-            foreach (var rule in rules.EnumerateArray())
+            if (_constraints.Rules is not { } rules) return;
+            var defaultTiming = _constraints.DefaultTiming;
+            foreach (var rule in rules)
             {
-                var pointer = DislJson.Pointer("/constraints/rules", index++);
-                if (DislJson.String(rule, "kind") is { } kind && kind != "invariant") continue;
-                if (rule.TryGetProperty("enabled", out var enabled) && enabled.ValueKind == JsonValueKind.False) continue;
-                var timing = DislJson.Strings(rule, "timing") is { Count: > 0 } own ? own : defaultTiming.Count > 0 ? defaultTiming : ["live", "save"];
+                if (rule.Kind is { } kind && kind != "invariant") continue;
+                // An invariant that is not an object threw here when it was read from the JSON at run time, and still does.
+                if (rule.NotAnObject is { } malformed) throw new InvalidOperationException(malformed);
+                if (!rule.Enabled) continue;
+                var timing = rule.Timing is { Count: > 0 } own ? own : defaultTiming.Count > 0 ? defaultTiming : ["live", "save"];
                 if (!timing.Contains("live")) continue;
-                foreach (var self in Scope(rule)) Rule(rule, pointer, self, defaultSeverity);
+                foreach (var self in Scope(rule)) Rule(rule, self, _constraints.DefaultSeverity);
             }
         }
 
-        private void Rule(JsonElement rule, string pointer, object self, string? defaultSeverity)
+        private void Rule(DislConstraintRule rule, object self, string? defaultSeverity)
         {
-            var id = DislJson.String(rule, "id") ?? pointer;
-            var code = DislJson.String(rule, "code") ?? id;
             var variables = Variables(self, null);
-            if (rule.TryGetProperty("forEach", out var forEach))
+            if (rule.ForEach is { } forEach)
             {
-                if (DislEvaluation.Expression(specification, forEach, DislJson.Pointer(pointer, "forEach"), DislContext.Constraint, variables) is not IReadOnlyList<object?> items) return;
+                if (forEach.Evaluate(variables) is not IReadOnlyList<object?> items) return;
                 for (var item = 0; item < items.Count; item++)
                 {
                     var bound = new Dictionary<string, object?>(variables) { ["item"] = items[item], ["index"] = (long)item };
@@ -212,35 +209,27 @@ public static class ConstraintEvaluator
 
             void One(Dictionary<string, object?> bound, DislElement? item)
             {
-                if (rule.TryGetProperty("when", out var when) && !DislEvaluation.Holds(specification, when, DislJson.Pointer(pointer, "when"), DislContext.Constraint, bound)) return;
-                var holds = rule.TryGetProperty("rule", out var condition)
-                    ? DislEvaluation.Expression(specification, condition, DislJson.Pointer(pointer, "rule"), DislContext.Constraint, bound)
-                    : false;
+                if (rule.When is { } when && !when.Holds(bound)) return;
+                var holds = rule.Rule is { } condition ? condition.Evaluate(bound) : false;
                 if (holds is not false) return;
 
                 var targets = Targets(bound, item);
-                var severity = rule.TryGetProperty("severity", out var declared)
-                    ? declared.ValueKind == JsonValueKind.String ? declared.GetString()! : DislEvaluation.Expression(specification, declared, DislJson.Pointer(pointer, "severity"), DislContext.Constraint, bound) as string ?? defaultSeverity ?? "error"
-                    : defaultSeverity ?? "error";
-                var message = rule.TryGetProperty("message", out var text)
-                    ? DislEvaluation.Message(specification, text, DislJson.Pointer(pointer, "message"), DislContext.Constraint, bound, id)
-                    : id;
+                var severity = rule.SeverityText ?? rule.Severity?.Evaluate(bound) as string ?? defaultSeverity ?? "error";
+                var message = rule.Message?.Text(bound, rule.Id) ?? rule.Id;
                 var at = targets.FirstOrDefault(element => element.Line is not null) ?? targets.FirstOrDefault();
-                (string? file, int? line) = rule.TryGetProperty("location", out var location)
-                    ? Located(DislEvaluation.Expression(specification, location, DislJson.Pointer(pointer, "location"), DislContext.Constraint, bound), at)
+                (string? file, int? line) = rule.Location is { } location
+                    ? Located(location.Evaluate(bound), at)
                     : at?.Location ?? (null, null);
-                var subject = rule.TryGetProperty("subject", out var about)
-                    ? DislEvaluation.Expression(specification, about, DislJson.Pointer(pointer, "subject"), DislContext.Constraint, bound) as string
-                    : null;
+                var subject = rule.Subject?.Evaluate(bound) as string;
                 var ordered = (Unwrapped(self) ?? item)?.Line ?? at?.Line;
-                _found.Add((new DislFinding(code, id, severity, message, [.. targets.Select(WrittenId)], line, file, subject), -1, ordered));
+                _found.Add((new DislFinding(rule.Code, rule.Id, severity, message, [.. targets.Select(WrittenId)], line, file, subject), -1, ordered));
             }
 
             List<DislElement> Targets(Dictionary<string, object?> bound, DislElement? item)
             {
-                if (rule.TryGetProperty("target", out var target) && !(target.ValueKind == JsonValueKind.String && target.GetString() == "self"))
+                if (rule.Target is { } target)
                 {
-                    return DislEvaluation.Expression(specification, target, DislJson.Pointer(pointer, "target"), DislContext.Constraint, bound) switch
+                    return target.Evaluate(bound) switch
                     {
                         DislElement one => [one],
                         IReadOnlyList<object?> list => [.. list.OfType<DislElement>()],
@@ -274,7 +263,7 @@ public static class ConstraintEvaluator
             var kept = _unparseable.Count == 0
                 ? _found
                 : [.. _found.Where(entry => entry.Finding.ConstraintId == DislReaderFinding.Unparseable || entry.Finding.File is not { } file || !_unparseable.Contains(file))];
-            var order = _constraints.ValueKind == JsonValueKind.Object && _constraints.TryGetProperty("order", out var declared) ? DislJson.Strings(declared) : [];
+            var order = _constraints.Order;
             if (order.Count == 0) return [.. kept.Select(entry => entry.Finding)];
             return
             [
@@ -297,9 +286,9 @@ public static class ConstraintEvaluator
             return -1;
         }
 
-        private IEnumerable<object> Scope(JsonElement rule)
+        private IEnumerable<object> Scope(DislConstraintRule rule)
         {
-            var scope = DislJson.Strings(rule, "scope");
+            var scope = rule.Scope;
             if (scope.Count == 0 || scope.Contains("diagram")) return [diagram];
             if (scope.Contains("*")) return diagram.Elements.Select(View);
             return diagram.Elements
@@ -346,38 +335,26 @@ public static class ConstraintEvaluator
         private static bool Flag(DislType type, string name, bool fallback) =>
             type.Json.TryGetProperty(name, out var value) && value.ValueKind is JsonValueKind.True or JsonValueKind.False ? value.GetBoolean() : fallback;
 
-        private BuiltIn Setting(string id) => new(specification, id, specification.BuiltInSetting(id));
+        private BuiltIn Setting(string id) => new(id, _constraints.BuiltIn(id));
     }
 
     /// <summary>One built-in's setting (§8.1), with the runtime's defaults.</summary>
-    private sealed class BuiltIn(DislSpecification specification, string id, JsonElement json)
+    private sealed class BuiltIn(string id, DislBuiltIn setting)
     {
-        private readonly string _pointer = DislJson.Pointer("/constraints/builtIn", id);
+        public bool Enabled => setting.Enabled;
 
-        public bool Enabled => specification.IsBuiltInEnabled(id);
-
-        public string Severity => (json.ValueKind == JsonValueKind.Object ? DislJson.String(json, "severity") : null) ?? id switch
+        public string Severity => setting.Severity ?? id switch
         {
             "std.unreadableEntry" or "std.duplicateId" or "std.missingId" => "warning",
             _ => "error",
         };
 
-        public string? OncePerGroup => json.ValueKind == JsonValueKind.Object ? DislJson.String(json, "oncePerGroup") : null;
+        public string? OncePerGroup => setting.OncePerGroup;
 
-        public string CodeOf(IReadOnlyDictionary<string, object?> variables)
-        {
-            if (json.ValueKind != JsonValueKind.Object || !json.TryGetProperty("code", out var code)) return id;
-            return code.ValueKind switch
-            {
-                JsonValueKind.String => code.GetString()!,
-                JsonValueKind.Object when DislEvaluation.Expression(specification, code, DislJson.Pointer(_pointer, "code"), DislContext.BuiltInMessage, variables) is string computed => computed,
-                _ => id,
-            };
-        }
+        public string CodeOf(IReadOnlyDictionary<string, object?> variables) =>
+            setting.CodeText ?? setting.Code?.Evaluate(variables) as string ?? id;
 
         public string MessageOf(IReadOnlyDictionary<string, object?> variables, string fallback) =>
-            json.ValueKind == JsonValueKind.Object && json.TryGetProperty("message", out var message)
-                ? DislEvaluation.Message(specification, message, DislJson.Pointer(_pointer, "message"), DislContext.BuiltInMessage, variables, fallback)
-                : fallback;
+            setting.Message?.Text(variables, fallback) ?? fallback;
     }
 }

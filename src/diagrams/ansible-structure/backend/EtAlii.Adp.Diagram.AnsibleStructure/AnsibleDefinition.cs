@@ -126,7 +126,7 @@ internal static class AnsibleDefinition
     /// <summary>The message of the one rule of <c>constraints.rules</c> that refuses a containment, as the definition writes it.</summary>
     private static string MoveRefusalOf()
     {
-        var rules = Specification.Root.GetProperty("constraints").GetProperty("rules").EnumerateArray()
+        var rules = Specification.Json.GetProperty("constraints").GetProperty("rules").EnumerateArray()
             .Where(rule => rule.TryGetProperty("kind", out var kind) && kind.ValueKind == JsonValueKind.String && kind.GetString() == "containment")
             .ToList();
         return rules is [var only] && only.TryGetProperty("message", out var message) && message.ValueKind == JsonValueKind.String

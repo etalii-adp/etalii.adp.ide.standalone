@@ -29,6 +29,9 @@ internal sealed record DislMenuTool
 
     public string? Operation { get; init; }
 
+    /// <summary>Its <c>form</c>, which the loader resolves against the forms (§7.3).</summary>
+    public string? Form { get; init; }
+
     /// <summary>Its <c>args</c>, Expressions, in order.</summary>
     public IReadOnlyList<(string Name, DislExpressionField Value)> Arguments { get; init; } = [];
 

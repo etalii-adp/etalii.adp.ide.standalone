@@ -84,7 +84,7 @@ internal static class PipelineDefinition
     }
 
     /// <summary>The definition's sentence for a change to an element the pipeline no longer holds (<c>std.notApplicable</c>).</summary>
-    public static string Gone { get; } = Specification.Root.GetProperty("behavior").GetProperty("messages").GetProperty("std.notApplicable").GetString()!;
+    public static string Gone { get; } = Specification.Json.GetProperty("behavior").GetProperty("messages").GetProperty("std.notApplicable").GetString()!;
 
     /// <summary>The stage, job or step <paramref name="id"/> names in <paramref name="body"/>, the first in written order; null for none, and for a body that is not YAML.</summary>
     public static DislElement? ElementOf(PipelineBody body, string id)
@@ -224,8 +224,8 @@ internal static class PipelineDefinition
     /// </summary>
     private static readonly Lazy<Dictionary<string, string>> ViewOperations = new(() =>
     {
-        var operations = Specification.Root.GetProperty("behavior").GetProperty("operations");
-        return Specification.Root.GetProperty("x-azure-pipeline").GetProperty("actions").EnumerateObject()
+        var operations = Specification.Json.GetProperty("behavior").GetProperty("operations");
+        return Specification.Json.GetProperty("x-azure-pipeline").GetProperty("actions").EnumerateObject()
             .Where(action => operations.TryGetProperty(action.Name, out var declared)
                 && declared.TryGetProperty("actions", out var actions)
                 && actions.EnumerateArray().Any(each => each.TryGetProperty("view", out _)))

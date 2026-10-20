@@ -1,5 +1,4 @@
 using System.Numerics;
-using System.Text.Json;
 
 namespace EtAlii.Adp.Specification.Disl;
 
@@ -27,16 +26,12 @@ public static class DislIds
     public static IIdSource Of(DislSpecification specification)
     {
         ArgumentNullException.ThrowIfNull(specification);
-        var ids = specification.Root.TryGetProperty("persistence", out var persistence) && persistence.TryGetProperty("ids", out var declared) && declared.ValueKind == JsonValueKind.Object
-            ? declared
-            : default;
-        var strategy = ids.ValueKind == JsonValueKind.Object ? DislJson.String(ids, "strategy") ?? "uuid-v7" : "uuid-v7";
-        var encoding = ids.ValueKind == JsonValueKind.Object ? DislJson.String(ids, "encoding") ?? "hex" : "hex";
-        return strategy switch
+        var encoding = specification.IdEncoding;
+        return specification.IdStrategy switch
         {
             "uuid-v4" => new Uuids(Guid.NewGuid, encoding),
             "uuid-v7" => new Uuids(Guid.CreateVersion7, encoding),
-            _ => throw new NotSupportedException($"This runtime cannot mint ids of strategy '{strategy}' without the model; give the interpreter an id source."),
+            var strategy => throw new NotSupportedException($"This runtime cannot mint ids of strategy '{strategy}' without the model; give the interpreter an id source."),
         };
     }
 

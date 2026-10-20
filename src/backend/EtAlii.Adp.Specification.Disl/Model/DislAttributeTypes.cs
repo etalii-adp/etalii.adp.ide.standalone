@@ -17,7 +17,7 @@ public static class DislAttributeTypes
     public static Func<string, string, string?> Of(DislSpecification specification)
     {
         ArgumentNullException.ThrowIfNull(specification);
-        var map = DislTypeMap.Of(specification);
+        var map = specification.TypeMap;
         var metamodel = specification.Metamodel;
         return (type, attribute) =>
         {

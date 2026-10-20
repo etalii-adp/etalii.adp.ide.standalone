@@ -1,4 +1,3 @@
-using System.Text.Json;
 using EtAlii.Adp.Specification.Cel;
 
 namespace EtAlii.Adp.Specification.Disl;
@@ -68,78 +67,65 @@ public static class CanvasChromeDerivation
         var cel = env.ToCel();
         var variables = new Dictionary<string, object?> { ["self"] = chrome, ["diagram"] = chrome, ["env"] = cel };
 
-        var title = Property(specification, env, "title") is var (titleJson, titlePointer) ? Label(specification, titleJson, titlePointer, variables) : null;
+        var title = Property(specification, env, canvas => canvas.Title) is { } titleLabel ? Label(titleLabel, variables) : null;
 
         List<string> header = [];
-        if (Property(specification, env, "header") is var (band, bandPointer) && Visible(specification, band, bandPointer, variables) && band.TryGetProperty("rows", out var rows) && rows.ValueKind == JsonValueKind.Array)
+        if (Property(specification, env, canvas => canvas.Header) is { } band && Visible(band.Visible, variables))
         {
-            var index = 0;
-            foreach (var row in rows.EnumerateArray())
+            // A band that is not an object threw here when it was read from the JSON at run time, and still does.
+            if (band.NotAnObject is { } malformed) throw new InvalidOperationException(malformed);
+            foreach (var row in band.Rows ?? [])
             {
-                if (Label(specification, row, DislJson.Pointer(DislJson.Pointer(bandPointer, "rows"), index++), variables) is { } text) header.Add(text);
+                if (Label(row, variables) is { } text) header.Add(text);
             }
         }
 
-        var legend = Property(specification, env, "legend") is var (legendJson, legendPointer) ? Legend(diagram, legendJson, legendPointer, drawn, chrome, cel) : null;
+        var legend = Property(specification, env, canvas => canvas.Legend) is { } declared ? Legend(diagram, declared, drawn, chrome, cel) : null;
         return new DerivedCanvasChrome(title, header, legend);
     }
 
-    /// <summary>The canvas property <paramref name="name"/>: the active viewpoint's, else the notation's; null when neither states it.</summary>
-    private static (JsonElement Json, string Pointer)? Property(DislSpecification specification, DislEnv env, string name)
+    /// <summary>A canvas property: the active viewpoint's, else the notation's; null when neither states it.</summary>
+    private static T? Property<T>(DislSpecification specification, DislEnv env, Func<DislCanvas, T?> property)
+        where T : class
     {
-        var root = specification.Root;
         if (env.Viewpoint.Length > 0
-            && root.TryGetProperty("viewpoints", out var viewpoints) && viewpoints.ValueKind == JsonValueKind.Object
-            && viewpoints.TryGetProperty(env.Viewpoint, out var viewpoint) && viewpoint.ValueKind == JsonValueKind.Object
-            && viewpoint.TryGetProperty("canvas", out var own) && own.ValueKind == JsonValueKind.Object && own.TryGetProperty(name, out var value))
+            && specification.Viewpoints.Find(env.Viewpoint) is { Canvas: { } own }
+            && property(own) is { } value)
         {
-            return (value, DislJson.Pointer(DislJson.Pointer(DislJson.Pointer("/viewpoints", env.Viewpoint), "canvas"), name));
+            return value;
         }
-        if (root.TryGetProperty("notation", out var notation) && notation.ValueKind == JsonValueKind.Object
-            && notation.TryGetProperty("canvas", out var canvas) && canvas.ValueKind == JsonValueKind.Object && canvas.TryGetProperty(name, out var declared))
-        {
-            return (declared, DislJson.Pointer("/notation/canvas", name));
-        }
-        return null;
+        return specification.Notation.Canvas is { } canvas ? property(canvas) : null;
     }
 
     /// <summary>A Label's text (§6.12) with <c>self</c> the diagram, or null when it is not visible.</summary>
-    private static string? Label(DislSpecification specification, JsonElement label, string pointer, IReadOnlyDictionary<string, object?> variables)
+    private static string? Label(DislCanvasLabel label, IReadOnlyDictionary<string, object?> variables)
     {
-        if (label.ValueKind != JsonValueKind.Object || !Visible(specification, label, pointer, variables)) return null;
-        if (!label.TryGetProperty("text", out var text)) return "";
-        var at = DislJson.Pointer(pointer, "text");
-        return text.ValueKind switch
+        if (!label.IsObject || !Visible(label.Visible, variables)) return null;
+        return label.Text switch
         {
-            JsonValueKind.String => text.GetString()!,
-            JsonValueKind.Object when DislJson.String(text, "attribute") is { } attribute => ((ICelObject)variables["self"]!).TryGetMember(attribute, out var value) ? DislEvaluation.TextOf(value) : "",
-            JsonValueKind.Object when text.TryGetProperty("cel", out _) => DislEvaluation.Expression(specification, text, at, DislContext.Element, variables) is var value and not CelError ? DislEvaluation.TextOf(value) : "",
+            DislBindable.Literal literal => literal.Value as string ?? "",
+            DislBindable.Attribute attribute => ((ICelObject)variables["self"]!).TryGetMember(attribute.Name, out var value) ? DislEvaluation.TextOf(value) : "",
+            DislBindable.Expression expression => expression.Field.Evaluate(variables) is var value and not CelError ? DislEvaluation.TextOf(value) : "",
             _ => "",
         };
     }
 
     /// <summary>Whether a Bindable <c>visible</c> holds: true when absent, a literal as it is, a <c>{cel}</c> while it is true.</summary>
-    private static bool Visible(DislSpecification specification, JsonElement owner, string pointer, IReadOnlyDictionary<string, object?> variables)
+    private static bool Visible(DislBindable visible, IReadOnlyDictionary<string, object?> variables) => visible switch
     {
-        if (owner.ValueKind != JsonValueKind.Object || !owner.TryGetProperty("visible", out var visible)) return true;
-        return visible.ValueKind switch
-        {
-            JsonValueKind.True => true,
-            JsonValueKind.False => false,
-            JsonValueKind.Object when DislJson.String(visible, "attribute") is { } attribute => ((ICelObject)variables["self"]!).TryGetMember(attribute, out var value) && value is true,
-            _ => DislEvaluation.Holds(specification, visible, DislJson.Pointer(pointer, "visible"), DislContext.Element, variables),
-        };
-    }
+        DislBindable.Literal literal => literal.Value is true,
+        DislBindable.Attribute attribute => ((ICelObject)variables["self"]!).TryGetMember(attribute.Name, out var value) && value is true,
+        DislBindable.Expression expression => expression.Field.Holds(variables),
+        _ => true,
+    };
 
-    private static DerivedLegend? Legend(DislDiagram diagram, JsonElement legend, string pointer, IReadOnlyList<DislElement> drawn, DislDrawnDiagram chrome, CelMap env)
+    private static DerivedLegend? Legend(DislDiagram diagram, DislCanvasLegend legend, IReadOnlyList<DislElement> drawn, DislDrawnDiagram chrome, CelMap env)
     {
-        if (legend.ValueKind != JsonValueKind.Object || legend.TryGetProperty("visible", out var visible) && visible.ValueKind == JsonValueKind.False) return null;
+        if (!legend.Shown) return null;
 
         var specification = diagram.Specification;
         var onDiagram = new Dictionary<string, object?> { ["self"] = chrome, ["diagram"] = chrome, ["env"] = env };
-        var title = legend.TryGetProperty("title", out var heading)
-            ? DislEvaluation.Message(specification, heading, DislJson.Pointer(pointer, "title"), DislContext.Legend, onDiagram, "")
-            : "";
+        var title = legend.Title?.Text(onDiagram, "") ?? "";
 
         // First appearance in model order (§6.13): the drawn elements as the model orders them, any the model does not hold after them as given.
         var order = new Dictionary<DislElement, int>(ReferenceEqualityComparer.Instance);
@@ -147,41 +133,36 @@ public static class CanvasChromeDerivation
         var inModelOrder = drawn.Select((element, index) => (element, index)).OrderBy(entry => order.TryGetValue(entry.element, out var at) ? at : order.Count + entry.index).Select(entry => entry.element).ToList();
 
         List<DerivedLegendEntry> entries = [];
-        var fromDrawn = DislJson.String(legend, "from") == "drawn";
-        foreach (var entry in DislJson.Strings(legend, "entries"))
+        foreach (var entry in legend.Entries)
         {
             var first = inModelOrder.FirstOrDefault(element => Matches(element, entry));
-            if (fromDrawn && first is null) continue;
+            if (legend.FromDrawn && first is null) continue;
             entries.Add(new DerivedLegendEntry(entry, DeclaredLabel(specification, entry), first));
         }
 
-        if (legend.TryGetProperty("computed", out var computed) && computed.ValueKind == JsonValueKind.Object && computed.TryGetProperty("key", out var key))
+        if (legend.Computed is { } computed)
         {
-            var at = DislJson.Pointer(pointer, "computed");
             var groups = new List<(string Key, DislElement First)>();
             var seen = new HashSet<string>(StringComparer.Ordinal);
             foreach (var element in inModelOrder)
             {
-                var value = DislEvaluation.Expression(specification, key, DislJson.Pointer(at, "key"), DislContext.Legend, OnElement(element));
+                var value = computed.Key.Evaluate(OnElement(element));
                 if (value is CelError) continue;
                 var text = DislEvaluation.TextOf(value);
                 if (seen.Add(text)) groups.Add((text, element));
             }
-            if (computed.TryGetProperty("order", out var sort))
+            if (computed.Order is { } sort)
             {
-                groups = [.. groups.OrderBy(group => DislEvaluation.Expression(specification, sort, DislJson.Pointer(at, "order"), DislContext.Legend, OnElement(group.First)), SortKey.Instance)];
+                groups = [.. groups.OrderBy(group => sort.Evaluate(OnElement(group.First)), SortKey.Instance)];
             }
             foreach ((string text, DislElement first) in groups)
             {
-                var label = computed.TryGetProperty("label", out var message)
-                    ? DislEvaluation.Message(specification, message, DislJson.Pointer(at, "label"), DislContext.Legend, OnElement(first), text)
-                    : text;
+                var label = computed.Label?.Text(OnElement(first), text) ?? text;
                 entries.Add(new DerivedLegendEntry(text, label, first));
             }
         }
 
-        var position = DislJson.String(legend, "position");
-        return new DerivedLegend(title, position, entries);
+        return new DerivedLegend(title, legend.Position, entries);
 
         Dictionary<string, object?> OnElement(DislElement element) => new() { ["self"] = element, ["diagram"] = chrome, ["env"] = env };
     }

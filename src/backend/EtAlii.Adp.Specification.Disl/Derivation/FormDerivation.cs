@@ -74,13 +74,13 @@ public static class FormDerivation
             if (item.NotAnObject is { } malformed) throw new InvalidOperationException(malformed);
             var attribute = item.Attribute;
             var variables = Variables(attribute is not null && self.Type.Attributes.ContainsKey(attribute) ? self.ValueOf(attribute) : null);
-            if (item.Visible is { } visible && !visible.Holds(specification, DislContext.Form, variables)) return;
+            if (item.Visible is { } visible && !visible.Holds(variables)) return;
 
             switch (item.Kind)
             {
                 case "section" or "group":
                     var title = item.Label ?? item.Title;
-                    Items(item.Items, title is null ? group : title.Text(specification, DislContext.Form, variables, group));
+                    Items(item.Items, title is null ? group : title.Text(variables, group));
                     return;
                 case "row":
                     Items(item.Items, group);
@@ -89,7 +89,7 @@ public static class FormDerivation
                     foreach (var tab in item.Tabs ?? [])
                     {
                         if (tab.NotAnObject is { } notAnObject) throw new InvalidOperationException(notAnObject);
-                        Items(tab.Items, tab.Title?.Text(specification, DislContext.Form, variables, group) ?? group);
+                        Items(tab.Items, tab.Title?.Text(variables, group) ?? group);
                     }
                     return;
                 case "field" or "computed" or "type":
@@ -103,12 +103,12 @@ public static class FormDerivation
             var attribute = item.Attribute;
             var declared = attribute is null ? null : self.Type.Attributes.GetValueOrDefault(attribute);
             var defaultLabel = declared is null ? attribute ?? "" : DislJson.String(declared.Json, "label") ?? declared.Name;
-            var label = item.Label?.Text(specification, DislContext.Form, variables, defaultLabel) ?? defaultLabel;
+            var label = item.Label?.Text(variables, defaultLabel) ?? defaultLabel;
 
             string value;
             if (item.Display is { } display)
             {
-                value = Text(display.Evaluate(specification, DislContext.Form, variables));
+                value = Text(display.Evaluate(variables));
             }
             else if (item.Kind == "type")
             {
@@ -116,14 +116,14 @@ public static class FormDerivation
             }
             else if (item.Kind == "computed")
             {
-                value = item.ValueText ?? (item.Value is { } computed ? Text(computed.Evaluate(specification, DislContext.Form, variables)) : "");
+                value = item.ValueText ?? (item.Value is { } computed ? Text(computed.Evaluate(variables)) : "");
             }
             else
             {
                 value = declared is null ? "" : AttributeText(declared);
             }
 
-            var reason = DislReason.First(item.ReadOnlyReasons, specification, DislContext.Form, variables);
+            var reason = DislReason.First(item.ReadOnlyReasons, specification, variables);
             if (reason is null && env.ReadOnly) reason = DislEvaluation.StandardMessage(specification, "std.readOnly", variables, "This diagram is read-only.");
 
             var key = item.Id ?? attribute ?? label;
@@ -134,14 +134,14 @@ public static class FormDerivation
 
         /// <summary>The types a type item offers, each named by its <c>optionLabel</c> with <c>item</c> bound, else as itself.</summary>
         private List<string> Types(DislFormItem item, Dictionary<string, object?> variables) =>
-            item.Options?.Expression.Evaluate(specification, DislContext.Form, variables) is IReadOnlyList<object?> types
+            item.Options?.Expression.Evaluate(variables) is IReadOnlyList<object?> types
                 ? [.. types.Select(type => OptionLabel(item, variables, type))]
                 : [];
 
         /// <summary>A type item's name for <paramref name="type"/>: its <c>optionLabel</c> with <c>item</c> bound, else the type as text.</summary>
         private string OptionLabel(DislFormItem item, Dictionary<string, object?> variables, object? type) =>
             item.OptionLabel is { } optionLabel
-                ? Text(optionLabel.Evaluate(specification, DislContext.Form, new Dictionary<string, object?>(variables) { ["item"] = type }))
+                ? Text(optionLabel.Evaluate(new Dictionary<string, object?>(variables) { ["item"] = type }))
                 : Text(type);
 
         private List<string>? Candidates(DislFormItem item, Dictionary<string, object?> variables)
@@ -153,7 +153,7 @@ public static class FormDerivation
                 case DislFormOptions.Enumeration enumeration:
                     return specification.Metamodel.Enums.TryGetValue(enumeration.Name, out var declared) ? [.. declared.Values.Select(value => value.Label ?? value.Key)] : [];
                 case DislFormOptions.Computed computed:
-                    return computed.Expression.Evaluate(specification, DislContext.Form, variables) is IReadOnlyList<object?> list
+                    return computed.Expression.Evaluate(variables) is IReadOnlyList<object?> list
                         ? [.. list.Select(OptionText)]
                         : [];
             }
