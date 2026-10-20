@@ -12,7 +12,7 @@ One Developer owns this specification, per CLAUDE.md's one-owner-per-specificati
 | --- | --- |
 | 2 | The refusal sentence for an edit into a collection written on one line (finding B12), as a chat ruling. The rest of the task does not wait, and the task is not delivered without the ruling. |
 | 4 | Task 3 merged in etalii.adp. Its graph functions (L1) are shared library work: `causal-loop-disl-fbl`, `azure-devops-pipeline-disl-fbl`, `supply-chain-disl-fbl`, `rdf-disl-fbl` and `functional-decomposition-graph-disl-fbl` need them too, and whichever specification reaches its library step first delivers them. If they are on `develop` when task 4 starts, the task adds only what is missing. |
-| 10 | **A language change in etalii-adp/etalii.adp**: FBL answering gaps 1, 2 and 3 (several readings over one binding, a resource capture per reading, a YAML scalar as written), and gap 4 for its part. The reports of task 9 are what asks for it. The `persistence.ids.prefix` part of the task is shared with `causal-loop-disl-fbl` and does not wait on the language. |
+| 10 | **A language change in etalii-adp/etalii.adp**: FBL answering gaps 1 and 2 (several readings over one binding, a resource capture per reading), and gap 4 for its part. Gap 3 (a YAML scalar as written) is answered by FBL 0.5, etalii.adp feature 015 (ruled in chat 2026-10-20). The reports of task 9 are what asks for it. The `persistence.ids.prefix` part of the task is shared with `causal-loop-disl-fbl` and does not wait on the language. |
 | 11 | Task 10. |
 | 12 | Task 11, and gaps 4 to 7 only for the parts that stay module code behind a named stand-in until they are answered. |
 | 13 | Task 12. |
