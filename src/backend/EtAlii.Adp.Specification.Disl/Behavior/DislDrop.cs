@@ -87,7 +87,7 @@ public static class DislDrop
             var matches = dropTarget is null ? target.On.Contains("canvas") : target.On.Any(dropTarget.IsA);
             if (!matches) continue;
 
-            return target.Kind == "operation" && target.Operation is not null && OperationInterpreter.Refusal(specification, target.Operation, diagram, dropTarget, env) is { } reason
+            return target is { Kind: "operation", Operation: { } operation } && OperationInterpreter.Refusal(specification, operation, diagram, dropTarget, env) is { } reason
                 ? new DislDropOutcome.Refused(reason)
                 : new DislDropOutcome.Target(target.Kind, target.Operation, dropTarget) { Arguments = Arguments(target, diagram, dropTarget, env, position) };
         }
