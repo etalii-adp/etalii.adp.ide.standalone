@@ -1,4 +1,5 @@
 using EtAlii.Adp.Context;
+using EtAlii.Adp.Documents;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.Databricks.Tests.Parity;
@@ -47,7 +48,7 @@ public class DatabricksDerivedMenusTests
                 var target = DatabricksParityCorpus.Target(elementId, origin, registration);
                 foreach (var entry in new[] { readable, readOnly })
                 {
-                    var expected = HandWrittenDatabricks.Menus(target, entry);
+                    var expected = WithToolboxDrops(HandWrittenDatabricks.Menus(target, entry), elementId, origin, entry);
                     var actual = DatabricksDefinition.Menus(target, entry);
                     Assert.True(
                         expected.Select(group => group.Actions).SequenceEqual(actual.Select(group => group.Actions), GroupComparer.Instance),
@@ -59,6 +60,30 @@ public class DatabricksDerivedMenusTests
 
         // A file that does not parse offers nothing under either; every other offers something to compare.
         Assert.True(compared > 0 || !readable.IsUsable, $"{document}: no menu had anything to compare.");
+    }
+
+    /// <summary>
+    /// The one place the derived menus differ from the hand-written ones on purpose: a placement on the empty canvas also
+    /// discovers every toolbox entry of its reading that its menu does not offer, under the entry's label and icon,
+    /// because a toolbox drop is executed at a placement and only what that placement discovers can be executed. The
+    /// hand-written placement offered the job's three tasks under every reading, so the bundle's resources and the
+    /// pipeline's libraries could never be dropped - before these menus were derived as much as after
+    /// (databricks-disl-fbl task 8's browser pass).
+    /// </summary>
+    private static IReadOnlyList<ContextActionGroupDefinition> WithToolboxDrops(
+        IReadOnlyList<ContextActionGroupDefinition> menu, string elementId, ToolOrigin origin, DocumentEntry<LineDocument, DatabricksModel> entry)
+    {
+        if (!entry.IsUsable || !DatabricksNewPlacement.IsPlacement(elementId))
+        {
+            return menu;
+        }
+
+        var offered = menu.SelectMany(group => group.Actions).Select(action => action.Id).ToHashSet(StringComparer.Ordinal);
+        var drops = HandWrittenDatabricks.Toolbox(origin)
+            .Where(item => !offered.Contains(item.DropActionId))
+            .Select(item => new ContextActionDefinition(item.DropActionId, item.Label, item.Icon))
+            .ToList();
+        return drops.Count == 0 ? menu : [.. menu, new ContextActionGroupDefinition(drops)];
     }
 
     [Theory]

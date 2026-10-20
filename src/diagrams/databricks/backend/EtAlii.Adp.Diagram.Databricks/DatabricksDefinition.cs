@@ -85,7 +85,7 @@ internal static class DatabricksDefinition
 
         if (DatabricksNewPlacement.IsPlacement(target.ElementId))
         {
-            return Of(target.Origin).Menus(DislMenuTarget.Canvas(CanvasOf(target.Origin, reading)), Env);
+            return WithToolboxDrops(Of(target.Origin), CanvasOf(target.Origin, reading));
         }
 
         if (DatabricksRelationGesture.TryParse(target.ElementId, out var from, out var to))
@@ -95,6 +95,24 @@ internal static class DatabricksDefinition
         }
 
         return [];
+    }
+
+    /// <summary>
+    /// The empty canvas's menu of <paramref name="diagram"/>, with every toolbox entry it does not already offer added
+    /// in a group of its own, under the entry's own label and icon. The canvas answers a drop with the entry's drop
+    /// action at a placement, and executing an action by id only finds what its target discovers. The job's entries
+    /// are on its canvas menu; the bundle's resources and the pipeline's libraries are offered by their definitions
+    /// on the Bundle's and the Pipeline's menus alone, so a drop of any of them was refused.
+    /// </summary>
+    private static IReadOnlyList<ContextActionGroupDefinition> WithToolboxDrops(DislDiagramDefinition definition, DislDiagram diagram)
+    {
+        var menu = definition.Menus(DislMenuTarget.Canvas(diagram), Env);
+        var offered = menu.SelectMany(group => group.Actions).Select(action => action.Id).ToHashSet(StringComparer.Ordinal);
+        var drops = definition.Toolbox
+            .Where(item => item.DropActionId.Length > 0 && !offered.Contains(item.DropActionId))
+            .Select(item => new ContextActionDefinition(item.DropActionId, item.Label, item.Icon))
+            .ToList();
+        return drops.Count == 0 ? menu : [.. menu, new ContextActionGroupDefinition(drops)];
     }
 
     /// <summary>The property rows of <paramref name="target"/> in <paramref name="entry"/>: an element's form; none for anything else.</summary>
