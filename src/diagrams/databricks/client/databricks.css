@@ -43,18 +43,25 @@
 
 /* ---- Edges ------------------------------------------------------------------------- */
 
-/* Outcome edges wear their answer (Requirement 4.3). */
-.databricks-edge-outcome-true {
+/*
+ * Outcome edges wear their answer (Requirement 4.3): the line, and with it the arrowhead, which
+ * follows the line through `context-stroke`, and the label. On the connection's group these rules
+ * reached neither - the line states its own stroke - and stroked the label's glyphs instead.
+ */
+.databricks-edge-outcome-true .canvas-connection-line {
   stroke: var(--color-success, #15803d);
 }
 
-.databricks-edge-outcome-false {
+.databricks-edge-outcome-true .library-connection-label {
+  fill: var(--color-success, #15803d);
+}
+
+.databricks-edge-outcome-false .canvas-connection-line {
   stroke: var(--color-danger, #dc2626);
 }
 
-/* An override is a reference, not a flow: straight and dashed. */
-.databricks-override-line {
-  stroke-dasharray: 3 3;
+.databricks-edge-outcome-false .library-connection-label {
+  fill: var(--color-danger, #dc2626);
 }
 
 /* ---- The simulation ---------------------------------------------------------------- */

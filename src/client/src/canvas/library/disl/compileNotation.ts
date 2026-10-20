@@ -984,6 +984,13 @@ class Compiler {
         fail(`${where} sits ${label.distance} beside its node; the library's beside label sits at its own gap.`);
       }
       declaration.placement = "beside";
+    } else if (position === "outside-top" || position === "outside-bottom") {
+      // Centred over or under the node, at the library's own gap from its edge.
+      const side = position === "outside-top" ? "above" : "below";
+      if (label.distance !== undefined) {
+        fail(`${where} sits ${label.distance} ${side} its node; the library's ${side} label sits at its own gap.`);
+      }
+      declaration.placement = side;
     } else if (isObject(position)) {
       const [ax, ay] = position.anchor as readonly [number, number];
       const anchorTo = ay === 0 ? "top" : ay === 0.5 ? "centre" : ay === 1 ? "bottom" : undefined;

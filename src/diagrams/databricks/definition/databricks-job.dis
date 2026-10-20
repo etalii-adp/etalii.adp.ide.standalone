@@ -188,7 +188,7 @@
           "source": { "mode": "fixed", "points": [ { "id": "right", "x": 1, "y": 0.5 } ] },
           "target": { "mode": "fixed", "points": [ { "id": "left", "x": 0, "y": 0.5 } ] }
         },
-        "targetMarker": "arrow",
+        "targetMarker": "arrowFilled",
         "labels": [ { "id": "outcome", "text": { "cel": "has(self.outcome) ? self.outcome : ''" }, "at": "middle", "offset": -6, "editable": false } ],
         "conditions": [
           { "when": "has(self.outcome) && self.outcome == 'true'", "style": { "stroke": { "color": "#15803d" } }, "doc": "Outcome edges wear their answer." },

@@ -95,7 +95,7 @@ describe("the bundle canvas", () => {
     const { container } = renderCanvas();
 
     // Assert.
-    expect(container.querySelectorAll(".databricks-override-line")).toHaveLength(1);
+    expect(container.querySelectorAll(".databricks-override .canvas-connection-line")).toHaveLength(1);
   });
 
   it("wears mode, default and the override count on the frame", () => {
@@ -140,7 +140,7 @@ describe("the bundle canvas", () => {
     // Assert.
     expect(container.querySelector(".databricks-canvas")!.classList.contains("canvas-host")).toBe(true);
     expect(container.querySelector(".databricks-node-box")!.classList.contains("canvas-node")).toBe(true);
-    expect(container.querySelector(".databricks-override-line")!.classList.contains("canvas-connection-line")).toBe(true);
+    expect(container.querySelector(".databricks-override .canvas-connection-line")).not.toBeNull();
     expect(container.querySelector(".databricks-scrollbars.canvas-scrollbar-horizontal")).not.toBeNull();
     expect(container.querySelector(".databricks-scrollbars.canvas-scrollbar-vertical")).not.toBeNull();
   });
