@@ -102,7 +102,7 @@ public static class FormDerivation
         {
             var attribute = item.Attribute;
             var declared = attribute is null ? null : self.Type.Attributes.GetValueOrDefault(attribute);
-            var defaultLabel = declared is null ? attribute ?? "" : DislJson.String(declared.Json, "label") ?? declared.Name;
+            var defaultLabel = declared is null ? attribute ?? "" : declared.Label ?? declared.Name;
             var label = item.Label?.Text(variables, defaultLabel) ?? defaultLabel;
 
             string value;
@@ -172,7 +172,7 @@ public static class FormDerivation
         /// <summary>An attribute's text: derived, else stored, else its default when it declares one, else empty.</summary>
         private string AttributeText(DislAttribute attribute)
         {
-            if (!self.Attributes.ContainsKey(attribute.Name) && attribute.Default is null && !attribute.Json.TryGetProperty("derived", out _)) return "";
+            if (!self.Attributes.ContainsKey(attribute.Name) && attribute.Default is null && !attribute.IsDerived) return "";
             return Format(self.ValueOf(attribute.Name), attribute.Type);
         }
 

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using EtAlii.Adp.Specification.Json;
 
 namespace EtAlii.Adp.Specification.Disl;
 
@@ -27,7 +28,7 @@ internal static class DislOperationReader
         var inOrder = new List<DislOperation>();
         foreach (var operation in all.EnumerateObject())
         {
-            var read = Operation(specification, operation.Name, operation.Value, DislJson.Pointer(Pointer, operation.Name));
+            var read = Operation(specification, operation.Name, operation.Value, JsonPointer.Append(Pointer, operation.Name));
             inOrder.Add(read);
             operations[operation.Name] = read;
         }
@@ -36,21 +37,21 @@ internal static class DislOperationReader
 
     private static DislOperation Operation(DislSpecification specification, string id, JsonElement operation, string pointer)
     {
-        var targets = DislJson.Strings(operation, "for");
+        var targets = JsonProperties.StringOrStrings(operation, "for");
         if (DislFieldReader.NotAnObject(operation) is { } malformed) return new DislOperation(id, targets, [], null, null, DislActionList.Empty, null, null, null, null, null, null, malformed);
 
         (string? sentence, string? sentenceMalformed) = Sentence(operation);
         return new DislOperation(
             id,
             targets,
-            operation.TryGetProperty("unavailable", out var unavailable) ? DislFieldReader.Reasons(specification, unavailable, DislJson.Pointer(pointer, "unavailable")) : [],
-            operation.TryGetProperty("enabled", out var enabled) ? DislFieldReader.Expression(specification, enabled, DislJson.Pointer(pointer, "enabled")) : null,
-            operation.TryGetProperty("plugin", out var plugin) ? Plugin(plugin, DislJson.Pointer(pointer, "plugin")) : null,
-            operation.TryGetProperty("actions", out var actions) ? DislActionReader.List(specification, actions, DislJson.Pointer(pointer, "actions")) : DislActionList.Empty,
-            operation.TryGetProperty("label", out var label) ? DislFieldReader.Message(specification, label, DislJson.Pointer(pointer, "label")) : null,
-            DislJson.String(operation, "icon"),
-            DislJson.String(operation, "shortcut"),
-            DislJson.String(operation, "paramsForm"),
+            operation.TryGetProperty("unavailable", out var unavailable) ? DislFieldReader.Reasons(specification, unavailable, JsonPointer.Append(pointer, "unavailable")) : [],
+            operation.TryGetProperty("enabled", out var enabled) ? DislFieldReader.Expression(specification, enabled, JsonPointer.Append(pointer, "enabled")) : null,
+            operation.TryGetProperty("plugin", out var plugin) ? Plugin(plugin, JsonPointer.Append(pointer, "plugin")) : null,
+            operation.TryGetProperty("actions", out var actions) ? DislActionReader.List(specification, actions, JsonPointer.Append(pointer, "actions")) : DislActionList.Empty,
+            operation.TryGetProperty("label", out var label) ? DislFieldReader.Message(specification, label, JsonPointer.Append(pointer, "label")) : null,
+            JsonProperties.String(operation, "icon"),
+            JsonProperties.String(operation, "shortcut"),
+            JsonProperties.String(operation, "paramsForm"),
             sentence,
             sentenceMalformed,
             null);
@@ -71,8 +72,8 @@ internal static class DislOperationReader
     /// <summary>A <c>plugin</c>: a name, or <c>{name, args}</c>, its arguments the values they read as.</summary>
     private static DislOperationPlugin Plugin(JsonElement plugin, string pointer)
     {
-        var name = plugin.ValueKind == JsonValueKind.String ? plugin.GetString()! : DislJson.String(plugin, "name") ?? "";
-        var argumentsAt = DislJson.Pointer(pointer, "args");
-        return new DislOperationPlugin(name, [.. DislJson.Members(plugin, "args").Select(argument => (argument.Name, new DislActionValue.Literal(DislJson.Pointer(argumentsAt, argument.Name), DislValues.Json(argument.Value))))]);
+        var name = plugin.ValueKind == JsonValueKind.String ? plugin.GetString()! : JsonProperties.String(plugin, "name") ?? "";
+        var argumentsAt = JsonPointer.Append(pointer, "args");
+        return new DislOperationPlugin(name, [.. DislJson.Members(plugin, "args").Select(argument => (argument.Name, new DislActionValue.Literal(JsonPointer.Append(argumentsAt, argument.Name), DislLiterals.Json(argument.Value))))]);
     }
 }

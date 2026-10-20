@@ -1,8 +1,6 @@
 using System.Collections;
 using System.Globalization;
-using System.Text.Json;
 using EtAlii.Adp.Specification.Cel;
-using EtAlii.Adp.Specification.Json;
 
 namespace EtAlii.Adp.Specification.Disl;
 
@@ -22,7 +20,7 @@ internal static class DislValues
     /// <summary>What an unset attribute reads as: its default, else its type's zero value (§4.3).</summary>
     public static object? Unset(DislAttribute attribute, DislMetamodel metamodel)
     {
-        if (attribute.Default is { } literal && FromJson(literal, attribute, metamodel) is { } value) return value;
+        if (attribute.DefaultValue is { } value) return Copy(value);
         if (attribute.Many) return new List<object?>();
         return attribute.Type switch
         {
@@ -35,36 +33,6 @@ internal static class DislValues
             _ => null,
         };
     }
-
-    /// <summary>A JSON value of <paramref name="attribute"/>'s type as CEL sees it; null when it is not of that type.</summary>
-    public static object? FromJson(JsonElement json, DislAttribute attribute, DislMetamodel metamodel)
-    {
-        if (attribute.Many)
-        {
-            if (json.ValueKind != JsonValueKind.Array) return null;
-            var items = new List<object?>();
-            foreach (var item in json.EnumerateArray())
-            {
-                if (One(item, attribute.Type, metamodel) is not { } value) return null;
-                items.Add(value);
-            }
-            return items;
-        }
-        return One(json, attribute.Type, metamodel);
-    }
-
-    private static object? One(JsonElement json, string type, DislMetamodel metamodel) => (type, json.ValueKind) switch
-    {
-        ("int", JsonValueKind.Number) => json.TryGetInt64(out var integer) ? integer : null,
-        ("number", JsonValueKind.Number) => json.GetDouble(),
-        ("bool", JsonValueKind.True or JsonValueKind.False) => json.GetBoolean(),
-        ("yearMonth", JsonValueKind.String) => YearMonth.Parse(json.GetString()!),
-        ("json", _) => Json(json),
-        (_, JsonValueKind.Object) when metamodel.DataTypes.Contains(type) => Json(json),
-        ("int" or "number" or "bool" or "yearMonth", _) => null,
-        (_, JsonValueKind.String) => json.GetString(),
-        _ => null,
-    };
 
     /// <summary>
     /// A value a format binding read (FBL: text, <see cref="long"/>, <see cref="double"/>,
@@ -137,15 +105,18 @@ internal static class DislValues
         return true;
     }
 
-    /// <summary>Any JSON as CEL values: objects as maps, arrays as lists, integral numbers as <c>int</c>.</summary>
-    public static object? Json(JsonElement json) => json.ValueKind switch
+    /// <summary>
+    /// A copy of a value converted at load, its lists and maps copied too, so that each reading gets one of its own, as
+    /// a conversion of the JSON at each reading did, and a change to one cannot reach the next.
+    /// </summary>
+    public static object? Copy(object? value) => value switch
     {
-        JsonValueKind.Object => json.EnumerateObject().Aggregate(new CelMap(), (map, property) =>
+        List<object?> list => list.Select(Copy).ToList(),
+        CelMap map => map.Aggregate(new CelMap(), (copy, entry) =>
         {
-            map[property.Name] = Json(property.Value);
-            return map;
+            copy[entry.Key] = Copy(entry.Value);
+            return copy;
         }),
-        JsonValueKind.Array => json.EnumerateArray().Select(Json).ToList(),
-        _ => JsonScalars.ToCel(json),
+        _ => value,
     };
 }

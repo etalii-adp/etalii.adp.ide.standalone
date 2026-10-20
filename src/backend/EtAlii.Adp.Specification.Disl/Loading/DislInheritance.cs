@@ -18,7 +18,7 @@ internal static class DislInheritance
 
         foreach (var name in types.Keys.Where(relations.ContainsKey))
         {
-            diagnostics.Add(DislLoader.Error(DislJson.Pointer("/metamodel/relations", name), $"'{name}' names a node type and a relation type; they share one namespace (DISL §2.2)."));
+            diagnostics.Add(DislLoader.Error(JsonPointer.Append("/metamodel/relations", name), $"'{name}' names a node type and a relation type; they share one namespace (DISL §2.2)."));
         }
         foreach (var name in enums.Keys.Concat(dataTypes).Where(name => types.ContainsKey(name) || relations.ContainsKey(name)))
         {
@@ -35,11 +35,11 @@ internal static class DislInheritance
         foreach (var type in all.Values)
         {
             var section = type.IsRelation ? "/metamodel/relations" : "/metamodel/types";
-            Merge(type, all, DislJson.Pointer(section, type.Name), known, diagnostics);
+            Merge(type, all, JsonPointer.Append(section, type.Name), known, diagnostics);
         }
         foreach (var relation in relations.Values)
         {
-            var pointer = DislJson.Pointer("/metamodel/relations", relation.Name);
+            var pointer = JsonPointer.Append("/metamodel/relations", relation.Name);
             relation.Source = End(relation, "source", all, pointer, diagnostics);
             relation.Target = End(relation, "target", all, pointer, diagnostics);
         }
@@ -65,9 +65,9 @@ internal static class DislInheritance
         foreach (var member in DislJson.Members(metamodel, "enums"))
         {
             var values = DislJson.Members(member.Value, "values")
-                .Select(value => new DislEnumValue(value.Name, DislJson.String(value.Value, "value") ?? value.Name, DislJson.String(value.Value, "label")))
+                .Select(value => new DislEnumValue(value.Name, JsonProperties.String(value.Value, "value") ?? value.Name, JsonProperties.String(value.Value, "label")))
                 .ToList();
-            enums[member.Name] = new DislEnum(member.Name, values, DislJson.Bool(member.Value, "ordered"));
+            enums[member.Name] = new DislEnum(member.Name, values, JsonProperties.Bool(member.Value, "ordered"));
         }
         return enums;
     }
@@ -77,10 +77,10 @@ internal static class DislInheritance
     {
         foreach (var type in types.Values)
         {
-            var extends = DislJson.Strings(type.Json, "extends");
+            var extends = JsonProperties.StringOrStrings(type.Json, "extends");
             foreach (var parent in extends.Where(parent => !sameKind.ContainsKey(parent)))
             {
-                diagnostics.Add(DislLoader.Error(DislJson.Pointer(DislJson.Pointer(section, type.Name), "extends"), $"'{type.Name}' extends '{parent}', which is not a {kind} type of this specification (DISL §4.7)."));
+                diagnostics.Add(DislLoader.Error(JsonPointer.Append(JsonPointer.Append(section, type.Name), "extends"), $"'{type.Name}' extends '{parent}', which is not a {kind} type of this specification (DISL §4.7)."));
             }
             type.Extends = [.. extends.Where(sameKind.ContainsKey)];
         }
@@ -104,7 +104,7 @@ internal static class DislInheritance
             if (done.TryGetValue(type.Name, out var known)) return known;
             if (!visiting.Add(type.Name))
             {
-                diagnostics.Add(DislLoader.Error(DislJson.Pointer(section, type.Name), $"'{type.Name}' is its own supertype; supertypes form a directed acyclic graph (DISL §4.7)."));
+                diagnostics.Add(DislLoader.Error(JsonPointer.Append(section, type.Name), $"'{type.Name}' is its own supertype; supertypes form a directed acyclic graph (DISL §4.7)."));
                 return [type.Name];
             }
             var sequences = type.Extends.Select(parent => new List<string>(Of(types[parent]))).ToList();
@@ -116,7 +116,7 @@ internal static class DislInheritance
                     .FirstOrDefault(candidate => !sequences.Any(sequence => sequence.IndexOf(candidate) > 0));
                 if (head is null)
                 {
-                    diagnostics.Add(DislLoader.Error(DislJson.Pointer(section, type.Name), $"'{type.Name}' has no consistent C3 linearisation of its supertypes (DISL §4.7)."));
+                    diagnostics.Add(DislLoader.Error(JsonPointer.Append(section, type.Name), $"'{type.Name}' has no consistent C3 linearisation of its supertypes (DISL §4.7)."));
                     result.AddRange(sequences.SelectMany(sequence => sequence).Distinct(StringComparer.Ordinal).Where(name => !result.Contains(name)));
                     break;
                 }
@@ -136,7 +136,7 @@ internal static class DislInheritance
         foreach (var ancestor in type.Linearisation.AsEnumerable().Reverse())
         {
             var declarer = all[ancestor];
-            var own = Attributes(declarer.Json, declarer.Name, DislJson.Pointer(declarer.IsRelation ? "/metamodel/relations" : "/metamodel/types", declarer.Name), known, ancestor == type.Name ? diagnostics : null);
+            var own = Attributes(declarer.Json, declarer.Name, JsonPointer.Append(declarer.IsRelation ? "/metamodel/relations" : "/metamodel/types", declarer.Name), known, ancestor == type.Name ? diagnostics : null);
             foreach (var attribute in own.Values)
             {
                 if (merged.TryGetValue(attribute.Name, out var inherited))
@@ -148,7 +148,7 @@ internal static class DislInheritance
                     }
                     if (narrows && attribute.Type != inherited.Type && !(all.ContainsKey(attribute.Type) && all.ContainsKey(inherited.Type) && all[attribute.Type].Linearisation.Contains(inherited.Type)))
                     {
-                        diagnostics.Add(DislLoader.Error(DislJson.Pointer(DislJson.Pointer(pointer, "attributes"), attribute.Name), $"'{attribute.DeclaredBy}' redeclares '{attribute.Name}' as {attribute.Type}, changing its type {inherited.Type}; a subtype may only narrow it (DISL §4.7)."));
+                        diagnostics.Add(DislLoader.Error(JsonPointer.Append(JsonPointer.Append(pointer, "attributes"), attribute.Name), $"'{attribute.DeclaredBy}' redeclares '{attribute.Name}' as {attribute.Type}, changing its type {inherited.Type}; a subtype may only narrow it (DISL §4.7)."));
                     }
                 }
                 merged[attribute.Name] = attribute;
@@ -157,16 +157,16 @@ internal static class DislInheritance
         type.Attributes = merged;
 
         var containing = type.Linearisation.Select(name => all[name].Json).FirstOrDefault(json => json.ValueKind == JsonValueKind.Object && json.TryGetProperty("children", out _));
-        type.ChildTypes = containing.ValueKind == JsonValueKind.Object ? DislJson.Strings(containing.GetProperty("children"), "allowed") : [];
+        type.ChildTypes = containing.ValueKind == JsonValueKind.Object ? JsonProperties.StringOrStrings(containing.GetProperty("children"), "allowed") : [];
 
-        var declaredLabel = type.Linearisation.Select(name => DislJson.String(all[name].Json, "labelAttribute")).FirstOrDefault(label => label is not null);
+        var declaredLabel = type.Linearisation.Select(name => JsonProperties.String(all[name].Json, "labelAttribute")).FirstOrDefault(label => label is not null);
         if (declaredLabel is not null && !merged.ContainsKey(declaredLabel))
         {
-            diagnostics.Add(DislLoader.Error(DislJson.Pointer(pointer, "labelAttribute"), $"'{type.Name}' has no attribute '{declaredLabel}' to use as its label (DISL §4.6)."));
+            diagnostics.Add(DislLoader.Error(JsonPointer.Append(pointer, "labelAttribute"), $"'{type.Name}' has no attribute '{declaredLabel}' to use as its label (DISL §4.6)."));
         }
         type.LabelAttribute = declaredLabel
-            ?? merged.Values.FirstOrDefault(attribute => DislJson.Bool(attribute.Json, "key"))?.Name
-            ?? merged.Values.FirstOrDefault(attribute => attribute.Type == "string" && DislJson.Bool(attribute.Json, "required"))?.Name
+            ?? merged.Values.FirstOrDefault(attribute => attribute.Key)?.Name
+            ?? merged.Values.FirstOrDefault(attribute => attribute.Type == "string" && JsonProperties.Bool(attribute.Json, "required"))?.Name
             ?? merged.Values.FirstOrDefault(attribute => attribute.Type == "string")?.Name;
     }
 
@@ -182,8 +182,8 @@ internal static class DislInheritance
         var attributes = new OrderedDictionary<string, DislAttribute>(StringComparer.Ordinal);
         foreach (var member in DislJson.Members(owner, "attributes"))
         {
-            var attributePointer = DislJson.Pointer(DislJson.Pointer(pointer, "attributes"), member.Name);
-            var type = DislJson.String(member.Value, "type");
+            var attributePointer = JsonPointer.Append(JsonPointer.Append(pointer, "attributes"), member.Name);
+            var type = JsonProperties.String(member.Value, "type");
             if (diagnostics is not null)
             {
                 if (DislLoader.IsReserved(member.Name))
@@ -196,13 +196,17 @@ internal static class DislInheritance
                 }
                 else if (!known.Contains(type))
                 {
-                    diagnostics.Add(DislLoader.Error(DislJson.Pointer(attributePointer, "type"), $"'{type}' is not a primitive, an enum, a data type or a type of this specification (DISL §4.3)."));
+                    diagnostics.Add(DislLoader.Error(JsonPointer.Append(attributePointer, "type"), $"'{type}' is not a primitive, an enum, a data type or a type of this specification (DISL §4.3)."));
                 }
             }
             JsonElement? literalDefault = member.Value.TryGetProperty("default", out var declaredDefault) && !(declaredDefault.ValueKind == JsonValueKind.Object && declaredDefault.TryGetProperty("cel", out _))
                 ? declaredDefault
                 : null;
-            attributes[member.Name] = new DislAttribute(member.Name, type ?? "json", DislJson.Bool(member.Value, "many"), literalDefault, declaredBy, member.Value);
+            var many = JsonProperties.Bool(member.Value, "many");
+            attributes[member.Name] = new DislAttribute(member.Name, type ?? "json", many, literalDefault, declaredBy, member.Value)
+            {
+                DefaultValue = literalDefault is { } literal ? DislLiterals.FromJson(literal, type ?? "json", many, known.DataTypes) : null,
+            };
         }
         return attributes;
     }
@@ -218,20 +222,23 @@ internal static class DislInheritance
             return new DislRelationEnd([], [], false);
         }
         var end = declaring.GetProperty(side);
-        var types = end.ValueKind == JsonValueKind.Object ? DislJson.Strings(end, "types") : DislJson.Strings(end);
-        var exclude = end.ValueKind == JsonValueKind.Object ? DislJson.Strings(end, "exclude") : [];
+        var types = end.ValueKind == JsonValueKind.Object ? JsonProperties.StringOrStrings(end, "types") : JsonProperties.Strings(end);
+        var exclude = end.ValueKind == JsonValueKind.Object ? JsonProperties.StringOrStrings(end, "exclude") : [];
         foreach (var name in types.Concat(exclude).Where(name => !all.ContainsKey(name)))
         {
-            diagnostics.Add(DislLoader.Error(DislJson.Pointer(pointer, side), $"'{name}' is not a type of this specification (DISL §4.9)."));
+            diagnostics.Add(DislLoader.Error(JsonPointer.Append(pointer, side), $"'{name}' is not a type of this specification (DISL §4.9)."));
         }
-        return new DislRelationEnd(types, exclude, side == "target" && DislJson.Bool(end, "optional"));
+        return new DislRelationEnd(types, exclude, side == "target" && JsonProperties.Bool(end, "optional"));
     }
 }
 
 /// <summary>The names an attribute's type may be: a primitive, an enum, a data type, or a node or relation type (DISL §4.3).</summary>
-internal sealed class TypeNames(IEnumerable<string> enums, IEnumerable<string> dataTypes, IEnumerable<string> types)
+internal sealed class TypeNames(IEnumerable<string> enums, IReadOnlySet<string> dataTypes, IEnumerable<string> types)
 {
     private readonly HashSet<string> _names = [.. DislAttribute.Primitives, .. enums, .. dataTypes, .. types];
+
+    /// <summary>The names of the data types, whose literals are read as maps.</summary>
+    public IReadOnlySet<string> DataTypes => dataTypes;
 
     public bool Contains(string name) => _names.Contains(name);
 }

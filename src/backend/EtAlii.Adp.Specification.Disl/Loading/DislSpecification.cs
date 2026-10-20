@@ -43,10 +43,10 @@ public sealed class DislSpecification
         _walked = walked;
         _diagnostics = diagnostics;
 
-        Disl = DislJson.String(root, "disl") ?? DislJson.String(root, "dedl") ?? "";
+        Disl = JsonProperties.String(root, "disl") ?? JsonProperties.String(root, "dedl") ?? "";
         var language = root.GetProperty("language");
-        LanguageId = DislJson.String(language, "id") ?? "";
-        Origin = DislJson.String(language, "origin") ?? DislJson.String(language, "x-adp-origin");
+        LanguageId = JsonProperties.String(language, "id") ?? "";
+        Origin = JsonProperties.String(language, "origin") ?? JsonProperties.String(language, "x-adp-origin");
         Extensions = DislJson.Extensions(root);
 
         var persistence = root.TryGetProperty("persistence", out var declaredPersistence) ? declaredPersistence : default;
@@ -55,15 +55,16 @@ public sealed class DislSpecification
             ? declared
             : default;
         Ids = IdRuleOf(ids);
-        IdEncoding = ids.ValueKind == JsonValueKind.Object ? DislJson.String(ids, "encoding") ?? "hex" : "hex";
+        IdEncoding = ids.ValueKind == JsonValueKind.Object ? JsonProperties.String(ids, "encoding") ?? "hex" : "hex";
         IdTypeNames = [.. DislJson.Members(ids, "types").Select(type => type.Name)];
         foreach (var type in DislJson.Members(ids, "types")) IdTypes[type.Name] = IdRuleOf(type.Value);
         if (ids.ValueKind == JsonValueKind.Object && ids.TryGetProperty("prefix", out var prefix) && prefix.ValueKind == JsonValueKind.Object)
         {
             foreach (var type in prefix.EnumerateObject().Where(type => type.Value.ValueKind == JsonValueKind.String)) IdPrefixes[type.Name] = type.Value.GetString()!;
         }
-        IdComparer = DislJson.String(ids, "compare") == "ignore-case" ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
-        TypeMap = DislTypeMap.Read(persistence);
+        IdComparer = JsonProperties.String(ids, "compare") == "ignore-case" ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
+        TypeMap = DislTypeMapReader.Read(persistence);
+        DislDerivedReader.Read(this);
 
         Operations = DislOperationReader.Read(this, root);
         Toolbox = DislToolboxReader.Read(this, root);
@@ -213,7 +214,7 @@ public sealed class DislSpecification
 
     /// <summary>A rule as declared; its prefix only when it is one string, which a map (top level only) is not.</summary>
     private static DislIdRule IdRuleOf(JsonElement json) =>
-        new(DislJson.String(json, "strategy") ?? "uuid-v7", DislJson.String(json, "expression"), DislJson.String(json, "prefix"));
+        new(JsonProperties.String(json, "strategy") ?? "uuid-v7", JsonProperties.String(json, "expression"), JsonProperties.String(json, "prefix"));
 }
 
 /// <summary>The metamodel of a specification (DISL §4), inheritance flattened.</summary>

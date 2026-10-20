@@ -182,7 +182,7 @@ public static class CanvasChromeDerivation
     /// <summary>A declared entry's text: the label of the type it names, else of the enum value, else the entry itself.</summary>
     private static string DeclaredLabel(DislSpecification specification, string entry)
     {
-        if (specification.Metamodel.TypeOf(entry) is { } type) return DislJson.String(type.Json, "label") ?? type.Name;
+        if (specification.Metamodel.TypeOf(entry) is { } type) return type.Label ?? type.Name;
         var value = specification.Metamodel.Enums.Values.SelectMany(enumeration => enumeration.Values).FirstOrDefault(candidate => candidate.Key == entry);
         return value?.Label ?? entry;
     }

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using EtAlii.Adp.Specification.Json;
 
 namespace EtAlii.Adp.Specification.Disl;
 
@@ -23,26 +24,26 @@ internal static class DislConstraintReader
         {
             rules = [];
             var index = 0;
-            foreach (var rule in declared.EnumerateArray()) rules.Add(Rule(specification, rule, DislJson.Pointer(Pointer, index++)));
+            foreach (var rule in declared.EnumerateArray()) rules.Add(Rule(specification, rule, JsonPointer.Append(Pointer, index++)));
         }
 
         var hasDefaults = constraints.TryGetProperty("defaults", out var defaults);
         var builtIns = new Dictionary<string, DislBuiltIn>(StringComparer.Ordinal);
         foreach (var builtIn in DislJson.Members(constraints, "builtIn"))
         {
-            if (builtIn.Value.ValueKind == JsonValueKind.Object) builtIns[builtIn.Name] = BuiltIn(specification, builtIn.Value, DislJson.Pointer("/constraints/builtIn", builtIn.Name));
+            if (builtIn.Value.ValueKind == JsonValueKind.Object) builtIns[builtIn.Name] = BuiltIn(specification, builtIn.Value, JsonPointer.Append("/constraints/builtIn", builtIn.Name));
         }
         return new DislConstraints(
             rules,
-            hasDefaults ? DislJson.Strings(defaults, "timing") : [],
-            hasDefaults && defaults.ValueKind == JsonValueKind.Object ? DislJson.String(defaults, "severity") : null,
-            constraints.TryGetProperty("order", out var order) ? DislJson.Strings(order) : [],
+            hasDefaults ? JsonProperties.StringOrStrings(defaults, "timing") : [],
+            hasDefaults && defaults.ValueKind == JsonValueKind.Object ? JsonProperties.String(defaults, "severity") : null,
+            constraints.TryGetProperty("order", out var order) ? JsonProperties.Strings(order) : [],
             builtIns);
     }
 
     private static DislConstraintRule Rule(DislSpecification specification, JsonElement rule, string pointer)
     {
-        var id = DislJson.String(rule, "id") ?? pointer;
+        var id = JsonProperties.String(rule, "id") ?? pointer;
         if (DislFieldReader.NotAnObject(rule) is { } malformed) return new DislConstraintRule { Pointer = pointer, Id = id, Code = id, NotAnObject = malformed };
 
         var severity = rule.TryGetProperty("severity", out var declaredSeverity) ? declaredSeverity : default;
@@ -50,25 +51,25 @@ internal static class DislConstraintReader
         {
             Pointer = pointer,
             Id = id,
-            Code = DislJson.String(rule, "code") ?? id,
-            Kind = DislJson.String(rule, "kind"),
+            Code = JsonProperties.String(rule, "code") ?? id,
+            Kind = JsonProperties.String(rule, "kind"),
             Enabled = !rule.TryGetProperty("enabled", out var enabled) || enabled.ValueKind != JsonValueKind.False,
-            Enforcement = DislJson.String(rule, "enforcement"),
-            Timing = DislJson.Strings(rule, "timing"),
-            Scope = DislJson.Strings(rule, "scope"),
+            Enforcement = JsonProperties.String(rule, "enforcement"),
+            Timing = JsonProperties.StringOrStrings(rule, "timing"),
+            Scope = JsonProperties.StringOrStrings(rule, "scope"),
             ForEach = Expression("forEach"),
             When = Expression("when"),
             Rule = Expression("rule"),
             SeverityText = severity.ValueKind == JsonValueKind.String ? severity.GetString() : null,
-            Severity = severity.ValueKind is JsonValueKind.Undefined or JsonValueKind.String ? null : DislFieldReader.Expression(specification, severity, DislJson.Pointer(pointer, "severity")),
-            Message = rule.TryGetProperty("message", out var message) ? DislFieldReader.Message(specification, message, DislJson.Pointer(pointer, "message")) : null,
+            Severity = severity.ValueKind is JsonValueKind.Undefined or JsonValueKind.String ? null : DislFieldReader.Expression(specification, severity, JsonPointer.Append(pointer, "severity")),
+            Message = rule.TryGetProperty("message", out var message) ? DislFieldReader.Message(specification, message, JsonPointer.Append(pointer, "message")) : null,
             Location = Expression("location"),
             Subject = Expression("subject"),
             Target = rule.TryGetProperty("target", out var target) && !(target.ValueKind == JsonValueKind.String && target.GetString() == "self") ? Expression("target") : null,
         };
 
         DislExpressionField? Expression(string name) =>
-            rule.TryGetProperty(name, out var json) ? DislFieldReader.Expression(specification, json, DislJson.Pointer(pointer, name)) : null;
+            rule.TryGetProperty(name, out var json) ? DislFieldReader.Expression(specification, json, JsonPointer.Append(pointer, name)) : null;
     }
 
     private static DislBuiltIn BuiltIn(DislSpecification specification, JsonElement setting, string pointer)
@@ -76,10 +77,10 @@ internal static class DislConstraintReader
         var code = setting.TryGetProperty("code", out var declared) ? declared : default;
         return new DislBuiltIn(
             !setting.TryGetProperty("enabled", out var enabled) || enabled.ValueKind != JsonValueKind.False,
-            DislJson.String(setting, "severity"),
-            DislJson.String(setting, "oncePerGroup"),
+            JsonProperties.String(setting, "severity"),
+            JsonProperties.String(setting, "oncePerGroup"),
             code.ValueKind == JsonValueKind.String ? code.GetString() : null,
-            code.ValueKind == JsonValueKind.Object ? DislFieldReader.Expression(specification, code, DislJson.Pointer(pointer, "code")) : null,
-            setting.TryGetProperty("message", out var message) ? DislFieldReader.Message(specification, message, DislJson.Pointer(pointer, "message")) : null);
+            code.ValueKind == JsonValueKind.Object ? DislFieldReader.Expression(specification, code, JsonPointer.Append(pointer, "code")) : null,
+            setting.TryGetProperty("message", out var message) ? DislFieldReader.Message(specification, message, JsonPointer.Append(pointer, "message")) : null);
     }
 }

@@ -236,7 +236,7 @@ public static class ContextMenuDerivation
         var fallback = operation?.Label is { } operationLabel
             ? operationLabel.Text(Operational(target, variables, arguments), kind)
             : tool.Via is { } via && specification.Metamodel.TypeOf(via) is { } viaType
-                ? DislJson.String(viaType.Json, "label") ?? via
+                ? viaType.Label ?? via
                 : kind;
         var label = tool.Label?.Text(variables, fallback) ?? fallback;
         var icon = tool.Icon ?? operation?.Icon ?? "";
