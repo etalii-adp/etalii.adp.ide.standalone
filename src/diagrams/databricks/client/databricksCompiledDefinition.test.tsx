@@ -24,7 +24,8 @@ import { HAND_WRITTEN_CONNECTABLE, HAND_WRITTEN_RENDER_ONLY, handWrittenModel } 
  * change to the oracle, or a replacement that must match an exact number of times, rather than tolerated:
  *  - a target is a rectangle on the background layer (DISL 6.16), drawn beneath the connections, where the
  *    oracle drew the library's frame over them: the library's box, its corners rounded 4 rather than 6;
- *  - an override's dash is the definition's line style, which the stylesheet used to say alone;
+ *  - an override's dash is the definition's line style, which the stylesheet used to say alone, so its line
+ *    wears no class of its own to say it by;
  *  - a target with no mode, no default and no override draws its summary line empty, where the oracle's
  *    parts drew no line at all.
  * The job's and the pipeline's compiled drawings are the oracle's exactly.
@@ -198,11 +199,11 @@ function replaced(markup: string, pattern: RegExp, replacement: string, expected
   return markup.replace(pattern, replacement);
 }
 
-/** The oracle with the bundle definition's decisions taken in: a target on the background layer, an override dashed by its style. */
+/** The oracle with the bundle definition's decisions taken in: a target on the background layer, an override dashed by its style rather than by its line's class. */
 const BUNDLE_ORACLE: DiagramDefinition = assertValidDiagramDefinition({
   ...HAND_WRITTEN_RENDER_ONLY,
   elementTypes: HAND_WRITTEN_RENDER_ONLY.elementTypes.map((type) => (type.id === "frame" ? { ...type, shape: "box", beneathConnections: true } : type)),
-  relationTypes: HAND_WRITTEN_RENDER_ONLY.relationTypes.map((relation) => (relation.id === "override" ? { ...relation, style: { ...relation.style, dash: [3, 3] } } : relation)),
+  relationTypes: HAND_WRITTEN_RENDER_ONLY.relationTypes.map((relation) => (relation.id === "override" ? { ...relation, style: { ...relation.style, dash: [3, 3] }, lineClassName: undefined } : relation)),
 });
 
 describe("the databricks compiled definitions", () => {
@@ -222,7 +223,7 @@ describe("the databricks compiled definitions", () => {
   it("draw the bundle as the hand-written definition drew it, but for the decisions its definition takes", () => {
     let actual = compiledDrawing(BundleCanvas, BUNDLE, BUNDLE_STATES);
 
-    for (const drawn of ["development · default", "production · 2 overrides", "1 override", "databricks-frame-outline", "databricks-override-line", "resources.dashboards", "databricks-sim-running"]) {
+    for (const drawn of ["development · default", "production · 2 overrides", "1 override", "databricks-frame-outline", "databricks-override", "stroke-dasharray: 3 3", "resources.dashboards", "databricks-sim-running"]) {
       expect(actual, drawn).toContain(drawn);
     }
     // The bare target's summary, drawn empty.

@@ -2,7 +2,7 @@ import type { ActionDeclaration } from "@client/canvas/library/definition/action
 import type { ClassDeclaration, CustomRouteRef, DiagramDefinition } from "@client/canvas/library/definition/diagramDefinition";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
 import { compileNotation, type NotationBindings } from "@client/canvas/library/disl/compileNotation";
-import { parseDisl, type DislDocument } from "@client/canvas/library/disl/disTypes";
+import { parseDisl } from "@client/canvas/library/disl/disTypes";
 
 /**
  * What the family's three canvases need beside their bundled definitions (`definition/databricks-bundle.dis`,
@@ -107,7 +107,6 @@ export const DATABRICKS_BINDINGS: NotationBindings = {
   labelClassName: (type, label) => labelClassOf(type, label.id),
   labelEditorBox: (_type, label) => (label.editable === "inline" ? { top: 0, height: NODE_HEIGHT } : undefined),
   relationClassName: (relation) => (relation === "Override" ? "databricks-override" : `databricks-edge databricks-edge-${relation === "Dependency" ? "depends" : "flow"}`),
-  relationLineClassName: (relation) => (relation === "Override" ? "databricks-override-line" : undefined),
   endpointAnchors: (relation, end) => (end === "target" ? "edge" : relation === "Dependency" ? ["left", "right"] : []),
   customRoutes: { Dependency: layeredRoute, Flow: layeredRoute },
   action: dispatched,
@@ -121,7 +120,7 @@ export const DATABRICKS_BINDINGS: NotationBindings = {
  * the library hands it to the module's handler and sends nothing, so a simulation never reaches a command,
  * the history or a file. The ids are the definition's own wire ids, offered on the types the operation is for.
  */
-function simulatedMenuActions(spec: DislDocument): ActionDeclaration[] {
+function simulatedMenuActions(spec: ReturnType<typeof parseDisl>): ActionDeclaration[] {
   const wire = (spec as unknown as Record<string, { actions?: Record<string, string> } | undefined>)["x-databricks"]?.actions ?? {};
   return Object.entries(spec.behavior?.operations ?? {}).flatMap(([name, operation]): ActionDeclaration[] => {
     const declared = operation as { simulate?: unknown; for?: string | readonly string[] };
