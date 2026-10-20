@@ -25,6 +25,12 @@ namespace EtAlii.Adp.Diagram.Databricks;
 /// registration rewritten (Requirement 5.4).
 /// </para>
 /// <para>
+/// <b>Files.</b> The readings the menus and rows derive from are built once per parsed resource and record no file,
+/// because nothing they derive reads one. The readings the findings are evaluated over are built for the file being
+/// judged and record its name as the diagram's, so that an element's <c>location()</c> is a SourceLocation, which
+/// always names a file (DISL §8.6), as a reader's would be.
+/// </para>
+/// <para>
 /// <b>A second task of one key</b> is read with an ephemeral id no key can equal, and keeps the key as written in
 /// its <c>key</c> attribute and in the host attribute <see cref="WrittenKey"/>: its model id is not the first
 /// holder's, so <c>std.duplicateId</c> stays off and the duplicate is the definition's own rule, by
@@ -76,6 +82,33 @@ internal static class DatabricksDisl
         return pipeline is null ? Empty(specification) : _pipelines.GetValue(pipeline, read => Build(PipelineElements(read), specification));
     }
 
+    /// <summary>The job reading of <paramref name="job"/> under <paramref name="specification"/>, located in the subject <paramref name="file"/>: built afresh.</summary>
+    public static DislModel Job(JobModel job, DislSpecification specification, string file)
+    {
+        ArgumentNullException.ThrowIfNull(job);
+        ArgumentNullException.ThrowIfNull(specification);
+        ArgumentNullException.ThrowIfNull(file);
+        return Build(JobElements(job), specification, file);
+    }
+
+    /// <summary>The bundle reading of <paramref name="bundle"/> under <paramref name="specification"/>, located in the subject <paramref name="file"/>: built afresh.</summary>
+    public static DislModel Bundle(BundleModel bundle, DislSpecification specification, string file)
+    {
+        ArgumentNullException.ThrowIfNull(bundle);
+        ArgumentNullException.ThrowIfNull(specification);
+        ArgumentNullException.ThrowIfNull(file);
+        return Build(BundleElements(bundle), specification, file);
+    }
+
+    /// <summary>The pipeline reading of <paramref name="pipeline"/> under <paramref name="specification"/>, located in the subject <paramref name="file"/>: built afresh.</summary>
+    public static DislModel Pipeline(PipelineModel pipeline, DislSpecification specification, string file)
+    {
+        ArgumentNullException.ThrowIfNull(pipeline);
+        ArgumentNullException.ThrowIfNull(specification);
+        ArgumentNullException.ThrowIfNull(file);
+        return Build(PipelineElements(pipeline), specification, file);
+    }
+
     /// <summary>
     /// The element <paramref name="wireId"/> names in <paramref name="diagram"/>, as the module's selection finds
     /// it: the first node with that model id, else the first relation; null for none. A later holder of a task key
@@ -92,8 +125,8 @@ internal static class DatabricksDisl
     private static DislModel Empty(DislSpecification specification) =>
         _empty.GetValue(specification, empty => Build([], empty));
 
-    private static DislModel Build(IReadOnlyList<FblElement> elements, DislSpecification specification) =>
-        DislModelBuilder.From(new FblModel(elements, [], false), specification);
+    private static DislModel Build(IReadOnlyList<FblElement> elements, DislSpecification specification, string? file = null) =>
+        DislModelBuilder.From(new FblModel(elements, [], false), specification, new DislEnv(), file);
 
     /// <summary>
     /// The job's own scalars as the diagram's attributes, a task per task with a key, a job cluster per cluster, and
