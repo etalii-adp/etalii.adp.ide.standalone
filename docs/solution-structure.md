@@ -37,7 +37,7 @@ flowchart LR
 
 Those are **two different splits of the same 144**, and a figure appearing in both tables is a coincidence rather than a correspondence, which is exactly what makes a wrong classification look right.
 
-There are **159** tracked `.csproj` files under `src/`, which is **15** more than the solution holds. Every one of the 15 is fixture or example data of the dotnet-dependency-graph module — a module whose subject matter *is* reading `.csproj` files, so its test fixtures and its showcase project are themselves `.csproj`, in `src/diagrams/dotnet-dependency-graph` and in the showcase copy under `src/examples/`. **A page giving the tracked count as the number of projects would be wrong in the confident direction.**
+There are **167** tracked `.csproj` files under `src/`, which is **23** more than the solution holds. Every one of the 23 is fixture or example data of the dotnet-dependency-graph module — a module whose subject matter *is* reading `.csproj` files, so its test fixtures and its showcase project are themselves `.csproj`, in `src/diagrams/dotnet-dependency-graph` and in the showcase copy under `src/examples/`. **A page giving the tracked count as the number of projects would be wrong in the confident direction.**
 
 ## The relative-path trap
 
