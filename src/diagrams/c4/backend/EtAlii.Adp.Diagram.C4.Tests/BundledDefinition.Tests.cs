@@ -96,7 +96,7 @@ public sealed partial class BundledDefinitionTests
 
     /// <summary>
     /// Each definition loads with no diagnostic of severity error (Requirement 2.6). The definitions are
-    /// DISL 0.4, of which the runtime warns; a warning is allowed.
+    /// DISL 0.5, of which the runtime warns; a warning is allowed.
     /// </summary>
     [Theory]
     [MemberData(nameof(Names))]

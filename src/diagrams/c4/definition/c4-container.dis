@@ -1,6 +1,6 @@
 {
   "$schema": "https://etalii.net/adp/disl/schema/0.2/disl.schema.json#/$defs/Specification",
-  "disl": "0.4",
+  "disl": "0.5",
   "language": {
     "id": "net.etalii.adp.c4.container",
     "version": "0.2.0",
@@ -809,38 +809,6 @@
       "followSystem": true
     },
     "shapes": {
-      "c4Person": {
-        "label": "Person",
-        "doc": "A rounded box with a round head of radius 10 centred 8 above its top edge, so that the body covers the bottom of the head, as the Structurizr default theme draws a person.",
-        "parts": [
-          {
-            "id": "head",
-            "shape": "circle",
-            "box": {
-              "x": "w / 2.0 - 10.0",
-              "y": -18,
-              "w": 20,
-              "h": 20
-            }
-          },
-          {
-            "id": "body",
-            "shape": {
-              "type": "roundedRect",
-              "params": {
-                "radius": 8
-              }
-            },
-            "box": {
-              "x": 0,
-              "y": 0,
-              "w": "w",
-              "h": "h"
-            },
-            "outline": true
-          }
-        ]
-      },
       "c4Cylinder": {
         "label": "Cylinder",
         "doc": "A data store: a box with an elliptical cap of height 12 at the top and bottom, the top cap drawn before the bottom one.",
@@ -1003,7 +971,7 @@
     },
     "nodes": {
       "Person": {
-        "shape": "c4Person",
+        "shape": "person",
         "style": "person",
         "size": {
           "min": [

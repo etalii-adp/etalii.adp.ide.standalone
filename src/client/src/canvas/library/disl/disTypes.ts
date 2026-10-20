@@ -456,8 +456,8 @@ export interface DislLayout {
  */
 export function parseDisl(text: string): DislDocument {
   const document = JSON.parse(text) as DislDocument;
-  if (document.disl !== "0.3" && document.disl !== "0.4") {
-    throw new Error(`This client reads DISL 0.3 and 0.4; the bundled specification declares "${String(document.disl)}".`);
+  if (document.disl !== "0.3" && document.disl !== "0.4" && document.disl !== "0.5") {
+    throw new Error(`This client reads DISL 0.3, 0.4 and 0.5; the bundled specification declares "${String(document.disl)}".`);
   }
 
   return document;
