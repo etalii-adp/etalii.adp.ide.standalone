@@ -39,10 +39,16 @@ public sealed class ProjectReader
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(projectPath);
 
+        byte[] bytes;
         XDocument document;
         try
         {
-            document = XDocument.Load(projectPath);
+            // The bytes once, so that a declaration's source can be given in them (Q6), and the
+            // document from them with line information. XML declares its own encoding and the
+            // load honours it as loading from the path did, so a file in UTF-16 still opens.
+            bytes = File.ReadAllBytes(projectPath);
+            using var stream = new MemoryStream(bytes, writable: false);
+            document = XDocument.Load(stream, LoadOptions.SetLineInfo);
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or System.Xml.XmlException)
         {
@@ -56,8 +62,8 @@ public sealed class ProjectReader
 
         return new ProjectReading(
             TargetFrameworksOf(document),
-            ProjectReferencesOf(document, directory),
-            PackageReferencesOf(document, directory),
+            ProjectReferencesOf(document, bytes, directory),
+            PackageReferencesOf(document, bytes, directory),
             []);
     }
 
@@ -84,7 +90,7 @@ public sealed class ProjectReader
     /// Project-to-project references, each resolved to a full path so the graph can match them
     /// against the solution's own projects rather than comparing two spellings of one path.
     /// </summary>
-    private static IReadOnlyList<ProjectReferenceReading> ProjectReferencesOf(XDocument document, string directory)
+    private static IReadOnlyList<ProjectReferenceReading> ProjectReferencesOf(XDocument document, byte[] bytes, string directory)
     {
         var references = new List<ProjectReferenceReading>();
 
@@ -97,6 +103,7 @@ public sealed class ProjectReader
             }
 
             var normalized = include.Replace('\\', Path.DirectorySeparatorChar).Replace('/', Path.DirectorySeparatorChar);
+            var source = EntrySpan.Of(bytes, element);
 
             if (normalized.Contains('*', StringComparison.Ordinal))
             {
@@ -107,13 +114,13 @@ public sealed class ProjectReader
                 // quietly missing most of its subject. Found by measuring EtAlii.Adp.slnx.
                 foreach (var match in ExpandWildcard(directory, normalized))
                 {
-                    references.Add(new ProjectReferenceReading(include, match));
+                    references.Add(new ProjectReferenceReading(include, match) { Source = source });
                 }
 
                 continue;
             }
 
-            references.Add(new ProjectReferenceReading(include, Path.GetFullPath(Path.Combine(directory, normalized))));
+            references.Add(new ProjectReferenceReading(include, Path.GetFullPath(Path.Combine(directory, normalized))) { Source = source });
         }
 
         return references;
@@ -175,7 +182,7 @@ public sealed class ProjectReader
     /// Package references, with a version where one can be found: written on the reference, or
     /// - the normal case in a centrally managed repository - found by walking upward.
     /// </summary>
-    private IReadOnlyList<PackageReferenceReading> PackageReferencesOf(XDocument document, string directory)
+    private IReadOnlyList<PackageReferenceReading> PackageReferencesOf(XDocument document, byte[] bytes, string directory)
     {
         var references = new List<PackageReferenceReading>();
 
@@ -200,7 +207,10 @@ public sealed class ProjectReader
             // different answers, and the property grid renders them differently (Requirement 4.4).
             references.Add(new PackageReferenceReading(
                 id.Trim(),
-                string.IsNullOrWhiteSpace(version) ? null : version.Trim()));
+                string.IsNullOrWhiteSpace(version) ? null : version.Trim())
+            {
+                Source = EntrySpan.Of(bytes, element),
+            });
         }
 
         return references;

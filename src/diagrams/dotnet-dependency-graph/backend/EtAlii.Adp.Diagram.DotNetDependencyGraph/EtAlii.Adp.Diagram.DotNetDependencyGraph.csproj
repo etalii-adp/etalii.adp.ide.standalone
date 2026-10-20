@@ -10,7 +10,7 @@
       with this module absent (structure.md's dependency direction), and core learns no .NET,
       MSBuild, NuGet or solution vocabulary from it.
     -->
-    <!-- The format is stated by the binding below, loaded through FBL; nothing is read through it yet. -->
+    <!-- The format is stated by the binding below, and every solution is read through it by the module's plugin. -->
     <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Specification.Fbl\EtAlii.Adp.Specification.Fbl.csproj" />
     <!-- The property rows are derived from the bundled DISL definition. -->
     <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Specification.Disl\EtAlii.Adp.Specification.Disl.csproj" />
