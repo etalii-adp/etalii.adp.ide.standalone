@@ -118,14 +118,22 @@ describe("compileNotation", () => {
   it("refuses a label position the library has no placement for", () => {
     const spec = specOf();
     const card = spec.notation.nodes.Card!;
-    const nodes = { ...spec.notation.nodes, Card: { ...card, labels: [{ ...card.labels![0]!, position: "outside-top" }] } };
-    expect(() => compileNotation({ ...spec, notation: { ...spec.notation, nodes } }, BINDINGS)).toThrow(/"outside-top"/);
+    const nodes = { ...spec.notation.nodes, Card: { ...card, labels: [{ ...card.labels![0]!, position: "outside-top-left" }] } };
+    expect(() => compileNotation({ ...spec, notation: { ...spec.notation, nodes } }, BINDINGS)).toThrow(/"outside-top-left"/);
   });
 
   it("places a label outside on the right beside its node, and refuses a distance of its own", () => {
     const beside = compileNotation(withLabel({ position: "outside-right" }), BINDINGS).elementTypes[0]!.labels![0];
     expect(beside).toEqual({ text: { path: "payload.name" }, placement: "beside" });
     expect(() => compileNotation(withLabel({ position: "outside-right", distance: 4 }), BINDINGS)).toThrow(/sits 4 beside/);
+  });
+  it("places a label outside on the top above its node and outside on the bottom below it, and refuses a distance of its own", () => {
+    const above = compileNotation(withLabel({ position: "outside-top" }), BINDINGS).elementTypes[0]!.labels![0];
+    expect(above).toEqual({ text: { path: "payload.name" }, placement: "above" });
+    const below = compileNotation(withLabel({ position: "outside-bottom" }), BINDINGS).elementTypes[0]!.labels![0];
+    expect(below).toEqual({ text: { path: "payload.name" }, placement: "below" });
+    expect(() => compileNotation(withLabel({ position: "outside-top", distance: 4 }), BINDINGS)).toThrow(/sits 4 above/);
+    expect(() => compileNotation(withLabel({ position: "outside-bottom", distance: 4 }), BINDINGS)).toThrow(/sits 4 below/);
   });
   /** The spec with Card's one label replaced by `label`. */
   function withLabel(label: Partial<DislLabel>): DislDocument {
