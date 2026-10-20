@@ -10,6 +10,8 @@
       with this module absent (structure.md's dependency direction), and core learns no .NET,
       MSBuild, NuGet or solution vocabulary from it.
     -->
+    <!-- The format is stated by the binding below, loaded through FBL; nothing is read through it yet. -->
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Specification.Fbl\EtAlii.Adp.Specification.Fbl.csproj" />
     <!-- The property rows are derived from the bundled DISL definition. -->
     <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Specification.Disl\EtAlii.Adp.Specification.Disl.csproj" />
   </ItemGroup>
@@ -32,6 +34,11 @@
       named entry per proto is a rule that cannot be forgotten.
     -->
     <Protobuf Include="..\..\api\dotnet-dependency-graph.proto" ProtoRoot="..\..\api" GrpcServices="None" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The module's own FBL binding of the solution, which the definition's persistence.binding names. -->
+    <EmbeddedResource Include="dotnet-dependency-graph.fbl" LogicalName="dotnet-dependency-graph.fbl" />
   </ItemGroup>
 
   <ItemGroup>

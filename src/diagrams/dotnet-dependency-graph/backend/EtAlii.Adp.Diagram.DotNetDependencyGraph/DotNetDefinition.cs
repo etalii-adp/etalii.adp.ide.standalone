@@ -13,9 +13,11 @@ namespace EtAlii.Adp.Diagram.DotNetDependencyGraph;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>The model is built from what the readers read</b>, not through FBL: a graph spans the solution, every
-/// project file it names, the <c>Directory.Packages.props</c> files above them and the local NuGet cache,
-/// where an FBL binding reads one file. <see cref="ModelOf"/> turns one <see cref="DependencyGraphModel"/>
+/// <b>The model is built from what the readers read</b>, not yet through the module's binding
+/// (<c>dotnet-dependency-graph.fbl</c>, which the definition's <c>persistence.binding</c> names): a graph spans
+/// the solution, every project file it names, the <c>Directory.Packages.props</c> files above them and the
+/// local NuGet cache, and FBL has no subject that is one named file with the files it leads to (the
+/// companion's language gap 1). <see cref="ModelOf"/> turns one <see cref="DependencyGraphModel"/>
 /// into a <see cref="DislDiagram"/> once, element for element and with the graph's own ids, and keeps it
 /// for as long as the graph lives, so every selection of one reading reads one model.
 /// </para>
