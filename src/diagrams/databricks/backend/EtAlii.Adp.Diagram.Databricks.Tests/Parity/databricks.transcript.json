@@ -100,7 +100,7 @@
             "\"edge:shared_first->shared_second\" => selects \"shared_first → shared_second\", menu #6, no rows",
             "\"cluster:merged\" => selects \"merged\", menu #1, no rows",
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #7, no rows",
             "\"rel:task:shared_first->task:shared_second\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:shared_first\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -122,7 +122,7 @@
             "\"task:shared_second\" => selects \"shared_second\", menu #5, rows #2",
             "\"edge:shared_first->shared_second\" => selects \"shared_first → shared_second\", menu #6, no rows",
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #7, no rows",
             "\"rel:task:shared_first->task:shared_second\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:shared_first\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -133,7 +133,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #7, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -144,7 +144,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #8, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -165,7 +165,9 @@
         [
           "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
           "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
-          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-resource:jobs | Job | mdi-transit-connection-horizontal | - | on",
+          "g2 databricks.add-resource:pipelines | Pipeline | mdi-pipe | - | on"
         ],
         [
           "g1 databricks.connect | Depend on | mdi-ray-start-arrow | - | on"
@@ -187,6 +189,18 @@
         ],
         [
           "g1 databricks.remove-edge | Remove dependency | mdi-vector-polyline-remove | Delete | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-library:notebook | Notebook library | mdi-notebook-outline | - | on",
+          "g2 databricks.add-library:file | File library | mdi-file-code-outline | - | on"
         ]
       ],
       "choices": [],
@@ -942,7 +956,7 @@
           "targets": [
             "\"task:only\" => selects \"only\", menu #5, rows #2",
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #3, no rows",
+            "\"new:120,80\" => selects null, menu #6, no rows",
             "\"rel:task:only->task:b\" => selects null, menu #4, no rows",
             "\"rel:new:120,80->task:only\" => selects null, menu #4, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -957,7 +971,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #3, no rows",
+            "\"new:120,80\" => selects null, menu #6, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #4, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #4, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -968,7 +982,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #3, no rows",
+            "\"new:120,80\" => selects null, menu #7, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #4, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #4, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -992,7 +1006,9 @@
         [
           "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
           "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
-          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-resource:jobs | Job | mdi-transit-connection-horizontal | - | on",
+          "g2 databricks.add-resource:pipelines | Pipeline | mdi-pipe | - | on"
         ],
         [
           "g1 databricks.connect | Depend on | mdi-ray-start-arrow | - | on"
@@ -1003,6 +1019,18 @@
           "g1 databricks.assign-cluster | Assign cluster… | mdi-server | - | on",
           "g1 databricks.remove-task | Remove | mdi-delete-outline | Delete | on",
           "g2 databricks.simulated.run-job | Run job (simulated) | mdi-play-outline | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-library:notebook | Notebook library | mdi-notebook-outline | - | on",
+          "g2 databricks.add-library:file | File library | mdi-file-code-outline | - | on"
         ]
       ],
       "choices": [],
@@ -1523,7 +1551,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #3, no rows",
+            "\"new:120,80\" => selects null, menu #5, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #4, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #4, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -1546,12 +1574,12 @@
             "compute | databricks/pipeline+node | 0, 200 | DatabricksPipelineNodePayload { \"role\": \"compute\", \"label\": \"cluster\" }"
           ],
           "targets": [
-            "\"pipeline\" => selects \"Bronze to gold\", menu #5, rows #3",
+            "\"pipeline\" => selects \"Bronze to gold\", menu #6, rows #3",
             "\"target\" => selects null, menu #1, no rows",
             "\"flow:pipeline->target\" => selects \"Bronze to gold → target\", menu #1, no rows",
             "\"compute\" => selects null, menu #1, no rows",
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #3, no rows",
+            "\"new:120,80\" => selects null, menu #7, no rows",
             "\"rel:pipeline->target\" => selects null, menu #4, no rows",
             "\"rel:new:120,80->pipeline\" => selects null, menu #4, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -1566,7 +1594,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #3, no rows",
+            "\"new:120,80\" => selects null, menu #7, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #4, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #4, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -1586,15 +1614,29 @@
         [
           "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
           "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
-          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-resource:jobs | Job | mdi-transit-connection-horizontal | - | on",
+          "g2 databricks.add-resource:pipelines | Pipeline | mdi-pipe | - | on"
         ],
         [
           "g1 databricks.connect | Depend on | mdi-ray-start-arrow | - | on"
         ],
         [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+        ],
+        [
           "g1 databricks.add-library:notebook | Add notebook library… | mdi-notebook-outline | - | on",
           "g1 databricks.add-library:file | Add file library… | mdi-file-code-outline | - | on",
           "g2 databricks.simulated.pipeline-update | Start update (simulated) | mdi-play-outline | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-library:notebook | Notebook library | mdi-notebook-outline | - | on",
+          "g2 databricks.add-library:file | File library | mdi-file-code-outline | - | on"
         ]
       ],
       "choices": [],
@@ -1985,7 +2027,7 @@
             "\"cluster:main\" => selects \"main\", menu #1, no rows",
             "\"cluster:spare\" => selects \"spare\", menu #1, no rows",
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #7, no rows",
             "\"rel:task:quoted_task->task:downstream\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:quoted_task\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -2000,7 +2042,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #7, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -2017,14 +2059,14 @@
             "compute | databricks/pipeline+node | 0, 200 | DatabricksPipelineNodePayload { \"role\": \"compute\", \"label\": \"cluster\" }"
           ],
           "targets": [
-            "\"library:transformations/commented\" => selects \"transformations/commented\", menu #7, no rows",
+            "\"library:transformations/commented\" => selects \"transformations/commented\", menu #8, no rows",
             "\"flow:transformations/commented->pipeline\" => selects \"transformations/commented → Commented pipeline\", menu #1, no rows",
-            "\"pipeline\" => selects \"Commented pipeline\", menu #8, rows #3",
+            "\"pipeline\" => selects \"Commented pipeline\", menu #9, rows #3",
             "\"target\" => selects null, menu #1, no rows",
             "\"flow:pipeline->target\" => selects \"Commented pipeline → target\", menu #1, no rows",
             "\"compute\" => selects null, menu #1, no rows",
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #10, no rows",
             "\"rel:library:transformations/commented->pipeline\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->library:transformations/commented\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -2039,7 +2081,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #10, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -2056,7 +2098,9 @@
         [
           "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
           "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
-          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-resource:jobs | Job | mdi-transit-connection-horizontal | - | on",
+          "g2 databricks.add-resource:pipelines | Pipeline | mdi-pipe | - | on"
         ],
         [
           "g1 databricks.connect | Depend on | mdi-ray-start-arrow | - | on"
@@ -2080,12 +2124,24 @@
           "g1 databricks.remove-edge | Remove dependency | mdi-vector-polyline-remove | Delete | on"
         ],
         [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+        ],
+        [
           "g1 databricks.remove-library | Remove library | mdi-delete-outline | Delete | on"
         ],
         [
           "g1 databricks.add-library:notebook | Add notebook library… | mdi-notebook-outline | - | on",
           "g1 databricks.add-library:file | Add file library… | mdi-file-code-outline | - | on",
           "g2 databricks.simulated.pipeline-update | Start update (simulated) | mdi-play-outline | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-library:notebook | Notebook library | mdi-notebook-outline | - | on",
+          "g2 databricks.add-library:file | File library | mdi-file-code-outline | - | on"
         ]
       ],
       "choices": [],
@@ -2846,7 +2902,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #2, no rows",
-            "\"new:120,80\" => selects null, menu #3, no rows",
+            "\"new:120,80\" => selects null, menu #5, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #4, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #4, no rows",
             "\"parity:unknown\" => selects null, menu #2, no rows"
@@ -2861,7 +2917,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #2, no rows",
-            "\"new:120,80\" => selects null, menu #3, no rows",
+            "\"new:120,80\" => selects null, menu #6, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #4, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #4, no rows",
             "\"parity:unknown\" => selects null, menu #2, no rows"
@@ -2885,10 +2941,24 @@
         [
           "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
           "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
-          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-resource:jobs | Job | mdi-transit-connection-horizontal | - | on",
+          "g2 databricks.add-resource:pipelines | Pipeline | mdi-pipe | - | on"
         ],
         [
           "g1 databricks.connect | Depend on | mdi-ray-start-arrow | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-library:notebook | Notebook library | mdi-notebook-outline | - | on",
+          "g2 databricks.add-library:file | File library | mdi-file-code-outline | - | on"
         ]
       ],
       "choices": [],
@@ -3075,7 +3145,7 @@
             "\"edge:after_circle->further_after\" => selects \"after_circle → further_after\", menu #5, no rows",
             "\"task:independent\" => selects \"independent\", menu #8, rows #5",
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #9, no rows",
             "\"rel:task:left->task:right\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:left\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -3090,7 +3160,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #9, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -3101,7 +3171,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #10, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -3122,7 +3192,9 @@
         [
           "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
           "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
-          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-resource:jobs | Job | mdi-transit-connection-horizontal | - | on",
+          "g2 databricks.add-resource:pipelines | Pipeline | mdi-pipe | - | on"
         ],
         [
           "g1 databricks.connect | Depend on | mdi-ray-start-arrow | - | on"
@@ -3160,6 +3232,18 @@
           "g1 databricks.assign-cluster | Assign cluster… | mdi-server | - | on",
           "g1 databricks.remove-task | Remove | mdi-delete-outline | Delete | on",
           "g2 databricks.simulated.run-job | Run job (simulated) | mdi-play-outline | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-library:notebook | Notebook library | mdi-notebook-outline | - | on",
+          "g2 databricks.add-library:file | File library | mdi-file-code-outline | - | on"
         ]
       ],
       "choices": [],
@@ -3794,7 +3878,7 @@
             "\"edge:twin->middle\" => selects \"twin → middle\", menu #6, no rows",
             "\"edge:middle->twin\" => selects \"middle → twin\", menu #6, no rows",
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #7, no rows",
             "\"rel:task:twin->task:middle\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:twin\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -3809,7 +3893,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #7, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -3820,7 +3904,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #8, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -3841,7 +3925,9 @@
         [
           "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
           "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
-          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-resource:jobs | Job | mdi-transit-connection-horizontal | - | on",
+          "g2 databricks.add-resource:pipelines | Pipeline | mdi-pipe | - | on"
         ],
         [
           "g1 databricks.connect | Depend on | mdi-ray-start-arrow | - | on"
@@ -3863,6 +3949,18 @@
         ],
         [
           "g1 databricks.remove-edge | Remove dependency | mdi-vector-polyline-remove | Delete | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-library:notebook | Notebook library | mdi-notebook-outline | - | on",
+          "g2 databricks.add-library:file | File library | mdi-file-code-outline | - | on"
         ]
       ],
       "choices": [],
@@ -4434,7 +4532,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #4, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -4449,7 +4547,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #5, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -4470,10 +4568,24 @@
         [
           "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
           "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
-          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-resource:jobs | Job | mdi-transit-connection-horizontal | - | on",
+          "g2 databricks.add-resource:pipelines | Pipeline | mdi-pipe | - | on"
         ],
         [
           "g1 databricks.connect | Depend on | mdi-ray-start-arrow | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-library:notebook | Notebook library | mdi-notebook-outline | - | on",
+          "g2 databricks.add-library:file | File library | mdi-file-code-outline | - | on"
         ]
       ],
       "choices": [],
@@ -4644,7 +4756,7 @@
             "\"edge:not_declared->waits_for_nobody\" => selects \"not_declared → waits_for_nobody\", menu #6, no rows",
             "\"task:not_declared\" => selects null, menu #1, no rows",
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #7, no rows",
             "\"rel:task:a_notebook->task:a_python\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:a_notebook\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -4659,7 +4771,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #7, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -4670,7 +4782,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #8, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -4691,7 +4803,9 @@
         [
           "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
           "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
-          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-resource:jobs | Job | mdi-transit-connection-horizontal | - | on",
+          "g2 databricks.add-resource:pipelines | Pipeline | mdi-pipe | - | on"
         ],
         [
           "g1 databricks.connect | Depend on | mdi-ray-start-arrow | - | on"
@@ -4714,6 +4828,18 @@
         ],
         [
           "g1 databricks.remove-edge | Remove dependency | mdi-vector-polyline-remove | Delete | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-library:notebook | Notebook library | mdi-notebook-outline | - | on",
+          "g2 databricks.add-library:file | File library | mdi-file-code-outline | - | on"
         ]
       ],
       "choices": [],
@@ -5444,7 +5570,7 @@
             "\"task:third_missing\" => selects null, menu #1, no rows",
             "\"cluster:real_cluster\" => selects \"real_cluster\", menu #1, no rows",
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #9, no rows",
             "\"rel:task:both->task:plain_missing\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:both\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -5459,7 +5585,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #9, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -5470,7 +5596,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #10, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -5491,7 +5617,9 @@
         [
           "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
           "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
-          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-resource:jobs | Job | mdi-transit-connection-horizontal | - | on",
+          "g2 databricks.add-resource:pipelines | Pipeline | mdi-pipe | - | on"
         ],
         [
           "g1 databricks.connect | Depend on | mdi-ray-start-arrow | - | on"
@@ -5531,6 +5659,18 @@
           "g1 databricks.disconnect:ring_a | Disconnect from 'ring_a' | mdi-vector-polyline-remove | - | on",
           "g1 databricks.remove-task | Remove | mdi-delete-outline | Delete | on",
           "g2 databricks.simulated.run-job | Run job (simulated) | mdi-play-outline | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-library:notebook | Notebook library | mdi-notebook-outline | - | on",
+          "g2 databricks.add-library:file | File library | mdi-file-code-outline | - | on"
         ]
       ],
       "choices": [],
@@ -6163,7 +6303,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #3, no rows",
+            "\"new:120,80\" => selects null, menu #5, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #4, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #4, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -6182,7 +6322,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #3, no rows",
+            "\"new:120,80\" => selects null, menu #6, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #4, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #4, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -6206,10 +6346,24 @@
         [
           "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
           "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
-          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-resource:jobs | Job | mdi-transit-connection-horizontal | - | on",
+          "g2 databricks.add-resource:pipelines | Pipeline | mdi-pipe | - | on"
         ],
         [
           "g1 databricks.connect | Depend on | mdi-ray-start-arrow | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-library:notebook | Notebook library | mdi-notebook-outline | - | on",
+          "g2 databricks.add-library:file | File library | mdi-file-code-outline | - | on"
         ]
       ],
       "choices": [],
@@ -6471,7 +6625,7 @@
             "\"edge:nowhere->stray\" => selects \"nowhere → stray\", menu #5, no rows",
             "\"task:nowhere\" => selects null, menu #1, no rows",
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #8, no rows",
             "\"rel:task:loop_a->task:loop_b\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:loop_a\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -6486,7 +6640,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #8, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -6497,7 +6651,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #9, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -6518,7 +6672,9 @@
         [
           "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
           "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
-          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-resource:jobs | Job | mdi-transit-connection-horizontal | - | on",
+          "g2 databricks.add-resource:pipelines | Pipeline | mdi-pipe | - | on"
         ],
         [
           "g1 databricks.connect | Depend on | mdi-ray-start-arrow | - | on"
@@ -6549,6 +6705,18 @@
           "g1 databricks.disconnect:nowhere | Disconnect from 'nowhere' | mdi-vector-polyline-remove | - | on",
           "g1 databricks.remove-task | Remove | mdi-delete-outline | Delete | on",
           "g2 databricks.simulated.run-job | Run job (simulated) | mdi-play-outline | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-library:notebook | Notebook library | mdi-notebook-outline | - | on",
+          "g2 databricks.add-library:file | File library | mdi-file-code-outline | - | on"
         ]
       ],
       "choices": [],
@@ -7161,7 +7329,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #4, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -7180,12 +7348,12 @@
             "compute | databricks/pipeline+node | 0, 200 | DatabricksPipelineNodePayload { \"role\": \"compute\", \"label\": \"cluster\" }"
           ],
           "targets": [
-            "\"pipeline\" => selects \"hollow\", menu #4, rows #1",
+            "\"pipeline\" => selects \"hollow\", menu #5, rows #1",
             "\"target\" => selects null, menu #1, no rows",
             "\"flow:pipeline->target\" => selects \"hollow → target\", menu #1, no rows",
             "\"compute\" => selects null, menu #1, no rows",
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #6, no rows",
             "\"rel:pipeline->target\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->pipeline\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -7196,7 +7364,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #6, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -7213,15 +7381,29 @@
         [
           "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
           "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
-          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-resource:jobs | Job | mdi-transit-connection-horizontal | - | on",
+          "g2 databricks.add-resource:pipelines | Pipeline | mdi-pipe | - | on"
         ],
         [
           "g1 databricks.connect | Depend on | mdi-ray-start-arrow | - | on"
         ],
         [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+        ],
+        [
           "g1 databricks.add-library:notebook | Add notebook library… | mdi-notebook-outline | - | on",
           "g1 databricks.add-library:file | Add file library… | mdi-file-code-outline | - | on",
           "g2 databricks.simulated.pipeline-update | Start update (simulated) | mdi-play-outline | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-library:notebook | Notebook library | mdi-notebook-outline | - | on",
+          "g2 databricks.add-library:file | File library | mdi-file-code-outline | - | on"
         ]
       ],
       "choices": [],
@@ -7467,7 +7649,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #4, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -7486,12 +7668,12 @@
             "task:c | databricks/job+task | 0, 120 | DatabricksTaskPayload { \"taskKey\": \"c\", \"taskType\": \"notebook\", \"source\": \"notebooks/c\" }"
           ],
           "targets": [
-            "\"task:a\" => selects \"a\", menu #4, rows #1",
-            "\"task:b\" => selects \"b\", menu #5, rows #2",
-            "\"edge:a->b\" => selects \"a → b\", menu #6, no rows",
-            "\"task:c\" => selects \"c\", menu #4, rows #3",
+            "\"task:a\" => selects \"a\", menu #5, rows #1",
+            "\"task:b\" => selects \"b\", menu #6, rows #2",
+            "\"edge:a->b\" => selects \"a → b\", menu #7, no rows",
+            "\"task:c\" => selects \"c\", menu #5, rows #3",
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #4, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -7514,16 +7696,16 @@
             "compute | databricks/pipeline+node | 0, 320 | DatabricksPipelineNodePayload { \"role\": \"compute\", \"label\": \"cluster\" }"
           ],
           "targets": [
-            "\"library:transformations/one\" => selects \"transformations/one\", menu #7, no rows",
+            "\"library:transformations/one\" => selects \"transformations/one\", menu #8, no rows",
             "\"flow:transformations/one->pipeline\" => selects \"transformations/one → Flow pipeline\", menu #1, no rows",
-            "\"library:transformations/two.py\" => selects \"transformations/two.py\", menu #7, no rows",
+            "\"library:transformations/two.py\" => selects \"transformations/two.py\", menu #8, no rows",
             "\"flow:transformations/two.py->pipeline\" => selects \"transformations/two.py → Flow pipeline\", menu #1, no rows",
-            "\"pipeline\" => selects \"Flow pipeline\", menu #8, rows #4",
+            "\"pipeline\" => selects \"Flow pipeline\", menu #9, rows #4",
             "\"target\" => selects null, menu #1, no rows",
             "\"flow:pipeline->target\" => selects \"Flow pipeline → target\", menu #1, no rows",
             "\"compute\" => selects null, menu #1, no rows",
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #10, no rows",
             "\"rel:library:transformations/one->library:transformations/two.py\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->library:transformations/one\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -7538,7 +7720,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #10, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -7555,10 +7737,17 @@
         [
           "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
           "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
-          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-resource:jobs | Job | mdi-transit-connection-horizontal | - | on",
+          "g2 databricks.add-resource:pipelines | Pipeline | mdi-pipe | - | on"
         ],
         [
           "g1 databricks.connect | Depend on | mdi-ray-start-arrow | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
         ],
         [
           "g1 databricks.rename-task | Rename… | mdi-pencil-outline | F2 | on",
@@ -7585,6 +7774,13 @@
           "g1 databricks.add-library:notebook | Add notebook library… | mdi-notebook-outline | - | on",
           "g1 databricks.add-library:file | Add file library… | mdi-file-code-outline | - | on",
           "g2 databricks.simulated.pipeline-update | Start update (simulated) | mdi-play-outline | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-library:notebook | Notebook library | mdi-notebook-outline | - | on",
+          "g2 databricks.add-library:file | File library | mdi-file-code-outline | - | on"
         ]
       ],
       "choices": [],
@@ -7967,7 +8163,7 @@
             "\"task:a\" => selects \"a\", menu #6, rows #2",
             "\"task:c\" => selects \"c\", menu #6, rows #3",
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #7, no rows",
             "\"rel:task:b->task:a\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:b\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -7982,7 +8178,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #7, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -7993,7 +8189,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #8, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -8014,7 +8210,9 @@
         [
           "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
           "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
-          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-resource:jobs | Job | mdi-transit-connection-horizontal | - | on",
+          "g2 databricks.add-resource:pipelines | Pipeline | mdi-pipe | - | on"
         ],
         [
           "g1 databricks.connect | Depend on | mdi-ray-start-arrow | - | on"
@@ -8036,6 +8234,18 @@
           "g1 databricks.assign-cluster | Assign cluster… | mdi-server | - | on",
           "g1 databricks.remove-task | Remove | mdi-delete-outline | Delete | on",
           "g2 databricks.simulated.run-job | Run job (simulated) | mdi-play-outline | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-library:notebook | Notebook library | mdi-notebook-outline | - | on",
+          "g2 databricks.add-library:file | File library | mdi-file-code-outline | - | on"
         ]
       ],
       "choices": [],
@@ -8626,7 +8836,7 @@
             "\"task:mapping_first\" => selects \"mapping_first\", menu #5, rows #2",
             "\"edge:outer->mapping_first\" => selects \"outer → mapping_first\", menu #6, no rows",
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #7, no rows",
             "\"rel:task:outer->task:mapping_first\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:outer\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -8641,7 +8851,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #7, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -8652,7 +8862,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #8, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -8673,7 +8883,9 @@
         [
           "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
           "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
-          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-resource:jobs | Job | mdi-transit-connection-horizontal | - | on",
+          "g2 databricks.add-resource:pipelines | Pipeline | mdi-pipe | - | on"
         ],
         [
           "g1 databricks.connect | Depend on | mdi-ray-start-arrow | - | on"
@@ -8695,6 +8907,18 @@
         ],
         [
           "g1 databricks.remove-edge | Remove dependency | mdi-vector-polyline-remove | Delete | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-library:notebook | Notebook library | mdi-notebook-outline | - | on",
+          "g2 databricks.add-library:file | File library | mdi-file-code-outline | - | on"
         ]
       ],
       "choices": [],
@@ -9288,7 +9512,7 @@
             "\"task:condition_1\" => selects \"condition_1\", menu #5, rows #3",
             "\"edge:python_1->condition_1\" => selects \"python_1 → condition_1\", menu #6, no rows",
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #7, no rows",
             "\"rel:task:notebook_2->task:python_1\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:notebook_2\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -9303,7 +9527,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #7, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -9314,7 +9538,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #8, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -9335,7 +9559,9 @@
         [
           "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
           "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
-          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-resource:jobs | Job | mdi-transit-connection-horizontal | - | on",
+          "g2 databricks.add-resource:pipelines | Pipeline | mdi-pipe | - | on"
         ],
         [
           "g1 databricks.connect | Depend on | mdi-ray-start-arrow | - | on"
@@ -9357,6 +9583,18 @@
         ],
         [
           "g1 databricks.remove-edge | Remove dependency | mdi-vector-polyline-remove | Delete | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-library:notebook | Notebook library | mdi-notebook-outline | - | on",
+          "g2 databricks.add-library:file | File library | mdi-file-code-outline | - | on"
         ]
       ],
       "choices": [],
@@ -9978,7 +10216,7 @@
             "\"edge:publish->refresh_dashboard\" => selects \"publish → refresh_dashboard\", menu #6, no rows",
             "\"cluster:ingest_cluster\" => selects \"ingest_cluster\", menu #1, no rows",
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #9, no rows",
             "\"rel:task:ingest->task:quality_gate\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:ingest\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -9993,7 +10231,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #9, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -10004,7 +10242,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #10, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -10025,7 +10263,9 @@
         [
           "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
           "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
-          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-resource:jobs | Job | mdi-transit-connection-horizontal | - | on",
+          "g2 databricks.add-resource:pipelines | Pipeline | mdi-pipe | - | on"
         ],
         [
           "g1 databricks.connect | Depend on | mdi-ray-start-arrow | - | on"
@@ -10063,6 +10303,18 @@
           "g1 databricks.disconnect:publish | Disconnect from 'publish' | mdi-vector-polyline-remove | - | on",
           "g1 databricks.remove-task | Remove | mdi-delete-outline | Delete | on",
           "g2 databricks.simulated.run-job | Run job (simulated) | mdi-play-outline | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-library:notebook | Notebook library | mdi-notebook-outline | - | on",
+          "g2 databricks.add-library:file | File library | mdi-file-code-outline | - | on"
         ]
       ],
       "choices": [],
@@ -10840,7 +11092,7 @@
             "\"edge:land->refine\" => selects \"land → refine\", menu #6, no rows",
             "\"task:publish\" => selects \"publish\", menu #4, rows #3",
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #7, no rows",
             "\"rel:task:land->task:refine\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:land\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -10855,7 +11107,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #7, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -10866,7 +11118,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #8, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -10887,7 +11139,9 @@
         [
           "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
           "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
-          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-resource:jobs | Job | mdi-transit-connection-horizontal | - | on",
+          "g2 databricks.add-resource:pipelines | Pipeline | mdi-pipe | - | on"
         ],
         [
           "g1 databricks.connect | Depend on | mdi-ray-start-arrow | - | on"
@@ -10909,6 +11163,18 @@
         ],
         [
           "g1 databricks.remove-edge | Remove dependency | mdi-vector-polyline-remove | Delete | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-library:notebook | Notebook library | mdi-notebook-outline | - | on",
+          "g2 databricks.add-library:file | File library | mdi-file-code-outline | - | on"
         ]
       ],
       "choices": [],
@@ -11519,7 +11785,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #4, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -11540,14 +11806,14 @@
             "compute | databricks/pipeline+node | 0, 200 | DatabricksPipelineNodePayload { \"role\": \"compute\", \"label\": \"cluster\" }"
           ],
           "targets": [
-            "\"library:transformations/legacy\" => selects \"transformations/legacy\", menu #4, no rows",
+            "\"library:transformations/legacy\" => selects \"transformations/legacy\", menu #5, no rows",
             "\"flow:transformations/legacy->pipeline\" => selects \"transformations/legacy → legacy_settings\", menu #1, no rows",
-            "\"pipeline\" => selects \"legacy_settings\", menu #5, rows #1",
+            "\"pipeline\" => selects \"legacy_settings\", menu #6, rows #1",
             "\"target\" => selects null, menu #1, no rows",
             "\"flow:pipeline->target\" => selects \"legacy_settings → target\", menu #1, no rows",
             "\"compute\" => selects null, menu #1, no rows",
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #7, no rows",
             "\"rel:library:transformations/legacy->pipeline\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->library:transformations/legacy\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -11558,7 +11824,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #7, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -11575,10 +11841,17 @@
         [
           "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
           "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
-          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-resource:jobs | Job | mdi-transit-connection-horizontal | - | on",
+          "g2 databricks.add-resource:pipelines | Pipeline | mdi-pipe | - | on"
         ],
         [
           "g1 databricks.connect | Depend on | mdi-ray-start-arrow | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
         ],
         [
           "g1 databricks.remove-library | Remove library | mdi-delete-outline | Delete | on"
@@ -11587,6 +11860,13 @@
           "g1 databricks.add-library:notebook | Add notebook library… | mdi-notebook-outline | - | on",
           "g1 databricks.add-library:file | Add file library… | mdi-file-code-outline | - | on",
           "g2 databricks.simulated.pipeline-update | Start update (simulated) | mdi-play-outline | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-library:notebook | Notebook library | mdi-notebook-outline | - | on",
+          "g2 databricks.add-library:file | File library | mdi-file-code-outline | - | on"
         ]
       ],
       "choices": [],
@@ -11856,7 +12136,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #4, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -11877,14 +12157,14 @@
             "compute | databricks/pipeline+node | 0, 200 | DatabricksPipelineNodePayload { \"role\": \"compute\", \"label\": \"cluster\" }"
           ],
           "targets": [
-            "\"library:transformations/legacy\" => selects \"transformations/legacy\", menu #4, no rows",
+            "\"library:transformations/legacy\" => selects \"transformations/legacy\", menu #5, no rows",
             "\"flow:transformations/legacy->pipeline\" => selects \"transformations/legacy → Legacy target\", menu #1, no rows",
-            "\"pipeline\" => selects \"Legacy target\", menu #5, rows #1",
+            "\"pipeline\" => selects \"Legacy target\", menu #6, rows #1",
             "\"target\" => selects null, menu #1, no rows",
             "\"flow:pipeline->target\" => selects \"Legacy target → target\", menu #1, no rows",
             "\"compute\" => selects null, menu #1, no rows",
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #7, no rows",
             "\"rel:library:transformations/legacy->pipeline\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->library:transformations/legacy\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -11899,7 +12179,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #7, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -11916,10 +12196,17 @@
         [
           "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
           "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
-          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-resource:jobs | Job | mdi-transit-connection-horizontal | - | on",
+          "g2 databricks.add-resource:pipelines | Pipeline | mdi-pipe | - | on"
         ],
         [
           "g1 databricks.connect | Depend on | mdi-ray-start-arrow | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
         ],
         [
           "g1 databricks.remove-library | Remove library | mdi-delete-outline | Delete | on"
@@ -11928,6 +12215,13 @@
           "g1 databricks.add-library:notebook | Add notebook library… | mdi-notebook-outline | - | on",
           "g1 databricks.add-library:file | Add file library… | mdi-file-code-outline | - | on",
           "g2 databricks.simulated.pipeline-update | Start update (simulated) | mdi-play-outline | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-library:notebook | Notebook library | mdi-notebook-outline | - | on",
+          "g2 databricks.add-library:file | File library | mdi-file-code-outline | - | on"
         ]
       ],
       "choices": [],
@@ -12218,7 +12512,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #2, no rows",
-            "\"new:120,80\" => selects null, menu #3, no rows",
+            "\"new:120,80\" => selects null, menu #5, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #4, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #4, no rows",
             "\"parity:unknown\" => selects null, menu #2, no rows"
@@ -12233,7 +12527,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #2, no rows",
-            "\"new:120,80\" => selects null, menu #3, no rows",
+            "\"new:120,80\" => selects null, menu #6, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #4, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #4, no rows",
             "\"parity:unknown\" => selects null, menu #2, no rows"
@@ -12257,10 +12551,24 @@
         [
           "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
           "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
-          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-resource:jobs | Job | mdi-transit-connection-horizontal | - | on",
+          "g2 databricks.add-resource:pipelines | Pipeline | mdi-pipe | - | on"
         ],
         [
           "g1 databricks.connect | Depend on | mdi-ray-start-arrow | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-library:notebook | Notebook library | mdi-notebook-outline | - | on",
+          "g2 databricks.add-library:file | File library | mdi-file-code-outline | - | on"
         ]
       ],
       "choices": [],
@@ -12429,7 +12737,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #4, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -12460,20 +12768,20 @@
             "compute | databricks/pipeline+node | 0, 800 | DatabricksPipelineNodePayload { \"role\": \"compute\", \"label\": \"cluster\" }"
           ],
           "targets": [
-            "\"library:shared/x\" => selects \"shared/x\", menu #4, no rows",
+            "\"library:shared/x\" => selects \"shared/x\", menu #5, no rows",
             "\"flow:shared/x->pipeline\" => selects \"shared/x → library_ids\", menu #1, no rows",
-            "\"library:transformations/gold/**\" => selects \"transformations/gold/**\", menu #4, no rows",
+            "\"library:transformations/gold/**\" => selects \"transformations/gold/**\", menu #5, no rows",
             "\"flow:transformations/gold/**->pipeline\" => selects \"transformations/gold/** → library_ids\", menu #1, no rows",
-            "\"library:${workspace.file_path}/{braces}.py\" => selects \"${workspace.file_path}/{braces}.py\", menu #4, no rows",
+            "\"library:${workspace.file_path}/{braces}.py\" => selects \"${workspace.file_path}/{braces}.py\", menu #5, no rows",
             "\"flow:${workspace.file_path}/{braces}.py->pipeline\" => selects \"${workspace.file_path}/{braces}.py → library_ids\", menu #1, no rows",
-            "\"library:\" => selects \"\", menu #4, no rows",
+            "\"library:\" => selects \"\", menu #5, no rows",
             "\"flow:->pipeline\" => selects \" → library_ids\", menu #1, no rows",
-            "\"pipeline\" => selects \"library_ids\", menu #5, rows #1",
+            "\"pipeline\" => selects \"library_ids\", menu #6, rows #1",
             "\"target\" => selects null, menu #1, no rows",
             "\"flow:pipeline->target\" => selects \"library_ids → target\", menu #1, no rows",
             "\"compute\" => selects null, menu #1, no rows",
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #7, no rows",
             "\"rel:library:shared/x->library:shared/x\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->library:shared/x\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -12484,7 +12792,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #7, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -12501,10 +12809,17 @@
         [
           "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
           "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
-          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-resource:jobs | Job | mdi-transit-connection-horizontal | - | on",
+          "g2 databricks.add-resource:pipelines | Pipeline | mdi-pipe | - | on"
         ],
         [
           "g1 databricks.connect | Depend on | mdi-ray-start-arrow | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
         ],
         [
           "g1 databricks.remove-library | Remove library | mdi-delete-outline | Delete | on"
@@ -12513,6 +12828,13 @@
           "g1 databricks.add-library:notebook | Add notebook library… | mdi-notebook-outline | - | on",
           "g1 databricks.add-library:file | Add file library… | mdi-file-code-outline | - | on",
           "g2 databricks.simulated.pipeline-update | Start update (simulated) | mdi-play-outline | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-library:notebook | Notebook library | mdi-notebook-outline | - | on",
+          "g2 databricks.add-library:file | File library | mdi-file-code-outline | - | on"
         ]
       ],
       "choices": [],
@@ -12820,7 +13142,7 @@
             "\"task:ghost\" => selects null, menu #1, no rows",
             "\"task:phantom\" => selects null, menu #1, no rows",
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #7, no rows",
             "\"rel:task:first_waiter->task:second_waiter\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:first_waiter\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -12835,7 +13157,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #7, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -12846,7 +13168,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #8, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -12867,7 +13189,9 @@
         [
           "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
           "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
-          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-resource:jobs | Job | mdi-transit-connection-horizontal | - | on",
+          "g2 databricks.add-resource:pipelines | Pipeline | mdi-pipe | - | on"
         ],
         [
           "g1 databricks.connect | Depend on | mdi-ray-start-arrow | - | on"
@@ -12891,6 +13215,18 @@
           "g1 databricks.disconnect:phantom | Disconnect from 'phantom' | mdi-vector-polyline-remove | - | on",
           "g1 databricks.remove-task | Remove | mdi-delete-outline | Delete | on",
           "g2 databricks.simulated.run-job | Run job (simulated) | mdi-play-outline | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-library:notebook | Notebook library | mdi-notebook-outline | - | on",
+          "g2 databricks.add-library:file | File library | mdi-file-code-outline | - | on"
         ]
       ],
       "choices": [],
@@ -13486,7 +13822,7 @@
             "\"edge:upstream->with_dependency\" => selects \"upstream → with_dependency\", menu #6, no rows",
             "\"cluster:cluster_one\" => selects \"cluster_one\", menu #1, no rows",
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #7, no rows",
             "\"rel:task:upstream->task:with_dependency\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:upstream\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -13501,7 +13837,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #7, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -13512,7 +13848,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #8, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -13533,7 +13869,9 @@
         [
           "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
           "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
-          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-resource:jobs | Job | mdi-transit-connection-horizontal | - | on",
+          "g2 databricks.add-resource:pipelines | Pipeline | mdi-pipe | - | on"
         ],
         [
           "g1 databricks.connect | Depend on | mdi-ray-start-arrow | - | on"
@@ -13555,6 +13893,18 @@
         ],
         [
           "g1 databricks.remove-edge | Remove dependency | mdi-vector-polyline-remove | Delete | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-library:notebook | Notebook library | mdi-notebook-outline | - | on",
+          "g2 databricks.add-library:file | File library | mdi-file-code-outline | - | on"
         ]
       ],
       "choices": [],
@@ -14157,7 +14507,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #4, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -14178,14 +14528,14 @@
             "compute | databricks/pipeline+node | 0, 200 | DatabricksPipelineNodePayload { \"role\": \"compute\", \"label\": \"cluster\" }"
           ],
           "targets": [
-            "\"library:transformations/bare\" => selects \"transformations/bare\", menu #4, no rows",
+            "\"library:transformations/bare\" => selects \"transformations/bare\", menu #5, no rows",
             "\"flow:transformations/bare->pipeline\" => selects \"transformations/bare → Bare\", menu #1, no rows",
-            "\"pipeline\" => selects \"Bare\", menu #5, rows #1",
+            "\"pipeline\" => selects \"Bare\", menu #6, rows #1",
             "\"target\" => selects null, menu #1, no rows",
             "\"flow:pipeline->target\" => selects \"Bare → target\", menu #1, no rows",
             "\"compute\" => selects null, menu #1, no rows",
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #7, no rows",
             "\"rel:library:transformations/bare->pipeline\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->library:transformations/bare\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -14200,7 +14550,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #7, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -14217,10 +14567,17 @@
         [
           "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
           "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
-          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-resource:jobs | Job | mdi-transit-connection-horizontal | - | on",
+          "g2 databricks.add-resource:pipelines | Pipeline | mdi-pipe | - | on"
         ],
         [
           "g1 databricks.connect | Depend on | mdi-ray-start-arrow | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
         ],
         [
           "g1 databricks.remove-library | Remove library | mdi-delete-outline | Delete | on"
@@ -14229,6 +14586,13 @@
           "g1 databricks.add-library:notebook | Add notebook library… | mdi-notebook-outline | - | on",
           "g1 databricks.add-library:file | Add file library… | mdi-file-code-outline | - | on",
           "g2 databricks.simulated.pipeline-update | Start update (simulated) | mdi-play-outline | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-library:notebook | Notebook library | mdi-notebook-outline | - | on",
+          "g2 databricks.add-library:file | File library | mdi-file-code-outline | - | on"
         ]
       ],
       "choices": [],
@@ -14519,7 +14883,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #2, no rows",
-            "\"new:120,80\" => selects null, menu #3, no rows",
+            "\"new:120,80\" => selects null, menu #5, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #4, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #4, no rows",
             "\"parity:unknown\" => selects null, menu #2, no rows"
@@ -14534,7 +14898,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #2, no rows",
-            "\"new:120,80\" => selects null, menu #3, no rows",
+            "\"new:120,80\" => selects null, menu #6, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #4, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #4, no rows",
             "\"parity:unknown\" => selects null, menu #2, no rows"
@@ -14558,10 +14922,24 @@
         [
           "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
           "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
-          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-resource:jobs | Job | mdi-transit-connection-horizontal | - | on",
+          "g2 databricks.add-resource:pipelines | Pipeline | mdi-pipe | - | on"
         ],
         [
           "g1 databricks.connect | Depend on | mdi-ray-start-arrow | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-library:notebook | Notebook library | mdi-notebook-outline | - | on",
+          "g2 databricks.add-library:file | File library | mdi-file-code-outline | - | on"
         ]
       ],
       "choices": [],
@@ -14724,7 +15102,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #2, no rows",
-            "\"new:120,80\" => selects null, menu #3, no rows",
+            "\"new:120,80\" => selects null, menu #5, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #4, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #4, no rows",
             "\"parity:unknown\" => selects null, menu #2, no rows"
@@ -14739,7 +15117,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #2, no rows",
-            "\"new:120,80\" => selects null, menu #3, no rows",
+            "\"new:120,80\" => selects null, menu #6, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #4, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #4, no rows",
             "\"parity:unknown\" => selects null, menu #2, no rows"
@@ -14763,10 +15141,24 @@
         [
           "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
           "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
-          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-resource:jobs | Job | mdi-transit-connection-horizontal | - | on",
+          "g2 databricks.add-resource:pipelines | Pipeline | mdi-pipe | - | on"
         ],
         [
           "g1 databricks.connect | Depend on | mdi-ray-start-arrow | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-library:notebook | Notebook library | mdi-notebook-outline | - | on",
+          "g2 databricks.add-library:file | File library | mdi-file-code-outline | - | on"
         ]
       ],
       "choices": [],
@@ -14947,7 +15339,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #4, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -14973,19 +15365,19 @@
             "notifications | databricks/pipeline+node | 320, 440 | DatabricksPipelineNodePayload { \"role\": \"notifications\", \"label\": \"data-eng@example.com\" }"
           ],
           "targets": [
-            "\"library:transformations/bronze\" => selects \"transformations/bronze\", menu #4, no rows",
+            "\"library:transformations/bronze\" => selects \"transformations/bronze\", menu #5, no rows",
             "\"flow:transformations/bronze->pipeline\" => selects \"transformations/bronze → bronze_to_gold\", menu #1, no rows",
-            "\"library:transformations/silver.py\" => selects \"transformations/silver.py\", menu #4, no rows",
+            "\"library:transformations/silver.py\" => selects \"transformations/silver.py\", menu #5, no rows",
             "\"flow:transformations/silver.py->pipeline\" => selects \"transformations/silver.py → bronze_to_gold\", menu #1, no rows",
-            "\"library:transformations/gold/**\" => selects \"transformations/gold/**\", menu #4, no rows",
+            "\"library:transformations/gold/**\" => selects \"transformations/gold/**\", menu #5, no rows",
             "\"flow:transformations/gold/**->pipeline\" => selects \"transformations/gold/** → bronze_to_gold\", menu #1, no rows",
-            "\"pipeline\" => selects \"bronze_to_gold\", menu #5, rows #1",
+            "\"pipeline\" => selects \"bronze_to_gold\", menu #6, rows #1",
             "\"target\" => selects null, menu #1, no rows",
             "\"flow:pipeline->target\" => selects \"bronze_to_gold → target\", menu #1, no rows",
             "\"compute\" => selects null, menu #1, no rows",
             "\"notifications\" => selects null, menu #1, no rows",
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #7, no rows",
             "\"rel:library:transformations/bronze->library:transformations/silver.py\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->library:transformations/bronze\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -14996,7 +15388,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #7, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -15013,10 +15405,17 @@
         [
           "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
           "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
-          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-resource:jobs | Job | mdi-transit-connection-horizontal | - | on",
+          "g2 databricks.add-resource:pipelines | Pipeline | mdi-pipe | - | on"
         ],
         [
           "g1 databricks.connect | Depend on | mdi-ray-start-arrow | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
         ],
         [
           "g1 databricks.remove-library | Remove library | mdi-delete-outline | Delete | on"
@@ -15025,6 +15424,13 @@
           "g1 databricks.add-library:notebook | Add notebook library… | mdi-notebook-outline | - | on",
           "g1 databricks.add-library:file | Add file library… | mdi-file-code-outline | - | on",
           "g2 databricks.simulated.pipeline-update | Start update (simulated) | mdi-play-outline | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-library:notebook | Notebook library | mdi-notebook-outline | - | on",
+          "g2 databricks.add-library:file | File library | mdi-file-code-outline | - | on"
         ]
       ],
       "choices": [],
@@ -15338,7 +15744,7 @@
             "\"edge:plain->follower\" => selects \"plain → follower\", menu #7, no rows",
             "\"cluster:c1\" => selects \"c1\", menu #1, no rows",
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #3, no rows",
+            "\"new:120,80\" => selects null, menu #8, no rows",
             "\"rel:task:plain->task:follower\" => selects null, menu #4, no rows",
             "\"rel:new:120,80->task:plain\" => selects null, menu #4, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -15353,7 +15759,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #3, no rows",
+            "\"new:120,80\" => selects null, menu #8, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #4, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #4, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -15372,16 +15778,16 @@
             "compute | databricks/pipeline+node | 0, 320 | DatabricksPipelineNodePayload { \"role\": \"compute\", \"label\": \"cluster\" }"
           ],
           "targets": [
-            "\"library:transformations/raw\" => selects \"transformations/raw\", menu #8, no rows",
+            "\"library:transformations/raw\" => selects \"transformations/raw\", menu #9, no rows",
             "\"flow:transformations/raw->pipeline\" => selects \"transformations/raw → Raw pipeline\", menu #1, no rows",
-            "\"library:transformations/raw.py\" => selects \"transformations/raw.py\", menu #8, no rows",
+            "\"library:transformations/raw.py\" => selects \"transformations/raw.py\", menu #9, no rows",
             "\"flow:transformations/raw.py->pipeline\" => selects \"transformations/raw.py → Raw pipeline\", menu #1, no rows",
-            "\"pipeline\" => selects \"Raw pipeline\", menu #9, rows #4",
+            "\"pipeline\" => selects \"Raw pipeline\", menu #10, rows #4",
             "\"target\" => selects null, menu #1, no rows",
             "\"flow:pipeline->target\" => selects \"Raw pipeline → target\", menu #1, no rows",
             "\"compute\" => selects null, menu #1, no rows",
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #3, no rows",
+            "\"new:120,80\" => selects null, menu #11, no rows",
             "\"rel:library:transformations/raw->library:transformations/raw.py\" => selects null, menu #4, no rows",
             "\"rel:new:120,80->library:transformations/raw\" => selects null, menu #4, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -15396,7 +15802,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #3, no rows",
+            "\"new:120,80\" => selects null, menu #11, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #4, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #4, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -15416,7 +15822,9 @@
         [
           "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
           "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
-          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-resource:jobs | Job | mdi-transit-connection-horizontal | - | on",
+          "g2 databricks.add-resource:pipelines | Pipeline | mdi-pipe | - | on"
         ],
         [
           "g1 databricks.connect | Depend on | mdi-ray-start-arrow | - | on"
@@ -15440,12 +15848,24 @@
           "g1 databricks.remove-edge | Remove dependency | mdi-vector-polyline-remove | Delete | on"
         ],
         [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+        ],
+        [
           "g1 databricks.remove-library | Remove library | mdi-delete-outline | Delete | on"
         ],
         [
           "g1 databricks.add-library:notebook | Add notebook library… | mdi-notebook-outline | - | on",
           "g1 databricks.add-library:file | Add file library… | mdi-file-code-outline | - | on",
           "g2 databricks.simulated.pipeline-update | Start update (simulated) | mdi-play-outline | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-library:notebook | Notebook library | mdi-notebook-outline | - | on",
+          "g2 databricks.add-library:file | File library | mdi-file-code-outline | - | on"
         ]
       ],
       "choices": [],
@@ -16234,7 +16654,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #4, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -16257,16 +16677,16 @@
             "compute | databricks/pipeline+node | 0, 320 | DatabricksPipelineNodePayload { \"role\": \"compute\", \"label\": \"cluster\" }"
           ],
           "targets": [
-            "\"library:transformations/a\" => selects \"transformations/a\", menu #4, no rows",
+            "\"library:transformations/a\" => selects \"transformations/a\", menu #5, no rows",
             "\"flow:transformations/a->pipeline\" => selects \"transformations/a → one_line\", menu #1, no rows",
-            "\"library:transformations/b.py\" => selects \"transformations/b.py\", menu #4, no rows",
+            "\"library:transformations/b.py\" => selects \"transformations/b.py\", menu #5, no rows",
             "\"flow:transformations/b.py->pipeline\" => selects \"transformations/b.py → one_line\", menu #1, no rows",
-            "\"pipeline\" => selects \"one_line\", menu #5, rows #1",
+            "\"pipeline\" => selects \"one_line\", menu #6, rows #1",
             "\"target\" => selects null, menu #1, no rows",
             "\"flow:pipeline->target\" => selects \"one_line → target\", menu #1, no rows",
             "\"compute\" => selects null, menu #1, no rows",
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #7, no rows",
             "\"rel:library:transformations/a->library:transformations/b.py\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->library:transformations/a\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -16277,7 +16697,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #7, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -16294,10 +16714,17 @@
         [
           "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
           "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
-          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-resource:jobs | Job | mdi-transit-connection-horizontal | - | on",
+          "g2 databricks.add-resource:pipelines | Pipeline | mdi-pipe | - | on"
         ],
         [
           "g1 databricks.connect | Depend on | mdi-ray-start-arrow | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
         ],
         [
           "g1 databricks.remove-library | Remove library | mdi-delete-outline | Delete | on"
@@ -16306,6 +16733,13 @@
           "g1 databricks.add-library:notebook | Add notebook library… | mdi-notebook-outline | - | on",
           "g1 databricks.add-library:file | Add file library… | mdi-file-code-outline | - | on",
           "g2 databricks.simulated.pipeline-update | Start update (simulated) | mdi-play-outline | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-library:notebook | Notebook library | mdi-notebook-outline | - | on",
+          "g2 databricks.add-library:file | File library | mdi-file-code-outline | - | on"
         ]
       ],
       "choices": [],
@@ -16554,7 +16988,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #2, no rows",
-            "\"new:120,80\" => selects null, menu #3, no rows",
+            "\"new:120,80\" => selects null, menu #5, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #4, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #4, no rows",
             "\"parity:unknown\" => selects null, menu #2, no rows"
@@ -16569,7 +17003,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #2, no rows",
-            "\"new:120,80\" => selects null, menu #3, no rows",
+            "\"new:120,80\" => selects null, menu #6, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #4, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #4, no rows",
             "\"parity:unknown\" => selects null, menu #2, no rows"
@@ -16593,10 +17027,24 @@
         [
           "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
           "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
-          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-resource:jobs | Job | mdi-transit-connection-horizontal | - | on",
+          "g2 databricks.add-resource:pipelines | Pipeline | mdi-pipe | - | on"
         ],
         [
           "g1 databricks.connect | Depend on | mdi-ray-start-arrow | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-library:notebook | Notebook library | mdi-notebook-outline | - | on",
+          "g2 databricks.add-library:file | File library | mdi-file-code-outline | - | on"
         ]
       ],
       "choices": [],
@@ -16781,7 +17229,7 @@
             "\"task:shape\" => selects \"shape\", menu #6, rows #4",
             "\"edge:ingest->shape\" => selects \"ingest → shape\", menu #7, no rows",
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #3, no rows",
+            "\"new:120,80\" => selects null, menu #8, no rows",
             "\"rel:task:ingest->task:shape\" => selects null, menu #4, no rows",
             "\"rel:new:120,80->task:ingest\" => selects null, menu #4, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -16801,11 +17249,11 @@
           ],
           "targets": [
             "\"task:ingest\" => selects \"ingest\", menu #5, rows #5",
-            "\"task:report\" => selects \"report\", menu #8, rows #6",
+            "\"task:report\" => selects \"report\", menu #9, rows #6",
             "\"edge:absent->report\" => selects \"absent → report\", menu #7, no rows",
             "\"task:absent\" => selects null, menu #1, no rows",
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #3, no rows",
+            "\"new:120,80\" => selects null, menu #8, no rows",
             "\"rel:task:ingest->task:report\" => selects null, menu #4, no rows",
             "\"rel:new:120,80->task:ingest\" => selects null, menu #4, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -16816,7 +17264,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #3, no rows",
+            "\"new:120,80\" => selects null, menu #8, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #4, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #4, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -16833,14 +17281,14 @@
             "compute | databricks/pipeline+node | 0, 200 | DatabricksPipelineNodePayload { \"role\": \"compute\", \"label\": \"cluster\" }"
           ],
           "targets": [
-            "\"library:transformations/a\" => selects \"transformations/a\", menu #9, no rows",
+            "\"library:transformations/a\" => selects \"transformations/a\", menu #10, no rows",
             "\"flow:transformations/a->pipeline\" => selects \"transformations/a → Pipe A\", menu #1, no rows",
-            "\"pipeline\" => selects \"Pipe A\", menu #10, rows #7",
+            "\"pipeline\" => selects \"Pipe A\", menu #11, rows #7",
             "\"target\" => selects null, menu #1, no rows",
             "\"flow:pipeline->target\" => selects \"Pipe A → target\", menu #1, no rows",
             "\"compute\" => selects null, menu #1, no rows",
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #3, no rows",
+            "\"new:120,80\" => selects null, menu #12, no rows",
             "\"rel:library:transformations/a->pipeline\" => selects null, menu #4, no rows",
             "\"rel:new:120,80->library:transformations/a\" => selects null, menu #4, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -16861,14 +17309,14 @@
             "compute | databricks/pipeline+node | 0, 200 | DatabricksPipelineNodePayload { \"role\": \"compute\", \"label\": \"cluster\" }"
           ],
           "targets": [
-            "\"library:transformations/b\" => selects \"transformations/b\", menu #9, no rows",
+            "\"library:transformations/b\" => selects \"transformations/b\", menu #10, no rows",
             "\"flow:transformations/b->pipeline\" => selects null, menu #1, no rows",
-            "\"pipeline\" => selects \"Pipe A\", menu #10, rows #8",
+            "\"pipeline\" => selects \"Pipe A\", menu #11, rows #8",
             "\"target\" => selects null, menu #1, no rows",
             "\"flow:pipeline->target\" => selects \"Pipe A → target\", menu #1, no rows",
             "\"compute\" => selects null, menu #1, no rows",
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #3, no rows",
+            "\"new:120,80\" => selects null, menu #12, no rows",
             "\"rel:library:transformations/b->pipeline\" => selects null, menu #4, no rows",
             "\"rel:new:120,80->library:transformations/b\" => selects null, menu #4, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -16879,7 +17327,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #3, no rows",
+            "\"new:120,80\" => selects null, menu #12, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #4, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #4, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -16899,7 +17347,9 @@
         [
           "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
           "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
-          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-resource:jobs | Job | mdi-transit-connection-horizontal | - | on",
+          "g2 databricks.add-resource:pipelines | Pipeline | mdi-pipe | - | on"
         ],
         [
           "g1 databricks.connect | Depend on | mdi-ray-start-arrow | - | on"
@@ -16923,6 +17373,11 @@
           "g1 databricks.remove-edge | Remove dependency | mdi-vector-polyline-remove | Delete | on"
         ],
         [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+        ],
+        [
           "g1 databricks.rename-task | Rename… | mdi-pencil-outline | F2 | on",
           "g1 databricks.set-run-if | Set run if… | mdi-filter-outline | - | on",
           "g1 databricks.assign-cluster | Assign cluster… | mdi-server | - | on",
@@ -16937,6 +17392,13 @@
           "g1 databricks.add-library:notebook | Add notebook library… | mdi-notebook-outline | - | on",
           "g1 databricks.add-library:file | Add file library… | mdi-file-code-outline | - | on",
           "g2 databricks.simulated.pipeline-update | Start update (simulated) | mdi-play-outline | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-library:notebook | Notebook library | mdi-notebook-outline | - | on",
+          "g2 databricks.add-library:file | File library | mdi-file-code-outline | - | on"
         ]
       ],
       "choices": [],
@@ -17769,7 +18231,7 @@
             "\"task:02\" => selects \"02\", menu #6, rows #3",
             "\"edge:01->02\" => selects \"01 → 02\", menu #7, no rows",
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #3, no rows",
+            "\"new:120,80\" => selects null, menu #8, no rows",
             "\"rel:task:01->task:02\" => selects null, menu #4, no rows",
             "\"rel:new:120,80->task:01\" => selects null, menu #4, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -17784,7 +18246,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #3, no rows",
+            "\"new:120,80\" => selects null, menu #8, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #4, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #4, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -17801,14 +18263,14 @@
             "compute | databricks/pipeline+node | 0, 200 | DatabricksPipelineNodePayload { \"role\": \"compute\", \"label\": \"serverless\" }"
           ],
           "targets": [
-            "\"library:transformations/typed\" => selects \"transformations/typed\", menu #8, no rows",
+            "\"library:transformations/typed\" => selects \"transformations/typed\", menu #9, no rows",
             "\"flow:transformations/typed->pipeline\" => selects \"transformations/typed → null\", menu #1, no rows",
-            "\"pipeline\" => selects \"null\", menu #9, rows #4",
+            "\"pipeline\" => selects \"null\", menu #10, rows #4",
             "\"target\" => selects null, menu #1, no rows",
             "\"flow:pipeline->target\" => selects \"null → target\", menu #1, no rows",
             "\"compute\" => selects null, menu #1, no rows",
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #3, no rows",
+            "\"new:120,80\" => selects null, menu #11, no rows",
             "\"rel:library:transformations/typed->pipeline\" => selects null, menu #4, no rows",
             "\"rel:new:120,80->library:transformations/typed\" => selects null, menu #4, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -17823,7 +18285,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #3, no rows",
+            "\"new:120,80\" => selects null, menu #11, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #4, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #4, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -17843,7 +18305,9 @@
         [
           "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
           "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
-          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-resource:jobs | Job | mdi-transit-connection-horizontal | - | on",
+          "g2 databricks.add-resource:pipelines | Pipeline | mdi-pipe | - | on"
         ],
         [
           "g1 databricks.connect | Depend on | mdi-ray-start-arrow | - | on"
@@ -17867,12 +18331,24 @@
           "g1 databricks.remove-edge | Remove dependency | mdi-vector-polyline-remove | Delete | on"
         ],
         [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+        ],
+        [
           "g1 databricks.remove-library | Remove library | mdi-delete-outline | Delete | on"
         ],
         [
           "g1 databricks.add-library:notebook | Add notebook library… | mdi-notebook-outline | - | on",
           "g1 databricks.add-library:file | Add file library… | mdi-file-code-outline | - | on",
           "g2 databricks.simulated.pipeline-update | Start update (simulated) | mdi-play-outline | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-library:notebook | Notebook library | mdi-notebook-outline | - | on",
+          "g2 databricks.add-library:file | File library | mdi-file-code-outline | - | on"
         ]
       ],
       "choices": [],
@@ -18792,7 +19268,7 @@
             "\"task:run\" => selects \"run\", menu #5, rows #2",
             "\"cluster:sized_by_variable\" => selects \"sized_by_variable\", menu #1, no rows",
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #3, no rows",
+            "\"new:120,80\" => selects null, menu #6, no rows",
             "\"rel:task:run->cluster:sized_by_variable\" => selects null, menu #4, no rows",
             "\"rel:new:120,80->task:run\" => selects null, menu #4, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -18807,7 +19283,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #3, no rows",
+            "\"new:120,80\" => selects null, menu #6, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #4, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #4, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -18824,14 +19300,14 @@
             "compute | databricks/pipeline+node | 0, 200 | DatabricksPipelineNodePayload { \"role\": \"compute\", \"label\": \"cluster\" }"
           ],
           "targets": [
-            "\"library:transformations/variable\" => selects \"transformations/variable\", menu #6, no rows",
+            "\"library:transformations/variable\" => selects \"transformations/variable\", menu #7, no rows",
             "\"flow:transformations/variable->pipeline\" => selects \"transformations/variable → Variable pipeline\", menu #1, no rows",
-            "\"pipeline\" => selects \"Variable pipeline\", menu #7, rows #3",
+            "\"pipeline\" => selects \"Variable pipeline\", menu #8, rows #3",
             "\"target\" => selects null, menu #1, no rows",
             "\"flow:pipeline->target\" => selects \"Variable pipeline → target\", menu #1, no rows",
             "\"compute\" => selects null, menu #1, no rows",
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #3, no rows",
+            "\"new:120,80\" => selects null, menu #9, no rows",
             "\"rel:library:transformations/variable->pipeline\" => selects null, menu #4, no rows",
             "\"rel:new:120,80->library:transformations/variable\" => selects null, menu #4, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -18846,7 +19322,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #3, no rows",
+            "\"new:120,80\" => selects null, menu #9, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #4, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #4, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -18866,7 +19342,9 @@
         [
           "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
           "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
-          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-resource:jobs | Job | mdi-transit-connection-horizontal | - | on",
+          "g2 databricks.add-resource:pipelines | Pipeline | mdi-pipe | - | on"
         ],
         [
           "g1 databricks.connect | Depend on | mdi-ray-start-arrow | - | on"
@@ -18879,12 +19357,24 @@
           "g2 databricks.simulated.run-job | Run job (simulated) | mdi-play-outline | - | on"
         ],
         [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+        ],
+        [
           "g1 databricks.remove-library | Remove library | mdi-delete-outline | Delete | on"
         ],
         [
           "g1 databricks.add-library:notebook | Add notebook library… | mdi-notebook-outline | - | on",
           "g1 databricks.add-library:file | Add file library… | mdi-file-code-outline | - | on",
           "g2 databricks.simulated.pipeline-update | Start update (simulated) | mdi-play-outline | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-library:notebook | Notebook library | mdi-notebook-outline | - | on",
+          "g2 databricks.add-library:file | File library | mdi-file-code-outline | - | on"
         ]
       ],
       "choices": [],
@@ -19623,7 +20113,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #3, no rows",
+            "\"new:120,80\" => selects null, menu #5, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #4, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #4, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -19649,19 +20139,19 @@
             "notifications | databricks/pipeline+node | 320, 440 | DatabricksPipelineNodePayload { \"role\": \"notifications\", \"label\": \"data-eng@vrenken.eu\" }"
           ],
           "targets": [
-            "\"library:transformations/bronze\" => selects \"transformations/bronze\", menu #5, no rows",
+            "\"library:transformations/bronze\" => selects \"transformations/bronze\", menu #6, no rows",
             "\"flow:transformations/bronze->pipeline\" => selects \"transformations/bronze → Bronze to gold\", menu #1, no rows",
-            "\"library:transformations/silver\" => selects \"transformations/silver\", menu #5, no rows",
+            "\"library:transformations/silver\" => selects \"transformations/silver\", menu #6, no rows",
             "\"flow:transformations/silver->pipeline\" => selects \"transformations/silver → Bronze to gold\", menu #1, no rows",
-            "\"library:transformations/gold/**\" => selects \"transformations/gold/**\", menu #5, no rows",
+            "\"library:transformations/gold/**\" => selects \"transformations/gold/**\", menu #6, no rows",
             "\"flow:transformations/gold/**->pipeline\" => selects \"transformations/gold/** → Bronze to gold\", menu #1, no rows",
-            "\"pipeline\" => selects \"Bronze to gold\", menu #6, rows #3",
+            "\"pipeline\" => selects \"Bronze to gold\", menu #7, rows #3",
             "\"target\" => selects null, menu #1, no rows",
             "\"flow:pipeline->target\" => selects \"Bronze to gold → target\", menu #1, no rows",
             "\"compute\" => selects null, menu #1, no rows",
             "\"notifications\" => selects null, menu #1, no rows",
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #3, no rows",
+            "\"new:120,80\" => selects null, menu #8, no rows",
             "\"rel:library:transformations/bronze->library:transformations/silver\" => selects null, menu #4, no rows",
             "\"rel:new:120,80->library:transformations/bronze\" => selects null, menu #4, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -19676,7 +20166,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #3, no rows",
+            "\"new:120,80\" => selects null, menu #8, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #4, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #4, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -19700,10 +20190,17 @@
         [
           "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
           "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
-          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-resource:jobs | Job | mdi-transit-connection-horizontal | - | on",
+          "g2 databricks.add-resource:pipelines | Pipeline | mdi-pipe | - | on"
         ],
         [
           "g1 databricks.connect | Depend on | mdi-ray-start-arrow | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
         ],
         [
           "g1 databricks.remove-library | Remove library | mdi-delete-outline | Delete | on"
@@ -19712,6 +20209,13 @@
           "g1 databricks.add-library:notebook | Add notebook library… | mdi-notebook-outline | - | on",
           "g1 databricks.add-library:file | Add file library… | mdi-file-code-outline | - | on",
           "g2 databricks.simulated.pipeline-update | Start update (simulated) | mdi-play-outline | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-library:notebook | Notebook library | mdi-notebook-outline | - | on",
+          "g2 databricks.add-library:file | File library | mdi-file-code-outline | - | on"
         ]
       ],
       "choices": [],
@@ -20081,7 +20585,7 @@
             "\"edge:publish->refresh_dashboard\" => selects \"publish → refresh_dashboard\", menu #6, no rows",
             "\"cluster:ingest_cluster\" => selects \"ingest_cluster\", menu #1, no rows",
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #9, no rows",
             "\"rel:task:land_raw->task:quality_gate\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:land_raw\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -20096,7 +20600,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #9, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -20128,7 +20632,7 @@
             "\"edge:publish->refresh_dashboard\" => selects \"publish → refresh_dashboard\", menu #6, no rows",
             "\"cluster:ingest_cluster\" => selects \"ingest_cluster\", menu #1, no rows",
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #9, no rows",
             "\"rel:task:land_raw->task:quality_gate\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:land_raw\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -20139,7 +20643,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #10, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -20160,7 +20664,9 @@
         [
           "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
           "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
-          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-resource:jobs | Job | mdi-transit-connection-horizontal | - | on",
+          "g2 databricks.add-resource:pipelines | Pipeline | mdi-pipe | - | on"
         ],
         [
           "g1 databricks.connect | Depend on | mdi-ray-start-arrow | - | on"
@@ -20198,6 +20704,18 @@
           "g1 databricks.disconnect:publish | Disconnect from 'publish' | mdi-vector-polyline-remove | - | on",
           "g1 databricks.remove-task | Remove | mdi-delete-outline | Delete | on",
           "g2 databricks.simulated.run-job | Run job (simulated) | mdi-play-outline | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-library:notebook | Notebook library | mdi-notebook-outline | - | on",
+          "g2 databricks.add-library:file | File library | mdi-file-code-outline | - | on"
         ]
       ],
       "choices": [],
@@ -20858,7 +21376,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #3, no rows",
+            "\"new:120,80\" => selects null, menu #5, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #4, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #4, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -20884,19 +21402,19 @@
             "notifications | databricks/pipeline+node | 320, 440 | DatabricksPipelineNodePayload { \"role\": \"notifications\", \"label\": \"data-eng@vrenken.eu\" }"
           ],
           "targets": [
-            "\"library:transformations/bronze\" => selects \"transformations/bronze\", menu #5, no rows",
+            "\"library:transformations/bronze\" => selects \"transformations/bronze\", menu #6, no rows",
             "\"flow:transformations/bronze->pipeline\" => selects \"transformations/bronze → Bronze to gold\", menu #1, no rows",
-            "\"library:transformations/silver\" => selects \"transformations/silver\", menu #5, no rows",
+            "\"library:transformations/silver\" => selects \"transformations/silver\", menu #6, no rows",
             "\"flow:transformations/silver->pipeline\" => selects \"transformations/silver → Bronze to gold\", menu #1, no rows",
-            "\"library:transformations/gold/**\" => selects \"transformations/gold/**\", menu #5, no rows",
+            "\"library:transformations/gold/**\" => selects \"transformations/gold/**\", menu #6, no rows",
             "\"flow:transformations/gold/**->pipeline\" => selects \"transformations/gold/** → Bronze to gold\", menu #1, no rows",
-            "\"pipeline\" => selects \"Bronze to gold\", menu #6, rows #3",
+            "\"pipeline\" => selects \"Bronze to gold\", menu #7, rows #3",
             "\"target\" => selects null, menu #1, no rows",
             "\"flow:pipeline->target\" => selects \"Bronze to gold → target\", menu #1, no rows",
             "\"compute\" => selects null, menu #1, no rows",
             "\"notifications\" => selects null, menu #1, no rows",
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #3, no rows",
+            "\"new:120,80\" => selects null, menu #8, no rows",
             "\"rel:library:transformations/bronze->library:transformations/silver\" => selects null, menu #4, no rows",
             "\"rel:new:120,80->library:transformations/bronze\" => selects null, menu #4, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -20911,7 +21429,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #3, no rows",
+            "\"new:120,80\" => selects null, menu #8, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #4, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #4, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -20935,10 +21453,17 @@
         [
           "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
           "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
-          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-resource:jobs | Job | mdi-transit-connection-horizontal | - | on",
+          "g2 databricks.add-resource:pipelines | Pipeline | mdi-pipe | - | on"
         ],
         [
           "g1 databricks.connect | Depend on | mdi-ray-start-arrow | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
         ],
         [
           "g1 databricks.remove-library | Remove library | mdi-delete-outline | Delete | on"
@@ -20947,6 +21472,13 @@
           "g1 databricks.add-library:notebook | Add notebook library… | mdi-notebook-outline | - | on",
           "g1 databricks.add-library:file | Add file library… | mdi-file-code-outline | - | on",
           "g2 databricks.simulated.pipeline-update | Start update (simulated) | mdi-play-outline | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-library:notebook | Notebook library | mdi-notebook-outline | - | on",
+          "g2 databricks.add-library:file | File library | mdi-file-code-outline | - | on"
         ]
       ],
       "choices": [],
@@ -21297,7 +21829,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #2, no rows",
-            "\"new:120,80\" => selects null, menu #3, no rows",
+            "\"new:120,80\" => selects null, menu #5, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #4, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #4, no rows",
             "\"parity:unknown\" => selects null, menu #2, no rows"
@@ -21312,7 +21844,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #2, no rows",
-            "\"new:120,80\" => selects null, menu #3, no rows",
+            "\"new:120,80\" => selects null, menu #6, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #4, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #4, no rows",
             "\"parity:unknown\" => selects null, menu #2, no rows"
@@ -21336,10 +21868,24 @@
         [
           "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
           "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
-          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-resource:jobs | Job | mdi-transit-connection-horizontal | - | on",
+          "g2 databricks.add-resource:pipelines | Pipeline | mdi-pipe | - | on"
         ],
         [
           "g1 databricks.connect | Depend on | mdi-ray-start-arrow | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-library:notebook | Notebook library | mdi-notebook-outline | - | on",
+          "g2 databricks.add-library:file | File library | mdi-file-code-outline | - | on"
         ]
       ],
       "choices": [],
@@ -21505,7 +22051,7 @@
           "targets": [
             "\"task:main\" => selects \"main\", menu #4, rows #1",
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #5, no rows",
             "\"rel:task:main->task:b\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:main\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -21520,7 +22066,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #5, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -21531,7 +22077,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #6, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -21552,7 +22098,9 @@
         [
           "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
           "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
-          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-resource:jobs | Job | mdi-transit-connection-horizontal | - | on",
+          "g2 databricks.add-resource:pipelines | Pipeline | mdi-pipe | - | on"
         ],
         [
           "g1 databricks.connect | Depend on | mdi-ray-start-arrow | - | on"
@@ -21563,6 +22111,18 @@
           "g1 databricks.assign-cluster | Assign cluster… | mdi-server | - | on",
           "g1 databricks.remove-task | Remove | mdi-delete-outline | Delete | on",
           "g2 databricks.simulated.run-job | Run job (simulated) | mdi-play-outline | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-library:notebook | Notebook library | mdi-notebook-outline | - | on",
+          "g2 databricks.add-library:file | File library | mdi-file-code-outline | - | on"
         ]
       ],
       "choices": [],
@@ -22079,7 +22639,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #4, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -22100,14 +22660,14 @@
             "compute | databricks/pipeline+node | 0, 200 | DatabricksPipelineNodePayload { \"role\": \"compute\", \"label\": \"cluster\" }"
           ],
           "targets": [
-            "\"library:transformations/parity\" => selects \"transformations/parity\", menu #4, no rows",
+            "\"library:transformations/parity\" => selects \"transformations/parity\", menu #5, no rows",
             "\"flow:transformations/parity->pipeline\" => selects \"transformations/parity → parity\", menu #1, no rows",
-            "\"pipeline\" => selects \"parity\", menu #5, rows #1",
+            "\"pipeline\" => selects \"parity\", menu #6, rows #1",
             "\"target\" => selects null, menu #1, no rows",
             "\"flow:pipeline->target\" => selects \"parity → target\", menu #1, no rows",
             "\"compute\" => selects null, menu #1, no rows",
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #7, no rows",
             "\"rel:library:transformations/parity->pipeline\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->library:transformations/parity\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -22118,7 +22678,7 @@
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #2, no rows",
+            "\"new:120,80\" => selects null, menu #7, no rows",
             "\"rel:task:a->task:b\" => selects null, menu #3, no rows",
             "\"rel:new:120,80->task:a\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
@@ -22135,10 +22695,17 @@
         [
           "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
           "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
-          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-resource:jobs | Job | mdi-transit-connection-horizontal | - | on",
+          "g2 databricks.add-resource:pipelines | Pipeline | mdi-pipe | - | on"
         ],
         [
           "g1 databricks.connect | Depend on | mdi-ray-start-arrow | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on"
         ],
         [
           "g1 databricks.remove-library | Remove library | mdi-delete-outline | Delete | on"
@@ -22147,6 +22714,13 @@
           "g1 databricks.add-library:notebook | Add notebook library… | mdi-notebook-outline | - | on",
           "g1 databricks.add-library:file | Add file library… | mdi-file-code-outline | - | on",
           "g2 databricks.simulated.pipeline-update | Start update (simulated) | mdi-play-outline | - | on"
+        ],
+        [
+          "g1 databricks.add-task:notebook | Add notebook task here | mdi-notebook-outline | - | on",
+          "g1 databricks.add-task:python | Add Python task here | mdi-language-python | - | on",
+          "g1 databricks.add-task:condition | Add condition task here | mdi-call-split | - | on",
+          "g2 databricks.add-library:notebook | Notebook library | mdi-notebook-outline | - | on",
+          "g2 databricks.add-library:file | File library | mdi-file-code-outline | - | on"
         ]
       ],
       "choices": [],
