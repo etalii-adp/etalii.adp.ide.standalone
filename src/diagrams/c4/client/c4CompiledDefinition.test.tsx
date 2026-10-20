@@ -273,9 +273,10 @@ describe("the C4 canvas's compiled definitions", () => {
  * The specifications' shapes are the silhouettes the canvas draws them as.
  *
  * The canvas never reads a shape's geometry: `c4Bindings.ts` says every card is the library's `styled-box`,
- * whose silhouette the element names. This holds the two to one drawing - each part of `c4Person`,
- * `c4Cylinder`, the `roundedRect` of radius 8 and the `rect` in the order drawn, at the box it stands in -
- * at a grid of card sizes, so neither can be changed without the other.
+ * whose silhouette the element names. This holds the two to one drawing - each part of DISL 0.5's built-in
+ * `person` as section 6.7 states it at its default radius, `c4Cylinder`, the `roundedRect` of radius 8 and
+ * the `rect` in the order drawn, at the box it stands in - at a grid of card sizes, so neither can be
+ * changed without the other.
  */
 describe("the C4 specifications' shapes", () => {
   const SPEC = parseDisl(container);
@@ -321,10 +322,18 @@ describe("the C4 specifications' shapes", () => {
   }
 
   const custom = (name: string) => (SPEC.notation.shapes![name] as DislCustomShape).parts!;
+  /**
+   * DISL 0.5's `person` (section 6.7, Appendix B.2), which no specification states as parts: a head of
+   * radius 10 centred 8 above the top edge, painted first, then a body of radius 8 over the bounds.
+   */
+  const person = (): DislShapePart[] => [
+    { id: "head", shape: "circle", box: { x: "w / 2.0 - 10.0", y: -18, w: 20, h: 20 } } as DislShapePart,
+    ...whole("roundedRect", 8),
+  ];
   const whole = (type: string, radius?: number): DislShapePart[] => [{ id: "body", shape: radius === undefined ? type : { type, params: { radius } }, box: { x: 0, y: 0, w: "w", h: "h" } } as DislShapePart];
 
   it.each([
-    ["Person", "c4Person", () => custom("c4Person")],
+    ["Person", "DISL's person", person],
     ["Cylinder", "c4Cylinder", () => custom("c4Cylinder")],
     ["RoundedBox", "a roundedRect of radius 8", () => whole("roundedRect", 8)],
     ["Box", "a rect", () => whole("rect")],
@@ -337,7 +346,7 @@ describe("the C4 specifications' shapes", () => {
   it("are the shapes the specifications draw their cards with", () => {
     const shapes = Object.fromEntries(Object.entries(SPEC.notation.nodes).map(([name, node]) => [name, typeof node.shape === "string" ? node.shape : (node.shape as { type: string; params?: unknown })]));
     expect(shapes).toEqual({
-      Person: "c4Person",
+      Person: "person",
       SoftwareSystem: { type: "roundedRect", params: { radius: 8 } },
       Container: { type: "roundedRect", params: { radius: 8 } },
       Component: { type: "roundedRect", params: { radius: 8 } },

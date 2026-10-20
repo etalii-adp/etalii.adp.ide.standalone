@@ -8,8 +8,9 @@ import type { DislCustomShape, DislShapeRef } from "./disTypes";
  * <b>A shape is admitted only with the parameters the library draws.</b> The library's hexagon is
  * inset a quarter with flat ends, its parallelogram leans a fifth to the right, its superellipse is
  * the squircle of exponent 4 (`shapes/outline.ts`), its cylinder stands upright with caps 12 high at
- * every height (`DiagramCanvas`'s `cylinder`). DISL lets a specification ask for any inset,
- * skew or exponent (§6.7), and a reference asking for one the library does not draw is refused here
+ * every height (`DiagramCanvas`'s `cylinder`), and its person's body has corners of 8 (`shapes/person.ts`).
+ * DISL lets a specification ask for any inset, skew, exponent or radius (§6.7), and a reference
+ * asking for one the library does not draw is refused here
  * rather than drawn as something else: a quiet substitution is the drift this compiler exists to
  * make impossible. A parameter left out takes DISL's default (Appendix B.2), which is then checked
  * the same way.
@@ -36,6 +37,9 @@ const SHAPES: Readonly<Record<string, CatalogEntry>> = {
   // DISL's cap defaults to 0.15 of the height, which is no number; the library's is 12 at every
   // height, so a reference states the cap or is refused.
   cylinder: { shape: "cylinder", draws: { cap: 12, orientation: "vertical" }, defaults: { cap: "0.15 × height", orientation: "vertical" } },
+  // DISL 0.5's person (§6.7): its one parameter is the body's corner, which the library draws at 8,
+  // DISL's default; the head is fixed and has none (`shapes/person.ts`).
+  person: { shape: "person", draws: { radius: 8 }, defaults: { radius: 8 } },
 };
 
 /** The DISL built-in shape names this library can draw. */

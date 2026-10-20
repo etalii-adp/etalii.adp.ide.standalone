@@ -1381,11 +1381,12 @@ class Compiler {
    * from a key on the item that names its other end is one per item: the item is the end that holds it,
    * and an end holds one key. Only a relation a gesture can draw (`edits.connect`) is bounded here, since
    * the bound exists to refuse the gesture before it is made. A 0.3 specification keeps what it had: there
-   * a drawn line onto an element that has one already moves it, which its module answers.
+   * a drawn line onto an element that has one already moves it, which its module answers. A 0.5 one is a
+   * 0.4 one here, since 0.5 changes nothing of 0.4 but adds the person shape.
    */
   private heldOnce(relation: DislRelation): { maxFromSource: 1 } | { maxIntoTarget: 1 } | undefined {
     const derived = relation.derived;
-    if (this.spec["disl"] !== "0.4" || !isObject(derived) || !isObject(derived.edits) || typeof derived.edits.connect !== "string") {
+    if (this.spec["disl"] === "0.3" || !isObject(derived) || !isObject(derived.edits) || typeof derived.edits.connect !== "string") {
       return undefined;
     }
 
