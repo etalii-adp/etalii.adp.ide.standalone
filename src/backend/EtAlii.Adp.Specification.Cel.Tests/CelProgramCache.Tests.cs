@@ -23,9 +23,10 @@ public class CelProgramCacheTests
         var given = new ConcurrentBag<(string Expression, CelProgram? Program, string? Problem)>();
         var cancellation = TestContext.Current.CancellationToken;
         using var start = new Barrier(threadCount);
-        var threads = Enumerable.Range(0, threadCount).Select(index => new Thread(() =>
+        // The barrier is handed to each thread as it starts rather than captured, since it is disposed here.
+        var threads = Enumerable.Range(0, threadCount).Select(index => new Thread(barrier =>
         {
-            start.SignalAndWait(cancellation);
+            ((Barrier)barrier!).SignalAndWait(cancellation);
             // Each thread asks for the keys in its own order, so threads meet on every key.
             foreach (var expression in Expressions.Skip(index % Expressions.Length).Concat(Expressions.Take(index % Expressions.Length)))
             {
@@ -35,7 +36,7 @@ public class CelProgramCacheTests
         })).ToList();
 
         // Act.
-        threads.ForEach(thread => thread.Start());
+        threads.ForEach(thread => thread.Start(start));
         threads.ForEach(thread => thread.Join());
 
         // Assert.
