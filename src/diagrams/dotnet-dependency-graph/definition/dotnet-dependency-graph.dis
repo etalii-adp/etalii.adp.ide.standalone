@@ -369,10 +369,11 @@
 
   "persistence": {
     "doc": "The model is not stored by this diagram type: it is read from the solution each time. The registration (`.adp`) holds the binding and the positions the user dragged, nothing else. No `.sln`, `.slnx` or project file is ever written.",
-    "format": "plugin:net.etalii.adp.dotnet.solution",
-    "files": { "mode": "split", "model": "{name}.slnx", "view": "{name}.adp" },
+    "format": "fbl",
+    "binding": "https://raw.githubusercontent.com/etalii-adp/etalii.adp.ide.standalone/develop/src/diagrams/dotnet-dependency-graph/backend/EtAlii.Adp.Diagram.DotNetDependencyGraph/dotnet-dependency-graph.fbl#solution",
     "ids": { "strategy": "natural", "prefix": { "Project": "project:", "Package": "package:" }, "stable": true,
-             "doc": "A project is `project:<path>`, a package `package:<id>`, and a reference `depends:<source id>-><target id>`." },
+             "pattern": "^(project|package|depends):.{1,1024}$",
+             "doc": "A project is `project:<path>`, a package `package:<id>`, and a reference `depends:<source id>-><target id>`. A project's path holds `/`, a reference holds `>` and two ids, and either can pass 128 characters, so the pattern admits them where DISL 11.5's default would not." },
     "view": { "store": [ "bounds" ], "styleOverrides": "none" }
   },
 
@@ -381,6 +382,7 @@
       "version": "^0.1.0",
       "provides": [ "persistenceFormat", "action" ],
       "required": true,
+      "plans": [],
       "args": {
         "action": { "type": "string", "doc": "`revealProjectFile`." }
       },

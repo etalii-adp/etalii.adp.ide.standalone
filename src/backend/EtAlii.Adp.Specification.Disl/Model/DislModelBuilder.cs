@@ -69,12 +69,23 @@ public static class DislModelBuilder
         List<FblElement> unreadable = [];
         if (reading.Unreadable) return new DislModel(diagram, findings, header, unreadable, true);
 
-        var map = specification.TypeMap;
-        var metamodel = specification.Metamodel;
-        var built = new Dictionary<FblElement, DislElement>(ReferenceEqualityComparer.Instance);
-        var byReadId = new Dictionary<string, DislElement>(specification.IdComparer);
-        var pending = new List<(FblElement Element, DislTypeMapping Mapping, DislType Type)>();
+        var typed = Typed(reading, diagram, header, unreadable);
+        new StoredElements(diagram, typed).Add();
+        findings.AddRange(Complete(diagram));
+        return new DislModel(diagram, findings, header, unreadable, false);
+    }
 
+    /// <summary>
+    /// The elements of <paramref name="reading"/> the type map makes model elements, in reading order, each with its
+    /// mapping and metamodel type; a <c>header</c> element is kept in <paramref name="header"/>, a <c>diagram</c>
+    /// element's attributes are set on <paramref name="diagram"/>, and an element of no type the model can hold is kept
+    /// in <paramref name="unreadable"/>.
+    /// </summary>
+    private static List<(FblElement Element, DislTypeMapping Mapping, DislType Type)> Typed(FblModel reading, DislDiagram diagram, List<FblElement> header, List<FblElement> unreadable)
+    {
+        var map = diagram.Specification.TypeMap;
+        var metamodel = diagram.Specification.Metamodel;
+        var typed = new List<(FblElement Element, DislTypeMapping Mapping, DislType Type)>();
         foreach (var element in reading.Elements)
         {
             var mapping = map.For(element.Type);
@@ -84,14 +95,7 @@ public static class DislModelBuilder
                     header.Add(element);
                     continue;
                 case "diagram":
-                    foreach ((string name, object? raw) in element.Attributes)
-                    {
-                        var target = mapping.Attributes.GetValueOrDefault(name, name);
-                        if (metamodel.DiagramAttributes.TryGetValue(target, out var attribute) && DislValues.TryFromRead(raw, attribute, metamodel, out var value))
-                        {
-                            diagram.SetAttribute(target, value);
-                        }
-                    }
+                    DiagramAttributes(diagram, element, mapping);
                     continue;
             }
             if (mapping.As == "unreadable" || metamodel.TypeOf(mapping.As) is not { Abstract: false } type)
@@ -99,78 +103,23 @@ public static class DislModelBuilder
                 unreadable.Add(element);
                 continue;
             }
-            pending.Add((element, mapping, type));
+            typed.Add((element, mapping, type));
         }
+        return typed;
+    }
 
-        // Nodes in reading order, each after its parent; then relations, whose ends are nodes.
-        foreach ((FblElement element, DislTypeMapping mapping, DislType type) in pending.Where(entry => !entry.Type.IsRelation))
+    /// <summary>The attributes of an element mapped <c>as</c> <c>diagram</c>, set on the diagram where they are diagram attributes that fit.</summary>
+    private static void DiagramAttributes(DislDiagram diagram, FblElement element, DislTypeMapping mapping)
+    {
+        var metamodel = diagram.Specification.Metamodel;
+        foreach ((string name, object? raw) in element.Attributes)
         {
-            Node(element, mapping, type);
-        }
-        foreach ((FblElement element, DislTypeMapping mapping, DislType type) in pending.Where(entry => entry.Type.IsRelation))
-        {
-            var attributes = Attributes(element, mapping, type, metamodel, out var host, out var ends);
-            var sourceId = ends.GetValueOrDefault("source") ?? element.Source;
-            var targetId = ends.GetValueOrDefault("target") ?? element.Target;
-            diagram.Add(new DislElement(diagram, type, NaturalId(specification, type, element, sourceId, targetId), attributes)
+            var target = mapping.Attributes.GetValueOrDefault(name, name);
+            if (metamodel.DiagramAttributes.TryGetValue(target, out var attribute) && DislValues.TryFromRead(raw, attribute, metamodel, out var value))
             {
-                Source = End(sourceId),
-                Target = End(targetId),
-                SourceId = sourceId,
-                TargetId = targetId,
-                HostAttributes = host,
-                Line = element.Line,
-                File = FileOf(element),
-                IdIsStored = element.IdIsStored,
-            });
-        }
-
-        // A reference attribute holds the id its target was read with, which under a prefix is not the
-        // target's model id: it is stored as the model id of the first node read with it (§11.5.4), and
-        // one that names nothing stays as read.
-        foreach (var element in diagram.Elements)
-        {
-            foreach (var attribute in element.Type.Attributes.Values)
-            {
-                if (metamodel.TypeOf(attribute.Type) is null || !element.Attributes.TryGetValue(attribute.Name, out var stored)) continue;
-                element.Store(attribute.Name, stored switch
-                {
-                    string id => ModelId(id),
-                    IReadOnlyList<object?> ids => ids.Select(id => id is string text ? ModelId(text) : id).ToList(),
-                    _ => stored,
-                });
+                diagram.SetAttribute(target, value);
             }
         }
-
-        findings.AddRange(Complete(diagram));
-        return new DislModel(diagram, findings, header, unreadable, false);
-
-        string ModelId(string id) => byReadId.TryGetValue(id, out var node) ? node.Id : id;
-
-        DislElement Node(FblElement element, DislTypeMapping mapping, DislType type)
-        {
-            if (built.TryGetValue(element, out var done)) return done;
-            var parent = element.ParentId is { } parentId && pending.FirstOrDefault(entry => entry.Element.Id == parentId) is { Element: not null } owner && !owner.Type.IsRelation
-                ? Node(owner.Element, owner.Mapping, owner.Type)
-                : null;
-            var attributes = Attributes(element, mapping, type, metamodel, out var host, out _);
-            var node = diagram.Add(new DislElement(diagram, type, NaturalId(specification, type, element, null, null), attributes)
-            {
-                Parent = parent,
-                Slot = parent is null ? null : element.ParentSlot,
-                HostAttributes = host,
-                Line = element.Line,
-                File = FileOf(element),
-                IdIsStored = element.IdIsStored,
-            });
-            built[element] = node;
-            byReadId.TryAdd(element.Id, node);
-            return node;
-        }
-
-        // A relation end names a stored id (an FBL reference by id) or an FBL element's id, which is the
-        // node's as it was read; the first element with it keeps it (§11.5.4).
-        DislElement? End(string? id) => id is null ? null : byReadId.GetValueOrDefault(id) ?? diagram.ElementById(id);
     }
 
     /// <summary>The file a folder subject's plugin read the element in (FBL §11.2); null for an element of the primary file.</summary>
@@ -244,105 +193,83 @@ public static class DislModelBuilder
     /// <summary>The derived relation types (§4.11.3), in the order of <c>metamodel.relations</c>.</summary>
     private static void DerivedRelations(DislDiagram diagram, List<Finding> findings)
     {
-        var specification = diagram.Specification;
-        foreach (var type in specification.Metamodel.Relations.Values)
+        foreach (var type in diagram.Specification.Metamodel.Relations.Values)
         {
-            if (type.DerivedRelation is DislDerivedRelation.Listed listed)
+            switch (type.DerivedRelation)
             {
-                ExpressionForm(diagram, type, listed.Items, findings);
-                continue;
-            }
-
-            if (type.DerivedRelation is not DislDerivedRelation.Mapped derived) continue;
-
-            var variables = new Dictionary<string, object?> { ["diagram"] = diagram, ["env"] = diagram.Env.ToCel() };
-            if (derived.From.Evaluate(variables) is not IReadOnlyList<object?> items)
-            {
-                findings.Add(new Finding(DerivedFailed, FindingSeverity.Warning, $"The items of {type.Name} could not be computed, so there are none.", null));
-                continue;
-            }
-
-            var failures = new HashSet<string>(StringComparer.Ordinal);
-            var badEnds = new Dictionary<string, int>(StringComparer.Ordinal);
-            var repeats = new Dictionary<string, int>(StringComparer.Ordinal);
-            var groups = Groups(derived.Key, variables, items, failures);
-            for (var index = 0; index < groups.Count; index++)
-            {
-                var group = groups[index];
-                var item = new Dictionary<string, object?>(variables) { ["item"] = group[0], ["group"] = group, ["index"] = (long)index };
-                var source = derived.Source.Evaluate(item);
-                var target = derived.Target.Evaluate(item);
-                if (source is CelError || target is CelError)
-                {
-                    failures.Add(((source as CelError) ?? (CelError)target!).Message);
-                    continue;
-                }
-                if (!Allows(type.Source, source)) { badEnds["source"] = badEnds.GetValueOrDefault("source") + 1; continue; }
-                if (!Allows(type.Target, target)) { badEnds["target"] = badEnds.GetValueOrDefault("target") + 1; continue; }
-                var from = (DislElement)source!;
-                var to = (DislElement)target!;
-
-                string id;
-                if (derived.Id is { } written)
-                {
-                    if (written.Evaluate(item) is not string text)
-                    {
-                        failures.Add("the id of an item is not a string");
-                        continue;
-                    }
-                    id = text;
-                }
-                else
-                {
-                    var plain = $"{type.Name}:{from.Id}->{to.Id}";
-                    var seen = repeats[plain] = repeats.GetValueOrDefault(plain) + 1;
-                    id = seen == 1 ? plain : $"{plain}#{seen}";
-                }
-
-                // Without sources, the group when its items are elements (§4.11.3).
-                IReadOnlyList<DislElement> sources = group.All(member => member is DislElement) ? [.. group.Cast<DislElement>()] : [];
-                if (derived.Sources is { } derivedSources)
-                {
-                    if (derivedSources.Evaluate(item) is not IReadOnlyList<object?> list)
-                    {
-                        failures.Add("the sources of an item are not a list");
-                        continue;
-                    }
-                    sources = [.. list.OfType<DislElement>()];
-                }
-
-                var attributes = new Dictionary<string, object?>(StringComparer.Ordinal);
-                foreach ((string name, DislDerivedField value) in derived.Attributes)
-                {
-                    attributes[name] = value.Evaluate(item);
-                }
-
-                if (diagram.ElementById(id) is { } taken)
-                {
-                    findings.Add(new Finding(DerivedId, FindingSeverity.Warning, $"{type.Name} '{id}' has the id of {taken}; it is not drawn.", null));
-                    continue;
-                }
-                diagram.Add(new DislElement(diagram, type, id, attributes)
-                {
-                    Source = from,
-                    Target = to,
-                    SourceId = from.Id,
-                    TargetId = to.Id,
-                    IsDerived = true,
-                    Sources = sources,
-                    IdIsStored = false,
-                });
-            }
-
-            foreach (var failure in failures)
-            {
-                findings.Add(new Finding(DerivedFailed, FindingSeverity.Warning, $"Items of {type.Name} were dropped: {failure}", null));
-            }
-            foreach ((string end, int count) in badEnds)
-            {
-                findings.Add(new Finding(DerivedEnds, FindingSeverity.Warning, $"{count} item(s) of {type.Name} were dropped: their {end} is not one its declaration allows.", null));
+                case DislDerivedRelation.Listed listed:
+                    ExpressionForm(new DerivedItems(diagram, type, findings), listed.Items);
+                    break;
+                case DislDerivedRelation.Mapped mapped:
+                    ObjectForm(new DerivedItems(diagram, type, findings), mapped);
+                    break;
             }
         }
+    }
+
+    /// <summary>
+    /// A derived relation type in the object form (§4.11.3): its items, grouped by its <c>key</c>, each group giving
+    /// one relation from its <c>source</c> to its <c>target</c>, with its <c>id</c>, <c>sources</c> and <c>attributes</c>.
+    /// </summary>
+    private static void ObjectForm(DerivedItems run, DislDerivedRelation.Mapped derived)
+    {
+        if (derived.From.Evaluate(run.Variables) is not IReadOnlyList<object?> items)
+        {
+            run.NoItems();
+            return;
+        }
+
+        var groups = Groups(derived.Key, run, items);
+        for (var index = 0; index < groups.Count; index++)
+        {
+            var group = groups[index];
+            ObjectFormItem(run, derived, group, new Dictionary<string, object?>(run.Variables) { ["item"] = group[0], ["group"] = group, ["index"] = (long)index });
+        }
+        run.Report();
+    }
+
+    /// <summary>The relation one group of the object form gives, bound as <paramref name="item"/>; none when it is dropped.</summary>
+    private static void ObjectFormItem(DerivedItems run, DislDerivedRelation.Mapped derived, List<object?> group, Dictionary<string, object?> item)
+    {
+        var source = derived.Source.Evaluate(item);
+        var target = derived.Target.Evaluate(item);
+        if (source is CelError || target is CelError)
+        {
+            run.Fail(((source as CelError) ?? (CelError)target!).Message);
+            return;
+        }
+        if (!run.Ends(source, target, out var from, out var to)) return;
+
+        string id;
+        if (derived.Id is { } written)
+        {
+            if (written.Evaluate(item) is not string text)
+            {
+                run.Fail("the id of an item is not a string");
+                return;
+            }
+            id = text;
+        }
+        else id = run.PlainId(from, to);
+
+        // Without sources, the group when its items are elements (§4.11.3).
+        IReadOnlyList<DislElement> sources = group.All(member => member is DislElement) ? [.. group.Cast<DislElement>()] : [];
+        if (derived.Sources is { } derivedSources)
+        {
+            if (derivedSources.Evaluate(item) is not IReadOnlyList<object?> list)
+            {
+                run.Fail("the sources of an item are not a list");
+                return;
+            }
+            sources = [.. list.OfType<DislElement>()];
+        }
+
+        var attributes = new Dictionary<string, object?>(StringComparer.Ordinal);
+        foreach ((string name, DislDerivedField value) in derived.Attributes)
+        {
+            attributes[name] = value.Evaluate(item);
+        }
+        run.Add(id, from, to, attributes, sources);
     }
 
     /// <summary>
@@ -351,23 +278,23 @@ public static class DislModelBuilder
     /// is a group of its own. An item whose key fails, or is not a string, number, bool or list of
     /// those, is dropped.
     /// </summary>
-    private static List<List<object?>> Groups(DislDerivedField? keyed, Dictionary<string, object?> variables, IReadOnlyList<object?> items, HashSet<string> failures)
+    private static List<List<object?>> Groups(DislDerivedField? keyed, DerivedItems run, IReadOnlyList<object?> items)
     {
         if (keyed is null) return [.. items.Select(item => new List<object?> { item })];
 
         var groups = new List<(object? Key, List<object?> Members)>();
         for (var index = 0; index < items.Count; index++)
         {
-            var bound = new Dictionary<string, object?>(variables) { ["item"] = items[index], ["group"] = new List<object?> { items[index] }, ["index"] = (long)index };
+            var bound = new Dictionary<string, object?>(run.Variables) { ["item"] = items[index], ["group"] = new List<object?> { items[index] }, ["index"] = (long)index };
             var key = keyed.Evaluate(bound);
             if (key is CelError error)
             {
-                failures.Add(error.Message);
+                run.Fail(error.Message);
                 continue;
             }
             if (!IsKey(key))
             {
-                failures.Add("the key of an item is not a string, number, bool or list of those");
+                run.Fail("the key of an item is not a string, number, bool or list of those");
                 continue;
             }
             var found = groups.FindIndex(group => CelEquality.Equal(group.Key, key));
@@ -388,88 +315,58 @@ public static class DislModelBuilder
     /// what they mean in the object form, and any other key is ignored; without an <c>id</c> the id is
     /// <c>&lt;Type&gt;:&lt;source.id&gt;-&gt;&lt;target.id&gt;</c>, with <c>#2</c>, <c>#3</c> for repeats.
     /// </summary>
-    private static void ExpressionForm(DislDiagram diagram, DislType type, DislDerivedField derived, List<Finding> findings)
+    private static void ExpressionForm(DerivedItems run, DislDerivedField derived)
     {
-        var variables = new Dictionary<string, object?> { ["diagram"] = diagram, ["env"] = diagram.Env.ToCel() };
-        if (derived.Evaluate(variables) is not IReadOnlyList<object?> items)
+        if (derived.Evaluate(run.Variables) is not IReadOnlyList<object?> items)
         {
-            findings.Add(new Finding(DerivedFailed, FindingSeverity.Warning, $"The items of {type.Name} could not be computed, so there are none.", null));
+            run.NoItems();
             return;
         }
 
-        var failures = new HashSet<string>(StringComparer.Ordinal);
-        var badEnds = new Dictionary<string, int>(StringComparer.Ordinal);
-        var repeats = new Dictionary<string, int>(StringComparer.Ordinal);
         foreach (var item in items)
         {
-            if (item is not IReadOnlyDictionary<string, object?> map || !map.ContainsKey("source") || !map.ContainsKey("target"))
-            {
-                failures.Add("an item is not a map with a source and a target");
-                continue;
-            }
-
-            if (!Allows(type.Source, map["source"])) { badEnds["source"] = badEnds.GetValueOrDefault("source") + 1; continue; }
-            if (!Allows(type.Target, map["target"])) { badEnds["target"] = badEnds.GetValueOrDefault("target") + 1; continue; }
-            var from = (DislElement)map["source"]!;
-            var to = (DislElement)map["target"]!;
-
-            string id;
-            if (map.TryGetValue("id", out var written))
-            {
-                if (written is not string text)
-                {
-                    failures.Add("the id of an item is not a string");
-                    continue;
-                }
-                id = text;
-            }
-            else
-            {
-                var plain = $"{type.Name}:{from.Id}->{to.Id}";
-                var seen = repeats[plain] = repeats.GetValueOrDefault(plain) + 1;
-                id = seen == 1 ? plain : $"{plain}#{seen}";
-            }
-
-            IReadOnlyList<DislElement> sources = [];
-            if (map.TryGetValue("sources", out var listed))
-            {
-                if (listed is not IReadOnlyList<object?> list)
-                {
-                    failures.Add("the sources of an item are not a list");
-                    continue;
-                }
-                sources = [.. list.OfType<DislElement>()];
-            }
-
-            var attributes = map
-                .Where(entry => type.Attributes.ContainsKey(entry.Key))
-                .ToDictionary(entry => entry.Key, entry => entry.Value, StringComparer.Ordinal);
-
-            if (diagram.ElementById(id) is { } taken)
-            {
-                findings.Add(new Finding(DerivedId, FindingSeverity.Warning, $"{type.Name} '{id}' has the id of {taken}; it is not drawn.", null));
-                continue;
-            }
-            diagram.Add(new DislElement(diagram, type, id, attributes)
-            {
-                Source = from,
-                Target = to,
-                SourceId = from.Id,
-                TargetId = to.Id,
-                IsDerived = true,
-                Sources = sources,
-                IdIsStored = false,
-            });
+            ExpressionFormItem(run, item);
         }
+        run.Report();
+    }
 
-        foreach (var failure in failures)
+    /// <summary>The relation one item of the expression form gives; none when it is dropped.</summary>
+    private static void ExpressionFormItem(DerivedItems run, object? item)
+    {
+        if (item is not IReadOnlyDictionary<string, object?> map || !map.TryGetValue("source", out var source) || !map.TryGetValue("target", out var target))
         {
-            findings.Add(new Finding(DerivedFailed, FindingSeverity.Warning, $"Items of {type.Name} were dropped: {failure}", null));
+            run.Fail("an item is not a map with a source and a target");
+            return;
         }
-        foreach ((string end, int count) in badEnds)
+        if (!run.Ends(source, target, out var from, out var to)) return;
+
+        string id;
+        if (map.TryGetValue("id", out var written))
         {
-            findings.Add(new Finding(DerivedEnds, FindingSeverity.Warning, $"{count} item(s) of {type.Name} were dropped: their {end} is not one its declaration allows.", null));
+            if (written is not string text)
+            {
+                run.Fail("the id of an item is not a string");
+                return;
+            }
+            id = text;
         }
+        else id = run.PlainId(from, to);
+
+        IReadOnlyList<DislElement> sources = [];
+        if (map.TryGetValue("sources", out var listed))
+        {
+            if (listed is not IReadOnlyList<object?> list)
+            {
+                run.Fail("the sources of an item are not a list");
+                return;
+            }
+            sources = [.. list.OfType<DislElement>()];
+        }
+
+        var attributes = map
+            .Where(entry => run.Type.Attributes.ContainsKey(entry.Key))
+            .ToDictionary(entry => entry.Key, entry => entry.Value, StringComparer.Ordinal);
+        run.Add(id, from, to, attributes, sources);
     }
 
     private static bool Allows(DislRelationEnd? end, object? value) =>
@@ -506,5 +403,178 @@ public static class DislModelBuilder
             }
         }
         return attributes;
+    }
+
+    /// <summary>
+    /// The stored elements of a reading added to its diagram (§11.5): the nodes in reading order, each after its
+    /// parent, then the relations, whose ends are nodes, then the reference attributes as model ids.
+    /// </summary>
+    private sealed class StoredElements(DislDiagram diagram, List<(FblElement Element, DislTypeMapping Mapping, DislType Type)> typed)
+    {
+        private readonly DislSpecification _specification = diagram.Specification;
+        private readonly Dictionary<FblElement, DislElement> _built = new(ReferenceEqualityComparer.Instance);
+        private readonly Dictionary<string, DislElement> _byReadId = new(diagram.Specification.IdComparer);
+
+        public void Add()
+        {
+            foreach ((FblElement element, DislTypeMapping mapping, DislType type) in typed.Where(entry => !entry.Type.IsRelation))
+            {
+                Node(element, mapping, type);
+            }
+            foreach ((FblElement element, DislTypeMapping mapping, DislType type) in typed.Where(entry => entry.Type.IsRelation))
+            {
+                Relation(element, mapping, type);
+            }
+            References();
+        }
+
+        private DislElement Node(FblElement element, DislTypeMapping mapping, DislType type)
+        {
+            if (_built.TryGetValue(element, out var done)) return done;
+            var parent = element.ParentId is { } parentId && typed.FirstOrDefault(entry => entry.Element.Id == parentId) is { Element: not null } owner && !owner.Type.IsRelation
+                ? Node(owner.Element, owner.Mapping, owner.Type)
+                : null;
+            var attributes = Attributes(element, mapping, type, _specification.Metamodel, out var host, out _);
+            var node = diagram.Add(new DislElement(diagram, type, NaturalId(_specification, type, element, null, null), attributes)
+            {
+                Parent = parent,
+                Slot = parent is null ? null : element.ParentSlot,
+                HostAttributes = host,
+                Line = element.Line,
+                File = FileOf(element),
+                IdIsStored = element.IdIsStored,
+            });
+            _built[element] = node;
+            _byReadId.TryAdd(element.Id, node);
+            return node;
+        }
+
+        private void Relation(FblElement element, DislTypeMapping mapping, DislType type)
+        {
+            var attributes = Attributes(element, mapping, type, _specification.Metamodel, out var host, out var ends);
+            var sourceId = ends.GetValueOrDefault("source") ?? element.Source;
+            var targetId = ends.GetValueOrDefault("target") ?? element.Target;
+            diagram.Add(new DislElement(diagram, type, NaturalId(_specification, type, element, sourceId, targetId), attributes)
+            {
+                Source = End(sourceId),
+                Target = End(targetId),
+                SourceId = sourceId,
+                TargetId = targetId,
+                HostAttributes = host,
+                Line = element.Line,
+                File = FileOf(element),
+                IdIsStored = element.IdIsStored,
+            });
+        }
+
+        /// <summary>
+        /// A reference attribute holds the id its target was read with, which under a prefix is not the
+        /// target's model id: it is stored as the model id of the first node read with it (§11.5.4), and
+        /// one that names nothing stays as read.
+        /// </summary>
+        private void References()
+        {
+            foreach (var element in diagram.Elements)
+            {
+                foreach (var attribute in element.Type.Attributes.Values)
+                {
+                    if (_specification.Metamodel.TypeOf(attribute.Type) is null || !element.Attributes.TryGetValue(attribute.Name, out var stored)) continue;
+                    element.Store(attribute.Name, stored switch
+                    {
+                        string id => ModelId(id),
+                        IReadOnlyList<object?> ids => ids.Select(id => id is string text ? ModelId(text) : id).ToList(),
+                        _ => stored,
+                    });
+                }
+            }
+        }
+
+        private string ModelId(string id) => _byReadId.TryGetValue(id, out var node) ? node.Id : id;
+
+        // A relation end names a stored id (an FBL reference by id) or an FBL element's id, which is the
+        // node's as it was read; the first element with it keeps it (§11.5.4).
+        private DislElement? End(string? id) => id is null ? null : _byReadId.GetValueOrDefault(id) ?? diagram.ElementById(id);
+    }
+
+    /// <summary>
+    /// One derived relation type's items as they become relations (§4.11.3, §4.9): the variables its expressions
+    /// read, the relations it adds, and what it drops, reported once its items are done.
+    /// </summary>
+    private sealed class DerivedItems(DislDiagram diagram, DislType type, List<Finding> findings)
+    {
+        private readonly HashSet<string> _failures = new(StringComparer.Ordinal);
+        private readonly Dictionary<string, int> _badEnds = new(StringComparer.Ordinal);
+        private readonly Dictionary<string, int> _repeats = new(StringComparer.Ordinal);
+
+        public DislType Type => type;
+
+        /// <summary>What the type's expressions read besides an item: <c>diagram</c> and <c>env</c>.</summary>
+        public Dictionary<string, object?> Variables { get; } = new() { ["diagram"] = diagram, ["env"] = diagram.Env.ToCel() };
+
+        /// <summary>Reports that the type's items could not be computed.</summary>
+        public void NoItems() =>
+            findings.Add(new Finding(DerivedFailed, FindingSeverity.Warning, $"The items of {type.Name} could not be computed, so there are none.", null));
+
+        /// <summary>Notes why an item was dropped, reported once by <see cref="Report"/>.</summary>
+        public void Fail(string failure) => _failures.Add(failure);
+
+        /// <summary>Whether <paramref name="source"/> and <paramref name="target"/> are ends the declaration allows; an item with one that is not is dropped and counted.</summary>
+        public bool Ends(object? source, object? target, out DislElement from, out DislElement to)
+        {
+            from = null!;
+            to = null!;
+            if (!Allows(type.Source, source)) return BadEnd("source");
+            if (!Allows(type.Target, target)) return BadEnd("target");
+            from = (DislElement)source!;
+            to = (DislElement)target!;
+            return true;
+        }
+
+        /// <summary>The id of a relation that states none: <c>&lt;Type&gt;:&lt;source.id&gt;-&gt;&lt;target.id&gt;</c>, with <c>#2</c>, <c>#3</c> for repeats.</summary>
+        public string PlainId(DislElement from, DislElement to)
+        {
+            var plain = $"{type.Name}:{from.Id}->{to.Id}";
+            var seen = _repeats[plain] = _repeats.GetValueOrDefault(plain) + 1;
+            return seen == 1 ? plain : $"{plain}#{seen}";
+        }
+
+        /// <summary>Adds the derived relation, unless its id is taken (§4.11.5).</summary>
+        public void Add(string id, DislElement from, DislElement to, Dictionary<string, object?> attributes, IReadOnlyList<DislElement> sources)
+        {
+            if (diagram.ElementById(id) is { } taken)
+            {
+                findings.Add(new Finding(DerivedId, FindingSeverity.Warning, $"{type.Name} '{id}' has the id of {taken}; it is not drawn.", null));
+                return;
+            }
+            diagram.Add(new DislElement(diagram, type, id, attributes)
+            {
+                Source = from,
+                Target = to,
+                SourceId = from.Id,
+                TargetId = to.Id,
+                IsDerived = true,
+                Sources = sources,
+                IdIsStored = false,
+            });
+        }
+
+        /// <summary>Reports the items dropped: why, then how many for an end the declaration does not allow.</summary>
+        public void Report()
+        {
+            foreach (var failure in _failures)
+            {
+                findings.Add(new Finding(DerivedFailed, FindingSeverity.Warning, $"Items of {type.Name} were dropped: {failure}", null));
+            }
+            foreach ((string end, int count) in _badEnds)
+            {
+                findings.Add(new Finding(DerivedEnds, FindingSeverity.Warning, $"{count} item(s) of {type.Name} were dropped: their {end} is not one its declaration allows.", null));
+            }
+        }
+
+        private bool BadEnd(string end)
+        {
+            _badEnds[end] = _badEnds.GetValueOrDefault(end) + 1;
+            return false;
+        }
     }
 }

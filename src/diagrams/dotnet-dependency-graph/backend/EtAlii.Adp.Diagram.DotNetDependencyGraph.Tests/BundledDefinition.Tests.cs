@@ -66,6 +66,30 @@ public sealed partial class BundledDefinitionTests
     }
 
     /// <summary>
+    /// Persistence is the module's FBL binding, without the <c>files</c> DISL 11.2 forbids beside it (finding A1), and
+    /// its id pattern admits today's ids, which DISL 11.5's default does not (finding A3).
+    /// </summary>
+    [Fact]
+    public void ThePersistence_IsFbl_WithoutFiles_AndAPatternThatAdmitsTodaysIds()
+    {
+        // Arrange.
+        var persistence = _module.ResourceJson("dotnet-dependency-graph.dis").GetProperty("persistence");
+        var project = "project:src/Pipeline.Core/Pipeline.Core.csproj";
+        var reference = $"depends:{project}->project:{new string('a', 200)}/Deep.csproj";
+
+        // Act.
+        var pattern = new Regex(persistence.GetProperty("ids").GetProperty("pattern").GetString()!);
+
+        // Assert.
+        Assert.Equal("fbl", persistence.GetProperty("format").GetString());
+        Assert.False(persistence.TryGetProperty("files", out _), "persistence.files is beside format fbl.");
+        Assert.Matches(pattern, project);
+        Assert.Matches(pattern, "package:Serilog");
+        Assert.Matches(pattern, reference);
+        Assert.DoesNotMatch(new Regex("^[A-Za-z0-9_.:#-]{1,128}$"), reference);
+    }
+
+    /// <summary>
     /// An operation a plugin carries out is handed back with the plugin's <c>args</c> as the definition
     /// writes them (DISL §9.3, <c>plugin: {name, args}</c>), so the host knows which action it is asked for.
     /// </summary>
