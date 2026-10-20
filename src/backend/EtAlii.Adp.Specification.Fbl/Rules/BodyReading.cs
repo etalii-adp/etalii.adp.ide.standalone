@@ -20,7 +20,11 @@ internal sealed class BodyReading
 {
     private readonly Dictionary<Entry, string> _claims = [];
     private readonly Dictionary<Entry, ReadElement> _byEntry = [];
-    private readonly Dictionary<string, CelProgram?> _programs = new(StringComparer.Ordinal);
+    // What this reading compiled, for the expressions whose rule kept no program for its context.
+    private readonly CelProgramCache<(CelContext Context, string Expression)> _programs = new(key => FblCel.Compile(key.Expression, key.Context));
+
+    // The expressions that did not compile and whose reason was given: the first to meet one is told why, later ones not.
+    private readonly HashSet<(CelContext Context, string Expression)> _told = [];
 
     // An entry's parent as CEL reads it, converted once per reading: every item of a list shares the
     // list as its parent, so converting it per item made reading quadratic in the list's length.
@@ -336,25 +340,16 @@ internal sealed class BodyReading
 
     /// <summary>
     /// The program of <paramref name="expression"/>: the one its rule kept as the binding loaded when it
-    /// was compiled for this context, else compiled here once per reading.
+    /// was compiled for this context, else compiled here once per reading. One that does not compile
+    /// gives its reason to the first caller only.
     /// </summary>
     private CelProgram? Program(Rule? rule, string expression, CelContext context, out string? problem)
     {
         problem = null;
         if (rule?.Program(context, expression) is { } kept) return kept;
-        var key = context + ":" + expression;
-        if (_programs.TryGetValue(key, out var cached)) return cached;
-        try
-        {
-            cached = FblCel.Compile(expression, context);
-        }
-        catch (CelException e)
-        {
-            problem = e.Message;
-            cached = null;
-        }
-        _programs[key] = cached;
-        return cached;
+        if (_programs.TryGet((context, expression), out var program, out var failure)) return program;
+        if (_told.Add((context, expression))) problem = failure;
+        return null;
     }
 
     private CelContext RuleContext => Family switch

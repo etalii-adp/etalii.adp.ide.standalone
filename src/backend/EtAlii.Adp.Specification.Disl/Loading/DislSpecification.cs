@@ -20,12 +20,14 @@ public sealed class DislSpecification
         DislMetamodel metamodel,
         IReadOnlyList<DislFunctionDeclaration> functions,
         CelEnvironment environment,
+        CelProgramCache<DislProgramKey> programs,
         IReadOnlyList<DislExpression> expressions)
     {
         Root = root;
         Metamodel = metamodel;
         Functions = functions;
         _functions = environment;
+        Programs = programs;
         Expressions = expressions;
         _expressions = expressions.ToDictionary(expression => expression.Pointer, StringComparer.Ordinal);
         var ids = root.TryGetProperty("persistence", out var persistence) && persistence.ValueKind == JsonValueKind.Object && persistence.TryGetProperty("ids", out var declared)
@@ -91,6 +93,13 @@ public sealed class DislSpecification
 
     /// <summary>The compiled expression at <paramref name="pointer"/>, or null when there is none.</summary>
     public DislExpression? ExpressionAt(string pointer) => _expressions.GetValueOrDefault(pointer);
+
+    /// <summary>
+    /// Every program of this specification, by what decides it: those the loader compiled, which
+    /// <see cref="Expressions"/> holds by position, and those a runtime compiles on first use. They live as
+    /// long as the specification does.
+    /// </summary>
+    internal CelProgramCache<DislProgramKey> Programs { get; }
 
     /// <summary>
     /// An environment for <paramref name="context"/> (§12.3): the library, the user functions and the
