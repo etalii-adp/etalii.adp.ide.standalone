@@ -18,10 +18,10 @@ public sealed class DislSpecification
     private readonly Dictionary<string, DislExpression> _expressions = new(StringComparer.Ordinal);
 
     /// <summary>The positions the loader walked, compiled or not, while the parts are read; null once they are.</summary>
-    private IReadOnlySet<string>? _walked;
+    private readonly IReadOnlySet<string>? _walked;
 
     /// <summary>Where a part read while loading reports what it cannot read; null once the parts are read.</summary>
-    private List<LoadDiagnostic>? _diagnostics;
+    private readonly List<LoadDiagnostic>? _diagnostics;
 
     internal DislSpecification(
         JsonElement root,

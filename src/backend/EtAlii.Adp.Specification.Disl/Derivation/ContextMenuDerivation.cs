@@ -128,11 +128,11 @@ public static class ContextMenuDerivation
 
         var groups = new List<DerivedMenuGroup>();
         var cel = env.ToCel();
-        (DislContext context, Dictionary<string, object?> variables, IReadOnlyList<string> types) = target switch
+        (Dictionary<string, object?> variables, IReadOnlyList<string> types) = target switch
         {
-            DislMenuTarget.OnElement element => (DislContext.Element, Variables(element.Self, target.Diagram, cel), element.Self.Type.Linearisation),
-            DislMenuTarget.OnConnection connection => (DislContext.Connection, Connection(connection, cel), (IReadOnlyList<string>)["connection"]),
-            _ => (DislContext.Element, Variables(target.Diagram, target.Diagram, cel), (IReadOnlyList<string>)["diagram"]),
+            DislMenuTarget.OnElement element => (Variables(element.Self, target.Diagram, cel), element.Self.Type.Linearisation),
+            DislMenuTarget.OnConnection connection => (Connection(connection, cel), (IReadOnlyList<string>)["connection"]),
+            _ => (Variables(target.Diagram, target.Diagram, cel), (IReadOnlyList<string>)["diagram"]),
         };
 
         var toolbox = specification.Toolbox;
@@ -144,7 +144,7 @@ public static class ContextMenuDerivation
             if (!Applies(set, target)) continue;
             matched = true;
             if (set.When is { } when && !when.Holds(variables)) continue;
-            Set(specification, set, context, variables, types, target, ids, groups);
+            Set(specification, set, variables, types, target, ids, groups);
         }
 
         if (!matched && target is DislMenuTarget.OnConnection { RelationType: { } relation } pending)
@@ -169,7 +169,6 @@ public static class ContextMenuDerivation
     private static void Set(
         DislSpecification specification,
         DislMenuSet set,
-        DislContext context,
         Dictionary<string, object?> variables,
         IReadOnlyList<string> types,
         DislMenuTarget target,
@@ -186,7 +185,7 @@ public static class ContextMenuDerivation
                 current = [];
                 currentName = tool.Group;
             }
-            current.AddRange(Entries(specification, tool, context, variables, types, target, ids));
+            current.AddRange(Entries(specification, tool, variables, types, target, ids));
         }
         if (current is { Count: > 0 }) groups.Add(new DerivedMenuGroup(currentName, current));
     }
@@ -194,7 +193,6 @@ public static class ContextMenuDerivation
     private static IEnumerable<DerivedMenuEntry> Entries(
         DislSpecification specification,
         DislMenuTool tool,
-        DislContext context,
         Dictionary<string, object?> variables,
         IReadOnlyList<string> types,
         DislMenuTarget target,
@@ -203,7 +201,7 @@ public static class ContextMenuDerivation
         if (tool.NotAnObject is { } malformed) throw new InvalidOperationException(malformed);
         if (tool.ForEach is not { } forEach)
         {
-            if (Entry(specification, tool, context, variables, new Dictionary<string, object?>(), types, target, ids) is { } entry) yield return entry;
+            if (Entry(specification, tool, variables, new Dictionary<string, object?>(), types, target, ids) is { } entry) yield return entry;
             yield break;
         }
 
@@ -213,14 +211,13 @@ public static class ContextMenuDerivation
         {
             var bindings = new Dictionary<string, object?>(StringComparer.Ordinal) { ["item"] = items[index], ["index"] = (long)index };
             if (tool.As is { } named) bindings[named] = items[index];
-            if (Entry(specification, tool, context, variables, bindings, types, target, ids) is { } entry) yield return entry;
+            if (Entry(specification, tool, variables, bindings, types, target, ids) is { } entry) yield return entry;
         }
     }
 
     private static DerivedMenuEntry? Entry(
         DislSpecification specification,
         DislMenuTool tool,
-        DislContext context,
         Dictionary<string, object?> outer,
         Dictionary<string, object?> bindings,
         IReadOnlyList<string> types,
@@ -245,7 +242,7 @@ public static class ContextMenuDerivation
         var icon = tool.Icon ?? operation?.Icon ?? "";
         var shortcut = tool.Shortcut ?? operation?.Shortcut;
 
-        var reason = Unavailable(specification, tool, context, variables, operation, target, arguments);
+        var reason = Unavailable(specification, tool, variables, operation, target, arguments);
         var available = reason is null && (tool.Enabled is not { } enabled || enabled.Holds(variables));
 
         return new DerivedMenuEntry(
@@ -263,7 +260,6 @@ public static class ContextMenuDerivation
     private static string? Unavailable(
         DislSpecification specification,
         DislMenuTool tool,
-        DislContext context,
         IReadOnlyDictionary<string, object?> variables,
         DislOperation? operation,
         DislMenuTarget target,

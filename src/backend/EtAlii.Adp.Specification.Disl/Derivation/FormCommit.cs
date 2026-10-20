@@ -61,8 +61,8 @@ public static class FormCommit
         if (DislReason.First(item.ReadOnlyReasons, specification, current) is { } reason) return DislTransaction.Refused(reason);
         if (env.ReadOnly) return DislTransaction.Refused(DislEvaluation.StandardMessage(specification, "std.readOnly", current, "This diagram is read-only."));
 
-        var chosen = Chosen(specification, item, current, value);
-        if (Invalid(specification, item, Variables(self, chosen, cel)) is { } invalid) return DislTransaction.Refused(invalid);
+        var chosen = Chosen(item, current, value);
+        if (Invalid(item, Variables(self, chosen, cel)) is { } invalid) return DislTransaction.Refused(invalid);
 
         if (item.Parse is { } parse)
         {
@@ -140,7 +140,7 @@ public static class FormCommit
         foreach (var item in found.Items ?? [])
         {
             if (item.Attribute != attribute) continue;
-            return Invalid(specification, item, Variables(self, value, env.ToCel(), diagram ?? self?.Diagram));
+            return Invalid(item, Variables(self, value, env.ToCel(), diagram ?? self?.Diagram));
         }
         return null;
     }
@@ -196,7 +196,7 @@ public static class FormCommit
     }
 
     /// <summary>The message of the first validation of severity <c>error</c> of <paramref name="item"/> that fails, or null.</summary>
-    private static string? Invalid(DislSpecification specification, DislFormItem item, Dictionary<string, object?> variables)
+    private static string? Invalid(DislFormItem item, Dictionary<string, object?> variables)
     {
         if (item.NotAnObject is { } malformed) throw new InvalidOperationException(malformed);
         foreach (var validation in item.Validations)
@@ -211,7 +211,7 @@ public static class FormCommit
     }
 
     /// <summary>The value of the option labelled <paramref name="text"/> in <paramref name="item"/>'s <c>options</c>, else the text itself.</summary>
-    private static object? Chosen(DislSpecification specification, DislFormItem item, Dictionary<string, object?> variables, string text)
+    private static object? Chosen(DislFormItem item, Dictionary<string, object?> variables, string text)
     {
         if (item.Options is not { } options) return text;
         IEnumerable<object?> list = options switch
