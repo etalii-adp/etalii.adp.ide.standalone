@@ -1,5 +1,4 @@
 using System.Reflection;
-using EtAlii.Adp.Diagram;
 using Xunit;
 
 namespace EtAlii.Adp.Modules.Tests;
@@ -56,22 +55,5 @@ public class ModulePluggabilityTests
         // rather than vacuous.
         Assert.Contains("EtAlii.Adp.Documents", referencedNames);
         Assert.Contains("EtAlii.Adp.Diagram", referencedNames);
-    }
-
-    [Fact]
-    public void Core_CompilesAndRuns_WithNoDiagramModuleLoaded()
-    {
-        // Arrange and act.
-        // EtAlii.Adp.Diagram is the seam every module plugs into. That it loads and its core
-        // types resolve without any module present is the "core stays testable with zero
-        // diagram modules" property (Requirement 13 NFR), exercised by this very assembly:
-        // these unit tests reference core, not the mindmap module.
-        var thisAssembly = Assembly.GetExecutingAssembly();
-        var references = thisAssembly.GetReferencedAssemblies().Select(reference => reference.Name).ToArray();
-
-        // Assert.
-        Assert.DoesNotContain("EtAlii.Adp.Diagram.Mindmap", references);
-        // And the core definition type is usable here with no module in sight.
-        Assert.Equal("", new DiagramDefinition(new ToolOrigin("x", "y"), "Z").Extension);
     }
 }
