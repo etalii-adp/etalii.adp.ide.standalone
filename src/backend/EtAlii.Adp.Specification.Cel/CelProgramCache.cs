@@ -30,15 +30,13 @@ namespace EtAlii.Adp.Specification.Cel;
 public sealed class CelProgramCache<TKey> where TKey : notnull
 {
     private readonly Func<TKey, CelProgram> _compile;
-    private readonly ConcurrentDictionary<TKey, Lazy<Compilation>> _compilations;
+    private readonly ConcurrentDictionary<TKey, Lazy<Compilation>> _compilations = new();
 
     /// <param name="compile">Compiles the program of a key; a <see cref="CelException"/> says why it cannot.</param>
-    /// <param name="comparer">How keys compare; the default comparer when null.</param>
-    public CelProgramCache(Func<TKey, CelProgram> compile, IEqualityComparer<TKey>? comparer = null)
+    public CelProgramCache(Func<TKey, CelProgram> compile)
     {
         ArgumentNullException.ThrowIfNull(compile);
         _compile = compile;
-        _compilations = new ConcurrentDictionary<TKey, Lazy<Compilation>>(comparer ?? EqualityComparer<TKey>.Default);
     }
 
     /// <summary>
