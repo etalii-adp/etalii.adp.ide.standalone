@@ -42,14 +42,19 @@ internal static class DislEvaluation
     /// </summary>
     public static object? Expression(DislSpecification specification, JsonElement json, string pointer, DislContext context, IReadOnlyDictionary<string, object?> variables)
     {
-        (string? source, string at) = json.ValueKind switch
-        {
-            JsonValueKind.String => (json.GetString(), pointer),
-            JsonValueKind.Object when DislJson.String(json, "cel") is { } cel => (cel, DislJson.Pointer(pointer, "cel")),
-            _ => (null, pointer),
-        };
+        (string? source, string at) = DislFieldReader.Source(json, pointer);
+        return Evaluate(specification, pointer, source, source is null ? null : specification.ExpressionAt(at)?.Program, context, variables);
+    }
+
+    /// <summary>
+    /// The value of the Expression at <paramref name="pointer"/> whose CEL is <paramref name="source"/> (null when it holds
+    /// none) and whose compiled program is <paramref name="program"/>, or compiled in <paramref name="context"/> when the
+    /// loader compiled none; what both an Expression read from the JSON and one typed at load (<see cref="DislExpressionField"/>) give.
+    /// </summary>
+    internal static object? Evaluate(DislSpecification specification, string pointer, string? source, CelProgram? program, DislContext context, IReadOnlyDictionary<string, object?> variables)
+    {
         if (source is null) return new CelError($"{pointer} is not an expression.");
-        return specification.ExpressionAt(at) is { } compiled ? compiled.Program.Evaluate(variables) : Of(specification, context, source, variables);
+        return program is not null ? program.Evaluate(variables) : Of(specification, context, source, variables);
     }
 
     /// <summary>Whether the condition at <paramref name="pointer"/> holds; a condition that fails does not.</summary>
@@ -61,53 +66,24 @@ internal static class DislEvaluation
     /// of a <c>{cel}</c> object; <paramref name="fallback"/> when it is absent or fails.
     /// </summary>
     public static string Message(DislSpecification specification, JsonElement json, string pointer, DislContext context, IReadOnlyDictionary<string, object?> variables, string fallback) =>
-        json.ValueKind switch
-        {
-            JsonValueKind.String => json.GetString()!,
-            JsonValueKind.Object when json.TryGetProperty("cel", out _) => Expression(specification, json, pointer, context, variables) switch
-            {
-                string text => text,
-                CelMap locales => Localized(locales.Select(entry => (entry.Key, entry.Value as string))) ?? fallback,
-                _ => fallback,
-            },
-            JsonValueKind.Object => Localized(json.EnumerateObject().Select(entry => (entry.Name, entry.Value.ValueKind == JsonValueKind.String ? entry.Value.GetString() : null))) ?? fallback,
-            _ => fallback,
-        };
+        DislFieldReader.Message(specification, json, pointer).Text(specification, context, variables, fallback);
 
     /// <summary>
     /// The first Reason of <paramref name="reasons"/> that applies (§2.3): a Message always does, an
     /// object while its <c>when</c> holds, a <c>{reason: id}</c> while the named reason's does.
     /// </summary>
-    public static string? FirstReason(DislSpecification specification, JsonElement reasons, string pointer, DislContext context, IReadOnlyDictionary<string, object?> variables)
-    {
-        if (reasons.ValueKind != JsonValueKind.Array) return null;
-        var index = 0;
-        foreach (var reason in reasons.EnumerateArray())
-        {
-            var at = DislJson.Pointer(pointer, index++);
-            if (Reason(specification, reason, at, context, variables) is { } text) return text;
-        }
-        return null;
-    }
+    public static string? FirstReason(DislSpecification specification, JsonElement reasons, string pointer, DislContext context, IReadOnlyDictionary<string, object?> variables) =>
+        DislReason.First(DislFieldReader.Reasons(specification, reasons, pointer), specification, context, variables);
 
     /// <summary>One Reason (§2.3): a Message, an object while its <c>when</c> holds, a <c>{reason: id}</c> while the named one's does; null when it does not apply.</summary>
-    internal static string? Reason(DislSpecification specification, JsonElement reason, string pointer, DislContext context, IReadOnlyDictionary<string, object?> variables)
-    {
-        if (reason.ValueKind == JsonValueKind.Object && DislJson.String(reason, "reason") is { } id)
-        {
-            // A named reason is declared once under behavior.reasons, in the element context.
-            var named = DislJson.Pointer("/behavior/reasons", id);
-            return specification.Root.TryGetProperty("behavior", out var behavior) && behavior.TryGetProperty("reasons", out var all) && all.TryGetProperty(id, out var declared)
-                ? Reason(specification, declared, named, DislContext.Element, variables)
-                : null;
-        }
-        if (reason.ValueKind == JsonValueKind.Object && reason.TryGetProperty("message", out var message))
-        {
-            if (reason.TryGetProperty("when", out var when) && !Holds(specification, when, DislJson.Pointer(pointer, "when"), context, variables)) return null;
-            return Message(specification, message, DislJson.Pointer(pointer, "message"), context, variables, "");
-        }
-        return Message(specification, reason, pointer, context, variables, "");
-    }
+    internal static string? Reason(DislSpecification specification, JsonElement reason, string pointer, DislContext context, IReadOnlyDictionary<string, object?> variables) =>
+        DislFieldReader.Reason(specification, reason, pointer).Text(specification, context, variables);
+
+    /// <summary>The reason <c>behavior.reasons</c> declares as <paramref name="id"/> (§2.3), in the element context; null when it declares none or it does not apply.</summary>
+    internal static string? NamedReason(DislSpecification specification, string id, IReadOnlyDictionary<string, object?> variables) =>
+        specification.Root.TryGetProperty("behavior", out var behavior) && behavior.TryGetProperty("reasons", out var all) && all.TryGetProperty(id, out var declared)
+            ? Reason(specification, declared, DislJson.Pointer("/behavior/reasons", id), DislContext.Element, variables)
+            : null;
 
     /// <summary>The text <c>behavior.messages</c> gives for <paramref name="key"/> (§9.1), else <paramref name="fallback"/>.</summary>
     public static string StandardMessage(DislSpecification specification, string key, IReadOnlyDictionary<string, object?> variables, string fallback) =>
@@ -125,7 +101,8 @@ internal static class DislEvaluation
         _ => value.ToString() ?? "",
     };
 
-    private static string? Localized(IEnumerable<(string Tag, string? Text)> locales)
+    /// <summary>A locale map's text (§2.3): its English, else its first English variant's, else its first; null when it has none.</summary>
+    internal static string? Localized(IEnumerable<(string Tag, string? Text)> locales)
     {
         var list = locales.Where(locale => locale.Text is not null).ToList();
         return list.FirstOrDefault(locale => locale.Tag == "en").Text ?? list.FirstOrDefault(locale => locale.Tag.StartsWith("en-", StringComparison.Ordinal)).Text ?? list.FirstOrDefault().Text;
