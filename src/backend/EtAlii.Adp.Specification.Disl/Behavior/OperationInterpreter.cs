@@ -1,4 +1,3 @@
-using System.Text.Json;
 
 namespace EtAlii.Adp.Specification.Disl;
 
@@ -77,13 +76,7 @@ public static class OperationInterpreter
         ArgumentNullException.ThrowIfNull(ids);
 
         if (specification.Metamodel.TypeOf(relationType) is not { IsRelation: true } relation) return DislTransaction.Refused($"There is no relation type '{relationType}'.");
-        if (relation.Derived is not { ValueKind: JsonValueKind.Object } derived || !derived.TryGetProperty("edits", out var edits)
-            || DislJson.String(edits, "connect") is not { } operationId)
-        {
-            return DislTransaction.Refused(relation.Derived is { ValueKind: JsonValueKind.Object } withReason && DislJson.String(withReason, "reason") is { } reason
-                ? reason
-                : $"A {relationType} cannot be drawn.");
-        }
+        if (relation.ConnectEdit is not { } operationId) return DislTransaction.Refused(relation.DerivedReason ?? $"A {relationType} cannot be drawn.");
         if (specification.Operations.Find(operationId) is not { } operation) return DislTransaction.Refused($"There is no operation '{operationId}'.");
 
         var variables = Variables(DislContext.Operation, diagram, env);
@@ -106,11 +99,11 @@ public static class OperationInterpreter
         if (operation.Plugin is { } plugin)
         {
             var arguments = new Dictionary<string, object?>(StringComparer.Ordinal);
-            foreach ((string name, DislActionValue.Literal value) in plugin.Arguments) arguments[name] = value.Evaluate(specification, DislContext.Operation, variables);
+            foreach ((string name, DislActionValue.Literal value) in plugin.Arguments) arguments[name] = value.Evaluate(variables);
             return new DislTransaction([], [new HostAction.Plugin(plugin.Name, arguments)], null);
         }
 
-        var runner = new ActionRunner(specification, diagram, ids, DislContext.Operation);
+        var runner = new ActionRunner(specification, diagram, ids);
         runner.Run(operation.Actions, variables);
         return runner.Transaction;
     }
@@ -271,12 +264,12 @@ public static class OperationInterpreter
     {
         if (!operation.AppliesTo(isA)) return NotApplicable(specification, diagram, operation.Id);
 
-        if (DislReason.First(specification.Operations.EditGate, specification, DislContext.Element, Gate(diagram, variables)) is { } gated) return gated;
+        if (DislReason.First(specification.Operations.EditGate, specification, Gate(diagram, variables)) is { } gated) return gated;
 
         // An operation that is not an object threw here when it was read from the JSON at run time, and still does.
         if (operation.NotAnObject is { } malformed) throw new InvalidOperationException(malformed);
-        if (DislReason.First(operation.Unavailable, specification, DislContext.Operation, variables) is { } reason) return reason;
-        return operation.Enabled is { } enabled && !enabled.Holds(specification, DislContext.Operation, variables)
+        if (DislReason.First(operation.Unavailable, specification, variables) is { } reason) return reason;
+        return operation.Enabled is { } enabled && !enabled.Holds(variables)
             ? NotApplicable(specification, diagram, operation.Id)
             : null;
     }
@@ -300,10 +293,7 @@ public static class OperationInterpreter
     {
         if (specification.Toolbox.NotAnObject is { } malformed) throw new InvalidOperationException(malformed);
         if (specification.Toolbox.Library is not { } library) return null;
-        var named = specification.Root.TryGetProperty("notation", out var notation) && notation.TryGetProperty("edges", out var edges)
-            && edges.TryGetProperty(relationType, out var edge) && edge.TryGetProperty("connect", out var connect)
-                ? DislJson.String(connect, "tool")
-                : null;
+        var named = specification.Notation.ConnectToolOf(relationType);
         foreach ((string name, DislTool tool) in library)
         {
             if (named is not null ? name == named : tool.Creates == relationType) return tool;
@@ -327,7 +317,7 @@ public static class OperationInterpreter
         {
             if (!created.Attributes.TryGetValue(property.Name, out var attribute)) return $"{type} has no attribute '{property.Name}'.";
             var value = property.Expression is { } expression
-                ? expression.Evaluate(specification, DislContext.Create, variables)
+                ? expression.Evaluate(variables)
                 : DislValues.FromJson(property.Literal, attribute, specification.Metamodel);
             if (value is Cel.CelError error) return error.Message;
             if (value is not null) attributes[property.Name] = value;

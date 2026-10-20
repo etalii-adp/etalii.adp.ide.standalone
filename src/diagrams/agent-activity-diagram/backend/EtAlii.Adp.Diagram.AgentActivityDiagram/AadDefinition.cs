@@ -55,7 +55,7 @@ internal static class AadDefinition
     /// </summary>
     public static (double Width, double Height) SizeOf(string type)
     {
-        var size = Specification.Root.GetProperty("notation").GetProperty("nodes").GetProperty(type).GetProperty("size").GetProperty("default");
+        var size = Specification.Json.GetProperty("notation").GetProperty("nodes").GetProperty(type).GetProperty("size").GetProperty("default");
         return (size[0].GetDouble(), size[1].GetDouble());
     }
 
@@ -261,13 +261,13 @@ internal static class AadDefinition
     }
 
     private static JsonElement? TypeJson(string name) =>
-        Specification.Root.GetProperty("metamodel").GetProperty("types").TryGetProperty(name, out var type) ? type : null;
+        Specification.Json.GetProperty("metamodel").GetProperty("types").TryGetProperty(name, out var type) ? type : null;
 
     private static List<AadRelationType> ReadRelations()
     {
         var relations = new List<AadRelationType>();
-        var operations = Specification.Root.GetProperty("behavior").GetProperty("operations");
-        foreach (var relation in Specification.Root.GetProperty("metamodel").GetProperty("relations").EnumerateObject())
+        var operations = Specification.Json.GetProperty("behavior").GetProperty("operations");
+        foreach (var relation in Specification.Json.GetProperty("metamodel").GetProperty("relations").EnumerateObject())
         {
             // The relation's connect operation says which end's key states it: it sets one key on one end.
             var connect = relation.Value.GetProperty("derived").GetProperty("edits").GetProperty("connect").GetString()!;
@@ -286,7 +286,7 @@ internal static class AadDefinition
     private static IReadOnlyDictionary<string, AadEnum> ReadEnums()
     {
         var enums = new Dictionary<string, AadEnum>(StringComparer.Ordinal);
-        foreach (var declared in Specification.Root.GetProperty("metamodel").GetProperty("enums").EnumerateObject())
+        foreach (var declared in Specification.Json.GetProperty("metamodel").GetProperty("enums").EnumerateObject())
         {
             var members = new List<AadEnumMember>();
             foreach (var member in declared.Value.GetProperty("values").EnumerateObject())
@@ -307,7 +307,7 @@ internal static class AadDefinition
     private static HashSet<string> ReadCollapsedByDefault()
     {
         var collapsed = new HashSet<string>(StringComparer.Ordinal);
-        var nodes = Specification.Root.GetProperty("notation").GetProperty("nodes");
+        var nodes = Specification.Json.GetProperty("notation").GetProperty("nodes");
         foreach (var node in nodes.EnumerateObject())
         {
             if (!node.Value.TryGetProperty("compartments", out var compartments)) continue;

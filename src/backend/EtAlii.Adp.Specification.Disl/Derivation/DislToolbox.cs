@@ -47,7 +47,11 @@ internal sealed record DislToolbox(
 internal abstract record DislPaletteItem
 {
     /// <summary>A tool of the group <paramref name="Group"/>, found by <paramref name="Key"/>: the name a reference gives, else the inline tool's own <c>id</c>.</summary>
-    public sealed record Entry(string Group, string? Key, DislTool Tool) : DislPaletteItem;
+    /// <param name="ResolvedAt">
+    /// Where the loader resolves the tool's <c>creates</c> (§2.7): an inline tool of a top-level group's own position; null
+    /// for a reference into the library and for a tool of a nested group, whose names it does not resolve.
+    /// </param>
+    public sealed record Entry(string Group, string? Key, DislTool Tool, string? ResolvedAt = null) : DislPaletteItem;
 
     /// <summary>
     /// A group that is not an object (<paramref name="Name"/> null), or a reference named <paramref name="Name"/> into

@@ -17,25 +17,29 @@ internal static class DislOperationReader
     public static DislOperations Read(DislSpecification specification, JsonElement root)
     {
         var operations = new Dictionary<string, DislOperation>(StringComparer.Ordinal);
-        if (!root.TryGetProperty("behavior", out var behavior)) return new DislOperations(operations, [], null);
-        if (DislFieldReader.NotAnObject(behavior) is { } malformed) return new DislOperations(operations, [], malformed);
+        if (!root.TryGetProperty("behavior", out var behavior)) return new DislOperations(operations, [], [], null);
+        if (DislFieldReader.NotAnObject(behavior) is { } malformed) return new DislOperations(operations, [], [], malformed);
 
         var gate = behavior.TryGetProperty("editGate", out var declared) ? DislFieldReader.Reasons(specification, declared, "/behavior/editGate") : [];
-        if (!behavior.TryGetProperty("operations", out var all)) return new DislOperations(operations, gate, null);
-        if (DislFieldReader.NotAnObject(all) is { } notAnObject) return new DislOperations(operations, gate, notAnObject);
+        if (!behavior.TryGetProperty("operations", out var all)) return new DislOperations(operations, [], gate, null);
+        if (DislFieldReader.NotAnObject(all) is { } notAnObject) return new DislOperations(operations, [], gate, notAnObject);
 
+        var inOrder = new List<DislOperation>();
         foreach (var operation in all.EnumerateObject())
         {
-            operations[operation.Name] = Operation(specification, operation.Name, operation.Value, DislJson.Pointer(Pointer, operation.Name));
+            var read = Operation(specification, operation.Name, operation.Value, DislJson.Pointer(Pointer, operation.Name));
+            inOrder.Add(read);
+            operations[operation.Name] = read;
         }
-        return new DislOperations(operations, gate, null);
+        return new DislOperations(operations, inOrder, gate, null);
     }
 
     private static DislOperation Operation(DislSpecification specification, string id, JsonElement operation, string pointer)
     {
         var targets = DislJson.Strings(operation, "for");
-        if (DislFieldReader.NotAnObject(operation) is { } malformed) return new DislOperation(id, targets, [], null, null, DislActionList.Empty, null, null, null, malformed);
+        if (DislFieldReader.NotAnObject(operation) is { } malformed) return new DislOperation(id, targets, [], null, null, DislActionList.Empty, null, null, null, null, null, null, malformed);
 
+        (string? sentence, string? sentenceMalformed) = Sentence(operation);
         return new DislOperation(
             id,
             targets,
@@ -46,7 +50,22 @@ internal static class DislOperationReader
             operation.TryGetProperty("label", out var label) ? DislFieldReader.Message(specification, label, DislJson.Pointer(pointer, "label")) : null,
             DislJson.String(operation, "icon"),
             DislJson.String(operation, "shortcut"),
+            DislJson.String(operation, "paramsForm"),
+            sentence,
+            sentenceMalformed,
             null);
+    }
+
+    /// <summary>The first message of the <c>unavailable</c> reasons written as a string, or what reading it threw.</summary>
+    private static (string? Sentence, string? Malformed) Sentence(JsonElement operation)
+    {
+        if (!operation.TryGetProperty("unavailable", out var unavailable) || unavailable.ValueKind != JsonValueKind.Array) return (null, null);
+        foreach (var reason in unavailable.EnumerateArray())
+        {
+            if (DislFieldReader.NotAnObject(reason) is { } malformed) return (null, malformed);
+            if (reason.TryGetProperty("message", out var message) && message.ValueKind == JsonValueKind.String) return (message.GetString(), null);
+        }
+        return (null, null);
     }
 
     /// <summary>A <c>plugin</c>: a name, or <c>{name, args}</c>, its arguments the values they read as.</summary>

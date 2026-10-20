@@ -1,5 +1,3 @@
-using System.Text.Json;
-
 namespace EtAlii.Adp.Specification.Disl;
 
 /// <summary>A confirmation to ask before a transaction (DISL §9.5), its texts evaluated.</summary>
@@ -35,40 +33,38 @@ public static class DeletionPolicy
     {
         ArgumentNullException.ThrowIfNull(specification);
         ArgumentNullException.ThrowIfNull(self);
-        if (Policy(specification, self) is not var (policy, pointer) || !policy.TryGetProperty("confirm", out var confirm)) return null;
+        if (specification.Behavior.DeletionOf(self.Type.Linearisation) is not { } policy) return null;
+        // A policy that is not an object threw here when it was read from the JSON at run time, and still does.
+        if (policy.NotAnObject is { } malformed) throw new InvalidOperationException(malformed);
+        if (policy.Confirm is not { } confirm) return null;
 
-        var at = DislJson.Pointer(pointer, "confirm");
         var variables = OperationInterpreter.Variables(DislContext.GestureDelete, self.Diagram, env);
         variables["self"] = self;
         variables["selection"] = selection?.Cast<object?>().ToList() ?? [self];
         variables["count"] = null;
 
-        if (confirm.ValueKind != JsonValueKind.Object || confirm.TryGetProperty("cel", out _) || !confirm.TryGetProperty("message", out var message))
-        {
-            // A plain Message: asked every time (§9.5).
-            return new DislConfirmation("Delete", DislEvaluation.Message(specification, confirm, at, DislContext.GestureDelete, variables, ""), "Delete", true, null);
-        }
+        // A plain Message: asked every time (§9.5).
+        if (confirm is DislDeletionConfirm.Always always) return new DislConfirmation("Delete", always.Message.Text(variables, ""), "Delete", true, null);
+        var asked = (DislDeletionConfirm.Asked)confirm;
 
         long? count = null;
-        if (confirm.TryGetProperty("count", out var counted))
+        if (asked.Count is { } counted)
         {
-            if (DislEvaluation.Expression(specification, counted, DislJson.Pointer(at, "count"), DislContext.GestureDelete, variables) is not long value) return null;
+            if (counted.Evaluate(variables) is not long value) return null;
             count = value;
             variables["count"] = value;
-            var threshold = confirm.TryGetProperty("threshold", out var declared) && declared.TryGetInt64(out var limit) ? limit : 0;
-            if (value < threshold) return null;
+            // A threshold that is not a number threw here when it was read from the JSON at run time, and still does.
+            if (asked.ThresholdMalformed is { } notANumber) throw new InvalidOperationException(notANumber);
+            if (value < asked.Threshold) return null;
         }
-        if (confirm.TryGetProperty("when", out var when) && !DislEvaluation.Holds(specification, when, DislJson.Pointer(at, "when"), DislContext.GestureDelete, variables)) return null;
+        if (asked.When is { } when && !when.Holds(variables)) return null;
 
         return new DislConfirmation(
-            Text(confirm, "title", "Delete"),
-            DislEvaluation.Message(specification, message, DislJson.Pointer(at, "message"), DislContext.GestureDelete, variables, ""),
-            Text(confirm, "confirmLabel", "Delete"),
-            !confirm.TryGetProperty("danger", out var danger) || danger.ValueKind != JsonValueKind.False,
+            asked.Title?.Text(variables, "Delete") ?? "Delete",
+            asked.Message.Text(variables, ""),
+            asked.ConfirmLabel?.Text(variables, "Delete") ?? "Delete",
+            asked.Danger,
             count);
-
-        string Text(JsonElement owner, string name, string fallback) =>
-            owner.TryGetProperty(name, out var text) ? DislEvaluation.Message(specification, text, DislJson.Pointer(at, name), DislContext.GestureDelete, variables, fallback) : fallback;
     }
 
     /// <summary>The removals deleting <paramref name="self"/> makes, in the order they are made.</summary>
@@ -80,10 +76,10 @@ public static class DeletionPolicy
         ArgumentNullException.ThrowIfNull(specification);
         ArgumentNullException.ThrowIfNull(self);
 
-        var policy = Policy(specification, self)?.Policy;
-        var children = policy is { } declared ? DislJson.String(declared, "children") ?? "delete" : "delete";
-        var relations = policy is { } withRelations ? DislJson.String(withRelations, "relations") ?? "delete" : "delete";
-        var references = policy is { } withReferences ? DislJson.String(withReferences, "references") ?? "unset" : "unset";
+        var policy = specification.Behavior.DeletionOf(self.Type.Linearisation);
+        var children = policy?.Children ?? "delete";
+        var relations = policy?.Relations ?? "delete";
+        var references = policy?.References ?? "unset";
 
         var subtree = self.Type.IsRelation ? [] : self.Descendants().ToList();
         if (subtree.Count > 0 && children != "delete") return DislTransaction.Refused(children == "forbid" ? "This cannot be deleted while it has children." : $"Deleting with children: \"{children}\" is not supported yet.");
@@ -116,18 +112,4 @@ public static class DeletionPolicy
         IReadOnlyList<object?> list => list.Any(item => item is DislElement element && gone.Contains(element)),
         _ => false,
     };
-
-    /// <summary>The deletion policy of the first type along <paramref name="self"/>'s linearisation that declares one.</summary>
-    private static (JsonElement Policy, string Pointer)? Policy(DislSpecification specification, DislElement self)
-    {
-        if (!specification.Root.TryGetProperty("behavior", out var behavior) || !behavior.TryGetProperty("deletion", out var deletion) || deletion.ValueKind != JsonValueKind.Object)
-        {
-            return null;
-        }
-        foreach (var type in self.Type.Linearisation)
-        {
-            if (deletion.TryGetProperty(type, out var policy)) return (policy, DislJson.Pointer("/behavior/deletion", type));
-        }
-        return null;
-    }
 }

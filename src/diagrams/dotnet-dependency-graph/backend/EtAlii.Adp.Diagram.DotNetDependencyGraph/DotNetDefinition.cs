@@ -114,7 +114,7 @@ internal static class DotNetDefinition
 
     /// <summary>The sentence of <c>behavior.messages</c>' <c>std.readOnly</c>, as the definition writes it.</summary>
     private static string RefusalOf() =>
-        Specification.Root.GetProperty("behavior").GetProperty("messages").GetProperty("std.readOnly") is { ValueKind: JsonValueKind.String } message
+        Specification.Json.GetProperty("behavior").GetProperty("messages").GetProperty("std.readOnly") is { ValueKind: JsonValueKind.String } message
             ? message.GetString()!
             : throw new InvalidOperationException("The definition words no std.readOnly to refuse a write with.");
 

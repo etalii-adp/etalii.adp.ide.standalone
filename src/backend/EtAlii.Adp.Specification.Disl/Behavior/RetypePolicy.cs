@@ -1,4 +1,3 @@
-using System.Text.Json;
 using EtAlii.Adp.Specification.Cel;
 
 namespace EtAlii.Adp.Specification.Disl;
@@ -34,7 +33,7 @@ public static class RetypePolicy
 
         if (self.IsDerived) return DislTransaction.Refused($"{self.Type.Name} is derived, so its type cannot be changed.");
         if (specification.Metamodel.TypeOf(type) is not { IsRelation: false, Abstract: false } target) return DislTransaction.Refused($"A {self.Type.Name} cannot become a {type}: that is no type of node.");
-        if (Policy(specification, self) is not var (policy, pointer) || !DislJson.Strings(policy, "to").Contains(type))
+        if (specification.Behavior.RetypeOf(self.Type.Linearisation) is not { } policy || !policy.To.Contains(type))
         {
             return DislTransaction.Refused($"A {self.Type.Name} cannot become a {type}.");
         }
@@ -44,28 +43,14 @@ public static class RetypePolicy
         variables["old"] = self;
 
         var attributes = new Dictionary<string, object?>(StringComparer.Ordinal);
-        foreach (var mapping in DislJson.Members(policy, "attributeMapping"))
+        foreach ((string attribute, DislExpressionField mapping) in policy.AttributeMapping)
         {
-            if (!target.Attributes.ContainsKey(mapping.Name)) continue;
-            var value = DislEvaluation.Expression(specification, mapping.Value, DislJson.Pointer(DislJson.Pointer(pointer, "attributeMapping"), mapping.Name), DislContext.Retype, variables);
+            if (!target.Attributes.ContainsKey(attribute)) continue;
+            var value = mapping.Evaluate(variables);
             if (value is CelError error) return DislTransaction.Refused(error.Message);
-            attributes[mapping.Name] = value;
+            attributes[attribute] = value;
         }
 
         return new DislTransaction([new DislChange.Retype(self.Id, type, attributes)], [], null);
-    }
-
-    /// <summary>The retype entry of the first type along <paramref name="self"/>'s linearisation that declares one.</summary>
-    private static (JsonElement Policy, string Pointer)? Policy(DislSpecification specification, DislElement self)
-    {
-        if (!specification.Root.TryGetProperty("behavior", out var behavior) || !behavior.TryGetProperty("retype", out var retype) || retype.ValueKind != JsonValueKind.Object)
-        {
-            return null;
-        }
-        foreach (var type in self.Type.Linearisation)
-        {
-            if (retype.TryGetProperty(type, out var policy) && policy.ValueKind == JsonValueKind.Object) return (policy, DislJson.Pointer("/behavior/retype", type));
-        }
-        return null;
     }
 }

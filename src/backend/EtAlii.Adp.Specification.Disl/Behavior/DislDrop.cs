@@ -98,7 +98,7 @@ public static class DislDrop
         variables["dropTarget"] = dropTarget;
         variables["tool"] = toolId;
         variables["elementType"] = tool.Creates;
-        return new DislDropOutcome.Refused(drop.Refusal is null ? DefaultRefusal : DislReason.First(drop.Refusal, specification, DislContext.Create, variables) ?? DefaultRefusal);
+        return new DislDropOutcome.Refused(drop.Refusal is null ? DefaultRefusal : DislReason.First(drop.Refusal, specification, variables) ?? DefaultRefusal);
     }
 
     /// <summary>A matching target's <c>args</c>, evaluated in the element context where the drop lands.</summary>
@@ -120,7 +120,7 @@ public static class DislDrop
             ["env"] = (env ?? new DislEnv()).ToCel(),
             ["position"] = OperationInterpreter.Map(position),
         };
-        foreach ((string name, DislExpressionField value) in target.Arguments) arguments[name] = value.Evaluate(specification, DislContext.Element, variables);
+        foreach ((string name, DislExpressionField value) in target.Arguments) arguments[name] = value.Evaluate(variables);
 
         return arguments;
     }

@@ -140,7 +140,8 @@ internal static class DislFormReader
         return list;
     }
 
-    private static DislFormParse Parse(DislSpecification specification, JsonElement parse, string pointer) =>
+    /// <summary>A <c>parse</c> (DISL 0.3 §7.5, §6.12): its <c>accepts</c>, its <c>refusal</c> and its <c>write</c>.</summary>
+    internal static DislFormParse Parse(DislSpecification specification, JsonElement parse, string pointer) =>
         DislFieldReader.NotAnObject(parse) is { } malformed
             ? new DislFormParse(null, null, null, malformed)
             : new DislFormParse(

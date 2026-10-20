@@ -1,4 +1,3 @@
-using System.Text.Json;
 using EtAlii.Adp.Specification.Cel;
 
 namespace EtAlii.Adp.Specification.Disl;
@@ -59,7 +58,7 @@ public static class FormCommit
         var cel = env.ToCel();
         var current = Variables(self, declared is null ? null : self.ValueOf(declared.Name), cel);
 
-        if (DislReason.First(item.ReadOnlyReasons, specification, DislContext.Form, current) is { } reason) return DislTransaction.Refused(reason);
+        if (DislReason.First(item.ReadOnlyReasons, specification, current) is { } reason) return DislTransaction.Refused(reason);
         if (env.ReadOnly) return DislTransaction.Refused(DislEvaluation.StandardMessage(specification, "std.readOnly", current, "This diagram is read-only."));
 
         var chosen = Chosen(specification, item, current, value);
@@ -69,12 +68,12 @@ public static class FormCommit
         {
             if (parse.NotAnObject is { } malformed) throw new InvalidOperationException(malformed);
             var text = Variables(self, value, cel);
-            if (parse.Accepts is { } accepts && !accepts.Holds(specification, DislContext.Form, text))
+            if (parse.Accepts is { } accepts && !accepts.Holds(text))
             {
-                return DislTransaction.Refused(parse.Refusal?.Text(specification, DislContext.Form, text, $"'{value}' cannot be written here.") ?? $"'{value}' cannot be written here.");
+                return DislTransaction.Refused(parse.Refusal?.Text(text, $"'{value}' cannot be written here.") ?? $"'{value}' cannot be written here.");
             }
 
-            var runner = new ActionRunner(specification, self.Diagram, DislIds.Fixed(), DislContext.Form);
+            var runner = new ActionRunner(specification, self.Diagram, DislIds.Fixed());
             if (parse.Write is { } write) runner.Run(write, text);
             return runner.Transaction;
         }
@@ -112,15 +111,15 @@ public static class FormCommit
         {
             var attribute = item.Attribute ?? "";
             if (item.NotAnObject is { } notAnObject) throw new InvalidOperationException(notAnObject);
-            var label = item.Label?.Text(specification, DislContext.Form, variables, attribute) ?? attribute;
-            var initial = item.Initial?.Evaluate(specification, DislContext.Form, variables);
+            var label = item.Label?.Text(variables, attribute) ?? attribute;
+            var initial = item.Initial?.Evaluate(variables);
             fields.Add(new FormRequestField(attribute, label, item.Widget, initial is CelError ? null : initial));
         }
 
         return new FormRequest(
-            found.Label?.Text(specification, DislContext.Form, variables, form) ?? form,
+            found.Label?.Text(variables, form) ?? form,
             found.Icon,
-            found.SubmitLabel?.Text(specification, DislContext.Form, variables, ""),
+            found.SubmitLabel?.Text(variables, ""),
             fields);
     }
 
@@ -165,22 +164,20 @@ public static class FormCommit
 
         var variables = Variables(self, text, env.ToCel());
         if (env.ReadOnly) return DislTransaction.Refused(DislEvaluation.StandardMessage(specification, "std.readOnly", variables, "This diagram is read-only."));
-        if (LabelOf(specification, self, label) is not { } found || !found.Json.TryGetProperty("parse", out var parse))
+        if (specification.Notation.LabelOf(self.Type.Name, label) is not { Parse: { } parse })
         {
             return DislTransaction.Refused($"'{label}' cannot be edited here.");
         }
 
-        var parsePointer = DislJson.Pointer(found.Pointer, "parse");
-        if (parse.TryGetProperty("accepts", out var accepts) && !DislEvaluation.Holds(specification, accepts, DislJson.Pointer(parsePointer, "accepts"), DislContext.LabelParse, variables))
+        // A parse that is not an object threw here when it was read from the JSON at run time, and still does.
+        if (parse.NotAnObject is { } malformed) throw new InvalidOperationException(malformed);
+        if (parse.Accepts is { } accepts && !accepts.Holds(variables))
         {
-            return DislTransaction.Refused(parse.TryGetProperty("refusal", out var refusal)
-                ? DislEvaluation.Message(specification, refusal, DislJson.Pointer(parsePointer, "refusal"), DislContext.LabelParse, variables, $"'{text}' cannot be written here.")
-                : $"'{text}' cannot be written here.");
+            return DislTransaction.Refused(parse.Refusal?.Text(variables, $"'{text}' cannot be written here.") ?? $"'{text}' cannot be written here.");
         }
 
-        var runner = new ActionRunner(specification, self.Diagram, DislIds.Fixed(), DislContext.LabelParse);
-        // Until the notation's labels are typed at load, a parse's write is typed as it runs.
-        if (parse.TryGetProperty("write", out var write)) runner.Run(DislActionReader.List(specification, write, DislJson.Pointer(parsePointer, "write")), variables);
+        var runner = new ActionRunner(specification, self.Diagram, DislIds.Fixed());
+        if (parse.Write is { } write) runner.Run(write, variables);
         return runner.Transaction;
     }
 
@@ -195,30 +192,7 @@ public static class FormCommit
         ArgumentNullException.ThrowIfNull(label);
         ArgumentNullException.ThrowIfNull(env);
 
-        if (LabelOf(specification, self, label) is not { } found) return null;
-        var key = found.Json.TryGetProperty("editText", out _) ? "editText" : "text";
-        if (!found.Json.TryGetProperty(key, out var json)) return null;
-        return DislEvaluation.Expression(specification, json, DislJson.Pointer(found.Pointer, key), DislContext.Element, Variables(self, null, env.ToCel())) as string;
-    }
-
-    /// <summary>The label <paramref name="id"/> of the notation of <paramref name="self"/>'s type: a node's, else a relation's.</summary>
-    private static (JsonElement Json, string Pointer)? LabelOf(DislSpecification specification, DislElement self, string id)
-    {
-        if (!specification.Root.TryGetProperty("notation", out var notation)) return null;
-        foreach (var kind in new[] { "nodes", "edges" })
-        {
-            foreach (var type in DislJson.Members(notation, kind))
-            {
-                if (type.Name != self.Type.Name || !type.Value.TryGetProperty("labels", out var labels) || labels.ValueKind != JsonValueKind.Array) continue;
-                var index = 0;
-                foreach (var label in labels.EnumerateArray())
-                {
-                    var at = DislJson.Pointer(DislJson.Pointer(DislJson.Pointer(DislJson.Pointer("/notation", kind), type.Name), "labels"), index++);
-                    if (DislJson.String(label, "id") == id) return (label, at);
-                }
-            }
-        }
-        return null;
+        return specification.Notation.LabelOf(self.Type.Name, label)?.EditText?.Evaluate(Variables(self, null, env.ToCel())) as string;
     }
 
     /// <summary>The message of the first validation of severity <c>error</c> of <paramref name="item"/> that fails, or null.</summary>
@@ -229,9 +203,9 @@ public static class FormCommit
         {
             if (validation.NotAnObject is { } notAnObject) throw new InvalidOperationException(notAnObject);
             if (validation.Severity != "error" || validation.Rule is not { } rule) continue;
-            if (rule.Holds(specification, DislContext.Form, variables)) continue;
+            if (rule.Holds(variables)) continue;
             var fallback = $"'{DislEvaluation.TextOf(variables["value"])}' is not accepted here.";
-            return validation.Message?.Text(specification, DislContext.Form, variables, fallback) ?? fallback;
+            return validation.Message?.Text(variables, fallback) ?? fallback;
         }
         return null;
     }
@@ -242,8 +216,8 @@ public static class FormCommit
         if (item.Options is not { } options) return text;
         IEnumerable<object?> list = options switch
         {
-            DislFormOptions.Listed listed => listed.Values.Evaluate(specification, DislContext.Form, variables) as IReadOnlyList<object?> ?? [],
-            DislFormOptions.Computed { DeclaresEnum: false } computed => computed.Expression.Evaluate(specification, DislContext.Form, variables) as IReadOnlyList<object?> ?? [],
+            DislFormOptions.Listed listed => listed.Values.Evaluate(variables) as IReadOnlyList<object?> ?? [],
+            DislFormOptions.Computed { DeclaresEnum: false } computed => computed.Expression.Evaluate(variables) as IReadOnlyList<object?> ?? [],
             _ => [],
         };
         foreach (var option in list)

@@ -402,6 +402,10 @@ internal static partial class DislExpressionWalker
             }
             if (key == "snapping") return frame.In(DislContext.Snap).As(Mode.Literal);
             if (key == "parse") return frame.In(DislContext.LabelParse).As(Mode.Literal);
+            // A label's parse (DISL 0.3 §6.12): accepts is an Expression over value, as a form field's is (§7.5).
+            if (key == "accepts" && path is [.., "parse"]) return frame.As(Mode.Expression);
+            // A computed legend (§6.13): its key and its order are Expressions over each drawn element.
+            if (key is "key" or "order" && path is [.., "legend", "computed"]) return frame.As(Mode.Expression);
             if (key == "filters") return frame.In(DislContext.Filter).As(Mode.Literal);
             if (key == "options" && path.Contains("filters")) return frame.In(DislContext.FilterOptions).As(Mode.Literal);
             if (key == "legend") return frame.In(DislContext.Legend).As(Mode.Literal);

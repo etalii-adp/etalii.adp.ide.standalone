@@ -49,6 +49,9 @@ public sealed class DislType
         Name = name;
         IsRelation = isRelation;
         Json = json;
+        var derived = json.ValueKind == JsonValueKind.Object && json.TryGetProperty("derived", out var declared) && declared.ValueKind == JsonValueKind.Object ? declared : default;
+        ConnectEdit = derived.ValueKind == JsonValueKind.Object && derived.TryGetProperty("edits", out var edits) ? DislJson.String(edits, "connect") : null;
+        DerivedReason = DislJson.String(derived, "reason");
     }
 
     public string Name { get; }
@@ -84,6 +87,12 @@ public sealed class DislType
 
     /// <summary>The <c>derived</c> declaration (§4.11): an Expression (a relation's 0.1 form) or a DerivedNode or DerivedRelation object; null for a stored type.</summary>
     public JsonElement? Derived => Json.TryGetProperty("derived", out var derived) ? derived : null;
+
+    /// <summary>The operation a derived relation's <c>edits.connect</c> runs when one is drawn (§4.11), or null when it names none.</summary>
+    internal string? ConnectEdit { get; }
+
+    /// <summary>A derived type's <c>reason</c>, why it cannot be edited by hand (§4.11), or null when it states none.</summary>
+    internal string? DerivedReason { get; }
 
     /// <summary>The extension properties (<c>x-</c>) of the declaration, unread and unchanged.</summary>
     public IReadOnlyDictionary<string, JsonElement> Extensions => DislJson.Extensions(Json);

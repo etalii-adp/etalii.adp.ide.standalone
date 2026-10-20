@@ -13,6 +13,15 @@ namespace EtAlii.Adp.Specification.Disl;
 /// <param name="Label">Its <c>label</c>, which a context menu entry running it is named by; null when it states none.</param>
 /// <param name="Icon">Its <c>icon</c>, a context menu entry's when the entry states none.</param>
 /// <param name="Shortcut">Its <c>shortcut</c>, a context menu entry's when the entry states none.</param>
+/// <param name="ParamsForm">Its <c>paramsForm</c>, the form that asks for its parameters, or null when it names none.</param>
+/// <param name="WrittenSentence">
+/// The first message of its <c>unavailable</c> reasons written as a string, as the definition words it; null when it
+/// words none.
+/// </param>
+/// <param name="WrittenSentenceMalformed">
+/// The message System.Text.Json threw reading the reasons for <paramref name="WrittenSentence"/> when one before it is not
+/// an object, null otherwise.
+/// </param>
 /// <param name="NotAnObject">
 /// The message System.Text.Json threw when the runtime read an operation that is not an object, null for one that
 /// is; such an operation still throws it where its <c>unavailable</c> was read.
@@ -27,8 +36,21 @@ internal sealed record DislOperation(
     DislMessage? Label,
     string? Icon,
     string? Shortcut,
+    string? ParamsForm,
+    string? WrittenSentence,
+    string? WrittenSentenceMalformed,
     string? NotAnObject)
 {
+    /// <summary>
+    /// The first message of its <c>unavailable</c> reasons written as a string (<see cref="WrittenSentence"/>), which a host
+    /// carries while the operation is available; what reading it from the JSON threw, it still throws.
+    /// </summary>
+    public string? Sentence()
+    {
+        if ((NotAnObject ?? WrittenSentenceMalformed) is { } malformed) throw new InvalidOperationException(malformed);
+        return WrittenSentence;
+    }
+
     /// <summary>
     /// Whether the operation is for a target that is of a type when <paramref name="isA"/> says so, or the diagram when
     /// it is null: its <c>for</c> is empty, or names the diagram, the selection, or one of the target's types.
@@ -48,12 +70,13 @@ internal sealed record DislOperationPlugin(string Name, IReadOnlyList<(string Na
 /// at load.
 /// </summary>
 /// <param name="Operations">The operations, by name.</param>
+/// <param name="Declared">The operations as they are declared, in order, a name declared twice twice.</param>
 /// <param name="EditGate">The edit gate's Reasons, in order; none when there is no gate.</param>
 /// <param name="Malformed">
 /// The message System.Text.Json threw when the runtime looked for an operation in a <c>behavior</c> or
 /// <c>behavior.operations</c> that is not an object; such a specification still throws it on every look-up.
 /// </param>
-internal sealed record DislOperations(IReadOnlyDictionary<string, DislOperation> Operations, IReadOnlyList<DislReason> EditGate, string? Malformed)
+internal sealed record DislOperations(IReadOnlyDictionary<string, DislOperation> Operations, IReadOnlyList<DislOperation> Declared, IReadOnlyList<DislReason> EditGate, string? Malformed)
 {
     /// <summary>The operation <paramref name="id"/>, or null when there is none.</summary>
     public DislOperation? Find(string id) =>

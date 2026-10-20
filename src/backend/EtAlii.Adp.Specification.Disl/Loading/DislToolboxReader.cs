@@ -64,7 +64,7 @@ internal static class DislToolboxReader
                         }
                         else if (entry.ValueKind == JsonValueKind.Object)
                         {
-                            palette.Add(new DislPaletteItem.Entry(id, DislJson.String(entry, "id"), Tool(specification, entry, entryAt)));
+                            palette.Add(new DislPaletteItem.Entry(id, DislJson.String(entry, "id"), Tool(specification, entry, entryAt), pointer == "/toolbox/groups" ? entryAt : null));
                         }
                     }
                 }
@@ -167,6 +167,7 @@ internal static class DislToolboxReader
             Visible = tool.TryGetProperty("visible", out var visible) ? DislFieldReader.Expression(specification, visible, DislJson.Pointer(pointer, "visible")) : null,
             Kind = DislJson.String(tool, "kind") ?? "operation",
             Operation = DislJson.String(tool, "operation"),
+            Form = DislJson.String(tool, "form"),
             Arguments = Arguments(specification, tool, pointer),
             Via = DislJson.String(tool, "via"),
             Label = tool.TryGetProperty("label", out var label) ? DislFieldReader.Message(specification, label, DislJson.Pointer(pointer, "label")) : null,

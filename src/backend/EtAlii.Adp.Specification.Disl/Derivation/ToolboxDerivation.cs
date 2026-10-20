@@ -51,7 +51,7 @@ public static class ToolboxDerivation
         if (tool.NotAnObject is { } malformed) throw new InvalidOperationException(malformed);
         var type = tool.Creates is null ? null : specification.Metamodel.TypeOf(tool.Creates);
         var typeLabel = type is null ? name : DislJson.String(type.Json, "label") ?? type.Name;
-        var label = tool.Label?.Text(specification, DislContext.Element, variables, typeLabel) ?? typeLabel;
+        var label = tool.Label?.Text(variables, typeLabel) ?? typeLabel;
         var icon = tool.Icon ?? (type is null ? null : DislJson.String(type.Json, "icon")) ?? "";
         return new DerivedTool(name, group, ids.ToolId(name), tool.Creates, label, icon, tool.Doc, ids.DropActionId(name));
     }

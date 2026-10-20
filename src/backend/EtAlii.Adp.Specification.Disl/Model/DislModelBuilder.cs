@@ -70,7 +70,7 @@ public static class DislModelBuilder
         List<FblElement> unreadable = [];
         if (reading.Unreadable) return new DislModel(diagram, findings, header, unreadable, true);
 
-        var map = DislTypeMap.Of(specification);
+        var map = specification.TypeMap;
         var metamodel = specification.Metamodel;
         var built = new Dictionary<FblElement, DislElement>(ReferenceEqualityComparer.Instance);
         var byReadId = new Dictionary<string, DislElement>(specification.IdComparer);
@@ -213,7 +213,7 @@ public static class DislModelBuilder
     {
         var specification = diagram.Specification;
         var computed = new Dictionary<string, DislElement>(specification.IdComparer);
-        var reportsDuplicates = specification.IsBuiltInEnabled(FindingCodes.DuplicateId);
+        var reportsDuplicates = specification.Constraints.BuiltIn(FindingCodes.DuplicateId).Enabled;
         foreach (var element in elements)
         {
             var rule = specification.IdRuleOf(element.Type.Name);

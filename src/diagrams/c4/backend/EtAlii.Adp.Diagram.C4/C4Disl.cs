@@ -311,7 +311,7 @@ internal static class C4Disl
 
     /// <summary>The viewpoint a definition declares first, for a model of no view.</summary>
     private static string DefaultViewpoint(DislSpecification specification) =>
-        specification.Root.TryGetProperty("viewpoints", out var viewpoints) && viewpoints.ValueKind == System.Text.Json.JsonValueKind.Object
+        specification.Json.TryGetProperty("viewpoints", out var viewpoints) && viewpoints.ValueKind == System.Text.Json.JsonValueKind.Object
             ? viewpoints.EnumerateObject().Select(viewpoint => viewpoint.Name).FirstOrDefault() ?? ""
             : "";
 

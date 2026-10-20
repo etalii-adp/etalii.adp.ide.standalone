@@ -1,4 +1,3 @@
-using System.Text.Json;
 using EtAlii.Adp.Specification.Cel;
 
 namespace EtAlii.Adp.Specification.Disl;
@@ -144,7 +143,7 @@ public static class ContextMenuDerivation
         {
             if (!Applies(set, target)) continue;
             matched = true;
-            if (set.When is { } when && !when.Holds(specification, context, variables)) continue;
+            if (set.When is { } when && !when.Holds(variables)) continue;
             Set(specification, set, context, variables, types, target, ids, groups);
         }
 
@@ -209,7 +208,7 @@ public static class ContextMenuDerivation
         }
 
         // An entry per item, in list order, with item (or its as name) and index bound (§7.3); an empty or failing list gives none.
-        if (forEach.Evaluate(specification, context, variables) is not IReadOnlyList<object?> items) yield break;
+        if (forEach.Evaluate(variables) is not IReadOnlyList<object?> items) yield break;
         for (var index = 0; index < items.Count; index++)
         {
             var bindings = new Dictionary<string, object?>(StringComparer.Ordinal) { ["item"] = items[index], ["index"] = (long)index };
@@ -229,25 +228,25 @@ public static class ContextMenuDerivation
         WireIdMap ids)
     {
         var variables = bindings.Count == 0 ? outer : new Dictionary<string, object?>(outer).Also(bindings);
-        if (tool.Visible is { } visible && !visible.Holds(specification, context, variables)) return null;
+        if (tool.Visible is { } visible && !visible.Holds(variables)) return null;
 
         var kind = tool.Kind;
         var operation = Operation(specification, tool.Operation);
 
         var arguments = new Dictionary<string, object?>(bindings, StringComparer.Ordinal);
-        foreach ((string name, DislExpressionField value) in tool.Arguments) arguments[name] = value.Evaluate(specification, context, variables);
+        foreach ((string name, DislExpressionField value) in tool.Arguments) arguments[name] = value.Evaluate(variables);
 
         var fallback = operation?.Label is { } operationLabel
-            ? operationLabel.Text(specification, DislContext.Operation, Operational(target, variables, arguments), kind)
+            ? operationLabel.Text(Operational(target, variables, arguments), kind)
             : tool.Via is { } via && specification.Metamodel.TypeOf(via) is { } viaType
                 ? DislJson.String(viaType.Json, "label") ?? via
                 : kind;
-        var label = tool.Label?.Text(specification, context, variables, fallback) ?? fallback;
+        var label = tool.Label?.Text(variables, fallback) ?? fallback;
         var icon = tool.Icon ?? operation?.Icon ?? "";
         var shortcut = tool.Shortcut ?? operation?.Shortcut;
 
         var reason = Unavailable(specification, tool, context, variables, operation, target, arguments);
-        var available = reason is null && (tool.Enabled is not { } enabled || enabled.Holds(specification, context, variables));
+        var available = reason is null && (tool.Enabled is not { } enabled || enabled.Holds(variables));
 
         return new DerivedMenuEntry(
             ids.ActionId(types, kind, tool.Operation, arguments),
@@ -270,9 +269,9 @@ public static class ContextMenuDerivation
         DislMenuTarget target,
         IReadOnlyDictionary<string, object?> arguments)
     {
-        if (DislReason.First(tool.Unavailable, specification, context, variables) is { } reason) return reason;
+        if (DislReason.First(tool.Unavailable, specification, variables) is { } reason) return reason;
         if (operation is { Unavailable.Count: > 0 }
-            && DislReason.First(operation.Unavailable, specification, DislContext.Operation, Operational(target, variables, arguments)) is { } inheritedReason)
+            && DislReason.First(operation.Unavailable, specification, Operational(target, variables, arguments)) is { } inheritedReason)
         {
             return inheritedReason;
         }
@@ -289,8 +288,7 @@ public static class ContextMenuDerivation
     /// <summary>The menu of a connection on a derived relation type with a <c>connect</c> edit (§4.11): its operation, as one entry.</summary>
     private static void ConnectEdit(DislSpecification specification, DislMenuTarget.OnConnection pending, string relation, CelMap env, WireIdMap ids, List<DerivedMenuGroup> groups)
     {
-        if (specification.Metamodel.TypeOf(relation)?.Derived is not { ValueKind: JsonValueKind.Object } derived) return;
-        if (!derived.TryGetProperty("edits", out var edits) || DislJson.String(edits, "connect") is not { } operationName) return;
+        if (specification.Metamodel.TypeOf(relation)?.ConnectEdit is not { } operationName) return;
         if (Operation(specification, operationName) is not { } operation) return;
 
         // The relation does not exist yet: self is its two ends, as the operation's reasons read them.
@@ -299,8 +297,8 @@ public static class ContextMenuDerivation
         {
             ["self"] = self, ["selection"] = new List<object?>(), ["p"] = new CelMap(), ["diagram"] = pending.Diagram, ["env"] = env, ["position"] = null,
         };
-        var label = operation.Label?.Text(specification, DislContext.Operation, variables, operationName) ?? operationName;
-        var reason = DislReason.First(operation.Unavailable, specification, DislContext.Operation, variables);
+        var label = operation.Label?.Text(variables, operationName) ?? operationName;
+        var reason = DislReason.First(operation.Unavailable, specification, variables);
         var entry = new DerivedMenuEntry(
             ids.ActionId([relation, "connection"], "connect", operationName, new Dictionary<string, object?>()),
             "operation",

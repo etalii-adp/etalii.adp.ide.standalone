@@ -8,19 +8,16 @@ namespace EtAlii.Adp.Specification.Disl;
 /// </summary>
 /// <param name="Pointer">The position, as a refusal names it.</param>
 /// <param name="Source">The CEL, or null when the position holds no expression: a number, a list, an object without a <c>cel</c> string.</param>
-/// <param name="Program">
-/// The program the loader compiled for the source, from the specification's cache; null for a position the loader does
-/// not walk (inside an <c>x-</c> key), which is compiled on first use as <see cref="DislEvaluation"/> compiles it.
-/// </param>
+/// <param name="Program">The program the loader compiled for the source, from the specification's cache.</param>
 internal sealed record DislExpressionField(string Pointer, string? Source, CelProgram? Program)
 {
-    /// <summary>The value in <paramref name="context"/>: a <see cref="CelError"/> when the position holds no expression or it fails.</summary>
-    public object? Evaluate(DislSpecification specification, DislContext context, IReadOnlyDictionary<string, object?> variables) =>
-        DislEvaluation.Evaluate(specification, Pointer, Source, Program, context, variables);
+    /// <summary>The value: a <see cref="CelError"/> when the position holds no expression or it fails.</summary>
+    public object? Evaluate(IReadOnlyDictionary<string, object?> variables) =>
+        DislEvaluation.Evaluate(Pointer, Source, Program, variables);
 
     /// <summary>Whether the condition holds; a condition that fails does not.</summary>
-    public bool Holds(DislSpecification specification, DislContext context, IReadOnlyDictionary<string, object?> variables) =>
-        Evaluate(specification, context, variables) is true;
+    public bool Holds(IReadOnlyDictionary<string, object?> variables) =>
+        Evaluate(variables) is true;
 }
 
 /// <summary>
@@ -30,13 +27,12 @@ internal sealed record DislExpressionField(string Pointer, string? Source, CelPr
 internal abstract record DislActionValue(string Pointer)
 {
     /// <summary>What the position gives: the expression's value (a <see cref="CelError"/> when it fails), or the literal.</summary>
-    public abstract object? Evaluate(DislSpecification specification, DislContext context, IReadOnlyDictionary<string, object?> variables);
+    public abstract object? Evaluate(IReadOnlyDictionary<string, object?> variables);
 
     /// <summary>A string or an object: an Expression.</summary>
     public sealed record Expression(DislExpressionField Field) : DislActionValue(Field.Pointer)
     {
-        public override object? Evaluate(DislSpecification specification, DislContext context, IReadOnlyDictionary<string, object?> variables) =>
-            Field.Evaluate(specification, context, variables);
+        public override object? Evaluate(IReadOnlyDictionary<string, object?> variables) => Field.Evaluate(variables);
     }
 
     /// <summary>
@@ -46,7 +42,7 @@ internal abstract record DislActionValue(string Pointer)
     /// </summary>
     public sealed record Literal(string Pointer, object? Value) : DislActionValue(Pointer)
     {
-        public override object? Evaluate(DislSpecification specification, DislContext context, IReadOnlyDictionary<string, object?> variables) => Copy(Value);
+        public override object? Evaluate(IReadOnlyDictionary<string, object?> variables) => Copy(Value);
 
         private static object? Copy(object? value) => value switch
         {

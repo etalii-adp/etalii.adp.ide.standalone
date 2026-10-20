@@ -1,4 +1,3 @@
-using System.Text.Json;
 using EtAlii.Adp.Specification.Json;
 
 namespace EtAlii.Adp.Specification.Disl;
@@ -6,114 +5,109 @@ namespace EtAlii.Adp.Specification.Disl;
 /// <summary>
 /// Step 5 of loading (DISL §14.1) outside the metamodel: the type, operation and form references of
 /// the toolbox, the forms, the constraints, the behavior, the notation, the viewpoints and the id
-/// rules each name something the specification declares (§2.7). The metamodel's own references are
-/// resolved while its inheritance is flattened (<see cref="DislInheritance"/>).
+/// rules each name something the specification declares (§2.7), read from the parts the specification
+/// typed at load. The metamodel's own references are resolved while its inheritance is flattened
+/// (<see cref="DislInheritance"/>).
 /// </summary>
 internal static class DislNames
 {
     /// <summary>The words a context menu's <c>for</c>, a constraint's <c>scope</c> or an operation's <c>for</c> may use besides type names.</summary>
     private static readonly HashSet<string> TargetWords = new(StringComparer.Ordinal) { "diagram", "connection", "node", "relation", "port", "*" };
 
-    public static void Resolve(JsonElement root, DislMetamodel metamodel, List<LoadDiagnostic> diagnostics)
+    public static void Resolve(DislSpecification specification, List<LoadDiagnostic> diagnostics)
     {
-        var operations = DislJson.Members(root.TryGetProperty("behavior", out var behavior) ? behavior : default, "operations")
-            .Select(member => member.Name).ToHashSet(StringComparer.Ordinal);
-        var forms = DislJson.Members(root, "forms").Select(member => member.Name).ToHashSet(StringComparer.Ordinal);
-        var resolver = new Resolver(metamodel, diagnostics);
+        var operations = specification.Operations.Declared.Select(operation => operation.Id).ToHashSet(StringComparer.Ordinal);
+        var forms = specification.Forms.All.Select(form => form.Name).ToHashSet(StringComparer.Ordinal);
+        var resolver = new Resolver(specification.Metamodel, diagnostics);
 
-        if (root.TryGetProperty("toolbox", out var toolbox))
+        foreach (var entry in specification.Toolbox.Palette.OfType<DislPaletteItem.Entry>())
         {
-            Each(toolbox, "groups", "/toolbox/groups", (group, groupPointer) =>
-                Each(group, "tools", DislJson.Pointer(groupPointer, "tools"), (tool, toolPointer) =>
-                    resolver.Type(tool, "creates", toolPointer, concrete: true)));
-            Each(toolbox, "contextMenus", "/toolbox/contextMenus", (menu, menuPointer) =>
+            if (entry.ResolvedAt is { } toolPointer) resolver.Type(entry.Tool.Creates, toolPointer, "creates", concrete: true);
+        }
+        var menuIndex = 0;
+        foreach (var menu in specification.Toolbox.ContextMenus)
+        {
+            var menuPointer = DislJson.Pointer("/toolbox/contextMenus", menuIndex++);
+            if (menu.NotAnObject is not null) continue;
+            resolver.Targets(menu.For, menuPointer, "for");
+            var toolIndex = 0;
+            foreach (var tool in menu.Tools)
             {
-                resolver.Targets(menu, "for", menuPointer);
-                Each(menu, "tools", DislJson.Pointer(menuPointer, "tools"), (tool, toolPointer) =>
+                var toolPointer = DislJson.Pointer(DislJson.Pointer(menuPointer, "tools"), toolIndex++);
+                if (tool.NotAnObject is not null) continue;
+                if (tool.Operation is { } operation && !operations.Contains(operation))
                 {
-                    if (DislJson.String(tool, "operation") is { } operation && !operations.Contains(operation))
-                    {
-                        diagnostics.Add(DislLoader.Error(DislJson.Pointer(toolPointer, "operation"), $"'{operation}' is not an operation of behavior.operations (DISL §7.3)."));
-                    }
-                    resolver.Type(tool, "via", toolPointer, relation: true);
-                    if (DislJson.String(tool, "form") is { } form && !forms.Contains(form))
-                    {
-                        diagnostics.Add(DislLoader.Error(DislJson.Pointer(toolPointer, "form"), $"'{form}' is not a form of this specification (DISL §7.3)."));
-                    }
-                });
-            });
+                    diagnostics.Add(DislLoader.Error(DislJson.Pointer(toolPointer, "operation"), $"'{operation}' is not an operation of behavior.operations (DISL §7.3)."));
+                }
+                resolver.Type(tool.Via, toolPointer, "via", relation: true);
+                if (tool.Form is { } form && !forms.Contains(form))
+                {
+                    diagnostics.Add(DislLoader.Error(DislJson.Pointer(toolPointer, "form"), $"'{form}' is not a form of this specification (DISL §7.3)."));
+                }
+            }
         }
 
-        foreach (var form in DislJson.Members(root, "forms"))
+        foreach (var form in specification.Forms.All)
         {
-            resolver.Targets(form.Value, "for", DislJson.Pointer("/forms", form.Name));
+            resolver.Targets(form.For, DislJson.Pointer("/forms", form.Name), "for");
         }
 
-        if (root.TryGetProperty("constraints", out var constraints))
+        foreach (var rule in specification.Constraints.Rules ?? [])
         {
-            Each(constraints, "rules", "/constraints/rules", (rule, pointer) => resolver.Targets(rule, "scope", pointer));
+            if (rule.NotAnObject is null) resolver.Targets(rule.Scope, rule.Pointer, "scope");
         }
 
-        foreach (var operation in DislJson.Members(behavior, "operations"))
+        foreach (var operation in specification.Operations.Declared)
         {
-            var pointer = DislJson.Pointer("/behavior/operations", operation.Name);
-            resolver.Targets(operation.Value, "for", pointer);
-            if (DislJson.String(operation.Value, "paramsForm") is { } form && !forms.Contains(form))
+            var pointer = DislJson.Pointer("/behavior/operations", operation.Id);
+            resolver.Targets(operation.For, pointer, "for");
+            if (operation.ParamsForm is { } form && !forms.Contains(form))
             {
                 diagnostics.Add(DislLoader.Error(DislJson.Pointer(pointer, "paramsForm"), $"'{form}' is not a form of this specification (DISL §9.3)."));
             }
         }
-        Each(behavior, "hooks", "/behavior/hooks", (hook, pointer) => resolver.Targets(hook, "for", pointer));
-        foreach (var deletion in DislJson.Members(behavior, "deletion"))
+        var behavior = specification.Behavior;
+        foreach (var hook in behavior.Hooks) resolver.Targets(hook.For, hook.Pointer, "for");
+        foreach ((string type, _) in behavior.Deletion)
         {
-            resolver.Name(deletion.Name, DislJson.Pointer("/behavior/deletion", deletion.Name));
+            resolver.Name(type, DislJson.Pointer("/behavior/deletion", type));
         }
-        foreach (var retype in DislJson.Members(behavior, "retype"))
+        foreach ((string type, DislRetypePolicy policy) in behavior.Retype)
         {
-            var pointer = DislJson.Pointer("/behavior/retype", retype.Name);
-            resolver.Name(retype.Name, pointer);
-            foreach (var target in DislJson.Strings(retype.Value, "to")) resolver.Name(target, DislJson.Pointer(pointer, "to"));
+            var pointer = DislJson.Pointer("/behavior/retype", type);
+            resolver.Name(type, pointer);
+            foreach (var target in policy.To) resolver.Name(target, DislJson.Pointer(pointer, "to"));
         }
 
-        if (root.TryGetProperty("notation", out var notation)) Notation(notation, "/notation", resolver);
-        foreach (var viewpoint in DislJson.Members(root, "viewpoints"))
+        Notation(specification.Notation.Names, "/notation", resolver);
+        foreach ((string name, DislViewpoint viewpoint) in specification.Viewpoints.All)
         {
-            var pointer = DislJson.Pointer("/viewpoints", viewpoint.Name);
-            foreach (var key in new[] { "include", "exclude" })
+            var pointer = DislJson.Pointer("/viewpoints", name);
+            foreach ((string key, IReadOnlyList<string> names) in new[] { ("include", viewpoint.Include), ("exclude", viewpoint.Exclude) })
             {
-                foreach (var name in DislJson.Strings(viewpoint.Value, key).Where(name => !name.Contains('*', StringComparison.Ordinal)))
+                foreach (var type in names.Where(type => !type.Contains('*', StringComparison.Ordinal)))
                 {
-                    resolver.Name(name, DislJson.Pointer(pointer, key));
+                    resolver.Name(type, DislJson.Pointer(pointer, key));
                 }
             }
-            if (viewpoint.Value.TryGetProperty("notation", out var overrides)) Notation(overrides, DislJson.Pointer(pointer, "notation"), resolver);
+            // A viewpoint that is not an object threw here when its notation was read from the JSON, and still does.
+            if (viewpoint.NotAnObject is { } malformed) throw new InvalidOperationException(malformed);
+            if (viewpoint.Notation is { } overrides) Notation(overrides, DislJson.Pointer(pointer, "notation"), resolver);
         }
 
-        if (root.TryGetProperty("persistence", out var persistence) && persistence.TryGetProperty("ids", out var ids))
-        {
-            foreach (var type in DislJson.Members(ids, "types")) resolver.Name(type.Name, DislJson.Pointer("/persistence/ids/types", type.Name));
-        }
+        // A persistence that is not an object threw here when its ids were read from the JSON, and still does.
+        if (specification.PersistenceNotAnObject is { } notAnObject) throw new InvalidOperationException(notAnObject);
+        foreach (var type in specification.IdTypeNames) resolver.Name(type, DislJson.Pointer("/persistence/ids/types", type));
     }
 
-    private static void Notation(JsonElement notation, string pointer, Resolver resolver)
+    private static void Notation(DislNotationNames names, string pointer, Resolver resolver)
     {
-        foreach (var node in DislJson.Members(notation, "nodes")) resolver.Name(node.Name, DislJson.Pointer(DislJson.Pointer(pointer, "nodes"), node.Name));
+        foreach (var node in names.Nodes) resolver.Name(node, DislJson.Pointer(DislJson.Pointer(pointer, "nodes"), node));
 
         // An edge notation names a relation type, or a reference attribute as Type.attribute (§6.10).
-        foreach (var edge in DislJson.Members(notation, "edges").Where(edge => !edge.Name.Contains('.', StringComparison.Ordinal)))
+        foreach (var edge in names.Edges.Where(edge => !edge.Contains('.', StringComparison.Ordinal)))
         {
-            resolver.Name(edge.Name, DislJson.Pointer(DislJson.Pointer(pointer, "edges"), edge.Name));
-        }
-    }
-
-    private static void Each(JsonElement owner, string name, string pointer, Action<JsonElement, string> visit)
-    {
-        if (owner.ValueKind != JsonValueKind.Object || !owner.TryGetProperty(name, out var list) || list.ValueKind != JsonValueKind.Array) return;
-        var index = 0;
-        foreach (var item in list.EnumerateArray())
-        {
-            if (item.ValueKind == JsonValueKind.Object) visit(item, DislJson.Pointer(pointer, index));
-            index++;
+            resolver.Name(edge, DislJson.Pointer(DislJson.Pointer(pointer, "edges"), edge));
         }
     }
 
@@ -129,9 +123,9 @@ internal static class DislNames
         }
 
         /// <summary>A property naming one type: a concrete one where something is created, a relation type where one is connected.</summary>
-        public void Type(JsonElement owner, string property, string pointer, bool concrete = false, bool relation = false)
+        public void Type(string? name, string pointer, string property, bool concrete = false, bool relation = false)
         {
-            if (DislJson.String(owner, property) is not { } name) return;
+            if (name is null) return;
             var type = metamodel.TypeOf(name);
             var at = DislJson.Pointer(pointer, property);
             if (type is null) diagnostics.Add(DislLoader.Error(at, $"'{name}' is not a type of this specification (DISL §2.7)."));
@@ -140,9 +134,9 @@ internal static class DislNames
         }
 
         /// <summary>A property naming what something applies to: types, or one of the words <c>diagram</c>, <c>connection</c> and the like.</summary>
-        public void Targets(JsonElement owner, string property, string pointer)
+        public void Targets(IReadOnlyList<string> names, string pointer, string property)
         {
-            foreach (var name in DislJson.Strings(owner, property).Where(name => !TargetWords.Contains(name)))
+            foreach (var name in names.Where(name => !TargetWords.Contains(name)))
             {
                 Name(name, DislJson.Pointer(pointer, property));
             }
