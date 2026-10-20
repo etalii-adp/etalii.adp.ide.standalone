@@ -183,7 +183,8 @@ public static class FormCommit
 
     /// <summary>
     /// The text the inline editor of <paramref name="self"/>'s label <paramref name="label"/> opens on (DISL §6.12): its
-    /// <c>editText</c>, else its <c>text</c>; null when there is no such label or it does not evaluate to text.
+    /// <c>editText</c>, else its <c>text</c>, which as a bare string is the literal it states (§2.5 b); null when there is
+    /// no such label or it does not evaluate to text.
     /// </summary>
     public static string? EditText(DislSpecification specification, DislElement self, string label, DislEnv env)
     {
@@ -192,7 +193,12 @@ public static class FormCommit
         ArgumentNullException.ThrowIfNull(label);
         ArgumentNullException.ThrowIfNull(env);
 
-        return specification.Notation.LabelOf(self.Type.Name, label)?.EditText?.Evaluate(Variables(self, null, env.ToCel())) as string;
+        return specification.Notation.LabelOf(self.Type.Name, label)?.EditText switch
+        {
+            DislBindable.Literal { Value: string literal } => literal,
+            DislBindable.Expression expression => expression.Field.Evaluate(Variables(self, null, env.ToCel())) as string,
+            _ => null,
+        };
     }
 
     /// <summary>The message of the first validation of severity <c>error</c> of <paramref name="item"/> that fails, or null.</summary>

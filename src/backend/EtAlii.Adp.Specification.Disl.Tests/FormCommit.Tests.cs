@@ -21,7 +21,9 @@ public class FormCommitTests
             "parse": { "accepts": "value != '' && !value.contains('#')", "write": [ { "set": { "note": "value.trim()" } } ],
               "refusal": { "cel": "'\\'' + value + '\\' is no caption.'" } } },
           { "id": "badge", "text": { "cel": "self.code" }, "editable": "inline",
-            "parse": { "write": [ { "set": { "code": "value" } } ] } } ] } } },
+            "parse": { "write": [ { "set": { "code": "value" } } ] } },
+          { "id": "plain", "text": "self.note", "editable": "inline" },
+          { "id": "word", "text": "Untitled", "editable": "inline" } ] } } },
         "forms": {
           "gauge": {
             "for": "Gauge",
@@ -244,5 +246,30 @@ public class FormCommitTests
 
         // Assert.
         Assert.Equal("first?", text);
+    }
+
+    [Fact]
+    public void ALabelsEditor_WithoutEditText_OpensOnWhatItsExpressionTextEvaluatesTo()
+    {
+        // Act.
+        var text = FormCommit.EditText(Specification, Gauge(), "badge", Editable);
+
+        // Assert.
+        Assert.Equal("x", text);
+    }
+
+    [Theory]
+    [InlineData("plain", "self.note")]
+    [InlineData("word", "Untitled")]
+    public void ALabelsEditor_WithoutEditText_OpensOnItsBareStringTextAsALiteral(string label, string expected)
+    {
+        // DISL §2.5 (b): a bare string in a Bindable position is always a literal, so it is not evaluated - neither
+        // the one that would compile (to the note) nor the one that would not (to no text).
+
+        // Act.
+        var text = FormCommit.EditText(Specification, Gauge(), label, Editable);
+
+        // Assert.
+        Assert.Equal(expected, text);
     }
 }
