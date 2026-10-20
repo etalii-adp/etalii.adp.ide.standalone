@@ -26,7 +26,7 @@ internal static class BindingReader
         PluginReader? plugin = null;
         if (reader.ValueKind == JsonValueKind.Object)
         {
-            plugin = new PluginReader(JsonProperties.String(reader, "plugin") ?? "", JsonProperties.String(reader, "version"));
+            plugin = new PluginReader(JsonProperties.String(reader, "plugin") ?? "", JsonProperties.String(reader, "version")) { Args = Args(reader, pointer, problems) };
         }
         else if (reader.ValueKind != JsonValueKind.String || reader.GetString() != "declared")
         {
@@ -55,6 +55,15 @@ internal static class BindingReader
                 ? new TemplateSettings(JsonProperties.String(t, "text") ?? "", Strings(t, "byOrigin", pointer + "/template", "A template's byOrigin", problems))
                 : null,
         };
+    }
+
+    /// <summary>A plugin reader's <c>args</c> (FBL §11.1): an object, kept as written for the plugin, which alone knows its keys.</summary>
+    private static JsonElement? Args(JsonElement reader, string pointer, List<LoadDiagnostic> problems)
+    {
+        if (!reader.TryGetProperty("args", out var args)) return null;
+        if (args.ValueKind == JsonValueKind.Object) return args.Clone();
+        problems.Add(new LoadDiagnostic(pointer + "/reader/args", LoadSeverity.Error, "A reader's args is an object."));
+        return null;
     }
 
     private static Claims ReadClaims(JsonElement json, string pointer, List<LoadDiagnostic> problems)

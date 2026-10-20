@@ -112,7 +112,11 @@ public sealed class BodySettings
 
 public sealed record FileRule(string? Name, string Glob, Family? Family);
 
-public sealed record PluginReader(string Plugin, string? Version);
+public sealed record PluginReader(string Plugin, string? Version)
+{
+    /// <summary>The reader's <c>args</c> (FBL §11.1), an object handed to every <c>read</c>; null when the binding gives none.</summary>
+    public JsonElement? Args { get; init; }
+}
 
 internal sealed class TextDefaults
 {
