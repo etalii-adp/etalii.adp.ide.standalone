@@ -39,6 +39,7 @@ public sealed class DislSpecification
             ? prefix.EnumerateObject().Where(type => type.Value.ValueKind == JsonValueKind.String).ToDictionary(type => type.Name, type => type.Value.GetString()!, StringComparer.Ordinal)
             : new Dictionary<string, string>(StringComparer.Ordinal);
         IdComparer = DislJson.String(ids, "compare") == "ignore-case" ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
+        Operations = DislOperationReader.Read(this, root);
     }
 
     /// <summary>The specification's JSON, as it was read.</summary>
@@ -90,6 +91,9 @@ public sealed class DislSpecification
 
     /// <summary>The per-evaluation cost limit (§2.5): <c>language.limits.celCost</c>, one million by default.</summary>
     public long CostLimit => _functions.Budget;
+
+    /// <summary>The operations (§9.3) and the edit gate (§9.1), typed at load.</summary>
+    internal DislOperations Operations { get; }
 
     /// <summary>The compiled expression at <paramref name="pointer"/>, or null when there is none.</summary>
     public DislExpression? ExpressionAt(string pointer) => _expressions.GetValueOrDefault(pointer);

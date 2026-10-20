@@ -99,7 +99,8 @@ public static class HookRunner
                 var first = runner.Changes.Count;
                 var snapshots = new Dictionary<DislElement, DislElement>(ReferenceEqualityComparer.Instance);
                 runner.Before = snapshots;
-                if (hook.TryGetProperty("actions", out var actions) && !runner.Run(actions, DislJson.Pointer(pointer, "actions"), variables)) return false;
+                // Until the hooks are typed at load, a hook's actions are typed as it runs.
+                if (hook.TryGetProperty("actions", out var actions) && !runner.Run(DislActionReader.List(specification, actions, DislJson.Pointer(pointer, "actions")), variables)) return false;
                 runner.Before = null;
 
                 foreach (var set in runner.Changes.Skip(first).OfType<DislChange.Set>().ToList())

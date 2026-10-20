@@ -40,22 +40,17 @@ public static class OperationInterpreter
         ArgumentNullException.ThrowIfNull(diagram);
         ArgumentNullException.ThrowIfNull(ids);
 
-        if (!specification.Root.TryGetProperty("behavior", out var behavior) || !behavior.TryGetProperty("operations", out var operations)
-            || !operations.TryGetProperty(operationId, out var operation))
-        {
-            return DislTransaction.Refused($"There is no operation '{operationId}'.");
-        }
+        if (specification.Operations.Find(operationId) is not { } operation) return DislTransaction.Refused($"There is no operation '{operationId}'.");
 
-        var pointer = DislJson.Pointer("/behavior/operations", operationId);
         var variables = Variables(DislContext.Operation, diagram, env);
         variables["self"] = self;
         variables["selection"] = invocation?.Selection?.Cast<object?>().ToList() ?? (self is null ? [] : [self]);
         variables["position"] = Map(invocation?.Position);
         variables["p"] = Map(invocation?.Parameters);
 
-        if (Unavailable(specification, operation, pointer, diagram, self is null ? null : self.IsA, variables, operationId) is { } reason) return DislTransaction.Refused(reason);
+        if (Unavailable(specification, operation, diagram, self is null ? null : self.IsA, variables) is { } reason) return DislTransaction.Refused(reason);
 
-        return Actions(specification, operation, pointer, diagram, ids, variables);
+        return Actions(specification, operation, diagram, ids, variables);
     }
 
     /// <summary>
@@ -89,40 +84,34 @@ public static class OperationInterpreter
                 ? reason
                 : $"A {relationType} cannot be drawn.");
         }
-        if (!specification.Root.TryGetProperty("behavior", out var behavior) || !behavior.TryGetProperty("operations", out var operations)
-            || !operations.TryGetProperty(operationId, out var operation))
-        {
-            return DislTransaction.Refused($"There is no operation '{operationId}'.");
-        }
+        if (specification.Operations.Find(operationId) is not { } operation) return DislTransaction.Refused($"There is no operation '{operationId}'.");
 
-        var pointer = DislJson.Pointer("/behavior/operations", operationId);
         var variables = Variables(DislContext.Operation, diagram, env);
         variables["self"] = new Cel.CelMap { ["source"] = source, ["target"] = target, ["type"] = relationType };
         variables["selection"] = new List<object?>();
         variables["position"] = Map(null);
         variables["p"] = Map(null);
 
-        if (Unavailable(specification, operation, pointer, diagram, relation.Linearisation.Contains, variables, operationId) is { } refusal) return DislTransaction.Refused(refusal);
+        if (Unavailable(specification, operation, diagram, relation.Linearisation.Contains, variables) is { } refusal) return DislTransaction.Refused(refusal);
 
-        return Actions(specification, operation, pointer, diagram, ids, variables);
+        return Actions(specification, operation, diagram, ids, variables);
     }
 
     /// <summary>
     /// The operation's <c>plugin</c> handed back whole, its <c>args</c> as written (a PluginCall's
     /// arguments are values validated against the plugin's declaration, not expressions), or its actions run.
     /// </summary>
-    private static DislTransaction Actions(DislSpecification specification, JsonElement operation, string pointer, DislDiagram diagram, IIdSource ids, Dictionary<string, object?> variables)
+    private static DislTransaction Actions(DislSpecification specification, DislOperation operation, DislDiagram diagram, IIdSource ids, Dictionary<string, object?> variables)
     {
-        if (operation.TryGetProperty("plugin", out var plugin))
+        if (operation.Plugin is { } plugin)
         {
-            var name = plugin.ValueKind == JsonValueKind.String ? plugin.GetString()! : DislJson.String(plugin, "name") ?? "";
             var arguments = new Dictionary<string, object?>(StringComparer.Ordinal);
-            foreach (var argument in DislJson.Members(plugin, "args")) arguments[argument.Name] = DislValues.Json(argument.Value);
-            return new DislTransaction([], [new HostAction.Plugin(name, arguments)], null);
+            foreach ((string name, DislActionValue.Literal value) in plugin.Arguments) arguments[name] = value.Evaluate(specification, DislContext.Operation, variables);
+            return new DislTransaction([], [new HostAction.Plugin(plugin.Name, arguments)], null);
         }
 
         var runner = new ActionRunner(specification, diagram, ids, DislContext.Operation);
-        if (operation.TryGetProperty("actions", out var actions)) runner.Run(actions, DislJson.Pointer(pointer, "actions"), variables);
+        runner.Run(operation.Actions, variables);
         return runner.Transaction;
     }
 
@@ -262,13 +251,7 @@ public static class OperationInterpreter
     public static bool AppliesTo(DislSpecification specification, string operationId, DislElement? self)
     {
         ArgumentNullException.ThrowIfNull(specification);
-        if (!specification.Root.TryGetProperty("behavior", out var behavior) || !behavior.TryGetProperty("operations", out var operations)
-            || !operations.TryGetProperty(operationId, out var operation))
-        {
-            return false;
-        }
-        var targets = DislJson.Strings(operation, "for");
-        return targets.Count == 0 || targets.Contains("diagram") || targets.Contains("selection") || self is not null && targets.Any(self.IsA);
+        return specification.Operations.Find(operationId) is { } operation && operation.AppliesTo(self is null ? null : self.IsA);
     }
 
     /// <summary>
@@ -281,18 +264,14 @@ public static class OperationInterpreter
         ArgumentNullException.ThrowIfNull(specification);
         ArgumentNullException.ThrowIfNull(operationId);
         ArgumentNullException.ThrowIfNull(diagram);
-        if (!specification.Root.TryGetProperty("behavior", out var behavior) || !behavior.TryGetProperty("operations", out var operations)
-            || !operations.TryGetProperty(operationId, out var operation))
-        {
-            return $"There is no operation '{operationId}'.";
-        }
+        if (specification.Operations.Find(operationId) is not { } operation) return $"There is no operation '{operationId}'.";
 
         var variables = Variables(DislContext.Operation, diagram, env);
         variables["self"] = self;
         variables["selection"] = self is null ? new List<object?>() : [self];
         variables["position"] = Map(null);
         variables["p"] = Map(null);
-        return Unavailable(specification, operation, DislJson.Pointer("/behavior/operations", operationId), diagram, self is null ? null : self.IsA, variables, operationId);
+        return Unavailable(specification, operation, diagram, self is null ? null : self.IsA, variables);
     }
 
     internal static Dictionary<string, object?> Variables(DislContext context, DislDiagram diagram, DislEnv? env)
@@ -304,24 +283,17 @@ public static class OperationInterpreter
     }
 
     /// <param name="isA">Whether the operation's target is of a type, or null when it runs on the diagram.</param>
-    private static string? Unavailable(DislSpecification specification, JsonElement operation, string pointer, DislDiagram diagram, Func<string, bool>? isA, Dictionary<string, object?> variables, string operationId)
+    private static string? Unavailable(DislSpecification specification, DislOperation operation, DislDiagram diagram, Func<string, bool>? isA, Dictionary<string, object?> variables)
     {
-        var applies = DislJson.Strings(operation, "for") is var targets && (targets.Count == 0 || targets.Contains("diagram") || targets.Contains("selection")
-            || isA is not null && targets.Any(isA));
-        if (!applies) return NotApplicable(specification, diagram, operationId);
+        if (!operation.AppliesTo(isA)) return NotApplicable(specification, diagram, operation.Id);
 
-        if (specification.Root.TryGetProperty("behavior", out var behavior) && behavior.TryGetProperty("editGate", out var gate)
-            && DislEvaluation.FirstReason(specification, gate, "/behavior/editGate", DislContext.Element, Gate(diagram, variables)) is { } gated)
-        {
-            return gated;
-        }
-        if (operation.TryGetProperty("unavailable", out var unavailable)
-            && DislEvaluation.FirstReason(specification, unavailable, DislJson.Pointer(pointer, "unavailable"), DislContext.Operation, variables) is { } reason)
-        {
-            return reason;
-        }
-        return operation.TryGetProperty("enabled", out var enabled) && !DislEvaluation.Holds(specification, enabled, DislJson.Pointer(pointer, "enabled"), DislContext.Operation, variables)
-            ? NotApplicable(specification, diagram, operationId)
+        if (DislReason.First(specification.Operations.EditGate, specification, DislContext.Element, Gate(diagram, variables)) is { } gated) return gated;
+
+        // An operation that is not an object threw here when it was read from the JSON at run time, and still does.
+        if (operation.NotAnObject is { } malformed) throw new InvalidOperationException(malformed);
+        if (DislReason.First(operation.Unavailable, specification, DislContext.Operation, variables) is { } reason) return reason;
+        return operation.Enabled is { } enabled && !enabled.Holds(specification, DislContext.Operation, variables)
+            ? NotApplicable(specification, diagram, operation.Id)
             : null;
     }
 
