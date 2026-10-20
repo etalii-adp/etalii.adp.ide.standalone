@@ -10,7 +10,7 @@ namespace EtAlii.Adp.Specification.Cel;
 /// global <c>lower(s)</c> and <c>upper(s)</c>, which map case over all of Unicode where the
 /// <c>Ascii</c> pair maps only A to Z. Indexes count code points.
 /// </summary>
-public static class CelStrings
+internal static class CelStrings
 {
     public static void Register(CelEnvironment environment)
     {

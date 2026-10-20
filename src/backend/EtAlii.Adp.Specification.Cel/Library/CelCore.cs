@@ -8,7 +8,7 @@ namespace EtAlii.Adp.Specification.Cel;
 /// <c>size</c>, <c>matches</c> (over the regular expression subset of FBL §2.5) and the conversions
 /// <c>int</c>, <c>double</c> and <c>string</c>, and <c>type</c> with the type names it is compared with.
 /// </summary>
-public static class CelCore
+internal static class CelCore
 {
     public static void Register(CelEnvironment environment)
     {

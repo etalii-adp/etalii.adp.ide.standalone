@@ -6,7 +6,7 @@ namespace EtAlii.Adp.Specification.Cel;
 /// int; and <c>math.greatest</c> and <c>math.least</c> over arguments or one list, comparing ints and
 /// doubles by value and giving the winner unchanged.
 /// </summary>
-public static class CelMath
+internal static class CelMath
 {
     public static void Register(CelEnvironment environment)
     {
