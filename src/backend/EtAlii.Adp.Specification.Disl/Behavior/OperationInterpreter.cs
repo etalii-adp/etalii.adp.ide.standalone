@@ -131,8 +131,8 @@ public static class OperationInterpreter
         ArgumentNullException.ThrowIfNull(diagram);
         ArgumentNullException.ThrowIfNull(ids);
 
-        if (Tool(specification, toolId) is not var (tool, pointer)) return DislTransaction.Refused($"There is no tool '{toolId}'.");
-        if (DislJson.String(tool, "creates") is not { } type || specification.Metamodel.TypeOf(type) is not { IsRelation: false, Abstract: false } created)
+        if (specification.Toolbox.Find(toolId) is not { } tool) return DislTransaction.Refused($"There is no tool '{toolId}'.");
+        if (tool.Creates is not { } type || specification.Metamodel.TypeOf(type) is not { IsRelation: false, Abstract: false } created)
         {
             return DislTransaction.Refused($"Tool '{toolId}' creates no node.");
         }
@@ -143,18 +143,10 @@ public static class OperationInterpreter
         variables["tool"] = toolId;
 
         var attributes = new Dictionary<string, object?>(StringComparer.Ordinal);
-        foreach (var property in DislJson.Members(tool, "initial"))
-        {
-            if (!created.Attributes.TryGetValue(property.Name, out var attribute)) return DislTransaction.Refused($"{type} has no attribute '{property.Name}'.");
-            var value = property.Value.ValueKind == JsonValueKind.Object
-                ? DislEvaluation.Expression(specification, property.Value, DislJson.Pointer(DislJson.Pointer(pointer, "initial"), property.Name), DislContext.Create, variables)
-                : DislValues.FromJson(property.Value, attribute, specification.Metamodel);
-            if (value is Cel.CelError error) return DislTransaction.Refused(error.Message);
-            if (value is not null) attributes[property.Name] = value;
-        }
+        if (Initial(specification, tool.Initial, type, created, variables, attributes) is { } refusal) return DislTransaction.Refused(refusal);
 
         var element = diagram.AddNode(type, ids.Next(type), attributes);
-        List<HostAction> after = DislJson.String(tool, "after") switch
+        List<HostAction> after = tool.After switch
         {
             "editLabel" => [new HostAction.EditLabel(element.Id, null)],
             "select" or null => [new HostAction.Select([element.Id])],
@@ -195,32 +187,24 @@ public static class OperationInterpreter
         if (newEnd is not ("source" or "target")) throw new ArgumentException("The new end is the source or the target.", nameof(newEnd));
 
         if (specification.Metamodel.TypeOf(relationType) is not { IsRelation: true, Abstract: false }) return DislTransaction.Refused($"There is no relation type '{relationType}'.");
-        if (ConnectTool(specification, relationType) is not var (tool, pointer)) return DislTransaction.Refused($"No tool creates a {relationType} on empty canvas.");
+        if (ConnectTool(specification, relationType) is not { } tool) return DislTransaction.Refused($"No tool creates a {relationType} on empty canvas.");
+        if (tool.NotAnObject is { } malformed) throw new InvalidOperationException(malformed);
         var key = newEnd == "target" ? "createTarget" : "createSource";
-        if (!tool.TryGetProperty(key, out var end) || end.ValueKind == JsonValueKind.String && end.GetString() == "ask")
+        if ((newEnd == "target" ? tool.CreateTarget : tool.CreateSource) is not { Ask: false } end)
         {
             return DislTransaction.Refused($"A {relationType} cannot end on empty canvas.");
         }
 
-        var type = end.ValueKind == JsonValueKind.String ? end.GetString() : DislJson.String(end, "type");
+        var type = end.Type;
         if (type is null || specification.Metamodel.TypeOf(type) is not { IsRelation: false, Abstract: false } created) return DislTransaction.Refused($"The {key} of {relationType} names no node type it can create.");
 
         var variables = Variables(DislContext.Create, diagram, env);
         variables["position"] = Map(position);
         variables["elementType"] = type;
-        variables["tool"] = DislJson.String(tool, "id");
+        variables["tool"] = tool.Id;
 
         var attributes = new Dictionary<string, object?>(StringComparer.Ordinal);
-        var initialAt = DislJson.Pointer(DislJson.Pointer(pointer, key), "initial");
-        foreach (var property in DislJson.Members(end, "initial"))
-        {
-            if (!created.Attributes.TryGetValue(property.Name, out var attribute)) return DislTransaction.Refused($"{type} has no attribute '{property.Name}'.");
-            var value = property.Value.ValueKind == JsonValueKind.Object
-                ? DislEvaluation.Expression(specification, property.Value, DislJson.Pointer(initialAt, property.Name), DislContext.Create, variables)
-                : DislValues.FromJson(property.Value, attribute, specification.Metamodel);
-            if (value is Cel.CelError error) return DislTransaction.Refused(error.Message);
-            if (value is not null) attributes[property.Name] = value;
-        }
+        if (Initial(specification, end.Initial, type, created, variables, attributes) is { } refusal) return DislTransaction.Refused(refusal);
 
         try
         {
@@ -308,51 +292,45 @@ public static class OperationInterpreter
     private static Dictionary<string, object?> Gate(DislDiagram diagram, Dictionary<string, object?> variables) =>
         new(StringComparer.Ordinal) { ["self"] = diagram, ["diagram"] = diagram, ["env"] = variables["env"] };
 
-    /// <summary>The tool <paramref name="toolId"/> as the palette declares it, inline in a group or from the toolbox's library, with its pointer.</summary>
-    internal static (JsonElement Tool, string Pointer)? Tool(DislSpecification specification, string toolId)
-    {
-        if (!specification.Root.TryGetProperty("toolbox", out var toolbox)) return null;
-        return toolbox.TryGetProperty("groups", out var groups) ? InGroups(groups, "/toolbox/groups") : null;
-
-        (JsonElement, string)? InGroups(JsonElement list, string at)
-        {
-            if (list.ValueKind != JsonValueKind.Array) return null;
-            var index = 0;
-            foreach (var group in list.EnumerateArray())
-            {
-                var groupAt = DislJson.Pointer(at, index++);
-                var position = 0;
-                var tools = group.TryGetProperty("tools", out var declared) && declared.ValueKind == JsonValueKind.Array ? declared.EnumerateArray().ToList() : [];
-                foreach (var entry in tools)
-                {
-                    var entryAt = DislJson.Pointer(DislJson.Pointer(groupAt, "tools"), position++);
-                    if (entry.ValueKind == JsonValueKind.String && entry.GetString() == toolId
-                        && toolbox.TryGetProperty("tools", out var library) && library.TryGetProperty(toolId, out var shared))
-                    {
-                        return (shared, DislJson.Pointer("/toolbox/tools", toolId));
-                    }
-                    if (entry.ValueKind == JsonValueKind.Object && DislJson.String(entry, "id") == toolId) return (entry, entryAt);
-                }
-                if (group.TryGetProperty("groups", out var nested) && InGroups(nested, DislJson.Pointer(groupAt, "groups")) is { } found) return found;
-            }
-            return null;
-        }
-    }
-
     /// <summary>
     /// The tool a connect gesture of <paramref name="relationType"/> runs: the one its edge notation's
     /// <c>connect.tool</c> names (§6.10), else the first library tool (<c>toolbox.tools</c>) that creates it.
     /// </summary>
-    private static (JsonElement Tool, string Pointer)? ConnectTool(DislSpecification specification, string relationType)
+    private static DislTool? ConnectTool(DislSpecification specification, string relationType)
     {
-        if (!specification.Root.TryGetProperty("toolbox", out var toolbox) || !toolbox.TryGetProperty("tools", out var library) || library.ValueKind != JsonValueKind.Object) return null;
+        if (specification.Toolbox.NotAnObject is { } malformed) throw new InvalidOperationException(malformed);
+        if (specification.Toolbox.Library is not { } library) return null;
         var named = specification.Root.TryGetProperty("notation", out var notation) && notation.TryGetProperty("edges", out var edges)
             && edges.TryGetProperty(relationType, out var edge) && edge.TryGetProperty("connect", out var connect)
                 ? DislJson.String(connect, "tool")
                 : null;
-        foreach (var tool in library.EnumerateObject())
+        foreach ((string name, DislTool tool) in library)
         {
-            if (named is not null ? tool.Name == named : DislJson.String(tool.Value, "creates") == relationType) return (tool.Value, DislJson.Pointer("/toolbox/tools", tool.Name));
+            if (named is not null ? name == named : tool.Creates == relationType) return tool;
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// The <paramref name="initial"/> values of a node of <paramref name="type"/> into <paramref name="attributes"/>: an
+    /// Expression evaluated in the create context, any other value read as its attribute; the refusal, or null.
+    /// </summary>
+    private static string? Initial(
+        DislSpecification specification,
+        IReadOnlyList<DislToolInitial> initial,
+        string type,
+        DislType created,
+        Dictionary<string, object?> variables,
+        Dictionary<string, object?> attributes)
+    {
+        foreach (var property in initial)
+        {
+            if (!created.Attributes.TryGetValue(property.Name, out var attribute)) return $"{type} has no attribute '{property.Name}'.";
+            var value = property.Expression is { } expression
+                ? expression.Evaluate(specification, DislContext.Create, variables)
+                : DislValues.FromJson(property.Literal, attribute, specification.Metamodel);
+            if (value is Cel.CelError error) return error.Message;
+            if (value is not null) attributes[property.Name] = value;
         }
         return null;
     }

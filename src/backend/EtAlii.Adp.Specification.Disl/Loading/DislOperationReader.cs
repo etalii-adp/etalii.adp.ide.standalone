@@ -34,7 +34,7 @@ internal static class DislOperationReader
     private static DislOperation Operation(DislSpecification specification, string id, JsonElement operation, string pointer)
     {
         var targets = DislJson.Strings(operation, "for");
-        if (DislFieldReader.NotAnObject(operation) is { } malformed) return new DislOperation(id, targets, [], null, null, DislActionList.Empty, malformed);
+        if (DislFieldReader.NotAnObject(operation) is { } malformed) return new DislOperation(id, targets, [], null, null, DislActionList.Empty, null, null, null, malformed);
 
         return new DislOperation(
             id,
@@ -43,6 +43,9 @@ internal static class DislOperationReader
             operation.TryGetProperty("enabled", out var enabled) ? DislFieldReader.Expression(specification, enabled, DislJson.Pointer(pointer, "enabled")) : null,
             operation.TryGetProperty("plugin", out var plugin) ? Plugin(plugin, DislJson.Pointer(pointer, "plugin")) : null,
             operation.TryGetProperty("actions", out var actions) ? DislActionReader.List(specification, actions, DislJson.Pointer(pointer, "actions")) : DislActionList.Empty,
+            operation.TryGetProperty("label", out var label) ? DislFieldReader.Message(specification, label, DislJson.Pointer(pointer, "label")) : null,
+            DislJson.String(operation, "icon"),
+            DislJson.String(operation, "shortcut"),
             null);
     }
 

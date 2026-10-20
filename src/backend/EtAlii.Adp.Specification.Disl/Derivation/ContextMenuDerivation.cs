@@ -136,18 +136,16 @@ public static class ContextMenuDerivation
             _ => (DislContext.Element, Variables(target.Diagram, target.Diagram, cel), (IReadOnlyList<string>)["diagram"]),
         };
 
+        var toolbox = specification.Toolbox;
+        if (toolbox.NotAnObject is { } malformed) throw new InvalidOperationException(malformed);
+
         var matched = false;
-        if (specification.Root.TryGetProperty("toolbox", out var toolbox) && toolbox.TryGetProperty("contextMenus", out var sets) && sets.ValueKind == JsonValueKind.Array)
+        foreach (var set in toolbox.ContextMenus)
         {
-            var index = 0;
-            foreach (var set in sets.EnumerateArray())
-            {
-                var pointer = DislJson.Pointer("/toolbox/contextMenus", index++);
-                if (!Applies(set, target)) continue;
-                matched = true;
-                if (set.TryGetProperty("when", out var when) && !DislEvaluation.Holds(specification, when, DislJson.Pointer(pointer, "when"), context, variables)) continue;
-                Set(specification, set, pointer, context, variables, types, target, ids, groups);
-            }
+            if (!Applies(set, target)) continue;
+            matched = true;
+            if (set.When is { } when && !when.Holds(specification, context, variables)) continue;
+            Set(specification, set, context, variables, types, target, ids, groups);
         }
 
         if (!matched && target is DislMenuTarget.OnConnection { RelationType: { } relation } pending)
@@ -157,23 +155,21 @@ public static class ContextMenuDerivation
         return groups;
     }
 
-    private static bool Applies(JsonElement set, DislMenuTarget target)
+    private static bool Applies(DislMenuSet set, DislMenuTarget target)
     {
-        var declared = set.TryGetProperty("for", out _);
-        var names = DislJson.Strings(set, "for");
+        if (set.NotAnObject is { } malformed) throw new InvalidOperationException(malformed);
         return target switch
         {
-            DislMenuTarget.OnElement element => !declared || names.Any(name => name is not ("diagram" or "connection") && element.Self.IsA(name)),
-            DislMenuTarget.OnCanvas => names.Contains("diagram"),
-            DislMenuTarget.OnConnection => names.Contains("connection"),
+            DislMenuTarget.OnElement element => !set.DeclaresFor || set.For.Any(name => name is not ("diagram" or "connection") && element.Self.IsA(name)),
+            DislMenuTarget.OnCanvas => set.For.Contains("diagram"),
+            DislMenuTarget.OnConnection => set.For.Contains("connection"),
             _ => false,
         };
     }
 
     private static void Set(
         DislSpecification specification,
-        JsonElement set,
-        string pointer,
+        DislMenuSet set,
         DislContext context,
         Dictionary<string, object?> variables,
         IReadOnlyList<string> types,
@@ -181,58 +177,50 @@ public static class ContextMenuDerivation
         WireIdMap ids,
         List<DerivedMenuGroup> groups)
     {
-        if (!set.TryGetProperty("tools", out var tools) || tools.ValueKind != JsonValueKind.Array) return;
-
         List<DerivedMenuEntry>? current = null;
         string? currentName = null;
-        var index = 0;
-        foreach (var tool in tools.EnumerateArray())
+        foreach (var tool in set.Tools)
         {
-            var at = DislJson.Pointer(DislJson.Pointer(pointer, "tools"), index);
-            var name = DislJson.String(tool, "group");
-            if (current is null || name != currentName)
+            if (current is null || tool.Group != currentName)
             {
                 if (current is { Count: > 0 }) groups.Add(new DerivedMenuGroup(currentName, current));
                 current = [];
-                currentName = name;
+                currentName = tool.Group;
             }
-            index++;
-            current.AddRange(Entries(specification, tool, at, context, variables, types, target, ids));
+            current.AddRange(Entries(specification, tool, context, variables, types, target, ids));
         }
         if (current is { Count: > 0 }) groups.Add(new DerivedMenuGroup(currentName, current));
     }
 
     private static IEnumerable<DerivedMenuEntry> Entries(
         DislSpecification specification,
-        JsonElement tool,
-        string pointer,
+        DislMenuTool tool,
         DislContext context,
         Dictionary<string, object?> variables,
         IReadOnlyList<string> types,
         DislMenuTarget target,
         WireIdMap ids)
     {
-        if (!tool.TryGetProperty("forEach", out var forEach))
+        if (tool.NotAnObject is { } malformed) throw new InvalidOperationException(malformed);
+        if (tool.ForEach is not { } forEach)
         {
-            if (Entry(specification, tool, pointer, context, variables, new Dictionary<string, object?>(), types, target, ids) is { } entry) yield return entry;
+            if (Entry(specification, tool, context, variables, new Dictionary<string, object?>(), types, target, ids) is { } entry) yield return entry;
             yield break;
         }
 
         // An entry per item, in list order, with item (or its as name) and index bound (§7.3); an empty or failing list gives none.
-        if (DislEvaluation.Expression(specification, forEach, DislJson.Pointer(pointer, "forEach"), context, variables) is not IReadOnlyList<object?> items) yield break;
-        var named = DislJson.String(tool, "as");
+        if (forEach.Evaluate(specification, context, variables) is not IReadOnlyList<object?> items) yield break;
         for (var index = 0; index < items.Count; index++)
         {
             var bindings = new Dictionary<string, object?>(StringComparer.Ordinal) { ["item"] = items[index], ["index"] = (long)index };
-            if (named is not null) bindings[named] = items[index];
-            if (Entry(specification, tool, pointer, context, variables, bindings, types, target, ids) is { } entry) yield return entry;
+            if (tool.As is { } named) bindings[named] = items[index];
+            if (Entry(specification, tool, context, variables, bindings, types, target, ids) is { } entry) yield return entry;
         }
     }
 
     private static DerivedMenuEntry? Entry(
         DislSpecification specification,
-        JsonElement tool,
-        string pointer,
+        DislMenuTool tool,
         DislContext context,
         Dictionary<string, object?> outer,
         Dictionary<string, object?> bindings,
@@ -241,37 +229,30 @@ public static class ContextMenuDerivation
         WireIdMap ids)
     {
         var variables = bindings.Count == 0 ? outer : new Dictionary<string, object?>(outer).Also(bindings);
-        if (tool.TryGetProperty("visible", out var visible) && !DislEvaluation.Holds(specification, visible, DislJson.Pointer(pointer, "visible"), context, variables)) return null;
+        if (tool.Visible is { } visible && !visible.Holds(specification, context, variables)) return null;
 
-        var kind = DislJson.String(tool, "kind") ?? "operation";
-        var operationName = DislJson.String(tool, "operation");
-        var operation = Operation(specification, operationName);
+        var kind = tool.Kind;
+        var operation = Operation(specification, tool.Operation);
 
         var arguments = new Dictionary<string, object?>(bindings, StringComparer.Ordinal);
-        foreach (var argument in DislJson.Members(tool, "args"))
-        {
-            arguments[argument.Name] = DislEvaluation.Expression(specification, argument.Value, DislJson.Pointer(DislJson.Pointer(pointer, "args"), argument.Name), context, variables);
-        }
+        foreach ((string name, DislExpressionField value) in tool.Arguments) arguments[name] = value.Evaluate(specification, context, variables);
 
-        var fallback = operation is { } declared && declared.TryGetProperty("label", out var operationLabel)
-            ? DislEvaluation.Message(specification, operationLabel, DislJson.Pointer(OperationPointer(operationName!), "label"),
-                DislContext.Operation, Operational(target, variables, arguments), kind)
-            : DislJson.String(tool, "via") is { } via && specification.Metamodel.TypeOf(via) is { } viaType
+        var fallback = operation?.Label is { } operationLabel
+            ? operationLabel.Text(specification, DislContext.Operation, Operational(target, variables, arguments), kind)
+            : tool.Via is { } via && specification.Metamodel.TypeOf(via) is { } viaType
                 ? DislJson.String(viaType.Json, "label") ?? via
                 : kind;
-        var label = tool.TryGetProperty("label", out var message)
-            ? DislEvaluation.Message(specification, message, DislJson.Pointer(pointer, "label"), context, variables, fallback)
-            : fallback;
-        var icon = DislJson.String(tool, "icon") ?? (operation is { } withIcon ? DislJson.String(withIcon, "icon") : null) ?? "";
-        var shortcut = DislJson.String(tool, "shortcut") ?? (operation is { } withShortcut ? DislJson.String(withShortcut, "shortcut") : null);
+        var label = tool.Label?.Text(specification, context, variables, fallback) ?? fallback;
+        var icon = tool.Icon ?? operation?.Icon ?? "";
+        var shortcut = tool.Shortcut ?? operation?.Shortcut;
 
-        var reason = Unavailable(specification, tool, pointer, context, variables, kind, operation, operationName, target, arguments);
-        var available = reason is null && (!tool.TryGetProperty("enabled", out var enabled) || DislEvaluation.Holds(specification, enabled, DislJson.Pointer(pointer, "enabled"), context, variables));
+        var reason = Unavailable(specification, tool, context, variables, operation, target, arguments);
+        var available = reason is null && (tool.Enabled is not { } enabled || enabled.Holds(specification, context, variables));
 
         return new DerivedMenuEntry(
-            ids.ActionId(types, kind, operationName, arguments),
+            ids.ActionId(types, kind, tool.Operation, arguments),
             kind,
-            operationName,
+            tool.Operation,
             label,
             icon,
             shortcut is null ? null : DerivedShortcut.Parse(shortcut),
@@ -282,32 +263,25 @@ public static class ContextMenuDerivation
 
     private static string? Unavailable(
         DislSpecification specification,
-        JsonElement tool,
-        string pointer,
+        DislMenuTool tool,
         DislContext context,
         IReadOnlyDictionary<string, object?> variables,
-        string kind,
-        JsonElement? operation,
-        string? operationName,
+        DislOperation? operation,
         DislMenuTarget target,
         IReadOnlyDictionary<string, object?> arguments)
     {
-        if (tool.TryGetProperty("unavailable", out var own)
-            && DislEvaluation.FirstReason(specification, own, DislJson.Pointer(pointer, "unavailable"), context, variables) is { } reason)
-        {
-            return reason;
-        }
-        if (operation is { } declared && declared.TryGetProperty("unavailable", out var inherited)
-            && DislEvaluation.FirstReason(specification, inherited, DislJson.Pointer(OperationPointer(operationName!), "unavailable"), DislContext.Operation, Operational(target, variables, arguments)) is { } inheritedReason)
+        if (DislReason.First(tool.Unavailable, specification, context, variables) is { } reason) return reason;
+        if (operation is { Unavailable.Count: > 0 }
+            && DislReason.First(operation.Unavailable, specification, DislContext.Operation, Operational(target, variables, arguments)) is { } inheritedReason)
         {
             return inheritedReason;
         }
-        if (kind is "moveUp" or "moveDown" && target is DislMenuTarget.OnElement { Self: { } self })
+        if (tool.Kind is "moveUp" or "moveDown" && target is DislMenuTarget.OnElement { Self: { } self })
         {
             var siblings = self.Parent?.Children ?? [.. self.Diagram.Nodes.Where(node => node.Parent is null)];
             var place = siblings.ToList().FindIndex(sibling => ReferenceEquals(sibling, self));
-            if (kind == "moveUp" && place <= 0) return DislEvaluation.StandardMessage(specification, "std.atStart", variables, "It is already the first.");
-            if (kind == "moveDown" && place >= siblings.Count - 1) return DislEvaluation.StandardMessage(specification, "std.atEnd", variables, "It is already the last.");
+            if (tool.Kind == "moveUp" && place <= 0) return DislEvaluation.StandardMessage(specification, "std.atStart", variables, "It is already the first.");
+            if (tool.Kind == "moveDown" && place >= siblings.Count - 1) return DislEvaluation.StandardMessage(specification, "std.atEnd", variables, "It is already the last.");
         }
         return null;
     }
@@ -325,33 +299,24 @@ public static class ContextMenuDerivation
         {
             ["self"] = self, ["selection"] = new List<object?>(), ["p"] = new CelMap(), ["diagram"] = pending.Diagram, ["env"] = env, ["position"] = null,
         };
-        var at = OperationPointer(operationName);
-        var label = operation.TryGetProperty("label", out var message)
-            ? DislEvaluation.Message(specification, message, DislJson.Pointer(at, "label"), DislContext.Operation, variables, operationName)
-            : operationName;
-        var reason = operation.TryGetProperty("unavailable", out var reasons)
-            ? DislEvaluation.FirstReason(specification, reasons, DislJson.Pointer(at, "unavailable"), DislContext.Operation, variables)
-            : null;
+        var label = operation.Label?.Text(specification, DislContext.Operation, variables, operationName) ?? operationName;
+        var reason = DislReason.First(operation.Unavailable, specification, DislContext.Operation, variables);
         var entry = new DerivedMenuEntry(
             ids.ActionId([relation, "connection"], "connect", operationName, new Dictionary<string, object?>()),
             "operation",
             operationName,
             label,
-            DislJson.String(operation, "icon") ?? "",
-            DislJson.String(operation, "shortcut") is { } shortcut ? DerivedShortcut.Parse(shortcut) : null,
+            operation.Icon ?? "",
+            operation.Shortcut is { } shortcut ? DerivedShortcut.Parse(shortcut) : null,
             reason is null,
             reason ?? "",
             new Dictionary<string, object?>());
         groups.Add(new DerivedMenuGroup(null, [entry]));
     }
 
-    private static JsonElement? Operation(DislSpecification specification, string? name) =>
-        name is not null && specification.Root.TryGetProperty("behavior", out var behavior) && behavior.TryGetProperty("operations", out var operations)
-        && operations.TryGetProperty(name, out var operation) && operation.ValueKind == JsonValueKind.Object
-            ? operation
-            : null;
-
-    private static string OperationPointer(string name) => DislJson.Pointer("/behavior/operations", name);
+    /// <summary>The operation <paramref name="name"/> a menu entry runs; none for an operation that is not an object, whose members a menu reads as absent.</summary>
+    private static DislOperation? Operation(DislSpecification specification, string? name) =>
+        name is not null && specification.Operations.Find(name) is { NotAnObject: null } operation ? operation : null;
 
     /// <summary>The operation context's variables (§12.3) for an entry: its target as <c>self</c> and its selection, its arguments as <c>p</c>.</summary>
     private static Dictionary<string, object?> Operational(DislMenuTarget target, IReadOnlyDictionary<string, object?> variables, IReadOnlyDictionary<string, object?> arguments)
