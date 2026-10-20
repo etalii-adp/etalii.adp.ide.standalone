@@ -352,7 +352,7 @@ public static class ConstraintEvaluator
         public string? OncePerGroup => setting.OncePerGroup;
 
         public string CodeOf(IReadOnlyDictionary<string, object?> variables) =>
-            setting.CodeText ?? (setting.Code?.Evaluate(variables) is string computed ? computed : id);
+            setting.CodeText ?? setting.Code?.Evaluate(variables) as string ?? id;
 
         public string MessageOf(IReadOnlyDictionary<string, object?> variables, string fallback) =>
             setting.Message?.Text(variables, fallback) ?? fallback;
