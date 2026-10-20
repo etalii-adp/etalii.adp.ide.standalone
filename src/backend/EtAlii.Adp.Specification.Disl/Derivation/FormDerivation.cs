@@ -149,7 +149,7 @@ public static class FormDerivation
             switch (item.Options)
             {
                 case DislFormOptions.Listed listed:
-                    return [.. ((IReadOnlyList<object?>)listed.Values.Value!).Select(OptionText)];
+                    return listed.Values.Value is IReadOnlyList<object?> values ? [.. values.Select(OptionText)] : [];
                 case DislFormOptions.Enumeration enumeration:
                     return specification.Metamodel.Enums.TryGetValue(enumeration.Name, out var declared) ? [.. declared.Values.Select(value => value.Label ?? value.Key)] : [];
                 case DislFormOptions.Computed computed:

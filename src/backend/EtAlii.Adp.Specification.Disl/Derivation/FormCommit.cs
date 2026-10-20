@@ -242,7 +242,7 @@ public static class FormCommit
         if (item.Options is not { } options) return text;
         IEnumerable<object?> list = options switch
         {
-            DislFormOptions.Listed listed => (IReadOnlyList<object?>)listed.Values.Evaluate(specification, DislContext.Form, variables)!,
+            DislFormOptions.Listed listed => listed.Values.Evaluate(specification, DislContext.Form, variables) as IReadOnlyList<object?> ?? [],
             DislFormOptions.Computed { DeclaresEnum: false } computed => computed.Expression.Evaluate(specification, DislContext.Form, variables) as IReadOnlyList<object?> ?? [],
             _ => [],
         };
