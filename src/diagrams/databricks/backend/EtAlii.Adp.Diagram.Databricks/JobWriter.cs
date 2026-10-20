@@ -50,13 +50,18 @@ internal static class JobWriter
             return $"There is no '{taskType}' task type to add.";
         }
 
+        if (TasksOnOneLine(document, job))
+        {
+            return DatabricksSplices.OneLineListRefusal;
+        }
+
         (string itemIndent, string keyIndent, int insertAt) = TaskInsertion(document, job);
         if (insertAt < 0)
         {
             return "The job has no tasks section to add into.";
         }
 
-        var lines = new List<string> { $"{itemIndent}- task_key: {taskKey}" };
+        var lines = new List<string> { $"{itemIndent}- task_key: {DatabricksSplices.Quote(taskKey)}" };
         lines.AddRange(skeleton.Select(part =>
             keyIndent + string.Format(CultureInfo.InvariantCulture, part, DatabricksSplices.Quote(source))));
         document.Insert(insertAt, lines);
@@ -82,6 +87,12 @@ internal static class JobWriter
         if (task is null)
         {
             return $"There is no task named '{taskKey}' any more.";
+        }
+
+        if (TasksOnOneLine(document, job)
+            || job.Tasks.Any(other => other.Key != taskKey && other.DependsOn.Any(dependency => dependency.TaskKey == taskKey) && DependenciesOnOneLine(document, other)))
+        {
+            return DatabricksSplices.OneLineListRefusal;
         }
 
         var ranges = new List<LineRange> { task.Lines };
@@ -134,15 +145,20 @@ internal static class JobWriter
             return $"'{toKey}' already depends on '{fromKey}'.";
         }
 
+        if (DependenciesOnOneLine(document, to))
+        {
+            return DatabricksSplices.OneLineListRefusal;
+        }
+
         var keyIndent = DatabricksSplices.KeyIndentWithin(document, to.Lines);
         var entryIndent = to.DependsOn.Count > 0
             ? DatabricksSplices.Indent(document.Lines[to.DependsOn[^1].Lines.Start].Text)
             : keyIndent + "  ";
 
-        var entry = new List<string> { $"{entryIndent}- task_key: {fromKey}" };
+        var entry = new List<string> { $"{entryIndent}- task_key: {DatabricksSplices.Quote(fromKey)}" };
         if (outcome.Length > 0)
         {
-            entry.Add($"{entryIndent}  outcome: \"{outcome}\"");
+            entry.Add($"{entryIndent}  outcome: {DatabricksSplices.Quoted(outcome)}");
         }
 
         if (to.DependsOn.Count > 0)
@@ -158,8 +174,9 @@ internal static class JobWriter
             return "";
         }
 
-        // No depends_on yet: the key and its first entry go directly under the task_key line.
-        document.Insert(to.Lines.Start + 1, [$"{keyIndent}depends_on:", .. entry]);
+        // No depends_on yet: the key and its first entry go directly under the task's first line,
+        // or after the mapping that line opens.
+        document.Insert(DatabricksSplices.NewKeyLine(document, to.Lines), [$"{keyIndent}depends_on:", .. entry]);
         return "";
     }
 
@@ -177,6 +194,11 @@ internal static class JobWriter
         if (to is null || dependency is null)
         {
             return $"There is no dependency from '{fromKey}' to '{toKey}' any more.";
+        }
+
+        if (DependenciesOnOneLine(document, to))
+        {
+            return DatabricksSplices.OneLineListRefusal;
         }
 
         foreach (var range in DependencyRemovals(document, to, [dependency])
@@ -213,6 +235,12 @@ internal static class JobWriter
             return $"A task named '{newKey}' is already there.";
         }
 
+        if (TasksOnOneLine(document, job)
+            || job.Tasks.Any(other => other.DependsOn.Any(dependency => dependency.TaskKey == taskKey) && DependenciesOnOneLine(document, other)))
+        {
+            return DatabricksSplices.OneLineListRefusal;
+        }
+
         var rewrites = new List<int>();
         var own = DatabricksSplices.FindKey(document, task.Lines, "task_key");
         if (own < 0)
@@ -231,7 +259,7 @@ internal static class JobWriter
         {
             var text = document.Lines[line].Text;
             var colon = text.IndexOf(':', StringComparison.Ordinal);
-            document.Replace(new LineRange(line, line), [$"{text[..(colon + 1)]} {newKey}"]);
+            document.Replace(new LineRange(line, line), [$"{text[..(colon + 1)]} {DatabricksSplices.Quote(newKey)}"]);
         }
 
         return "";
@@ -265,6 +293,11 @@ internal static class JobWriter
             return $"There is no task named '{taskKey}' any more.";
         }
 
+        if (TasksOnOneLine(document, job))
+        {
+            return DatabricksSplices.OneLineListRefusal;
+        }
+
         var line = DatabricksSplices.FindKey(document, task.Lines, key);
         if (value.Length == 0)
         {
@@ -280,14 +313,22 @@ internal static class JobWriter
         {
             var text = document.Lines[line].Text;
             var colon = text.IndexOf(':', StringComparison.Ordinal);
-            document.Replace(new LineRange(line, line), [$"{text[..(colon + 1)]} {value}"]);
+            document.Replace(new LineRange(line, line), [$"{text[..(colon + 1)]} {DatabricksSplices.Quote(value)}"]);
             return "";
         }
 
         var keyIndent = DatabricksSplices.KeyIndentWithin(document, task.Lines);
-        document.Insert(task.Lines.Start + 1, [$"{keyIndent}{key}: {value}"]);
+        document.Insert(DatabricksSplices.NewKeyLine(document, task.Lines), [$"{keyIndent}{key}: {DatabricksSplices.Quote(value)}"]);
         return "";
     }
+
+    /// <summary>Whether the job's <c>tasks</c> list is written on one line, so no task can be spliced into or out of it (finding B12).</summary>
+    private static bool TasksOnOneLine(LineDocument document, JobModel job) =>
+        DatabricksSplices.IsOneLineList(document, job.Lines, "tasks", job.Tasks.Select(task => task.Lines));
+
+    /// <summary>Whether a task's <c>depends_on</c> list is written on one line, so no dependency can be spliced into or out of it (finding B12).</summary>
+    private static bool DependenciesOnOneLine(LineDocument document, JobTask task) =>
+        DatabricksSplices.IsOneLineList(document, task.Lines, "depends_on", task.DependsOn.Select(dependency => dependency.Lines));
 
     /// <summary>
     /// What removing some of a task's dependencies splices: each entry's lines - plus the

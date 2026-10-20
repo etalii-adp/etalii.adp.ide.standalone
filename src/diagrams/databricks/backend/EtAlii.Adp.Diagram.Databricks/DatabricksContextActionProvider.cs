@@ -88,113 +88,14 @@ public sealed class DatabricksContextActionProvider : DiagramActionProvider<Line
     protected override bool IsBody(string path) => DatabricksSelection.CouldBeFamilyFile(path);
 
     /// <inheritdoc />
-    protected override IReadOnlyList<ContextActionGroupDefinition> Discover(DocumentEntry<LineDocument, DatabricksModel> entry, string elementId)
-    {
-        ArgumentNullException.ThrowIfNull(entry);
-
-        if (!entry.IsUsable)
-        {
-            // Requirement 2.3: a file that does not parse withholds every edit.
-            return [];
-        }
-
-        if (DatabricksSelection.TaskOf(entry.Model, elementId) is { } selected)
-        {
-            return ForTask(selected.Task);
-        }
-
-        if (DatabricksSelection.TryEdge(elementId, out _, out _))
-        {
-            return
-            [
-                new ContextActionGroupDefinition(
-                [
-                    new ContextActionDefinition(RemoveEdgeActionId, "Remove dependency", "mdi-vector-polyline-remove", new ContextShortcutDefinition("Delete")),
-                ]),
-            ];
-        }
-
-        if (DatabricksSelection.IsBundle(elementId))
-        {
-            return
-            [
-                new ContextActionGroupDefinition(
-                [
-                    new ContextActionDefinition(RenameBundleActionId, "Rename…", "mdi-pencil-outline", new ContextShortcutDefinition("F2")),
-                ]),
-                new ContextActionGroupDefinition(
-                [
-                    new ContextActionDefinition($"{AddResourceActionPrefix}jobs", "Add job resource…", "mdi-transit-connection-horizontal"),
-                    new ContextActionDefinition($"{AddResourceActionPrefix}pipelines", "Add pipeline resource…", "mdi-pipe"),
-                ]),
-            ];
-        }
-
-        if (DatabricksSelection.TargetOf(entry.Model, elementId) is not null)
-        {
-            // The mocked domain action on a target frame (Requirement 8.4).
-            return
-            [
-                new ContextActionGroupDefinition(
-                [
-                    new ContextActionDefinition(SimulatedDeployActionId, "Deploy here (simulated)", "mdi-rocket-launch-outline"),
-                ]),
-            ];
-        }
-
-        if (DatabricksSelection.IsPipelineNode(elementId))
-        {
-            return
-            [
-                new ContextActionGroupDefinition(
-                [
-                    new ContextActionDefinition($"{AddLibraryActionPrefix}notebook", "Add notebook library…", "mdi-notebook-outline"),
-                    new ContextActionDefinition($"{AddLibraryActionPrefix}file", "Add file library…", "mdi-file-code-outline"),
-                ]),
-                new ContextActionGroupDefinition(
-                [
-                    new ContextActionDefinition(SimulatedUpdateActionId, "Start update (simulated)", "mdi-play-outline"),
-                ]),
-            ];
-        }
-
-        if (DatabricksSelection.LibraryOf(entry.Model, elementId) is not null)
-        {
-            return
-            [
-                new ContextActionGroupDefinition(
-                [
-                    new ContextActionDefinition(RemoveLibraryActionId, "Remove library", "mdi-delete-outline", new ContextShortcutDefinition("Delete")),
-                ]),
-            ];
-        }
-
-        if (DatabricksNewPlacement.IsPlacement(elementId))
-        {
-            // Empty canvas discovers what can be dropped or added there, because executing an
-            // action by id only finds actions its target discovers.
-            return
-            [
-                new ContextActionGroupDefinition(
-                [
-                    new ContextActionDefinition($"{AddTaskActionPrefix}notebook", "Add notebook task here", "mdi-notebook-outline"),
-                    new ContextActionDefinition($"{AddTaskActionPrefix}python", "Add Python task here", "mdi-language-python"),
-                    new ContextActionDefinition($"{AddTaskActionPrefix}condition", "Add condition task here", "mdi-call-split"),
-                ]),
-            ];
-        }
-
-        if (DatabricksRelationGesture.TryParse(elementId, out _, out _))
-        {
-            return
-            [
-                new ContextActionGroupDefinition(
-                    [new ContextActionDefinition(ConnectActionId, "Depend on", "mdi-ray-start-arrow")]),
-            ];
-        }
-
-        return [];
-    }
+    /// <remarks>
+    /// Derived from the definition of the reading that holds the target (<see cref="DatabricksDefinition.Menus"/>), of
+    /// the resource the target's registration names (finding B3); nothing on a file that does not parse
+    /// (Requirement 2.3). Executing an action by id only finds actions its target discovers, so the empty canvas
+    /// discovers what can be dropped or added there.
+    /// </remarks>
+    protected override IReadOnlyList<ContextActionGroupDefinition> Discover(ContextTarget target, DocumentEntry<LineDocument, DatabricksModel> entry) =>
+        DatabricksDefinition.Menus(target, entry);
 
     /// <inheritdoc />
     protected override async ValueTask<ContextExecutionResult> RunAsync(
@@ -213,7 +114,9 @@ public sealed class DatabricksContextActionProvider : DiagramActionProvider<Line
             return new ContextExecutionCompleted();
         }
 
-        var task = DatabricksSelection.TaskOf(entry.Model, target.ElementId);
+        // The resource the target's registration names, not the file's first (finding B3).
+        var model = DatabricksSelection.ReadingOf(entry.Model, target);
+        var task = DatabricksSelection.TaskOf(model, target.ElementId);
 
         switch (actionId)
         {
@@ -230,24 +133,14 @@ public sealed class DatabricksContextActionProvider : DiagramActionProvider<Line
                     "Assign cluster", "mdi-server", "Cluster key (empty = serverless)", selected.Task.ClusterKey, "Assign"));
 
             case RemoveTaskActionId when task is { } selected:
-            {
-                // Requirement 2.5's shape: the action says how many edges go with it, before it
-                // runs. An untouched task needs no ceremony - and no ceremony means the removal
+                // Requirement 2.5's shape: the definition's confirmation says how many edges go with it,
+                // before it runs. An untouched task needs no ceremony - and no ceremony means the removal
                 // happens HERE, because a Completed execution never reaches the commit leg.
-                var going = selected.Task.DependsOn.Count + JobWriter.ReferencesTo(selected.Job, selected.Task.Key).Count;
                 return await RemoveAsync(
                     target,
                     new RemoveDatabricksTaskCommand(target.ResolvedFullPath, selected.Job.Key, selected.Task.Key),
-                    going == 0
-                        ? null
-                        : new RemovalConfirmation(
-                            "Remove task",
-                            going == 1
-                                ? "Removing this task also removes the 1 dependency touching it."
-                                : $"Removing this task also removes the {going} dependencies touching it.",
-                            "Remove"),
+                    DatabricksDefinition.RemoveConfirmation(target, entry.Model),
                     cancellationToken);
-            }
 
             case var _ when actionId.StartsWith(DisconnectActionPrefix, StringComparison.Ordinal) && task is { } selected:
                 return await DispatchAsync(target, new DisconnectDatabricksTasksCommand(
@@ -258,7 +151,7 @@ public sealed class DatabricksContextActionProvider : DiagramActionProvider<Line
 
             case RemoveEdgeActionId when DatabricksSelection.TryEdge(target.ElementId, out var fromKey, out var toKey):
                 return await DispatchAsync(target, new DisconnectDatabricksTasksCommand(
-                    target.ResolvedFullPath, JobKeyFor(entry.Model, toKey), fromKey, toKey), cancellationToken);
+                    target.ResolvedFullPath, JobKeyFor(model, target, toKey), fromKey, toKey), cancellationToken);
 
             case ConnectActionId when DatabricksRelationGesture.TryParse(target.ElementId, out var from, out var to):
             {
@@ -273,23 +166,24 @@ public sealed class DatabricksContextActionProvider : DiagramActionProvider<Line
                 var fromKey = KeyOf(from);
                 var toKey = KeyOf(to);
                 return await DispatchAsync(target, new ConnectDatabricksTasksCommand(
-                    target.ResolvedFullPath, JobKeyFor(entry.Model, toKey), fromKey, toKey), cancellationToken);
+                    target.ResolvedFullPath, JobKeyFor(model, target, toKey), fromKey, toKey), cancellationToken);
             }
 
             case var _ when actionId.StartsWith(AddTaskActionPrefix, StringComparison.Ordinal)
                 && DatabricksNewPlacement.IsPlacement(target.ElementId):
             {
                 // The gesture already said everything an add needs - so nothing is asked, and
-                // the task appears with a fresh key. The authored drop position is the client's
-                // follow-up layout write; the computed layout places it until then.
-                var job = entry.Model.Jobs.FirstOrDefault();
+                // the task appears with the key the definition's drop gives it (finding A11). The
+                // authored drop position is the client's follow-up layout write; the computed
+                // layout places it until then.
+                var job = model.Jobs.FirstOrDefault();
                 if (job is null)
                 {
                     return new ContextExecutionFailed("This file declares no job to add a task to.");
                 }
 
                 var taskType = actionId[AddTaskActionPrefix.Length..];
-                var key = FreshKey(job, taskType);
+                var key = DatabricksDefinition.DroppedTaskKey(job, actionId);
                 return await DispatchAsync(target, new InsertDatabricksTaskCommand(
                     target.ResolvedFullPath, job.Key, key, taskType, SourceFor(taskType, key)), cancellationToken);
             }
@@ -300,7 +194,7 @@ public sealed class DatabricksContextActionProvider : DiagramActionProvider<Line
 
             case RenameBundleActionId when DatabricksSelection.IsBundle(target.ElementId):
                 return new ContextExecutionRequiresInput(new ContextInputRequest(
-                    "Rename bundle", "mdi-pencil-outline", "Name", entry.Model.Bundle.Name, "Rename", target.ElementId));
+                    "Rename bundle", "mdi-pencil-outline", "Name", model.Bundle.Name, "Rename", target.ElementId));
 
             case var _ when actionId.StartsWith(AddResourceActionPrefix, StringComparison.Ordinal):
                 return new ContextExecutionRequiresInput(new ContextInputRequest(
@@ -310,7 +204,7 @@ public sealed class DatabricksContextActionProvider : DiagramActionProvider<Line
                 return new ContextExecutionRequiresInput(new ContextInputRequest(
                     "Add library", "mdi-plus", "Path", "", "Add"));
 
-            case RemoveLibraryActionId when DatabricksSelection.LibraryOf(entry.Model, target.ElementId) is { } selected:
+            case RemoveLibraryActionId when DatabricksSelection.LibraryOf(model, target.ElementId) is { } selected:
                 return await DispatchAsync(target, new RemoveDatabricksLibraryCommand(
                     target.ResolvedFullPath, selected.Pipeline.Key, selected.Library.Kind, selected.Library.Path), cancellationToken);
 
@@ -352,7 +246,8 @@ public sealed class DatabricksContextActionProvider : DiagramActionProvider<Line
 
         var trimmed = value.Trim();
         var body = target.ResolvedFullPath;
-        var task = DatabricksSelection.TaskOf(model, target.ElementId);
+        var reading = DatabricksSelection.ReadingOf(model, target);
+        var task = DatabricksSelection.TaskOf(reading, target.ElementId);
 
         if (actionId.StartsWith(AddResourceActionPrefix, StringComparison.Ordinal))
         {
@@ -361,14 +256,14 @@ public sealed class DatabricksContextActionProvider : DiagramActionProvider<Line
 
         if (actionId.StartsWith(AddLibraryActionPrefix, StringComparison.Ordinal))
         {
-            var pipeline = model.Pipelines.FirstOrDefault();
+            var pipeline = reading.Pipelines.FirstOrDefault();
             return new InsertDatabricksLibraryCommand(
-                body, pipeline?.Key ?? "", actionId[AddLibraryActionPrefix.Length..], trimmed);
+                body, pipeline?.Key ?? DatabricksSelection.ResourceKeyOf(target), actionId[AddLibraryActionPrefix.Length..], trimmed);
         }
 
         if (actionId.StartsWith(AddTaskActionPrefix, StringComparison.Ordinal))
         {
-            var job = model.Jobs.FirstOrDefault();
+            var job = reading.Jobs.FirstOrDefault();
             var taskType = actionId[AddTaskActionPrefix.Length..];
             return job is null
                 ? null
@@ -390,53 +285,19 @@ public sealed class DatabricksContextActionProvider : DiagramActionProvider<Line
         };
     }
 
-    private static IReadOnlyList<ContextActionGroupDefinition> ForTask(JobTask task)
-    {
-        List<ContextActionDefinition> edits =
-        [
-            new(RenameTaskActionId, "Rename…", "mdi-pencil-outline", new ContextShortcutDefinition("F2")),
-            new(SetRunIfActionId, "Set run if…", "mdi-filter-outline"),
-            new(AssignClusterActionId, "Assign cluster…", "mdi-server"),
-
-            // One disconnect per upstream edge, so the menu names what each one severs.
-            .. task.DependsOn.Select(dependency => new ContextActionDefinition(
-                $"{DisconnectActionPrefix}{dependency.TaskKey}",
-                $"Disconnect from '{dependency.TaskKey}'",
-                "mdi-vector-polyline-remove")),
-
-            new(RemoveTaskActionId, "Remove", "mdi-delete-outline", new ContextShortcutDefinition("Delete")),
-        ];
-
-        return
-        [
-            new ContextActionGroupDefinition(edits),
-            new ContextActionGroupDefinition(
-            [
-                new ContextActionDefinition(SimulatedRunActionId, "Run job (simulated)", "mdi-play-outline"),
-            ]),
-        ];
-    }
-
-    /// <summary>The job whose task carries <paramref name="taskKey"/>; empty for the file's first.</summary>
-    private static string JobKeyFor(DatabricksModel model, string taskKey) =>
-        model.Jobs.FirstOrDefault(job => job.Tasks.Any(task => task.Key == taskKey))?.Key ?? "";
+    /// <summary>
+    /// The job of <paramref name="model"/> whose task carries <paramref name="taskKey"/>, else its first -
+    /// and where it has none, the job <paramref name="target"/>'s registration names, so a command never
+    /// falls through to another job of the file (finding B3).
+    /// </summary>
+    private static string JobKeyFor(DatabricksModel model, ContextTarget target, string taskKey) =>
+        model.Jobs.FirstOrDefault(job => job.Tasks.Any(task => task.Key == taskKey))?.Key
+        ?? model.Jobs.FirstOrDefault()?.Key
+        ?? DatabricksSelection.ResourceKeyOf(target);
 
     /// <summary>An element id's task key: <c>task:{key}</c>, or the id as given.</summary>
     private static string KeyOf(string elementId) =>
         elementId.StartsWith("task:", StringComparison.Ordinal) ? elementId["task:".Length..] : elementId;
-
-    /// <summary>A key no task in the job carries yet: <c>{type}_1</c>, counting up.</summary>
-    private static string FreshKey(JobModel job, string taskType)
-    {
-        for (var counter = 1; ; counter++)
-        {
-            var candidate = $"{taskType}_{counter}";
-            if (job.Tasks.All(task => task.Key != candidate))
-            {
-                return candidate;
-            }
-        }
-    }
 
     private static string SourceFor(string taskType, string key) => taskType switch
     {

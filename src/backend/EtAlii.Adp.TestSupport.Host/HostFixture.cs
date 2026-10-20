@@ -9,6 +9,8 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Serilog;
+using Serilog.Core;
 using IoPath = System.IO.Path;
 
 namespace EtAlii.Adp.TestSupport.Host;
@@ -28,12 +30,39 @@ namespace EtAlii.Adp.TestSupport.Host;
 /// A class whose host needs a registration of its own derives a fixture from this one and
 /// overrides <see cref="ConfigureServices"/>.
 /// </para>
+/// <para>
+/// The host's pipeline also hands every event on to <see cref="Outside"/>, so a test project that
+/// runs flows still hears its own loggers through <c>LogCapture</c>: see <see cref="Outside"/>.
+/// </para>
 /// </remarks>
 [UsedImplicitly] // Instantiated by xUnit for each class that declares IClassFixture<HostFixture>.
 public class HostFixture : IDisposable
 {
+    /// <summary>
+    /// What <see cref="Log.Logger"/> was before the first fixture's host ran: in a test project,
+    /// <c>LogCapture</c>'s pipeline, which its module initializer installs.
+    /// </summary>
+    /// <remarks>
+    /// A running host points <see cref="Log.Logger"/> at its own pipeline, and a class's
+    /// <c>private static readonly ILogger</c> binds to whatever the global is when the class is
+    /// first used. A test project whose flows run hosts beside tests that assert on
+    /// <c>LogCapture</c> - every module test project since spec 025's T303 - would otherwise lose
+    /// the events of each class first used while a flow's host was up, so a presence assertion
+    /// fails and an absence assertion passes without having looked. Read in the static
+    /// constructor, at the first fixture, because the host's own start replaces the global with
+    /// a bootstrap logger before its services are configured. The host's minimum level still
+    /// applies: a debug event of a class bound to the host's pipeline does not arrive.
+    /// <c>LogCaptureThroughAFlowHostTests</c> in the timeline's test project guards this.
+    /// </remarks>
+    private static readonly ILogger Outside;
+
     private readonly TestFolder _appData;
     private readonly WebApplicationFactory<Program> _factory;
+
+    static HostFixture()
+    {
+        Outside = Log.Logger;
+    }
 
     public HostFixture()
     {
@@ -54,6 +83,8 @@ public class HostFixture : IDisposable
                     provider.GetRequiredService<DiagramFileRouter>(),
                     provider.GetRequiredService<DiagramValidators>(),
                     provider.GetRequiredService<TimeProvider>()));
+                // Program.cs reads its sinks from the services too (ReadFrom.Services).
+                services.AddSingleton<ILogEventSink>(new ForwardingLogSink(Outside));
                 ConfigureServices(services);
             });
         });

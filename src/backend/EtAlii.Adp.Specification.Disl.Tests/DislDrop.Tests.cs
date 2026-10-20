@@ -25,13 +25,19 @@ public class DislDropTests
             "drop": { "targets": [ { "on": ["Box"], "kind": "operation", "operation": "addInside" } ], "elsewhere": "ignore" } },
           { "id": "worded", "kind": "operation", "operation": "addInside", "mode": "drop",
             "drop": { "targets": [ { "on": ["Box"], "kind": "operation", "operation": "addInside" } ], "elsewhere": "refuse" } },
-          { "id": "plain", "kind": "operation", "operation": "addInside" }
+          { "id": "plain", "kind": "operation", "operation": "addInside" },
+          { "id": "named", "kind": "operation", "operation": "addNamed", "mode": "drop",
+            "drop": { "targets": [
+              { "on": ["Box"], "kind": "operation", "operation": "addNamed", "args": { "name": "self.name + '/' + string(position.x)" } },
+              { "on": ["canvas"], "kind": "operation", "operation": "addNamed", "args": { "name": "'top ' + string(diagram.nodesOfType('Box').size())" } }
+            ] } }
         ] } ] },
         "behavior": {
           "operations": {
             "addTop": { "label": "Add", "actions": [ { "create": { "type": "'Box'" } } ] },
             "addInside": { "label": "Add inside", "for": ["Box"], "actions": [ { "create": { "type": "'Crate'", "parent": "self" } } ] },
-            "addNever": { "label": "Add never", "unavailable": [ "Not yet." ], "actions": [] }
+            "addNever": { "label": "Add never", "unavailable": [ "Not yet." ], "actions": [] },
+            "addNamed": { "label": "Add named", "params": { "name": { "type": "string" } }, "actions": [ { "create": { "type": "'Box'", "attributes": { "name": "p.name" } } } ] }
           }
         }
         """;
@@ -118,6 +124,24 @@ public class DislDropTests
         // Assert.
         Assert.Equal(("operation", "addInside", box), Landing(onBox));
         Assert.Equal(("operation", "addInside", (DislElement?)null), Landing(onCrate));
+    }
+
+    [Fact]
+    public void AMatchingTargetsArgs_AreEvaluatedWhereTheDropLands()
+    {
+        // Arrange.
+        (DislDiagram diagram, DislElement box, _) = Diagram();
+        var position = new Dictionary<string, object?>(StringComparer.Ordinal) { ["x"] = 7L, ["y"] = 9L };
+
+        // Act.
+        var onBox = Assert.IsType<DislDropOutcome.Target>(DislDrop.Resolve(Specification, "named", diagram, box, position: position));
+        var onCanvas = Assert.IsType<DislDropOutcome.Target>(DislDrop.Resolve(Specification, "named", diagram, null));
+        var without = Assert.IsType<DislDropOutcome.Target>(DislDrop.Resolve(Specification, "anywhere", diagram, null));
+
+        // Assert.
+        Assert.Equal("B/7", onBox.Arguments["name"]);
+        Assert.Equal("top 1", onCanvas.Arguments["name"]);
+        Assert.Empty(without.Arguments);
     }
 
     /// <summary>What a drop that matched a target runs, and on what.</summary>

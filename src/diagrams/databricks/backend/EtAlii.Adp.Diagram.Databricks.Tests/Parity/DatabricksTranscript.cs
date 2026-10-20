@@ -37,7 +37,7 @@ namespace EtAlii.Adp.Diagram.Databricks.Tests.Parity;
 /// nothing, and under every real registration beside the document. For each reading, the payload of every
 /// element the session draws, and the selection text, the context menu and the property rows of every
 /// element drawn, of the empty canvas, of a placement, of two connect gestures and of an unknown id, under
-/// that reading's origin. A reading that answers exactly as an earlier one is written as <c>sameAs</c> it.
+/// that reading's origin and registration. A reading that answers exactly as an earlier one is written as <c>sameAs</c> it.
 /// </para>
 /// <para>
 /// <b>An edit script</b> that runs every command once, through the real history on a copy of the document:
@@ -380,7 +380,7 @@ internal static class DatabricksTranscript
             var targets = new List<string>();
             foreach (var target in Targets(elements))
             {
-                targets.Add(await TargetLineAsync(session, target, opening.Origin, menus, choices, rowSets, cancellationToken));
+                targets.Add(await TargetLineAsync(session, target, opening, menus, choices, rowSets, cancellationToken));
             }
 
             var same = readings.FirstOrDefault(earlier => earlier.SameAs is null
@@ -488,19 +488,23 @@ internal static class DatabricksTranscript
         return elements.Select(element => element.Id).Append("").Append(placement).Concat(gestures).Append(Unknown).Distinct(StringComparer.Ordinal);
     }
 
-    /// <summary>One target as a line: what a selection of it reads, and its menu and its rows, each as an index into the document's tables.</summary>
+    /// <summary>
+    /// One target as a line: what a selection of it reads, and its menu and its rows, each as an index into the
+    /// document's tables. The target carries the opening's registration, as the host resolves one through it.
+    /// </summary>
     private static async Task<string> TargetLineAsync(
         Session session,
         string target,
-        ToolOrigin origin,
+        Opening opening,
         List<IReadOnlyList<string>> menus,
         List<IReadOnlyList<string>> choices,
         List<IReadOnlyList<string>> rowSets,
         CancellationToken cancellationToken)
     {
         var selection = DatabricksSelection.Describe(session.Model, target);
-        var menu = menus.IndexOfOrAdd((await session.Actions.DiscoverAsync(session.Target(target, origin), cancellationToken)).MenuLines());
-        IReadOnlyList<string> rows = [.. (await session.Properties.DescribeAsync(session.Target(target, origin), cancellationToken)).Select(row => row.RowLine(choices))];
+        var resolved = session.Target(target, opening.Origin) with { RegistrationPath = opening.Registration };
+        var menu = menus.IndexOfOrAdd((await session.Actions.DiscoverAsync(resolved, cancellationToken)).MenuLines());
+        IReadOnlyList<string> rows = [.. (await session.Properties.DescribeAsync(resolved, cancellationToken)).Select(row => row.RowLine(choices))];
         return $"{TranscriptText.Quoted(target)} => selects {TranscriptText.Quoted(selection)}, menu #{menu}, {(rows.Count == 0 ? "no rows" : $"rows #{rowSets.IndexOfOrAdd(rows)}")}";
     }
 

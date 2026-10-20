@@ -38,6 +38,11 @@ internal static class PipelineWriter
             return $"The {kind} library '{path}' is already there.";
         }
 
+        if (LibrariesOnOneLine(document, pipeline))
+        {
+            return DatabricksSplices.OneLineListRefusal;
+        }
+
         var pathKey = kind == "glob" ? "include" : "path";
         if (DatabricksSplices.IsJson(document))
         {
@@ -51,7 +56,7 @@ internal static class PipelineWriter
             var lastText = document.Lines[last.End].Text;
             var indent = DatabricksSplices.Indent(document.Lines[last.Start].Text);
             document.Replace(new LineRange(last.End, last.End), [lastText.TrimEnd() + ","]);
-            document.Insert(last.End + 1, [$"{indent}{{ \"{kind}\": {{ \"{pathKey}\": \"{path}\" }} }}"]);
+            document.Insert(last.End + 1, [$"{indent}{{ \"{kind}\": {{ \"{pathKey}\": {DatabricksSplices.Quoted(path)} }} }}"]);
             return "";
         }
 
@@ -99,6 +104,11 @@ internal static class PipelineWriter
         if (pipeline.Libraries.Count == 1)
         {
             return "A pipeline needs at least one library; removing the last one is not allowed.";
+        }
+
+        if (LibrariesOnOneLine(document, pipeline))
+        {
+            return DatabricksSplices.OneLineListRefusal;
         }
 
         var wasLast = library == pipeline.Libraries[^1];
@@ -151,12 +161,15 @@ internal static class PipelineWriter
         if (DatabricksSplices.IsJson(document))
         {
             var hadComma = text.TrimEnd().EndsWith(',');
-            var quoted = $"\"{value.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("\"", "\\\"", StringComparison.Ordinal)}\"";
-            document.Replace(new LineRange(line, line), [$"{text[..(colon + 1)]} {quoted}{(hadComma ? "," : "")}"]);
+            document.Replace(new LineRange(line, line), [$"{text[..(colon + 1)]} {DatabricksSplices.Quoted(value)}{(hadComma ? "," : "")}"]);
             return "";
         }
 
         document.Replace(new LineRange(line, line), [$"{text[..(colon + 1)]} {DatabricksSplices.Quote(value)}"]);
         return "";
     }
+
+    /// <summary>Whether the pipeline's <c>libraries</c> list is written on one line, so no library can be spliced into or out of it (finding B12).</summary>
+    private static bool LibrariesOnOneLine(LineDocument document, PipelineModel pipeline) =>
+        DatabricksSplices.IsOneLineList(document, pipeline.Lines, "libraries", pipeline.Libraries.Select(library => library.Lines));
 }

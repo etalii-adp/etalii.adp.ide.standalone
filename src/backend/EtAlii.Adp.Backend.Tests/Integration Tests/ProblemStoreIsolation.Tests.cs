@@ -33,6 +33,8 @@ namespace EtAlii.Adp.Backend.Tests;
 /// host-logger guard boots the host from a project of its own, <c>EtAlii.Adp.HostLogging.Tests</c>,
 /// because its subject is process-wide. A sweep of this folder alone would have lost it from the
 /// population without a sound, which is the one way this guard can be switched off by a move.
+/// For the same reason it sweeps the test projects under <c>src/tests</c>, where the host's tests
+/// that span modules moved out of this one (code-structure T304).
 /// </para>
 /// <para>
 /// <b>And it sweeps the host harness, <c>EtAlii.Adp.TestSupport.Host</c>.</b> Since spec 025 the
@@ -75,6 +77,7 @@ public class ProblemStoreIsolationTests
         // This file itself is skipped: it names the fixture type and the override in its own
         // text, so it would answer both questions about itself and prove nothing.
         var sources = Directory.EnumerateDirectories(BackendFolder, "*.Tests")
+            .Concat(Directory.EnumerateDirectories(TestsFolder, "*.Tests"))
             .Append(IoPath.Combine(BackendFolder, HarnessProject))
             .SelectMany(project => Directory.EnumerateFiles(project, "*.cs", SearchOption.AllDirectories))
             .Where(source => !IsBuildOutput(source))
@@ -115,6 +118,9 @@ public class ProblemStoreIsolationTests
     /// <see cref="ExampleRegistrationTests"/> uses, for the same reason.
     /// </summary>
     private static string BackendFolder { get; } = RepositoryPaths.Under("src", "backend");
+
+    /// <summary><c>src/tests</c>, the test projects that are no core project.</summary>
+    private static string TestsFolder { get; } = RepositoryPaths.Under("src", "tests");
 
     private static bool IsBuildOutput(string source)
     {

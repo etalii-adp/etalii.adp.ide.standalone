@@ -85,7 +85,10 @@ public abstract class DiagramSnapshotSourceResolver<TSnapshot> : IContextSourceR
         }
 
         var elementId = id.ElementId.Value;
-        var target = ContextTarget.ForElement(bodyPath, elementId, root, watchId, routed.Definition.Origin);
+        var target = ContextTarget.ForElement(bodyPath, elementId, root, watchId, routed.Definition.Origin) with
+        {
+            RegistrationPath = routed.RegistrationPath,
+        };
 
         if (GestureIds.TryParsePlacement(elementId, out _, out _) || GestureIds.TryParseRelation(elementId, out _, out _))
         {
