@@ -13,8 +13,7 @@ namespace EtAlii.Adp.Specification.Fbl.Json;
 /// </summary>
 internal sealed class JsonFamily(BodyText text, FblBinding binding, FblOptions options) : TreeFamily(text, binding, options)
 {
-    private readonly List<Span> _leaves = [];
-    private int _position;
+    private List<Span> _leaves = [];
 
     public override string FamilyName => "json";
 
@@ -29,25 +28,19 @@ internal sealed class JsonFamily(BodyText text, FblBinding binding, FblOptions o
         return true;
     }
 
-    private sealed class SyntaxError(int offset, string message) : Exception(message)
-    {
-        public int Offset { get; } = offset;
-    }
-
     public override void Parse()
     {
-        _position = Text.BomLength;
+        var parser = new JsonBodyParser(Text);
+        _leaves = parser.Leaves;
         try
         {
-            SkipWhitespace();
-            var value = ParseValue();
-            SkipWhitespace();
-            if (_position < Text.Length) throw new SyntaxError(_position, "The body has more than one JSON value.");
+            var value = parser.Parse();
+            foreach ((string name, Span span) in parser.Duplicates) Report(FindingCodes.DuplicateKey, FindingSeverity.Warning, $"The member \"{name}\" appears again in this object; only the first is read.", span);
             Root = new TreeEntry { IsRoot = true, Own = value.Span, Value = value, Indent = Column(value.Span.Start) };
             Index(Root);
             foreach (var entry in AllEntries.OfType<TreeEntry>().Where(e => !e.IsRoot)) entry.LineSpan = LineSpanOf(entry);
         }
-        catch (SyntaxError error)
+        catch (JsonBodyParser.JsonError error)
         {
             Unreadable = (error.Offset, error.Message);
         }
@@ -57,187 +50,6 @@ internal sealed class JsonFamily(BodyText text, FblBinding binding, FblOptions o
     {
         var line = Text.Lines[Text.LineIndexAt(offset)];
         return offset - Math.Max(line.Start, Text.LineIndexAt(offset) == 0 ? Text.BomLength : 0);
-    }
-
-    private byte Current => _position < Text.Length ? Text.Bytes[_position] : (byte)0;
-
-    private void SkipWhitespace()
-    {
-        while (_position < Text.Length)
-        {
-            var b = Text.Bytes[_position];
-            if (b is (byte)' ' or (byte)'\t' or (byte)'\r' or (byte)'\n') _position++;
-            else if (b == (byte)'/') throw new SyntaxError(_position, "A JSON body cannot hold comments.");
-            else break;
-        }
-    }
-
-    private void Expect(byte expected)
-    {
-        if (Current != expected) throw new SyntaxError(_position, $"'{(char)expected}' was expected here.");
-        _position++;
-    }
-
-    private TreeValue ParseValue()
-    {
-        if (_position >= Text.Length) throw new SyntaxError(_position, "The body ends where a value was expected.");
-        return Current switch
-        {
-            (byte)'{' => ParseObject(),
-            (byte)'[' => ParseArray(),
-            (byte)'"' => ParseStringValue(),
-            _ => ParseLiteral(),
-        };
-    }
-
-    private TreeValue ParseObject()
-    {
-        var start = _position;
-        _position++;
-        var entries = new List<TreeEntry>();
-        var names = new HashSet<string>(StringComparer.Ordinal);
-        SkipWhitespace();
-        if (Current == (byte)'}')
-        {
-            _position++;
-            return Container(ValueKind.Mapping, start, entries);
-        }
-        while (true)
-        {
-            SkipWhitespace();
-            if (Current != (byte)'"') throw new SyntaxError(_position, "A member name in quotes was expected here.");
-            (string name, Span keySpan) = ParseString();
-            SkipWhitespace();
-            Expect((byte)':');
-            SkipWhitespace();
-            var value = ParseValue();
-            var member = new TreeEntry { Name = name, KeySpan = keySpan, Value = value, Own = new Span(keySpan.Start, value.Span.End), Indent = Column(keySpan.Start) };
-            if (names.Add(name)) entries.Add(member);
-            else Report(FindingCodes.DuplicateKey, FindingSeverity.Warning, $"The member \"{name}\" appears again in this object; only the first is read.", keySpan);
-            SkipWhitespace();
-            if (Current == (byte)',')
-            {
-                member.Separator = _position;
-                _position++;
-                continue;
-            }
-            Expect((byte)'}');
-            break;
-        }
-        return Container(ValueKind.Mapping, start, entries);
-    }
-
-    private TreeValue ParseArray()
-    {
-        var start = _position;
-        _position++;
-        var entries = new List<TreeEntry>();
-        SkipWhitespace();
-        if (Current == (byte)']')
-        {
-            _position++;
-            return Container(ValueKind.Sequence, start, entries);
-        }
-        while (true)
-        {
-            SkipWhitespace();
-            var value = ParseValue();
-            var item = new TreeEntry { Value = value, Own = value.Span, Indent = Column(value.Span.Start) };
-            entries.Add(item);
-            SkipWhitespace();
-            if (Current == (byte)',')
-            {
-                item.Separator = _position;
-                _position++;
-                continue;
-            }
-            Expect((byte)']');
-            break;
-        }
-        return Container(ValueKind.Sequence, start, entries);
-    }
-
-    private TreeValue Container(ValueKind kind, int start, List<TreeEntry> entries)
-    {
-        var value = new TreeValue { Kind = kind, Style = ValueStyle.Block, Span = new Span(start, _position) };
-        value.Entries.AddRange(entries);
-        return value;
-    }
-
-    private TreeValue ParseStringValue()
-    {
-        (string text, Span span) = ParseString();
-        return new TreeValue { Kind = ValueKind.Scalar, Style = ValueStyle.JsonString, Span = span, Text = text, Typed = text };
-    }
-
-    private (string Text, Span Span) ParseString()
-    {
-        var start = _position;
-        _position++;
-        var builder = new StringBuilder();
-        var runStart = _position;
-        while (true)
-        {
-            if (_position >= Text.Length) throw new SyntaxError(start, "A string is never closed.");
-            var b = Text.Bytes[_position];
-            if (b == (byte)'"') break;
-            if (b < 0x20) throw new SyntaxError(_position, "A string holds a control character that is not escaped.");
-            if (b != (byte)'\\')
-            {
-                _position++;
-                continue;
-            }
-            builder.Append(Text.Text(runStart, _position));
-            _position++;
-            var escape = Current;
-            _position++;
-            switch (escape)
-            {
-                case (byte)'"': builder.Append('"'); break;
-                case (byte)'\\': builder.Append('\\'); break;
-                case (byte)'/': builder.Append('/'); break;
-                case (byte)'b': builder.Append('\b'); break;
-                case (byte)'f': builder.Append('\f'); break;
-                case (byte)'n': builder.Append('\n'); break;
-                case (byte)'r': builder.Append('\r'); break;
-                case (byte)'t': builder.Append('\t'); break;
-                case (byte)'u':
-                    if (_position + 4 > Text.Length || !int.TryParse(Text.Text(_position, _position + 4), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var code))
-                    {
-                        throw new SyntaxError(_position, "A \\u escape needs four hexadecimal digits.");
-                    }
-                    builder.Append((char)code);
-                    _position += 4;
-                    break;
-                default:
-                    throw new SyntaxError(_position - 1, "This escape is not one JSON knows.");
-            }
-            runStart = _position;
-        }
-        builder.Append(Text.Text(runStart, _position));
-        _position++;
-        var span = new Span(start, _position);
-        _leaves.Add(span);
-        return (builder.ToString(), span);
-    }
-
-    private TreeValue ParseLiteral()
-    {
-        var start = _position;
-        while (_position < Text.Length && Text.Bytes[_position] is (>= (byte)'a' and <= (byte)'z') or (>= (byte)'0' and <= (byte)'9') or (byte)'-' or (byte)'+' or (byte)'.' or (byte)'E') _position++;
-        var raw = Text.Text(start, _position);
-        object? typed = raw switch
-        {
-            "true" => true,
-            "false" => false,
-            "null" => null,
-            _ when long.TryParse(raw, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var l) => l,
-            _ when double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out var d) && raw.Length > 0 && raw[0] != '+' => d,
-            _ => throw new SyntaxError(start, raw.Length == 0 ? "A value was expected here." : $"'{raw}' is not a JSON value."),
-        };
-        var span = new Span(start, _position);
-        _leaves.Add(span);
-        return new TreeValue { Kind = ValueKind.Scalar, Style = ValueStyle.JsonOther, Span = span, Text = raw, Typed = typed };
     }
 
     /// <summary>
@@ -264,7 +76,7 @@ internal sealed class JsonFamily(BodyText text, FblBinding binding, FblOptions o
         return wire is not null ? Quote(wire) : Write(value, binding);
     }
 
-    public static string Write(object? value, AttributeBinding? binding) => value switch
+    private static string Write(object? value, AttributeBinding? binding) => value switch
     {
         null => "null",
         string s => Quote(s),
@@ -277,7 +89,7 @@ internal sealed class JsonFamily(BodyText text, FblBinding binding, FblOptions o
     /// <summary>A JSON string with the escapes RFC 8785 uses (FBL §6.3).</summary>
     public static string Quote(string value) => "\"" + Escape(value) + "\"";
 
-    public static string Escape(string value)
+    private static string Escape(string value)
     {
         var builder = new StringBuilder(value.Length + 2);
         foreach (var c in value)
