@@ -97,7 +97,7 @@ public class PublicSurfaceTests
                     if (method is MethodInfo returning) named.Add(returning.ReturnType);
                     named.AddRange(method.GetParameters().Select(parameter => parameter.ParameterType));
                     break;
-                case EventInfo @event when @event.AddMethod is { } add && Visible(add):
+                case EventInfo { AddMethod: { } add } @event when Visible(add):
                     named.Add(@event.EventHandlerType!);
                     break;
                 case Type nested when nested.IsNestedPublic || nested.IsNestedFamily || nested.IsNestedFamORAssem:
@@ -116,7 +116,7 @@ public class PublicSurfaceTests
     private static IEnumerable<Type> Parts(Type type)
     {
         if (type.HasElementType) return Parts(type.GetElementType()!);
-        if (type.IsGenericType && !type.IsGenericTypeDefinition)
+        if (type is { IsGenericType: true, IsGenericTypeDefinition: false })
         {
             return Parts(type.GetGenericTypeDefinition()).Concat(type.GetGenericArguments().SelectMany(Parts));
         }
