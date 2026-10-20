@@ -42,19 +42,19 @@ internal static class DatabricksDefinition
     private const string WireBlock = "x-databricks";
 
     /// <summary>The bundle's definition.</summary>
-    public static DislDiagramDefinition Bundle { get; } = new(typeof(DatabricksDefinition).Assembly, "databricks-bundle.dis", WireBlock);
+    private static DislDiagramDefinition Bundle { get; } = new(typeof(DatabricksDefinition).Assembly, "databricks-bundle.dis", WireBlock);
 
     /// <summary>The job's definition, with the free-key function its add operations call (<see cref="DatabricksFreeKey"/>).</summary>
-    public static DislDiagramDefinition Job { get; } = new(typeof(DatabricksDefinition).Assembly, "databricks-job.dis", WireBlock, DatabricksFreeKey.Plugins);
+    private static DislDiagramDefinition Job { get; } = new(typeof(DatabricksDefinition).Assembly, "databricks-job.dis", WireBlock, DatabricksFreeKey.Plugins);
 
     /// <summary>The pipeline's definition.</summary>
-    public static DislDiagramDefinition Pipeline { get; } = new(typeof(DatabricksDefinition).Assembly, "databricks-pipeline.dis", WireBlock);
+    private static DislDiagramDefinition Pipeline { get; } = new(typeof(DatabricksDefinition).Assembly, "databricks-pipeline.dis", WireBlock);
 
     /// <summary>What <c>env</c> reads: editable, in the one viewpoint each reading has.</summary>
     private static DislEnv Env { get; } = new();
 
     /// <summary>The definition of the tool type <paramref name="origin"/> names: the job's when it names none.</summary>
-    public static DislDiagramDefinition Of(ToolOrigin? origin) => origin?.Type switch
+    private static DislDiagramDefinition Of(ToolOrigin? origin) => origin?.Type switch
     {
         "bundle" => Bundle,
         "pipeline" => Pipeline,

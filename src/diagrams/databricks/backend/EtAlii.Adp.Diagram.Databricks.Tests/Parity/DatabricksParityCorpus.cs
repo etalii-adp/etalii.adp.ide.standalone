@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
 using Xunit;
@@ -93,11 +94,11 @@ internal sealed class DatabricksParityCorpus : IDisposable
     {
         var mapper = new DatabricksElementMapper();
         var key = DatabricksHeaders.ReadResourceKey(registration);
-        var none = new Dictionary<string, RegistrationPosition>(StringComparer.Ordinal);
+        var none = ReadOnlyDictionary<string, RegistrationPosition>.Empty;
         IReadOnlyList<DiagramElement> elements = origin.Type switch
         {
-            "job" => Pick(model.Jobs, job => job.Key, key) is { } job ? mapper.JobElements(job, none) : [],
-            "pipeline" => Pick(model.Pipelines, pipeline => pipeline.Key, key) is { } pipeline ? mapper.PipelineElements(pipeline, none) : [],
+            "job" => Pick(model.Jobs, candidate => candidate.Key, key) is { } job ? mapper.JobElements(job, none) : [],
+            "pipeline" => Pick(model.Pipelines, candidate => candidate.Key, key) is { } pipeline ? mapper.PipelineElements(pipeline, none) : [],
             _ => mapper.BundleElements(model.Bundle, none),
         };
         var boxes = elements.Where(element => !element.Type.EndsWith("+edge", StringComparison.Ordinal)).Select(element => element.Id).ToList();

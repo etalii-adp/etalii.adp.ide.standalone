@@ -42,7 +42,7 @@ namespace EtAlii.Adp.Diagram.Databricks;
 internal static class DatabricksDisl
 {
     /// <summary>The host attribute holding the key a task is written with, also for a second holder of the key.</summary>
-    public const string WrittenKey = "writtenKey";
+    private const string WrittenKey = "writtenKey";
 
     /// <summary>What no task key can begin with: the start of a later holder's ephemeral id.</summary>
     private const char Ephemeral = '\u0001';
@@ -278,7 +278,7 @@ internal static class DatabricksDisl
     private static string? Present(string value) => value.Length > 0 ? value : null;
 
     /// <summary>The line an element is written at, 1-based, as a finding reports it.</summary>
-    private static int Line(EtAlii.Adp.Documents.LineRange lines) => lines.Start + 1;
+    private static int Line(Documents.LineRange lines) => lines.Start + 1;
 
     private static FblElement Diagram(Dictionary<string, object?> attributes) =>
         new("diagram", false, "diagram", "diagram", false, Written(attributes), null, null, null, null, default, 0);
