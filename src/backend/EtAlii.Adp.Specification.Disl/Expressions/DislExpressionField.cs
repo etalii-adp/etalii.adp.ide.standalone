@@ -44,7 +44,7 @@ internal abstract record DislActionValue(string Pointer)
     /// any value - as the value it reads as. Each evaluation gives a copy of its own, as a reading of the JSON did, so a
     /// run that keeps a list cannot change the next run's.
     /// </summary>
-    public sealed record Literal(string At, object? Value) : DislActionValue(At)
+    public sealed record Literal(string Pointer, object? Value) : DislActionValue(Pointer)
     {
         public override object? Evaluate(DislSpecification specification, DislContext context, IReadOnlyDictionary<string, object?> variables) => Copy(Value);
 
