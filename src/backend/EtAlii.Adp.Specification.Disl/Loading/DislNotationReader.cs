@@ -78,23 +78,24 @@ internal static class DislNotationReader
             var key = label.TryGetProperty("editText", out _) ? "editText" : "text";
             list.Add(new DislLabel(
                 JsonProperties.String(label, "id"),
-                label.TryGetProperty(key, out var text) ? EditText(specification, text, JsonPointer.Append(at, key)) : null,
+                label.TryGetProperty(key, out var text) ? EditText(specification, key, text, JsonPointer.Append(at, key)) : null,
                 label.TryGetProperty("parse", out var parse) ? DislFormReader.Parse(specification, parse, JsonPointer.Append(at, "parse")) : null));
         }
         return new DislTypeLabels(list, null);
     }
 
     /// <summary>
-    /// The text a label's inline editor opens on, read as an Expression in the element context as the runtime always
-    /// read it. A label's <c>text</c> is a Bindable (§2.5 b), whose bare string is a literal the loader does not walk;
-    /// such a string is compiled here, with the entered text's <c>value</c> bound beside the context's variables, and one
-    /// that does not compile opens on no text, as it did.
+    /// The text a label's inline editor opens on. Its <c>text</c> is a Bindable (§2.5 b), whose bare string is always a
+    /// literal, so the editor opens on that string itself (behaviour change B-40). A bare string in <c>editText</c>
+    /// (<paramref name="key"/>) is compiled in the element context with the entered text's <c>value</c> bound, as the
+    /// runtime always read it, and opens on no text when it does not compile; any other value is an Expression.
     /// </summary>
-    private static DislExpressionField EditText(DislSpecification specification, JsonElement text, string pointer)
+    private static DislBindable EditText(DislSpecification specification, string key, JsonElement text, string pointer)
     {
-        if (text.ValueKind != JsonValueKind.String) return DislFieldReader.Expression(specification, text, pointer);
+        if (text.ValueKind != JsonValueKind.String) return new DislBindable.Expression(DislFieldReader.Expression(specification, text, pointer));
         var source = text.GetString()!;
-        return new DislExpressionField(pointer, source, specification.Programs.TryGet(DislProgramKey.Of(DislContext.Element, source, ["value"]), out var program, out _) ? program : null);
+        if (key == "text") return new DislBindable.Literal(source);
+        return new DislBindable.Expression(new DislExpressionField(pointer, source, specification.Programs.TryGet(DislProgramKey.Of(DislContext.Element, source, ["value"]), out var program, out _) ? program : null));
     }
 
     private static DislEdgeNotation Edge(JsonElement edge) =>
