@@ -154,7 +154,7 @@ internal sealed class YamlParser(BodyText text)
             if (key.End.Index > key.Start.Index) throw new YamlError(ByteOf(key.Start), "Explicit keys ('? ') are not read by this host.");
             _next++;
             var start = ByteOf(key.Start);
-            var (name, keySpan) = KeyOf(start);
+            (string name, Span keySpan) = KeyOf(start);
             if (column < 0) column = Column(start);
             var colon = keySpan.End;
             var member = Empty(colon);
