@@ -43,7 +43,7 @@ Four criteria are met by more than one task and are claimed by the task that com
 
 ## The tasks
 
-- [ ] 1. Add one fixture per finding and freeze the transcript from today's code
+- [-] 1. Add one fixture per finding and freeze the transcript from today's code
   - Files: `src/diagrams/dotnet-dependency-graph/backend/EtAlii.Adp.Diagram.DotNetDependencyGraph.Tests/Fixtures/outside/` (new: a solution with a project outside its folder and a `Directory.Packages.props` above it), `Fixtures/new-document/` (new: a sibling as core creates it), `Fixtures/headerless/` (new: a registration without a `body:` header beside both serializations), `Fixtures/registration-order/` (new: a registration whose ids order differently in UTF-8 and UTF-16), `Fixtures/encoding/` (new: a project file in UTF-16), `Fixtures/namespace/` (new: a project file with a default namespace), `Parity/DotNetTranscript.cs`, `Parity/dotnet.transcript.json`, `Findings.Tests.cs` (new), `CorpusUntouched.Tests.cs` (new), `.gitattributes` only where the UTF-16 fixture needs an attribute
   - Add the six fixtures of Requirement 1.1 to the corpus and extend the generator's corpus only. Regenerate the transcript from today's unchanged code and review the diff as showing only the new documents.
   - Write one test per finding of table B marked Read or to settle by fixture (B2, both of B11, B14, B16, B17), each seen to fail for the reason the finding gives. A finding whose test cannot be made to fail for that reason is struck from the requirements as a small amendment, through the Scrum master, with the test as the reason.
