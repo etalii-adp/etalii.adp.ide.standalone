@@ -10,7 +10,15 @@ public abstract record DislDropOutcome
     /// <paramref name="Operation"/> for an <c>operation</c>, runs on <paramref name="On"/> (null for the diagram,
     /// as <c>"canvas"</c> gives it).
     /// </summary>
-    public sealed record Target(string Kind, string? Operation, DislElement? On) : DislDropOutcome;
+    public sealed record Target(string Kind, string? Operation, DislElement? On) : DislDropOutcome
+    {
+        /// <summary>
+        /// The matching target's <c>args</c>, evaluated where the drop lands (§7.2, §7.3): <c>self</c> the drop
+        /// target (the diagram on empty canvas) and <c>position</c> the drop point; empty for a target that
+        /// states none, and for a tool without <c>drop</c>.
+        /// </summary>
+        public IReadOnlyDictionary<string, object?> Arguments { get; init; } = new Dictionary<string, object?>(StringComparer.Ordinal);
+    }
 
     /// <summary>
     /// The drop is refused with <paramref name="Reason"/>: a matching target's operation is unavailable there,
@@ -40,6 +48,11 @@ public abstract record DislDropOutcome
 /// a tool that states none is refused with <see cref="DefaultRefusal"/>.
 /// </para>
 /// <para>
+/// <b>A matching target's <c>args</c></b> are Expressions, as a context tool's are (§7.3), evaluated in the element
+/// context with <c>self</c> the drop target, the diagram on empty canvas, and <c>position</c> the drop point; what
+/// they give is the outcome's <see cref="DislDropOutcome.Target.Arguments"/>, for the host to hand the operation.
+/// </para>
+/// <para>
 /// <b>A tool without <c>drop</c></b> is resolved as §7.2 says of DISL 0.1: an <c>operation</c> tool runs on the drop
 /// target when the operation's <c>for</c> admits it, else on the diagram; any other tool creates at the point.
 /// </para>
@@ -51,9 +64,16 @@ public static class DislDrop
 
     /// <summary>
     /// What tool <paramref name="toolId"/> dropped on <paramref name="dropTarget"/> (null on empty canvas) of
-    /// <paramref name="diagram"/> comes to; null when the specification has no such tool.
+    /// <paramref name="diagram"/> at <paramref name="position"/> (null for none) comes to; null when the
+    /// specification has no such tool.
     /// </summary>
-    public static DislDropOutcome? Resolve(DislSpecification specification, string toolId, DislDiagram diagram, DislElement? dropTarget, DislEnv? env = null)
+    public static DislDropOutcome? Resolve(
+        DislSpecification specification,
+        string toolId,
+        DislDiagram diagram,
+        DislElement? dropTarget,
+        DislEnv? env = null,
+        IReadOnlyDictionary<string, object?>? position = null)
     {
         ArgumentNullException.ThrowIfNull(specification);
         ArgumentNullException.ThrowIfNull(toolId);
@@ -66,8 +86,10 @@ public static class DislDrop
         var dropAt = DislJson.Pointer(pointer, "drop");
         if (drop.TryGetProperty("targets", out var targets) && targets.ValueKind == JsonValueKind.Array)
         {
+            var index = 0;
             foreach (var target in targets.EnumerateArray())
             {
+                var at = DislJson.Pointer(DislJson.Pointer(dropAt, "targets"), index++);
                 var on = DislJson.Strings(target, "on");
                 var matches = dropTarget is null ? on.Contains("canvas") : on.Any(dropTarget.IsA);
                 if (!matches) continue;
@@ -76,7 +98,7 @@ public static class DislDrop
                 var operation = DislJson.String(target, "operation");
                 return kind == "operation" && operation is not null && OperationInterpreter.Refusal(specification, operation, diagram, dropTarget, env) is { } reason
                     ? new DislDropOutcome.Refused(reason)
-                    : new DislDropOutcome.Target(kind, operation, dropTarget);
+                    : new DislDropOutcome.Target(kind, operation, dropTarget) { Arguments = Arguments(specification, target, at, diagram, dropTarget, env, position) };
             }
         }
 
@@ -92,6 +114,34 @@ public static class DislDrop
                 ? DislEvaluation.FirstReason(specification, refusal, DislJson.Pointer(dropAt, "refusal"), DislContexts.Create, variables)
                 : DislEvaluation.Reason(specification, refusal, DislJson.Pointer(dropAt, "refusal"), DislContexts.Create, variables)) ?? DefaultRefusal
             : DefaultRefusal);
+    }
+
+    /// <summary>A matching target's <c>args</c>, evaluated in the element context where the drop lands.</summary>
+    private static Dictionary<string, object?> Arguments(
+        DislSpecification specification,
+        JsonElement target,
+        string pointer,
+        DislDiagram diagram,
+        DislElement? dropTarget,
+        DislEnv? env,
+        IReadOnlyDictionary<string, object?>? position)
+    {
+        var arguments = new Dictionary<string, object?>(StringComparer.Ordinal);
+        if (!target.TryGetProperty("args", out _)) return arguments;
+
+        var variables = new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["self"] = (object?)dropTarget ?? diagram,
+            ["diagram"] = diagram,
+            ["env"] = (env ?? new DislEnv()).ToCel(),
+            ["position"] = OperationInterpreter.Map(position),
+        };
+        foreach (var argument in DislJson.Members(target, "args"))
+        {
+            arguments[argument.Name] = DislEvaluation.Expression(specification, argument.Value, DislJson.Pointer(DislJson.Pointer(pointer, "args"), argument.Name), DislContexts.Element, variables);
+        }
+
+        return arguments;
     }
 
     /// <summary>A tool without <c>drop</c>, as DISL 0.1 drops it.</summary>
