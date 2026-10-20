@@ -1,14 +1,14 @@
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Diagram.HelmChart.Tests;
 
 /// <summary>
 /// A small but genuine Helm chart, written into a temp folder for the integration flows.
 /// </summary>
 /// <remarks>
-/// Written here rather than copied from the module's own <c>Fixtures/</c>: test projects do
-/// not reference one another, and the flows need only enough of a chart to prove that core
-/// routes a folder-subject registration and streams what the module makes of it.
+/// Written in code rather than copied from this project's <c>Fixtures/</c>: the flows need only
+/// enough of a chart to prove that core routes a folder-subject registration and streams what
+/// the module makes of it.
 /// </remarks>
 internal static class HelmFixture
 {

@@ -67,7 +67,7 @@ Classifying by path segment — "count the ones containing `backend`" as the cor
 | Editor-family abstractions | `EtAlii.Adp.Editor` |
 | Designer-family abstractions: the definition, its discovery and its catalog | `EtAlii.Adp.Designer` |
 | Test helpers shipped as a project, referenced by every test project | `EtAlii.Adp.TestSupport` |
-| The in-process host the flow tests drive: one host per test class, a signed-in session, stream probes | `EtAlii.Adp.TestSupport.Host` |
+| The in-process host the flow tests drive: one host per test class, a signed-in session, stream probes and the steps the flows share | `EtAlii.Adp.TestSupport.Host` |
 | Reading and writing bodies through FBL bindings (Format Binding Language) | `EtAlii.Adp.Specification.Fbl` |
 | Evaluating CEL expressions (Common Expression Language), for FBL and DISL alike | `EtAlii.Adp.Specification.Cel` |
 | What the DISL and FBL loaders share: the diagnostic a loader reports and its severity | `EtAlii.Adp.Specification.Json` |
@@ -108,6 +108,8 @@ The skips are declared per project in a `.csproj.DotSettings` file, and `Namespa
 ## Where tests and fixtures live
 
 A test project sits beside its subject as `<Project>.Tests`, or is named for its purpose as `EtAlii.Adp.<Purpose>.Tests` where it has no single subject project: `EtAlii.Adp.Client.Tests` runs the client suite, `EtAlii.Adp.Repository.Tests` holds the guards whose subject is the repository itself - its documents, scripts and conventions - and `EtAlii.Adp.HostLogging.Tests` exists to hold **one class on purpose**. That class asserts which host's pipeline the process-wide `Log.Logger` points at, and a test assembly is its own process, so no other class's host can move it; a second host-booting class there ends that. Inside one, `Fixtures/**` is **test input, not product** — and for the modules whose round-trip requirement compares bytes, those fixtures are marked `-text` in `.gitattributes` so git does not rewrite their line endings and turn the test into a test of git.
+
+**A flow that tests one module and names its types lives in that module's own test project**, which references `EtAlii.Adp.TestSupport.Host` for the host and the steps the flows share; `src/diagrams/timeline/backend/EtAlii.Adp.Diagram.Timeline.Tests/TimelineFlow.Tests.cs` is one. `EtAlii.Adp.Backend.Tests` still holds the other flows, some of which test one module too.
 
 `src/fixtures/cross-tier/` is a different thing with a similar name: **one JSON file per rule the backend and the client must agree on**, each carrying its cases and the rule's own statement in a `reason` field, and read by both suites. Two parts of it are generated rather than written: its `example-models/` folder, where `ShippedExampleModelsTests` writes every shipped example as the stream a canvas receives and the client's emitter guard mounts every canvas on it, and `element-types.json`, which `ElementTypesTests` writes from each module's own type constants. Each test rewrites its file and fails when the checked-in copy is stale. It sits outside both because a client test reaching into the backend's folders would invert the dependency the whole tree is arranged to avoid. Beside that folder, `src/fixtures/schema-reference-cases.json` is the same kind of file for the editor family: where a schema reference points, read by the client's `resolveSchemaReference` and by the XML editor's C# twin of it, `SchemaReferenceRules`.
 

@@ -1,6 +1,5 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Context.Wire;
-using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Diagram.Wire;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.TestSupport.Host;
@@ -10,9 +9,8 @@ using Xunit;
 using ContextService = EtAlii.Adp.Context.Wire.ContextService;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 using Path = EtAlii.Adp.Documents.Wire.Path;
-using Wire = EtAlii.Adp.Diagram.HelmChart.Wire;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Diagram.HelmChart.Tests;
 
 /// <summary>
 /// The helm chart diagram against the real host: a chart registered by one <c>.adp</c> inside
