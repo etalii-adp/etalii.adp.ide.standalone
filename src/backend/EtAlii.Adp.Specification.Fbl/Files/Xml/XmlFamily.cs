@@ -464,7 +464,11 @@ internal sealed partial class XmlFamily(BodyText text, FblBinding binding, FblOp
         Append(plan, parent, text, SpliceOperation.InsertEntry);
     }
 
-    /// <summary>A new element without an <c>emit</c>: the rule's element name with its attributes in <c>insert.keys</c> order, then binding order (FBL §6.3).</summary>
+    /// <summary>
+    /// A new element without an <c>emit</c>: the rule's element name with its attributes in <c>insert.keys</c> order, then binding order (FBL §6.3).
+    /// An empty value is written as a set writes it and left out only under <c>empty: "remove"</c>; the planner has refused it under
+    /// <c>refuse</c> (FBL 0.6 §6.2, spec 025 B-09).
+    /// </summary>
     private static string NewElement(InsertRequest request)
     {
         var rule = request.Rule;
@@ -475,7 +479,9 @@ internal sealed partial class XmlFamily(BodyText text, FblBinding binding, FblOp
         if (rule.Id?.From?.Kind is SlotKind.XmlAttribute(var idAttribute) && request.Id is { } id) written.Add((idAttribute, id));
         foreach ((string attribute, AttributeBinding binding) in rule.Attributes)
         {
-            if (binding is { Kind: SlotKind.XmlAttribute(var xml), Child: null } && request.Values.TryGetValue(attribute, out var value) && value is not null)
+            if (binding is { Kind: SlotKind.XmlAttribute(var xml), Child: null } &&
+                request.Values.TryGetValue(attribute, out var value) && value is not null &&
+                !(NewText.IsEmpty(value) && binding.Empty == EmptyRule.Remove))
             {
                 written.Add((xml, NewText.Plain(value, binding)));
             }
