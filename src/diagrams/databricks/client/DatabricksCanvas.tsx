@@ -2,12 +2,7 @@ import { useMemo, useState } from "react";
 
 import { elementSourceOf } from "@client/canvas/selection";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
-import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
-import type {
-  CustomRouteRef,
-  DiagramDefinition,
-  ShapeBounds,
-} from "@client/canvas/library/definition/diagramDefinition";
+import type { DiagramDefinition, ShapeBounds } from "@client/canvas/library/definition/diagramDefinition";
 import type { DiagramEventHandlers } from "@client/canvas/library/api/diagramEvents";
 import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
 import { useContextConnection } from "@client/shell/context/ContextConnectionProvider";
@@ -15,26 +10,31 @@ import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import type { ToolContentProps } from "@client/shell/panels/toolPanelRegistration";
 import { useViewReport } from "@client/diagrams/useViewReport";
 import { useDatabricksStream } from "./useDatabricksStream";
-import { SIMULATED_ACTION_IDS, SIMULATED_MARKER, useSimulatedRun } from "./useSimulatedRun";
-import type { DatabricksFrame, DatabricksNode } from "./databricksModel";
+import { SIMULATED_MARKER, useSimulatedRun } from "./useSimulatedRun";
+import type { DatabricksEdge, DatabricksFrame, DatabricksNode } from "./databricksModel";
 import { placementId, relationId } from "@client/canvas/gestureIds";
 
-/** A node's drawn size, in the module's own canvas units - matching the backend layouts' spacing. */
+/** A node's drawn size, in the module's own canvas units: the definitions' fixed size, which the backend layouts space by. */
 export const NODE_WIDTH = 200;
 export const NODE_HEIGHT = 56;
 
-/** A target frame's drawn size; the frame is an enclosure, so it is larger than a node. */
+/** A target frame's drawn size, the bundle definition's fixed size for a target. */
 const FRAME_WIDTH = 220;
 const FRAME_HEIGHT = 120;
 
-/** FixedBezierConnection's control reach, kept for the family's layered edges. */
-const EDGE_REACH = 30;
+/** The definition's type a target frame draws as. */
+const TARGET_TYPE = "target";
+
+/** The definition's relation each kind of edge the stream sends draws as. */
+const RELATION_OF: Readonly<Record<DatabricksEdge["kind"], string>> = { depends: "dependency", override: "override", flow: "flow" };
 
 export interface DatabricksCanvasConfig {
   /** The aria label naming which of the family's readings this canvas draws. */
   ariaLabel: string;
-  /** Whether side anchors offer the dependency gesture - the job canvas's interaction. */
-  connectable: boolean;
+  /** The reading's canvas definition, compiled from its bundled definition (`databricksBindings.ts`). */
+  definition: DiagramDefinition;
+  /** The definition's node type a box of this reading draws as. */
+  typeOf: (node: DatabricksNode) => string;
   /**
    * Intercepts an action id before it reaches the backend; answering true means the canvas
    * handled it locally. The simulation engine's seam (Requirement 8.6): simulated ids play
@@ -43,225 +43,41 @@ export interface DatabricksCanvasConfig {
   interceptAction?: (actionId: string) => boolean;
 }
 
-
-/** An element as the library carries it here: the model element plus what it draws. */
-type NodeElement = DiagramModelElement & { node: DatabricksNode; simulated: string | undefined };
-type FrameBoxElement = DiagramModelElement & { frame: DatabricksFrame };
-
-
-
-
 /**
- * A dependency or flow edge, exactly as FixedBezierConnection drew it: out of the source's
- * right edge, into the target's left, with the fixed control reach the layered layout wants.
+ * What a box's labels read, under the names its definition gives them: an attribute's own name, or the
+ * path `databricksBindings.ts` names for a computed label. The backend sends the name and the badge strip
+ * already worked out, so each type's attributes are read from those.
  */
-const layeredRoute: CustomRouteRef = {
-  customRoute: "databricks-layered",
-  path: (from, to, _waypoints, ends) => {
-    const a = ends ? { x: ends.source.x + ends.source.width, y: ends.source.y + ends.source.height / 2 } : from;
-    const b = ends ? { x: ends.target.x, y: ends.target.y + ends.target.height / 2 } : to;
-    return `M ${a.x} ${a.y} C ${a.x + EDGE_REACH} ${a.y}, ${b.x - EDGE_REACH} ${b.y}, ${b.x} ${b.y}`;
-  },
-};
-
-/**
- * What the family's diagrams allow, stated once per reading: task and resource nodes that
- * drag and select, frames that drag and select, three edge kinds - depends and flow on the
- * layered bezier, overrides straight - and the dependency gesture only where the reading
- * offers it (the job canvas). Edges are not selectable in this family and the migration is
- * not the moment that changes: a press on one is ignored, exactly as it fell on nothing
- * before.
- */
-function definitionFor(connectable: boolean): DiagramDefinition {
-  const targets = ["task", "node", "frame"];
-  return assertValidDiagramDefinition({
-    elementTypes: [
-      {
-        id: "task",
-        shape: "box",
-        classNames: [
-          { className: "databricks-node canvas-element", on: "element" },
-          { className: { template: "databricks-node-{payload.kind}" }, on: "element" },
-          { className: "databricks-node-missing", on: "element", when: { path: "payload.unresolved", is: "true" } },
-          { className: { template: "databricks-sim-{payload.simulated}" }, on: "element", when: { path: "payload.simulated", is: "present" } },
-          { className: "databricks-node-box canvas-node", on: "shape" },
-        ],
-        labels: [
-          {
-            text: { path: "payload.label" },
-            anchorTo: "top",
-            offset: { x: 0, y: NODE_HEIGHT / 2 - 4 },
-            // Left, on the badge strip's edge, as the BoxElement drew it before the migration.
-            align: "start",
-            insetX: 8,
-            editable: true,
-            // The editor covers the whole box, as `placement: "inside"` did: this label sits
-            // low in the box to leave room for the badge strip, but it is still the element's
-            // one name and renaming it is renaming the task.
-            editorBox: { top: 0, height: NODE_HEIGHT },
-            truncate: true,
-            className: "databricks-label canvas-node-label",
-          },
-          {
-            // The badge strip, joined - one line rather than a stack, which is how the notation
-            // shows it and why a collection binding may name its separator.
-            text: { path: "payload.badges", each: { path: "text" }, join: " · " },
-            when: { path: "payload.badges", is: "non-empty" },
-            anchorTo: "top",
-            offset: { x: 0, y: NODE_HEIGHT - 8 },
-            align: "start",
-            insetX: 8,
-            className: "databricks-badges",
-          },
-        ],
-        anchors: connectable
-          ? {
-            kind: "sides",
-            fractions: [
-              { side: "left", at: 0.5, name: "left" },
-              { side: "right", at: 0.5, name: "right" },
-            ],
-          }
-          : { kind: "edge" },
-        sizing: "model",
-      },
-      {
-        id: "node",
-        shape: "box",
-        classNames: [
-          { className: "databricks-node canvas-element", on: "element" },
-          { className: { template: "databricks-node-{payload.kind}" }, on: "element" },
-          { className: "databricks-node-missing", on: "element", when: { path: "payload.unresolved", is: "true" } },
-          { className: { template: "databricks-sim-{payload.simulated}" }, on: "element", when: { path: "payload.simulated", is: "present" } },
-          { className: "databricks-node-box canvas-node", on: "shape" },
-        ],
-        labels: [
-          {
-            text: { path: "payload.label" },
-            anchorTo: "top",
-            offset: { x: 0, y: NODE_HEIGHT / 2 - 4 },
-            // Left, on the badge strip's edge, as the BoxElement drew it before the migration.
-            align: "start",
-            insetX: 8,
-            editable: true,
-            // The editor covers the whole box, as `placement: "inside"` did: this label sits
-            // low in the box to leave room for the badge strip, but it is still the element's
-            // one name and renaming it is renaming the task.
-            editorBox: { top: 0, height: NODE_HEIGHT },
-            truncate: true,
-            className: "databricks-label canvas-node-label",
-          },
-          {
-            // The badge strip, joined - one line rather than a stack, which is how the notation
-            // shows it and why a collection binding may name its separator.
-            text: { path: "payload.badges", each: { path: "text" }, join: " · " },
-            when: { path: "payload.badges", is: "non-empty" },
-            anchorTo: "top",
-            offset: { x: 0, y: NODE_HEIGHT - 8 },
-            align: "start",
-            insetX: 8,
-            className: "databricks-badges",
-          },
-        ],
-        anchors: { kind: "edge" },
-        sizing: "model",
-      },
-      {
-        id: "frame",
-        shape: "frame",
-        classNames: [
-          { className: "databricks-frame", on: "element" },
-          // The dashed outline's own class: the stylesheet reaches the frame by it, never by a
-          // descendant `rect` (client-centralization Requirement 3.1).
-          { className: "databricks-frame-outline" },
-        ],
-        labels: [
-          { text: { path: "payload.label" }, placement: "above", className: "databricks-frame-label" },
-          {
-            // `mode · default · 2 overrides`, with the parts that do not apply left out and no
-            // separator left behind - which is the whole of a parts binding's justification.
-            text: {
-              parts: [
-                { path: "payload.mode" },
-                { template: "default", when: { path: "payload.isDefault", is: "true" } },
-                { path: "payload.overrides", when: { path: "payload.overrides", is: "non-empty" } },
-              ],
-              join: " · ",
-            },
-            anchorTo: "top",
-            offset: { x: 0, y: 18 },
-            align: "start",
-            insetX: 12,
-            className: "databricks-badges",
-          },
-        ],
-        anchors: { kind: "edge" },
-        sizing: "model",
-      },
-    ],
-    relationTypes: [
-      {
-        id: "depends",
-        route: layeredRoute,
-        style: { endMarker: "arrow" },
-        label: { placement: "midpoint", offset: -6 },
-        className: "databricks-edge databricks-edge-depends",
-        endpoints: {
-          source: { elementTypes: ["task"], anchors: connectable ? ["left", "right"] : [] },
-          target: { elementTypes: targets, anchors: "edge" },
-          allowSelf: false,
-        },
-      },
-      {
-        id: "flow",
-        route: layeredRoute,
-        style: { endMarker: "arrow" },
-        label: { placement: "midpoint", offset: -6 },
-        className: "databricks-edge databricks-edge-flow",
-        endpoints: {
-          source: { elementTypes: targets, anchors: [] },
-          target: { elementTypes: targets, anchors: "edge" },
-          allowSelf: false,
-        },
-      },
-      {
-        id: "override",
-        route: "straight",
-        style: { endMarker: "arrow" },
-        className: "databricks-override",
-        lineClassName: "databricks-override-line",
-        endpoints: {
-          source: { elementTypes: targets, anchors: [] },
-          target: { elementTypes: targets, anchors: "edge" },
-          allowSelf: false,
-        },
-      },
-    ],
-    // WHAT THIS TYPE OFFERS, AND WHAT INVOKES IT. The key list was hand-written in this canvas
-    // and the delete was a keystroke it built to describe a gesture the library had already
-    // handed it. Declared, the library derives the key set and dispatches an action id.
-    actions: [
-      { id: "rename", backendKey: "F2", invokedBy: [{ kind: "shortcut", key: "F2" }], appliesTo: [{ kind: "element" }] },
-      { id: "delete", backendKey: "Delete", invokedBy: [{ kind: "gesture", gesture: "delete" }], appliesTo: [{ kind: "element" }, { kind: "connection" }] },
-      // THE SIMULATED RUNS ARE THIS CANVAS'S TO RUN (Requirements 8.6, 11.6). The backend offers
-      // them in the shared menu; declared here as menu entries, the library hands them to this
-      // module's handler and sends nothing - so a simulation never reaches a command, the history
-      // or a file. The ids are the engine's own list, never retyped.
-      ...SIMULATED_ACTION_IDS.map((id) => ({ id, invokedBy: [{ kind: "menu" as const }], appliesTo: [{ kind: "element" as const }] })),
-    ],
-    layout: { modes: ["manual"] },
-    dragging: "enabled",
-  });
+function payloadOf(type: string, node: DatabricksNode): Record<string, unknown> {
+  const badgeLine = node.badges.join(" · ");
+  switch (type) {
+    case "resource":
+      return { key: node.label, resourceKind: node.kind };
+    case "unknown":
+      return { key: node.label, path: node.kind };
+    case "library":
+      return { path: node.label, libraryKind: node.badges[0] ?? "" };
+    case "notifications":
+      return { recipients: node.label };
+    default:
+      return { key: node.label, name: node.label, badgeLine };
+  }
 }
 
-const CONNECTABLE_DEFINITION = definitionFor(true);
-const RENDER_ONLY_DEFINITION = definitionFor(false);
+function overrides(count: number): string {
+  return count === 0 ? "" : count === 1 ? "1 override" : `${count} overrides`;
+}
+
+/** A target's `mode · default · n overrides`, with the parts that do not apply left out. */
+function summaryOf(frame: DatabricksFrame): string {
+  return [frame.mode, frame.isDefault ? "default" : "", overrides(frame.overrideCount)].filter((part) => part !== "").join(" · ");
+}
 
 /**
  * The family's shared canvas: boxes, frames and directed edges at the positions the backend
- * computed and the `.adp` authored, drawn through the central canvas library. The three
- * diagram types differ in what arrives on the stream and whether the dependency gesture is
- * offered - everything else is one implementation (Requirement 1.2).
+ * computed and the `.adp` authored, drawn through the central canvas library from the reading's
+ * compiled definition. The three diagram types differ in what arrives on the stream and in their
+ * definitions - everything else is one implementation (Requirement 1.2).
  *
  * A drag never writes the body file: `moveElementTo` lands in the registration's `layout:`
  * block as one undoable command (Requirement 7).
@@ -271,7 +87,8 @@ export function DatabricksCanvas({
   entryId,
   path,
   ariaLabel,
-  connectable,
+  definition,
+  typeOf,
   interceptAction,
 }: ToolContentProps & DatabricksCanvasConfig) {
   const { model, loading, failed, moveElementTo, reportView } = useDatabricksStream(projectId, path);
@@ -281,48 +98,43 @@ export function DatabricksCanvas({
   const [viewport, setViewport] = useState<ShapeBounds | null>(null);
 
   const diagramModel = useMemo<DiagramModel>(() => {
-    // Frames first, so everything they enclose paints on top.
-    const frames = [...model.frames.values()].map((frame): FrameBoxElement => ({
+    // Frames first, as they always were; the definition puts them beneath the connections too.
+    const frames = [...model.frames.values()].map((frame): DiagramModelElement => ({
       id: frame.id,
-      type: "frame",
+      type: TARGET_TYPE,
       x: frame.x + FRAME_WIDTH / 2,
       y: frame.y + FRAME_HEIGHT / 2,
       width: FRAME_WIDTH,
       height: FRAME_HEIGHT,
       label: frame.label,
-      payload: {
-        label: frame.label,
-        mode: frame.mode,
-        isDefault: frame.isDefault,
-        overrides: overrides(frame.overrideCount),
-      },
-      frame,
+      payload: { name: frame.label, summary: summaryOf(frame) },
     }));
-    const nodes = [...model.nodes.values()].map((node): NodeElement => ({
-      id: node.id,
-      // The dependency gesture is tasks-only, so the task kind is its own element type.
-      type: node.id.startsWith("task:") ? "task" : "node",
-      x: node.x + NODE_WIDTH / 2,
-      y: node.y + NODE_HEIGHT / 2,
-      width: NODE_WIDTH,
-      height: NODE_HEIGHT,
-      label: node.label,
-      payload: {
+    const nodes = [...model.nodes.values()].map((node): DiagramModelElement => {
+      const type = typeOf(node);
+      const simulated = simulation.states.get(node.id);
+      return {
+        id: node.id,
+        type,
+        x: node.x + NODE_WIDTH / 2,
+        y: node.y + NODE_HEIGHT / 2,
+        width: NODE_WIDTH,
+        height: NODE_HEIGHT,
         label: node.label,
-        kind: node.kind,
-        unresolved: node.unresolved,
-        badges: node.badges.map((text) => ({ text })),
-        ...(simulation.states.get(node.id) !== undefined ? { simulated: simulation.states.get(node.id) } : {}),
-      },
-      node,
-      simulated: simulation.states.get(node.id),
-    }));
+        payload: {
+          ...payloadOf(type, node),
+          kind: node.kind,
+          unresolved: node.unresolved,
+          ...(simulated !== undefined ? { simulated } : {}),
+        },
+      };
+    });
     const connections = [...model.edges.values()].map((edge) => ({
       id: edge.id,
-      type: edge.kind,
+      type: RELATION_OF[edge.kind],
       sourceId: edge.fromElementId,
       targetId: edge.toElementId,
       label: edge.outcome || undefined,
+      // Outcome edges wear their answer: the definition's conditions, which the stylesheet paints.
       className: edge.outcome === "true"
         ? "databricks-edge-outcome-true"
         : edge.outcome === "false"
@@ -330,7 +142,7 @@ export function DatabricksCanvas({
           : undefined,
     }));
     return { elements: [...frames, ...nodes], connections };
-  }, [model, simulation.states]);
+  }, [model, simulation.states, typeOf]);
 
   /**
    * Runs an action, letting the interception seam play it locally first (Requirement 8.6): a
@@ -394,7 +206,7 @@ export function DatabricksCanvas({
   return (
     <div className="databricks-canvas canvas-host" role="application" aria-label={ariaLabel}>
       <DiagramCanvas
-        definition={connectable ? CONNECTABLE_DEFINITION : RENDER_ONLY_DEFINITION}
+        definition={definition}
         model={diagramModel}
         events={events}
         source={{ entryId, path }}
@@ -410,8 +222,4 @@ export function DatabricksCanvas({
       ) : null}
     </div>
   );
-}
-
-function overrides(count: number): string {
-  return count === 0 ? "" : count === 1 ? "1 override" : `${count} overrides`;
 }

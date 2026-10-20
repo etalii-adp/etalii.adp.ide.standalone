@@ -211,7 +211,7 @@
     "edges": {
       "Override": {
         "line": { "stroke": { "color": { "token": "color.border" }, "width": 1, "dash": [3, 3] }, "routing": "straight" },
-        "targetMarker": "arrow",
+        "targetMarker": "arrowFilled",
         "doc": "An override is a reference, not a flow: straight and dashed."
       }
     }

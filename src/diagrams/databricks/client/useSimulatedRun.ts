@@ -50,6 +50,11 @@ export const SIMULATED_ACTION_IDS: readonly string[] = Object.values(SIMULATED_S
 const DEFAULT_STEP_MS = 700;
 
 /**
+ * STANDING IN FOR RUNTIME GAP A6 (databricks-disl-fbl Requirement 8.2). Each of the three definitions
+ * states its mock run, deploy or update as an operation whose body is a `simulate`, and no canvas library
+ * plays one yet; until it does, this engine plays them, and the definitions' `simulate` becomes the show
+ * by a client change only.
+ *
  * The client-only mock runs of Requirement 8: pending → running → succeeded/failed played over
  * the parsed DAG, honoring `run_if` and condition outcomes, plus the deploy and pipeline-update
  * ripples. A state machine over `setInterval`; nothing here touches a file, the history or the
