@@ -1,4 +1,3 @@
-using System.Text.Json;
 using EtAlii.Adp.Specification.Cel;
 
 namespace EtAlii.Adp.Specification.Disl;
@@ -89,37 +88,27 @@ public static class GestureConstraintEvaluator
         ArgumentNullException.ThrowIfNull(gesture);
 
         List<DislFinding> refusals = [];
-        if (!specification.Root.TryGetProperty("constraints", out var constraints) || constraints.ValueKind != JsonValueKind.Object
-            || !constraints.TryGetProperty("rules", out var rules) || rules.ValueKind != JsonValueKind.Array)
-        {
-            return refusals;
-        }
+        if (specification.Constraints.Rules is not { } rules) return refusals;
 
-        var context = DislContexts.OfConstraintKind(kind);
         var variables = new Dictionary<string, object?>(gesture)
         {
             ["self"] = self,
             ["diagram"] = self?.Diagram,
             ["env"] = (env ?? new DislEnv()).ToCel(),
         };
-        var index = 0;
-        foreach (var rule in rules.EnumerateArray())
+        foreach (var rule in rules)
         {
-            var pointer = DislJson.Pointer("/constraints/rules", index++);
-            if (DislJson.String(rule, "kind") != kind) continue;
-            if (rule.TryGetProperty("enabled", out var enabled) && enabled.ValueKind == JsonValueKind.False) continue;
-            if ((DislJson.String(rule, "enforcement") ?? "prevent") is not ("prevent" or "prevent-and-report")) continue;
-            var scope = DislJson.Strings(rule, "scope");
+            if (rule.Kind != kind) continue;
+            if (!rule.Enabled) continue;
+            if ((rule.Enforcement ?? "prevent") is not ("prevent" or "prevent-and-report")) continue;
+            var scope = rule.Scope;
             if (scope.Count > 0 && !(self is not null && scope.Any(self.IsA)) && !scope.Contains("*")) continue;
 
-            if (rule.TryGetProperty("when", out var when) && !DislEvaluation.Holds(specification, when, DislJson.Pointer(pointer, "when"), context, variables)) continue;
-            if (rule.TryGetProperty("rule", out var condition) && DislEvaluation.Expression(specification, condition, DislJson.Pointer(pointer, "rule"), context, variables) is true) continue;
+            if (rule.When is { } when && !when.Holds(variables)) continue;
+            if (rule.Rule is { } condition && condition.Evaluate(variables) is true) continue;
 
-            var id = DislJson.String(rule, "id") ?? pointer;
-            var message = rule.TryGetProperty("message", out var text)
-                ? DislEvaluation.Message(specification, text, DislJson.Pointer(pointer, "message"), context, variables, id)
-                : id;
-            refusals.Add(new DislFinding(DislJson.String(rule, "code") ?? id, id, DislJson.String(rule, "severity") ?? "error", message, self is null ? [] : [self.Id], self?.Line));
+            var message = rule.Message?.Text(variables, rule.Id) ?? rule.Id;
+            refusals.Add(new DislFinding(rule.Code, rule.Id, rule.SeverityText ?? "error", message, self is null ? [] : [self.Id], self?.Line));
         }
         return refusals;
     }

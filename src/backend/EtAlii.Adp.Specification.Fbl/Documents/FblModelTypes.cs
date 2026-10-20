@@ -38,21 +38,21 @@ public sealed class FblBinding
     /// <summary>Null when the body may be written; the reason (possibly empty) when it is read-only.</summary>
     public string? ReadOnly { get; init; }
 
-    public TextDefaults Text { get; init; } = new();
+    internal TextDefaults Text { get; init; } = new();
 
-    public HeaderSettings? Header { get; init; }
+    internal HeaderSettings? Header { get; init; }
 
     public string? Comment { get; init; }
 
     public bool ReportUnmatched { get; init; }
 
-    public IReadOnlyList<BlockRule> Blocks { get; init; } = [];
+    internal IReadOnlyList<BlockRule> Blocks { get; init; } = [];
 
     public IReadOnlyList<Rule> Elements { get; init; } = [];
 
     public IReadOnlyList<Rule> Relations { get; init; } = [];
 
-    public RegistrationSettings Registration { get; init; } = new();
+    internal RegistrationSettings Registration { get; init; } = new();
 
     public TemplateSettings? Template { get; init; }
 
@@ -70,20 +70,20 @@ public sealed class Claims
 
     public bool RegistrationOnly { get; init; }
 
-    public Marker? Marker { get; init; }
+    internal Marker? Marker { get; init; }
 
     public IReadOnlyList<string> Suggest { get; init; } = [];
 
     public IReadOnlyList<string> Origins { get; init; } = [];
 
     /// <summary>Per origin: whether a bare file opens as it, and what suggests it.</summary>
-    public IReadOnlyDictionary<string, ReadingClaim> Readings { get; init; } = new Dictionary<string, ReadingClaim>();
+    internal IReadOnlyDictionary<string, ReadingClaim> Readings { get; init; } = new Dictionary<string, ReadingClaim>();
 }
 
-public sealed record ReadingClaim(bool Bare, IReadOnlyList<string> Suggest);
+internal sealed record ReadingClaim(bool Bare, IReadOnlyList<string> Suggest);
 
 /// <summary>A marker (FBL §12.2): exactly one of a root key, a first-line prefix or a pattern.</summary>
-public sealed record Marker(string? RootKey, JsonElement? RootValue, string? FirstLine, string? Pattern, int Lines);
+internal sealed record Marker(string? RootKey, JsonElement? RootValue, string? FirstLine, string? Pattern, int Lines);
 
 public sealed class BodySettings
 {
@@ -114,7 +114,7 @@ public sealed record FileRule(string? Name, string Glob, Family? Family);
 
 public sealed record PluginReader(string Plugin, string? Version);
 
-public sealed class TextDefaults
+internal sealed class TextDefaults
 {
     public string Newline { get; init; } = "\n";
 
@@ -126,9 +126,9 @@ public sealed class TextDefaults
     public QuoteStyle Quote { get; init; } = QuoteStyle.Double;
 }
 
-public sealed record HeaderSettings(string? Key, JsonElement? Value, string? Line, bool Required);
+internal sealed record HeaderSettings(string? Key, JsonElement? Value, string? Line, bool Required);
 
-public sealed record BlockRule(string Name, string Line, IReadOnlyList<string>? Within, bool CaseInsensitive, string? View);
+internal sealed record BlockRule(string Name, string Line, IReadOnlyList<string>? Within, bool CaseInsensitive, string? View);
 
 /// <summary>An element rule or a relation rule (FBL §5.1, §5.4).</summary>
 public sealed partial class Rule
@@ -153,9 +153,9 @@ public sealed partial class Rule
 
     public string? When { get; init; }
 
-    public IdBinding? Id { get; init; }
+    internal IdBinding? Id { get; init; }
 
-    public ParentBinding? Parent { get; init; }
+    internal ParentBinding? Parent { get; init; }
 
     /// <summary>The attribute bindings in the order the binding writes them.</summary>
     public IReadOnlyList<KeyValuePair<string, AttributeBinding>> Attributes { get; init; } = [];
@@ -164,9 +164,9 @@ public sealed partial class Rule
 
     public AttributeBinding? Target { get; init; }
 
-    public InsertSettings? Insert { get; init; }
+    internal InsertSettings? Insert { get; init; }
 
-    public RemoveSettings? Remove { get; init; }
+    internal RemoveSettings? Remove { get; init; }
 
     public bool SnapshotUndo { get; init; }
 
@@ -239,9 +239,9 @@ public sealed partial class Rule
     }
 }
 
-public sealed record IdBinding(Slot? From, string? SidecarKey);
+internal sealed record IdBinding(Slot? From, string? SidecarKey);
 
-public sealed record ParentBinding(IReadOnlyList<string> Rules, string? Slot);
+internal sealed record ParentBinding(IReadOnlyList<string> Rules, string? Slot);
 
 /// <summary>
 /// A slot (FBL §5.2): exactly one place a value is read from and written to, its <see cref="Kind"/>;
@@ -313,10 +313,10 @@ public abstract record SlotKind
 /// <summary>An attribute binding (FBL §5.2): a slot with the options that decide reading and writing.</summary>
 public sealed record AttributeBinding : Slot
 {
-    public EmptyRule Empty { get; init; } = EmptyRule.Keep;
+    internal EmptyRule Empty { get; init; } = EmptyRule.Keep;
 
     /// <summary>Per family name: what setting a value whose slot is absent does.</summary>
-    public IReadOnlyDictionary<string, AbsentRule> Absent { get; init; } = new Dictionary<string, AbsentRule>();
+    internal IReadOnlyDictionary<string, AbsentRule> Absent { get; init; } = new Dictionary<string, AbsentRule>();
 
     public JsonElement? Default { get; init; }
 
@@ -325,9 +325,9 @@ public sealed record AttributeBinding : Slot
 
     public bool KeepTimePrecision { get; init; }
 
-    public WrittenStyle? Style { get; init; }
+    internal WrittenStyle? Style { get; init; }
 
-    public ReferenceBinding? Reference { get; init; }
+    internal ReferenceBinding? Reference { get; init; }
 
     /// <summary>Wire value to model value, in document order.</summary>
     public IReadOnlyList<KeyValuePair<string, string>>? Map { get; init; }
@@ -336,33 +336,33 @@ public sealed record AttributeBinding : Slot
 
     public bool HtmlParagraphs { get; init; }
 
-    public CreateChild? Create { get; init; }
+    internal CreateChild? Create { get; init; }
 
     public string? ReadOnly { get; init; }
 
     /// <summary>yaml, json (FBL 0.5): what the slot reads from a scalar; null to let the attribute's type decide.</summary>
-    public ReadAs? Read { get; init; }
+    internal ReadAs? Read { get; init; }
 
     /// <summary>yaml, read as typed (FBL 0.5): whether a quoted scalar converts from its written text; null for not given, which does not.</summary>
-    public QuotedRule? Quoted { get; init; }
+    internal QuotedRule? Quoted { get; init; }
 
     /// <summary>yaml, json (FBL 0.5): what the attribute is when its value does not convert, keeping the entry readable.</summary>
-    public FallbackBinding? Fallback { get; init; }
+    internal FallbackBinding? Fallback { get; init; }
 }
 
-public sealed record ReferenceBinding(IReadOnlyList<string> To, string By);
+internal sealed record ReferenceBinding(IReadOnlyList<string> To, string By);
 
 /// <summary>An attribute binding's <c>fallback</c> (FBL 0.5 §5.2): its value, and whether <c>fbl.unconverted-value</c> is reported.</summary>
-public sealed record FallbackBinding(JsonElement Value, bool Report);
+internal sealed record FallbackBinding(JsonElement Value, bool Report);
 
 /// <summary>
 /// How a missing child holding the value is written. xml: the element's text and its place. yaml
 /// (FBL 0.4): <see cref="AtEnd"/>, each missing level of the mapping <c>child</c> reaches created at
 /// the end of the level above it.
 /// </summary>
-public sealed record CreateChild(string Emit, ChildPlace Place, string? Before, bool AtEnd = false);
+internal sealed record CreateChild(string Emit, ChildPlace Place, string? Before, bool AtEnd = false);
 
-public sealed class InsertSettings
+internal sealed class InsertSettings
 {
     public required InsertPlace Place { get; init; }
 
@@ -380,15 +380,15 @@ public sealed class InsertSettings
 }
 
 /// <summary>How a missing container is created: where, with the key or selector <see cref="At"/> names, and its own text.</summary>
-public sealed record CreateContainer(ContainerPlace At, string? Argument, string? Text);
+internal sealed record CreateContainer(ContainerPlace At, string? Argument, string? Text);
 
 /// <summary>
 /// What goes with a removed entry. <see cref="RemoveEmptyLevels"/> (FBL 0.4) implies
 /// <see cref="RemoveContainerWhenEmpty"/>, and removes the levels above the container that it leaves empty too.
 /// </summary>
-public sealed record RemoveSettings(IReadOnlyList<string> Cascade, bool RemoveContainerWhenEmpty, bool RemoveEmptyLevels = false);
+internal sealed record RemoveSettings(IReadOnlyList<string> Cascade, bool RemoveContainerWhenEmpty, bool RemoveEmptyLevels = false);
 
-public sealed class RegistrationSettings
+internal sealed class RegistrationSettings
 {
     public IReadOnlyList<string> Headers { get; init; } = [];
 

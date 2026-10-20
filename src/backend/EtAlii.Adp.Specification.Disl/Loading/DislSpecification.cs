@@ -1,19 +1,27 @@
 using System.Text.Json;
 using EtAlii.Adp.Specification.Cel;
+using EtAlii.Adp.Specification.Json;
 
 namespace EtAlii.Adp.Specification.Disl;
 
 /// <summary>
-/// A loaded DISL specification (DISL §3.1): a typed view over the JSON, inheritance flattened, and
-/// every expression compiled in its context. What this view does not type stays readable as JSON
-/// through <see cref="Root"/> and each part's <c>Json</c>, and every <c>x-</c> property is kept
-/// unread and unchanged (§2.8) in the <c>Extensions</c> of the object that holds it.
+/// A loaded DISL specification (DISL §3.1): a typed view over the JSON, inheritance flattened, every
+/// expression compiled in its context, and the parts the derivation and the behaviour read typed at
+/// load. What this view does not type stays readable as JSON through <see cref="Json"/> and each
+/// part's <c>Json</c>, and every <c>x-</c> property is kept unread and unchanged (§2.8) in the
+/// <c>Extensions</c> of the object that holds it.
 /// </summary>
 /// <remarks>Made by <see cref="DislLoader"/>, which refuses a specification with errors rather than giving a view of it.</remarks>
 public sealed class DislSpecification
 {
     private readonly CelEnvironment _functions;
-    private readonly Dictionary<string, DislExpression> _expressions;
+    private readonly Dictionary<string, DislExpression> _expressions = new(StringComparer.Ordinal);
+
+    /// <summary>The positions the loader walked, compiled or not, while the parts are read; null once they are.</summary>
+    private readonly IReadOnlySet<string>? _walked;
+
+    /// <summary>Where a part read while loading reports what it cannot read; null once the parts are read.</summary>
+    private readonly List<LoadDiagnostic>? _diagnostics;
 
     internal DislSpecification(
         JsonElement root,
@@ -21,54 +29,80 @@ public sealed class DislSpecification
         IReadOnlyList<DislFunctionDeclaration> functions,
         CelEnvironment environment,
         CelProgramCache<DislProgramKey> programs,
-        IReadOnlyList<DislExpression> expressions)
+        IReadOnlyList<DislExpression> expressions,
+        IReadOnlySet<string> walked,
+        List<LoadDiagnostic> diagnostics)
     {
-        Root = root;
+        Json = root;
         Metamodel = metamodel;
         Functions = functions;
         _functions = environment;
         Programs = programs;
         Expressions = expressions;
-        _expressions = expressions.ToDictionary(expression => expression.Pointer, StringComparer.Ordinal);
-        var ids = root.TryGetProperty("persistence", out var persistence) && persistence.ValueKind == JsonValueKind.Object && persistence.TryGetProperty("ids", out var declared)
+        foreach (var expression in expressions) _expressions.TryAdd(expression.Pointer, expression);
+        _walked = walked;
+        _diagnostics = diagnostics;
+
+        Disl = DislJson.String(root, "disl") ?? DislJson.String(root, "dedl") ?? "";
+        var language = root.GetProperty("language");
+        LanguageId = DislJson.String(language, "id") ?? "";
+        Origin = DislJson.String(language, "origin") ?? DislJson.String(language, "x-adp-origin");
+        Extensions = DislJson.Extensions(root);
+
+        var persistence = root.TryGetProperty("persistence", out var declaredPersistence) ? declaredPersistence : default;
+        PersistenceNotAnObject = persistence.ValueKind == JsonValueKind.Undefined ? null : DislFieldReader.NotAnObject(persistence);
+        var ids = persistence.ValueKind == JsonValueKind.Object && persistence.TryGetProperty("ids", out var declared)
             ? declared
             : default;
         Ids = IdRuleOf(ids);
-        IdTypes = DislJson.Members(ids, "types").ToDictionary(type => type.Name, type => IdRuleOf(type.Value), StringComparer.Ordinal);
-        IdPrefixes = ids.ValueKind == JsonValueKind.Object && ids.TryGetProperty("prefix", out var prefix) && prefix.ValueKind == JsonValueKind.Object
-            ? prefix.EnumerateObject().Where(type => type.Value.ValueKind == JsonValueKind.String).ToDictionary(type => type.Name, type => type.Value.GetString()!, StringComparer.Ordinal)
-            : new Dictionary<string, string>(StringComparer.Ordinal);
+        IdEncoding = ids.ValueKind == JsonValueKind.Object ? DislJson.String(ids, "encoding") ?? "hex" : "hex";
+        IdTypeNames = [.. DislJson.Members(ids, "types").Select(type => type.Name)];
+        foreach (var type in DislJson.Members(ids, "types")) IdTypes[type.Name] = IdRuleOf(type.Value);
+        if (ids.ValueKind == JsonValueKind.Object && ids.TryGetProperty("prefix", out var prefix) && prefix.ValueKind == JsonValueKind.Object)
+        {
+            foreach (var type in prefix.EnumerateObject().Where(type => type.Value.ValueKind == JsonValueKind.String)) IdPrefixes[type.Name] = type.Value.GetString()!;
+        }
         IdComparer = DislJson.String(ids, "compare") == "ignore-case" ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
+        TypeMap = DislTypeMap.Read(persistence);
+
         Operations = DislOperationReader.Read(this, root);
         Toolbox = DislToolboxReader.Read(this, root);
         Forms = DislFormReader.Read(this, root);
+        Constraints = DislConstraintReader.Read(this, root);
+        Behavior = DislBehaviorReader.Read(this, root);
+        Notation = DislNotationReader.Read(this, root);
+        Viewpoints = DislNotationReader.Viewpoints(this, root);
+
+        _walked = null;
+        _diagnostics = null;
     }
 
-    /// <summary>The specification's JSON, as it was read.</summary>
-    public JsonElement Root { get; }
+    /// <summary>
+    /// The specification's JSON, as it was read, for what this view does not type: a module's own readings. DISL's
+    /// derivation and behaviour read the parts typed at load, never this.
+    /// </summary>
+    public JsonElement Json { get; }
 
     /// <summary>The DISL version it targets (§2.9): <c>0.1</c>, <c>0.2</c> or <c>0.3</c>.</summary>
-    public string Disl => DislJson.String(Root, "disl") ?? DislJson.String(Root, "dedl") ?? "";
+    public string Disl { get; }
 
-    public string LanguageId => DislJson.String(Language, "id") ?? "";
+    public string LanguageId { get; }
 
     /// <summary>
     /// The tool type the specification is the definition of, as <c>&lt;vendor&gt;/&lt;type&gt;</c>
     /// (<c>language.origin</c>, §3.2), else the extension property it supersedes, <c>x-adp-origin</c>;
     /// null when it declares neither.
     /// </summary>
-    public string? Origin => DislJson.String(Language, "origin") ?? DislJson.String(Language, "x-adp-origin");
-
-    private JsonElement Language => Root.GetProperty("language");
+    public string? Origin { get; }
 
     /// <summary>The top-level <c>x-</c> properties, unread and unchanged.</summary>
-    public IReadOnlyDictionary<string, JsonElement> Extensions => DislJson.Extensions(Root);
+    public IReadOnlyDictionary<string, JsonElement> Extensions { get; }
 
     /// <summary>The metamodel (§4), inheritance flattened.</summary>
     public DislMetamodel Metamodel { get; }
 
     /// <summary>The user functions (§3.4), in declaration order.</summary>
-    public IReadOnlyList<DislFunctionDeclaration> Functions { get; }
+    internal IReadOnlyList<DislFunctionDeclaration> Functions { get; }
 
     /// <summary>Every compiled expression outside the functions, in document order.</summary>
     public IReadOnlyList<DislExpression> Expressions { get; }
@@ -77,10 +111,22 @@ public sealed class DislSpecification
     private DislIdRule Ids { get; }
 
     /// <summary>The per-type id rules (§11.5.2), by type name.</summary>
-    private IReadOnlyDictionary<string, DislIdRule> IdTypes { get; }
+    private Dictionary<string, DislIdRule> IdTypes { get; } = new(StringComparer.Ordinal);
 
     /// <summary>The top level's <c>prefix</c> when it is a map (§11.5), by type name.</summary>
-    private IReadOnlyDictionary<string, string> IdPrefixes { get; }
+    private Dictionary<string, string> IdPrefixes { get; } = new(StringComparer.Ordinal);
+
+    /// <summary>The type names of the per-type id rules (§11.5.2), in declaration order.</summary>
+    internal IReadOnlyList<string> IdTypeNames { get; }
+
+    /// <summary>The top-level id strategy (§11.5.1), <c>uuid-v7</c> when none is declared.</summary>
+    internal string IdStrategy => Ids.Strategy;
+
+    /// <summary>The <c>encoding</c> of the ids a runtime mints (§11.5.1), <c>hex</c> when none is declared.</summary>
+    internal string IdEncoding { get; }
+
+    /// <summary>The message System.Text.Json threw reading a member of a <c>persistence</c> that is not an object, null for one that is.</summary>
+    internal string? PersistenceNotAnObject { get; }
 
     /// <summary>
     /// How the model's ids compare (§11.5.4, <c>persistence.ids.compare</c>) for lookups, references and
@@ -94,6 +140,9 @@ public sealed class DislSpecification
     /// <summary>The per-evaluation cost limit (§2.5): <c>language.limits.celCost</c>, one million by default.</summary>
     public long CostLimit => _functions.Budget;
 
+    /// <summary>The <c>persistence.typeMap</c> (DISL 0.3), or the identity mapping, read at load.</summary>
+    internal DislTypeMap TypeMap { get; }
+
     /// <summary>The operations (§9.3) and the edit gate (§9.1), typed at load.</summary>
     internal DislOperations Operations { get; }
 
@@ -103,12 +152,40 @@ public sealed class DislSpecification
     /// <summary>The forms (§7.5), typed at load.</summary>
     internal DislForms Forms { get; }
 
+    /// <summary>The constraints (§8): the rules, their defaults and order, and the built-ins' settings, typed at load.</summary>
+    internal DislConstraints Constraints { get; }
+
+    /// <summary>The hooks, the messages and reasons, and the deletion and retype policies (§9), typed at load.</summary>
+    internal DislBehavior Behavior { get; }
+
+    /// <summary>What the derivation reads of the notation (§6), typed at load.</summary>
+    internal DislNotation Notation { get; }
+
+    /// <summary>The viewpoints (§3.5), typed at load.</summary>
+    internal DislViewpoints Viewpoints { get; }
+
     /// <summary>The compiled expression at <paramref name="pointer"/>, or null when there is none.</summary>
     public DislExpression? ExpressionAt(string pointer) => _expressions.GetValueOrDefault(pointer);
 
     /// <summary>
+    /// The program the loader compiled at <paramref name="pointer"/>, for a part read at load that reads the position as
+    /// an Expression whose CEL is <paramref name="source"/>. A position the loader did not walk has none, and is an error
+    /// at load (FR-079): the runtime evaluates only what the loader compiled.
+    /// </summary>
+    internal CelProgram? CompiledAt(string pointer, string source)
+    {
+        var program = ExpressionAt(pointer)?.Program;
+        if (program is null && _walked is not null && !_walked.Contains(pointer))
+        {
+            _diagnostics?.Add(DislLoader.Error(pointer, $"'{source}' is read here as an expression, but the loader compiles none at this position (DISL §2.5, step 8 of §14.1)."));
+        }
+        return program;
+    }
+
+    /// <summary>
     /// Every program of this specification, by what decides it: those the loader compiled, which
-    /// <see cref="Expressions"/> holds by position, and those a runtime compiles on first use. They live as
+    /// <see cref="Expressions"/> holds by position, and those compiled outside the walk: a label's text, and an id rule
+    /// the model computes on first use. They live as
     /// long as the specification does.
     /// </summary>
     internal CelProgramCache<DislProgramKey> Programs { get; }
@@ -125,7 +202,7 @@ public sealed class DislSpecification
     /// linearisation, or the top-level one; with the prefix it gives the type (§11.5): the rule's own,
     /// else the top level's for the nearest type in the linearisation that the map names.
     /// </summary>
-    public DislIdRule IdRuleOf(string type)
+    internal DislIdRule IdRuleOf(string type)
     {
         var linearisation = Metamodel.TypeOf(type)?.Linearisation ?? [type];
         var rule = linearisation.Select(candidate => IdTypes.GetValueOrDefault(candidate)).FirstOrDefault(found => found is not null) ?? Ids;
@@ -133,18 +210,6 @@ public sealed class DislSpecification
         var prefix = linearisation.Select(candidate => IdPrefixes.GetValueOrDefault(candidate)).FirstOrDefault(found => found is not null) ?? Ids.Prefix;
         return prefix is null ? rule : rule with { Prefix = prefix };
     }
-
-    /// <summary>The setting of the built-in <paramref name="id"/> in <c>constraints.builtIn</c> (§8.1); the default value when it has none.</summary>
-    internal JsonElement BuiltInSetting(string id)
-    {
-        if (!Root.TryGetProperty("constraints", out var constraints) || constraints.ValueKind != JsonValueKind.Object) return default;
-        if (!constraints.TryGetProperty("builtIn", out var all) || all.ValueKind != JsonValueKind.Object) return default;
-        return all.TryGetProperty(id, out var own) ? own : default;
-    }
-
-    /// <summary>Whether the built-in <paramref name="id"/> is reported (§8.1): unless its setting's <c>enabled</c> is <c>false</c>.</summary>
-    internal bool IsBuiltInEnabled(string id) =>
-        BuiltInSetting(id) is not { ValueKind: JsonValueKind.Object } setting || !setting.TryGetProperty("enabled", out var enabled) || enabled.ValueKind != JsonValueKind.False;
 
     /// <summary>A rule as declared; its prefix only when it is one string, which a map (top level only) is not.</summary>
     private static DislIdRule IdRuleOf(JsonElement json) =>

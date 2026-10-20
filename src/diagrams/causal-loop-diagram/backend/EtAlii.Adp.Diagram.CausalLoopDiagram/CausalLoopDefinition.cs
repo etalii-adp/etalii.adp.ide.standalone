@@ -210,7 +210,7 @@ internal static class CausalLoopDefinition
 
     /// <summary>The declared type of the parameter <paramref name="name"/> of <paramref name="operation"/>; null for none.</summary>
     private static string? ParameterType(string operation, string name) =>
-        Specification.Root.TryGetProperty("behavior", out var behavior)
+        Specification.Json.TryGetProperty("behavior", out var behavior)
         && behavior.TryGetProperty("operations", out var operations)
         && operations.TryGetProperty(operation, out var declared)
         && declared.TryGetProperty("params", out var parameters)

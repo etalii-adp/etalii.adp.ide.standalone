@@ -16,10 +16,11 @@ internal sealed class DislTypeMap(IReadOnlyDictionary<string, DislTypeMapping> m
 {
     private static readonly IReadOnlyDictionary<string, string> NoRenames = new Dictionary<string, string>();
 
-    public static DislTypeMap Of(DislSpecification specification)
+    /// <summary>The type map of <paramref name="persistence"/>, the specification's <c>persistence</c>; read once, at load.</summary>
+    public static DislTypeMap Read(JsonElement persistence)
     {
         var mappings = new Dictionary<string, DislTypeMapping>(StringComparer.Ordinal);
-        if (specification.Root.TryGetProperty("persistence", out var persistence) && persistence.TryGetProperty("typeMap", out var map) && map.ValueKind == JsonValueKind.Object)
+        if (persistence.ValueKind == JsonValueKind.Object && persistence.TryGetProperty("typeMap", out var map) && map.ValueKind == JsonValueKind.Object)
         {
             foreach (var entry in map.EnumerateObject())
             {

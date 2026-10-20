@@ -23,8 +23,7 @@ namespace EtAlii.Adp.Specification.Disl;
 /// </para>
 /// <para>
 /// <b>It runs the actions as they were typed at load</b> (<see cref="DislActionReader"/>): each value position holds
-/// the program the loader compiled for it, and a position the loader did not compile is compiled on first use in the
-/// runner's context, as <see cref="DislEvaluation"/> does.
+/// the program the loader compiled for it; a position the loader did not compile is refused at load.
 /// </para>
 /// <para>
 /// <b>A <c>reparent</c> is applied like the others</b>: the node moves, with everything beneath it,
@@ -32,7 +31,7 @@ namespace EtAlii.Adp.Specification.Disl;
 /// records that place as an index among the new parent's children counted before the move.
 /// </para>
 /// </remarks>
-internal sealed class ActionRunner(DislSpecification specification, DislDiagram diagram, IIdSource ids, DislContext context)
+internal sealed class ActionRunner(DislSpecification specification, DislDiagram diagram, IIdSource ids)
 {
     private readonly List<DislChange> _changes = [];
     private readonly List<HostAction> _host = [];
@@ -57,7 +56,7 @@ internal sealed class ActionRunner(DislSpecification specification, DislDiagram 
         foreach (var action in actions.Actions)
         {
             if (action is DislAction.NotAnObject) return Refuse($"The action at {action.At} is not an object.");
-            if (action.When is { } when && !when.Holds(specification, context, variables)) continue;
+            if (action.When is { } when && !when.Holds(variables)) continue;
             if (!Action(action, variables)) return false;
         }
         return true;
@@ -145,7 +144,7 @@ internal sealed class ActionRunner(DislSpecification specification, DislDiagram 
                 }
                 return true;
             case DislAction.If condition:
-                return condition.Condition.Holds(specification, context, variables)
+                return condition.Condition.Holds(variables)
                     ? Run(condition.Then, variables)
                     : Run(condition.Else, variables);
             case DislAction.ForEach forEach:
@@ -357,7 +356,7 @@ internal sealed class ActionRunner(DislSpecification specification, DislDiagram 
 
     private bool Value(DislActionValue declared, Dictionary<string, object?> variables, out object? value)
     {
-        value = declared.Evaluate(specification, context, variables);
+        value = declared.Evaluate(variables);
         return value is not CelError error || Refuse($"{declared.Pointer}: {error.Message}");
     }
 

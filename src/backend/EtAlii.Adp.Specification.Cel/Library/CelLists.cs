@@ -7,7 +7,7 @@ namespace EtAlii.Adp.Specification.Cel;
 /// empty list. Both sorts are stable and order strings by code point (DISL §12.1);
 /// <c>reverse()</c> and <c>join()</c> are shared with strings.
 /// </summary>
-public static class CelLists
+internal static class CelLists
 {
     public static void Register(CelEnvironment environment)
     {

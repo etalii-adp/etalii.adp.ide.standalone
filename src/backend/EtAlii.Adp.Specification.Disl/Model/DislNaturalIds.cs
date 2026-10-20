@@ -31,7 +31,7 @@ public static class DislNaturalIds
     public static Func<IdRequest, string?> Of(DislSpecification specification)
     {
         ArgumentNullException.ThrowIfNull(specification);
-        var map = DislTypeMap.Of(specification);
+        var map = specification.TypeMap;
         return request =>
         {
             ArgumentNullException.ThrowIfNull(request);

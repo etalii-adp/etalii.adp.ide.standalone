@@ -1,5 +1,3 @@
-using System.Text.Json;
-
 namespace EtAlii.Adp.Specification.Disl;
 
 /// <summary>
@@ -76,31 +74,29 @@ public static class HookRunner
         DislEnv? env,
         string source)
     {
-        var runner = new ActionRunner(specification, self.Diagram, ids, DislContext.Hook);
+        var runner = new ActionRunner(specification, self.Diagram, ids);
         var ran = new HashSet<(string Hook, DislElement Element)>();
-        var budget = MaxDepth(specification);
+        var budget = specification.Behavior.HookDepth();
         Ran(self, old, kind, attributes);
         return runner.Transaction;
 
         bool Ran(DislElement element, DislElement? before, string happened, IReadOnlyCollection<string> changed)
         {
-            foreach ((JsonElement hook, string pointer) in Hooks(specification, element, happened, changed))
+            foreach (var hook in Hooks(specification, element, happened, changed))
             {
-                var id = DislJson.String(hook, "id") ?? pointer;
-                if (!ran.Add((id, element))) continue;
+                if (!ran.Add((hook.Id, element))) continue;
                 if (--budget < 0) return runner.Refuse("The change set off more hooks than behavior.maxHookDepth allows.");
 
                 var variables = OperationInterpreter.Variables(DislContext.Hook, element.Diagram, env);
                 variables["self"] = element;
                 variables["old"] = before;
                 variables["event"] = Event(element, before, happened, changed, source);
-                if (hook.TryGetProperty("when", out var when) && !DislEvaluation.Holds(specification, when, DislJson.Pointer(pointer, "when"), DislContext.Hook, variables)) continue;
+                if (hook.When is { } when && !when.Holds(variables)) continue;
 
                 var first = runner.Changes.Count;
                 var snapshots = new Dictionary<DislElement, DislElement>(ReferenceEqualityComparer.Instance);
                 runner.Before = snapshots;
-                // Until the hooks are typed at load, a hook's actions are typed as it runs.
-                if (hook.TryGetProperty("actions", out var actions) && !runner.Run(DislActionReader.List(specification, actions, DislJson.Pointer(pointer, "actions")), variables)) return false;
+                if (hook.Actions is { } actions && !runner.Run(actions, variables)) return false;
                 runner.Before = null;
 
                 foreach (var set in runner.Changes.Skip(first).OfType<DislChange.Set>().ToList())
@@ -130,28 +126,22 @@ public static class HookRunner
         element.Store(attribute, value);
     }
 
-    private static IEnumerable<(JsonElement Hook, string Pointer)> Hooks(DislSpecification specification, DislElement element, string kind, IReadOnlyCollection<string> changed)
+    private static IEnumerable<DislHook> Hooks(DislSpecification specification, DislElement element, string kind, IReadOnlyCollection<string> changed)
     {
-        if (!specification.Root.TryGetProperty("behavior", out var behavior) || !behavior.TryGetProperty("hooks", out var hooks) || hooks.ValueKind != JsonValueKind.Array)
-        {
-            return [];
-        }
-        var declared = new List<(JsonElement Hook, string Pointer, long Order, int Index)>();
+        var declared = new List<(DislHook Hook, int Index)>();
         var index = 0;
-        foreach (var hook in hooks.EnumerateArray())
+        foreach (var hook in specification.Behavior.Hooks)
         {
-            var pointer = DislJson.Pointer("/behavior/hooks", index);
             var position = index++;
-            if (!DislJson.Strings(hook, "on").Contains(kind)) continue;
-            if ((DislJson.String(hook, "phase") ?? "after") != "after") continue;
-            var types = DislJson.Strings(hook, "for");
-            if (types.Count > 0 && !types.Any(element.IsA)) continue;
-            var watched = DislJson.Strings(hook, "attribute");
-            if (kind == "change" && watched.Count > 0 && !watched.Any(changed.Contains)) continue;
-            var order = hook.TryGetProperty("order", out var declaredOrder) && declaredOrder.TryGetInt64(out var value) ? value : 0;
-            declared.Add((hook, pointer, order, position));
+            if (!hook.On.Contains(kind)) continue;
+            if (hook.Phase != "after") continue;
+            if (hook.For.Count > 0 && !hook.For.Any(element.IsA)) continue;
+            if (kind == "change" && hook.Attribute.Count > 0 && !hook.Attribute.Any(changed.Contains)) continue;
+            // An order that is not a number threw here when it was read from the JSON at run time, and still does.
+            if (hook.OrderMalformed is { } malformed) throw new InvalidOperationException(malformed);
+            declared.Add((hook, position));
         }
-        return declared.OrderBy(hook => hook.Order).ThenBy(hook => hook.Index).Select(hook => (hook.Hook, hook.Pointer));
+        return declared.OrderBy(hook => hook.Hook.Order).ThenBy(hook => hook.Index).Select(hook => hook.Hook);
     }
 
     private static Cel.CelMap Event(DislElement element, DislElement? before, string kind, IReadOnlyCollection<string> changed, string source)
@@ -166,9 +156,4 @@ public static class HookRunner
             ["source"] = source,
         };
     }
-
-    private static int MaxDepth(DislSpecification specification) =>
-        specification.Root.TryGetProperty("behavior", out var behavior) && behavior.TryGetProperty("maxHookDepth", out var depth) && depth.TryGetInt32(out var value)
-            ? value
-            : 100;
 }

@@ -11,7 +11,7 @@ namespace EtAlii.Adp.Specification.Fbl.Routing;
 /// of a yaml or json body, a prefix of the first line after a byte-order mark, or an expression one
 /// of the first lines matches.
 /// </summary>
-public static class MarkerEvaluator
+internal static class MarkerEvaluator
 {
     /// <summary>The number of lines a pattern marker looks at when it names none (FBL §12.2).</summary>
     private const int DefaultLines = 20;

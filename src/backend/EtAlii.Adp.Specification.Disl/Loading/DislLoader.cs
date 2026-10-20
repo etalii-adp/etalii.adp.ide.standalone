@@ -121,7 +121,7 @@ public static class DislLoader
 
         // Steps 5 and 6: the metamodel, names resolved and inheritance flattened (§4.7), and the other references.
         var metamodel = DislInheritance.Build(metamodelJson, diagnostics);
-        DislNames.Resolve(root, metamodel, diagnostics);
+        var resolvedAt = diagnostics.Count;
 
         // Step 8: the plugins' functions, the user functions in declaration order, then every expression in its context.
         var functions = Functions(root, diagnostics);
@@ -131,11 +131,20 @@ public static class DislLoader
         PluginFunctions.Register(environment, root, plugins, diagnostics);
         UserFunctions.Compile(environment, functions, diagnostics);
         var programs = DislPrograms.Over(environment);
-        var expressions = Compile(root, programs, diagnostics);
+        var walked = new HashSet<string>(StringComparer.Ordinal);
+        var expressions = Compile(root, programs, walked, diagnostics);
+
+        // The parts the derivation and the behaviour read, typed over the compiled expressions; a position one reads as
+        // an Expression where none was walked is an error (FR-079). The other references are resolved over them, and
+        // reported where step 5 reports them, before step 8's.
+        var specification = new DislSpecification(root, metamodel, functions, environment, programs, expressions, walked, diagnostics);
+        var names = new List<LoadDiagnostic>();
+        DislNames.Resolve(specification, names);
+        diagnostics.InsertRange(resolvedAt, names);
 
         return diagnostics.Any(diagnostic => diagnostic.Severity == LoadSeverity.Error)
             ? new DislLoadResult(null, diagnostics)
-            : new DislLoadResult(new DislSpecification(root, metamodel, functions, environment, programs, expressions), diagnostics);
+            : new DislLoadResult(specification, diagnostics);
     }
 
     internal static LoadDiagnostic Error(string pointer, string message) => new(pointer, LoadSeverity.Error, message);
@@ -202,13 +211,15 @@ public static class DislLoader
 
     /// <summary>
     /// Compiles every expression the walker finds into <paramref name="programs"/>, each in its context
-    /// with the names bound around it, and gives each position the program it compiled to.
+    /// with the names bound around it, and gives each position the program it compiled to; every position
+    /// walked, compiled or not, goes into <paramref name="walked"/>.
     /// </summary>
-    private static List<DislExpression> Compile(JsonElement root, CelProgramCache<DislProgramKey> programs, List<LoadDiagnostic> diagnostics)
+    private static List<DislExpression> Compile(JsonElement root, CelProgramCache<DislProgramKey> programs, HashSet<string> walked, List<LoadDiagnostic> diagnostics)
     {
         var expressions = new List<DislExpression>();
         foreach (var site in DislExpressionWalker.Sites(root))
         {
+            walked.Add(site.Pointer);
             var context = site.Context;
             if (context is null)
             {

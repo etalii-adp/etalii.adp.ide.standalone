@@ -89,7 +89,7 @@ public static class DislDrop
 
             return target is { Kind: "operation", Operation: { } operation } && OperationInterpreter.Refusal(specification, operation, diagram, dropTarget, env) is { } reason
                 ? new DislDropOutcome.Refused(reason)
-                : new DislDropOutcome.Target(target.Kind, target.Operation, dropTarget) { Arguments = Arguments(specification, target, diagram, dropTarget, env, position) };
+                : new DislDropOutcome.Target(target.Kind, target.Operation, dropTarget) { Arguments = Arguments(target, diagram, dropTarget, env, position) };
         }
 
         if (drop.Elsewhere != "refuse") return new DislDropOutcome.Elsewhere(drop.Elsewhere);
@@ -98,12 +98,11 @@ public static class DislDrop
         variables["dropTarget"] = dropTarget;
         variables["tool"] = toolId;
         variables["elementType"] = tool.Creates;
-        return new DislDropOutcome.Refused(drop.Refusal is null ? DefaultRefusal : DislReason.First(drop.Refusal, specification, DislContext.Create, variables) ?? DefaultRefusal);
+        return new DislDropOutcome.Refused(drop.Refusal is null ? DefaultRefusal : DislReason.First(drop.Refusal, specification, variables) ?? DefaultRefusal);
     }
 
     /// <summary>A matching target's <c>args</c>, evaluated in the element context where the drop lands.</summary>
     private static Dictionary<string, object?> Arguments(
-        DislSpecification specification,
         DislDropTarget target,
         DislDiagram diagram,
         DislElement? dropTarget,
@@ -120,7 +119,7 @@ public static class DislDrop
             ["env"] = (env ?? new DislEnv()).ToCel(),
             ["position"] = OperationInterpreter.Map(position),
         };
-        foreach ((string name, DislExpressionField value) in target.Arguments) arguments[name] = value.Evaluate(specification, DislContext.Element, variables);
+        foreach ((string name, DislExpressionField value) in target.Arguments) arguments[name] = value.Evaluate(variables);
 
         return arguments;
     }

@@ -78,7 +78,7 @@ internal static class GhgDisl
 
     /// <summary>The index of the constraint rule with <paramref name="id"/>.</summary>
     public static int RuleIndex(string id) =>
-        Specification.Root.GetProperty("constraints").GetProperty("rules").EnumerateArray()
+        Specification.Json.GetProperty("constraints").GetProperty("rules").EnumerateArray()
             .Select((rule, index) => (rule, index))
             .Single(pair => pair.rule.GetProperty("id").GetString() == id).index;
 }

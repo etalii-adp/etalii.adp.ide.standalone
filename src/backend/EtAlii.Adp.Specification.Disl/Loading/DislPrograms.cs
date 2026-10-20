@@ -14,7 +14,8 @@ internal readonly record struct DislProgramKey(DislContext? Context, string Sour
 
 /// <summary>
 /// The programs of one specification, compiled once each: by the loader for every expression it walks,
-/// and on first use for those a runtime finds itself (an <c>x-</c> key, an id rule). The specification
+/// at load for a label's text, which its inline editor reads as an Expression (<see cref="DislNotationReader"/>), and on
+/// first use for an id rule the model computes (§11.5.2). The specification
 /// keeps the cache, so its programs live exactly as long as it does.
 /// </summary>
 internal static class DislPrograms

@@ -36,7 +36,7 @@ public sealed record DislEnum(string Name, IReadOnlyList<DislEnumValue> Values, 
 }
 
 /// <summary>One end of a relation type (DISL §4.9): the types it accepts, those it excludes, and whether it may be missing.</summary>
-public sealed record DislRelationEnd(IReadOnlyList<string> Types, IReadOnlyList<string> Exclude, bool Optional);
+internal sealed record DislRelationEnd(IReadOnlyList<string> Types, IReadOnlyList<string> Exclude, bool Optional);
 
 /// <summary>
 /// A node type (DISL §4.6) or a relation type (§4.9), inheritance flattened (§4.7): its C3
@@ -49,6 +49,9 @@ public sealed class DislType
         Name = name;
         IsRelation = isRelation;
         Json = json;
+        var derived = json.ValueKind == JsonValueKind.Object && json.TryGetProperty("derived", out var declared) && declared.ValueKind == JsonValueKind.Object ? declared : default;
+        ConnectEdit = derived.ValueKind == JsonValueKind.Object && derived.TryGetProperty("edits", out var edits) ? DislJson.String(edits, "connect") : null;
+        DerivedReason = DislJson.String(derived, "reason");
     }
 
     public string Name { get; }
@@ -77,13 +80,19 @@ public sealed class DislType
     public string? LabelAttribute { get; internal set; }
 
     /// <summary>A relation type's source end; null for a node type.</summary>
-    public DislRelationEnd? Source { get; internal set; }
+    internal DislRelationEnd? Source { get; set; }
 
     /// <summary>A relation type's target end; null for a node type.</summary>
-    public DislRelationEnd? Target { get; internal set; }
+    internal DislRelationEnd? Target { get; set; }
 
     /// <summary>The <c>derived</c> declaration (§4.11): an Expression (a relation's 0.1 form) or a DerivedNode or DerivedRelation object; null for a stored type.</summary>
     public JsonElement? Derived => Json.TryGetProperty("derived", out var derived) ? derived : null;
+
+    /// <summary>The operation a derived relation's <c>edits.connect</c> runs when one is drawn (§4.11), or null when it names none.</summary>
+    internal string? ConnectEdit { get; }
+
+    /// <summary>A derived type's <c>reason</c>, why it cannot be edited by hand (§4.11), or null when it states none.</summary>
+    internal string? DerivedReason { get; }
 
     /// <summary>The extension properties (<c>x-</c>) of the declaration, unread and unchanged.</summary>
     public IReadOnlyDictionary<string, JsonElement> Extensions => DislJson.Extensions(Json);
@@ -92,13 +101,13 @@ public sealed class DislType
 }
 
 /// <summary>One parameter of a user function (DISL §3.4).</summary>
-public sealed record DislParameter(string Name, string Type);
+internal sealed record DislParameter(string Name, string Type);
 
 /// <summary>A user function's bounded recursion (DISL §3.4): how deep it may call itself, and what a call deeper than that gives.</summary>
-public sealed record DislRecursion(int MaxDepth, string AtMaxDepth);
+internal sealed record DislRecursion(int MaxDepth, string AtMaxDepth);
 
 /// <summary>A user function as declared (DISL §3.4), in declaration order.</summary>
-public sealed record DislFunctionDeclaration(
+internal sealed record DislFunctionDeclaration(
     string Name,
     IReadOnlyList<DislParameter> Parameters,
     string Returns,
@@ -114,7 +123,7 @@ public sealed record DislFunctionDeclaration(
 /// map by type): the type's own rule's, else the top level's for the type or the nearest type in its
 /// linearisation; null when none is declared.
 /// </param>
-public sealed record DislIdRule(string Strategy, string? Expression, string? Prefix = null);
+internal sealed record DislIdRule(string Strategy, string? Expression, string? Prefix = null);
 
 /// <summary>A compiled expression of the specification: where it is, the context it was compiled in (§12.3; null where this runtime does not know it), and its program.</summary>
 public sealed record DislExpression(string Pointer, DislContext? Context, CelProgram Program);

@@ -113,7 +113,7 @@ public class DatabricksFindingsTests
         var today = Parity.DatabricksRuleSet.Judge(DatabricksModel.Read(LineDocument.Parse(text)))
             .Select(problem => $"line {((DiagramProblemLineLocation)problem.Location!).Number} | {problem.RuleId}")
             .ToList();
-        var root = JsonNode.Parse(BundledDefinition.Load(typeof(Diagram).Assembly, "databricks-job.dis").Specification.Root.GetRawText())!;
+        var root = JsonNode.Parse(BundledDefinition.Load(typeof(Diagram).Assembly, "databricks-job.dis").Specification.Json.GetRawText())!;
         var orders = Permutations(_jobCodes).Select(order => (IReadOnlyList<string>?)order).Append(null).ToList();
 
         // Act.

@@ -7,7 +7,7 @@ using System.Text;
 /// and their endings (CRLF, LF or a lone CR), and conversion from a byte offset to a 1-based line and a
 /// code-point column. Every offset is a UTF-8 byte offset into the whole file, the mark included.
 /// </summary>
-public sealed class BodyText
+internal sealed class BodyText
 {
     private static readonly UTF8Encoding _strict = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
@@ -161,4 +161,4 @@ public sealed class BodyText
 }
 
 /// <summary>One line: <see cref="Start"/> to <see cref="ContentEnd"/> is the line, up to <see cref="End"/> its ending.</summary>
-public readonly record struct TextLine(int Start, int ContentEnd, int End, string Ending);
+internal readonly record struct TextLine(int Start, int ContentEnd, int End, string Ending);

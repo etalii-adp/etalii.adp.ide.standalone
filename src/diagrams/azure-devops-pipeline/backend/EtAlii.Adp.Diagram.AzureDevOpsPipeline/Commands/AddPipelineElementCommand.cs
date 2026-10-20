@@ -79,7 +79,7 @@ internal sealed class AddPipelineElementCommandHandler(IPipelineDocumentStore do
     }
 
     /// <summary>The sentence the definition's <c>addStage</c> is unavailable with in a pipeline with no stage of its own.</summary>
-    private static string NoStages { get; } = PipelineDefinition.Specification.Root.GetProperty("behavior").GetProperty("operations")
+    private static string NoStages { get; } = PipelineDefinition.Specification.Json.GetProperty("behavior").GetProperty("operations")
         .GetProperty("addStage").GetProperty("unavailable")[0].GetProperty("message").GetString()!;
 
     /// <summary>The names a new element of <paramref name="kind"/> must not take: every stage's, or every job's of the pipeline.</summary>

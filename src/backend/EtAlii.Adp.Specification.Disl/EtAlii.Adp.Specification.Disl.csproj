@@ -9,6 +9,8 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="EtAlii.Adp.Specification.Disl.Tests" />
+    <!-- The module host reads the operations typed at load (spec 025, T224) rather than the specification's JSON. -->
+    <InternalsVisibleTo Include="EtAlii.Adp.Diagram.Modules" />
   </ItemGroup>
 
   <ItemGroup>

@@ -108,7 +108,7 @@ internal static class HelmDefinition
         return DislModelBuilder.From(reading, Specification);
     }
 
-    private static JsonElement Block(string name) => Specification.Root.GetProperty(name);
+    private static JsonElement Block(string name) => Specification.Json.GetProperty(name);
 
     /// <summary>
     /// A finding of the reading as the reader's finding of its code: its message is the reason, which is the

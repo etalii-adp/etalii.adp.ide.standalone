@@ -1,4 +1,3 @@
-using System.Text.Json;
 using EtAlii.Adp.Specification.Cel;
 
 namespace EtAlii.Adp.Specification.Disl;
@@ -62,16 +61,15 @@ public sealed class DislView : ICelObject
     private List<DislElement> Computed()
     {
         var specification = Diagram.Specification;
-        var declared = specification.Root.TryGetProperty("viewpoints", out var viewpoints) && viewpoints.ValueKind == JsonValueKind.Object;
-        if (!declared) return [.. Diagram.Elements];
-        if (!viewpoints.TryGetProperty(Viewpoint, out var viewpoint) || viewpoint.ValueKind != JsonValueKind.Object)
+        if (!specification.Viewpoints.Declared) return [.. Diagram.Elements];
+        if (specification.Viewpoints.Find(Viewpoint) is not { NotAnObject: null } viewpoint)
         {
             throw new CelException($"The view '{Id}' is of the viewpoint '{Viewpoint}', which this specification does not declare, and was given no members.");
         }
 
-        var include = DislJson.Strings(viewpoint, "include");
-        var exclude = DislJson.Strings(viewpoint, "exclude");
-        var members = specification.ExpressionAt(DislJson.Pointer(DislJson.Pointer("/viewpoints", Viewpoint), "members"));
+        var include = viewpoint.Include;
+        var exclude = viewpoint.Exclude;
+        var members = viewpoint.Members;
         var variables = new Dictionary<string, object?>
         {
             ["diagram"] = new DislViewDiagram(this),
