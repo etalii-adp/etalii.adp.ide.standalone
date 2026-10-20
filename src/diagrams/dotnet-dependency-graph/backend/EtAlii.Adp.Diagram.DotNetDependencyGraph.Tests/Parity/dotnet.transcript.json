@@ -16,6 +16,366 @@
   ],
   "solutions": [
     {
+      "solution": "diagrams/dotnet-dependency-graph/backend/EtAlii.Adp.Diagram.DotNetDependencyGraph.Tests/Fixtures/encoding/Encoding.slnx",
+      "sha256": "f90cba2625a883a23ad27b2d2a92b3708111101798e285a22e0dbd56ddf89e25",
+      "projects": [
+        "project:Utf16/Utf16.csproj | Utf16 | Utf16/Utf16.csproj | [net10.0] | \"10.0\""
+      ],
+      "packages": [
+        "package:Encoded.Package | Encoded.Package | [1.2.3] | conflict False | dependents 1 | ambient False | null"
+      ],
+      "references": [
+        "depends:project:Utf16/Utf16.csproj->package:Encoded.Package | Package | project:Utf16/Utf16.csproj -> package:Encoded.Package"
+      ],
+      "failures": [],
+      "payloads": [
+        "project:Utf16/Utf16.csproj | dotnet/dependency-graph+project | 0, 0 | DependencyElementPayload { \"name\": \"Utf16\", \"kind\": \"DEPENDENCY_ELEMENT_KIND_PROJECT\", \"projectRelativePath\": [ \"Utf16\", \"Utf16.csproj\" ], \"targetFrameworks\": [ \"net10.0\" ] }",
+        "package:Encoded.Package | dotnet/dependency-graph+package | 520, 0 | DependencyElementPayload { \"name\": \"Encoded.Package\", \"kind\": \"DEPENDENCY_ELEMENT_KIND_PACKAGE\", \"versions\": [ \"1.2.3\" ], \"dependentProjectCount\": 1 }",
+        "depends:project:Utf16/Utf16.csproj->package:Encoded.Package | dotnet/dependency-graph+edge | 0, 0 | DependencyElementPayload { \"name\": \"depends:project:Utf16/Utf16.csproj-\\u003epackage:Encoded.Package\", \"kind\": \"DEPENDENCY_ELEMENT_KIND_PACKAGE_REFERENCE\" }"
+      ],
+      "payloadsWithAStoredPosition": [
+        "project:Utf16/Utf16.csproj | dotnet/dependency-graph+project | 10.5, -20 | DependencyElementPayload { \"name\": \"Utf16\", \"kind\": \"DEPENDENCY_ELEMENT_KIND_PROJECT\", \"projectRelativePath\": [ \"Utf16\", \"Utf16.csproj\" ], \"targetFrameworks\": [ \"net10.0\" ] }"
+      ],
+      "rows": [
+        {
+          "target": "project:Utf16/Utf16.csproj",
+          "rows": [
+            "dotnet.name | Name | \"Utf16\" | Line | read-only (Defined in Utf16/Utf16.csproj; edit it in a text editor.) | group Identity",
+            "dotnet.path | Path | \"Utf16/Utf16.csproj\" | Line | read-only (Defined in Utf16/Utf16.csproj; edit it in a text editor.) | group Identity",
+            "dotnet.target-frameworks | Target framework | \"net10.0\" | Line | read-only (Defined in Utf16/Utf16.csproj; edit it in a text editor.) | group Build",
+            "dotnet.dotnet-version | .NET version | \"10.0\" | Line | read-only (Defined in Utf16/Utf16.csproj; edit it in a text editor.) | group Build"
+          ]
+        },
+        {
+          "target": "package:Encoded.Package",
+          "rows": [
+            "dotnet.package-id | Package | \"Encoded.Package\" | Line | read-only (Defined in the project files that reference it; edit it in a text editor.) | group Identity",
+            "dotnet.package-version | Version | \"1.2.3\" | Line | read-only (Defined in the project files that reference it; edit it in a text editor.) | group Identity",
+            "dotnet.package-description | Description | \"Not available - this package is not in the local NuGet cache\" | Line | read-only (Published by the package's author and read from the local NuGet cache; nothing in this workspace defines it.) | group About"
+          ]
+        },
+        {
+          "target": "depends:project:Utf16/Utf16.csproj->package:Encoded.Package",
+          "rows": []
+        },
+        {
+          "target": "",
+          "rows": []
+        },
+        {
+          "target": "parity:unknown",
+          "rows": []
+        }
+      ],
+      "rowsOfAnotherFile": "project:Utf16/Utf16.csproj of a .adp => 0 rows",
+      "write": "refused: A .NET dependency graph shows the solution as it is and changes nothing in it. Edit the project file this value comes from, and the diagram will follow.",
+      "session": [
+        "baseline => 3 elements added",
+        "reparent project:Utf16/Utf16.csproj => A .NET dependency graph is drawn from the solution's own files, so nothing on it can be moved from here. Change a reference in the project file, and the diagram will follow.",
+        "move project:Utf16/Utf16.csproj to (10, 20) => This diagram is read-only."
+      ]
+    },
+    {
+      "solution": "diagrams/dotnet-dependency-graph/backend/EtAlii.Adp.Diagram.DotNetDependencyGraph.Tests/Fixtures/headerless/Both.sln",
+      "sha256": "eee641dc1b63f1f1907fa4a3fd3ad1406527790338dc81b3d2bdea6e35518ed1",
+      "projects": [
+        "project:Classic/Classic.csproj | Classic | Classic/Classic.csproj | [net10.0] | \"10.0\""
+      ],
+      "packages": [],
+      "references": [],
+      "failures": [],
+      "payloads": [
+        "project:Classic/Classic.csproj | dotnet/dependency-graph+project | 0, 0 | DependencyElementPayload { \"name\": \"Classic\", \"kind\": \"DEPENDENCY_ELEMENT_KIND_PROJECT\", \"projectRelativePath\": [ \"Classic\", \"Classic.csproj\" ], \"targetFrameworks\": [ \"net10.0\" ] }"
+      ],
+      "payloadsWithAStoredPosition": [
+        "project:Classic/Classic.csproj | dotnet/dependency-graph+project | 10.5, -20 | DependencyElementPayload { \"name\": \"Classic\", \"kind\": \"DEPENDENCY_ELEMENT_KIND_PROJECT\", \"projectRelativePath\": [ \"Classic\", \"Classic.csproj\" ], \"targetFrameworks\": [ \"net10.0\" ] }"
+      ],
+      "rows": [
+        {
+          "target": "project:Classic/Classic.csproj",
+          "rows": [
+            "dotnet.name | Name | \"Classic\" | Line | read-only (Defined in Classic/Classic.csproj; edit it in a text editor.) | group Identity",
+            "dotnet.path | Path | \"Classic/Classic.csproj\" | Line | read-only (Defined in Classic/Classic.csproj; edit it in a text editor.) | group Identity",
+            "dotnet.target-frameworks | Target framework | \"net10.0\" | Line | read-only (Defined in Classic/Classic.csproj; edit it in a text editor.) | group Build",
+            "dotnet.dotnet-version | .NET version | \"10.0\" | Line | read-only (Defined in Classic/Classic.csproj; edit it in a text editor.) | group Build"
+          ]
+        },
+        {
+          "target": "",
+          "rows": []
+        },
+        {
+          "target": "parity:unknown",
+          "rows": []
+        }
+      ],
+      "rowsOfAnotherFile": "project:Classic/Classic.csproj of a .adp => 0 rows",
+      "write": "refused: A .NET dependency graph shows the solution as it is and changes nothing in it. Edit the project file this value comes from, and the diagram will follow.",
+      "session": [
+        "baseline => 1 elements added",
+        "reparent project:Classic/Classic.csproj => A .NET dependency graph is drawn from the solution's own files, so nothing on it can be moved from here. Change a reference in the project file, and the diagram will follow.",
+        "move project:Classic/Classic.csproj to (10, 20) => This diagram is read-only."
+      ]
+    },
+    {
+      "solution": "diagrams/dotnet-dependency-graph/backend/EtAlii.Adp.Diagram.DotNetDependencyGraph.Tests/Fixtures/headerless/Both.slnx",
+      "sha256": "715fe2d5ddf8edca31486ae6bf246e8a51abded0b9dafd4d0f36dc12bf416910",
+      "projects": [
+        "project:Xml/Xml.csproj | Xml | Xml/Xml.csproj | [net10.0] | \"10.0\""
+      ],
+      "packages": [],
+      "references": [],
+      "failures": [],
+      "payloads": [
+        "project:Xml/Xml.csproj | dotnet/dependency-graph+project | 0, 0 | DependencyElementPayload { \"name\": \"Xml\", \"kind\": \"DEPENDENCY_ELEMENT_KIND_PROJECT\", \"projectRelativePath\": [ \"Xml\", \"Xml.csproj\" ], \"targetFrameworks\": [ \"net10.0\" ] }"
+      ],
+      "payloadsWithAStoredPosition": [
+        "project:Xml/Xml.csproj | dotnet/dependency-graph+project | 10.5, -20 | DependencyElementPayload { \"name\": \"Xml\", \"kind\": \"DEPENDENCY_ELEMENT_KIND_PROJECT\", \"projectRelativePath\": [ \"Xml\", \"Xml.csproj\" ], \"targetFrameworks\": [ \"net10.0\" ] }"
+      ],
+      "rows": [
+        {
+          "target": "project:Xml/Xml.csproj",
+          "rows": [
+            "dotnet.name | Name | \"Xml\" | Line | read-only (Defined in Xml/Xml.csproj; edit it in a text editor.) | group Identity",
+            "dotnet.path | Path | \"Xml/Xml.csproj\" | Line | read-only (Defined in Xml/Xml.csproj; edit it in a text editor.) | group Identity",
+            "dotnet.target-frameworks | Target framework | \"net10.0\" | Line | read-only (Defined in Xml/Xml.csproj; edit it in a text editor.) | group Build",
+            "dotnet.dotnet-version | .NET version | \"10.0\" | Line | read-only (Defined in Xml/Xml.csproj; edit it in a text editor.) | group Build"
+          ]
+        },
+        {
+          "target": "",
+          "rows": []
+        },
+        {
+          "target": "parity:unknown",
+          "rows": []
+        }
+      ],
+      "rowsOfAnotherFile": "project:Xml/Xml.csproj of a .adp => 0 rows",
+      "write": "refused: A .NET dependency graph shows the solution as it is and changes nothing in it. Edit the project file this value comes from, and the diagram will follow.",
+      "session": [
+        "baseline => 1 elements added",
+        "reparent project:Xml/Xml.csproj => A .NET dependency graph is drawn from the solution's own files, so nothing on it can be moved from here. Change a reference in the project file, and the diagram will follow.",
+        "move project:Xml/Xml.csproj to (10, 20) => This diagram is read-only."
+      ]
+    },
+    {
+      "solution": "diagrams/dotnet-dependency-graph/backend/EtAlii.Adp.Diagram.DotNetDependencyGraph.Tests/Fixtures/namespace/Namespace.slnx",
+      "sha256": "f987a6fca3afc75f34190e54c4c75cc4b0105c1187891f3b2f38fae2afe52c23",
+      "projects": [
+        "project:Old/Old.csproj | Old | Old/Old.csproj | [] | null"
+      ],
+      "packages": [
+        "package:Namespaced.Package | Namespaced.Package | [2.0.0] | conflict False | dependents 1 | ambient False | null"
+      ],
+      "references": [
+        "depends:project:Old/Old.csproj->package:Namespaced.Package | Package | project:Old/Old.csproj -> package:Namespaced.Package"
+      ],
+      "failures": [],
+      "payloads": [
+        "project:Old/Old.csproj | dotnet/dependency-graph+project | 0, 0 | DependencyElementPayload { \"name\": \"Old\", \"kind\": \"DEPENDENCY_ELEMENT_KIND_PROJECT\", \"projectRelativePath\": [ \"Old\", \"Old.csproj\" ] }",
+        "package:Namespaced.Package | dotnet/dependency-graph+package | 520, 0 | DependencyElementPayload { \"name\": \"Namespaced.Package\", \"kind\": \"DEPENDENCY_ELEMENT_KIND_PACKAGE\", \"versions\": [ \"2.0.0\" ], \"dependentProjectCount\": 1 }",
+        "depends:project:Old/Old.csproj->package:Namespaced.Package | dotnet/dependency-graph+edge | 0, 0 | DependencyElementPayload { \"name\": \"depends:project:Old/Old.csproj-\\u003epackage:Namespaced.Package\", \"kind\": \"DEPENDENCY_ELEMENT_KIND_PACKAGE_REFERENCE\" }"
+      ],
+      "payloadsWithAStoredPosition": [
+        "project:Old/Old.csproj | dotnet/dependency-graph+project | 10.5, -20 | DependencyElementPayload { \"name\": \"Old\", \"kind\": \"DEPENDENCY_ELEMENT_KIND_PROJECT\", \"projectRelativePath\": [ \"Old\", \"Old.csproj\" ] }"
+      ],
+      "rows": [
+        {
+          "target": "project:Old/Old.csproj",
+          "rows": [
+            "dotnet.name | Name | \"Old\" | Line | read-only (Defined in Old/Old.csproj; edit it in a text editor.) | group Identity",
+            "dotnet.path | Path | \"Old/Old.csproj\" | Line | read-only (Defined in Old/Old.csproj; edit it in a text editor.) | group Identity",
+            "dotnet.target-frameworks | Target frameworks | \"Not discoverable\" | Line | read-only (Defined in Old/Old.csproj; edit it in a text editor.) | group Build",
+            "dotnet.dotnet-version | .NET version | \"Not discoverable\" | Line | read-only (Defined in Old/Old.csproj; edit it in a text editor.) | group Build"
+          ]
+        },
+        {
+          "target": "package:Namespaced.Package",
+          "rows": [
+            "dotnet.package-id | Package | \"Namespaced.Package\" | Line | read-only (Defined in the project files that reference it; edit it in a text editor.) | group Identity",
+            "dotnet.package-version | Version | \"2.0.0\" | Line | read-only (Defined in the project files that reference it; edit it in a text editor.) | group Identity",
+            "dotnet.package-description | Description | \"Not available - this package is not in the local NuGet cache\" | Line | read-only (Published by the package's author and read from the local NuGet cache; nothing in this workspace defines it.) | group About"
+          ]
+        },
+        {
+          "target": "depends:project:Old/Old.csproj->package:Namespaced.Package",
+          "rows": []
+        },
+        {
+          "target": "",
+          "rows": []
+        },
+        {
+          "target": "parity:unknown",
+          "rows": []
+        }
+      ],
+      "rowsOfAnotherFile": "project:Old/Old.csproj of a .adp => 0 rows",
+      "write": "refused: A .NET dependency graph shows the solution as it is and changes nothing in it. Edit the project file this value comes from, and the diagram will follow.",
+      "session": [
+        "baseline => 3 elements added",
+        "reparent project:Old/Old.csproj => A .NET dependency graph is drawn from the solution's own files, so nothing on it can be moved from here. Change a reference in the project file, and the diagram will follow.",
+        "move project:Old/Old.csproj to (10, 20) => This diagram is read-only."
+      ]
+    },
+    {
+      "solution": "diagrams/dotnet-dependency-graph/backend/EtAlii.Adp.Diagram.DotNetDependencyGraph.Tests/Fixtures/new-document/New.sln",
+      "sha256": "3c3218784f99806d32d3531be1bdea5b130f5c75458574775e15151459a1027b",
+      "projects": [],
+      "packages": [],
+      "references": [],
+      "failures": [],
+      "payloads": [],
+      "rows": [
+        {
+          "target": "",
+          "rows": []
+        },
+        {
+          "target": "parity:unknown",
+          "rows": []
+        }
+      ],
+      "rowsOfAnotherFile": " of a .adp => 0 rows",
+      "write": "refused: A .NET dependency graph shows the solution as it is and changes nothing in it. Edit the project file this value comes from, and the diagram will follow.",
+      "session": [
+        "baseline => 0 elements added",
+        "reparent parity:unknown => A .NET dependency graph is drawn from the solution's own files, so nothing on it can be moved from here. Change a reference in the project file, and the diagram will follow.",
+        "move parity:unknown to (10, 20) => This diagram is read-only."
+      ]
+    },
+    {
+      "solution": "diagrams/dotnet-dependency-graph/backend/EtAlii.Adp.Diagram.DotNetDependencyGraph.Tests/Fixtures/outside/app/Outside.slnx",
+      "sha256": "3ca6ba4e5101d952c99b8e51b0d726f268e41c47670d7ec57fe04491076a8f08",
+      "projects": [
+        "project:Local/Local.csproj | Local | Local/Local.csproj | [net10.0] | \"10.0\"",
+        "project:../lib/Lib/Lib.csproj | Lib | ../lib/Lib/Lib.csproj | [net10.0] | \"10.0\""
+      ],
+      "packages": [
+        "package:Outside.Versioned | Outside.Versioned | [3.1.4] | conflict False | dependents 1 | ambient False | null"
+      ],
+      "references": [
+        "depends:project:Local/Local.csproj->project:../lib/Lib/Lib.csproj | Project | project:Local/Local.csproj -> project:../lib/Lib/Lib.csproj",
+        "depends:project:../lib/Lib/Lib.csproj->package:Outside.Versioned | Package | project:../lib/Lib/Lib.csproj -> package:Outside.Versioned"
+      ],
+      "failures": [],
+      "payloads": [
+        "project:Local/Local.csproj | dotnet/dependency-graph+project | 320, 0 | DependencyElementPayload { \"name\": \"Local\", \"kind\": \"DEPENDENCY_ELEMENT_KIND_PROJECT\", \"projectRelativePath\": [ \"Local\", \"Local.csproj\" ], \"targetFrameworks\": [ \"net10.0\" ] }",
+        "project:../lib/Lib/Lib.csproj | dotnet/dependency-graph+project | 0, 0 | DependencyElementPayload { \"name\": \"Lib\", \"kind\": \"DEPENDENCY_ELEMENT_KIND_PROJECT\", \"projectRelativePath\": [ \"..\", \"lib\", \"Lib\", \"Lib.csproj\" ], \"targetFrameworks\": [ \"net10.0\" ] }",
+        "package:Outside.Versioned | dotnet/dependency-graph+package | 840, 0 | DependencyElementPayload { \"name\": \"Outside.Versioned\", \"kind\": \"DEPENDENCY_ELEMENT_KIND_PACKAGE\", \"versions\": [ \"3.1.4\" ], \"dependentProjectCount\": 1 }",
+        "depends:project:Local/Local.csproj->project:../lib/Lib/Lib.csproj | dotnet/dependency-graph+edge | 0, 0 | DependencyElementPayload { \"name\": \"depends:project:Local/Local.csproj-\\u003eproject:../lib/Lib/Lib.csproj\", \"kind\": \"DEPENDENCY_ELEMENT_KIND_PROJECT_REFERENCE\" }",
+        "depends:project:../lib/Lib/Lib.csproj->package:Outside.Versioned | dotnet/dependency-graph+edge | 0, 0 | DependencyElementPayload { \"name\": \"depends:project:../lib/Lib/Lib.csproj-\\u003epackage:Outside.Versioned\", \"kind\": \"DEPENDENCY_ELEMENT_KIND_PACKAGE_REFERENCE\" }"
+      ],
+      "payloadsWithAStoredPosition": [
+        "project:Local/Local.csproj | dotnet/dependency-graph+project | 10.5, -20 | DependencyElementPayload { \"name\": \"Local\", \"kind\": \"DEPENDENCY_ELEMENT_KIND_PROJECT\", \"projectRelativePath\": [ \"Local\", \"Local.csproj\" ], \"targetFrameworks\": [ \"net10.0\" ] }"
+      ],
+      "rows": [
+        {
+          "target": "project:Local/Local.csproj",
+          "rows": [
+            "dotnet.name | Name | \"Local\" | Line | read-only (Defined in Local/Local.csproj; edit it in a text editor.) | group Identity",
+            "dotnet.path | Path | \"Local/Local.csproj\" | Line | read-only (Defined in Local/Local.csproj; edit it in a text editor.) | group Identity",
+            "dotnet.target-frameworks | Target framework | \"net10.0\" | Line | read-only (Defined in Local/Local.csproj; edit it in a text editor.) | group Build",
+            "dotnet.dotnet-version | .NET version | \"10.0\" | Line | read-only (Defined in Local/Local.csproj; edit it in a text editor.) | group Build"
+          ]
+        },
+        {
+          "target": "project:../lib/Lib/Lib.csproj",
+          "rows": [
+            "dotnet.name | Name | \"Lib\" | Line | read-only (Defined in ../lib/Lib/Lib.csproj; edit it in a text editor.) | group Identity",
+            "dotnet.path | Path | \"../lib/Lib/Lib.csproj\" | Line | read-only (Defined in ../lib/Lib/Lib.csproj; edit it in a text editor.) | group Identity",
+            "dotnet.target-frameworks | Target framework | \"net10.0\" | Line | read-only (Defined in ../lib/Lib/Lib.csproj; edit it in a text editor.) | group Build",
+            "dotnet.dotnet-version | .NET version | \"10.0\" | Line | read-only (Defined in ../lib/Lib/Lib.csproj; edit it in a text editor.) | group Build"
+          ]
+        },
+        {
+          "target": "package:Outside.Versioned",
+          "rows": [
+            "dotnet.package-id | Package | \"Outside.Versioned\" | Line | read-only (Defined in the project files that reference it; edit it in a text editor.) | group Identity",
+            "dotnet.package-version | Version | \"3.1.4\" | Line | read-only (Defined in the project files that reference it; edit it in a text editor.) | group Identity",
+            "dotnet.package-description | Description | \"Not available - this package is not in the local NuGet cache\" | Line | read-only (Published by the package's author and read from the local NuGet cache; nothing in this workspace defines it.) | group About"
+          ]
+        },
+        {
+          "target": "depends:project:Local/Local.csproj->project:../lib/Lib/Lib.csproj",
+          "rows": []
+        },
+        {
+          "target": "depends:project:../lib/Lib/Lib.csproj->package:Outside.Versioned",
+          "rows": []
+        },
+        {
+          "target": "",
+          "rows": []
+        },
+        {
+          "target": "parity:unknown",
+          "rows": []
+        }
+      ],
+      "rowsOfAnotherFile": "project:Local/Local.csproj of a .adp => 0 rows",
+      "write": "refused: A .NET dependency graph shows the solution as it is and changes nothing in it. Edit the project file this value comes from, and the diagram will follow.",
+      "session": [
+        "baseline => 5 elements added",
+        "reparent project:Local/Local.csproj => A .NET dependency graph is drawn from the solution's own files, so nothing on it can be moved from here. Change a reference in the project file, and the diagram will follow.",
+        "move project:Local/Local.csproj to (10, 20) => This diagram is read-only."
+      ]
+    },
+    {
+      "solution": "diagrams/dotnet-dependency-graph/backend/EtAlii.Adp.Diagram.DotNetDependencyGraph.Tests/Fixtures/registration-order/Order.slnx",
+      "sha256": "b82d6ecea18d9958a7ed3f40b6efe567e6016fd04beb609b76ae4e93c3799a76",
+      "projects": [
+        "project:Ａ/Ａ.csproj | Ａ | Ａ/Ａ.csproj | [net10.0] | \"10.0\"",
+        "project:\uD835\uDD38/\uD835\uDD38.csproj | \uD835\uDD38 | \uD835\uDD38/\uD835\uDD38.csproj | [net10.0] | \"10.0\""
+      ],
+      "packages": [],
+      "references": [],
+      "failures": [],
+      "payloads": [
+        "project:Ａ/Ａ.csproj | dotnet/dependency-graph+project | 0, 0 | DependencyElementPayload { \"name\": \"Ａ\", \"kind\": \"DEPENDENCY_ELEMENT_KIND_PROJECT\", \"projectRelativePath\": [ \"Ａ\", \"Ａ.csproj\" ], \"targetFrameworks\": [ \"net10.0\" ] }",
+        "project:\uD835\uDD38/\uD835\uDD38.csproj | dotnet/dependency-graph+project | 0, 90 | DependencyElementPayload { \"name\": \"\\ud835\\udd38\", \"kind\": \"DEPENDENCY_ELEMENT_KIND_PROJECT\", \"projectRelativePath\": [ \"\\ud835\\udd38\", \"\\ud835\\udd38.csproj\" ], \"targetFrameworks\": [ \"net10.0\" ] }"
+      ],
+      "payloadsWithAStoredPosition": [
+        "project:Ａ/Ａ.csproj | dotnet/dependency-graph+project | 10.5, -20 | DependencyElementPayload { \"name\": \"Ａ\", \"kind\": \"DEPENDENCY_ELEMENT_KIND_PROJECT\", \"projectRelativePath\": [ \"Ａ\", \"Ａ.csproj\" ], \"targetFrameworks\": [ \"net10.0\" ] }"
+      ],
+      "rows": [
+        {
+          "target": "project:Ａ/Ａ.csproj",
+          "rows": [
+            "dotnet.name | Name | \"Ａ\" | Line | read-only (Defined in Ａ/Ａ.csproj; edit it in a text editor.) | group Identity",
+            "dotnet.path | Path | \"Ａ/Ａ.csproj\" | Line | read-only (Defined in Ａ/Ａ.csproj; edit it in a text editor.) | group Identity",
+            "dotnet.target-frameworks | Target framework | \"net10.0\" | Line | read-only (Defined in Ａ/Ａ.csproj; edit it in a text editor.) | group Build",
+            "dotnet.dotnet-version | .NET version | \"10.0\" | Line | read-only (Defined in Ａ/Ａ.csproj; edit it in a text editor.) | group Build"
+          ]
+        },
+        {
+          "target": "project:\uD835\uDD38/\uD835\uDD38.csproj",
+          "rows": [
+            "dotnet.name | Name | \"\\uD835\\uDD38\" | Line | read-only (Defined in \uD835\uDD38/\uD835\uDD38.csproj; edit it in a text editor.) | group Identity",
+            "dotnet.path | Path | \"\\uD835\\uDD38/\\uD835\\uDD38.csproj\" | Line | read-only (Defined in \uD835\uDD38/\uD835\uDD38.csproj; edit it in a text editor.) | group Identity",
+            "dotnet.target-frameworks | Target framework | \"net10.0\" | Line | read-only (Defined in \uD835\uDD38/\uD835\uDD38.csproj; edit it in a text editor.) | group Build",
+            "dotnet.dotnet-version | .NET version | \"10.0\" | Line | read-only (Defined in \uD835\uDD38/\uD835\uDD38.csproj; edit it in a text editor.) | group Build"
+          ]
+        },
+        {
+          "target": "",
+          "rows": []
+        },
+        {
+          "target": "parity:unknown",
+          "rows": []
+        }
+      ],
+      "rowsOfAnotherFile": "project:Ａ/Ａ.csproj of a .adp => 0 rows",
+      "write": "refused: A .NET dependency graph shows the solution as it is and changes nothing in it. Edit the project file this value comes from, and the diagram will follow.",
+      "session": [
+        "baseline => 2 elements added",
+        "reparent project:Ａ/Ａ.csproj => A .NET dependency graph is drawn from the solution's own files, so nothing on it can be moved from here. Change a reference in the project file, and the diagram will follow.",
+        "move project:Ａ/Ａ.csproj to (10, 20) => This diagram is read-only."
+      ]
+    },
+    {
       "solution": "diagrams/dotnet-dependency-graph/backend/EtAlii.Adp.Diagram.DotNetDependencyGraph.Tests/Fixtures/solution/Both.sln",
       "sha256": "d7ed8deb409666936ca478ce8bd95715240f11c1dc8c59b0ca6fd45e09312031",
       "projects": [
