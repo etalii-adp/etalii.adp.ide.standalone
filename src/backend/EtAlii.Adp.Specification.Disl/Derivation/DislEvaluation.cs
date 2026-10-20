@@ -1,5 +1,3 @@
-using System.Collections.Concurrent;
-using System.Runtime.CompilerServices;
 using System.Text.Json;
 using EtAlii.Adp.Specification.Cel;
 
@@ -13,7 +11,8 @@ namespace EtAlii.Adp.Specification.Disl;
 /// <para>
 /// <b>Programs are compiled once per specification.</b> An expression the loader compiled is taken
 /// from <see cref="DislSpecification.ExpressionAt"/>; one it does not walk, inside an <c>x-</c> key,
-/// is compiled on first use and kept beside the specification for as long as it lives.
+/// is compiled on first use into the specification's <see cref="DislSpecification.Programs"/>, and
+/// kept for as long as the specification lives.
 /// </para>
 /// <para>
 /// <b>An expression that fails gives no value</b> (<see cref="CelError"/>), which each caller turns
@@ -22,8 +21,6 @@ namespace EtAlii.Adp.Specification.Disl;
 /// </remarks>
 internal static class DislEvaluation
 {
-    private static readonly ConditionalWeakTable<DislSpecification, ConcurrentDictionary<(DislContext Context, string Source, string Bindings), CelProgram>> Compiled = [];
-
     private static readonly CelProgram Text = CelEnvironment.Standard().DeclareVariable("v").Compile("string(v)");
 
     /// <summary>
@@ -32,20 +29,11 @@ internal static class DislEvaluation
     /// </summary>
     private static object? Of(DislSpecification specification, DislContext context, string source, IReadOnlyDictionary<string, object?> variables)
     {
-        var programs = Compiled.GetValue(specification, _ => new ConcurrentDictionary<(DislContext, string, string), CelProgram>());
         var declared = DislContexts.VariablesOf(context);
-        var bindings = string.Join(",", variables.Keys.Where(name => !declared.Contains(name)).Order(StringComparer.Ordinal));
-        CelProgram program;
-        try
-        {
-            program = programs.GetOrAdd((context, source, bindings), key =>
-                specification.Environment(key.Context, key.Bindings.Length == 0 ? [] : key.Bindings.Split(',')).Compile(key.Source));
-        }
-        catch (CelException e)
-        {
-            return new CelError(e.Message);
-        }
-        return program.Evaluate(variables);
+        var bindings = variables.Keys.Where(name => !declared.Contains(name)).Order(StringComparer.Ordinal);
+        return specification.Programs.TryGet(DislProgramKey.Of(context, source, bindings), out var program, out var problem)
+            ? program.Evaluate(variables)
+            : new CelError(problem);
     }
 
     /// <summary>

@@ -212,7 +212,6 @@ public static class DislModelBuilder
     private static void DerivedIds(DislDiagram diagram, IReadOnlyList<DislElement> elements, List<Finding> findings)
     {
         var specification = diagram.Specification;
-        var programs = new Dictionary<string, CelProgram>(StringComparer.Ordinal);
         var computed = new Dictionary<string, DislElement>(specification.IdComparer);
         var reportsDuplicates = specification.IsBuiltInEnabled(FindingCodes.DuplicateId);
         foreach (var element in elements)
@@ -220,11 +219,12 @@ public static class DislModelBuilder
             var rule = specification.IdRuleOf(element.Type.Name);
             if (rule is not { Strategy: "derived", Expression: { } expression }) continue;
 
-            if (!programs.TryGetValue(expression, out var program))
-            {
-                program = programs[expression] = specification.Environment(DislContext.Identity).Compile(expression);
-            }
-            var value = program.Evaluate(new Dictionary<string, object?> { ["self"] = element, ["diagram"] = diagram, ["env"] = diagram.Env.ToCel() });
+            // An expression that does not compile gives no id, as one that fails does: a rule the loader
+            // walks cannot reach here uncompiled, but one under a type whose name its walk passes over
+            // (doc, for one) can.
+            var value = specification.Programs.TryGet(DislProgramKey.Of(DislContext.Identity, expression, []), out var program, out var problem)
+                ? program.Evaluate(new Dictionary<string, object?> { ["self"] = element, ["diagram"] = diagram, ["env"] = diagram.Env.ToCel() })
+                : new CelError(problem);
             if (value is not string id)
             {
                 var why = value is CelError error ? error.Message : "it did not give a string";

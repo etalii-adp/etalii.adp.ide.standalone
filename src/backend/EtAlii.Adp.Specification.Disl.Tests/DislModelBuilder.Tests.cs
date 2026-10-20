@@ -212,6 +212,31 @@ public class DislModelBuilderTests
             findings.Take(2).Select(finding => finding.ToString()));
     }
 
+    // The loader walks every id rule but one under a type whose name its walk passes over, here doc,
+    // so such a rule's expression reaches Complete uncompiled. Until T212 the CelException that
+    // compiling it threw left Complete, and so the reading of the whole diagram.
+    private static readonly DislSpecification DerivedUncompiled = Specifications.Loaded(Specifications.With("""
+        "metamodel": { "types": { "doc": { "attributes": { "name": { "type": "string" } } } } },
+        "persistence": { "ids": { "types": { "doc": { "strategy": "derived", "expression": "self.name +" } } } }
+        """));
+
+    [Fact]
+    public void ADerivedIdWhoseExpressionDoesNotCompile_IsAMissingId_AndThrowsNothing()
+    {
+        var diagram = new DislDiagram(DerivedUncompiled);
+        diagram.AddNode("doc", "a", new Dictionary<string, object?> { ["name"] = "a" });
+        diagram.AddNode("doc", "b", new Dictionary<string, object?> { ["name"] = "b" });
+
+        var findings = DislModelBuilder.Complete(diagram);
+
+        Assert.Equal(["a", "b"], diagram.Nodes.Select(node => node.Id));
+        Assert.All(diagram.Nodes, node => Assert.False(node.IdIsStored));
+        Assert.Equal(
+            ["std.missingId: The id of this doc could not be computed: 'self.name +' ends too early.",
+             "std.missingId: The id of this doc could not be computed: 'self.name +' ends too early."],
+            findings.Select(finding => finding.ToString()));
+    }
+
     private static readonly DislSpecification DerivedWithoutDuplicates = Specifications.Loaded(Specifications.With("""
         "metamodel": { "types": { "Thing": { "attributes": { "name": { "type": "string" } } } } },
         "persistence": { "ids": { "strategy": "derived", "expression": "self.name == 'fail' ? self.missing : self.name" } },
