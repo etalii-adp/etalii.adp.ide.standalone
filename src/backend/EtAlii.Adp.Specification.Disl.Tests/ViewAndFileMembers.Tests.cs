@@ -18,7 +18,7 @@ public class ViewAndFileMembersTests
         """));
 
     private static object? Evaluate(DislSpecification specification, string expression, object self, DislDiagram diagram) =>
-        specification.Environment(DislContexts.Element).Compile(expression)
+        specification.Environment(DislContext.Element).Compile(expression)
             .Evaluate(new Dictionary<string, object?> { ["self"] = self, ["diagram"] = diagram, ["env"] = new CelMap() });
 
     [Theory]

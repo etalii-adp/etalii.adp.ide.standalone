@@ -7,7 +7,7 @@ namespace EtAlii.Adp.Specification.Disl.Tests;
 public class UserFunctionsTests
 {
     private static object? Evaluate(DislSpecification specification, string expression, IReadOnlyDictionary<string, object?>? variables = null) =>
-        specification.Environment(DislContexts.Element).Compile(expression).Evaluate(variables ?? new Dictionary<string, object?>());
+        specification.Environment(DislContext.Element).Compile(expression).Evaluate(variables ?? new Dictionary<string, object?>());
 
     [Fact]
     public void AFunction_CallsTheFunctionsDeclaredBeforeIt()

@@ -76,7 +76,7 @@ public static class HookRunner
         DislEnv? env,
         string source)
     {
-        var runner = new ActionRunner(specification, self.Diagram, ids, DislContexts.Hook);
+        var runner = new ActionRunner(specification, self.Diagram, ids, DislContext.Hook);
         var ran = new HashSet<(string Hook, DislElement Element)>();
         var budget = MaxDepth(specification);
         Ran(self, old, kind, attributes);
@@ -90,11 +90,11 @@ public static class HookRunner
                 if (!ran.Add((id, element))) continue;
                 if (--budget < 0) return runner.Refuse("The change set off more hooks than behavior.maxHookDepth allows.");
 
-                var variables = OperationInterpreter.Variables(DislContexts.Hook, element.Diagram, env);
+                var variables = OperationInterpreter.Variables(DislContext.Hook, element.Diagram, env);
                 variables["self"] = element;
                 variables["old"] = before;
                 variables["event"] = Event(element, before, happened, changed, source);
-                if (hook.TryGetProperty("when", out var when) && !DislEvaluation.Holds(specification, when, DislJson.Pointer(pointer, "when"), DislContexts.Hook, variables)) continue;
+                if (hook.TryGetProperty("when", out var when) && !DislEvaluation.Holds(specification, when, DislJson.Pointer(pointer, "when"), DislContext.Hook, variables)) continue;
 
                 var first = runner.Changes.Count;
                 var snapshots = new Dictionary<DislElement, DislElement>(ReferenceEqualityComparer.Instance);

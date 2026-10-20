@@ -20,7 +20,7 @@ public class DiagramAttributeValuesTests
         """));
 
     private static object? Evaluate(DislDiagram diagram, string expression) =>
-        Specification.Environment(DislContexts.Element).Compile(expression)
+        Specification.Environment(DislContext.Element).Compile(expression)
             .Evaluate(new Dictionary<string, object?> { ["self"] = diagram, ["diagram"] = diagram, ["env"] = new CelMap() });
 
     [Fact]
@@ -66,7 +66,7 @@ public class DiagramAttributeValuesTests
         // Act.
         var focus = diagram.ValueOf("focus");
         var also = Assert.IsAssignableFrom<IReadOnlyList<object?>>(diagram.ValueOf("also"));
-        var name = Referring.Environment(DislContexts.Element).Compile("diagram.focus.name")
+        var name = Referring.Environment(DislContext.Element).Compile("diagram.focus.name")
             .Evaluate(new Dictionary<string, object?> { ["self"] = diagram, ["diagram"] = diagram, ["env"] = new CelMap() });
 
         // Assert.

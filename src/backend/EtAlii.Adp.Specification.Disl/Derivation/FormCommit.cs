@@ -62,7 +62,7 @@ public static class FormCommit
         var current = Variables(self, declared is null ? null : self.ValueOf(declared.Name), cel);
 
         if (item.TryGetProperty("readOnlyReasons", out var reasons)
-            && DislEvaluation.FirstReason(specification, reasons, DislJson.Pointer(pointer, "readOnlyReasons"), DislContexts.Form, current) is { } reason)
+            && DislEvaluation.FirstReason(specification, reasons, DislJson.Pointer(pointer, "readOnlyReasons"), DislContext.Form, current) is { } reason)
         {
             return DislTransaction.Refused(reason);
         }
@@ -75,14 +75,14 @@ public static class FormCommit
         {
             var text = Variables(self, value, cel);
             var parsePointer = DislJson.Pointer(pointer, "parse");
-            if (parse.TryGetProperty("accepts", out var accepts) && !DislEvaluation.Holds(specification, accepts, DislJson.Pointer(parsePointer, "accepts"), DislContexts.Form, text))
+            if (parse.TryGetProperty("accepts", out var accepts) && !DislEvaluation.Holds(specification, accepts, DislJson.Pointer(parsePointer, "accepts"), DislContext.Form, text))
             {
                 return DislTransaction.Refused(parse.TryGetProperty("refusal", out var refusal)
-                    ? DislEvaluation.Message(specification, refusal, DislJson.Pointer(parsePointer, "refusal"), DislContexts.Form, text, $"'{value}' cannot be written here.")
+                    ? DislEvaluation.Message(specification, refusal, DislJson.Pointer(parsePointer, "refusal"), DislContext.Form, text, $"'{value}' cannot be written here.")
                     : $"'{value}' cannot be written here.");
             }
 
-            var runner = new ActionRunner(specification, self.Diagram, DislIds.Fixed(), DislContexts.Form);
+            var runner = new ActionRunner(specification, self.Diagram, DislIds.Fixed(), DislContext.Form);
             if (parse.TryGetProperty("write", out var write)) runner.Run(write, DislJson.Pointer(parsePointer, "write"), text);
             return runner.Transaction;
         }
@@ -123,16 +123,16 @@ public static class FormCommit
             {
                 var at = DislJson.Pointer(DislJson.Pointer(pointer, "items"), index++);
                 var attribute = DislJson.String(item, "attribute") ?? "";
-                var label = item.TryGetProperty("label", out var text) ? DislEvaluation.Message(specification, text, DislJson.Pointer(at, "label"), DislContexts.Form, variables, attribute) : attribute;
-                var initial = item.TryGetProperty("initial", out var expression) ? DislEvaluation.Expression(specification, expression, DislJson.Pointer(at, "initial"), DislContexts.Form, variables) : null;
+                var label = item.TryGetProperty("label", out var text) ? DislEvaluation.Message(specification, text, DislJson.Pointer(at, "label"), DislContext.Form, variables, attribute) : attribute;
+                var initial = item.TryGetProperty("initial", out var expression) ? DislEvaluation.Expression(specification, expression, DislJson.Pointer(at, "initial"), DislContext.Form, variables) : null;
                 fields.Add(new FormRequestField(attribute, label, DislJson.String(item, "widget"), initial is CelError ? null : initial));
             }
         }
 
         return new FormRequest(
-            json.TryGetProperty("label", out var title) ? DislEvaluation.Message(specification, title, DislJson.Pointer(pointer, "label"), DislContexts.Form, variables, form) : form,
+            json.TryGetProperty("label", out var title) ? DislEvaluation.Message(specification, title, DislJson.Pointer(pointer, "label"), DislContext.Form, variables, form) : form,
             DislJson.String(json, "icon"),
-            json.TryGetProperty("submitLabel", out var submit) ? DislEvaluation.Message(specification, submit, DislJson.Pointer(pointer, "submitLabel"), DislContexts.Form, variables, "") : null,
+            json.TryGetProperty("submitLabel", out var submit) ? DislEvaluation.Message(specification, submit, DislJson.Pointer(pointer, "submitLabel"), DislContext.Form, variables, "") : null,
             fields);
     }
 
@@ -188,14 +188,14 @@ public static class FormCommit
         }
 
         var parsePointer = DislJson.Pointer(found.Pointer, "parse");
-        if (parse.TryGetProperty("accepts", out var accepts) && !DislEvaluation.Holds(specification, accepts, DislJson.Pointer(parsePointer, "accepts"), DislContexts.LabelParse, variables))
+        if (parse.TryGetProperty("accepts", out var accepts) && !DislEvaluation.Holds(specification, accepts, DislJson.Pointer(parsePointer, "accepts"), DislContext.LabelParse, variables))
         {
             return DislTransaction.Refused(parse.TryGetProperty("refusal", out var refusal)
-                ? DislEvaluation.Message(specification, refusal, DislJson.Pointer(parsePointer, "refusal"), DislContexts.LabelParse, variables, $"'{text}' cannot be written here.")
+                ? DislEvaluation.Message(specification, refusal, DislJson.Pointer(parsePointer, "refusal"), DislContext.LabelParse, variables, $"'{text}' cannot be written here.")
                 : $"'{text}' cannot be written here.");
         }
 
-        var runner = new ActionRunner(specification, self.Diagram, DislIds.Fixed(), DislContexts.LabelParse);
+        var runner = new ActionRunner(specification, self.Diagram, DislIds.Fixed(), DislContext.LabelParse);
         if (parse.TryGetProperty("write", out var write)) runner.Run(write, DislJson.Pointer(parsePointer, "write"), variables);
         return runner.Transaction;
     }
@@ -214,7 +214,7 @@ public static class FormCommit
         if (LabelOf(specification, self, label) is not { } found) return null;
         var key = found.Json.TryGetProperty("editText", out _) ? "editText" : "text";
         if (!found.Json.TryGetProperty(key, out var json)) return null;
-        return DislEvaluation.Expression(specification, json, DislJson.Pointer(found.Pointer, key), DislContexts.Element, Variables(self, null, env.ToCel())) as string;
+        return DislEvaluation.Expression(specification, json, DislJson.Pointer(found.Pointer, key), DislContext.Element, Variables(self, null, env.ToCel())) as string;
     }
 
     /// <summary>The label <paramref name="id"/> of the notation of <paramref name="self"/>'s type: a node's, else a relation's.</summary>
@@ -246,9 +246,9 @@ public static class FormCommit
         {
             var at = DislJson.Pointer(DislJson.Pointer(pointer, "validate"), index++);
             if ((DislJson.String(validation, "severity") ?? "error") != "error" || !validation.TryGetProperty("rule", out var rule)) continue;
-            if (DislEvaluation.Holds(specification, rule, DislJson.Pointer(at, "rule"), DislContexts.Form, variables)) continue;
+            if (DislEvaluation.Holds(specification, rule, DislJson.Pointer(at, "rule"), DislContext.Form, variables)) continue;
             return validation.TryGetProperty("message", out var message)
-                ? DislEvaluation.Message(specification, message, DislJson.Pointer(at, "message"), DislContexts.Form, variables, $"'{DislEvaluation.TextOf(variables["value"])}' is not accepted here.")
+                ? DislEvaluation.Message(specification, message, DislJson.Pointer(at, "message"), DislContext.Form, variables, $"'{DislEvaluation.TextOf(variables["value"])}' is not accepted here.")
                 : $"'{DislEvaluation.TextOf(variables["value"])}' is not accepted here.";
         }
         return null;
@@ -262,7 +262,7 @@ public static class FormCommit
         {
             JsonValueKind.Array => options.EnumerateArray().Select(DislValues.Json),
             JsonValueKind.Object when options.TryGetProperty("enum", out _) => [],
-            JsonValueKind.Object or JsonValueKind.String => DislEvaluation.Expression(specification, options, DislJson.Pointer(pointer, "options"), DislContexts.Form, variables) as IReadOnlyList<object?> ?? [],
+            JsonValueKind.Object or JsonValueKind.String => DislEvaluation.Expression(specification, options, DislJson.Pointer(pointer, "options"), DislContext.Form, variables) as IReadOnlyList<object?> ?? [],
             _ => [],
         };
         foreach (var option in list)

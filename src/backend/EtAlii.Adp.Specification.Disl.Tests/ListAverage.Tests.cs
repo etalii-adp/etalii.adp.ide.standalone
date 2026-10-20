@@ -9,7 +9,7 @@ public class ListAverageTests
     private static readonly DislSpecification Specification = Specifications.Loaded(Specifications.With());
 
     private static object? Evaluate(string expression) =>
-        Specification.Environment(DislContexts.Element).Compile(expression).Evaluate(new Dictionary<string, object?>());
+        Specification.Environment(DislContext.Element).Compile(expression).Evaluate(new Dictionary<string, object?>());
 
     [Theory]
     [InlineData("[1, 2, 3, 4].avg()", 2.5)]

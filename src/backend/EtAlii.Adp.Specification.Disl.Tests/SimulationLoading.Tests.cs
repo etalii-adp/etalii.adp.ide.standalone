@@ -31,7 +31,7 @@ public class SimulationLoadingTests
     {
         var specification = Specifications.Loaded(Simulating("state[self.id] == 'pending' ? 'done' : state[self.id]"));
 
-        Assert.Equal(DislContexts.Simulation, specification.ExpressionAt($"/behavior/operations/play/simulate/{property}")?.Context);
+        Assert.Equal(DislContext.Simulation, specification.ExpressionAt($"/behavior/operations/play/simulate/{property}")?.Context);
     }
 
     [Fact]

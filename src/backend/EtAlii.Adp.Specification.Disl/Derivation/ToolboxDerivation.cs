@@ -77,7 +77,7 @@ public static class ToolboxDerivation
         var type = creates is null ? null : specification.Metamodel.TypeOf(creates);
         var typeLabel = type is null ? name : DislJson.String(type.Json, "label") ?? type.Name;
         var label = tool.TryGetProperty("label", out var message)
-            ? DislEvaluation.Message(specification, message, DislJson.Pointer(pointer, "label"), DislContexts.Element, variables, typeLabel)
+            ? DislEvaluation.Message(specification, message, DislJson.Pointer(pointer, "label"), DislContext.Element, variables, typeLabel)
             : typeLabel;
         var icon = DislJson.String(tool, "icon") ?? (type is null ? null : DislJson.String(type.Json, "icon")) ?? "";
         return new DerivedTool(name, group, ids.ToolId(name), creates, label, icon, Doc(tool), ids.DropActionId(name));

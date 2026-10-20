@@ -57,7 +57,7 @@ public class DislReachabilityTests
     private DislElement Node(string id) => _diagram.AddNode("Node", id);
 
     private object? Evaluate(string id, string expression) =>
-        Specification.Environment(DislContexts.Element).Compile(expression)
+        Specification.Environment(DislContext.Element).Compile(expression)
             .Evaluate(new Dictionary<string, object?> { ["self"] = _diagram.ElementById(id), ["diagram"] = _diagram, ["env"] = new CelMap() });
 
     [Theory]

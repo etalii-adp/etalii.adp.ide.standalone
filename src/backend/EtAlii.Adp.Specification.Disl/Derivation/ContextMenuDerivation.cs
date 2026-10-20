@@ -129,11 +129,11 @@ public static class ContextMenuDerivation
 
         var groups = new List<DerivedMenuGroup>();
         var cel = env.ToCel();
-        (string context, Dictionary<string, object?> variables, IReadOnlyList<string> types) = target switch
+        (DislContext context, Dictionary<string, object?> variables, IReadOnlyList<string> types) = target switch
         {
-            DislMenuTarget.OnElement element => (DislContexts.Element, Variables(element.Self, target.Diagram, cel), element.Self.Type.Linearisation),
-            DislMenuTarget.OnConnection connection => (DislContexts.Connection, Connection(connection, cel), (IReadOnlyList<string>)["connection"]),
-            _ => (DislContexts.Element, Variables(target.Diagram, target.Diagram, cel), (IReadOnlyList<string>)["diagram"]),
+            DislMenuTarget.OnElement element => (DislContext.Element, Variables(element.Self, target.Diagram, cel), element.Self.Type.Linearisation),
+            DislMenuTarget.OnConnection connection => (DislContext.Connection, Connection(connection, cel), (IReadOnlyList<string>)["connection"]),
+            _ => (DislContext.Element, Variables(target.Diagram, target.Diagram, cel), (IReadOnlyList<string>)["diagram"]),
         };
 
         var matched = false;
@@ -174,7 +174,7 @@ public static class ContextMenuDerivation
         DislSpecification specification,
         JsonElement set,
         string pointer,
-        string context,
+        DislContext context,
         Dictionary<string, object?> variables,
         IReadOnlyList<string> types,
         DislMenuTarget target,
@@ -206,7 +206,7 @@ public static class ContextMenuDerivation
         DislSpecification specification,
         JsonElement tool,
         string pointer,
-        string context,
+        DislContext context,
         Dictionary<string, object?> variables,
         IReadOnlyList<string> types,
         DislMenuTarget target,
@@ -233,7 +233,7 @@ public static class ContextMenuDerivation
         DislSpecification specification,
         JsonElement tool,
         string pointer,
-        string context,
+        DislContext context,
         Dictionary<string, object?> outer,
         Dictionary<string, object?> bindings,
         IReadOnlyList<string> types,
@@ -255,7 +255,7 @@ public static class ContextMenuDerivation
 
         var fallback = operation is { } declared && declared.TryGetProperty("label", out var operationLabel)
             ? DislEvaluation.Message(specification, operationLabel, DislJson.Pointer(OperationPointer(operationName!), "label"),
-                DislContexts.Operation, Operational(target, variables, arguments), kind)
+                DislContext.Operation, Operational(target, variables, arguments), kind)
             : DislJson.String(tool, "via") is { } via && specification.Metamodel.TypeOf(via) is { } viaType
                 ? DislJson.String(viaType.Json, "label") ?? via
                 : kind;
@@ -284,7 +284,7 @@ public static class ContextMenuDerivation
         DislSpecification specification,
         JsonElement tool,
         string pointer,
-        string context,
+        DislContext context,
         IReadOnlyDictionary<string, object?> variables,
         string kind,
         JsonElement? operation,
@@ -298,7 +298,7 @@ public static class ContextMenuDerivation
             return reason;
         }
         if (operation is { } declared && declared.TryGetProperty("unavailable", out var inherited)
-            && DislEvaluation.FirstReason(specification, inherited, DislJson.Pointer(OperationPointer(operationName!), "unavailable"), DislContexts.Operation, Operational(target, variables, arguments)) is { } inheritedReason)
+            && DislEvaluation.FirstReason(specification, inherited, DislJson.Pointer(OperationPointer(operationName!), "unavailable"), DislContext.Operation, Operational(target, variables, arguments)) is { } inheritedReason)
         {
             return inheritedReason;
         }
@@ -327,10 +327,10 @@ public static class ContextMenuDerivation
         };
         var at = OperationPointer(operationName);
         var label = operation.TryGetProperty("label", out var message)
-            ? DislEvaluation.Message(specification, message, DislJson.Pointer(at, "label"), DislContexts.Operation, variables, operationName)
+            ? DislEvaluation.Message(specification, message, DislJson.Pointer(at, "label"), DislContext.Operation, variables, operationName)
             : operationName;
         var reason = operation.TryGetProperty("unavailable", out var reasons)
-            ? DislEvaluation.FirstReason(specification, reasons, DislJson.Pointer(at, "unavailable"), DislContexts.Operation, variables)
+            ? DislEvaluation.FirstReason(specification, reasons, DislJson.Pointer(at, "unavailable"), DislContext.Operation, variables)
             : null;
         var entry = new DerivedMenuEntry(
             ids.ActionId([relation, "connection"], "connect", operationName, new Dictionary<string, object?>()),

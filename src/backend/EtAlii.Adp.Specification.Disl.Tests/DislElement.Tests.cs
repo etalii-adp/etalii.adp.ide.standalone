@@ -39,7 +39,7 @@ public class DislElementTests
     }
 
     private object? Evaluate(string expression, DislElement? self = null) =>
-        Specification.Environment(DislContexts.Element).Compile(expression)
+        Specification.Environment(DislContext.Element).Compile(expression)
             .Evaluate(new Dictionary<string, object?> { ["self"] = self ?? _outer, ["diagram"] = _diagram, ["env"] = new CelMap() });
 
     [Theory]

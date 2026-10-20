@@ -37,7 +37,7 @@ public class DiagramCyclesTests
     }
 
     private static object? Evaluate(DislDiagram diagram, string expression) =>
-        Specification.Environment(DislContexts.Constraint).Compile(expression)
+        Specification.Environment(DislContext.Constraint).Compile(expression)
             .Evaluate(new Dictionary<string, object?> { ["self"] = diagram, ["diagram"] = diagram, ["env"] = new CelMap() });
 
     /// <summary>The cycles as text: each cycle its member ids joined by a space, the cycles by a comma.</summary>
@@ -210,7 +210,7 @@ public class DiagramCyclesTests
         var diagram = new DislDiagram(specification);
         var a = diagram.AddNode("Station", "a");
         diagram.AddRelation("Track", "loop", a, a);
-        var program = specification.Environment(DislContexts.Constraint).Compile("diagram.cycles('Track', 1000).size()");
+        var program = specification.Environment(DislContext.Constraint).Compile("diagram.cycles('Track', 1000).size()");
 
         // Act.
         var value = program.Evaluate(new Dictionary<string, object?> { ["self"] = diagram, ["diagram"] = diagram, ["env"] = new CelMap() });
