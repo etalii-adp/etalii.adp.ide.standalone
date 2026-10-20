@@ -10,6 +10,9 @@ namespace EtAlii.Adp.Specification.Disl;
 /// <param name="Enabled">Its <c>enabled</c> condition, or null when it has none.</param>
 /// <param name="Plugin">Its <c>plugin</c>, or null when it runs actions.</param>
 /// <param name="Actions">Its <c>actions</c>; an empty list when it states none.</param>
+/// <param name="Label">Its <c>label</c>, which a context menu entry running it is named by; null when it states none.</param>
+/// <param name="Icon">Its <c>icon</c>, a context menu entry's when the entry states none.</param>
+/// <param name="Shortcut">Its <c>shortcut</c>, a context menu entry's when the entry states none.</param>
 /// <param name="NotAnObject">
 /// The message System.Text.Json threw when the runtime read an operation that is not an object, null for one that
 /// is; such an operation still throws it where its <c>unavailable</c> was read.
@@ -21,6 +24,9 @@ internal sealed record DislOperation(
     DislExpressionField? Enabled,
     DislOperationPlugin? Plugin,
     DislActionList Actions,
+    DislMessage? Label,
+    string? Icon,
+    string? Shortcut,
     string? NotAnObject)
 {
     /// <summary>

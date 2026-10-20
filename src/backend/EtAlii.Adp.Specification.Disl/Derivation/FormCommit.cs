@@ -50,45 +50,36 @@ public static class FormCommit
         ArgumentNullException.ThrowIfNull(value);
         ArgumentNullException.ThrowIfNull(env);
 
-        if (FormOf(specification, self, usage) is not { } form || Find(form.Json, DislJson.Pointer(form.Pointer, "items"), row) is not { } found)
+        if (specification.Forms.For(self, usage) is not { } form || Find(form.Items, row) is not { } item)
         {
             return DislTransaction.Refused($"'{row}' is not a row of this element's form.");
         }
 
-        (JsonElement item, string pointer) = found;
-        var attribute = DislJson.String(item, "attribute");
-        var declared = attribute is null ? null : self.Type.Attributes.GetValueOrDefault(attribute);
+        var declared = item.Attribute is null ? null : self.Type.Attributes.GetValueOrDefault(item.Attribute);
         var cel = env.ToCel();
         var current = Variables(self, declared is null ? null : self.ValueOf(declared.Name), cel);
 
-        if (item.TryGetProperty("readOnlyReasons", out var reasons)
-            && DislEvaluation.FirstReason(specification, reasons, DislJson.Pointer(pointer, "readOnlyReasons"), DislContext.Form, current) is { } reason)
-        {
-            return DislTransaction.Refused(reason);
-        }
+        if (DislReason.First(item.ReadOnlyReasons, specification, DislContext.Form, current) is { } reason) return DislTransaction.Refused(reason);
         if (env.ReadOnly) return DislTransaction.Refused(DislEvaluation.StandardMessage(specification, "std.readOnly", current, "This diagram is read-only."));
 
-        var chosen = Chosen(specification, item, pointer, current, value);
-        if (Invalid(specification, item, pointer, Variables(self, chosen, cel)) is { } invalid) return DislTransaction.Refused(invalid);
+        var chosen = Chosen(specification, item, current, value);
+        if (Invalid(specification, item, Variables(self, chosen, cel)) is { } invalid) return DislTransaction.Refused(invalid);
 
-        if (item.TryGetProperty("parse", out var parse))
+        if (item.Parse is { } parse)
         {
+            if (parse.NotAnObject is { } malformed) throw new InvalidOperationException(malformed);
             var text = Variables(self, value, cel);
-            var parsePointer = DislJson.Pointer(pointer, "parse");
-            if (parse.TryGetProperty("accepts", out var accepts) && !DislEvaluation.Holds(specification, accepts, DislJson.Pointer(parsePointer, "accepts"), DislContext.Form, text))
+            if (parse.Accepts is { } accepts && !accepts.Holds(specification, DislContext.Form, text))
             {
-                return DislTransaction.Refused(parse.TryGetProperty("refusal", out var refusal)
-                    ? DislEvaluation.Message(specification, refusal, DislJson.Pointer(parsePointer, "refusal"), DislContext.Form, text, $"'{value}' cannot be written here.")
-                    : $"'{value}' cannot be written here.");
+                return DislTransaction.Refused(parse.Refusal?.Text(specification, DislContext.Form, text, $"'{value}' cannot be written here.") ?? $"'{value}' cannot be written here.");
             }
 
             var runner = new ActionRunner(specification, self.Diagram, DislIds.Fixed(), DislContext.Form);
-            // Until the forms are typed at load, a parse's write is typed as it runs.
-            if (parse.TryGetProperty("write", out var write)) runner.Run(DislActionReader.List(specification, write, DislJson.Pointer(parsePointer, "write")), text);
+            if (parse.Write is { } write) runner.Run(write, text);
             return runner.Transaction;
         }
 
-        if (declared is null || DislJson.String(item, "kind") == "computed")
+        if (declared is null || item.Kind == "computed")
         {
             return DislTransaction.Refused($"'{row}' cannot be edited here.");
         }
@@ -112,28 +103,24 @@ public static class FormCommit
         ArgumentNullException.ThrowIfNull(form);
         ArgumentNullException.ThrowIfNull(env);
 
-        if (!specification.Root.TryGetProperty("forms", out var forms) || !forms.TryGetProperty(form, out var json)) return null;
-        var pointer = DislJson.Pointer("/forms", form);
+        if (specification.Forms.Named(form) is not { } found) return null;
+        if (found.NotAnObject is { } malformed) throw new InvalidOperationException(malformed);
         var variables = Variables(self, null, env.ToCel(), diagram ?? self?.Diagram);
 
         var fields = new List<FormRequestField>();
-        if (json.TryGetProperty("items", out var items) && items.ValueKind == JsonValueKind.Array)
+        foreach (var item in found.Items ?? [])
         {
-            var index = 0;
-            foreach (var item in items.EnumerateArray())
-            {
-                var at = DislJson.Pointer(DislJson.Pointer(pointer, "items"), index++);
-                var attribute = DislJson.String(item, "attribute") ?? "";
-                var label = item.TryGetProperty("label", out var text) ? DislEvaluation.Message(specification, text, DislJson.Pointer(at, "label"), DislContext.Form, variables, attribute) : attribute;
-                var initial = item.TryGetProperty("initial", out var expression) ? DislEvaluation.Expression(specification, expression, DislJson.Pointer(at, "initial"), DislContext.Form, variables) : null;
-                fields.Add(new FormRequestField(attribute, label, DislJson.String(item, "widget"), initial is CelError ? null : initial));
-            }
+            var attribute = item.Attribute ?? "";
+            if (item.NotAnObject is { } notAnObject) throw new InvalidOperationException(notAnObject);
+            var label = item.Label?.Text(specification, DislContext.Form, variables, attribute) ?? attribute;
+            var initial = item.Initial?.Evaluate(specification, DislContext.Form, variables);
+            fields.Add(new FormRequestField(attribute, label, item.Widget, initial is CelError ? null : initial));
         }
 
         return new FormRequest(
-            json.TryGetProperty("label", out var title) ? DislEvaluation.Message(specification, title, DislJson.Pointer(pointer, "label"), DislContext.Form, variables, form) : form,
-            DislJson.String(json, "icon"),
-            json.TryGetProperty("submitLabel", out var submit) ? DislEvaluation.Message(specification, submit, DislJson.Pointer(pointer, "submitLabel"), DislContext.Form, variables, "") : null,
+            found.Label?.Text(specification, DislContext.Form, variables, form) ?? form,
+            found.Icon,
+            found.SubmitLabel?.Text(specification, DislContext.Form, variables, ""),
             fields);
     }
 
@@ -148,18 +135,13 @@ public static class FormCommit
         ArgumentNullException.ThrowIfNull(form);
         ArgumentNullException.ThrowIfNull(env);
 
-        if (!specification.Root.TryGetProperty("forms", out var forms) || !forms.TryGetProperty(form, out var json)
-            || !json.TryGetProperty("items", out var items) || items.ValueKind != JsonValueKind.Array)
-        {
-            return null;
-        }
+        if (specification.Forms.Named(form) is not { } found) return null;
+        if (found.NotAnObject is { } malformed) throw new InvalidOperationException(malformed);
 
-        var index = 0;
-        foreach (var item in items.EnumerateArray())
+        foreach (var item in found.Items ?? [])
         {
-            var at = DislJson.Pointer(DislJson.Pointer(DislJson.Pointer("/forms", form), "items"), index++);
-            if (DislJson.String(item, "attribute") != attribute) continue;
-            return Invalid(specification, item, at, Variables(self, value, env.ToCel(), diagram ?? self?.Diagram));
+            if (item.Attribute != attribute) continue;
+            return Invalid(specification, item, Variables(self, value, env.ToCel(), diagram ?? self?.Diagram));
         }
         return null;
     }
@@ -240,31 +222,28 @@ public static class FormCommit
     }
 
     /// <summary>The message of the first validation of severity <c>error</c> of <paramref name="item"/> that fails, or null.</summary>
-    private static string? Invalid(DislSpecification specification, JsonElement item, string pointer, Dictionary<string, object?> variables)
+    private static string? Invalid(DislSpecification specification, DislFormItem item, Dictionary<string, object?> variables)
     {
-        if (!item.TryGetProperty("validate", out var validations) || validations.ValueKind != JsonValueKind.Array) return null;
-        var index = 0;
-        foreach (var validation in validations.EnumerateArray())
+        if (item.NotAnObject is { } malformed) throw new InvalidOperationException(malformed);
+        foreach (var validation in item.Validations)
         {
-            var at = DislJson.Pointer(DislJson.Pointer(pointer, "validate"), index++);
-            if ((DislJson.String(validation, "severity") ?? "error") != "error" || !validation.TryGetProperty("rule", out var rule)) continue;
-            if (DislEvaluation.Holds(specification, rule, DislJson.Pointer(at, "rule"), DislContext.Form, variables)) continue;
-            return validation.TryGetProperty("message", out var message)
-                ? DislEvaluation.Message(specification, message, DislJson.Pointer(at, "message"), DislContext.Form, variables, $"'{DislEvaluation.TextOf(variables["value"])}' is not accepted here.")
-                : $"'{DislEvaluation.TextOf(variables["value"])}' is not accepted here.";
+            if (validation.NotAnObject is { } notAnObject) throw new InvalidOperationException(notAnObject);
+            if (validation.Severity != "error" || validation.Rule is not { } rule) continue;
+            if (rule.Holds(specification, DislContext.Form, variables)) continue;
+            var fallback = $"'{DislEvaluation.TextOf(variables["value"])}' is not accepted here.";
+            return validation.Message?.Text(specification, DislContext.Form, variables, fallback) ?? fallback;
         }
         return null;
     }
 
     /// <summary>The value of the option labelled <paramref name="text"/> in <paramref name="item"/>'s <c>options</c>, else the text itself.</summary>
-    private static object? Chosen(DislSpecification specification, JsonElement item, string pointer, Dictionary<string, object?> variables, string text)
+    private static object? Chosen(DislSpecification specification, DislFormItem item, Dictionary<string, object?> variables, string text)
     {
-        if (!item.TryGetProperty("options", out var options)) return text;
-        IEnumerable<object?> list = options.ValueKind switch
+        if (item.Options is not { } options) return text;
+        IEnumerable<object?> list = options switch
         {
-            JsonValueKind.Array => options.EnumerateArray().Select(DislValues.Json),
-            JsonValueKind.Object when options.TryGetProperty("enum", out _) => [],
-            JsonValueKind.Object or JsonValueKind.String => DislEvaluation.Expression(specification, options, DislJson.Pointer(pointer, "options"), DislContext.Form, variables) as IReadOnlyList<object?> ?? [],
+            DislFormOptions.Listed listed => listed.Values.Evaluate(specification, DislContext.Form, variables) as IReadOnlyList<object?> ?? [],
+            DislFormOptions.Computed { DeclaresEnum: false } computed => computed.Expression.Evaluate(specification, DislContext.Form, variables) as IReadOnlyList<object?> ?? [],
             _ => [],
         };
         foreach (var option in list)
@@ -278,44 +257,27 @@ public static class FormCommit
     }
 
     /// <summary>The item of <paramref name="row"/>: by its <c>id</c>, else its attribute, else its literal label, sections, rows and tabs searched.</summary>
-    private static (JsonElement Item, string Pointer)? Find(JsonElement owner, string pointer, string row)
+    private static DislFormItem? Find(IReadOnlyList<DislFormItem>? items, string row)
     {
-        if (!owner.TryGetProperty("items", out var items) || items.ValueKind != JsonValueKind.Array) return null;
-        var index = 0;
-        foreach (var item in items.EnumerateArray())
+        foreach (var item in items ?? [])
         {
-            var at = DislJson.Pointer(pointer, index++);
-            var kind = DislJson.String(item, "kind") ?? (item.TryGetProperty("attribute", out _) ? "field" : "");
-            switch (kind)
+            if (item.NotAnObject is { } malformed) throw new InvalidOperationException(malformed);
+            switch (item.Kind)
             {
                 case "section" or "group" or "row":
-                    if (Find(item, DislJson.Pointer(at, "items"), row) is { } nested) return nested;
+                    if (Find(item.Items, row) is { } nested) return nested;
                     break;
-                case "tabs" when item.TryGetProperty("tabs", out var tabs) && tabs.ValueKind == JsonValueKind.Array:
-                    var tab = 0;
-                    foreach (var each in tabs.EnumerateArray())
+                case "tabs" when item.Tabs is { } tabs:
+                    foreach (var tab in tabs)
                     {
-                        var tabAt = DislJson.Pointer(DislJson.Pointer(at, "tabs"), tab++);
-                        if (Find(each, DislJson.Pointer(tabAt, "items"), row) is { } inTab) return inTab;
+                        if (tab.NotAnObject is { } notAnObject) throw new InvalidOperationException(notAnObject);
+                        if (Find(tab.Items, row) is { } inTab) return inTab;
                     }
                     break;
                 default:
-                    var key = DislJson.String(item, "id") ?? DislJson.String(item, "attribute") ?? DislJson.String(item, "label");
-                    if (key == row) return (item, at);
+                    if (item.Name == row) return item;
                     break;
             }
-        }
-        return null;
-    }
-
-    /// <summary>The form <c>for</c> the element's type whose <c>usage</c> includes <paramref name="usage"/> (the default being <c>inspector</c>), as <see cref="FormDerivation"/> finds it.</summary>
-    private static (JsonElement Json, string Pointer)? FormOf(DislSpecification specification, DislElement self, string usage)
-    {
-        foreach (var form in DislJson.Members(specification.Root, "forms"))
-        {
-            var usages = DislJson.Strings(form.Value, "usage");
-            if (usages.Count > 0 ? !usages.Contains(usage) : usage != "inspector") continue;
-            if (DislJson.Strings(form.Value, "for").Any(self.IsA)) return (form.Value, DislJson.Pointer("/forms", form.Name));
         }
         return null;
     }

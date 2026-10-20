@@ -68,15 +68,8 @@ internal static class DislEvaluation
     public static string Message(DislSpecification specification, JsonElement json, string pointer, DislContext context, IReadOnlyDictionary<string, object?> variables, string fallback) =>
         DislFieldReader.Message(specification, json, pointer).Text(specification, context, variables, fallback);
 
-    /// <summary>
-    /// The first Reason of <paramref name="reasons"/> that applies (§2.3): a Message always does, an
-    /// object while its <c>when</c> holds, a <c>{reason: id}</c> while the named reason's does.
-    /// </summary>
-    public static string? FirstReason(DislSpecification specification, JsonElement reasons, string pointer, DislContext context, IReadOnlyDictionary<string, object?> variables) =>
-        DislReason.First(DislFieldReader.Reasons(specification, reasons, pointer), specification, context, variables);
-
     /// <summary>One Reason (§2.3): a Message, an object while its <c>when</c> holds, a <c>{reason: id}</c> while the named one's does; null when it does not apply.</summary>
-    internal static string? Reason(DislSpecification specification, JsonElement reason, string pointer, DislContext context, IReadOnlyDictionary<string, object?> variables) =>
+    private static string? Reason(DislSpecification specification, JsonElement reason, string pointer, DislContext context, IReadOnlyDictionary<string, object?> variables) =>
         DislFieldReader.Reason(specification, reason, pointer).Text(specification, context, variables);
 
     /// <summary>The reason <c>behavior.reasons</c> declares as <paramref name="id"/> (§2.3), in the element context; null when it declares none or it does not apply.</summary>

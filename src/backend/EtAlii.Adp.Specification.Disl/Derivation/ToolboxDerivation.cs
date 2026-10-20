@@ -1,5 +1,3 @@
-using System.Text.Json;
-
 namespace EtAlii.Adp.Specification.Disl;
 
 /// <summary>One palette tool as a host shows it (DISL §7.2), its ids mapped by a <see cref="WireIdMap"/>.</summary>
@@ -29,63 +27,32 @@ public static class ToolboxDerivation
         ArgumentNullException.ThrowIfNull(ids);
 
         var tools = new List<DerivedTool>();
-        if (!specification.Root.TryGetProperty("toolbox", out var toolbox) || toolbox.ValueKind != JsonValueKind.Object) return tools;
+        var toolbox = specification.Toolbox;
+        if (toolbox.NotAnObject is not null || toolbox.Palette.Count == 0) return tools;
 
         var empty = new DislDiagram(specification);
         var variables = new Dictionary<string, object?> { ["self"] = empty, ["diagram"] = empty, ["env"] = new DislEnv().ToCel() };
-        if (toolbox.TryGetProperty("groups", out var groups) && groups.ValueKind == JsonValueKind.Array)
+        foreach (var item in toolbox.Palette)
         {
-            Groups(groups, "/toolbox/groups");
-        }
-        return tools;
-
-        void Groups(JsonElement list, string pointer)
-        {
-            var index = 0;
-            foreach (var group in list.EnumerateArray())
+            switch (item)
             {
-                var at = DislJson.Pointer(pointer, index++);
-                var id = DislJson.String(group, "id") ?? "";
-                if (group.TryGetProperty("tools", out var entries) && entries.ValueKind == JsonValueKind.Array)
-                {
-                    var position = 0;
-                    foreach (var entry in entries.EnumerateArray())
-                    {
-                        var entryAt = DislJson.Pointer(DislJson.Pointer(at, "tools"), position++);
-                        if (entry.ValueKind == JsonValueKind.String)
-                        {
-                            var name = entry.GetString()!;
-                            if (toolbox.TryGetProperty("tools", out var library) && library.TryGetProperty(name, out var shared))
-                            {
-                                tools.Add(Tool(specification, ids, shared, DislJson.Pointer("/toolbox/tools", name), name, id, variables));
-                            }
-                        }
-                        else if (entry.ValueKind == JsonValueKind.Object)
-                        {
-                            tools.Add(Tool(specification, ids, entry, entryAt, DislJson.String(entry, "id") ?? "", id, variables));
-                        }
-                    }
-                }
-                if (group.TryGetProperty("groups", out var nested) && nested.ValueKind == JsonValueKind.Array) Groups(nested, DislJson.Pointer(at, "groups"));
+                case DislPaletteItem.Malformed malformed:
+                    throw new InvalidOperationException(malformed.Message);
+                case DislPaletteItem.Entry entry:
+                    tools.Add(Tool(specification, ids, entry.Tool, entry.Key ?? "", entry.Group, variables));
+                    break;
             }
         }
+        return tools;
     }
 
-    private static DerivedTool Tool(DislSpecification specification, WireIdMap ids, JsonElement tool, string pointer, string name, string group, IReadOnlyDictionary<string, object?> variables)
+    private static DerivedTool Tool(DislSpecification specification, WireIdMap ids, DislTool tool, string name, string group, IReadOnlyDictionary<string, object?> variables)
     {
-        var creates = DislJson.String(tool, "creates");
-        var type = creates is null ? null : specification.Metamodel.TypeOf(creates);
+        if (tool.NotAnObject is { } malformed) throw new InvalidOperationException(malformed);
+        var type = tool.Creates is null ? null : specification.Metamodel.TypeOf(tool.Creates);
         var typeLabel = type is null ? name : DislJson.String(type.Json, "label") ?? type.Name;
-        var label = tool.TryGetProperty("label", out var message)
-            ? DislEvaluation.Message(specification, message, DislJson.Pointer(pointer, "label"), DislContext.Element, variables, typeLabel)
-            : typeLabel;
-        var icon = DislJson.String(tool, "icon") ?? (type is null ? null : DislJson.String(type.Json, "icon")) ?? "";
-        return new DerivedTool(name, group, ids.ToolId(name), creates, label, icon, Doc(tool), ids.DropActionId(name));
+        var label = tool.Label?.Text(specification, DislContext.Element, variables, typeLabel) ?? typeLabel;
+        var icon = tool.Icon ?? (type is null ? null : DislJson.String(type.Json, "icon")) ?? "";
+        return new DerivedTool(name, group, ids.ToolId(name), tool.Creates, label, icon, tool.Doc, ids.DropActionId(name));
     }
-
-    /// <summary>A <c>doc</c> (§2.4) as one text: a string, or an object's summary.</summary>
-    private static string Doc(JsonElement owner) =>
-        owner.TryGetProperty("doc", out var doc)
-            ? doc.ValueKind == JsonValueKind.String ? doc.GetString()! : DislJson.String(doc, "summary") ?? ""
-            : "";
 }

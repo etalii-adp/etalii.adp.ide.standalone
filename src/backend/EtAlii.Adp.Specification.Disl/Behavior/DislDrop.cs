@@ -1,5 +1,3 @@
-using System.Text.Json;
-
 namespace EtAlii.Adp.Specification.Disl;
 
 /// <summary>What a toolbox tool dropped on a drop target comes to (DISL §7.2), before anything runs.</summary>
@@ -79,55 +77,41 @@ public static class DislDrop
         ArgumentNullException.ThrowIfNull(toolId);
         ArgumentNullException.ThrowIfNull(diagram);
 
-        if (OperationInterpreter.Tool(specification, toolId) is not var (tool, pointer)) return null;
-        if (!tool.TryGetProperty("drop", out var drop) || drop.ValueKind != JsonValueKind.Object) return WithoutDrop(specification, tool, dropTarget);
-        if (DislJson.String(drop, "place") is not null) return new DislDropOutcome.Placed();
+        if (specification.Toolbox.Find(toolId) is not { } tool) return null;
+        if (tool.NotAnObject is { } malformed) throw new InvalidOperationException(malformed);
+        if (tool.Drop is not { } drop) return WithoutDrop(specification, tool, dropTarget);
+        if (drop.Place is not null) return new DislDropOutcome.Placed();
 
-        var dropAt = DislJson.Pointer(pointer, "drop");
-        if (drop.TryGetProperty("targets", out var targets) && targets.ValueKind == JsonValueKind.Array)
+        foreach (var target in drop.Targets)
         {
-            var index = 0;
-            foreach (var target in targets.EnumerateArray())
-            {
-                var at = DislJson.Pointer(DislJson.Pointer(dropAt, "targets"), index++);
-                var on = DislJson.Strings(target, "on");
-                var matches = dropTarget is null ? on.Contains("canvas") : on.Any(dropTarget.IsA);
-                if (!matches) continue;
+            var matches = dropTarget is null ? target.On.Contains("canvas") : target.On.Any(dropTarget.IsA);
+            if (!matches) continue;
 
-                var kind = DislJson.String(target, "kind") ?? "operation";
-                var operation = DislJson.String(target, "operation");
-                return kind == "operation" && operation is not null && OperationInterpreter.Refusal(specification, operation, diagram, dropTarget, env) is { } reason
-                    ? new DislDropOutcome.Refused(reason)
-                    : new DislDropOutcome.Target(kind, operation, dropTarget) { Arguments = Arguments(specification, target, at, diagram, dropTarget, env, position) };
-            }
+            return target is { Kind: "operation", Operation: { } operation } && OperationInterpreter.Refusal(specification, operation, diagram, dropTarget, env) is { } reason
+                ? new DislDropOutcome.Refused(reason)
+                : new DislDropOutcome.Target(target.Kind, target.Operation, dropTarget) { Arguments = Arguments(specification, target, diagram, dropTarget, env, position) };
         }
 
-        var elsewhere = DislJson.String(drop, "elsewhere") ?? "create";
-        if (elsewhere != "refuse") return new DislDropOutcome.Elsewhere(elsewhere);
+        if (drop.Elsewhere != "refuse") return new DislDropOutcome.Elsewhere(drop.Elsewhere);
 
         var variables = OperationInterpreter.Variables(DislContext.Create, diagram, env);
         variables["dropTarget"] = dropTarget;
         variables["tool"] = toolId;
-        variables["elementType"] = DislJson.String(tool, "creates");
-        return new DislDropOutcome.Refused(drop.TryGetProperty("refusal", out var refusal)
-            ? (refusal.ValueKind == JsonValueKind.Array
-                ? DislEvaluation.FirstReason(specification, refusal, DislJson.Pointer(dropAt, "refusal"), DislContext.Create, variables)
-                : DislEvaluation.Reason(specification, refusal, DislJson.Pointer(dropAt, "refusal"), DislContext.Create, variables)) ?? DefaultRefusal
-            : DefaultRefusal);
+        variables["elementType"] = tool.Creates;
+        return new DislDropOutcome.Refused(drop.Refusal is null ? DefaultRefusal : DislReason.First(drop.Refusal, specification, DislContext.Create, variables) ?? DefaultRefusal);
     }
 
     /// <summary>A matching target's <c>args</c>, evaluated in the element context where the drop lands.</summary>
     private static Dictionary<string, object?> Arguments(
         DislSpecification specification,
-        JsonElement target,
-        string pointer,
+        DislDropTarget target,
         DislDiagram diagram,
         DislElement? dropTarget,
         DislEnv? env,
         IReadOnlyDictionary<string, object?>? position)
     {
         var arguments = new Dictionary<string, object?>(StringComparer.Ordinal);
-        if (!target.TryGetProperty("args", out _)) return arguments;
+        if (target.Arguments.Count == 0) return arguments;
 
         var variables = new Dictionary<string, object?>(StringComparer.Ordinal)
         {
@@ -136,18 +120,15 @@ public static class DislDrop
             ["env"] = (env ?? new DislEnv()).ToCel(),
             ["position"] = OperationInterpreter.Map(position),
         };
-        foreach (var argument in DislJson.Members(target, "args"))
-        {
-            arguments[argument.Name] = DislEvaluation.Expression(specification, argument.Value, DislJson.Pointer(DislJson.Pointer(pointer, "args"), argument.Name), DislContext.Element, variables);
-        }
+        foreach ((string name, DislExpressionField value) in target.Arguments) arguments[name] = value.Evaluate(specification, DislContext.Element, variables);
 
         return arguments;
     }
 
     /// <summary>A tool without <c>drop</c>, as DISL 0.1 drops it.</summary>
-    private static DislDropOutcome WithoutDrop(DislSpecification specification, JsonElement tool, DislElement? dropTarget)
+    private static DislDropOutcome WithoutDrop(DislSpecification specification, DislTool tool, DislElement? dropTarget)
     {
-        if (DislJson.String(tool, "kind") != "operation" || DislJson.String(tool, "operation") is not { } operation) return new DislDropOutcome.Elsewhere("create");
+        if (tool.Kind != "operation" || tool.Operation is not { } operation) return new DislDropOutcome.Elsewhere("create");
         return new DislDropOutcome.Target("operation", operation, OperationInterpreter.AppliesTo(specification, operation, dropTarget) ? dropTarget : null);
     }
 }

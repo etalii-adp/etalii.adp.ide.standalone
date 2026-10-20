@@ -1,4 +1,3 @@
-using System.Text.Json;
 using EtAlii.Adp.Specification.Cel;
 
 namespace EtAlii.Adp.Specification.Disl;
@@ -54,150 +53,112 @@ public static class FormDerivation
         ArgumentNullException.ThrowIfNull(ids);
 
         var rows = new List<DerivedRow>();
-        if (Form(specification, self, usage) is not { } form) return rows;
+        if (specification.Forms.For(self, usage) is not { } form) return rows;
 
         var walk = new Walk(specification, self, env, ids, rows);
-        walk.Items(form.Json, DislJson.Pointer(form.Pointer, "items"), "");
+        walk.Items(form.Items, "");
         return rows;
-    }
-
-    private static (JsonElement Json, string Pointer)? Form(DislSpecification specification, DislElement self, string usage)
-    {
-        foreach (var form in DislJson.Members(specification.Root, "forms"))
-        {
-            var usages = DislJson.Strings(form.Value, "usage");
-            if (usages.Count > 0 ? !usages.Contains(usage) : usage != "inspector") continue;
-            if (DislJson.Strings(form.Value, "for").Any(self.IsA)) return (form.Value, DislJson.Pointer("/forms", form.Name));
-        }
-        return null;
     }
 
     private sealed class Walk(DislSpecification specification, DislElement self, DislEnv env, WireIdMap ids, List<DerivedRow> rows)
     {
         private readonly CelMap _env = env.ToCel();
 
-        public void Items(JsonElement owner, string pointer, string group)
+        public void Items(IReadOnlyList<DislFormItem>? items, string group)
         {
-            if (!owner.TryGetProperty("items", out var items) || items.ValueKind != JsonValueKind.Array) return;
-            var index = 0;
-            foreach (var item in items.EnumerateArray())
-            {
-                Item(item, DislJson.Pointer(pointer, index++), group);
-            }
+            foreach (var item in items ?? []) Item(item, group);
         }
 
-        private void Item(JsonElement item, string pointer, string group)
+        private void Item(DislFormItem item, string group)
         {
-            var kind = DislJson.String(item, "kind") ?? (item.TryGetProperty("attribute", out _) ? "field" : "");
-            var attribute = DislJson.String(item, "attribute");
+            if (item.NotAnObject is { } malformed) throw new InvalidOperationException(malformed);
+            var attribute = item.Attribute;
             var variables = Variables(attribute is not null && self.Type.Attributes.ContainsKey(attribute) ? self.ValueOf(attribute) : null);
-            if (item.TryGetProperty("visible", out var visible) && !DislEvaluation.Holds(specification, visible, DislJson.Pointer(pointer, "visible"), DislContext.Form, variables)) return;
+            if (item.Visible is { } visible && !visible.Holds(specification, DislContext.Form, variables)) return;
 
-            switch (kind)
+            switch (item.Kind)
             {
                 case "section" or "group":
-                    var titled = item.TryGetProperty("label", out var title) || item.TryGetProperty("title", out title);
-                    var name = titled
-                        ? DislEvaluation.Message(specification, title, DislJson.Pointer(pointer, item.TryGetProperty("label", out _) ? "label" : "title"), DislContext.Form, variables, group)
-                        : group;
-                    Items(item, DislJson.Pointer(pointer, "items"), name);
+                    var title = item.Label ?? item.Title;
+                    Items(item.Items, title is null ? group : title.Text(specification, DislContext.Form, variables, group));
                     return;
                 case "row":
-                    Items(item, DislJson.Pointer(pointer, "items"), group);
+                    Items(item.Items, group);
                     return;
                 case "tabs":
-                    if (!item.TryGetProperty("tabs", out var tabs) || tabs.ValueKind != JsonValueKind.Array) return;
-                    var tab = 0;
-                    foreach (var each in tabs.EnumerateArray())
+                    foreach (var tab in item.Tabs ?? [])
                     {
-                        var at = DislJson.Pointer(DislJson.Pointer(pointer, "tabs"), tab++);
-                        var tabTitle = each.TryGetProperty("title", out var text) ? DislEvaluation.Message(specification, text, DislJson.Pointer(at, "title"), DislContext.Form, variables, group) : group;
-                        Items(each, DislJson.Pointer(at, "items"), tabTitle);
+                        if (tab.NotAnObject is { } notAnObject) throw new InvalidOperationException(notAnObject);
+                        Items(tab.Items, tab.Title?.Text(specification, DislContext.Form, variables, group) ?? group);
                     }
                     return;
                 case "field" or "computed" or "type":
-                    rows.Add(Row(item, pointer, group, kind, attribute, variables));
+                    rows.Add(Row(item, group, variables));
                     return;
             }
         }
 
-        private DerivedRow Row(JsonElement item, string pointer, string group, string kind, string? attribute, Dictionary<string, object?> variables)
+        private DerivedRow Row(DislFormItem item, string group, Dictionary<string, object?> variables)
         {
+            var attribute = item.Attribute;
             var declared = attribute is null ? null : self.Type.Attributes.GetValueOrDefault(attribute);
             var defaultLabel = declared is null ? attribute ?? "" : DislJson.String(declared.Json, "label") ?? declared.Name;
-            var label = item.TryGetProperty("label", out var message)
-                ? DislEvaluation.Message(specification, message, DislJson.Pointer(pointer, "label"), DislContext.Form, variables, defaultLabel)
-                : defaultLabel;
+            var label = item.Label?.Text(specification, DislContext.Form, variables, defaultLabel) ?? defaultLabel;
 
             string value;
-            if (item.TryGetProperty("display", out var display))
+            if (item.Display is { } display)
             {
-                value = Text(DislEvaluation.Expression(specification, display, DislJson.Pointer(pointer, "display"), DislContext.Form, variables));
+                value = Text(display.Evaluate(specification, DislContext.Form, variables));
             }
-            else if (kind == "type")
+            else if (item.Kind == "type")
             {
-                value = OptionLabel(item, pointer, variables, self.Type.Name);
+                value = OptionLabel(item, variables, self.Type.Name);
             }
-            else if (kind == "computed")
+            else if (item.Kind == "computed")
             {
-                value = item.TryGetProperty("value", out var computed)
-                    ? computed.ValueKind == JsonValueKind.String ? computed.GetString()! : Text(DislEvaluation.Expression(specification, computed, DislJson.Pointer(pointer, "value"), DislContext.Form, variables))
-                    : "";
+                value = item.ValueText ?? (item.Value is { } computed ? Text(computed.Evaluate(specification, DislContext.Form, variables)) : "");
             }
             else
             {
                 value = declared is null ? "" : AttributeText(declared);
             }
 
-            var reason = item.TryGetProperty("readOnlyReasons", out var reasons)
-                ? DislEvaluation.FirstReason(specification, reasons, DislJson.Pointer(pointer, "readOnlyReasons"), DislContext.Form, variables)
-                : null;
+            var reason = DislReason.First(item.ReadOnlyReasons, specification, DislContext.Form, variables);
             if (reason is null && env.ReadOnly) reason = DislEvaluation.StandardMessage(specification, "std.readOnly", variables, "This diagram is read-only.");
 
-            var key = DislJson.String(item, "id") ?? attribute ?? label;
-            return kind == "type"
-                ? new DerivedRow(ids.PropertyId(key), label, value, DislJson.String(item, "widget"), reason ?? "", group, Types(item, pointer, variables), Retypes: true)
-                : new DerivedRow(ids.PropertyId(key), label, value, DislJson.String(item, "widget"), reason ?? "", group, Candidates(item, pointer, variables));
+            var key = item.Id ?? attribute ?? label;
+            return item.Kind == "type"
+                ? new DerivedRow(ids.PropertyId(key), label, value, item.Widget, reason ?? "", group, Types(item, variables), Retypes: true)
+                : new DerivedRow(ids.PropertyId(key), label, value, item.Widget, reason ?? "", group, Candidates(item, variables));
         }
 
         /// <summary>The types a type item offers, each named by its <c>optionLabel</c> with <c>item</c> bound, else as itself.</summary>
-        private List<string> Types(JsonElement item, string pointer, Dictionary<string, object?> variables)
-        {
-            if (!item.TryGetProperty("options", out var options)
-                || DislEvaluation.Expression(specification, options, DislJson.Pointer(pointer, "options"), DislContext.Form, variables) is not IReadOnlyList<object?> types)
-            {
-                return [];
-            }
-            return [.. types.Select(type => OptionLabel(item, pointer, variables, type))];
-        }
+        private List<string> Types(DislFormItem item, Dictionary<string, object?> variables) =>
+            item.Options?.Expression.Evaluate(specification, DislContext.Form, variables) is IReadOnlyList<object?> types
+                ? [.. types.Select(type => OptionLabel(item, variables, type))]
+                : [];
 
         /// <summary>A type item's name for <paramref name="type"/>: its <c>optionLabel</c> with <c>item</c> bound, else the type as text.</summary>
-        private string OptionLabel(JsonElement item, string pointer, Dictionary<string, object?> variables, object? type) =>
-            item.TryGetProperty("optionLabel", out var optionLabel)
-                ? Text(DislEvaluation.Expression(specification, optionLabel, DislJson.Pointer(pointer, "optionLabel"), DislContext.Form, new Dictionary<string, object?>(variables) { ["item"] = type }))
+        private string OptionLabel(DislFormItem item, Dictionary<string, object?> variables, object? type) =>
+            item.OptionLabel is { } optionLabel
+                ? Text(optionLabel.Evaluate(specification, DislContext.Form, new Dictionary<string, object?>(variables) { ["item"] = type }))
                 : Text(type);
 
-        private List<string>? Candidates(JsonElement item, string pointer, Dictionary<string, object?> variables)
+        private List<string>? Candidates(DislFormItem item, Dictionary<string, object?> variables)
         {
-            if (item.TryGetProperty("options", out var options))
+            switch (item.Options)
             {
-                switch (options.ValueKind)
-                {
-                    case JsonValueKind.Array:
-                        return [.. options.EnumerateArray().Select(option => option.ValueKind == JsonValueKind.String ? option.GetString()! : OptionText(DislValues.Json(option)))];
-                    case JsonValueKind.Object when DislJson.String(options, "enum") is { } name:
-                        return specification.Metamodel.Enums.TryGetValue(name, out var enumeration) ? [.. enumeration.Values.Select(value => value.Label ?? value.Key)] : [];
-                    case JsonValueKind.Object or JsonValueKind.String:
-                        return DislEvaluation.Expression(specification, options, DislJson.Pointer(pointer, "options"), DislContext.Form, variables) is IReadOnlyList<object?> list
-                            ? [.. list.Select(OptionText)]
-                            : [];
-                }
+                case DislFormOptions.Listed listed:
+                    return listed.Values.Value is IReadOnlyList<object?> values ? [.. values.Select(OptionText)] : [];
+                case DislFormOptions.Enumeration enumeration:
+                    return specification.Metamodel.Enums.TryGetValue(enumeration.Name, out var declared) ? [.. declared.Values.Select(value => value.Label ?? value.Key)] : [];
+                case DislFormOptions.Computed computed:
+                    return computed.Expression.Evaluate(specification, DislContext.Form, variables) is IReadOnlyList<object?> list
+                        ? [.. list.Select(OptionText)]
+                        : [];
             }
-            if (item.TryGetProperty("widgetOptions", out var widgetOptions) && widgetOptions.TryGetProperty("marks", out var marks) && marks.ValueKind == JsonValueKind.Array)
-            {
-                return [.. marks.EnumerateArray().Select(mark => DislJson.String(mark, "label") ?? DislEvaluation.TextOf(mark.TryGetProperty("value", out var at) ? DislValues.Json(at) : null))];
-            }
-            return null;
+            if (item.MarksNotAnObject is { } malformed) throw new InvalidOperationException(malformed);
+            return item.Marks is null ? null : [.. item.Marks];
         }
 
         /// <summary>An option as it is offered: a <c>{value, label}</c> map by its label, else by its value; any other value as text (§7.5).</summary>

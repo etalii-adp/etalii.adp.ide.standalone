@@ -40,6 +40,8 @@ public sealed class DislSpecification
             : new Dictionary<string, string>(StringComparer.Ordinal);
         IdComparer = DislJson.String(ids, "compare") == "ignore-case" ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
         Operations = DislOperationReader.Read(this, root);
+        Toolbox = DislToolboxReader.Read(this, root);
+        Forms = DislFormReader.Read(this, root);
     }
 
     /// <summary>The specification's JSON, as it was read.</summary>
@@ -94,6 +96,12 @@ public sealed class DislSpecification
 
     /// <summary>The operations (§9.3) and the edit gate (§9.1), typed at load.</summary>
     internal DislOperations Operations { get; }
+
+    /// <summary>The toolbox (§7.1 to §7.3): the palette, the library and the context menus, typed at load.</summary>
+    internal DislToolbox Toolbox { get; }
+
+    /// <summary>The forms (§7.5), typed at load.</summary>
+    internal DislForms Forms { get; }
 
     /// <summary>The compiled expression at <paramref name="pointer"/>, or null when there is none.</summary>
     public DislExpression? ExpressionAt(string pointer) => _expressions.GetValueOrDefault(pointer);
