@@ -78,11 +78,11 @@ public class PublicSurfaceTests
     /// <summary>The types a public or protected signature of <paramref name="type"/> or of its public nested types names.</summary>
     private static IEnumerable<Type> Exposed(Type type)
     {
-        const BindingFlags Declared = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
+        const BindingFlags declared = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
         var named = new List<Type>();
         if (type.BaseType is { } baseType) named.Add(baseType);
         named.AddRange(type.GetInterfaces());
-        foreach (var member in type.GetMembers(Declared))
+        foreach (var member in type.GetMembers(declared))
         {
             switch (member)
             {
