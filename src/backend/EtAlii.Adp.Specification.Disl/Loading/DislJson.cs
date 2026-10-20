@@ -4,9 +4,9 @@ using EtAlii.Adp.Specification.Json;
 namespace EtAlii.Adp.Specification.Disl;
 
 /// <summary>
-/// Small readings of a specification's JSON that every part of the loader shares. The readings FBL
-/// makes as well live in <see cref="JsonProperties"/> and <see cref="JsonPointer"/>; these names forward to
-/// them so that the loader's many callers read as before.
+/// The two readings of a specification's JSON that only DISL's loader makes: an object's <c>x-</c> properties and
+/// the members of an object property. The readings FBL makes as well are <see cref="JsonProperties"/>'s, and the
+/// pointers a diagnostic names are <see cref="JsonPointer"/>'s.
 /// </summary>
 internal static class DislJson
 {
@@ -25,22 +25,9 @@ internal static class DislJson
         return found ?? None;
     }
 
-    public static bool Bool(JsonElement element, string name) => JsonProperties.Bool(element, name);
-
-    public static string? String(JsonElement element, string name) => JsonProperties.String(element, name);
-
-    /// <summary>A property that is one string or a list of them (a TypeRef or TypeRef[], DISL §2.7); empty when absent.</summary>
-    public static IReadOnlyList<string> Strings(JsonElement element, string name) => JsonProperties.StringOrStrings(element, name);
-
-    public static IReadOnlyList<string> Strings(JsonElement value) => JsonProperties.Strings(value);
-
     /// <summary>The members of an object property, in order; none when it is absent or not an object.</summary>
     public static IEnumerable<JsonProperty> Members(JsonElement element, string name) =>
         element.ValueKind == JsonValueKind.Object && element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Object
             ? value.EnumerateObject()
             : [];
-
-    public static string Pointer(string parent, string name) => JsonPointer.Append(parent, name);
-
-    public static string Pointer(string parent, int index) => JsonPointer.Append(parent, index);
 }

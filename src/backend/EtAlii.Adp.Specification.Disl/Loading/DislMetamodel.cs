@@ -1,5 +1,6 @@
 using System.Text.Json;
 using EtAlii.Adp.Specification.Cel;
+using EtAlii.Adp.Specification.Json;
 
 namespace EtAlii.Adp.Specification.Disl;
 
@@ -20,6 +21,27 @@ public sealed record DislAttribute(string Name, string Type, bool Many, JsonElem
     {
         "string", "text", "int", "number", "bool", "date", "datetime", "yearMonth", "time", "duration", "color", "uri", "expression", "json", "binary",
     };
+
+    /// <summary>Its <c>label</c>, read at load; null when it states none.</summary>
+    internal string? Label { get; } = JsonProperties.String(Json, "label");
+
+    /// <summary>Whether it is a <c>key</c> (§4.3), read at load: a part of its type's natural id.</summary>
+    internal bool Key { get; } = JsonProperties.Bool(Json, "key");
+
+    /// <summary>Whether it declares <c>derived</c> (§4.3), whatever that holds, read at load: its value is computed, never stored.</summary>
+    internal bool IsDerived { get; } = Json.ValueKind == JsonValueKind.Object && Json.TryGetProperty("derived", out _);
+
+    /// <summary>
+    /// Its literal <see cref="Default"/> as CEL sees it, converted at load; null without one, or when it is not a value of
+    /// the attribute's type. A reading gets a copy of its own (<see cref="DislValues.Copy"/>).
+    /// </summary>
+    internal object? DefaultValue { get; init; }
+
+    /// <summary>
+    /// The program the loader compiled at a derived attribute's <c>derived</c> (§4.3), set at load; null when it compiled
+    /// none there, and the attribute then reads as unset.
+    /// </summary>
+    internal CelProgram? DerivedProgram { get; set; }
 }
 
 /// <summary>One value of an enumeration (DISL §4.5): its key, which CEL sees, and its stored form, which is written.</summary>
@@ -49,9 +71,15 @@ public sealed class DislType
         Name = name;
         IsRelation = isRelation;
         Json = json;
+        Abstract = JsonProperties.Bool(json, "abstract");
+        Label = JsonProperties.String(json, "label");
+        Icon = JsonProperties.String(json, "icon");
+        AllowSelfLoops = Flag(json, "allowSelfLoops");
+        AllowParallel = Flag(json, "allowParallel");
+        Directed = Flag(json, "directed");
         var derived = json.ValueKind == JsonValueKind.Object && json.TryGetProperty("derived", out var declared) && declared.ValueKind == JsonValueKind.Object ? declared : default;
-        ConnectEdit = derived.ValueKind == JsonValueKind.Object && derived.TryGetProperty("edits", out var edits) ? DislJson.String(edits, "connect") : null;
-        DerivedReason = DislJson.String(derived, "reason");
+        ConnectEdit = derived.ValueKind == JsonValueKind.Object && derived.TryGetProperty("edits", out var edits) ? JsonProperties.String(edits, "connect") : null;
+        DerivedReason = JsonProperties.String(derived, "reason");
     }
 
     public string Name { get; }
@@ -62,7 +90,22 @@ public sealed class DislType
     /// <summary>The declaration itself, for what this view does not type.</summary>
     public JsonElement Json { get; }
 
-    public bool Abstract => DislJson.Bool(Json, "abstract");
+    public bool Abstract { get; }
+
+    /// <summary>Its <c>label</c>, read at load; null when it states none.</summary>
+    internal string? Label { get; }
+
+    /// <summary>Its <c>icon</c>, read at load; null when it states none.</summary>
+    internal string? Icon { get; }
+
+    /// <summary>A relation type's <c>allowSelfLoops</c> (§4.9) when it states it as a boolean; null otherwise.</summary>
+    internal bool? AllowSelfLoops { get; }
+
+    /// <summary>A relation type's <c>allowParallel</c> (§4.9) when it states it as a boolean; null otherwise.</summary>
+    internal bool? AllowParallel { get; }
+
+    /// <summary>A relation type's <c>directed</c> (§4.9) when it states it as a boolean; null otherwise.</summary>
+    internal bool? Directed { get; }
 
     /// <summary>The supertypes it names, in the order it names them.</summary>
     public IReadOnlyList<string> Extends { get; internal set; } = [];
@@ -88,6 +131,12 @@ public sealed class DislType
     /// <summary>The <c>derived</c> declaration (§4.11): an Expression (a relation's 0.1 form) or a DerivedNode or DerivedRelation object; null for a stored type.</summary>
     public JsonElement? Derived => Json.TryGetProperty("derived", out var derived) ? derived : null;
 
+    /// <summary>
+    /// A derived relation type's <c>derived</c> (§4.9, §4.11.3), typed at load with the programs the loader compiled; null
+    /// for a stored type, and for one whose <c>derived</c> is neither an Expression nor an object.
+    /// </summary>
+    internal DislDerivedRelation? DerivedRelation { get; set; }
+
     /// <summary>The operation a derived relation's <c>edits.connect</c> runs when one is drawn (§4.11), or null when it names none.</summary>
     internal string? ConnectEdit { get; }
 
@@ -98,6 +147,9 @@ public sealed class DislType
     public IReadOnlyDictionary<string, JsonElement> Extensions => DislJson.Extensions(Json);
 
     public override string ToString() => Name;
+
+    private static bool? Flag(JsonElement json, string name) =>
+        json.ValueKind == JsonValueKind.Object && json.TryGetProperty(name, out var value) && value.ValueKind is JsonValueKind.True or JsonValueKind.False ? value.GetBoolean() : null;
 }
 
 /// <summary>One parameter of a user function (DISL §3.4).</summary>

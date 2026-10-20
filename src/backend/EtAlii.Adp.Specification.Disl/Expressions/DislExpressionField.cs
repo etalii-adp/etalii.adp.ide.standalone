@@ -42,17 +42,6 @@ internal abstract record DislActionValue(string Pointer)
     /// </summary>
     public sealed record Literal(string Pointer, object? Value) : DislActionValue(Pointer)
     {
-        public override object? Evaluate(IReadOnlyDictionary<string, object?> variables) => Copy(Value);
-
-        private static object? Copy(object? value) => value switch
-        {
-            List<object?> list => list.Select(Copy).ToList(),
-            CelMap map => map.Aggregate(new CelMap(), (copy, entry) =>
-            {
-                copy[entry.Key] = Copy(entry.Value);
-                return copy;
-            }),
-            _ => value,
-        };
+        public override object? Evaluate(IReadOnlyDictionary<string, object?> variables) => DislValues.Copy(Value);
     }
 }

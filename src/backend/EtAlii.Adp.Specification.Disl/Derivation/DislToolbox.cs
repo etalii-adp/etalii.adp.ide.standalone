@@ -1,5 +1,3 @@
-using System.Text.Json;
-
 namespace EtAlii.Adp.Specification.Disl;
 
 /// <summary>
@@ -103,9 +101,14 @@ internal sealed record DislTool
 
 /// <summary>
 /// One <c>initial</c> value of a tool or a created end: an object is an Expression in the create context, any other
-/// value is read as the attribute it names when the tool runs, as an attribute's default is.
+/// value is read at load as the attribute it names of the type the tool creates, as an attribute's default is.
 /// </summary>
-internal sealed record DislToolInitial(string Name, DislExpressionField? Expression, JsonElement Literal);
+/// <param name="Expression">The Expression of an object; null for any other value.</param>
+/// <param name="Literal">
+/// Any other value as CEL sees it, converted at load; null when it is not of its attribute's type, or the tool creates
+/// no node type that has the attribute. A run gets a copy of its own (<see cref="DislValues.Copy"/>).
+/// </param>
+internal sealed record DislToolInitial(string Name, DislExpressionField? Expression, object? Literal);
 
 /// <summary>A <c>createSource</c> or <c>createTarget</c> (§6.10): the type to create, unless it says <c>ask</c>, and its initial values.</summary>
 internal sealed record DislToolEnd(string? Type, bool Ask, IReadOnlyList<DislToolInitial> Initial);

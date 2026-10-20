@@ -1,4 +1,5 @@
 using System.Text.Json;
+using EtAlii.Adp.Specification.Json;
 
 namespace EtAlii.Adp.Specification.Disl;
 
@@ -24,7 +25,7 @@ internal static class DislFieldReader
     private static (string? Source, string At) Source(JsonElement json, string pointer) => json.ValueKind switch
     {
         JsonValueKind.String => (json.GetString(), pointer),
-        JsonValueKind.Object when DislJson.String(json, "cel") is { } cel => (cel, DislJson.Pointer(pointer, "cel")),
+        JsonValueKind.Object when JsonProperties.String(json, "cel") is { } cel => (cel, JsonPointer.Append(pointer, "cel")),
         _ => (null, pointer),
     };
 
@@ -32,7 +33,7 @@ internal static class DislFieldReader
     public static DislActionValue Value(DislSpecification specification, JsonElement json, string pointer) =>
         json.ValueKind is JsonValueKind.String or JsonValueKind.Object
             ? new DislActionValue.Expression(Expression(specification, json, pointer))
-            : new DislActionValue.Literal(pointer, DislValues.Json(json));
+            : new DislActionValue.Literal(pointer, DislLiterals.Json(json));
 
     /// <summary>A Message (§2.3) at <paramref name="pointer"/>.</summary>
     public static DislMessage Message(DislSpecification specification, JsonElement json, string pointer) => json.ValueKind switch
@@ -49,18 +50,18 @@ internal static class DislFieldReader
         if (json.ValueKind != JsonValueKind.Array) return [];
         var reasons = new List<DislReason>();
         var index = 0;
-        foreach (var reason in json.EnumerateArray()) reasons.Add(Reason(specification, reason, DislJson.Pointer(pointer, index++)));
+        foreach (var reason in json.EnumerateArray()) reasons.Add(Reason(specification, reason, JsonPointer.Append(pointer, index++)));
         return reasons;
     }
 
     /// <summary>One Reason (§2.3) at <paramref name="pointer"/>.</summary>
     public static DislReason Reason(DislSpecification specification, JsonElement json, string pointer)
     {
-        if (json.ValueKind == JsonValueKind.Object && DislJson.String(json, "reason") is { } id) return new DislReason.Named(id);
+        if (json.ValueKind == JsonValueKind.Object && JsonProperties.String(json, "reason") is { } id) return new DislReason.Named(id);
         if (json.ValueKind == JsonValueKind.Object && json.TryGetProperty("message", out var message))
         {
-            var when = json.TryGetProperty("when", out var condition) ? Expression(specification, condition, DislJson.Pointer(pointer, "when")) : null;
-            return new DislReason.While(when, Message(specification, message, DislJson.Pointer(pointer, "message")));
+            var when = json.TryGetProperty("when", out var condition) ? Expression(specification, condition, JsonPointer.Append(pointer, "when")) : null;
+            return new DislReason.While(when, Message(specification, message, JsonPointer.Append(pointer, "message")));
         }
         return new DislReason.Always(Message(specification, json, pointer));
     }

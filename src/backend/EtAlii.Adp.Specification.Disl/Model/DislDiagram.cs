@@ -210,7 +210,7 @@ public sealed class DislDiagram : ICelObject
     public object? ValueOf(string name)
     {
         if (!Specification.Metamodel.DiagramAttributes.TryGetValue(name, out var attribute)) throw new ArgumentException($"'{name}' is not an attribute of the diagram.", nameof(name));
-        if (attribute.Json.TryGetProperty("derived", out _)) return Derived(attribute);
+        if (attribute.IsDerived) return Derived(attribute);
         if (!_attributes.TryGetValue(name, out var value)) return DislValues.Unset(attribute, Specification.Metamodel);
         if (Specification.Metamodel.TypeOf(attribute.Type) is null) return value;
         return value switch
@@ -228,11 +228,10 @@ public sealed class DislDiagram : ICelObject
     /// </summary>
     private object? Derived(DislAttribute attribute)
     {
-        var pointer = DislJson.Pointer(DislJson.Pointer("/metamodel/diagram/attributes", attribute.Name), "derived");
-        if (Specification.ExpressionAt(pointer) is not { } expression || !_computing.Add(attribute.Name)) return DislValues.Unset(attribute, Specification.Metamodel);
+        if (attribute.DerivedProgram is not { } program || !_computing.Add(attribute.Name)) return DislValues.Unset(attribute, Specification.Metamodel);
         try
         {
-            var value = expression.Program.Evaluate(new Dictionary<string, object?> { ["self"] = this, ["diagram"] = this, ["env"] = Env.ToCel() });
+            var value = program.Evaluate(new Dictionary<string, object?> { ["self"] = this, ["diagram"] = this, ["env"] = Env.ToCel() });
             return value is CelError ? DislValues.Unset(attribute, Specification.Metamodel) : value;
         }
         finally
@@ -323,7 +322,7 @@ public sealed class DislDiagram : ICelObject
     /// <inheritdoc />
     public bool HasMember(string name) =>
         Specification.Metamodel.DiagramAttributes.TryGetValue(name, out var attribute)
-            ? _attributes.ContainsKey(name) || attribute.Json.TryGetProperty("derived", out _)
+            ? _attributes.ContainsKey(name) || attribute.IsDerived
             : TryGetMember(name, out _);
 
     /// <inheritdoc />

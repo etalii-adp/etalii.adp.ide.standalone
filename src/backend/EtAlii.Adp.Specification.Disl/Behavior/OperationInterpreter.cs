@@ -136,7 +136,7 @@ public static class OperationInterpreter
         variables["tool"] = toolId;
 
         var attributes = new Dictionary<string, object?>(StringComparer.Ordinal);
-        if (Initial(specification, tool.Initial, type, created, variables, attributes) is { } refusal) return DislTransaction.Refused(refusal);
+        if (Initial(tool.Initial, type, created, variables, attributes) is { } refusal) return DislTransaction.Refused(refusal);
 
         var element = diagram.AddNode(type, ids.Next(type), attributes);
         List<HostAction> after = tool.After switch
@@ -197,7 +197,7 @@ public static class OperationInterpreter
         variables["tool"] = tool.Id;
 
         var attributes = new Dictionary<string, object?>(StringComparer.Ordinal);
-        if (Initial(specification, end.Initial, type, created, variables, attributes) is { } refusal) return DislTransaction.Refused(refusal);
+        if (Initial(end.Initial, type, created, variables, attributes) is { } refusal) return DislTransaction.Refused(refusal);
 
         try
         {
@@ -303,10 +303,9 @@ public static class OperationInterpreter
 
     /// <summary>
     /// The <paramref name="initial"/> values of a node of <paramref name="type"/> into <paramref name="attributes"/>: an
-    /// Expression evaluated in the create context, any other value read as its attribute; the refusal, or null.
+    /// Expression evaluated in the create context, any other value as the loader read it for its attribute; the refusal, or null.
     /// </summary>
     private static string? Initial(
-        DislSpecification specification,
         IReadOnlyList<DislToolInitial> initial,
         string type,
         DislType created,
@@ -315,10 +314,10 @@ public static class OperationInterpreter
     {
         foreach (var property in initial)
         {
-            if (!created.Attributes.TryGetValue(property.Name, out var attribute)) return $"{type} has no attribute '{property.Name}'.";
+            if (!created.Attributes.ContainsKey(property.Name)) return $"{type} has no attribute '{property.Name}'.";
             var value = property.Expression is { } expression
                 ? expression.Evaluate(variables)
-                : DislValues.FromJson(property.Literal, attribute, specification.Metamodel);
+                : DislValues.Copy(property.Literal);
             if (value is Cel.CelError error) return error.Message;
             if (value is not null) attributes[property.Name] = value;
         }

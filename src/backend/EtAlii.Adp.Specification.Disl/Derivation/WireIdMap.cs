@@ -1,4 +1,3 @@
-using System.Text.Json;
 using System.Text.RegularExpressions;
 
 namespace EtAlii.Adp.Specification.Disl;
@@ -28,7 +27,7 @@ public sealed partial class WireIdMap
     private readonly IReadOnlyDictionary<string, string> _actions;
     private readonly IReadOnlyDictionary<string, string> _properties;
 
-    private WireIdMap(
+    internal WireIdMap(
         IReadOnlyDictionary<string, (string? Id, string? Drop)> tools,
         IReadOnlyDictionary<string, string> actions,
         IReadOnlyDictionary<string, string> properties,
@@ -55,13 +54,7 @@ public sealed partial class WireIdMap
     {
         ArgumentNullException.ThrowIfNull(specification);
         ArgumentException.ThrowIfNullOrEmpty(key);
-        if (!specification.Extensions.TryGetValue(key, out var block) || block.ValueKind != JsonValueKind.Object) return None;
-
-        var tools = DislJson.Members(block, "tools").ToDictionary(
-            tool => tool.Name,
-            tool => (DislJson.String(tool.Value, "id"), DislJson.String(tool.Value, "drop")),
-            StringComparer.Ordinal);
-        return new WireIdMap(tools, Strings(block, "actions"), Strings(block, "properties"), Strings(block, "types"));
+        return WireIdMapReader.Read(specification, key);
     }
 
     /// <summary>The palette id of toolbox tool <paramref name="tool"/>.</summary>
@@ -96,11 +89,6 @@ public sealed partial class WireIdMap
             bindings.TryGetValue(match.Groups[1].Value, out var value) && value is string text
                 ? Types.GetValueOrDefault(text, text)
                 : match.Value);
-
-    private static Dictionary<string, string> Strings(JsonElement block, string name) =>
-        DislJson.Members(block, name)
-            .Where(member => member.Value.ValueKind == JsonValueKind.String)
-            .ToDictionary(member => member.Name, member => member.Value.GetString()!, StringComparer.Ordinal);
 
     [GeneratedRegex("<([A-Za-z_][A-Za-z0-9_]*)>", RegexOptions.CultureInvariant)]
     private static partial Regex Placeholder();

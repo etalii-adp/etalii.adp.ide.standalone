@@ -38,7 +38,7 @@ public static class DislNaturalIds
             var mapping = map.For(request.Type);
             if (specification.Metamodel.TypeOf(mapping.As) is not { } type || specification.IdRuleOf(type.Name).Strategy != "natural") return null;
 
-            var keys = type.Attributes.Values.Where(attribute => DislJson.Bool(attribute.Json, "key")).ToList();
+            var keys = type.Attributes.Values.Where(attribute => attribute.Key).ToList();
             if (keys.Count == 0) return null;
 
             var parts = new List<string>(keys.Count);

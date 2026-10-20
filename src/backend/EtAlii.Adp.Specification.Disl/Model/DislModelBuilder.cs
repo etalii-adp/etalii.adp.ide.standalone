@@ -1,4 +1,3 @@
-using System.Text.Json;
 using EtAlii.Adp.Specification.Cel;
 using EtAlii.Adp.Specification.Fbl;
 
@@ -248,17 +247,16 @@ public static class DislModelBuilder
         var specification = diagram.Specification;
         foreach (var type in specification.Metamodel.Relations.Values)
         {
-            var pointer = DislJson.Pointer(DislJson.Pointer("/metamodel/relations", type.Name), "derived");
-            if (type.Derived is { ValueKind: JsonValueKind.String })
+            if (type.DerivedRelation is DislDerivedRelation.Listed listed)
             {
-                ExpressionForm(diagram, type, pointer, findings);
+                ExpressionForm(diagram, type, listed.Items, findings);
                 continue;
             }
 
-            if (type.Derived is not { ValueKind: JsonValueKind.Object } derived) continue;
+            if (type.DerivedRelation is not DislDerivedRelation.Mapped derived) continue;
 
             var variables = new Dictionary<string, object?> { ["diagram"] = diagram, ["env"] = diagram.Env.ToCel() };
-            if (Evaluate(specification, DislJson.Pointer(pointer, "from"), variables) is not IReadOnlyList<object?> items)
+            if (derived.From.Evaluate(variables) is not IReadOnlyList<object?> items)
             {
                 findings.Add(new Finding(DerivedFailed, FindingSeverity.Warning, $"The items of {type.Name} could not be computed, so there are none.", null));
                 continue;
@@ -267,13 +265,13 @@ public static class DislModelBuilder
             var failures = new HashSet<string>(StringComparer.Ordinal);
             var badEnds = new Dictionary<string, int>(StringComparer.Ordinal);
             var repeats = new Dictionary<string, int>(StringComparer.Ordinal);
-            var groups = Groups(specification, derived, pointer, variables, items, failures);
+            var groups = Groups(derived.Key, variables, items, failures);
             for (var index = 0; index < groups.Count; index++)
             {
                 var group = groups[index];
                 var item = new Dictionary<string, object?>(variables) { ["item"] = group[0], ["group"] = group, ["index"] = (long)index };
-                var source = Evaluate(specification, DislJson.Pointer(pointer, "source"), item);
-                var target = Evaluate(specification, DislJson.Pointer(pointer, "target"), item);
+                var source = derived.Source.Evaluate(item);
+                var target = derived.Target.Evaluate(item);
                 if (source is CelError || target is CelError)
                 {
                     failures.Add(((source as CelError) ?? (CelError)target!).Message);
@@ -285,14 +283,14 @@ public static class DislModelBuilder
                 var to = (DislElement)target!;
 
                 string id;
-                if (derived.TryGetProperty("id", out _))
+                if (derived.Id is { } written)
                 {
-                    if (Evaluate(specification, DislJson.Pointer(pointer, "id"), item) is not string written)
+                    if (written.Evaluate(item) is not string text)
                     {
                         failures.Add("the id of an item is not a string");
                         continue;
                     }
-                    id = written;
+                    id = text;
                 }
                 else
                 {
@@ -303,20 +301,20 @@ public static class DislModelBuilder
 
                 // Without sources, the group when its items are elements (§4.11.3).
                 IReadOnlyList<DislElement> sources = group.All(member => member is DislElement) ? [.. group.Cast<DislElement>()] : [];
-                if (derived.TryGetProperty("sources", out _))
+                if (derived.Sources is { } derivedSources)
                 {
-                    if (Evaluate(specification, DislJson.Pointer(pointer, "sources"), item) is not IReadOnlyList<object?> listed)
+                    if (derivedSources.Evaluate(item) is not IReadOnlyList<object?> list)
                     {
                         failures.Add("the sources of an item are not a list");
                         continue;
                     }
-                    sources = [.. listed.OfType<DislElement>()];
+                    sources = [.. list.OfType<DislElement>()];
                 }
 
                 var attributes = new Dictionary<string, object?>(StringComparer.Ordinal);
-                foreach (var attribute in DislJson.Members(derived, "attributes"))
+                foreach ((string name, DislDerivedField value) in derived.Attributes)
                 {
-                    attributes[attribute.Name] = Evaluate(specification, DislJson.Pointer(DislJson.Pointer(pointer, "attributes"), attribute.Name), item);
+                    attributes[name] = value.Evaluate(item);
                 }
 
                 if (diagram.ElementById(id) is { } taken)
@@ -353,15 +351,15 @@ public static class DislModelBuilder
     /// is a group of its own. An item whose key fails, or is not a string, number, bool or list of
     /// those, is dropped.
     /// </summary>
-    private static List<List<object?>> Groups(DislSpecification specification, JsonElement derived, string pointer, Dictionary<string, object?> variables, IReadOnlyList<object?> items, HashSet<string> failures)
+    private static List<List<object?>> Groups(DislDerivedField? keyed, Dictionary<string, object?> variables, IReadOnlyList<object?> items, HashSet<string> failures)
     {
-        if (!derived.TryGetProperty("key", out _)) return [.. items.Select(item => new List<object?> { item })];
+        if (keyed is null) return [.. items.Select(item => new List<object?> { item })];
 
         var groups = new List<(object? Key, List<object?> Members)>();
         for (var index = 0; index < items.Count; index++)
         {
             var bound = new Dictionary<string, object?>(variables) { ["item"] = items[index], ["group"] = new List<object?> { items[index] }, ["index"] = (long)index };
-            var key = Evaluate(specification, DislJson.Pointer(pointer, "key"), bound);
+            var key = keyed.Evaluate(bound);
             if (key is CelError error)
             {
                 failures.Add(error.Message);
@@ -390,10 +388,10 @@ public static class DislModelBuilder
     /// what they mean in the object form, and any other key is ignored; without an <c>id</c> the id is
     /// <c>&lt;Type&gt;:&lt;source.id&gt;-&gt;&lt;target.id&gt;</c>, with <c>#2</c>, <c>#3</c> for repeats.
     /// </summary>
-    private static void ExpressionForm(DislDiagram diagram, DislType type, string pointer, List<Finding> findings)
+    private static void ExpressionForm(DislDiagram diagram, DislType type, DislDerivedField derived, List<Finding> findings)
     {
         var variables = new Dictionary<string, object?> { ["diagram"] = diagram, ["env"] = diagram.Env.ToCel() };
-        if (Evaluate(diagram.Specification, pointer, variables) is not IReadOnlyList<object?> items)
+        if (derived.Evaluate(variables) is not IReadOnlyList<object?> items)
         {
             findings.Add(new Finding(DerivedFailed, FindingSeverity.Warning, $"The items of {type.Name} could not be computed, so there are none.", null));
             return;
@@ -478,11 +476,6 @@ public static class DislModelBuilder
         value is DislElement { Type.IsRelation: false } element
         && (end is null || end.Types.Count == 0 || end.Types.Any(element.IsA))
         && (end is null || !end.Exclude.Any(element.IsA));
-
-    private static object? Evaluate(DislSpecification specification, string pointer, IReadOnlyDictionary<string, object?> variables) =>
-        specification.ExpressionAt(pointer) is { } expression
-            ? expression.Program.Evaluate(variables)
-            : new CelError($"No expression was compiled at {pointer}.");
 
     /// <summary>A binding element's attributes: the metamodel's typed, the ends named, the rest kept as read.</summary>
     private static Dictionary<string, object?> Attributes(
