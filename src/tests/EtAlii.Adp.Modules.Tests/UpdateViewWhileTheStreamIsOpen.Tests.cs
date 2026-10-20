@@ -20,7 +20,7 @@ using IoPath = System.IO.Path;
 using Path = EtAlii.Adp.Documents.Wire.Path;
 using WorkspaceDiagramService = EtAlii.Adp.Workspace.DiagramService;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Modules.Tests;
 
 /// <summary>
 /// <c>UpdateView</c> returns while the diagram's <c>Open</c> stream is live on the same

@@ -14,7 +14,7 @@ using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 using Path = EtAlii.Adp.Documents.Wire.Path;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Modules.Tests;
 
 /// <summary>
 /// The YAML editor's claims over the real host (yaml-editor Requirement 2.2, 2.3, 2.4 and 2.6).

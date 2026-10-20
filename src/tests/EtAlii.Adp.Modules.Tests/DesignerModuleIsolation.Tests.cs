@@ -1,7 +1,7 @@
 using Xunit;
 using IoPath = System.IO.Path;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Modules.Tests;
 
 /// <summary>
 /// The host does not know the Knowledge designer (knowledge-designer Requirement 10.1): no core
