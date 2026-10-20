@@ -19,7 +19,7 @@ using EtAlii.Adp.Diagram.SupplyChain;
 using EtAlii.Adp.Diagram.Timeline;
 using EtAlii.Adp.Diagram.WardleyMap;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Modules.Tests;
 
 /// <summary>
 /// Every element and relation type string a diagram module puts on the wire, keyed by the module's

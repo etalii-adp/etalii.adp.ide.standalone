@@ -27,7 +27,7 @@ using IoPath = System.IO.Path;
 // `Diagram.Timeline` would read as the namespace rather than the module's Diagram class, so the class is aliased.
 using TimelineModule = EtAlii.Adp.Diagram.Timeline.Diagram;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Modules.Tests;
 
 /// <summary>
 /// <b>Every connection any canvas draws resolves to a selection</b>, checked against the real composed

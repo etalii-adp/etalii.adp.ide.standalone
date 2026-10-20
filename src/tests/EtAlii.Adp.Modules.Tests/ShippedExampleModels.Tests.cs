@@ -10,7 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Modules.Tests;
 
 /// <summary>
 /// <b>Every shipped example, exported as the stream a canvas receives when it opens it</b>

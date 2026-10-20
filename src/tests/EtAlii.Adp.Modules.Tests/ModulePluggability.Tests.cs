@@ -2,7 +2,7 @@ using System.Reflection;
 using EtAlii.Adp.Diagram;
 using Xunit;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Modules.Tests;
 
 /// <summary>
 /// Proves the claim mindmap-diagram Requirement 13 makes rather than asserting it: core does

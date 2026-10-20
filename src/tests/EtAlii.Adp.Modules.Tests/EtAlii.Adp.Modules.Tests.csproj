@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The host's tests that span modules: what every module draws, names or registers, checked over
+    the composed host with all of them deployed (code-structure T304). It sits outside src/backend
+    so that it is no core project, and so the core test projects name no tool module in code
+    (SC-013). A test of one module belongs in that module's own test project instead.
+  -->
+
+  <PropertyGroup>
+    <!-- xUnit v3 test projects are executables: the test host is the project itself. -->
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Grpc.Core.Testing" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The modules are reached through the host, which deploys every one of them. -->
+    <ProjectReference Include="..\..\backend\EtAlii.Adp.Backend.Service\EtAlii.Adp.Backend.Service.csproj" />
+    <ProjectReference Include="..\..\backend\EtAlii.Adp.TestSupport.Host\EtAlii.Adp.TestSupport.Host.csproj" />
+  </ItemGroup>
+
+</Project>

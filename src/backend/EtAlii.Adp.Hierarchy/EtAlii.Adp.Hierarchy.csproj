@@ -28,9 +28,11 @@
          friends) - the moved-internals pattern from the Sessions extraction. They now live
          in EtAlii.Adp.Hierarchy.Tests (post-decomposition backlog item 2); the
          EtAlii.Adp.Backend.Tests grant remains for the AdpFileWriter/LineDocument/LineSplice
-         tests still there and any other consumer. -->
+         tests still there and any other consumer. EtAlii.Adp.Modules.Tests builds an
+         EditorResolver over the deployed editors with a captured logger. -->
     <InternalsVisibleTo Include="EtAlii.Adp.Hierarchy.Tests" />
     <InternalsVisibleTo Include="EtAlii.Adp.Backend.Tests" />
+    <InternalsVisibleTo Include="EtAlii.Adp.Modules.Tests" />
   </ItemGroup>
 
 </Project>

@@ -7,7 +7,7 @@ using EtAlii.Adp.Diagram.Mindmap;
 using Xunit;
 using IoPath = System.IO.Path;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Modules.Tests;
 
 /// <summary>
 /// The element and relation type strings each module emits, written to the golden fixture both tiers

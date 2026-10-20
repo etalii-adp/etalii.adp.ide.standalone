@@ -138,6 +138,7 @@ public partial class ArchitecturePagesTests
         var diagram = paths.Count(path => path.StartsWith("../diagrams/", StringComparison.Ordinal));
         var editor = paths.Count(path => path.StartsWith("../editors/", StringComparison.Ordinal));
         var designer = paths.Count(path => path.StartsWith("../designers/", StringComparison.Ordinal));
+        var spanning = paths.Count(path => path.StartsWith("../tests/", StringComparison.Ordinal));
         var test = paths.Count(path => path.EndsWith(".Tests.csproj", StringComparison.Ordinal));
         var tracked = TrackedProjectFiles();
 
@@ -148,6 +149,7 @@ public partial class ArchitecturePagesTests
             ["diagram"] = diagram,
             ["editor"] = editor,
             ["designer"] = designer,
+            ["spanning modules"] = spanning,
             ["production"] = paths.Length - test,
             ["test"] = test,
             ["tracked project files"] = tracked,
