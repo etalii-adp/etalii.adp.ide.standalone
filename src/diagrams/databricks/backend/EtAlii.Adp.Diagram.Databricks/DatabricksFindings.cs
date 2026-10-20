@@ -108,22 +108,15 @@ internal static class DatabricksFindings
             .Select(found => found.Finding)
             .ToList();
 
-        (Group Group, int Major, int Minor) KeyOf(DislFinding finding)
+        (Group Group, int Major, int Minor) KeyOf(DislFinding finding) => finding.Code switch
         {
-            switch (finding.Code)
-            {
-                case TaskKeyMissing when readers < keyless.Count:
-                    return (Group.PerTask, keyless[readers++], 0);
-                case MissingTask when Relation(finding) is { Target: { } task } && placeOf.TryGetValue(task, out var place):
-                    return (Group.PerTask, place, 1);
-                case DanglingCluster when Node(finding) is { } task && placeOf.TryGetValue(task, out var place):
-                    return (Group.PerTask, place, 2);
-                case DuplicateTaskKey when Node(finding) is { } task && placeOf.TryGetValue(task, out var place):
-                    return (Group.Duplicates, firstHolder.GetValueOrDefault(job.Tasks[place].Key, place), place);
-                default:
-                    return (Group.Rest, 0, 0);
-            }
-        }
+            TaskKeyMissing when readers < keyless.Count => (Group.PerTask, keyless[readers++], 0),
+            MissingTask when Relation(finding) is { Target: { } task } && placeOf.TryGetValue(task, out var place) => (Group.PerTask, place, 1),
+            DanglingCluster when Node(finding) is { } task && placeOf.TryGetValue(task, out var place) => (Group.PerTask, place, 2),
+            DuplicateTaskKey when Node(finding) is { } task && placeOf.TryGetValue(task, out var place) =>
+                (Group.Duplicates, firstHolder.GetValueOrDefault(job.Tasks[place].Key, place), place),
+            _ => (Group.Rest, 0, 0),
+        };
 
         // A dependency is named by its derived id, which two entries can share: the first not yet reported on its line.
         DislElement? Relation(DislFinding finding)
