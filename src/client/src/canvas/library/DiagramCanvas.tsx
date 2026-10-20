@@ -46,6 +46,7 @@ import { resolveChromeText, resolveLegend } from "./definition/chrome";
 import { actionForGesture, actionForKey, flagOf, type ElementGesture } from "./definition/actions";
 import { isCustomShape } from "./definition/diagramDefinition";
 import { outlineEdgePoint, outlineOf } from "./shapes/outline";
+import { onPersonHead, personHeadBox, personParts } from "./shapes/person";
 import {
   attachmentAlong,
   attachmentPointOf,
@@ -1049,17 +1050,19 @@ export function DiagramCanvasCore({
       for (let i = visibleElements.length - 1; i >= 0; i--) {
         const bounds = boundsOf(visibleElements[i]);
         if (
-          point.x >= bounds.x &&
-          point.x <= bounds.x + bounds.width &&
-          point.y >= bounds.y &&
-          point.y <= bounds.y + bounds.height
+          (point.x >= bounds.x &&
+            point.x <= bounds.x + bounds.width &&
+            point.y >= bounds.y &&
+            point.y <= bounds.y + bounds.height) ||
+          // A person's head stands above its bounds and is still the person (DISL 0.5 §6.7).
+          (drawsPerson(visibleElements[i], elementTypes.get(visibleElements[i].type)) && onPersonHead(bounds, point))
         ) {
           found.push(visibleElements[i]);
         }
       }
       return found;
     },
-    [visibleElements, boundsOf],
+    [visibleElements, boundsOf, elementTypes],
   );
 
   /** The topmost drawn element whose bounds contain the point. */
@@ -3833,16 +3836,18 @@ function renderShapeBody(
           {centredText(element, label)}
         </g>
       );
-    case "person":
+    case "person": {
       // The head first and the body over it, so the body covers the head's bottom. The body is
       // the outline: no polygon is stated for it, so the edge point and the text region are the box's.
+      const { head, body } = personParts(bounds);
       return (
         <g>
-          <circle className={shapeClass} cx={element.x} cy={bounds.y - 8} r={10} style={paint} />
-          <rect className={shapeClass} x={bounds.x} y={bounds.y} width={bounds.width} height={bounds.height} rx={8} style={paint} />
+          <circle className={shapeClass} cx={head.cx} cy={head.cy} r={head.r} style={paint} />
+          <rect className={shapeClass} x={body.x} y={body.y} width={body.width} height={body.height} rx={body.rx} style={paint} />
           {centredText(element, label)}
         </g>
       );
+    }
   }
 }
 
@@ -4526,6 +4531,19 @@ function labelBoxesOf(element: DiagramModelElement, type: ElementTypeDefinition 
   });
 }
 
+/**
+ * Whether an element is drawn as a person, whose head stands above its bounds: the `person` shape, or a
+ * styled box whose silhouette the element names `Person`, which `StyledBoxElement` draws as the same figure.
+ */
+function drawsPerson(element: DiagramModelElement, type: ElementTypeDefinition | undefined): boolean {
+  if (type === undefined || isCustomShape(type.shape)) {
+    return false;
+  }
+  const source = sourceOf(element);
+  const shape = shapeOf(type.shape, source);
+  return shape === "person" || (shape === "styled-box" && resolveBound(type.boundStyle?.silhouette, source) === "Person");
+}
+
 /** The box that fits every element and its labels with a margin - what the canvas opens with and Fit returns to. */
 function fitBoxOf(elements: readonly DiagramModelElement[], elementTypes: Map<string, ElementTypeDefinition>): ViewBox {
   if (elements.length === 0) {
@@ -4535,7 +4553,7 @@ function fitBoxOf(elements: readonly DiagramModelElement[], elementTypes: Map<st
   const boxes = elements.flatMap((element) => {
     const type = elementTypes.get(element.type);
     const bounds = elementBounds(element, type);
-    return [bounds, ...labelBoxesOf(element, type, bounds)];
+    return [bounds, ...(drawsPerson(element, type) ? [personHeadBox(bounds)] : []), ...labelBoxesOf(element, type, bounds)];
   });
   const minX = Math.min(...boxes.map((box) => box.x)) - FIT_PADDING;
   const minY = Math.min(...boxes.map((box) => box.y)) - FIT_PADDING;

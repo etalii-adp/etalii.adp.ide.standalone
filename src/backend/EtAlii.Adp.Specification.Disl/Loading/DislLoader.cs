@@ -130,11 +130,12 @@ public static class DislLoader
         DislCelLibrary.Register(environment, name => metamodel.Enums.GetValueOrDefault(name));
         PluginFunctions.Register(environment, root, plugins, diagnostics);
         UserFunctions.Compile(environment, functions, diagnostics);
-        var expressions = Compile(root, environment, diagnostics);
+        var programs = DislPrograms.Over(environment);
+        var expressions = Compile(root, programs, diagnostics);
 
         return diagnostics.Any(diagnostic => diagnostic.Severity == LoadSeverity.Error)
             ? new DislLoadResult(null, diagnostics)
-            : new DislLoadResult(new DislSpecification(root, metamodel, functions, environment, expressions), diagnostics);
+            : new DislLoadResult(new DislSpecification(root, metamodel, functions, environment, programs, expressions), diagnostics);
     }
 
     internal static LoadDiagnostic Error(string pointer, string message) => new(pointer, LoadSeverity.Error, message);
@@ -199,11 +200,13 @@ public static class DislLoader
         return functions;
     }
 
-    /// <summary>Compiles every expression the walker finds, each in its context with the names bound around it.</summary>
-    private static List<DislExpression> Compile(JsonElement root, CelEnvironment functions, List<LoadDiagnostic> diagnostics)
+    /// <summary>
+    /// Compiles every expression the walker finds into <paramref name="programs"/>, each in its context
+    /// with the names bound around it, and gives each position the program it compiled to.
+    /// </summary>
+    private static List<DislExpression> Compile(JsonElement root, CelProgramCache<DislProgramKey> programs, List<LoadDiagnostic> diagnostics)
     {
         var expressions = new List<DislExpression>();
-        var everything = DislContexts.All.SelectMany(DislContexts.VariablesOf).Distinct(StringComparer.Ordinal).ToArray();
         foreach (var site in DislExpressionWalker.Sites(root))
         {
             var context = site.Context;
@@ -211,16 +214,13 @@ public static class DislLoader
             {
                 diagnostics.Add(Warning(site.Pointer, "This runtime does not know the CEL context of this position; it was compiled with every variable of any context."));
             }
-            var environment = functions.Clone()
-                .DeclareVariables(context is { } known ? DislContexts.VariablesOf(known) : everything)
-                .DeclareVariables(site.Bindings);
-            try
+            if (programs.TryGet(DislProgramKey.Of(context, site.Source, site.Bindings), out var program, out var problem))
             {
-                expressions.Add(new DislExpression(site.Pointer, context, environment.Compile(site.Source)));
+                expressions.Add(new DislExpression(site.Pointer, context, program));
             }
-            catch (CelException e)
+            else
             {
-                diagnostics.Add(Error(site.Pointer, $"{e.Message} (context {(context is { } named ? DislContexts.NameOf(named) : "unknown")})"));
+                diagnostics.Add(Error(site.Pointer, $"{problem} (context {(context is { } named ? DislContexts.NameOf(named) : "unknown")})"));
             }
         }
         return expressions;
