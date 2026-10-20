@@ -61,7 +61,7 @@ graph TD
     Def --> Builder
     Builder --> Rows["FormDerivation: property rows"]
     Plugin -->|"graph and failures"| Mapper["DependencyElementMapper and layout"]
-    Plugin -->|"watch: paths"| Watch["PathWatch (library)"]
+    Plugin -->|"watch: paths"| Watch["shared watcher (EtAlii.Adp.Files)"]
     Watch -->|"settled change"| Session[DotNetDependencyGraphSession]
     Session -->|"ModelChange.Place"| Reg["OpenRegistration (library)"]
 ```
@@ -76,7 +76,7 @@ graph TD
 | 4 | The definition bundled again; the binding embedded and loaded with no problem; the refusal stated once. Nothing reads through the binding yet. | 2.1 to 2.4, 9.2 | Step 3 merged |
 | 5 | **Reading.** `DotNetSolutionPlugin`, `DotNetSolutionSubject`, `DotNetBody`; `DependencyGraphStore` holds bodies. The rows are still built by `DotNetDefinition.Build` from the same graph. A parity test compares the builder's model with `Build`'s, element for element, over the corpus. | 3.1 to 3.6, 3.8, 3.9 | Step 2 (L1, L2), step 4 |
 | 6 | **Derivation.** `DotNetDefinition.Rows` reads the model `DislModelBuilder` built. `Build` moves to the test project as `Parity/HandBuiltDotNetModel.cs`, the oracle of the step 5 test. | 3.7, 3.9, 6.2 | Step 5 |
-| 7 | **Watching.** The session watches the plugin's `Watch` paths through `PathWatch`; `SolutionWatcher` and its tests leave the module (the tests move to the library with their subject). The two tests of 4.4 are seen to fail against today's watcher first. | 4.1 to 4.4, 6.2 | Step 2 (L3, L4), step 5 |
+| 7 | **Watching.** The session watches the plugin's `Watch` paths through the shared watcher; `SolutionWatcher` and its tests leave the module (the tests move to the library with their subject). The two tests of 4.4 are seen to fail against today's watcher first. | 4.1 to 4.4, 6.2 | Step 2 (L3, L4), step 5 |
 | 8 | **The registration.** A move is written by `OpenRegistration` as one undo step. The fixtures of finding B14 are run first, and a difference is put to the user before the step lands. | 5.1, 5.2, 5.4 | Step 2 (L5); a ruling where 5.2 finds a difference |
 | 9 | **The new document.** Created from the binding's `template` as a `.slnx`; `DotNetSolutionDocumentFactory` leaves. The transcript's new-document entry is regenerated on purpose (Q4). | 5.3, 1.3, 6.2 | L6 |
 | 10 | The companion's table of remaining classes and gaps; the readmes and the two architecture pages where a sentence became false; the delivery report. | 6.1, 6.3, 8.1, 8.3, 8.4, 9.1 | Step 3's companion, updated in etalii.adp |
@@ -119,7 +119,7 @@ The sentence stays in the definition's `behavior.messages` `std.readOnly`, becau
 
 ### The session, watching and the registration
 
-- **Watching (step 7).** The plugin's `Watch` returns: every file read; every folder a wildcard `Include` listed; and a `Directory.Packages.props` path in every folder above each project, whether or not the file exists. `PathWatch` (L4) watches them and raises one settled change. The settle is 250 ms: the binding carries `"settle": 250` as drafted, and because FBL gives `settle` to folder bodies only, the module passes the binding's number to `PathWatch` from `DotNetSolutionSubject` (finding B15, recorded under gap 1). A watcher overflow counts as a change, inside `PathWatch`. After each re-read the watch is replaced by the new reading's paths.
+- **Watching (step 7).** The plugin's `Watch` returns: every file read; every folder a wildcard `Include` listed; and a `Directory.Packages.props` path in every folder above each project, whether or not the file exists. The shared watcher (L4) watches them and raises one settled change. The settle is 250 ms: the binding carries `"settle": 250` as drafted, and because FBL gives `settle` to folder bodies only, the module passes the binding's number to the shared watcher from `DotNetSolutionSubject` (finding B15, recorded under gap 1). A watcher overflow counts as a change, inside the shared watcher. After each re-read the watch is replaced by the new reading's paths.
 - **Refresh.** `Refresh`, `Rediff` and `DiagramDiff.Between` are unchanged, so Requirement 4.3 is met by the code that meets it today and the transcript holds it.
 - **A move (step 8).** `MoveElementToAsync` keeps its three refusals and their sentences (Requirement 5.4; the binding's `createOnFirstPlacement` is false). It executes a new command, `PlaceInRegistrationCommand`, which opens the registration's bytes with `OpenRegistration.Open`, applies `ModelChange.Place`, and writes the bytes. Its inverse restores the bytes read before, and refuses with `SplicedFile.DriftUndo` when the file has changed since. `KnownIds` is left unset, so no stale entry is pruned and `fbl.stale-view-data` does not appear (Q2). Reading positions stays `RegistrationLayout.Read`.
 - **Where the command lives** is a placement to put to the user as a selection, because it is tool-neutral and several tools of the series will use it: **`EtAlii.Adp.Hierarchy`, beside `SetRegistrationLayoutCommand`** (recommended: one home for both ways of writing a position; it costs that project a reference to `EtAlii.Adp.Specification.Fbl`, which references only `EtAlii.Adp` and the CEL library, so no cycle); `EtAlii.Adp.Diagram` (same reference, one project later); this module (no core change, and a copy per tool); other. This design is written against the first.
@@ -133,7 +133,7 @@ Each is added to `EtAlii.Adp.Specification.Fbl` with a test seen to fail first. 
 | L1 | `PluginReader.Args` loaded from `reader.args`, and `PluginReadRequest.Args` handed to `read` (FBL 11.2). | `PluginReader` is `(Plugin, Version)`; `PluginReadRequest` is `(Files)`. Searched the loader for `"args"`: none. |
 | L2 | `FblElement.File`: the file an element was read from, relative to the subject and `/`-separated, null for the body. `PluginBody` passes it through, and `DislElement` keeps it beside `Line`. | `FblElement` has `OwnSpan` and `Line` only. |
 | L3 | `PluginBody` calls `Watch` after every read and exposes the result as `WatchPaths`; a body's files are the body plus those paths ("a plugin body that spans several files"). | `IPersistencePlugin.Watch` carries the comment "no host calls it yet". Searched `src` for `.Watch(last` and `plugin.Watch`: none. |
-| L4 | `PathWatch`: watches a list of paths (a file whether or not it exists, a folder for entries added and removed), one watcher per folder, settles for a given time, treats an overflow as a change. `BodySettings.Settle` loaded from `body.settle`, default 400 (FBL 10.3). The module's `SolutionWatcher` is its starting point. | Searched the library for `settle`, `Settle` and `FileSystemWatcher`: none. |
+| L4 | The shared watcher (`WatchedFolderStore` in `EtAlii.Adp.Files`, the one place a `FileSystemWatcher` is made; not a `PathWatch` in the FBL library, ruled in chat 2026-10-20): watches a list of paths (a file whether or not it exists, a folder for entries added and removed), one watcher per folder, settles for a given time, treats an overflow as a change. `BodySettings.Settle` loaded from `body.settle`, default 400 (FBL 10.3). The module's `SolutionWatcher` is its starting point. | Searched the library for `settle`, `Settle` and `FileSystemWatcher`: none. |
 | L5 | A test that a read-only binding's plugin is never asked to plan a `ModelChange.Place`. | The rule exists: `PluginBody.Plan` refuses before the plugin, and `AReadOnlyBindingsPluginIsNeverAskedToPlan` holds it for a set. Only the placement case is added (Requirement 7.2). |
 | L6 | An `IDiagramDocumentFactory` that returns a binding's template through `TemplateWriter.Produce`, for every tool whose binding has one. Its home follows the placement ruling above, since `EtAlii.Adp.Documents` cannot reference the FBL library's types without a new reference. | Searched `src` for `TemplateWriter.`: only the library's tests. Every converted module still has a hand-written factory. |
 
@@ -206,7 +206,7 @@ Step 9 is written against the first.
 
 ### Unit Testing
 
-- Library: one test class per item L1 to L6, each seen to fail before its change. `PathWatch` inherits `SolutionWatcher`'s tests, including the watcher obligations.
+- Library: one test class per item L1 to L6, each seen to fail before its change. The shared watcher inherits `SolutionWatcher`'s tests, including the watcher obligations.
 - `DotNetSolutionPlugin`: the elements of each fixture; the source of a project, a reference, a wildcard reference and a package declared twice; determinism over two reads of the same files.
 - The binding: loads with no problem; its template reads through it with no finding (FBL 13).
 - The reader tests stay and pass unchanged; they hold Requirement 3.4.

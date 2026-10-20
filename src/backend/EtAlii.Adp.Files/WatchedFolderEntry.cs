@@ -14,6 +14,12 @@ namespace EtAlii.Adp.Files;
 /// directories full of build output, and a graph rebuilt for that would rebuild for nothing.
 /// </para>
 /// <para>
+/// <b>A named folder is watched for its entries.</b> A path named that is a folder when it is named
+/// is listened to itself, not recursively, and an entry added to it, removed from it or renamed in
+/// it counts, as a wildcard include's folder does: the reading listed what was there, and an entry
+/// more or less is a different listing. A named file need not exist while its folder does: that folder is watched for it.
+/// </para>
+/// <para>
 /// <b>A folder inside a watched project listens to the project.</b> Where a project root that holds
 /// the folder is watched already (<see cref="ProjectFileEvents"/>), the folder picks its own events
 /// out of that root's rather than making a second watcher over the same files; elsewhere it makes a
@@ -44,6 +50,9 @@ internal sealed class WatchedFolderEntry<TSnapshot> : IDisposable
 
     /// <summary>The files an event must name to count, or null when anything under the folder does.</summary>
     private volatile HashSet<string>? _files;
+
+    /// <summary>The named paths that were folders when named: an event for an entry directly in one counts.</summary>
+    private volatile HashSet<string> _folders = new(StringComparer.OrdinalIgnoreCase);
 
     private ITimer? _settleTimer;
     private int _claims;
@@ -97,9 +106,11 @@ internal sealed class WatchedFolderEntry<TSnapshot> : IDisposable
                 return;
             }
 
+            var folders = new HashSet<string>(wanted?.Where(Directory.Exists) ?? [], StringComparer.OrdinalIgnoreCase);
             _files = wanted;
+            _folders = folders;
             previous = _watchers;
-            _watchers = wanted is null ? [Listen(Path, recursive: true)] : [.. Directories(wanted).Select(directory => Listen(directory, recursive: false))];
+            _watchers = wanted is null ? [Listen(Path, recursive: true)] : [.. Directories(wanted).Concat(folders).Distinct(StringComparer.OrdinalIgnoreCase).Select(directory => Listen(directory, recursive: false))];
         }
 
         foreach (var watcher in previous)
@@ -188,15 +199,20 @@ internal sealed class WatchedFolderEntry<TSnapshot> : IDisposable
 
     private void Guarded(string path, string? oldPath = null)
     {
-        // Only the files the snapshot was read from, when it names them.
+        // Only the files the snapshot was read from, when it names them, and the entries of the folders it names.
         var files = _files;
-        if (files is not null && !Names(files, path) && (oldPath is null || !Names(files, oldPath)))
+        var folders = _folders;
+        if (files is not null && !Counts(files, folders, path) && (oldPath is null || !Counts(files, folders, oldPath)))
         {
             return;
         }
 
         Schedule(path);
     }
+
+    /// <summary>Whether <paramref name="path"/> is a named file, or an entry directly in a named folder.</summary>
+    private static bool Counts(HashSet<string> files, HashSet<string> folders, string path) =>
+        Names(files, path) || (System.IO.Path.GetDirectoryName(System.IO.Path.GetFullPath(path)) is { } directory && folders.Contains(directory));
 
     private void Schedule(string path)
     {
