@@ -6,9 +6,7 @@ using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.Specification.Fbl;
 using EtAlii.Adp.Specification.Fbl.Documents;
 using EtAlii.Adp.Specification.Fbl.History;
-using EtAlii.Adp.Specification.Fbl.Planning;
 using EtAlii.Adp.Specification.Fbl.Plugins;
-using EtAlii.Adp.Specification.Fbl.Registration;
 using EtAlii.Adp.Specification.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -18,9 +16,12 @@ namespace EtAlii.Adp.Diagram.DotNetDependencyGraph.Tests;
 
 /// <summary>
 /// One test per finding of dotnet-dependency-graph-disl-fbl that was known only by reading or is
-/// settled by a fixture (B2, both halves of B11, B14, B16 and B17), each on its fixture under
-/// <c>Fixtures/</c>: what today's code does with it beside what FBL, as the library implements it,
-/// does with it.
+/// settled by a fixture, each on its fixture under <c>Fixtures/</c>: what today's code does with it
+/// beside what FBL, as the library implements it, does with it. B2, B11's new document, B16 and B17
+/// are here; B11's registration without a <c>body:</c> header and B14 need the library's internal
+/// <c>BodyLocator</c> and <c>OpenRegistration</c>, so they are in the library's own test project, as
+/// <c>EtAlii.Adp.Specification.Fbl.Tests/RealFiles/DotNetDependencyGraphFindings.Tests.cs</c>, reading
+/// these same fixtures.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -32,9 +33,7 @@ namespace EtAlii.Adp.Diagram.DotNetDependencyGraph.Tests;
 /// </para>
 /// <para>
 /// FBL's side is read through the library, never re-implemented here: a file body is opened by
-/// <see cref="PluginBody"/>, a registration's body is found by <see cref="BodyLocator"/>, a layout
-/// entry is written by <see cref="OpenRegistration"/>, and an XML file is read by
-/// <see cref="OpenBody"/> through a declared binding. The binding of the .NET dependency graph is
+/// <see cref="PluginBody"/>, and an XML file is read by <see cref="OpenBody"/> through a declared binding. The binding of the .NET dependency graph is
 /// the requirements' appendix draft, since none exists yet.
 /// </para>
 /// </remarks>
@@ -170,51 +169,6 @@ public sealed class FindingsTests
     }
 
     [Fact]
-    public void B11_ARegistrationWithoutABodyHeaderBesideBothSerializations_OpensWhatTheOrderOfExtensionsSays()
-    {
-        // Arrange.
-        var registration = Fixture("headerless", "Both.adp");
-
-        // Act: core derives the sibling from the primary extension; FBL 8.2 takes the first of
-        // claims.extensions that exists, in the order the draft binding gives them.
-        var core = DiagramFilePair.BodyOf(registration, Catalog, Fixtures)!.Value.Path;
-        var located = BodyLocator.Locate(registration, RegistrationDocument.Read(File.ReadAllBytes(registration)), Binding(DraftBinding, "solution"), Fixtures);
-
-        var observed = string.Equals(core, located.Path, StringComparison.Ordinal)
-            ? null
-            : $"core opens {Path.GetFileName(core)} ({Projects(core)}); "
-              + $"FBL 8.2 under the draft's claims.extensions [.slnx, .sln] opens {Path.GetFileName(located.Path)} ({Projects(located.Path!)})";
-
-        // Assert.
-        Shows("B11", observed,
-            "core opens Both.sln (project:Classic/Classic.csproj); FBL 8.2 under the draft's claims.extensions [.slnx, .sln] opens Both.slnx (project:Xml/Xml.csproj)");
-    }
-
-    [Fact]
-    public void B14_APlacedId_GoesWhereEachWritersOrderPutsIt()
-    {
-        // Arrange: the registration holds an id with U+FF21; the id placed holds U+1D538, which
-        // UTF-16 orders before it and UTF-8 after it.
-        var bytes = File.ReadAllBytes(Fixture("registration-order", "Order.adp"));
-        const string placed = "project:\U0001D538/\U0001D538.csproj";
-
-        // Act: core rewrites the block with the new position; the library splices one entry in.
-        var registration = AdpRegistration.Parse(Encoding.UTF8.GetString(bytes));
-        var positions = new Dictionary<string, RegistrationPosition>(registration.Layout, StringComparer.Ordinal) { [placed] = new(30, 40) };
-        var core = Encoding.UTF8.GetBytes(registration.WithLayout(positions));
-        var library = OpenRegistration.Open(bytes);
-        Assert.IsType<PlanResult.Planned>(library.Change(new ModelChange.Place(placed, 30, 40)));
-
-        var observed = core.AsSpan().SequenceEqual(library.Bytes)
-            ? null
-            : $"core writes the layout as [{LayoutKeys(core)}]; the library writes it as [{LayoutKeys(library.Bytes)}]";
-
-        // Assert.
-        Shows("B14", observed,
-            "core writes the layout as [project:\U0001D538/\U0001D538.csproj, project:\uFF21/\uFF21.csproj]; the library writes it as [project:\uFF21/\uFF21.csproj, project:\U0001D538/\U0001D538.csproj]");
-    }
-
-    [Fact]
     public void B16_AProjectFileInUtf16_OpensTodayAndIsUnreadableAsAnFblBody()
     {
         // Arrange.
@@ -281,9 +235,6 @@ public sealed class FindingsTests
         return store.GetOrLoad(solution);
     }
 
-    private static string Projects(string solution) =>
-        string.Join(", ", Graph(solution).Projects.Select(project => project.Id));
-
     private static string Packages(DependencyGraphModel graph) =>
         string.Join(", ", graph.Packages.Select(package => $"{package.PackageId} {string.Join("/", package.Versions)}"));
 
@@ -304,10 +255,6 @@ public sealed class FindingsTests
     }
 
     private static string Visible(string text) => text.Replace("\r", "\\r", StringComparison.Ordinal).Replace("\n", "\\n", StringComparison.Ordinal);
-
-    /// <summary>The keys of a registration's layout block, in the order they are written.</summary>
-    private static string LayoutKeys(byte[] registration) =>
-        string.Join(", ", AdpRegistration.Parse(Encoding.UTF8.GetString(registration)).Layout.Keys);
 
     private static FblBinding Binding(string json, string name)
     {
