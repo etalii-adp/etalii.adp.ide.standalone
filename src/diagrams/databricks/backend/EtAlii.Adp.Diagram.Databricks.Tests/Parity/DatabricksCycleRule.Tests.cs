@@ -6,7 +6,7 @@ using IoPath = System.IO.Path;
 namespace EtAlii.Adp.Diagram.Databricks.Tests.Parity;
 
 /// <summary>
-/// The job definition's cycle rule (databricks-disl-fbl, task 4, finding A4) against the module's own finder, the
+/// The job definition's cycle rule (databricks-disl-fbl, task 4, finding A4) against the module's own finder, kept as the oracle since task 7: the
 /// <c>CycleMembers</c> of <see cref="DatabricksRuleSet"/>, over every job of the corpus: the fixtures and the shipped
 /// example. The rule is <c>inCycle</c> on a task or on one it is <c>reachable</c> from, for the first holder of a key;
 /// the module removes every task whose dependencies are all gone and reports what remains.
