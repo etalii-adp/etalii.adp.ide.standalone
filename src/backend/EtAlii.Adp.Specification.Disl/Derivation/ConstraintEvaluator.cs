@@ -1,4 +1,3 @@
-using System.Text.Json;
 using EtAlii.Adp.Specification.Cel;
 
 namespace EtAlii.Adp.Specification.Disl;
@@ -126,10 +125,10 @@ public static class ConstraintEvaluator
                 var type = relation.Type;
                 if (!Allows(type.Source, source)) violations.Add((relation, "source"));
                 if (!Allows(type.Target, target)) violations.Add((relation, "target"));
-                if (ReferenceEquals(source, target) && !Flag(type, "allowSelfLoops", true)) violations.Add((relation, "selfLoop"));
-                if (!Flag(type, "allowParallel", true))
+                if (ReferenceEquals(source, target) && !(type.AllowSelfLoops ?? true)) violations.Add((relation, "selfLoop"));
+                if (!(type.AllowParallel ?? true))
                 {
-                    var directed = Flag(type, "directed", true);
+                    var directed = type.Directed ?? true;
                     var key = directed || source.GetHashCode() <= target.GetHashCode() ? (type, source, target) : (type, target, source);
                     if (!parallels.TryGetValue(key, out var group)) parallels[key] = group = [];
                     group.Add(relation);
@@ -331,9 +330,6 @@ public static class ConstraintEvaluator
 
         private static bool Allows(DislRelationEnd? end, DislElement element) =>
             end is null || (end.Types.Count == 0 || end.Types.Any(element.IsA)) && !end.Exclude.Any(element.IsA);
-
-        private static bool Flag(DislType type, string name, bool fallback) =>
-            type.Json.TryGetProperty(name, out var value) && value.ValueKind is JsonValueKind.True or JsonValueKind.False ? value.GetBoolean() : fallback;
 
         private BuiltIn Setting(string id) => new(id, _constraints.BuiltIn(id));
     }

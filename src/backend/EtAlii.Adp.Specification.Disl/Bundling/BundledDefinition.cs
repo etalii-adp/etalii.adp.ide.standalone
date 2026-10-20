@@ -1,6 +1,5 @@
 using System.Reflection;
 using System.Security.Cryptography;
-using System.Text.Json;
 using EtAlii.Adp.Specification.Json;
 
 namespace EtAlii.Adp.Specification.Disl;
@@ -38,7 +37,7 @@ public sealed record BundledDefinition(DislSpecification Specification, Definiti
 
         var bytes = Resource(assembly, logicalName);
         var name = logicalName.EndsWith(".dis", StringComparison.Ordinal) ? logicalName[..^".dis".Length] : logicalName;
-        var provenance = ProvenanceOf(Resource(assembly, name + ".provenance.json"), name);
+        var provenance = DefinitionProvenanceReader.Read(Resource(assembly, name + ".provenance.json"), name);
 
         var actual = Convert.ToHexStringLower(SHA256.HashData(bytes));
         if (!string.Equals(actual, provenance.Sha256, StringComparison.Ordinal))
@@ -59,13 +58,5 @@ public sealed record BundledDefinition(DislSpecification Specification, Definiti
         using var copy = new MemoryStream();
         stream.CopyTo(copy);
         return copy.ToArray();
-    }
-
-    private static DefinitionProvenance ProvenanceOf(byte[] json, string name)
-    {
-        using var document = JsonDocument.Parse(json);
-        var root = document.RootElement;
-        return new DefinitionProvenance(Field("repository"), Field("path"), Field("revision"), Field("sha256"));
-        string Field(string field) => DislJson.String(root, field) ?? throw new InvalidOperationException($"The provenance of {name} has no {field}.");
     }
 }

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using EtAlii.Adp.Specification.Json;
 
 namespace EtAlii.Adp.Specification.Disl;
 
@@ -25,7 +26,7 @@ internal static class DislBehaviorReader
             messagesMalformed = DislFieldReader.NotAnObject(declaredMessages);
             if (messagesMalformed is null)
             {
-                foreach (var message in declaredMessages.EnumerateObject()) messages[message.Name] = DislFieldReader.Message(specification, message.Value, DislJson.Pointer("/behavior/messages", message.Name));
+                foreach (var message in declaredMessages.EnumerateObject()) messages[message.Name] = DislFieldReader.Message(specification, message.Value, JsonPointer.Append("/behavior/messages", message.Name));
             }
         }
 
@@ -36,7 +37,7 @@ internal static class DislBehaviorReader
             reasonsMalformed = DislFieldReader.NotAnObject(declaredReasons);
             if (reasonsMalformed is null)
             {
-                foreach (var reason in declaredReasons.EnumerateObject()) reasons[reason.Name] = DislFieldReader.Reason(specification, reason.Value, DislJson.Pointer("/behavior/reasons", reason.Name));
+                foreach (var reason in declaredReasons.EnumerateObject()) reasons[reason.Name] = DislFieldReader.Reason(specification, reason.Value, JsonPointer.Append("/behavior/reasons", reason.Name));
             }
         }
 
@@ -56,8 +57,8 @@ internal static class DislBehaviorReader
             messagesMalformed,
             reasons,
             reasonsMalformed,
-            [.. DislJson.Members(behavior, "deletion").Select(policy => (policy.Name, Deletion(specification, policy.Value, DislJson.Pointer("/behavior/deletion", policy.Name))))],
-            [.. DislJson.Members(behavior, "retype").Select(policy => (policy.Name, Retype(specification, policy.Value, DislJson.Pointer("/behavior/retype", policy.Name))))],
+            [.. DislJson.Members(behavior, "deletion").Select(policy => (policy.Name, Deletion(specification, policy.Value, JsonPointer.Append("/behavior/deletion", policy.Name))))],
+            [.. DislJson.Members(behavior, "retype").Select(policy => (policy.Name, Retype(specification, policy.Value, JsonPointer.Append("/behavior/retype", policy.Name))))],
             null);
     }
 
@@ -69,7 +70,7 @@ internal static class DislBehaviorReader
         var index = 0;
         foreach (var hook in declared.EnumerateArray())
         {
-            var pointer = DislJson.Pointer("/behavior/hooks", index++);
+            var pointer = JsonPointer.Append("/behavior/hooks", index++);
             if (hook.ValueKind != JsonValueKind.Object) continue;
 
             long order = 0;
@@ -81,15 +82,15 @@ internal static class DislBehaviorReader
             }
             hooks.Add(new DislHook(
                 pointer,
-                DislJson.String(hook, "id") ?? pointer,
-                DislJson.Strings(hook, "on"),
-                DislJson.String(hook, "phase") ?? "after",
-                DislJson.Strings(hook, "for"),
-                DislJson.Strings(hook, "attribute"),
+                JsonProperties.String(hook, "id") ?? pointer,
+                JsonProperties.StringOrStrings(hook, "on"),
+                JsonProperties.String(hook, "phase") ?? "after",
+                JsonProperties.StringOrStrings(hook, "for"),
+                JsonProperties.StringOrStrings(hook, "attribute"),
                 order,
                 orderMalformed,
-                hook.TryGetProperty("when", out var when) ? DislFieldReader.Expression(specification, when, DislJson.Pointer(pointer, "when")) : null,
-                hook.TryGetProperty("actions", out var actions) ? DislActionReader.List(specification, actions, DislJson.Pointer(pointer, "actions")) : null));
+                hook.TryGetProperty("when", out var when) ? DislFieldReader.Expression(specification, when, JsonPointer.Append(pointer, "when")) : null,
+                hook.TryGetProperty("actions", out var actions) ? DislActionReader.List(specification, actions, JsonPointer.Append(pointer, "actions")) : null));
         }
         return hooks;
     }
@@ -98,10 +99,10 @@ internal static class DislBehaviorReader
     {
         if (DislFieldReader.NotAnObject(policy) is { } malformed) return new DislDeletionPolicy(null, null, null, null, malformed);
         return new DislDeletionPolicy(
-            DislJson.String(policy, "children"),
-            DislJson.String(policy, "relations"),
-            DislJson.String(policy, "references"),
-            policy.TryGetProperty("confirm", out var confirm) ? Confirm(specification, confirm, DislJson.Pointer(pointer, "confirm")) : null,
+            JsonProperties.String(policy, "children"),
+            JsonProperties.String(policy, "relations"),
+            JsonProperties.String(policy, "references"),
+            policy.TryGetProperty("confirm", out var confirm) ? Confirm(specification, confirm, JsonPointer.Append(pointer, "confirm")) : null,
             null);
     }
 
@@ -121,25 +122,25 @@ internal static class DislBehaviorReader
             if (thresholdMalformed is null && declared.TryGetInt64(out var limit)) threshold = limit;
         }
         return new DislDeletionConfirm.Asked(
-            confirm.TryGetProperty("count", out var count) ? DislFieldReader.Expression(specification, count, DislJson.Pointer(pointer, "count")) : null,
+            confirm.TryGetProperty("count", out var count) ? DislFieldReader.Expression(specification, count, JsonPointer.Append(pointer, "count")) : null,
             threshold,
             thresholdMalformed,
-            confirm.TryGetProperty("when", out var when) ? DislFieldReader.Expression(specification, when, DislJson.Pointer(pointer, "when")) : null,
+            confirm.TryGetProperty("when", out var when) ? DislFieldReader.Expression(specification, when, JsonPointer.Append(pointer, "when")) : null,
             Text("title"),
-            DislFieldReader.Message(specification, message, DislJson.Pointer(pointer, "message")),
+            DislFieldReader.Message(specification, message, JsonPointer.Append(pointer, "message")),
             Text("confirmLabel"),
             !confirm.TryGetProperty("danger", out var danger) || danger.ValueKind != JsonValueKind.False);
 
         DislMessage? Text(string name) =>
-            confirm.TryGetProperty(name, out var text) ? DislFieldReader.Message(specification, text, DislJson.Pointer(pointer, name)) : null;
+            confirm.TryGetProperty(name, out var text) ? DislFieldReader.Message(specification, text, JsonPointer.Append(pointer, name)) : null;
     }
 
     private static DislRetypePolicy Retype(DislSpecification specification, JsonElement policy, string pointer)
     {
-        var mappingAt = DislJson.Pointer(pointer, "attributeMapping");
+        var mappingAt = JsonPointer.Append(pointer, "attributeMapping");
         return new DislRetypePolicy(
             policy.ValueKind == JsonValueKind.Object,
-            DislJson.Strings(policy, "to"),
-            [.. DislJson.Members(policy, "attributeMapping").Select(mapping => (mapping.Name, DislFieldReader.Expression(specification, mapping.Value, DislJson.Pointer(mappingAt, mapping.Name))))]);
+            JsonProperties.StringOrStrings(policy, "to"),
+            [.. DislJson.Members(policy, "attributeMapping").Select(mapping => (mapping.Name, DislFieldReader.Expression(specification, mapping.Value, JsonPointer.Append(mappingAt, mapping.Name))))]);
     }
 }

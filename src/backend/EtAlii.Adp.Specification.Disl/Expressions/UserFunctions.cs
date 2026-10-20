@@ -44,7 +44,7 @@ internal static partial class UserFunctions
         var declared = declarations.Select(declaration => declaration.Name).ToHashSet(StringComparer.Ordinal);
         foreach (var declaration in declarations)
         {
-            var pointer = DislJson.Pointer("/functions", declaration.Name);
+            var pointer = JsonPointer.Append("/functions", declaration.Name);
             if (!Valid(declaration, pointer, environment, diagnostics)) continue;
 
             var function = new Compiled(declaration);
@@ -60,7 +60,7 @@ internal static partial class UserFunctions
             }
             catch (CelException e)
             {
-                diagnostics.Add(new LoadDiagnostic(DislJson.Pointer(pointer, "cel"), LoadSeverity.Error, Explain(declaration, e.Message, declared)));
+                diagnostics.Add(new LoadDiagnostic(JsonPointer.Append(pointer, "cel"), LoadSeverity.Error, Explain(declaration, e.Message, declared)));
                 continue;
             }
 
@@ -83,17 +83,17 @@ internal static partial class UserFunctions
         }
         foreach (var parameter in declaration.Parameters.Where(parameter => !SimpleIdentifier().IsMatch(parameter.Name)))
         {
-            diagnostics.Add(new LoadDiagnostic(DislJson.Pointer(pointer, "params"), LoadSeverity.Error, $"The parameter '{parameter.Name}' is not a simple identifier."));
+            diagnostics.Add(new LoadDiagnostic(JsonPointer.Append(pointer, "params"), LoadSeverity.Error, $"The parameter '{parameter.Name}' is not a simple identifier."));
             valid = false;
         }
         foreach (var use in declaration.Uses.Where(use => use is not ("diagram" or "env")))
         {
-            diagnostics.Add(new LoadDiagnostic(DislJson.Pointer(pointer, "uses"), LoadSeverity.Error, $"A function may use 'diagram' and 'env', not '{use}'."));
+            diagnostics.Add(new LoadDiagnostic(JsonPointer.Append(pointer, "uses"), LoadSeverity.Error, $"A function may use 'diagram' and 'env', not '{use}'."));
             valid = false;
         }
         if (declaration.Recursion is { MaxDepth: < 1 })
         {
-            diagnostics.Add(new LoadDiagnostic(DislJson.Pointer(pointer, "recursion"), LoadSeverity.Error, "recursion.maxDepth must be at least 1."));
+            diagnostics.Add(new LoadDiagnostic(JsonPointer.Append(pointer, "recursion"), LoadSeverity.Error, "recursion.maxDepth must be at least 1."));
             valid = false;
         }
         return valid;

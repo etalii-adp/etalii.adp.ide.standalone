@@ -1,5 +1,3 @@
-using System.Text.Json;
-
 namespace EtAlii.Adp.Specification.Disl;
 
 /// <summary>How one binding type becomes part of the model: the metamodel type it is read as, its attributes renamed, and those kept for the host.</summary>
@@ -9,32 +7,13 @@ namespace EtAlii.Adp.Specification.Disl;
 internal sealed record DislTypeMapping(string As, IReadOnlyDictionary<string, string> Attributes, IReadOnlySet<string> HostAttributes);
 
 /// <summary>
-/// The specification's <c>persistence.typeMap</c> (DISL 0.3), or the identity mapping: read from
-/// the binding to the model by <see cref="DislModelBuilder"/>, and back by <see cref="DislWrite"/>.
+/// The specification's <c>persistence.typeMap</c> (DISL 0.3), or the identity mapping, read at load by
+/// <see cref="DislTypeMapReader"/>: consulted from the binding to the model by <see cref="DislModelBuilder"/>, and back
+/// by <see cref="DislWrite"/>.
 /// </summary>
 internal sealed class DislTypeMap(IReadOnlyDictionary<string, DislTypeMapping> mappings)
 {
     private static readonly IReadOnlyDictionary<string, string> NoRenames = new Dictionary<string, string>();
-
-    /// <summary>The type map of <paramref name="persistence"/>, the specification's <c>persistence</c>; read once, at load.</summary>
-    public static DislTypeMap Read(JsonElement persistence)
-    {
-        var mappings = new Dictionary<string, DislTypeMapping>(StringComparer.Ordinal);
-        if (persistence.ValueKind == JsonValueKind.Object && persistence.TryGetProperty("typeMap", out var map) && map.ValueKind == JsonValueKind.Object)
-        {
-            foreach (var entry in map.EnumerateObject())
-            {
-                var renames = DislJson.Members(entry.Value, "attributes")
-                    .Where(member => member.Value.ValueKind == JsonValueKind.String)
-                    .ToDictionary(member => member.Name, member => member.Value.GetString()!, StringComparer.Ordinal);
-                mappings[entry.Name] = new DislTypeMapping(
-                    DislJson.String(entry.Value, "as") ?? entry.Name,
-                    renames,
-                    DislJson.Strings(entry.Value, "hostAttributes").ToHashSet(StringComparer.Ordinal));
-            }
-        }
-        return new DislTypeMap(mappings);
-    }
 
     /// <summary>The mapping of binding type <paramref name="type"/>.</summary>
     public DislTypeMapping For(string type) => mappings.GetValueOrDefault(type) ?? new DislTypeMapping(type, NoRenames, new HashSet<string>());

@@ -106,8 +106,8 @@ public static class DislLoader
         }
         else
         {
-            if (DislJson.String(language, "id") is null) diagnostics.Add(Error("/language/id", "The language has no id (DISL §3.2)."));
-            if (DislJson.String(language, "version") is null) diagnostics.Add(Error("/language/version", "The language has no version (DISL §3.2)."));
+            if (JsonProperties.String(language, "id") is null) diagnostics.Add(Error("/language/id", "The language has no id (DISL §3.2)."));
+            if (JsonProperties.String(language, "version") is null) diagnostics.Add(Error("/language/version", "The language has no version (DISL §3.2)."));
         }
         if (!root.TryGetProperty("metamodel", out var metamodelJson) || metamodelJson.ValueKind != JsonValueKind.Object)
         {
@@ -154,8 +154,8 @@ public static class DislLoader
     /// <summary>The <c>disl</c> version, or its deprecated alias <c>dedl</c> (§2.9, §18): a higher major is refused, a higher minor warned about.</summary>
     private static void Version(JsonElement root, List<LoadDiagnostic> diagnostics)
     {
-        var disl = DislJson.String(root, "disl");
-        var dedl = DislJson.String(root, "dedl");
+        var disl = JsonProperties.String(root, "disl");
+        var dedl = JsonProperties.String(root, "dedl");
         if (disl is not null && dedl is not null)
         {
             diagnostics.Add(Error("/dedl", "A specification carries exactly one of 'disl' and its deprecated alias 'dedl' (DISL §18)."));
@@ -186,25 +186,25 @@ public static class DislLoader
         var functions = new List<DislFunctionDeclaration>();
         foreach (var function in DislJson.Members(root, "functions"))
         {
-            var pointer = DislJson.Pointer("/functions", function.Name);
+            var pointer = JsonPointer.Append("/functions", function.Name);
             var json = function.Value;
-            var cel = DislJson.String(json, "cel");
+            var cel = JsonProperties.String(json, "cel");
             if (cel is null)
             {
                 diagnostics.Add(Error(pointer, $"The function '{function.Name}' has no cel body (DISL §3.4)."));
                 continue;
             }
             var parameters = json.TryGetProperty("params", out var declared) && declared.ValueKind == JsonValueKind.Array
-                ? declared.EnumerateArray().Select(parameter => new DislParameter(DislJson.String(parameter, "name") ?? "", DislJson.String(parameter, "type") ?? "dyn")).ToList()
+                ? declared.EnumerateArray().Select(parameter => new DislParameter(JsonProperties.String(parameter, "name") ?? "", JsonProperties.String(parameter, "type") ?? "dyn")).ToList()
                 : [];
             DislRecursion? recursion = null;
             if (json.TryGetProperty("recursion", out var bounded) && bounded.ValueKind == JsonValueKind.Object)
             {
                 recursion = new DislRecursion(
                     bounded.TryGetProperty("maxDepth", out var depth) && depth.TryGetInt32(out var maxDepth) ? maxDepth : 0,
-                    DislJson.String(bounded, "atMaxDepth") ?? "null");
+                    JsonProperties.String(bounded, "atMaxDepth") ?? "null");
             }
-            functions.Add(new DislFunctionDeclaration(function.Name, parameters, DislJson.String(json, "returns") ?? "dyn", cel, DislJson.Strings(json, "uses"), recursion));
+            functions.Add(new DislFunctionDeclaration(function.Name, parameters, JsonProperties.String(json, "returns") ?? "dyn", cel, JsonProperties.StringOrStrings(json, "uses"), recursion));
         }
         return functions;
     }

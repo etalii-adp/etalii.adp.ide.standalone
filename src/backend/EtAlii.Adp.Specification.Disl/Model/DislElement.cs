@@ -121,7 +121,7 @@ public sealed class DislElement : ICelObject
     public object? ValueOf(string name)
     {
         if (!Type.Attributes.TryGetValue(name, out var attribute)) throw new ArgumentException($"'{name}' is not an attribute of {Type.Name}.", nameof(name));
-        if (attribute.Json.TryGetProperty("derived", out _)) return Derived(attribute);
+        if (attribute.IsDerived) return Derived(attribute);
         if (!_attributes.TryGetValue(name, out var value)) return DislValues.Unset(attribute, Diagram.Specification.Metamodel);
         if (Diagram.Specification.Metamodel.TypeOf(attribute.Type) is null) return value;
         return value switch
@@ -141,15 +141,13 @@ public sealed class DislElement : ICelObject
     private object? Derived(DislAttribute attribute)
     {
         var metamodel = Diagram.Specification.Metamodel;
-        var declaredIn = metamodel.Types.ContainsKey(attribute.DeclaredBy) ? "/metamodel/types" : "/metamodel/relations";
-        var pointer = DislJson.Pointer(DislJson.Pointer(DislJson.Pointer(DislJson.Pointer(declaredIn, attribute.DeclaredBy), "attributes"), attribute.Name), "derived");
-        if (Diagram.Specification.ExpressionAt(pointer) is not { } expression) return DislValues.Unset(attribute, metamodel);
+        if (attribute.DerivedProgram is not { } program) return DislValues.Unset(attribute, metamodel);
 
         _computing ??= new HashSet<(DislElement, string)>();
         if (!_computing.Add((this, attribute.Name))) return DislValues.Unset(attribute, metamodel);
         try
         {
-            var value = expression.Program.Evaluate(new Dictionary<string, object?> { ["self"] = this, ["diagram"] = Diagram, ["env"] = Diagram.Env.ToCel() });
+            var value = program.Evaluate(new Dictionary<string, object?> { ["self"] = this, ["diagram"] = Diagram, ["env"] = Diagram.Env.ToCel() });
             return value is CelError ? DislValues.Unset(attribute, metamodel) : value;
         }
         finally
@@ -245,7 +243,7 @@ public sealed class DislElement : ICelObject
 
     /// <inheritdoc />
     public bool HasMember(string name) => Type.Attributes.TryGetValue(name, out var attribute)
-        ? _attributes.ContainsKey(name) || attribute.Json.TryGetProperty("derived", out _)
+        ? _attributes.ContainsKey(name) || attribute.IsDerived
         : Member(name) is var value && !ReferenceEquals(value, Missing) && value is not null;
 
     private object? Member(string name)
