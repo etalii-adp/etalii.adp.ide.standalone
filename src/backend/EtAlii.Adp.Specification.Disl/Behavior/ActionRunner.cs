@@ -68,161 +68,183 @@ internal sealed class ActionRunner(DislSpecification specification, DislDiagram 
         return false;
     }
 
-    private bool Action(DislAction action, Dictionary<string, object?> variables)
+    /// <summary>Runs one action by its kind; false once the transaction is refused.</summary>
+    private bool Action(DislAction action, Dictionary<string, object?> variables) => action switch
     {
-        var at = action.At;
-        switch (action)
+        DislAction.Set set => Set(set, variables),
+        DislAction.Unset unset => Unset(unset, variables),
+        DislAction.Create create => Create(create, variables),
+        DislAction.Connect connect => Connect(connect, variables),
+        DislAction.Retype retype => Retype(retype, variables),
+        DislAction.Delete delete => Delete(delete, variables),
+        DislAction.Reparent reparent => Reparent(reparent, variables),
+        DislAction.Let let => Let(let, variables),
+        DislAction.If condition => If(condition, variables),
+        DislAction.ForEach forEach => ForEach(forEach, variables),
+        DislAction.Select select => Select(select, variables),
+        DislAction.EditLabel editLabel => EditLabel(editLabel, variables),
+        DislAction.Layout layout => Layout(layout),
+        DislAction.View view => View(view, variables),
+        DislAction.Plugin plugin => Plugin(plugin, variables),
+        DislAction.Abort abort => Abort(abort, variables),
+        DislAction.Unsupported unsupported => Refuse($"This runtime cannot run a `{unsupported.Kind}` action yet ({unsupported.At})."),
+        _ => Refuse($"The action at {action.At} is none this runtime knows."),
+    };
+
+    /// <summary>A <c>set</c>: its values stored on its <c>target</c>, by default <c>self</c>.</summary>
+    private bool Set(DislAction.Set set, Dictionary<string, object?> variables)
+    {
+        if (!Target(set.Target, set.At, variables, out var target)) return false;
+        Malformed(set.Malformed);
+        var values = new Dictionary<string, object?>(StringComparer.Ordinal);
+        foreach ((string name, DislActionValue declared) in set.Values)
         {
-            case DislAction.Set set:
-            {
-                if (!Target(set.Target, at, variables, out var target)) return false;
-                Malformed(set.Malformed);
-                var values = new Dictionary<string, object?>(StringComparer.Ordinal);
-                foreach ((string name, DislActionValue declared) in set.Values)
-                {
-                    if (!Value(declared, variables, out var value)) return false;
-                    values[name] = Stored(value);
-                }
-                return Set(target, values);
-            }
-            case DislAction.Unset unset:
-                {
-                    return Target(unset.Target, at, variables, out var target) && Set(target, unset.Names.ToDictionary(name => name, _ => (object?)null, StringComparer.Ordinal));
-                }
-            case DislAction.Create create:
-                return Create(create, variables);
-            case DislAction.Connect connect:
-                return Connect(connect, variables);
-            case DislAction.Retype retype:
-                return Retype(retype, variables);
-            case DislAction.Delete delete:
-            {
-                if (!Value(delete.Elements, variables, out var value)) return false;
-                foreach (var element in Elements(value))
-                {
-                    var deletion = DeletionPolicy.Changes(specification, element);
-                    if (!deletion.WasApplied) return Refuse(deletion.Refusal!);
-                    foreach (var change in deletion.Changes)
-                    {
-                        _changes.Add(change);
-                        if (change is DislChange.Remove removed && diagram.Elements.FirstOrDefault(candidate => candidate.Id == removed.ElementId) is { } gone) diagram.Remove(gone);
-                    }
-                }
-                return true;
-            }
-            case DislAction.Reparent reparent:
-            {
-                if (!Member(reparent.Target, variables, variables.GetValueOrDefault("self"), out var target)
-                    || !Member(reparent.Parent, variables, null, out var parent)
-                    || !Member(reparent.Slot, variables, null, out var slot)
-                    || !Member(reparent.After, variables, null, out var after)
-                    || !Member(reparent.Before, variables, null, out var before)) return false;
-                if (target is not DislElement element) return Refuse($"The reparent at {at} has no element to move.");
-                var newParent = parent as DislElement;
-                var siblings = diagram.SiblingsUnder(newParent);
-                var index = -1;
-                if (after is DislElement previous && (index = siblings.IndexOf(previous)) >= 0) index++;
-                else if (before is DislElement next) index = siblings.IndexOf(next);
-                if (index < 0 && (after is DislElement || before is DislElement)) return Refuse($"The reparent at {at} places the element beside one that is not beneath its new parent.");
-                try
-                {
-                    diagram.Reparent(element, newParent, slot as string, index);
-                }
-                catch (Exception e) when (e is ArgumentException or InvalidOperationException)
-                {
-                    return Refuse(e.Message);
-                }
-                _changes.Add(new DislChange.Reparent(element.Id, newParent?.Id, index));
-                return true;
-            }
-            case DislAction.Let let:
-                Malformed(let.Malformed);
-                foreach ((string name, DislActionValue declared) in let.Bindings)
-                {
-                    if (!Value(declared, variables, out var value)) return false;
-                    variables[name] = value;
-                }
-                return true;
-            case DislAction.If condition:
-                return condition.Condition.Holds(variables)
-                    ? Run(condition.Then, variables)
-                    : Run(condition.Else, variables);
-            case DislAction.ForEach forEach:
-            {
-                if (!Value(forEach.Items, variables, out var list)) return false;
-                if (list is not IReadOnlyList<object?> items) return Refuse($"The forEach at {at} is not over a list.");
-                foreach (var item in items)
-                {
-                    variables[forEach.As] = item;
-                    if (!Run(forEach.Do, variables)) return false;
-                }
-                return true;
-            }
-            case DislAction.Select select:
-            {
-                if (!Value(select.Elements, variables, out var value)) return false;
-                _host.Add(new HostAction.Select([.. Elements(value).Select(element => element.Id)]));
-                return true;
-            }
-            case DislAction.EditLabel editLabel:
-            {
-                if (!Member(editLabel.Target, variables, variables.GetValueOrDefault("self"), out var target)) return false;
-                if (target is not DislElement element) return Refuse($"The editLabel at {at} has no element to edit.");
-                _host.Add(new HostAction.EditLabel(element.Id, editLabel.Label));
-                return true;
-            }
-            case DislAction.Layout layout:
-            {
-                _host.Add(new HostAction.Layout(layout.Algorithm));
-                return true;
-            }
-            case DislAction.View view:
-            {
-                if (!Target(view.Target, at, variables, out var target)) return false;
-                Malformed(view.Malformed);
-                var values = new Dictionary<string, object?>(StringComparer.Ordinal);
-                foreach (var property in view.Values)
-                {
-                    if (property.Map is { } entries)
-                    {
-                        // A map of expressions by filter id or group key, not one expression.
-                        var map = new Dictionary<string, object?>(StringComparer.Ordinal);
-                        foreach ((string key, DislActionValue declared) in entries)
-                        {
-                            if (!Value(declared, variables, out var entryValue)) return false;
-                            map[key] = entryValue;
-                        }
-                        values[property.Name] = map;
-                        continue;
-                    }
-
-                    if (!Value(property.Value!, variables, out var value)) return false;
-                    values[property.Name] = value;
-                }
-
-                _host.Add(new HostAction.View(target.Id, values));
-                return true;
-            }
-            case DislAction.Plugin plugin:
-            {
-                var arguments = new Dictionary<string, object?>(StringComparer.Ordinal);
-                foreach ((string name, DislActionValue declared) in plugin.Arguments)
-                {
-                    if (!Value(declared, variables, out var value)) return false;
-                    arguments[name] = value;
-                }
-                Malformed(plugin.Malformed);
-                _host.Add(new HostAction.Plugin(plugin.Name, arguments));
-                return true;
-            }
-            case DislAction.Abort abort:
-                return Member(abort.Message, variables, "The change was refused.", out var message) && Refuse(DislEvaluation.TextOf(message));
-            case DislAction.Unsupported unsupported:
-                return Refuse($"This runtime cannot run a `{unsupported.Kind}` action yet ({at}).");
-            default:
-                return Refuse($"The action at {at} is none this runtime knows.");
+            if (!Value(declared, variables, out var value)) return false;
+            values[name] = Stored(value);
         }
+        return Store(target, values);
     }
+
+    /// <summary>An <c>unset</c>: its attributes of its <c>target</c>, by default <c>self</c>, stored as null.</summary>
+    private bool Unset(DislAction.Unset unset, Dictionary<string, object?> variables) =>
+        Target(unset.Target, unset.At, variables, out var target) && Store(target, unset.Names.ToDictionary(name => name, _ => (object?)null, StringComparer.Ordinal));
+
+    /// <summary>A <c>delete</c>: each element its value gives taken out, with what <see cref="DeletionPolicy"/> takes out with it.</summary>
+    private bool Delete(DislAction.Delete delete, Dictionary<string, object?> variables)
+    {
+        if (!Value(delete.Elements, variables, out var value)) return false;
+        foreach (var element in Elements(value))
+        {
+            var deletion = DeletionPolicy.Changes(specification, element);
+            if (!deletion.WasApplied) return Refuse(deletion.Refusal!);
+            foreach (var change in deletion.Changes)
+            {
+                _changes.Add(change);
+                if (change is DislChange.Remove removed && diagram.Elements.FirstOrDefault(candidate => candidate.Id == removed.ElementId) is { } gone) diagram.Remove(gone);
+            }
+        }
+        return true;
+    }
+
+    /// <summary>A <c>reparent</c>: its <c>target</c>, by default <c>self</c>, moved under its <c>parent</c> and <c>slot</c>, <c>after</c> or <c>before</c> a sibling, or last.</summary>
+    private bool Reparent(DislAction.Reparent reparent, Dictionary<string, object?> variables)
+    {
+        var at = reparent.At;
+        if (!Member(reparent.Target, variables, variables.GetValueOrDefault("self"), out var target)
+            || !Member(reparent.Parent, variables, null, out var parent)
+            || !Member(reparent.Slot, variables, null, out var slot)
+            || !Member(reparent.After, variables, null, out var after)
+            || !Member(reparent.Before, variables, null, out var before)) return false;
+        if (target is not DislElement element) return Refuse($"The reparent at {at} has no element to move.");
+        var newParent = parent as DislElement;
+        var siblings = diagram.SiblingsUnder(newParent);
+        var index = -1;
+        if (after is DislElement previous && (index = siblings.IndexOf(previous)) >= 0) index++;
+        else if (before is DislElement next) index = siblings.IndexOf(next);
+        if (index < 0 && (after is DislElement || before is DislElement)) return Refuse($"The reparent at {at} places the element beside one that is not beneath its new parent.");
+        try
+        {
+            diagram.Reparent(element, newParent, slot as string, index);
+        }
+        catch (Exception e) when (e is ArgumentException or InvalidOperationException)
+        {
+            return Refuse(e.Message);
+        }
+        _changes.Add(new DislChange.Reparent(element.Id, newParent?.Id, index));
+        return true;
+    }
+
+    /// <summary>A <c>let</c>: its names bound, in order, for the actions after it.</summary>
+    private bool Let(DislAction.Let let, Dictionary<string, object?> variables)
+    {
+        Malformed(let.Malformed);
+        foreach ((string name, DislActionValue declared) in let.Bindings)
+        {
+            if (!Value(declared, variables, out var value)) return false;
+            variables[name] = value;
+        }
+        return true;
+    }
+
+    /// <summary>An <c>if</c>: its <c>then</c> while its condition holds, else its <c>else</c>.</summary>
+    private bool If(DislAction.If condition, Dictionary<string, object?> variables) =>
+        condition.Condition.Holds(variables)
+            ? Run(condition.Then, variables)
+            : Run(condition.Else, variables);
+
+    /// <summary>A <c>forEach</c>: its <c>do</c> for each item of its list, the item bound to its <c>as</c>.</summary>
+    private bool ForEach(DislAction.ForEach forEach, Dictionary<string, object?> variables)
+    {
+        if (!Value(forEach.Items, variables, out var list)) return false;
+        if (list is not IReadOnlyList<object?> items) return Refuse($"The forEach at {forEach.At} is not over a list.");
+        foreach (var item in items)
+        {
+            variables[forEach.As] = item;
+            if (!Run(forEach.Do, variables)) return false;
+        }
+        return true;
+    }
+
+    /// <summary>A <c>select</c>: the elements its value gives, handed to the host.</summary>
+    private bool Select(DislAction.Select select, Dictionary<string, object?> variables)
+    {
+        if (!Value(select.Elements, variables, out var value)) return false;
+        _host.Add(new HostAction.Select([.. Elements(value).Select(element => element.Id)]));
+        return true;
+    }
+
+    /// <summary>An <c>editLabel</c>: its <c>target</c>, by default <c>self</c>, and its <c>label</c>, handed to the host.</summary>
+    private bool EditLabel(DislAction.EditLabel editLabel, Dictionary<string, object?> variables)
+    {
+        if (!Member(editLabel.Target, variables, variables.GetValueOrDefault("self"), out var target)) return false;
+        if (target is not DislElement element) return Refuse($"The editLabel at {editLabel.At} has no element to edit.");
+        _host.Add(new HostAction.EditLabel(element.Id, editLabel.Label));
+        return true;
+    }
+
+    /// <summary>A <c>layout</c>: its <c>algorithm</c>, handed to the host.</summary>
+    private bool Layout(DislAction.Layout layout)
+    {
+        _host.Add(new HostAction.Layout(layout.Algorithm));
+        return true;
+    }
+
+    /// <summary>A <c>view</c>: its values for its <c>target</c>, by default <c>self</c>, handed to the host.</summary>
+    private bool View(DislAction.View view, Dictionary<string, object?> variables)
+    {
+        if (!Target(view.Target, view.At, variables, out var target)) return false;
+        Malformed(view.Malformed);
+        var values = new Dictionary<string, object?>(StringComparer.Ordinal);
+        foreach (var property in view.Values)
+        {
+            if (property.Map is { } entries)
+            {
+                // A map of expressions by filter id or group key, not one expression.
+                if (!Values(entries, variables, out var map)) return false;
+                values[property.Name] = map;
+                continue;
+            }
+
+            if (!Value(property.Value!, variables, out var value)) return false;
+            values[property.Name] = value;
+        }
+
+        _host.Add(new HostAction.View(target.Id, values));
+        return true;
+    }
+
+    /// <summary>A <c>plugin</c>: the plugin it names and its <c>args</c>, handed to the host.</summary>
+    private bool Plugin(DislAction.Plugin plugin, Dictionary<string, object?> variables)
+    {
+        if (!Values(plugin.Arguments, variables, out var arguments)) return false;
+        Malformed(plugin.Malformed);
+        _host.Add(new HostAction.Plugin(plugin.Name, arguments));
+        return true;
+    }
+
+    /// <summary>An <c>abort</c>: the transaction refused with its <c>message</c>, or the runtime's own.</summary>
+    private bool Abort(DislAction.Abort abort, Dictionary<string, object?> variables) =>
+        Member(abort.Message, variables, "The change was refused.", out var message) && Refuse(DislEvaluation.TextOf(message));
 
     /// <summary>
     /// Throws what reading a body of the wrong shape threw when the runtime read it from the JSON, at the moment it did:
@@ -318,7 +340,8 @@ internal sealed class ActionRunner(DislSpecification specification, DislDiagram 
         return true;
     }
 
-    private bool Set(DislElement target, Dictionary<string, object?> values)
+    /// <summary>Stores <paramref name="values"/> on <paramref name="target"/>, as one change.</summary>
+    private bool Store(DislElement target, Dictionary<string, object?> values)
     {
         if (Before is not null && !Before.ContainsKey(target)) Before[target] = target.Snapshot();
         try
@@ -345,6 +368,18 @@ internal sealed class ActionRunner(DislSpecification specification, DislDiagram 
             return true;
         }
         return Refuse($"The action at {at} has no element to change.");
+    }
+
+    /// <summary>The values of named expressions, by name, in order; false at the first that fails.</summary>
+    private bool Values(IReadOnlyList<(string Name, DislActionValue Value)> declared, Dictionary<string, object?> variables, out Dictionary<string, object?> values)
+    {
+        values = new Dictionary<string, object?>(StringComparer.Ordinal);
+        foreach ((string name, DislActionValue expression) in declared)
+        {
+            if (!Value(expression, variables, out var value)) return false;
+            values[name] = value;
+        }
+        return true;
     }
 
     /// <summary>A member of an action's body: its value, or <paramref name="fallback"/> when the body states none.</summary>
