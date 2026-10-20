@@ -9,7 +9,7 @@ namespace EtAlii.Adp.Specification.Fbl.Registration;
 /// writes its layout entry by splices, in the ordinal order of ids, with numbers in
 /// <c>{decimals: 3}</c> form and the registration's own line ending (FBL §8.3).
 /// </summary>
-public sealed class OpenRegistration : SplicedFile
+internal sealed class OpenRegistration : SplicedFile
 {
     private OpenRegistration(byte[] bytes) : base(bytes)
     {

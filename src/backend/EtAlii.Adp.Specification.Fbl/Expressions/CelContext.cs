@@ -1,7 +1,7 @@
 namespace EtAlii.Adp.Specification.Fbl.Expressions;
 
 /// <summary>Where a CEL expression appears, which decides the variables it may use (FBL §2.4).</summary>
-public enum CelContext
+internal enum CelContext
 {
     /// <summary>A rule of an xml binding: entry, parent, path, line, registration.</summary>
     Tree,

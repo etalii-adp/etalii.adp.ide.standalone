@@ -3,7 +3,7 @@ using EtAlii.Adp.Specification.Fbl.Documents;
 namespace EtAlii.Adp.Specification.Fbl.Registration;
 
 /// <summary>Where a registration's body is (FBL §8.2), or why it is not opened.</summary>
-public sealed record BodyLocation(string? Path, bool Exists, string? Refusal)
+internal sealed record BodyLocation(string? Path, bool Exists, string? Refusal)
 {
     /// <summary>A missing body opens empty with <c>fbl.missing-body</c>, and nothing is written until the registration names a file.</summary>
     public bool IsMissing => Refusal is null && !Exists;
@@ -18,7 +18,7 @@ public sealed record BodyLocation(string? Path, bool Exists, string? Refusal)
 /// extension, else the registration's folder for a folder binding. A body outside the workspace root,
 /// or reached through a symbolic link or other reparse point, is refused (FBL §16).
 /// </summary>
-public static class BodyLocator
+internal static class BodyLocator
 {
     public static BodyLocation Locate(string registrationPath, RegistrationDocument registration, FblBinding binding, string workspaceRoot)
     {

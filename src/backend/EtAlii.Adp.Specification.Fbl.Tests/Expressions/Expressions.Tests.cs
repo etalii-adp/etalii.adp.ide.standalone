@@ -11,15 +11,15 @@ namespace EtAlii.Adp.Specification.Fbl.Tests.Expressions;
 public class ExpressionsTests
 {
     [Theory]
-    [InlineData("groups.name == 'x'", CelContext.Tree, "'groups' is not a variable here; available: entry, parent, path, line, registration.")]
-    [InlineData("path.x == 1", CelContext.Lines, "'path' is not a variable here; available: entry, parent, groups, line, registration.")]
-    [InlineData("entry.x == 1", CelContext.Insert, "'entry' is not a variable here; available: attributes.")]
-    [InlineData("entry.x.y.z()", CelContext.Tree, "The function 'z' is not supported by this CEL evaluator.")]
-    [InlineData("timestamp('2026-01-01')", CelContext.Tree, "The function 'timestamp' is not supported by this CEL evaluator.")]
-    public void AnExpressionOutsideTheSubsetFailsToCompile(string expression, CelContext context, string message)
+    [InlineData("groups.name == 'x'", nameof(CelContext.Tree), "'groups' is not a variable here; available: entry, parent, path, line, registration.")]
+    [InlineData("path.x == 1", nameof(CelContext.Lines), "'path' is not a variable here; available: entry, parent, groups, line, registration.")]
+    [InlineData("entry.x == 1", nameof(CelContext.Insert), "'entry' is not a variable here; available: attributes.")]
+    [InlineData("entry.x.y.z()", nameof(CelContext.Tree), "The function 'z' is not supported by this CEL evaluator.")]
+    [InlineData("timestamp('2026-01-01')", nameof(CelContext.Tree), "The function 'timestamp' is not supported by this CEL evaluator.")]
+    public void AnExpressionOutsideTheSubsetFailsToCompile(string expression, string context, string message)
     {
         // Act.
-        var refused = Record.Exception(() => FblCel.Compile(expression, context));
+        var refused = Record.Exception(() => FblCel.Compile(expression, Enum.Parse<CelContext>(context)));
 
         // Assert.
         Assert.IsType<CelException>(refused);
