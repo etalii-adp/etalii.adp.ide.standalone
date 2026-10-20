@@ -2,11 +2,10 @@ using EtAlii.Adp.Context.Wire;
 using EtAlii.Adp.Diagram.Wire;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy.Wire;
-using EtAlii.Adp.TestSupport.Host;
 using Xunit;
 using Path = EtAlii.Adp.Documents.Wire.Path;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.TestSupport.Host;
 
 /// <summary>
 /// The steps the document-backed diagram flows share: open a diagram and read its baseline, find
@@ -16,7 +15,7 @@ namespace EtAlii.Adp.Backend.Tests;
 /// The RDF, OWL and Databricks flows each carried these word for word; what differs between them is
 /// what they open and what they assert, which stays in each class.
 /// </remarks>
-internal static class DiagramFlow
+public static class DiagramFlow
 {
     /// <summary>Opens <paramref name="fileName"/> on a watch of its own and returns its baseline; empty when none came before the deadline.</summary>
     public static async Task<IReadOnlyList<Element>> BaselineAsync(FlowSession session, string fileName)

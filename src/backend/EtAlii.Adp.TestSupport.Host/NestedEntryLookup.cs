@@ -2,7 +2,7 @@ using EtAlii.Adp.Hierarchy.Wire;
 using Grpc.Core;
 using Xunit;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.TestSupport.Host;
 
 /// <summary>
 /// Finds an entry the way the tree now shows it (adp-file-nesting Requirement 3): a diagram
@@ -10,7 +10,7 @@ namespace EtAlii.Adp.Backend.Tests;
 /// the root listing no longer sees it. This walks the root and then one level under every entry
 /// that reports children - the same walk a user's eye makes.
 /// </summary>
-internal static class NestedEntryLookup
+public static class NestedEntryLookup
 {
     public static async Task<Documents.Wire.ShortGuid> EntryIdOfAsync(
         HierarchyService.HierarchyServiceClient hierarchy,

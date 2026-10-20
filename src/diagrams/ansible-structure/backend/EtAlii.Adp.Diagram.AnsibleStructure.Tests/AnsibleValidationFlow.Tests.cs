@@ -1,5 +1,3 @@
-using EtAlii.Adp.Diagram;
-using EtAlii.Adp.Diagram.AnsibleStructure;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.Problems;
@@ -8,7 +6,7 @@ using Microsoft.Extensions.Time.Testing;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Diagram.AnsibleStructure.Tests;
 
 /// <summary>
 /// Validation of a folder-subject diagram, end to end through core's own machinery.
@@ -52,7 +50,7 @@ public class AnsibleValidationFlowTests : IDisposable
 
         var services = new ServiceCollection();
         services.AddSingleton<TimeProvider>(_clock);
-        services.AddSingleton<IDiagramDefinitionCatalog>(new TestDiagramDefinitionCatalog(Diagram.AnsibleStructure.Diagram.AnsibleStructure));
+        services.AddSingleton<IDiagramDefinitionCatalog>(new TestDiagramDefinitionCatalog(Diagram.AnsibleStructure));
         services.AddSingleton<DiagramFileRouter>();
         services.AddSingleton<DiagramValidators>();
         services.AddSingleton<ProjectValidator>();

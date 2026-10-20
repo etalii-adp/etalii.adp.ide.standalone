@@ -18,6 +18,8 @@
     <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Workspace\EtAlii.Adp.Workspace.csproj" />
     <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Problems\EtAlii.Adp.Problems.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Diagram.C4\EtAlii.Adp.Diagram.C4.csproj" />
+    <!-- The module's flows over the real host (code-structure T303). -->
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.TestSupport.Host\EtAlii.Adp.TestSupport.Host.csproj" />
   </ItemGroup>
 
   <ItemGroup>
