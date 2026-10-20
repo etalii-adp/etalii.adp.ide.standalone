@@ -5,7 +5,8 @@ namespace EtAlii.Adp.Specification.Disl.Tests;
 
 /// <summary>
 /// <c>reachable(relType)</c> and <c>inCycle(relType)</c> on an element (DISL §12.2, §12.4): the transitive successors over
-/// relations of a type and its subtypes, <c>self</c> among them only when it is on a cycle, and whether it is.
+/// relations of a type and its subtypes, <c>self</c> among them only when it is on a cycle, and whether it is. An element
+/// downstream of a cycle, reached from one of its members, is not on it.
 /// </summary>
 public class DislReachabilityTests
 {
@@ -43,6 +44,12 @@ public class DislReachabilityTests
         _diagram.AddRelation("Flow", "y-z", y, z);
         _diagram.AddRelation("Flow", "z-y", z, y);
 
+        // Downstream of those cycles and on none: d waits for z, and e for d.
+        var d = Node("d");
+        var e = Node("e");
+        _diagram.AddRelation("Flow", "z-d", z, d);
+        _diagram.AddRelation("Flow", "d-e", d, e);
+
         // Outside every relation.
         Node("w");
     }
@@ -58,9 +65,11 @@ public class DislReachabilityTests
     [InlineData("a", "['b', 'c']")]
     [InlineData("b", "['c']")]
     [InlineData("c", "[]")]
-    [InlineData("x", "['x', 'y', 'z']")]
-    [InlineData("y", "['x', 'y', 'z']")]
-    [InlineData("z", "['x', 'y', 'z']")]
+    [InlineData("x", "['d', 'e', 'x', 'y', 'z']")]
+    [InlineData("y", "['d', 'e', 'x', 'y', 'z']")]
+    [InlineData("z", "['d', 'e', 'x', 'y', 'z']")]
+    [InlineData("d", "['e']")]
+    [InlineData("e", "[]")]
     [InlineData("w", "[]")]
     public void Reachable_IsTheTransitiveSuccessors_SelfOnlyOnACycle(string id, string expected) =>
         Assert.Equal(true, Evaluate(id, $"self.reachable('Flow').map(e, e.id).sort() == {expected}"));
@@ -72,6 +81,8 @@ public class DislReachabilityTests
     [InlineData("x", true)]
     [InlineData("y", true)]
     [InlineData("z", true)]
+    [InlineData("d", false)]
+    [InlineData("e", false)]
     [InlineData("w", false)]
     public void InCycle_HoldsForAnElementOnACycle(string id, bool expected) =>
         Assert.Equal(expected, Evaluate(id, "self.inCycle('Flow')"));

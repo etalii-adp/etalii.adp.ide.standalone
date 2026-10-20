@@ -301,6 +301,15 @@ internal static partial class DislExpressionWalker
                 return frame;
             }
 
+            if (path is [.., "drop", "targets", "args"]) return frame;
+            if (path is [.., "drop", "targets"])
+            {
+                // A drop target is a context tool plus on (§7.2): self is the drop target, position the drop
+                // point, and its args are Expressions as a context tool's are (§7.3).
+                var target = frame.Binding(["position"]);
+                return key == "args" ? target.As(Mode.Expression) : target;
+            }
+
             if (path is [_, "templates", ..])
             {
                 // A template's fragment (§7.4): its attribute values and positions are Expressions in the
@@ -350,6 +359,14 @@ internal static partial class DislExpressionWalker
                     "messages" or "reasons" or "editGate" => frame.In(DislContexts.Element),
                     _ => frame,
                 };
+            }
+
+            // An operation whose body is a simulation (§9.3, §9.6): its initial, next and until are
+            // Expressions of the simulation context, which binds state and step besides the operation's p.
+            if (key == "simulate" && path is [_, "operations", _]) return frame.In(DislContexts.Simulation).As(Mode.Literal);
+            if (path is [.., "operations", _, "simulate"])
+            {
+                return key is "initial" or "next" or "until" ? frame.As(Mode.Expression) : frame;
             }
 
             return key switch
