@@ -42,7 +42,7 @@ public abstract class SplicedFile
     /// another editor's buffer; when it differs from what the history expects, the undo is refused
     /// and nothing is written.
     /// </summary>
-    public UndoResult Undo(byte[]? current = null)
+    internal UndoResult Undo(byte[]? current = null)
     {
         if (!_history.CanUndo) return new UndoResult.Refused("There is nothing to undo.");
         var entry = _history.PeekUndo();
@@ -53,7 +53,7 @@ public abstract class SplicedFile
     }
 
     /// <summary>Redoes the most recently undone edit, refused on drift as <see cref="Undo"/> is.</summary>
-    public UndoResult Redo(byte[]? current = null)
+    internal UndoResult Redo(byte[]? current = null)
     {
         if (!_history.CanRedo) return new UndoResult.Refused("There is nothing to redo.");
         var entry = _history.PeekRedo();
@@ -83,7 +83,7 @@ public abstract class SplicedFile
 }
 
 /// <summary>What an undo or a redo did: the splices it applied, or why it was refused.</summary>
-public abstract record UndoResult
+internal abstract record UndoResult
 {
     public sealed record Done(IReadOnlyList<Splice> Splices) : UndoResult;
 

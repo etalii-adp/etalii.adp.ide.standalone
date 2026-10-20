@@ -7,7 +7,7 @@ namespace EtAlii.Adp.Specification.Fbl.Registration;
 /// <c>layout:</c> and <c>identities:</c> blocks, and whatever follows them kept as unbound content.
 /// Every part keeps its span, so the registration is written by splices like any body (FBL §8.4).
 /// </summary>
-public sealed class RegistrationDocument
+internal sealed class RegistrationDocument
 {
     /// <summary>The headers FBL itself defines (FBL §8.1); a binding declares others.</summary>
     private static readonly IReadOnlyList<string> FblHeaders = ["body", "view", "resource"];
@@ -152,10 +152,10 @@ public sealed class RegistrationDocument
     }
 }
 
-public sealed record RegistrationHeader(string Key, string Value, Span Line);
+internal sealed record RegistrationHeader(string Key, string Value, Span Line);
 
 /// <summary>A block: its name line, its whole span, and its entries in order.</summary>
-public sealed record RegistrationBlock(string Name, Span NameLine, Span Span, IReadOnlyList<RegistrationEntry> Entries);
+internal sealed record RegistrationBlock(string Name, Span NameLine, Span Span, IReadOnlyList<RegistrationEntry> Entries);
 
 /// <summary>One <c>key: value</c> entry of a block, the key being everything before the line's last <c>": "</c>.</summary>
-public sealed record RegistrationEntry(string Key, string Value, Span KeySpan, Span ValueSpan, Span Line, int Indent);
+internal sealed record RegistrationEntry(string Key, string Value, Span KeySpan, Span ValueSpan, Span Line, int Indent);

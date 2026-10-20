@@ -5,7 +5,7 @@ namespace EtAlii.Adp.Specification.Disl;
 /// each may read, and the name a diagnostic gives each. An expression is compiled in exactly one of
 /// them, so a variable its context does not bind is refused at load, naming the variables it does.
 /// </summary>
-public static class DislContexts
+internal static class DislContexts
 {
     private static readonly string[] Shaped = ["w", "h", "p", "self", "env"];
 

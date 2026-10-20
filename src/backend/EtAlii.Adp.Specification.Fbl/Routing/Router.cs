@@ -7,7 +7,7 @@ namespace EtAlii.Adp.Specification.Fbl.Routing;
 /// Routing (FBL §12.3) and offering readings (FBL §9.4). The router returns every candidate and
 /// never chooses between several on the caller's behalf.
 /// </summary>
-public static class Router
+internal static class Router
 {
     /// <summary>The part of a body <c>suggest</c> looks at (FBL §12.1).</summary>
     private const int SuggestBytes = 64 * 1024;

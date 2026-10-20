@@ -6,7 +6,7 @@ namespace EtAlii.Adp.Specification.Fbl.Expressions;
 /// FBL's presets of the CEL engine (FBL §2.4): the standard environment, which FBL shares with DISL,
 /// with the variables each <see cref="CelContext"/> offers and nothing else.
 /// </summary>
-public static class FblCel
+internal static class FblCel
 {
     private static readonly Dictionary<CelContext, CelEnvironment> _environments = new()
     {
