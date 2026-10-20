@@ -39,7 +39,7 @@ public class FindingLocationTests
         var wholeFile = Box(diagram, "wholeFile", "b.yaml", null);
         var primary = Box(diagram, "primary", null, 9);
         var unplaced = Box(new DislDiagram(specification), "unplaced", null, null);
-        var program = specification.Environment(DislContexts.Element).Compile("self.location()");
+        var program = specification.Environment(DislContext.Element).Compile("self.location()");
 
         // Act.
         object? LocationOf(DislElement self) => program.Evaluate(new Dictionary<string, object?> { ["self"] = self });

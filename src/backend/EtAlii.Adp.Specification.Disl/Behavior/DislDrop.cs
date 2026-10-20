@@ -105,14 +105,14 @@ public static class DislDrop
         var elsewhere = DislJson.String(drop, "elsewhere") ?? "create";
         if (elsewhere != "refuse") return new DislDropOutcome.Elsewhere(elsewhere);
 
-        var variables = OperationInterpreter.Variables(DislContexts.Create, diagram, env);
+        var variables = OperationInterpreter.Variables(DislContext.Create, diagram, env);
         variables["dropTarget"] = dropTarget;
         variables["tool"] = toolId;
         variables["elementType"] = DislJson.String(tool, "creates");
         return new DislDropOutcome.Refused(drop.TryGetProperty("refusal", out var refusal)
             ? (refusal.ValueKind == JsonValueKind.Array
-                ? DislEvaluation.FirstReason(specification, refusal, DislJson.Pointer(dropAt, "refusal"), DislContexts.Create, variables)
-                : DislEvaluation.Reason(specification, refusal, DislJson.Pointer(dropAt, "refusal"), DislContexts.Create, variables)) ?? DefaultRefusal
+                ? DislEvaluation.FirstReason(specification, refusal, DislJson.Pointer(dropAt, "refusal"), DislContext.Create, variables)
+                : DislEvaluation.Reason(specification, refusal, DislJson.Pointer(dropAt, "refusal"), DislContext.Create, variables)) ?? DefaultRefusal
             : DefaultRefusal);
     }
 
@@ -138,7 +138,7 @@ public static class DislDrop
         };
         foreach (var argument in DislJson.Members(target, "args"))
         {
-            arguments[argument.Name] = DislEvaluation.Expression(specification, argument.Value, DislJson.Pointer(DislJson.Pointer(pointer, "args"), argument.Name), DislContexts.Element, variables);
+            arguments[argument.Name] = DislEvaluation.Expression(specification, argument.Value, DislJson.Pointer(DislJson.Pointer(pointer, "args"), argument.Name), DislContext.Element, variables);
         }
 
         return arguments;

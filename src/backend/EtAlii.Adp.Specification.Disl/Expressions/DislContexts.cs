@@ -2,120 +2,87 @@ namespace EtAlii.Adp.Specification.Disl;
 
 /// <summary>
 /// The CEL contexts of DISL §12.3 and the gesture contexts of §8.4: the variables an expression in
-/// each may read. An expression is compiled in exactly one of them, so a variable its context does not
-/// bind is refused at load, naming the variables it does.
+/// each may read, and the name a diagnostic gives each. An expression is compiled in exactly one of
+/// them, so a variable its context does not bind is refused at load, naming the variables it does.
 /// </summary>
 public static class DislContexts
 {
-    public const string Element = "element";
-    public const string CompartmentItem = "compartmentItem";
-    public const string Shape = "shape";
-    public const string Marker = "marker";
-    public const string Handle = "handle";
-    public const string HandleSnap = "handleSnap";
-    public const string HandleWrite = "handleWrite";
-    public const string Placement = "placement";
-    public const string PlacementWrite = "placementWrite";
-    public const string Snap = "snap";
-    public const string Categories = "categories";
-    public const string Constraint = "constraint";
-    public const string BuiltInMessage = "constraint+detail";
-    public const string BuiltInRefusal = "refusal";
-    public const string Identity = "identity";
-    public const string Create = "create";
-    public const string Form = "form";
-    public const string Hook = "hook";
-    public const string Operation = "operation";
-    public const string Derive = "derive";
-    public const string DeriveItem = "deriveItem";
-    public const string Filter = "filter";
-    public const string FilterOptions = "filterOptions";
-    public const string Legend = "legend";
-    public const string Chrome = "chrome";
-    public const string Budget = "budget";
-    public const string Connection = "connection";
-    public const string Simulation = "simulation";
-    public const string Template = "template";
-    public const string Migration = "migration";
-    public const string Retype = "retype";
-    public const string LabelParse = "labelParse";
-    public const string DataTypeDisplay = "dataTypeDisplay";
-    private const string GestureConnect = "gesture:connect";
-    private const string GestureContainment = "gesture:containment";
-    private const string GestureCreate = "gesture:create";
-    public const string GestureDelete = "gesture:delete";
-    public const string GesturePlacement = "gesture:placement";
-    public const string GestureChange = "gesture:change";
-    private const string GestureReorder = "gesture:reorder";
-
     private static readonly string[] Shaped = ["w", "h", "p", "self", "env"];
 
-    private static readonly Dictionary<string, string[]> _variables = new(StringComparer.Ordinal)
+    /// <summary>A context's name, as a diagnostic gives it, and its variables.</summary>
+    private sealed record Declared(string Name, string[] Variables);
+
+    private static readonly Dictionary<DislContext, Declared> _contexts = new()
     {
-        [Element] = ["self", "diagram", "env"],
-        [CompartmentItem] = ["self", "item", "index", "diagram", "env"],
-        [Shape] = Shaped,
-        [Marker] = [.. Shaped, "sw"],
-        [Handle] = [.. Shaped, "px", "py"],
+        [DislContext.Element] = new("element", ["self", "diagram", "env"]),
+        [DislContext.CompartmentItem] = new("compartmentItem", ["self", "item", "index", "diagram", "env"]),
+        [DislContext.Shape] = new("shape", Shaped),
+        [DislContext.Marker] = new("marker", [.. Shaped, "sw"]),
+        [DislContext.Handle] = new("handle", [.. Shaped, "px", "py"]),
         // A handle's snap is a CEL snap rule (§6.8) in the handle context: the snap rule's value, axis and zoom besides.
-        [HandleSnap] = [.. Shaped, "px", "py", "value", "axis", "zoom", "diagram"],
-        [HandleWrite] = ["self", "diagram", "env", "p", "w", "h", "value", "yValue"],
-        [Placement] = ["self", "diagram", "env", "parent", "axis"],
-        [PlacementWrite] = ["self", "diagram", "env", "parent", "axis", "value"],
-        [Snap] = ["value", "axis", "zoom", "self", "parent", "diagram"],
-        [Categories] = ["diagram", "env"],
-        [Constraint] = ["self", "diagram", "env"],
-        [BuiltInMessage] = ["self", "diagram", "env", "detail"],
+        [DislContext.HandleSnap] = new("handleSnap", [.. Shaped, "px", "py", "value", "axis", "zoom", "diagram"]),
+        [DislContext.HandleWrite] = new("handleWrite", ["self", "diagram", "env", "p", "w", "h", "value", "yValue"]),
+        [DislContext.Placement] = new("placement", ["self", "diagram", "env", "parent", "axis"]),
+        [DislContext.PlacementWrite] = new("placementWrite", ["self", "diagram", "env", "parent", "axis", "value"]),
+        [DislContext.Snap] = new("snap", ["value", "axis", "zoom", "self", "parent", "diagram"]),
+        [DislContext.Categories] = new("categories", ["diagram", "env"]),
+        [DislContext.Constraint] = new("constraint", ["self", "diagram", "env"]),
+        [DislContext.BuiltInMessage] = new("constraint+detail", ["self", "diagram", "env", "detail"]),
         // A built-in's refusal (§8.4) sees the gesture's variables plus violation; the union of the gesture kinds a built-in refuses.
-        [BuiltInRefusal] = ["self", "diagram", "env", "violation", "relationType", "source", "target", "sourcePort", "targetPort", "child", "parent", "slot", "attribute", "oldValue", "newValue", "oldBounds", "newBounds", "newParent", "gesture"],
-        [Identity] = ["self", "diagram"],
-        [Create] = ["diagram", "env", "parent", "elementType", "position", "dropTarget", "tool"],
-        [Form] = ["self", "value", "diagram", "env"],
-        [Hook] = ["self", "old", "event", "diagram", "env"],
-        [Operation] = ["self", "selection", "p", "diagram", "env", "position"],
-        [Derive] = ["diagram", "env"],
-        [DeriveItem] = ["item", "group", "index", "diagram", "env"],
-        [Filter] = ["self", "value", "match", "diagram", "env"],
-        [FilterOptions] = ["value", "match", "diagram", "env"],
-        [Legend] = ["self", "diagram", "env"],
-        [Chrome] = ["diagram", "env"],
-        [Budget] = ["self", "index", "diagram", "env"],
-        [Connection] = ["source", "target", "sourceAnchor", "position", "diagram", "env"],
-        [Simulation] = ["self", "state", "step", "p", "diagram", "env"],
-        [Template] = ["p", "diagram", "env", "refs"],
-        [Migration] = ["element", "value", "document", "from", "to"],
+        [DislContext.BuiltInRefusal] = new("refusal", ["self", "diagram", "env", "violation", "relationType", "source", "target", "sourcePort", "targetPort", "child", "parent", "slot", "attribute", "oldValue", "newValue", "oldBounds", "newBounds", "newParent", "gesture"]),
+        [DislContext.Identity] = new("identity", ["self", "diagram"]),
+        [DislContext.Create] = new("create", ["diagram", "env", "parent", "elementType", "position", "dropTarget", "tool"]),
+        [DislContext.Form] = new("form", ["self", "value", "diagram", "env"]),
+        [DislContext.Hook] = new("hook", ["self", "old", "event", "diagram", "env"]),
+        [DislContext.Operation] = new("operation", ["self", "selection", "p", "diagram", "env", "position"]),
+        [DislContext.Derive] = new("derive", ["diagram", "env"]),
+        [DislContext.DeriveItem] = new("deriveItem", ["item", "group", "index", "diagram", "env"]),
+        [DislContext.Filter] = new("filter", ["self", "value", "match", "diagram", "env"]),
+        [DislContext.FilterOptions] = new("filterOptions", ["value", "match", "diagram", "env"]),
+        [DislContext.Legend] = new("legend", ["self", "diagram", "env"]),
+        [DislContext.Chrome] = new("chrome", ["diagram", "env"]),
+        [DislContext.Budget] = new("budget", ["self", "index", "diagram", "env"]),
+        [DislContext.Connection] = new("connection", ["source", "target", "sourceAnchor", "position", "diagram", "env"]),
+        [DislContext.Simulation] = new("simulation", ["self", "state", "step", "p", "diagram", "env"]),
+        [DislContext.Template] = new("template", ["p", "diagram", "env", "refs"]),
+        [DislContext.Migration] = new("migration", ["element", "value", "document", "from", "to"]),
         // A retype's attribute mapping (§9.5) is an Expression over the element as it was.
-        [Retype] = ["self", "old", "diagram", "env"],
+        [DislContext.Retype] = new("retype", ["self", "old", "diagram", "env"]),
         // A label's parse (§6.12): the element's context with value bound to the entered text.
-        [LabelParse] = ["self", "diagram", "env", "value"],
-        [DataTypeDisplay] = ["self", "diagram", "env", "value"],
-        [GestureConnect] = ["relationType", "source", "target", "sourcePort", "targetPort", "self", "diagram", "env"],
-        [GestureContainment] = ["child", "parent", "slot", "diagram", "env"],
-        [GestureCreate] = ["elementType", "parent", "position", "dropTarget", "tool", "diagram", "env"],
-        [GestureDelete] = ["self", "selection", "diagram", "env"],
-        [GesturePlacement] = ["self", "oldBounds", "newBounds", "newParent", "gesture", "diagram", "env"],
-        [GestureChange] = ["self", "attribute", "oldValue", "newValue", "diagram", "env"],
-        [GestureReorder] = ["self", "parent", "oldIndex", "newIndex", "siblings", "diagram", "env"],
+        [DislContext.LabelParse] = new("labelParse", ["self", "diagram", "env", "value"]),
+        [DislContext.DataTypeDisplay] = new("dataTypeDisplay", ["self", "diagram", "env", "value"]),
+        [DislContext.GestureConnect] = new("gesture:connect", ["relationType", "source", "target", "sourcePort", "targetPort", "self", "diagram", "env"]),
+        [DislContext.GestureContainment] = new("gesture:containment", ["child", "parent", "slot", "diagram", "env"]),
+        [DislContext.GestureCreate] = new("gesture:create", ["elementType", "parent", "position", "dropTarget", "tool", "diagram", "env"]),
+        [DislContext.GestureDelete] = new("gesture:delete", ["self", "selection", "diagram", "env"]),
+        [DislContext.GesturePlacement] = new("gesture:placement", ["self", "oldBounds", "newBounds", "newParent", "gesture", "diagram", "env"]),
+        [DislContext.GestureChange] = new("gesture:change", ["self", "attribute", "oldValue", "newValue", "diagram", "env"]),
+        [DislContext.GestureReorder] = new("gesture:reorder", ["self", "parent", "oldIndex", "newIndex", "siblings", "diagram", "env"]),
     };
 
     /// <summary>Every context this runtime knows.</summary>
-    public static IEnumerable<string> All => _variables.Keys;
+    public static IEnumerable<DislContext> All => _contexts.Keys;
 
     /// <summary>The variables of <paramref name="context"/>.</summary>
-    public static IReadOnlyList<string> VariablesOf(string context) =>
-        _variables.TryGetValue(context, out var variables) ? variables : throw new ArgumentException($"There is no CEL context '{context}'.", nameof(context));
+    public static IReadOnlyList<string> VariablesOf(DislContext context) => Of(context).Variables;
 
-    /// <summary>The gesture context of a constraint of <paramref name="kind"/> (§8.4), or <see cref="Constraint"/> for an invariant.</summary>
-    public static string OfConstraintKind(string? kind) => kind switch
+    /// <summary>The name of <paramref name="context"/> as a diagnostic gives it: §12.3's, such as <c>element</c> or <c>gesture:connect</c>.</summary>
+    public static string NameOf(DislContext context) => Of(context).Name;
+
+    private static Declared Of(DislContext context) =>
+        _contexts.TryGetValue(context, out var declared) ? declared : throw new ArgumentException($"There is no CEL context '{context}'.", nameof(context));
+
+    /// <summary>The gesture context of a constraint of <paramref name="kind"/> (§8.4), or <see cref="DislContext.Constraint"/> for an invariant.</summary>
+    public static DislContext OfConstraintKind(string? kind) => kind switch
     {
-        null or "invariant" => Constraint,
-        "connect" => GestureConnect,
-        "containment" => GestureContainment,
-        "create" => GestureCreate,
-        "delete" => GestureDelete,
-        "placement" => GesturePlacement,
-        "change" => GestureChange,
-        "reorder" => GestureReorder,
-        _ => Constraint,
+        null or "invariant" => DislContext.Constraint,
+        "connect" => DislContext.GestureConnect,
+        "containment" => DislContext.GestureContainment,
+        "create" => DislContext.GestureCreate,
+        "delete" => DislContext.GestureDelete,
+        "placement" => DislContext.GesturePlacement,
+        "change" => DislContext.GestureChange,
+        "reorder" => DislContext.GestureReorder,
+        _ => DislContext.Constraint,
     };
 }

@@ -116,5 +116,5 @@ public sealed record DislFunctionDeclaration(
 /// </param>
 public sealed record DislIdRule(string Strategy, string? Expression, string? Prefix = null);
 
-/// <summary>A compiled expression of the specification: where it is, the context it was compiled in (§12.3), and its program.</summary>
-public sealed record DislExpression(string Pointer, string Context, CelProgram Program);
+/// <summary>A compiled expression of the specification: where it is, the context it was compiled in (§12.3; null where this runtime does not know it), and its program.</summary>
+public sealed record DislExpression(string Pointer, DislContext? Context, CelProgram Program);

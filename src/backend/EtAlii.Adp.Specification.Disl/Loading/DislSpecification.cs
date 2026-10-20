@@ -96,7 +96,7 @@ public sealed class DislSpecification
     /// An environment for <paramref name="context"/> (§12.3): the library, the user functions and the
     /// context's variables, plus <paramref name="bindings"/>; for compiling what a runtime builds itself.
     /// </summary>
-    public CelEnvironment Environment(string context, params IEnumerable<string> bindings) =>
+    public CelEnvironment Environment(DislContext context, params IEnumerable<string> bindings) =>
         _functions.Clone().DeclareVariables(DislContexts.VariablesOf(context)).DeclareVariables(bindings);
 
     /// <summary>

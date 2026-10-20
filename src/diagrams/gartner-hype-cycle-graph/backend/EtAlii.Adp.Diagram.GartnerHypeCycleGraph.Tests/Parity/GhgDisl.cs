@@ -61,7 +61,7 @@ internal static class GhgDisl
         {
             if (!Programs.TryGetValue(expression, out program))
             {
-                program = Programs[expression] = Specification.Environment(DislContexts.Element, variables.Keys).Compile(expression);
+                program = Programs[expression] = Specification.Environment(DislContext.Element, variables.Keys).Compile(expression);
             }
         }
         var value = program.Evaluate(variables);

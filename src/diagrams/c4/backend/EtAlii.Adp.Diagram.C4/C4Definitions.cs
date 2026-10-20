@@ -420,7 +420,7 @@ internal static class C4Definitions
 
     /// <summary>The types <c>include *</c> selects on the view <paramref name="diagram"/> shows: the definition's <c>permitted(env.viewpoint)</c>.</summary>
     private static IReadOnlyList<string> PermittedTypes(DislDiagram diagram) =>
-        diagram.Specification.Environment(DislContexts.Element).Compile("permitted(env.viewpoint)")
+        diagram.Specification.Environment(DislContext.Element).Compile("permitted(env.viewpoint)")
             .Evaluate(new Dictionary<string, object?> { ["self"] = null, ["diagram"] = diagram, ["env"] = diagram.Env.ToCel() }) is IReadOnlyList<object?> types
             ? [.. types.OfType<string>()]
             : [];

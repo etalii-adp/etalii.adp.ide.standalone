@@ -91,14 +91,14 @@ public static class FormDerivation
             var kind = DislJson.String(item, "kind") ?? (item.TryGetProperty("attribute", out _) ? "field" : "");
             var attribute = DislJson.String(item, "attribute");
             var variables = Variables(attribute is not null && self.Type.Attributes.ContainsKey(attribute) ? self.ValueOf(attribute) : null);
-            if (item.TryGetProperty("visible", out var visible) && !DislEvaluation.Holds(specification, visible, DislJson.Pointer(pointer, "visible"), DislContexts.Form, variables)) return;
+            if (item.TryGetProperty("visible", out var visible) && !DislEvaluation.Holds(specification, visible, DislJson.Pointer(pointer, "visible"), DislContext.Form, variables)) return;
 
             switch (kind)
             {
                 case "section" or "group":
                     var titled = item.TryGetProperty("label", out var title) || item.TryGetProperty("title", out title);
                     var name = titled
-                        ? DislEvaluation.Message(specification, title, DislJson.Pointer(pointer, item.TryGetProperty("label", out _) ? "label" : "title"), DislContexts.Form, variables, group)
+                        ? DislEvaluation.Message(specification, title, DislJson.Pointer(pointer, item.TryGetProperty("label", out _) ? "label" : "title"), DislContext.Form, variables, group)
                         : group;
                     Items(item, DislJson.Pointer(pointer, "items"), name);
                     return;
@@ -111,7 +111,7 @@ public static class FormDerivation
                     foreach (var each in tabs.EnumerateArray())
                     {
                         var at = DislJson.Pointer(DislJson.Pointer(pointer, "tabs"), tab++);
-                        var tabTitle = each.TryGetProperty("title", out var text) ? DislEvaluation.Message(specification, text, DislJson.Pointer(at, "title"), DislContexts.Form, variables, group) : group;
+                        var tabTitle = each.TryGetProperty("title", out var text) ? DislEvaluation.Message(specification, text, DislJson.Pointer(at, "title"), DislContext.Form, variables, group) : group;
                         Items(each, DislJson.Pointer(at, "items"), tabTitle);
                     }
                     return;
@@ -126,13 +126,13 @@ public static class FormDerivation
             var declared = attribute is null ? null : self.Type.Attributes.GetValueOrDefault(attribute);
             var defaultLabel = declared is null ? attribute ?? "" : DislJson.String(declared.Json, "label") ?? declared.Name;
             var label = item.TryGetProperty("label", out var message)
-                ? DislEvaluation.Message(specification, message, DislJson.Pointer(pointer, "label"), DislContexts.Form, variables, defaultLabel)
+                ? DislEvaluation.Message(specification, message, DislJson.Pointer(pointer, "label"), DislContext.Form, variables, defaultLabel)
                 : defaultLabel;
 
             string value;
             if (item.TryGetProperty("display", out var display))
             {
-                value = Text(DislEvaluation.Expression(specification, display, DislJson.Pointer(pointer, "display"), DislContexts.Form, variables));
+                value = Text(DislEvaluation.Expression(specification, display, DislJson.Pointer(pointer, "display"), DislContext.Form, variables));
             }
             else if (kind == "type")
             {
@@ -141,7 +141,7 @@ public static class FormDerivation
             else if (kind == "computed")
             {
                 value = item.TryGetProperty("value", out var computed)
-                    ? computed.ValueKind == JsonValueKind.String ? computed.GetString()! : Text(DislEvaluation.Expression(specification, computed, DislJson.Pointer(pointer, "value"), DislContexts.Form, variables))
+                    ? computed.ValueKind == JsonValueKind.String ? computed.GetString()! : Text(DislEvaluation.Expression(specification, computed, DislJson.Pointer(pointer, "value"), DislContext.Form, variables))
                     : "";
             }
             else
@@ -150,7 +150,7 @@ public static class FormDerivation
             }
 
             var reason = item.TryGetProperty("readOnlyReasons", out var reasons)
-                ? DislEvaluation.FirstReason(specification, reasons, DislJson.Pointer(pointer, "readOnlyReasons"), DislContexts.Form, variables)
+                ? DislEvaluation.FirstReason(specification, reasons, DislJson.Pointer(pointer, "readOnlyReasons"), DislContext.Form, variables)
                 : null;
             if (reason is null && env.ReadOnly) reason = DislEvaluation.StandardMessage(specification, "std.readOnly", variables, "This diagram is read-only.");
 
@@ -164,7 +164,7 @@ public static class FormDerivation
         private List<string> Types(JsonElement item, string pointer, Dictionary<string, object?> variables)
         {
             if (!item.TryGetProperty("options", out var options)
-                || DislEvaluation.Expression(specification, options, DislJson.Pointer(pointer, "options"), DislContexts.Form, variables) is not IReadOnlyList<object?> types)
+                || DislEvaluation.Expression(specification, options, DislJson.Pointer(pointer, "options"), DislContext.Form, variables) is not IReadOnlyList<object?> types)
             {
                 return [];
             }
@@ -174,7 +174,7 @@ public static class FormDerivation
         /// <summary>A type item's name for <paramref name="type"/>: its <c>optionLabel</c> with <c>item</c> bound, else the type as text.</summary>
         private string OptionLabel(JsonElement item, string pointer, Dictionary<string, object?> variables, object? type) =>
             item.TryGetProperty("optionLabel", out var optionLabel)
-                ? Text(DislEvaluation.Expression(specification, optionLabel, DislJson.Pointer(pointer, "optionLabel"), DislContexts.Form, new Dictionary<string, object?>(variables) { ["item"] = type }))
+                ? Text(DislEvaluation.Expression(specification, optionLabel, DislJson.Pointer(pointer, "optionLabel"), DislContext.Form, new Dictionary<string, object?>(variables) { ["item"] = type }))
                 : Text(type);
 
         private List<string>? Candidates(JsonElement item, string pointer, Dictionary<string, object?> variables)
@@ -188,7 +188,7 @@ public static class FormDerivation
                     case JsonValueKind.Object when DislJson.String(options, "enum") is { } name:
                         return specification.Metamodel.Enums.TryGetValue(name, out var enumeration) ? [.. enumeration.Values.Select(value => value.Label ?? value.Key)] : [];
                     case JsonValueKind.Object or JsonValueKind.String:
-                        return DislEvaluation.Expression(specification, options, DislJson.Pointer(pointer, "options"), DislContexts.Form, variables) is IReadOnlyList<object?> list
+                        return DislEvaluation.Expression(specification, options, DislJson.Pointer(pointer, "options"), DislContext.Form, variables) is IReadOnlyList<object?> list
                             ? [.. list.Select(OptionText)]
                             : [];
                 }

@@ -126,25 +126,25 @@ public class BundledDefinitionLoadingTests
 
     /// <summary>The contexts the walker gives the hype cycle graph's expressions, spot-checked against DISL §12.3 and §8.4.</summary>
     [Theory]
-    [InlineData("/constraints/rules/0/rule", DislContexts.Constraint)]
-    [InlineData("/constraints/rules/9/rule", DislContexts.GestureChange)]
-    [InlineData("/constraints/rules/14/rule", DislContexts.GesturePlacement)]
-    [InlineData("/constraints/builtIn/std.references/message/cel", DislContexts.BuiltInMessage)]
-    [InlineData("/constraints/builtIn/std.endpoints/refusal/cel", DislContexts.BuiltInRefusal)]
-    [InlineData("/toolbox/groups/0/tools/0/initial/start/cel", DislContexts.Create)]
-    [InlineData("/toolbox/contextMenus/0/tools/0/visible", DislContexts.Element)]
-    [InlineData("/behavior/hooks/0/actions/1/set/peakEnd", DislContexts.Hook)]
-    [InlineData("/behavior/operations/addTrendHere/actions/0/create/attributes/start", DislContexts.Operation)]
-    [InlineData("/behavior/deletion/Trend/confirm/message/cel", DislContexts.GestureDelete)]
-    [InlineData("/notation/shapes/phasedBanner/handles/0/x", DislContexts.Shape)]
-    [InlineData("/notation/shapes/phasedBanner/handles/0/visible", DislContexts.Element)]
-    [InlineData("/notation/shapes/phasedBanner/handles/0/snap/cel", DislContexts.HandleSnap)]
-    [InlineData("/notation/shapes/phasedBanner/handles/0/write/0/set/peakEnd", DislContexts.HandleWrite)]
-    [InlineData("/notation/canvas/filters/tags/keep", DislContexts.Filter)]
-    [InlineData("/notation/canvas/filters/tags/options/cel", DislContexts.FilterOptions)]
-    [InlineData("/notation/nodes/Trigger/labels/0/parse/write/0/set/name", DislContexts.LabelParse)]
-    [InlineData("/forms/trend/items/3/items/0/value/cel", DislContexts.Form)]
-    public void AnExpressionOfTheHypeCycleGraph_IsCompiledInItsContext(string pointer, string context)
+    [InlineData("/constraints/rules/0/rule", DislContext.Constraint)]
+    [InlineData("/constraints/rules/9/rule", DislContext.GestureChange)]
+    [InlineData("/constraints/rules/14/rule", DislContext.GesturePlacement)]
+    [InlineData("/constraints/builtIn/std.references/message/cel", DislContext.BuiltInMessage)]
+    [InlineData("/constraints/builtIn/std.endpoints/refusal/cel", DislContext.BuiltInRefusal)]
+    [InlineData("/toolbox/groups/0/tools/0/initial/start/cel", DislContext.Create)]
+    [InlineData("/toolbox/contextMenus/0/tools/0/visible", DislContext.Element)]
+    [InlineData("/behavior/hooks/0/actions/1/set/peakEnd", DislContext.Hook)]
+    [InlineData("/behavior/operations/addTrendHere/actions/0/create/attributes/start", DislContext.Operation)]
+    [InlineData("/behavior/deletion/Trend/confirm/message/cel", DislContext.GestureDelete)]
+    [InlineData("/notation/shapes/phasedBanner/handles/0/x", DislContext.Shape)]
+    [InlineData("/notation/shapes/phasedBanner/handles/0/visible", DislContext.Element)]
+    [InlineData("/notation/shapes/phasedBanner/handles/0/snap/cel", DislContext.HandleSnap)]
+    [InlineData("/notation/shapes/phasedBanner/handles/0/write/0/set/peakEnd", DislContext.HandleWrite)]
+    [InlineData("/notation/canvas/filters/tags/keep", DislContext.Filter)]
+    [InlineData("/notation/canvas/filters/tags/options/cel", DislContext.FilterOptions)]
+    [InlineData("/notation/nodes/Trigger/labels/0/parse/write/0/set/name", DislContext.LabelParse)]
+    [InlineData("/forms/trend/items/3/items/0/value/cel", DislContext.Form)]
+    public void AnExpressionOfTheHypeCycleGraph_IsCompiledInItsContext(string pointer, DislContext context)
     {
         // Act.
         var expression = BundledDefinition.Load(Resources.Assembly, Resources.HypeCycle).Specification.ExpressionAt(pointer);
@@ -155,13 +155,13 @@ public class BundledDefinitionLoadingTests
     }
 
     [Theory]
-    [InlineData("/metamodel/relations/Child/derived/from", DislContexts.Derive)]
-    [InlineData("/metamodel/relations/Child/derived/source", DislContexts.DeriveItem)]
-    [InlineData("/persistence/ids/expression", DislContexts.Identity)]
-    [InlineData("/behavior/retype/Sequence/attributeMapping/attempts", DislContexts.Retype)]
-    [InlineData("/toolbox/contextMenus/0/tools/5/label/cel", DislContexts.Element)]
-    [InlineData("/forms/notesDialog/items/0/initial", DislContexts.Form)]
-    public void AnExpressionOfTheBehaviorModel_IsCompiledInItsContext(string pointer, string context)
+    [InlineData("/metamodel/relations/Child/derived/from", DislContext.Derive)]
+    [InlineData("/metamodel/relations/Child/derived/source", DislContext.DeriveItem)]
+    [InlineData("/persistence/ids/expression", DislContext.Identity)]
+    [InlineData("/behavior/retype/Sequence/attributeMapping/attempts", DislContext.Retype)]
+    [InlineData("/toolbox/contextMenus/0/tools/5/label/cel", DislContext.Element)]
+    [InlineData("/forms/notesDialog/items/0/initial", DislContext.Form)]
+    public void AnExpressionOfTheBehaviorModel_IsCompiledInItsContext(string pointer, DislContext context)
     {
         // Act.
         var expression = BundledDefinition.Load(Resources.Assembly, Resources.BehaviorModel).Specification.ExpressionAt(pointer);

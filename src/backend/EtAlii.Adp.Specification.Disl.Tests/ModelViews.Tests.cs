@@ -37,7 +37,7 @@ public class ModelViewsTests
     }
 
     private static object? Evaluate(DislDiagram diagram, string expression) =>
-        Specification.Environment(DislContexts.Constraint).Compile(expression)
+        Specification.Environment(DislContext.Constraint).Compile(expression)
             .Evaluate(new Dictionary<string, object?> { ["self"] = diagram, ["diagram"] = diagram, ["env"] = new CelMap() });
 
     [Fact]

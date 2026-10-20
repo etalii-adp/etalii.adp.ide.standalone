@@ -25,7 +25,7 @@ public class DropTargetLoadingTests
     {
         var specification = Specifications.Loaded(Dropping("'box ' + string(diagram.nodesOfType('Box').size() + 1)"));
 
-        Assert.Equal(DislContexts.Element, specification.ExpressionAt("/toolbox/groups/0/tools/0/drop/targets/0/args/name")?.Context);
+        Assert.Equal(DislContext.Element, specification.ExpressionAt("/toolbox/groups/0/tools/0/drop/targets/0/args/name")?.Context);
     }
 
     [Fact]

@@ -13,7 +13,7 @@ public class DislCelLibraryTests
         """));
 
     private static object? Evaluate(string expression) =>
-        Specification.Environment(DislContexts.Element).Compile(expression).Evaluate(new Dictionary<string, object?>());
+        Specification.Environment(DislContext.Element).Compile(expression).Evaluate(new Dictionary<string, object?>());
 
     [Theory]
     [InlineData("yearMonth(2026, 9)", 2026L * 12 + 8)]
