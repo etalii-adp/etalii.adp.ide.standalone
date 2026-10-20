@@ -233,7 +233,7 @@
           "source": { "mode": "fixed", "points": [ { "id": "right", "x": 1, "y": 0.5 } ] },
           "target": { "mode": "fixed", "points": [ { "id": "left", "x": 0, "y": 0.5 } ] }
         },
-        "targetMarker": "arrow"
+        "targetMarker": "arrowFilled"
       }
     }
   },
