@@ -1,6 +1,8 @@
 """The project graph (spec 025, T005): every ProjectReference, PackageReference, FrameworkReference and
 InternalsVisibleTo of the solution's projects as an edge list, the projects without a .cs file, and the
-core projects that name a tool module, by reference or by InternalsVisibleTo.
+core projects that name a tool module, by reference or by InternalsVisibleTo. A tool module is a diagram,
+designer or editor project; a project outside both the core and those kind folders, such as a test project
+of the host under src/tests, is none (T311).
 
 The items of src/Directory.Build.targets are edges too: MSBuild imports it into every project under src/, and
 it attaches EtAlii.Adp.TestSupport to every project whose name ends in .Tests. Such an edge carries
@@ -16,6 +18,8 @@ import common
 
 ITEMS = ("ProjectReference", "PackageReference", "FrameworkReference", "InternalsVisibleTo")
 TARGETS = os.path.join("src", "Directory.Build.targets")
+# The kinds of project a core project must not name: a diagram, designer or editor project, never "other".
+TOOL_KINDS = set(common.KINDS.values())
 ENDS_WITH = re.compile(r"^'\$\(MSBuildProjectName\.EndsWith\(`([^`]+)`\)\)'\s*==\s*'true'$")
 
 
@@ -71,7 +75,7 @@ def measure(root):
     edges = [edge for p in projects for edge in edges_of(p, by_path, inherited)]
     naming_modules = sorted({
         (edge["from"], edge["kind"], edge["to"]) for edge in edges
-        if by_name[edge["from"]].kind == "core" and edge["to"] in by_name and by_name[edge["to"]].kind != "core"
+        if by_name[edge["from"]].kind == "core" and edge["to"] in by_name and by_name[edge["to"]].kind in TOOL_KINDS
     })
     return {
         "projects": len(projects),

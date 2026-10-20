@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- A test project outside every tool kind folder: a core project's grant to it names no tool module. -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\backend\EtAlii.Adp.Core\EtAlii.Adp.Core.csproj" />
+  </ItemGroup>
+</Project>
