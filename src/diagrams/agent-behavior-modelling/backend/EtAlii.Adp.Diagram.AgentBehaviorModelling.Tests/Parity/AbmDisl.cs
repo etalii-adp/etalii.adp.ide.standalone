@@ -55,7 +55,7 @@ internal static class AbmDisl
 
     /// <summary>Evaluates <paramref name="expression"/> in the element context, <paramref name="variables"/> bound beside <c>self</c>, <c>diagram</c> and <c>env</c>.</summary>
     public static object? Evaluate(string expression, IReadOnlyDictionary<string, object?> variables) =>
-        Checked(expression, Specification.Environment(DislContexts.Element, variables.Keys).Compile(expression).Evaluate(variables));
+        Checked(expression, Specification.Environment(DislContext.Element, variables.Keys).Compile(expression).Evaluate(variables));
 
     /// <summary>The compiled expression at <paramref name="pointer"/> evaluated with <paramref name="variables"/>.</summary>
     public static object? EvaluateAt(string pointer, IReadOnlyDictionary<string, object?> variables) =>

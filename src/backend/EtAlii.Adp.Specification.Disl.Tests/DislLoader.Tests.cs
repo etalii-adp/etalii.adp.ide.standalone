@@ -272,7 +272,7 @@ public class DislLoaderTests
 
         var specification = Specifications.Loaded(json);
 
-        Assert.Equal(DislContexts.Operation, specification.ExpressionAt("/behavior/operations/copy/actions/2/select")!.Context);
+        Assert.Equal(DislContext.Operation, specification.ExpressionAt("/behavior/operations/copy/actions/2/select")!.Context);
         Assert.Equal(4, specification.Expressions.Count);
     }
 

@@ -222,7 +222,7 @@ public static class DislModelBuilder
 
             if (!programs.TryGetValue(expression, out var program))
             {
-                program = programs[expression] = specification.Environment(DislContexts.Identity).Compile(expression);
+                program = programs[expression] = specification.Environment(DislContext.Identity).Compile(expression);
             }
             var value = program.Evaluate(new Dictionary<string, object?> { ["self"] = element, ["diagram"] = diagram, ["env"] = diagram.Env.ToCel() });
             if (value is not string id)

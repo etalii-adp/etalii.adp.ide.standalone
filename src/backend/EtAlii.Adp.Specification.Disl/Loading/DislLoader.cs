@@ -207,12 +207,12 @@ public static class DislLoader
         foreach (var site in DislExpressionWalker.Sites(root))
         {
             var context = site.Context;
-            if (context.Length == 0)
+            if (context is null)
             {
                 diagnostics.Add(Warning(site.Pointer, "This runtime does not know the CEL context of this position; it was compiled with every variable of any context."));
             }
             var environment = functions.Clone()
-                .DeclareVariables(context.Length == 0 ? everything : DislContexts.VariablesOf(context))
+                .DeclareVariables(context is { } known ? DislContexts.VariablesOf(known) : everything)
                 .DeclareVariables(site.Bindings);
             try
             {
@@ -220,7 +220,7 @@ public static class DislLoader
             }
             catch (CelException e)
             {
-                diagnostics.Add(Error(site.Pointer, $"{e.Message} (context {(context.Length == 0 ? "unknown" : context)})"));
+                diagnostics.Add(Error(site.Pointer, $"{e.Message} (context {(context is { } named ? DislContexts.NameOf(named) : "unknown")})"));
             }
         }
         return expressions;

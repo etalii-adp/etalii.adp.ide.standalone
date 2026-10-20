@@ -1,10 +1,12 @@
 using EtAlii.Adp.Documents;
 
-namespace EtAlii.Adp.Diagram.Databricks;
+namespace EtAlii.Adp.Diagram.Databricks.Tests.Parity;
 
 /// <summary>
-/// The family's rules: a pure function from a parsed entry to the problems in it, each with the
-/// line the models recorded and a sentence saying what to do (databricks-diagrams Requirement 12).
+/// The family's rules as the module wrote them by hand before they were derived from the three DISL definitions
+/// (databricks-disl-fbl task 7, Requirement 3.3), kept verbatim as the oracle the derived findings are compared with:
+/// a pure function from a parsed entry to the problems in it, each with the line the models recorded and a sentence
+/// saying what to do (databricks-diagrams Requirement 12).
 /// </summary>
 /// <remarks>
 /// Nothing here looks at a workspace, the disk or another file (Requirement 12.3) - which is why

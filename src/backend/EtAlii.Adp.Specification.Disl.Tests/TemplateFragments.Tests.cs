@@ -54,7 +54,7 @@ public class TemplateFragmentsTests
         var expression = specification.ExpressionAt(pointer);
 
         // Assert.
-        Assert.Equal("template", expression?.Context);
+        Assert.Equal(DislContext.Template, expression?.Context);
     }
 
     [Fact]

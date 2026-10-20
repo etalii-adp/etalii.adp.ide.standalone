@@ -14,7 +14,7 @@ public class BoundsCenterTests
         """));
 
     private static object? Evaluate(string expression, DislElement self, DislDiagram diagram) =>
-        Specification.Environment(DislContexts.Element).Compile(expression)
+        Specification.Environment(DislContext.Element).Compile(expression)
             .Evaluate(new Dictionary<string, object?> { ["self"] = self, ["diagram"] = diagram, ["env"] = new CelMap() });
 
     private static CelMap Bounds(object x, object y, object width, object height) =>

@@ -28,7 +28,7 @@ namespace EtAlii.Adp.Specification.Disl;
 /// records that place as an index among the new parent's children counted before the move.
 /// </para>
 /// </remarks>
-internal sealed class ActionRunner(DislSpecification specification, DislDiagram diagram, IIdSource ids, string context)
+internal sealed class ActionRunner(DislSpecification specification, DislDiagram diagram, IIdSource ids, DislContext context)
 {
     private static readonly string[] Kinds =
     [

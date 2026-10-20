@@ -70,7 +70,7 @@ public sealed partial class BundledDefinitionTests
     [InlineData("dateAfter('2026-01-05T22:00:00', 6)", "2026-01-11")]
     public void TheModulesPluginFunctions_AreTheOnesCalled(string expression, object expected)
     {
-        var value = TimelineDefinition.Specification.Environment(DislContexts.Element).Compile(expression).Evaluate(new Dictionary<string, object?>());
+        var value = TimelineDefinition.Specification.Environment(DislContext.Element).Compile(expression).Evaluate(new Dictionary<string, object?>());
 
         Assert.Equal(expected, value);
     }

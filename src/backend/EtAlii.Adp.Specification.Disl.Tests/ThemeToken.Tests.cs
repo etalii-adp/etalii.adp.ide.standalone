@@ -13,9 +13,9 @@ public class ThemeTokenTests
     private static readonly DislSpecification Specification = Specifications.Loaded(Specifications.With());
 
     [Theory]
-    [InlineData(DislContexts.Element)]
-    [InlineData(DislContexts.Shape)]
-    public void AToken_CompilesInTheContextsThatDrawIt(string context)
+    [InlineData(DislContext.Element)]
+    [InlineData(DislContext.Shape)]
+    public void AToken_CompilesInTheContextsThatDrawIt(DislContext context)
     {
         // Act.
         var program = Specification.Environment(context).Compile("token('color.text')");
@@ -28,7 +28,7 @@ public class ThemeTokenTests
     public void AToken_IsNotResolvedWithoutATheme()
     {
         // Act.
-        var value = Specification.Environment(DislContexts.Element).Compile("token('color.text')").Evaluate(new Dictionary<string, object?>());
+        var value = Specification.Environment(DislContext.Element).Compile("token('color.text')").Evaluate(new Dictionary<string, object?>());
 
         // Assert.
         Assert.Equal(new CelError("The theme token 'color.text' is resolved where the diagram is drawn; this runtime has no theme."), value);

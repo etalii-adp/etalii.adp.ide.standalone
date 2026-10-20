@@ -113,7 +113,7 @@ public static class CanvasChromeDerivation
         {
             JsonValueKind.String => text.GetString()!,
             JsonValueKind.Object when DislJson.String(text, "attribute") is { } attribute => ((ICelObject)variables["self"]!).TryGetMember(attribute, out var value) ? DislEvaluation.TextOf(value) : "",
-            JsonValueKind.Object when text.TryGetProperty("cel", out _) => DislEvaluation.Expression(specification, text, at, DislContexts.Element, variables) is var value and not CelError ? DislEvaluation.TextOf(value) : "",
+            JsonValueKind.Object when text.TryGetProperty("cel", out _) => DislEvaluation.Expression(specification, text, at, DislContext.Element, variables) is var value and not CelError ? DislEvaluation.TextOf(value) : "",
             _ => "",
         };
     }
@@ -127,7 +127,7 @@ public static class CanvasChromeDerivation
             JsonValueKind.True => true,
             JsonValueKind.False => false,
             JsonValueKind.Object when DislJson.String(visible, "attribute") is { } attribute => ((ICelObject)variables["self"]!).TryGetMember(attribute, out var value) && value is true,
-            _ => DislEvaluation.Holds(specification, visible, DislJson.Pointer(pointer, "visible"), DislContexts.Element, variables),
+            _ => DislEvaluation.Holds(specification, visible, DislJson.Pointer(pointer, "visible"), DislContext.Element, variables),
         };
     }
 
@@ -138,7 +138,7 @@ public static class CanvasChromeDerivation
         var specification = diagram.Specification;
         var onDiagram = new Dictionary<string, object?> { ["self"] = chrome, ["diagram"] = chrome, ["env"] = env };
         var title = legend.TryGetProperty("title", out var heading)
-            ? DislEvaluation.Message(specification, heading, DislJson.Pointer(pointer, "title"), DislContexts.Legend, onDiagram, "")
+            ? DislEvaluation.Message(specification, heading, DislJson.Pointer(pointer, "title"), DislContext.Legend, onDiagram, "")
             : "";
 
         // First appearance in model order (§6.13): the drawn elements as the model orders them, any the model does not hold after them as given.
@@ -162,19 +162,19 @@ public static class CanvasChromeDerivation
             var seen = new HashSet<string>(StringComparer.Ordinal);
             foreach (var element in inModelOrder)
             {
-                var value = DislEvaluation.Expression(specification, key, DislJson.Pointer(at, "key"), DislContexts.Legend, OnElement(element));
+                var value = DislEvaluation.Expression(specification, key, DislJson.Pointer(at, "key"), DislContext.Legend, OnElement(element));
                 if (value is CelError) continue;
                 var text = DislEvaluation.TextOf(value);
                 if (seen.Add(text)) groups.Add((text, element));
             }
             if (computed.TryGetProperty("order", out var sort))
             {
-                groups = [.. groups.OrderBy(group => DislEvaluation.Expression(specification, sort, DislJson.Pointer(at, "order"), DislContexts.Legend, OnElement(group.First)), SortKey.Instance)];
+                groups = [.. groups.OrderBy(group => DislEvaluation.Expression(specification, sort, DislJson.Pointer(at, "order"), DislContext.Legend, OnElement(group.First)), SortKey.Instance)];
             }
             foreach ((string text, DislElement first) in groups)
             {
                 var label = computed.TryGetProperty("label", out var message)
-                    ? DislEvaluation.Message(specification, message, DislJson.Pointer(at, "label"), DislContexts.Legend, OnElement(first), text)
+                    ? DislEvaluation.Message(specification, message, DislJson.Pointer(at, "label"), DislContext.Legend, OnElement(first), text)
                     : text;
                 entries.Add(new DerivedLegendEntry(text, label, first));
             }

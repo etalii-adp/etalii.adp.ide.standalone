@@ -143,6 +143,47 @@ internal static class DatabricksDefinition
     }
 
     /// <summary>
+    /// The findings of the job definition over <paramref name="job"/> of the subject <paramref name="file"/>, in DISL's
+    /// order (§8.6), and the diagram they were evaluated over: a task without a key as the reader's
+    /// <c>std.unreadableEntry</c>, because it is not read as a task, then the references, then the rules.
+    /// </summary>
+    public static (DislDiagram Diagram, IReadOnlyList<DislFinding> Findings) Findings(JobModel job, string file)
+    {
+        ArgumentNullException.ThrowIfNull(job);
+        var diagram = DatabricksDisl.Job(job, Job.Specification, file).Diagram;
+        var keyless = job.Tasks
+            .Where(task => task.Key.Length == 0)
+            .Select(task => DislReaderFinding.Unreadable("A task has no task_key.", task.Lines.Start + 1))
+            .ToList();
+        return (diagram, ConstraintEvaluator.Evaluate(Job.Specification, diagram, new DislConstraintOptions(Env, keyless)));
+    }
+
+    /// <summary>The findings of the bundle definition over <paramref name="bundle"/> of the subject <paramref name="file"/>, in DISL's order (§8.6).</summary>
+    public static IReadOnlyList<DislFinding> Findings(BundleModel bundle, string file)
+    {
+        ArgumentNullException.ThrowIfNull(bundle);
+        return ConstraintEvaluator.Evaluate(Bundle.Specification, DatabricksDisl.Bundle(bundle, Bundle.Specification, file).Diagram, new DislConstraintOptions(Env));
+    }
+
+    /// <summary>The findings of the pipeline definition over <paramref name="pipeline"/> of the subject <paramref name="file"/>, in DISL's order (§8.6).</summary>
+    public static IReadOnlyList<DislFinding> Findings(PipelineModel pipeline, string file)
+    {
+        ArgumentNullException.ThrowIfNull(pipeline);
+        return ConstraintEvaluator.Evaluate(Pipeline.Specification, DatabricksDisl.Pipeline(pipeline, Pipeline.Specification, file).Diagram, new DislConstraintOptions(Env));
+    }
+
+    /// <summary>
+    /// The one finding of a file that does not parse: the reader's <c>std.unparseable</c> with the parser's own
+    /// <paramref name="reason"/>, at the 1-based <paramref name="line"/>. The three definitions state it alike; the
+    /// job's is asked.
+    /// </summary>
+    public static IReadOnlyList<DislFinding> Unparseable(string reason, int line)
+    {
+        ArgumentNullException.ThrowIfNull(reason);
+        return ConstraintEvaluator.Evaluate(Job.Specification, DatabricksDisl.Job(null, Job.Specification).Diagram, new DislConstraintOptions(Env, [DislReaderFinding.NotParsed(reason, line)]));
+    }
+
+    /// <summary>
     /// The definition and the element <paramref name="elementId"/> names in <paramref name="reading"/>: of its first job
     /// that has one, else of its bundle, else of its first pipeline that has one; nothing for none.
     /// </summary>

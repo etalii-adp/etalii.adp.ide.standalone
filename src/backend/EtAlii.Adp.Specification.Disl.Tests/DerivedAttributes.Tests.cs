@@ -44,7 +44,7 @@ public class DerivedAttributesTests
     }
 
     private object? Evaluate(string expression, DislElement self) =>
-        Specification.Environment(DislContexts.Element).Compile(expression)
+        Specification.Environment(DislContext.Element).Compile(expression)
             .Evaluate(new Dictionary<string, object?> { ["self"] = self, ["diagram"] = _diagram, ["env"] = new DislEnv().ToCel() });
 
     [Fact]
