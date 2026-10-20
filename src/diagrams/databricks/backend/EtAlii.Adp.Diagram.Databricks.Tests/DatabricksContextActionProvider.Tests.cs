@@ -237,6 +237,31 @@ public class DatabricksContextActionProviderTests : IDisposable
         Assert.Contains("task_key: notebook_1", await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken), StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData("bundle", "databricks.add-resource:jobs")]
+    [InlineData("bundle", "databricks.add-resource:pipelines")]
+    [InlineData("pipeline", "databricks.add-library:notebook")]
+    [InlineData("pipeline", "databricks.add-library:file")]
+    public async Task EveryToolboxEntry_IsDiscoveredOnItsReadingsEmptyCanvas(string reading, string dropActionId)
+    {
+        // Arrange.
+        // The canvas answers a toolbox drop with the entry's drop action at a placement, and executing an
+        // action by id only finds what its target discovers - so an entry its reading's empty canvas does
+        // not discover is refused as "not available" however it is dropped (databricks-disl-fbl task 8's
+        // browser pass, Requirement 8.3). The job's entries are discovered there; the bundle's and the
+        // pipeline's must be too.
+        var body = CopyFixture("bundle.yml");
+        var origin = new ToolOrigin("databricks", reading);
+        var placement = ContextTarget.ForElement(body, DatabricksNewPlacement.IdFor(400, 200), ProjectRoot.From(_root), origin: origin);
+
+        // Act.
+        var groups = await _actions.DiscoverAsync(placement, TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.Contains(dropActionId, groups.ActionIds());
+        Assert.Contains(dropActionId, DatabricksDefinition.Toolbox(origin).Select(item => item.DropActionId));
+    }
+
     [Fact]
     public async Task ASimulatedAction_CompletesAsANoOp_OffTheHistory()
     {
