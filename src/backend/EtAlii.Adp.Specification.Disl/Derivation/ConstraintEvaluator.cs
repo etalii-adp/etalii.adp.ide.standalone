@@ -200,7 +200,7 @@ public static class ConstraintEvaluator
             var variables = Variables(self, null);
             if (rule.TryGetProperty("forEach", out var forEach))
             {
-                if (DislEvaluation.Expression(specification, forEach, DislJson.Pointer(pointer, "forEach"), DislContexts.Constraint, variables) is not IReadOnlyList<object?> items) return;
+                if (DislEvaluation.Expression(specification, forEach, DislJson.Pointer(pointer, "forEach"), DislContext.Constraint, variables) is not IReadOnlyList<object?> items) return;
                 for (var item = 0; item < items.Count; item++)
                 {
                     var bound = new Dictionary<string, object?>(variables) { ["item"] = items[item], ["index"] = (long)item };
@@ -212,25 +212,25 @@ public static class ConstraintEvaluator
 
             void One(Dictionary<string, object?> bound, DislElement? item)
             {
-                if (rule.TryGetProperty("when", out var when) && !DislEvaluation.Holds(specification, when, DislJson.Pointer(pointer, "when"), DislContexts.Constraint, bound)) return;
+                if (rule.TryGetProperty("when", out var when) && !DislEvaluation.Holds(specification, when, DislJson.Pointer(pointer, "when"), DislContext.Constraint, bound)) return;
                 var holds = rule.TryGetProperty("rule", out var condition)
-                    ? DislEvaluation.Expression(specification, condition, DislJson.Pointer(pointer, "rule"), DislContexts.Constraint, bound)
+                    ? DislEvaluation.Expression(specification, condition, DislJson.Pointer(pointer, "rule"), DislContext.Constraint, bound)
                     : false;
                 if (holds is not false) return;
 
                 var targets = Targets(bound, item);
                 var severity = rule.TryGetProperty("severity", out var declared)
-                    ? declared.ValueKind == JsonValueKind.String ? declared.GetString()! : DislEvaluation.Expression(specification, declared, DislJson.Pointer(pointer, "severity"), DislContexts.Constraint, bound) as string ?? defaultSeverity ?? "error"
+                    ? declared.ValueKind == JsonValueKind.String ? declared.GetString()! : DislEvaluation.Expression(specification, declared, DislJson.Pointer(pointer, "severity"), DislContext.Constraint, bound) as string ?? defaultSeverity ?? "error"
                     : defaultSeverity ?? "error";
                 var message = rule.TryGetProperty("message", out var text)
-                    ? DislEvaluation.Message(specification, text, DislJson.Pointer(pointer, "message"), DislContexts.Constraint, bound, id)
+                    ? DislEvaluation.Message(specification, text, DislJson.Pointer(pointer, "message"), DislContext.Constraint, bound, id)
                     : id;
                 var at = targets.FirstOrDefault(element => element.Line is not null) ?? targets.FirstOrDefault();
                 (string? file, int? line) = rule.TryGetProperty("location", out var location)
-                    ? Located(DislEvaluation.Expression(specification, location, DislJson.Pointer(pointer, "location"), DislContexts.Constraint, bound), at)
+                    ? Located(DislEvaluation.Expression(specification, location, DislJson.Pointer(pointer, "location"), DislContext.Constraint, bound), at)
                     : at?.Location ?? (null, null);
                 var subject = rule.TryGetProperty("subject", out var about)
-                    ? DislEvaluation.Expression(specification, about, DislJson.Pointer(pointer, "subject"), DislContexts.Constraint, bound) as string
+                    ? DislEvaluation.Expression(specification, about, DislJson.Pointer(pointer, "subject"), DislContext.Constraint, bound) as string
                     : null;
                 var ordered = (Unwrapped(self) ?? item)?.Line ?? at?.Line;
                 _found.Add((new DislFinding(code, id, severity, message, [.. targets.Select(WrittenId)], line, file, subject), -1, ordered));
@@ -240,7 +240,7 @@ public static class ConstraintEvaluator
             {
                 if (rule.TryGetProperty("target", out var target) && !(target.ValueKind == JsonValueKind.String && target.GetString() == "self"))
                 {
-                    return DislEvaluation.Expression(specification, target, DislJson.Pointer(pointer, "target"), DislContexts.Constraint, bound) switch
+                    return DislEvaluation.Expression(specification, target, DislJson.Pointer(pointer, "target"), DislContext.Constraint, bound) switch
                     {
                         DislElement one => [one],
                         IReadOnlyList<object?> list => [.. list.OfType<DislElement>()],
@@ -370,14 +370,14 @@ public static class ConstraintEvaluator
             return code.ValueKind switch
             {
                 JsonValueKind.String => code.GetString()!,
-                JsonValueKind.Object when DislEvaluation.Expression(specification, code, DislJson.Pointer(_pointer, "code"), DislContexts.BuiltInMessage, variables) is string computed => computed,
+                JsonValueKind.Object when DislEvaluation.Expression(specification, code, DislJson.Pointer(_pointer, "code"), DislContext.BuiltInMessage, variables) is string computed => computed,
                 _ => id,
             };
         }
 
         public string MessageOf(IReadOnlyDictionary<string, object?> variables, string fallback) =>
             json.ValueKind == JsonValueKind.Object && json.TryGetProperty("message", out var message)
-                ? DislEvaluation.Message(specification, message, DislJson.Pointer(_pointer, "message"), DislContexts.BuiltInMessage, variables, fallback)
+                ? DislEvaluation.Message(specification, message, DislJson.Pointer(_pointer, "message"), DislContext.BuiltInMessage, variables, fallback)
                 : fallback;
     }
 }

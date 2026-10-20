@@ -39,7 +39,7 @@ public static class RetypePolicy
             return DislTransaction.Refused($"A {self.Type.Name} cannot become a {type}.");
         }
 
-        var variables = OperationInterpreter.Variables(DislContexts.Retype, self.Diagram, env);
+        var variables = OperationInterpreter.Variables(DislContext.Retype, self.Diagram, env);
         variables["self"] = self;
         variables["old"] = self;
 
@@ -47,7 +47,7 @@ public static class RetypePolicy
         foreach (var mapping in DislJson.Members(policy, "attributeMapping"))
         {
             if (!target.Attributes.ContainsKey(mapping.Name)) continue;
-            var value = DislEvaluation.Expression(specification, mapping.Value, DislJson.Pointer(DislJson.Pointer(pointer, "attributeMapping"), mapping.Name), DislContexts.Retype, variables);
+            var value = DislEvaluation.Expression(specification, mapping.Value, DislJson.Pointer(DislJson.Pointer(pointer, "attributeMapping"), mapping.Name), DislContext.Retype, variables);
             if (value is CelError error) return DislTransaction.Refused(error.Message);
             attributes[mapping.Name] = value;
         }

@@ -26,7 +26,7 @@ public class PluginFunctionsTests
     }
 
     private static object? Evaluate(DislSpecification specification, string expression) =>
-        specification.Environment(DislContexts.Element).Compile(expression).Evaluate(new Dictionary<string, object?>());
+        specification.Environment(DislContext.Element).Compile(expression).Evaluate(new Dictionary<string, object?>());
 
     [Fact]
     public void TheHostsImplementation_IsCalled_ByUserFunctionsToo()

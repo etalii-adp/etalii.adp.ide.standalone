@@ -12,7 +12,7 @@ public class ColorMixTests
     private static readonly DislSpecification Specification = Specifications.Loaded(Specifications.With());
 
     private static object? Evaluate(string expression) =>
-        Specification.Environment(DislContexts.Element).Compile(expression).Evaluate(new Dictionary<string, object?>());
+        Specification.Environment(DislContext.Element).Compile(expression).Evaluate(new Dictionary<string, object?>());
 
     [Theory]
     [InlineData("color('#ff0000').mix('#0000ff', 0.25)", "#bf0040ff")]
@@ -54,7 +54,7 @@ public class ColorMixTests
     public void AMixOfThemeTokens_CompilesInTheContextsThatDrawIt()
     {
         // Act.
-        var program = Specification.Environment(DislContexts.Shape).Compile("color(token('color.play')).mix(token('color.surface.raised'), 0.82)");
+        var program = Specification.Environment(DislContext.Shape).Compile("color(token('color.play')).mix(token('color.surface.raised'), 0.82)");
 
         // Assert.
         Assert.NotNull(program);

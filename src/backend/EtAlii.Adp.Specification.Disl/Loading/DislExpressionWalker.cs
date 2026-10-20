@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 namespace EtAlii.Adp.Specification.Disl;
 
 /// <summary>One CEL expression of a specification: where it is, its source, its context (§12.3) and the names actions bind around it.</summary>
-internal sealed record DislExpressionSite(string Pointer, string Source, string Context, IReadOnlyList<string> Bindings);
+internal sealed record DislExpressionSite(string Pointer, string Source, DislContext? Context, IReadOnlyList<string> Bindings);
 
 /// <summary>
 /// Finds every CEL expression of a specification and the context it is evaluated in (DISL §2.5 and
@@ -65,17 +65,17 @@ internal static partial class DislExpressionWalker
             var pointer = DislJson.Pointer("", section.Name);
             var frame = section.Name switch
             {
-                "language" => Frame.Of(DislContexts.Budget),
-                "metamodel" => Frame.Of(DislContexts.Element),
-                "coordinates" => Frame.Of(DislContexts.Placement),
-                "notation" => Frame.Of(DislContexts.Element),
-                "toolbox" => Frame.Of(DislContexts.Element),
-                "forms" => Frame.Of(DislContexts.Form),
-                "constraints" => Frame.Of(DislContexts.Constraint),
-                "behavior" => Frame.Of(DislContexts.Element),
-                "layout" => Frame.Of(DislContexts.Element),
-                "persistence" => Frame.Of(DislContexts.Element),
-                "viewpoints" => Frame.Of(DislContexts.Element),
+                "language" => Frame.Of(DislContext.Budget),
+                "metamodel" => Frame.Of(DislContext.Element),
+                "coordinates" => Frame.Of(DislContext.Placement),
+                "notation" => Frame.Of(DislContext.Element),
+                "toolbox" => Frame.Of(DislContext.Element),
+                "forms" => Frame.Of(DislContext.Form),
+                "constraints" => Frame.Of(DislContext.Constraint),
+                "behavior" => Frame.Of(DislContext.Element),
+                "layout" => Frame.Of(DislContext.Element),
+                "persistence" => Frame.Of(DislContext.Element),
+                "viewpoints" => Frame.Of(DislContext.Element),
                 _ => Frame.Unknown,
             };
             new Walk(sites, section.Name).Value(section.Value, pointer, frame, [section.Name]);
@@ -86,13 +86,13 @@ internal static partial class DislExpressionWalker
     private static bool Skipped(string name) => name.StartsWith("x-", StringComparison.Ordinal) || name == "doc";
 
     /// <summary>What a value is walked as: its context, the names bound around it, and whether a bare string in it is CEL.</summary>
-    private sealed record Frame(string? Context, IReadOnlyList<string> Bindings, Mode Mode)
+    private sealed record Frame(DislContext? Context, IReadOnlyList<string> Bindings, Mode Mode)
     {
         public static Frame Unknown { get; } = new(null, [], Mode.Literal);
 
-        public static Frame Of(string context) => new(context, [], Mode.Literal);
+        public static Frame Of(DislContext context) => new(context, [], Mode.Literal);
 
-        public Frame In(string context) => this with { Context = context };
+        public Frame In(DislContext context) => this with { Context = context };
 
         public Frame As(Mode mode) => this with { Mode = mode };
 
@@ -189,10 +189,11 @@ internal static partial class DislExpressionWalker
             // Action lists, wherever they are: hooks, operations, handle and placement writes, label parses.
             if (key is "actions" or "write" && value.ValueKind == JsonValueKind.Array)
             {
-                var context = key == "write" && path.Contains("handles") ? DislContexts.HandleWrite
-                    : key == "write" && path.Contains("placement") ? DislContexts.PlacementWrite
+                var context = key == "write" && path.Contains("handles") ? DislContext.HandleWrite
+                    : key == "write" && path.Contains("placement") ? DislContext.PlacementWrite
                     : next.Context;
-                return next.In(context!).Binding(Bound(value)).As(Mode.Action);
+                // An unknown section keeps its unknown context; its actions are reported as such.
+                return (next with { Context = context }).Binding(Bound(value)).As(Mode.Action);
             }
 
             return ExpressionKeys.Contains(key)
@@ -203,31 +204,31 @@ internal static partial class DislExpressionWalker
         private static Frame Metamodel(Frame frame, string key, JsonElement value, IReadOnlyList<string> path)
         {
             // An attribute's derived expression is an Expression in the element context; its CEL default is the create context's.
-            if (key == "derived" && path is [.., "attributes", _]) return frame.In(DislContexts.Element).As(Mode.Expression);
-            if (key == "default" && path is [.., "attributes", _]) return frame.In(DislContexts.Create).As(Mode.Literal);
-            if (key == "display") return frame.In(DislContexts.DataTypeDisplay).As(Mode.Literal);
+            if (key == "derived" && path is [.., "attributes", _]) return frame.In(DislContext.Element).As(Mode.Expression);
+            if (key == "default" && path is [.., "attributes", _]) return frame.In(DislContext.Create).As(Mode.Literal);
+            if (key == "display") return frame.In(DislContext.DataTypeDisplay).As(Mode.Literal);
 
             // A derived type (§4.11): from is the derive context, every other expression the deriveItem context.
             if (key == "derived" && path is [.., "types" or "relations", _])
             {
                 return value.ValueKind == JsonValueKind.String
-                    ? frame.In(DislContexts.Derive).As(Mode.Expression)
-                    : frame.In(DislContexts.DeriveItem).As(Mode.Literal);
+                    ? frame.In(DislContext.Derive).As(Mode.Expression)
+                    : frame.In(DislContext.DeriveItem).As(Mode.Literal);
             }
             if (path is [.., "derived"])
             {
                 return key switch
                 {
-                    "from" => frame.In(DislContexts.Derive).As(Mode.Expression),
-                    "key" or "id" or "source" or "target" or "owner" or "sources" or "parent" or "slot" => frame.In(DislContexts.DeriveItem).As(Mode.Expression),
-                    "attributes" => frame.In(DislContexts.DeriveItem).As(Mode.Expression),
-                    "reason" => frame.In(DislContexts.Element).As(Mode.Literal),
+                    "from" => frame.In(DislContext.Derive).As(Mode.Expression),
+                    "key" or "id" or "source" or "target" or "owner" or "sources" or "parent" or "slot" => frame.In(DislContext.DeriveItem).As(Mode.Expression),
+                    "attributes" => frame.In(DislContext.DeriveItem).As(Mode.Expression),
+                    "reason" => frame.In(DislContext.Element).As(Mode.Literal),
                     _ => frame.As(Mode.Literal),
                 };
             }
 
             // Each member of a derived type's attributes is an Expression of the deriveItem context (§4.11.3).
-            if (path is [.., "derived", "attributes"]) return frame.In(DislContexts.DeriveItem).As(Mode.Expression);
+            if (path is [.., "derived", "attributes"]) return frame.In(DislContext.DeriveItem).As(Mode.Expression);
 
             return frame.As(Mode.Literal);
         }
@@ -236,16 +237,16 @@ internal static partial class DislExpressionWalker
         {
             if (!path.Contains("ids"))
             {
-                return key == "migrations" ? frame.In(DislContexts.Migration) : frame.As(Mode.Literal);
+                return key == "migrations" ? frame.In(DislContext.Migration) : frame.As(Mode.Literal);
             }
 
             return key switch
             {
                 // A derived id is the identity context's; a cel id is made on creation, the create context's.
-                "expression" => frame.In(DislContexts.Identity).As(Mode.Expression),
-                "ephemeral" => frame.In(DislContexts.Identity).As(Mode.Expression),
-                "reason" => frame.In(DislContexts.Element).As(Mode.Literal),
-                _ => key == "migrations" ? frame.In(DislContexts.Migration) : frame.As(Mode.Literal)
+                "expression" => frame.In(DislContext.Identity).As(Mode.Expression),
+                "ephemeral" => frame.In(DislContext.Identity).As(Mode.Expression),
+                "reason" => frame.In(DislContext.Element).As(Mode.Literal),
+                _ => key == "migrations" ? frame.In(DislContext.Migration) : frame.As(Mode.Literal)
             };
         }
 
@@ -268,9 +269,9 @@ internal static partial class DislExpressionWalker
             {
                 return key switch
                 {
-                    "message" => frame.In(DislContexts.BuiltInMessage).As(Mode.Literal),
-                    "refusal" => frame.In(DislContexts.BuiltInRefusal).As(Mode.Literal),
-                    "code" => frame.In(DislContexts.BuiltInMessage).As(Mode.Literal),
+                    "message" => frame.In(DislContext.BuiltInMessage).As(Mode.Literal),
+                    "refusal" => frame.In(DislContext.BuiltInRefusal).As(Mode.Literal),
+                    "code" => frame.In(DislContext.BuiltInMessage).As(Mode.Literal),
                     _ => frame.As(Mode.Literal),
                 };
             }
@@ -286,8 +287,8 @@ internal static partial class DislExpressionWalker
                     // A set's own when, and its entries: the connection context for a pending connection (§7.3), else the element's.
                     var forConnection = DislJson.Strings(owner, "for").Contains("connection");
                     return frame.In(forConnection
-                        ? DislContexts.Connection
-                        : DislContexts.Element);
+                        ? DislContext.Connection
+                        : DislContext.Element);
                 }
                 if (path[^1] == "tools")
                 {
@@ -316,15 +317,15 @@ internal static partial class DislExpressionWalker
                 // template context, which binds refs; everything else in a template is literal.
                 if (path is [.., "fragment", "nodes" or "relations", "attributes"]) return frame;
                 return key is "attributes" or "at" && path is [.., "fragment", "nodes" or "relations"]
-                    ? frame.In(DislContexts.Template).As(Mode.Expression)
-                    : frame.In(DislContexts.Template).As(Mode.Literal);
+                    ? frame.In(DislContext.Template).As(Mode.Expression)
+                    : frame.In(DislContext.Template).As(Mode.Literal);
             }
 
             return key switch
             {
                 // A palette tool: its initial values in the create context, everything else in the element context on the diagram.
-                "initial" => frame.In(DislContexts.Create).As(Mode.Literal),
-                "refusal" => frame.In(DislContexts.Create).As(Mode.Literal),
+                "initial" => frame.In(DislContext.Create).As(Mode.Literal),
+                "refusal" => frame.In(DislContext.Create).As(Mode.Literal),
                 _ => frame
             };
         }
@@ -351,19 +352,19 @@ internal static partial class DislExpressionWalker
             {
                 return key switch
                 {
-                    "hooks" => frame.In(DislContexts.Hook),
-                    "operations" => frame.In(DislContexts.Operation),
-                    "deletion" => frame.In(DislContexts.GestureDelete),
-                    "retype" => frame.In(DislContexts.Retype),
-                    "simulations" => frame.In(DislContexts.Simulation),
-                    "messages" or "reasons" or "editGate" => frame.In(DislContexts.Element),
+                    "hooks" => frame.In(DislContext.Hook),
+                    "operations" => frame.In(DislContext.Operation),
+                    "deletion" => frame.In(DislContext.GestureDelete),
+                    "retype" => frame.In(DislContext.Retype),
+                    "simulations" => frame.In(DislContext.Simulation),
+                    "messages" or "reasons" or "editGate" => frame.In(DislContext.Element),
                     _ => frame,
                 };
             }
 
             // An operation whose body is a simulation (§9.3, §9.6): its initial, next and until are
             // Expressions of the simulation context, which binds state and step besides the operation's p.
-            if (key == "simulate" && path is [_, "operations", _]) return frame.In(DislContexts.Simulation).As(Mode.Literal);
+            if (key == "simulate" && path is [_, "operations", _]) return frame.In(DislContext.Simulation).As(Mode.Literal);
             if (path is [.., "operations", _, "simulate"])
             {
                 return key is "initial" or "next" or "until" ? frame.As(Mode.Expression) : frame;
@@ -381,8 +382,8 @@ internal static partial class DislExpressionWalker
 
         private static Frame Notation(Frame frame, string key, IReadOnlyList<string> path)
         {
-            if (key == "shapes") return frame.In(DislContexts.Shape).As(Mode.Geometry);
-            if (key == "markers") return frame.In(DislContexts.Marker).As(Mode.Geometry);
+            if (key == "shapes") return frame.In(DislContext.Shape).As(Mode.Geometry);
+            if (key == "markers") return frame.In(DislContext.Marker).As(Mode.Geometry);
             if (path.Contains("shapes") || path.Contains("markers"))
             {
                 // A handle (§6.8): its position is geometry, its visibility the element's, its snap a snap rule, its write the handleWrite context.
@@ -390,24 +391,24 @@ internal static partial class DislExpressionWalker
                 {
                     return key switch
                     {
-                        "visible" => frame.In(DislContexts.Element),
-                        "snap" => frame.In(DislContexts.HandleSnap).As(Mode.Literal),
-                        "label" or "value" or "yValue" => frame.In(DislContexts.Handle).As(Mode.Literal),
-                        "refusals" => frame.In(DislContexts.Element).As(Mode.Literal),
+                        "visible" => frame.In(DislContext.Element),
+                        "snap" => frame.In(DislContext.HandleSnap).As(Mode.Literal),
+                        "label" or "value" or "yValue" => frame.In(DislContext.Handle).As(Mode.Literal),
+                        "refusals" => frame.In(DislContext.Element).As(Mode.Literal),
                         _ => frame,
                     };
                 }
                 return frame;
             }
-            if (key == "snapping") return frame.In(DislContexts.Snap).As(Mode.Literal);
-            if (key == "parse") return frame.In(DislContexts.LabelParse).As(Mode.Literal);
-            if (key == "filters") return frame.In(DislContexts.Filter).As(Mode.Literal);
-            if (key == "options" && path.Contains("filters")) return frame.In(DislContexts.FilterOptions).As(Mode.Literal);
-            if (key == "legend") return frame.In(DislContexts.Legend).As(Mode.Literal);
-            if (key is "notices" or "chrome" or "emptyCanvas") return frame.In(DislContexts.Chrome).As(Mode.Literal);
+            if (key == "snapping") return frame.In(DislContext.Snap).As(Mode.Literal);
+            if (key == "parse") return frame.In(DislContext.LabelParse).As(Mode.Literal);
+            if (key == "filters") return frame.In(DislContext.Filter).As(Mode.Literal);
+            if (key == "options" && path.Contains("filters")) return frame.In(DislContext.FilterOptions).As(Mode.Literal);
+            if (key == "legend") return frame.In(DislContext.Legend).As(Mode.Literal);
+            if (key is "notices" or "chrome" or "emptyCanvas") return frame.In(DislContext.Chrome).As(Mode.Literal);
             // A compartment (section 6.9): its items, and everything said per item - its text, its icon,
             // its conditions and, since DISL 0.4, its link and its order - see the item.
-            if (key is "items" or "itemText" or "itemIcon" or "itemConditions" or "itemLink" or "itemOrder" && path.Contains("compartments")) return frame.In(DislContexts.CompartmentItem);
+            if (key is "items" or "itemText" or "itemIcon" or "itemConditions" or "itemLink" or "itemOrder" && path.Contains("compartments")) return frame.In(DislContext.CompartmentItem);
             return frame;
         }
 
@@ -415,8 +416,8 @@ internal static partial class DislExpressionWalker
         {
             return key switch
             {
-                "categories" => frame.In(DislContexts.Categories).As(Mode.Expression),
-                "snapping" or "snap" => frame.In(DislContexts.Snap).As(Mode.Literal),
+                "categories" => frame.In(DislContext.Categories).As(Mode.Expression),
+                "snapping" or "snap" => frame.In(DislContext.Snap).As(Mode.Literal),
                 _ => frame
             };
         }
@@ -443,6 +444,6 @@ internal static partial class DislExpressionWalker
         }
 
         private void Add(string pointer, string source, Frame frame) =>
-            sites.Add(new DislExpressionSite(pointer, source, frame.Context ?? "", frame.Bindings));
+            sites.Add(new DislExpressionSite(pointer, source, frame.Context, frame.Bindings));
     }
 }

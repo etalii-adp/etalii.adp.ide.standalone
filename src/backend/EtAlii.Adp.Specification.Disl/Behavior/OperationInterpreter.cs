@@ -47,7 +47,7 @@ public static class OperationInterpreter
         }
 
         var pointer = DislJson.Pointer("/behavior/operations", operationId);
-        var variables = Variables(DislContexts.Operation, diagram, env);
+        var variables = Variables(DislContext.Operation, diagram, env);
         variables["self"] = self;
         variables["selection"] = invocation?.Selection?.Cast<object?>().ToList() ?? (self is null ? [] : [self]);
         variables["position"] = Map(invocation?.Position);
@@ -96,7 +96,7 @@ public static class OperationInterpreter
         }
 
         var pointer = DislJson.Pointer("/behavior/operations", operationId);
-        var variables = Variables(DislContexts.Operation, diagram, env);
+        var variables = Variables(DislContext.Operation, diagram, env);
         variables["self"] = new Cel.CelMap { ["source"] = source, ["target"] = target, ["type"] = relationType };
         variables["selection"] = new List<object?>();
         variables["position"] = Map(null);
@@ -121,7 +121,7 @@ public static class OperationInterpreter
             return new DislTransaction([], [new HostAction.Plugin(name, arguments)], null);
         }
 
-        var runner = new ActionRunner(specification, diagram, ids, DislContexts.Operation);
+        var runner = new ActionRunner(specification, diagram, ids, DislContext.Operation);
         if (operation.TryGetProperty("actions", out var actions)) runner.Run(actions, DislJson.Pointer(pointer, "actions"), variables);
         return runner.Transaction;
     }
@@ -148,7 +148,7 @@ public static class OperationInterpreter
             return DislTransaction.Refused($"Tool '{toolId}' creates no node.");
         }
 
-        var variables = Variables(DislContexts.Create, diagram, env);
+        var variables = Variables(DislContext.Create, diagram, env);
         variables["position"] = Map(position);
         variables["elementType"] = type;
         variables["tool"] = toolId;
@@ -158,7 +158,7 @@ public static class OperationInterpreter
         {
             if (!created.Attributes.TryGetValue(property.Name, out var attribute)) return DislTransaction.Refused($"{type} has no attribute '{property.Name}'.");
             var value = property.Value.ValueKind == JsonValueKind.Object
-                ? DislEvaluation.Expression(specification, property.Value, DislJson.Pointer(DislJson.Pointer(pointer, "initial"), property.Name), DislContexts.Create, variables)
+                ? DislEvaluation.Expression(specification, property.Value, DislJson.Pointer(DislJson.Pointer(pointer, "initial"), property.Name), DislContext.Create, variables)
                 : DislValues.FromJson(property.Value, attribute, specification.Metamodel);
             if (value is Cel.CelError error) return DislTransaction.Refused(error.Message);
             if (value is not null) attributes[property.Name] = value;
@@ -216,7 +216,7 @@ public static class OperationInterpreter
         var type = end.ValueKind == JsonValueKind.String ? end.GetString() : DislJson.String(end, "type");
         if (type is null || specification.Metamodel.TypeOf(type) is not { IsRelation: false, Abstract: false } created) return DislTransaction.Refused($"The {key} of {relationType} names no node type it can create.");
 
-        var variables = Variables(DislContexts.Create, diagram, env);
+        var variables = Variables(DislContext.Create, diagram, env);
         variables["position"] = Map(position);
         variables["elementType"] = type;
         variables["tool"] = DislJson.String(tool, "id");
@@ -227,7 +227,7 @@ public static class OperationInterpreter
         {
             if (!created.Attributes.TryGetValue(property.Name, out var attribute)) return DislTransaction.Refused($"{type} has no attribute '{property.Name}'.");
             var value = property.Value.ValueKind == JsonValueKind.Object
-                ? DislEvaluation.Expression(specification, property.Value, DislJson.Pointer(initialAt, property.Name), DislContexts.Create, variables)
+                ? DislEvaluation.Expression(specification, property.Value, DislJson.Pointer(initialAt, property.Name), DislContext.Create, variables)
                 : DislValues.FromJson(property.Value, attribute, specification.Metamodel);
             if (value is Cel.CelError error) return DislTransaction.Refused(error.Message);
             if (value is not null) attributes[property.Name] = value;
@@ -287,7 +287,7 @@ public static class OperationInterpreter
             return $"There is no operation '{operationId}'.";
         }
 
-        var variables = Variables(DislContexts.Operation, diagram, env);
+        var variables = Variables(DislContext.Operation, diagram, env);
         variables["self"] = self;
         variables["selection"] = self is null ? new List<object?>() : [self];
         variables["position"] = Map(null);
@@ -295,7 +295,7 @@ public static class OperationInterpreter
         return Unavailable(specification, operation, DislJson.Pointer("/behavior/operations", operationId), diagram, self is null ? null : self.IsA, variables, operationId);
     }
 
-    internal static Dictionary<string, object?> Variables(string context, DislDiagram diagram, DislEnv? env)
+    internal static Dictionary<string, object?> Variables(DislContext context, DislDiagram diagram, DislEnv? env)
     {
         var variables = DislContexts.VariablesOf(context).ToDictionary(name => name, _ => (object?)null, StringComparer.Ordinal);
         variables["diagram"] = diagram;
@@ -311,23 +311,23 @@ public static class OperationInterpreter
         if (!applies) return NotApplicable(specification, diagram, operationId);
 
         if (specification.Root.TryGetProperty("behavior", out var behavior) && behavior.TryGetProperty("editGate", out var gate)
-            && DislEvaluation.FirstReason(specification, gate, "/behavior/editGate", DislContexts.Element, Gate(diagram, variables)) is { } gated)
+            && DislEvaluation.FirstReason(specification, gate, "/behavior/editGate", DislContext.Element, Gate(diagram, variables)) is { } gated)
         {
             return gated;
         }
         if (operation.TryGetProperty("unavailable", out var unavailable)
-            && DislEvaluation.FirstReason(specification, unavailable, DislJson.Pointer(pointer, "unavailable"), DislContexts.Operation, variables) is { } reason)
+            && DislEvaluation.FirstReason(specification, unavailable, DislJson.Pointer(pointer, "unavailable"), DislContext.Operation, variables) is { } reason)
         {
             return reason;
         }
-        return operation.TryGetProperty("enabled", out var enabled) && !DislEvaluation.Holds(specification, enabled, DislJson.Pointer(pointer, "enabled"), DislContexts.Operation, variables)
+        return operation.TryGetProperty("enabled", out var enabled) && !DislEvaluation.Holds(specification, enabled, DislJson.Pointer(pointer, "enabled"), DislContext.Operation, variables)
             ? NotApplicable(specification, diagram, operationId)
             : null;
     }
 
     private static string NotApplicable(DislSpecification specification, DislDiagram diagram, string operationId)
     {
-        var variables = Variables(DislContexts.Element, diagram, null);
+        var variables = Variables(DislContext.Element, diagram, null);
         variables["self"] = diagram;
         variables["operationId"] = operationId;
         return DislEvaluation.StandardMessage(specification, "std.notApplicable", variables, "That does not apply to this selection.");

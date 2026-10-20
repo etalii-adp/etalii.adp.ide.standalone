@@ -38,7 +38,7 @@ public static class DeletionPolicy
         if (Policy(specification, self) is not var (policy, pointer) || !policy.TryGetProperty("confirm", out var confirm)) return null;
 
         var at = DislJson.Pointer(pointer, "confirm");
-        var variables = OperationInterpreter.Variables(DislContexts.GestureDelete, self.Diagram, env);
+        var variables = OperationInterpreter.Variables(DislContext.GestureDelete, self.Diagram, env);
         variables["self"] = self;
         variables["selection"] = selection?.Cast<object?>().ToList() ?? [self];
         variables["count"] = null;
@@ -46,29 +46,29 @@ public static class DeletionPolicy
         if (confirm.ValueKind != JsonValueKind.Object || confirm.TryGetProperty("cel", out _) || !confirm.TryGetProperty("message", out var message))
         {
             // A plain Message: asked every time (§9.5).
-            return new DislConfirmation("Delete", DislEvaluation.Message(specification, confirm, at, DislContexts.GestureDelete, variables, ""), "Delete", true, null);
+            return new DislConfirmation("Delete", DislEvaluation.Message(specification, confirm, at, DislContext.GestureDelete, variables, ""), "Delete", true, null);
         }
 
         long? count = null;
         if (confirm.TryGetProperty("count", out var counted))
         {
-            if (DislEvaluation.Expression(specification, counted, DislJson.Pointer(at, "count"), DislContexts.GestureDelete, variables) is not long value) return null;
+            if (DislEvaluation.Expression(specification, counted, DislJson.Pointer(at, "count"), DislContext.GestureDelete, variables) is not long value) return null;
             count = value;
             variables["count"] = value;
             var threshold = confirm.TryGetProperty("threshold", out var declared) && declared.TryGetInt64(out var limit) ? limit : 0;
             if (value < threshold) return null;
         }
-        if (confirm.TryGetProperty("when", out var when) && !DislEvaluation.Holds(specification, when, DislJson.Pointer(at, "when"), DislContexts.GestureDelete, variables)) return null;
+        if (confirm.TryGetProperty("when", out var when) && !DislEvaluation.Holds(specification, when, DislJson.Pointer(at, "when"), DislContext.GestureDelete, variables)) return null;
 
         return new DislConfirmation(
             Text(confirm, "title", "Delete"),
-            DislEvaluation.Message(specification, message, DislJson.Pointer(at, "message"), DislContexts.GestureDelete, variables, ""),
+            DislEvaluation.Message(specification, message, DislJson.Pointer(at, "message"), DislContext.GestureDelete, variables, ""),
             Text(confirm, "confirmLabel", "Delete"),
             !confirm.TryGetProperty("danger", out var danger) || danger.ValueKind != JsonValueKind.False,
             count);
 
         string Text(JsonElement owner, string name, string fallback) =>
-            owner.TryGetProperty(name, out var text) ? DislEvaluation.Message(specification, text, DislJson.Pointer(at, name), DislContexts.GestureDelete, variables, fallback) : fallback;
+            owner.TryGetProperty(name, out var text) ? DislEvaluation.Message(specification, text, DislJson.Pointer(at, name), DislContext.GestureDelete, variables, fallback) : fallback;
     }
 
     /// <summary>The removals deleting <paramref name="self"/> makes, in the order they are made.</summary>
