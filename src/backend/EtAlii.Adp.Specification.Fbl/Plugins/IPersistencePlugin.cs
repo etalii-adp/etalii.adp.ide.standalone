@@ -21,7 +21,14 @@ public interface IPersistencePlugin
     /// <summary><c>template</c>: the bytes of a new body, asked only when the binding has no <c>template.text</c>.</summary>
     byte[] Template(PluginTemplateRequest request);
 
-    /// <summary><c>watch</c>: the paths a folder subject's reading depends on beyond its file rules.</summary>
-    /// <remarks>Each path is relative to the folder or full; <see cref="FolderBody.Dependencies"/> names them for the host to watch.</remarks>
+    /// <summary>
+    /// <c>watch</c>, asked after every read: the paths the reading depends on beyond the body, or, for a
+    /// folder subject, beyond its file rules. A path names a file, whether or not it exists, or a folder,
+    /// whose entries being added or removed changes the reading.
+    /// </summary>
+    /// <remarks>
+    /// Each path is relative to the folder (for a file body, the body's folder) or full;
+    /// <see cref="FolderBody.Dependencies"/> and <see cref="PluginBody.WatchPaths"/> name them for the host to watch.
+    /// </remarks>
     IReadOnlyList<string> Watch([UsedImplicitly] PluginReadResult last); // last: FBL §11.2's input to watch, the plugin's last read result; no plugin here reads it yet.
 }

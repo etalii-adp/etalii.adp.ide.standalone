@@ -28,6 +28,14 @@ public sealed class PluginBody : SplicedFile
 
     public FblModel Model => new(_last.Elements, _last.Findings, _last.Unreadable);
 
+    /// <summary>
+    /// What the plugin's <c>watch</c> named after the last read (FBL §11.2): the files and folders the
+    /// reading depends on beyond the body, as the plugin gives them, relative to the body's folder or
+    /// full. The host watches the body and these, and reads the body again when one changes; empty
+    /// without the plugin.
+    /// </summary>
+    public IReadOnlyList<string> WatchPaths { get; private set; } = [];
+
     /// <summary>Read-only without the plugin, when the plugin reports the body unreadable, or when the binding is read-only.</summary>
     public bool IsReadOnly => _plugin is null || _last.Unreadable || Binding.ReadOnly is not null;
 
@@ -84,9 +92,12 @@ public sealed class PluginBody : SplicedFile
         if (_plugin is null)
         {
             var finding = new Finding(FindingCodes.PluginMissing, FindingSeverity.Warning, MissingReason, new SourceLocation(FileName, 1, 1, 0));
+            WatchPaths = [];
             return new PluginReadResult([], [finding], false);
         }
-        return _plugin.Read(new PluginReadRequest([new PluginFile("", Bytes)]));
+        var result = _plugin.Read(new PluginReadRequest([new PluginFile("", Bytes)]) { Args = Binding.Plugin!.Args });
+        WatchPaths = _plugin.Watch(result);
+        return result;
     }
 
     /// <summary>A plugin's splices in body order, as FBL §6.5 applies them; overlapping splices are the plugin's error.</summary>

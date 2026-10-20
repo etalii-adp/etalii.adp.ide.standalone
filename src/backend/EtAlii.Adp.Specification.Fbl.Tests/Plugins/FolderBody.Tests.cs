@@ -18,9 +18,10 @@ public class FolderBodyTests
     private const string PluginId = "net.example.folder";
 
     /// <summary>A folder binding of no tool type: <c>index.txt</c> recognises it, and it reads that file and everything under <c>pages/</c>.</summary>
-    private static FblBinding Binding(string? readOnly = null)
+    private static FblBinding Binding(string? readOnly = null, string? args = null)
     {
         var readOnlyKey = readOnly is null ? "" : $$""", "readOnly": "{{readOnly}}" """;
+        var argsKey = args is null ? "" : $$""", "args": {{args}}""";
         var json = $$"""
             { "fbl": "0.1", "bindings": { "notes": {
               "claims": { "names": ["index.txt"] },
@@ -33,12 +34,27 @@ public class FolderBodyTests
                 ],
                 "ignore": ["pages/**/.hidden"]
               },
-              "reader": { "plugin": "{{PluginId}}", "version": "^0.1.0" }{{readOnlyKey}}
+              "reader": { "plugin": "{{PluginId}}", "version": "^0.1.0"{{argsKey}} }{{readOnlyKey}}
             } } }
             """;
         var problems = FblDocumentLoader.Load(Encoding.UTF8.GetBytes(json), out var document);
         Assert.DoesNotContain(problems, p => p.Severity == LoadSeverity.Error);
         return document!.Bindings["notes"];
+    }
+
+    [Fact]
+    public void TheBindingsArgsAreHandedToRead()
+    {
+        // Arrange.
+        using var folder = new TemporaryFolder();
+        folder.Write("index.txt", "index");
+        var plugin = new RecordingFolderPlugin(PluginId);
+
+        // Act.
+        FolderBody.Open(folder.Path, Binding(args: """{ "depth": 2 }"""), plugin);
+
+        // Assert.
+        Assert.Equal("""{ "depth": 2 }""", Assert.Single(plugin.Reads).Args?.GetRawText());
     }
 
     [Fact]

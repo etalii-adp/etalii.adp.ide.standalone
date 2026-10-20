@@ -276,7 +276,7 @@ public sealed class FolderBody : IDisposable
         _files = files;
         _unopened = [.. unopened.Select(finding => finding.Location!.File)];
         var entries = _options.SupplementaryEntries?.Invoke(Folder).Order(StringComparer.Ordinal).ToList() ?? [];
-        var result = plugin.Read(new PluginReadRequest(_files) { SupplementaryEntries = entries });
+        var result = plugin.Read(new PluginReadRequest(_files) { SupplementaryEntries = entries, Args = Binding.Plugin!.Args });
         _watched = plugin.Watch(result).Select(path => Path.GetFullPath(path, Folder)).ToList();
         return result with { Findings = [.. unopened, .. Located(result)] };
     }

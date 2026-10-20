@@ -103,6 +103,58 @@ public sealed class WatchedFilesStoreTests : WatchedFolderStoreContract<WatchedF
         Assert.True(await SettlesAsync(() => Holds(heard, h => h.Count > 0 && !h[^1].Files.ContainsKey("a.txt")), cancellationToken), "The deletion was not heard.");
     }
 
+    [Fact]
+    public async Task AFolderNamedByTheRead_HearsAnEntryAddedToIt()
+    {
+        // Arrange: the manifest names a folder, whose entries the reading lists, as a wildcard
+        // include lists the project files it matches.
+        var cancellationToken = TestContext.Current.CancellationToken;
+        Directory.CreateDirectory(Path.Combine(Root, "pages"));
+        await File.WriteAllTextAsync(Path.Combine(Root, "pages", "a.txt"), "a", cancellationToken);
+        await File.WriteAllTextAsync(Subject, "a.txt\npages", cancellationToken);
+        Assert.Equal("a.txt", Store.GetOrLoad(Subject).Files["pages"]);
+        var heard = new List<Reading>();
+        using var watch = Store.Watch(Subject, snapshot =>
+        {
+            lock (heard)
+            {
+                heard.Add(snapshot);
+            }
+        });
+
+        // Act: an entry no read named until now.
+        await File.WriteAllTextAsync(Path.Combine(Root, "pages", "b.txt"), "b", cancellationToken);
+
+        // Assert.
+        Assert.True(await SettlesAsync(() => Holds(heard, h => h.Count > 0 && h[^1].Files["pages"] == "a.txt,b.txt"), cancellationToken), "An entry added to a named folder was not heard.");
+    }
+
+    [Fact]
+    public async Task AFolderNamedByTheRead_HearsAnEntryRemovedFromIt()
+    {
+        // Arrange.
+        var cancellationToken = TestContext.Current.CancellationToken;
+        Directory.CreateDirectory(Path.Combine(Root, "pages"));
+        await File.WriteAllTextAsync(Path.Combine(Root, "pages", "a.txt"), "a", cancellationToken);
+        await File.WriteAllTextAsync(Path.Combine(Root, "pages", "b.txt"), "b", cancellationToken);
+        await File.WriteAllTextAsync(Subject, "a.txt\npages", cancellationToken);
+        Assert.Equal("a.txt,b.txt", Store.GetOrLoad(Subject).Files["pages"]);
+        var heard = new List<Reading>();
+        using var watch = Store.Watch(Subject, snapshot =>
+        {
+            lock (heard)
+            {
+                heard.Add(snapshot);
+            }
+        });
+
+        // Act.
+        File.Delete(Path.Combine(Root, "pages", "b.txt"));
+
+        // Assert.
+        Assert.True(await SettlesAsync(() => Holds(heard, h => h.Count > 0 && h[^1].Files["pages"] == "a.txt"), cancellationToken), "An entry removed from a named folder was not heard.");
+    }
+
     private static bool Holds(List<Reading> heard, Func<List<Reading>, bool> condition)
     {
         lock (heard)
@@ -111,10 +163,13 @@ public sealed class WatchedFilesStoreTests : WatchedFolderStoreContract<WatchedF
         }
     }
 
-    /// <summary>The manifest's text and the files it names that exist, by the name it gives them.</summary>
+    /// <summary>
+    /// The manifest's text and the files it names that exist, by the name it gives them; a name of a
+    /// folder reads as the names of its entries, in ordinal order and comma-separated.
+    /// </summary>
     public sealed record Reading(string Manifest, IReadOnlyDictionary<string, string> Files);
 
-    /// <summary>Reads a manifest and the files its lines name; watches exactly those.</summary>
+    /// <summary>Reads a manifest and the files and folders its lines name; watches exactly those.</summary>
     private sealed class ManifestStore(TimeSpan settleDelay, TimeProvider time) : WatchedFolderStore<Reading>(settleDelay, time: time)
     {
         protected override Reading Read(string folder)
@@ -122,10 +177,14 @@ public sealed class WatchedFilesStoreTests : WatchedFolderStoreContract<WatchedF
             var manifest = SharedDocumentReader.ReadAllText(folder);
             var directory = Path.GetDirectoryName(folder)!;
             var files = Names(manifest)
-                .Where(name => File.Exists(Path.Combine(directory, name)))
-                .ToDictionary(name => name, name => SharedDocumentReader.ReadAllText(Path.Combine(directory, name)), StringComparer.Ordinal);
+                .Where(name => File.Exists(Path.Combine(directory, name)) || Directory.Exists(Path.Combine(directory, name)))
+                .ToDictionary(name => name, name => Content(Path.Combine(directory, name)), StringComparer.Ordinal);
             return new Reading(manifest, files);
         }
+
+        private static string Content(string path) => Directory.Exists(path)
+            ? string.Join(",", Directory.EnumerateFileSystemEntries(path).Select(Path.GetFileName).Order(StringComparer.Ordinal))
+            : SharedDocumentReader.ReadAllText(path);
 
         protected override IReadOnlyCollection<string> WatchedFiles(string folder, Reading snapshot)
         {
