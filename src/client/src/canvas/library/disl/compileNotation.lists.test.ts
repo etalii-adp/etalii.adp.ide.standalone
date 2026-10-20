@@ -88,7 +88,15 @@ function withCard(change: (node: DislDocument["notation"]["nodes"][string]) => D
 describe("compileNotation, DISL 0.4", () => {
   it("reads a specification of DISL 0.4, and still refuses one it was not written against", () => {
     expect(parseDisl(JSON.stringify(specOf()))["disl"]).toBe("0.4");
-    expect(() => parseDisl(JSON.stringify({ ...specOf(), disl: "0.5" }))).toThrow(/declares "0.5"/);
+    expect(() => parseDisl(JSON.stringify({ ...specOf(), disl: "0.6" }))).toThrow(/declares "0.6"/);
+  });
+
+  it("reads a specification of DISL 0.5 as one of 0.4, which it extends by the person shape alone", () => {
+    const spec = { ...specOf(), disl: "0.5" };
+
+    expect(parseDisl(JSON.stringify(spec))["disl"]).toBe("0.5");
+    // What 0.4 added still holds at 0.5 (DISL 0.5, Changes from 0.4): a drawable derived relation is bounded.
+    expect(compileNotation(spec, BINDINGS).relationTypes[0]!.endpoints.cardinality).toEqual({ maxIntoTarget: 1 });
   });
 
   it("names types and actions as the specification does where a module states no wire ids", () => {

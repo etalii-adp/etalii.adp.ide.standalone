@@ -67,6 +67,16 @@ describe("the DISL shape catalog", () => {
     expect(() => libraryShapeOf({ type: "cylinder", params: { cap: 12, orientation: "horizontal" } })).toThrow(/orientation/);
   });
 
+  it("draws DISL 0.5's person at its default corner of 8 as the library's person", () => {
+    // DISL 0.5 §6.7: the person's one parameter is the body's corner radius, 8 by default (Appendix B.2).
+    expect(libraryShapeOf("person")).toBe("person");
+    expect(libraryShapeOf({ type: "person", params: { radius: 8 } })).toBe("person");
+    // The library draws the corner at 8 only, so another radius is refused rather than drawn at 8.
+    expect(() => libraryShapeOf({ type: "person", params: { radius: 4 } })).toThrow(/radius 8.*asks for 4/);
+    // The head is fixed (§6.7): there is no parameter for it.
+    expect(() => libraryShapeOf({ type: "person", params: { head: 12 } })).toThrow(/no "head" parameter/);
+  });
+
   it("crosses DISL's marker names over to the library's", () => {
     expect(libraryMarkerOf("arrowFilled")).toBe("arrow");
     expect(libraryMarkerOf("arrow")).toBe("open-arrow");

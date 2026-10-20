@@ -1,3 +1,5 @@
+import { personParts } from "@client/canvas/library/shapes/person";
+
 export type StyledBoxShape = "RoundedBox" | "Box" | "Person" | "Cylinder";
 
 export interface StyledBoxElementProps extends React.SVGProps<SVGGElement> {
@@ -49,17 +51,19 @@ export function StyledBoxElement({
 }: StyledBoxElementProps) {
   const halfWidth = width / 2;
   const halfHeight = height / 2;
+  // The library's person, DISL 0.5 §6.7, over this element's own box: one figure wherever it is drawn.
+  const person = shape === "Person" ? personParts({ x: -halfWidth, y: -halfHeight, width, height }) : undefined;
 
   return (
     <g transform={`translate(${x} ${y})`} {...groupProps}>
       {/* Every drawn part takes the paint itself rather than inheriting it from this group: a rule
           like c4's `.c4-node rect` states a stroke, and a stated stroke beats an inherited one, so a
           highlight on the group would be computed and then ignored (task 28). */}
-      {shape === "Person" ? (
+      {person !== undefined ? (
         <>
           {/* The person shape: a head above the box, as the reference diagrams draw it. */}
-          <circle style={style} cx={0} cy={-halfHeight - 8} r={10} fill={background} />
-          <rect style={style} x={-halfWidth} y={-halfHeight} width={width} height={height} rx={8} fill={background} />
+          <circle style={style} cx={person.head.cx} cy={person.head.cy} r={person.head.r} fill={background} />
+          <rect style={style} x={person.body.x} y={person.body.y} width={person.body.width} height={person.body.height} rx={person.body.rx} fill={background} />
         </>
       ) : shape === "Cylinder" ? (
         <>
