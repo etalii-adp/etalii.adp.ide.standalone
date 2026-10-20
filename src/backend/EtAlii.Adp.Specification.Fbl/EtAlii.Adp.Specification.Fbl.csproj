@@ -3,7 +3,8 @@
   <!-- FBL 0.1, the Format Binding Language of etalii-adp/etalii.adp, as a library that takes bytes and
        returns bytes. It references no project of this solution on purpose (fbl-implementation
        Requirement 1.3): what it proves about FBL must not be borrowed from this host's own document
-       primitives. YamlDotNet is used only to decide whether a yaml body is well-formed. -->
+       primitives. YamlDotNet decides whether a yaml body is well-formed, and its scanner's tokens are
+       what the yaml family builds its tree from. -->
 
   <ItemGroup>
     <PackageReference Include="YamlDotNet" />

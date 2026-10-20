@@ -1,16 +1,14 @@
-using System.Text;
 using EtAlii.Adp.Specification.Fbl.Documents;
 using EtAlii.Adp.Specification.Fbl.Planning;
 using EtAlii.Adp.Specification.Fbl.Rules;
 using EtAlii.Adp.Specification.Fbl.Text;
-using YamlDotNet.Core;
 
 namespace EtAlii.Adp.Specification.Fbl.Yaml;
 
 /// <summary>
-/// The <c>yaml</c> family (FBL §4.3): YamlDotNet decides whether the stream is well-formed, the
-/// <see cref="YamlParser"/> reads the first document's structure and spans, and writing keeps each
-/// replaced scalar's style and the body's indentation (FBL §6.3).
+/// The <c>yaml</c> family (FBL §4.3): the <see cref="YamlParser"/> reads the stream once, YamlDotNet
+/// deciding whether it is well-formed and its tokens giving the first document's structure and spans,
+/// and writing keeps each replaced scalar's style and the body's indentation (FBL §6.3).
 /// </summary>
 internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions options) : TreeFamily(text, binding, options)
 {
@@ -30,11 +28,6 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
 
     public override void Parse()
     {
-        if (WellFormed() is { } problem)
-        {
-            Unreadable = problem;
-            return;
-        }
         var parser = new YamlParser(Text);
         try
         {
@@ -53,32 +46,6 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
             Report(FindingCodes.DuplicateKey, FindingSeverity.Warning, $"The key '{name}' appears again in this mapping; only the first is read.", span);
         }
         foreach (var entry in AllEntries.OfType<TreeEntry>().Where(e => !e.IsRoot)) entry.LineSpan = LineSpanOf(entry);
-    }
-
-    /// <summary>YamlDotNet reads the whole stream; a syntax error anywhere makes the body unreadable (FBL §4.3, §7.5).</summary>
-    private (int Offset, string Message)? WellFormed()
-    {
-        var content = Text.Text(Text.BomLength, Text.Length);
-        try
-        {
-            var parser = new Parser(new StringReader(content));
-            while (parser.MoveNext())
-            {
-            }
-            return null;
-        }
-        catch (YamlException e)
-        {
-            var index = (int)Math.Clamp(e.Start.Index, 0, content.Length);
-            return (Text.BomLength + Encoding.UTF8.GetByteCount(content.AsSpan(0, index)), $"The body is not well-formed YAML: {e.Message}");
-        }
-        catch (InvalidOperationException)
-        {
-            // YamlDotNet's scanner throws this rather than a YamlException on some bodies it cannot
-            // finish, such as a flow sequence left open before the next key. It names no place, so the
-            // body is reported unreadable at its end.
-            return (Text.Length, "The body is not well-formed YAML: the reader could not finish it.");
-        }
     }
 
     /// <summary>Between leaves there is only whitespace, comments, indicators, anchors, tags and document markers.</summary>

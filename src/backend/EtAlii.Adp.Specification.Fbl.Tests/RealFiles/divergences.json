@@ -439,8 +439,8 @@
       "property": "unreadable",
       "binding": "databricks-pipeline",
       "file": "src/diagrams/databricks/backend/EtAlii.Adp.Diagram.Databricks.Tests/Fixtures/unreadable.json",
-      "observed": "offset 101: ']' was expected here.",
-      "reason": "The fixture is one of the Databricks module's parity corpus (databricks-disl-fbl task 1), written not to be JSON on purpose (finding B7). FBL refuses to read the body, which is the right answer for it; the sentence is the json family's own, where the module reports databricks.unparseable with YamlDotNet's message. The parity transcript freezes what the module does with it today."
+      "observed": "offset 101: '}' is invalid without a matching open.",
+      "reason": "The fixture is one of the Databricks module's parity corpus (databricks-disl-fbl task 1), written not to be JSON on purpose (finding B7). FBL refuses to read the body, which is the right answer for it; the sentence is the one .NET's JSON reader gives, which the json family reports without its line and position (B-29), where the module reports databricks.unparseable with YamlDotNet's message. The parity transcript freezes what the module does with it today."
     },
     {
       "property": "cross-check",
