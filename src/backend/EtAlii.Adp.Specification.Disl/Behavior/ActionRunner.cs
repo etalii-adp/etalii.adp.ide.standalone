@@ -1,4 +1,3 @@
-using System.Text.Json;
 using EtAlii.Adp.Specification.Cel;
 
 namespace EtAlii.Adp.Specification.Disl;
@@ -23,6 +22,11 @@ namespace EtAlii.Adp.Specification.Disl;
 /// not do part of it.
 /// </para>
 /// <para>
+/// <b>It runs the actions as they were typed at load</b> (<see cref="DislActionReader"/>): each value position holds
+/// the program the loader compiled for it, and a position the loader did not compile is compiled on first use in the
+/// runner's context, as <see cref="DislEvaluation"/> does.
+/// </para>
+/// <para>
 /// <b>A <c>reparent</c> is applied like the others</b>: the node moves, with everything beneath it,
 /// to its new parent at the place its <c>after</c> or <c>before</c> names, or last, and the change
 /// records that place as an index among the new parent's children counted before the move.
@@ -30,12 +34,6 @@ namespace EtAlii.Adp.Specification.Disl;
 /// </remarks>
 internal sealed class ActionRunner(DislSpecification specification, DislDiagram diagram, IIdSource ids, DislContext context)
 {
-    private static readonly string[] Kinds =
-    [
-        "set", "unset", "create", "connect", "delete", "move", "resize", "retype", "reparent", "reorder", "view",
-        "let", "if", "forEach", "select", "reveal", "highlight", "editLabel", "openForm", "notify", "layout", "abort", "call", "plugin",
-    ];
-
     private readonly List<DislChange> _changes = [];
     private readonly List<HostAction> _host = [];
 
@@ -53,17 +51,14 @@ internal sealed class ActionRunner(DislSpecification specification, DislDiagram 
     /// <summary>The transaction so far.</summary>
     public DislTransaction Transaction => Refusal is { } refusal ? DislTransaction.Refused(refusal) : new DislTransaction([.. _changes], [.. _host], null);
 
-    /// <summary>Runs <paramref name="actions"/>, found at <paramref name="pointer"/>; false once the transaction is refused.</summary>
-    public bool Run(JsonElement actions, string pointer, Dictionary<string, object?> variables)
+    /// <summary>Runs <paramref name="actions"/>; false once the transaction is refused.</summary>
+    public bool Run(DislActionList actions, Dictionary<string, object?> variables)
     {
-        if (actions.ValueKind != JsonValueKind.Array) return true;
-        var index = 0;
-        foreach (var action in actions.EnumerateArray())
+        foreach (var action in actions.Actions)
         {
-            var at = DislJson.Pointer(pointer, index++);
-            if (action.ValueKind != JsonValueKind.Object) return Refuse($"The action at {at} is not an object.");
-            if (action.TryGetProperty("when", out var when) && !DislEvaluation.Holds(specification, when, DislJson.Pointer(at, "when"), context, variables)) continue;
-            if (!Action(action, at, variables)) return false;
+            if (action is DislAction.NotAnObject) return Refuse($"The action at {action.At} is not an object.");
+            if (action.When is { } when && !when.Holds(specification, context, variables)) continue;
+            if (!Action(action, variables)) return false;
         }
         return true;
     }
@@ -74,38 +69,36 @@ internal sealed class ActionRunner(DislSpecification specification, DislDiagram 
         return false;
     }
 
-    private bool Action(JsonElement action, string at, Dictionary<string, object?> variables)
+    private bool Action(DislAction action, Dictionary<string, object?> variables)
     {
-        var kind = Kinds.FirstOrDefault(name => action.TryGetProperty(name, out _));
-        if (kind is null) return Refuse($"The action at {at} is none this runtime knows.");
-        var body = action.GetProperty(kind);
-        var bodyAt = DislJson.Pointer(at, kind);
-        switch (kind)
+        var at = action.At;
+        switch (action)
         {
-            case "set":
+            case DislAction.Set set:
             {
-                if (!Target(action, at, variables, out var target)) return false;
+                if (!Target(set.Target, at, variables, out var target)) return false;
+                Malformed(set.Malformed);
                 var values = new Dictionary<string, object?>(StringComparer.Ordinal);
-                foreach (var property in body.EnumerateObject())
+                foreach ((string name, DislActionValue declared) in set.Values)
                 {
-                    if (!Value(property.Value, DislJson.Pointer(bodyAt, property.Name), variables, out var value)) return false;
-                    values[property.Name] = Stored(value);
+                    if (!Value(declared, variables, out var value)) return false;
+                    values[name] = Stored(value);
                 }
                 return Set(target, values);
             }
-            case "unset":
+            case DislAction.Unset unset:
                 {
-                    return Target(action, at, variables, out var target) && Set(target, DislJson.Strings(body).ToDictionary(name => name, _ => (object?)null, StringComparer.Ordinal));
+                    return Target(unset.Target, at, variables, out var target) && Set(target, unset.Names.ToDictionary(name => name, _ => (object?)null, StringComparer.Ordinal));
                 }
-            case "create":
-                return Create(action, body, bodyAt, variables);
-            case "connect":
-                return Connect(action, body, bodyAt, variables);
-            case "retype":
-                return Retype(body, bodyAt, variables);
-            case "delete":
+            case DislAction.Create create:
+                return Create(create, variables);
+            case DislAction.Connect connect:
+                return Connect(connect, variables);
+            case DislAction.Retype retype:
+                return Retype(retype, variables);
+            case DislAction.Delete delete:
             {
-                if (!Value(body, bodyAt, variables, out var value)) return false;
+                if (!Value(delete.Elements, variables, out var value)) return false;
                 foreach (var element in Elements(value))
                 {
                     var deletion = DeletionPolicy.Changes(specification, element);
@@ -118,13 +111,13 @@ internal sealed class ActionRunner(DislSpecification specification, DislDiagram 
                 }
                 return true;
             }
-            case "reparent":
+            case DislAction.Reparent reparent:
             {
-                if (!Member(body, bodyAt, "target", variables, variables.GetValueOrDefault("self"), out var target)
-                    || !Member(body, bodyAt, "parent", variables, null, out var parent)
-                    || !Member(body, bodyAt, "slot", variables, null, out var slot)
-                    || !Member(body, bodyAt, "after", variables, null, out var after)
-                    || !Member(body, bodyAt, "before", variables, null, out var before)) return false;
+                if (!Member(reparent.Target, variables, variables.GetValueOrDefault("self"), out var target)
+                    || !Member(reparent.Parent, variables, null, out var parent)
+                    || !Member(reparent.Slot, variables, null, out var slot)
+                    || !Member(reparent.After, variables, null, out var after)
+                    || !Member(reparent.Before, variables, null, out var before)) return false;
                 if (target is not DislElement element) return Refuse($"The reparent at {at} has no element to move.");
                 var newParent = parent as DislElement;
                 var siblings = diagram.SiblingsUnder(newParent);
@@ -143,105 +136,118 @@ internal sealed class ActionRunner(DislSpecification specification, DislDiagram 
                 _changes.Add(new DislChange.Reparent(element.Id, newParent?.Id, index));
                 return true;
             }
-            case "let":
-                foreach (var property in body.EnumerateObject())
+            case DislAction.Let let:
+                Malformed(let.Malformed);
+                foreach ((string name, DislActionValue declared) in let.Bindings)
                 {
-                    if (!Value(property.Value, DislJson.Pointer(bodyAt, property.Name), variables, out var value)) return false;
-                    variables[property.Name] = value;
+                    if (!Value(declared, variables, out var value)) return false;
+                    variables[name] = value;
                 }
                 return true;
-            case "if":
-                return DislEvaluation.Holds(specification, body, bodyAt, context, variables)
-                    ? !action.TryGetProperty("then", out var then) || Run(then, DislJson.Pointer(at, "then"), variables)
-                    : !action.TryGetProperty("else", out var otherwise) || Run(otherwise, DislJson.Pointer(at, "else"), variables);
-            case "forEach":
+            case DislAction.If condition:
+                return condition.Condition.Holds(specification, context, variables)
+                    ? Run(condition.Then, variables)
+                    : Run(condition.Else, variables);
+            case DislAction.ForEach forEach:
             {
-                if (!Value(body, bodyAt, variables, out var list)) return false;
+                if (!Value(forEach.Items, variables, out var list)) return false;
                 if (list is not IReadOnlyList<object?> items) return Refuse($"The forEach at {at} is not over a list.");
-                var name = DislJson.String(action, "as") ?? "item";
                 foreach (var item in items)
                 {
-                    variables[name] = item;
-                    if (action.TryGetProperty("do", out var steps) && !Run(steps, DislJson.Pointer(at, "do"), variables)) return false;
+                    variables[forEach.As] = item;
+                    if (!Run(forEach.Do, variables)) return false;
                 }
                 return true;
             }
-            case "select":
+            case DislAction.Select select:
             {
-                if (!Value(body, bodyAt, variables, out var value)) return false;
+                if (!Value(select.Elements, variables, out var value)) return false;
                 _host.Add(new HostAction.Select([.. Elements(value).Select(element => element.Id)]));
                 return true;
             }
-            case "editLabel":
+            case DislAction.EditLabel editLabel:
             {
-                if (!Member(body, bodyAt, "target", variables, variables.GetValueOrDefault("self"), out var target)) return false;
+                if (!Member(editLabel.Target, variables, variables.GetValueOrDefault("self"), out var target)) return false;
                 if (target is not DislElement element) return Refuse($"The editLabel at {at} has no element to edit.");
-                _host.Add(new HostAction.EditLabel(element.Id, body.ValueKind == JsonValueKind.Object ? DislJson.String(body, "label") : null));
+                _host.Add(new HostAction.EditLabel(element.Id, editLabel.Label));
                 return true;
             }
-            case "layout":
+            case DislAction.Layout layout:
             {
-                _host.Add(new HostAction.Layout(DislJson.String(body, "algorithm") ?? ""));
+                _host.Add(new HostAction.Layout(layout.Algorithm));
                 return true;
             }
-            case "view":
+            case DislAction.View view:
             {
-                if (!Target(action, at, variables, out var target)) return false;
+                if (!Target(view.Target, at, variables, out var target)) return false;
+                Malformed(view.Malformed);
                 var values = new Dictionary<string, object?>(StringComparer.Ordinal);
-                foreach (var property in body.EnumerateObject())
+                foreach (var property in view.Values)
                 {
-                    var propertyAt = DislJson.Pointer(bodyAt, property.Name);
-                    if (property.Name is "filters" or "groups" && property.Value.ValueKind == JsonValueKind.Object)
+                    if (property.Map is { } entries)
                     {
                         // A map of expressions by filter id or group key, not one expression.
                         var map = new Dictionary<string, object?>(StringComparer.Ordinal);
-                        foreach (var entry in property.Value.EnumerateObject())
+                        foreach ((string key, DislActionValue declared) in entries)
                         {
-                            if (!Value(entry.Value, DislJson.Pointer(propertyAt, entry.Name), variables, out var entryValue)) return false;
-                            map[entry.Name] = entryValue;
+                            if (!Value(declared, variables, out var entryValue)) return false;
+                            map[key] = entryValue;
                         }
                         values[property.Name] = map;
                         continue;
                     }
 
-                    if (!Value(property.Value, propertyAt, variables, out var value)) return false;
+                    if (!Value(property.Value!, variables, out var value)) return false;
                     values[property.Name] = value;
                 }
 
                 _host.Add(new HostAction.View(target.Id, values));
                 return true;
             }
-            case "plugin":
+            case DislAction.Plugin plugin:
             {
                 var arguments = new Dictionary<string, object?>(StringComparer.Ordinal);
-                foreach (var argument in DislJson.Members(action, "args"))
+                foreach ((string name, DislActionValue declared) in plugin.Arguments)
                 {
-                    if (!Value(argument.Value, DislJson.Pointer(DislJson.Pointer(at, "args"), argument.Name), variables, out var value)) return false;
-                    arguments[argument.Name] = value;
+                    if (!Value(declared, variables, out var value)) return false;
+                    arguments[name] = value;
                 }
-                _host.Add(new HostAction.Plugin(body.GetString() ?? "", arguments));
+                Malformed(plugin.Malformed);
+                _host.Add(new HostAction.Plugin(plugin.Name, arguments));
                 return true;
             }
-            case "abort":
-                return Member(body, bodyAt, "message", variables, "The change was refused.", out var message) && Refuse(DislEvaluation.TextOf(message));
+            case DislAction.Abort abort:
+                return Member(abort.Message, variables, "The change was refused.", out var message) && Refuse(DislEvaluation.TextOf(message));
+            case DislAction.Unsupported unsupported:
+                return Refuse($"This runtime cannot run a `{unsupported.Kind}` action yet ({at}).");
             default:
-                return Refuse($"This runtime cannot run a `{kind}` action yet ({at}).");
+                return Refuse($"The action at {at} is none this runtime knows.");
         }
     }
 
-    private bool Create(JsonElement action, JsonElement body, string at, Dictionary<string, object?> variables)
+    /// <summary>
+    /// Throws what reading a body of the wrong shape threw when the runtime read it from the JSON, at the moment it did:
+    /// a definition's mistake the runtime never refused, and does not refuse now.
+    /// </summary>
+    private static void Malformed(string? message)
     {
-        if (!Member(body, at, "type", variables, null, out var typeValue)) return false;
+        if (message is not null) throw new InvalidOperationException(message);
+    }
+
+    private bool Create(DislAction.Create create, Dictionary<string, object?> variables)
+    {
+        var at = create.BodyAt;
+        if (!Member(create.Type, variables, null, out var typeValue)) return false;
         if (typeValue is not string type || specification.Metamodel.TypeOf(type) is not { IsRelation: false, Abstract: false }) return Refuse($"The create at {at} names no node type it can create.");
-        if (!Member(body, at, "parent", variables, null, out var parent)
-            || !Member(body, at, "slot", variables, null, out var slot)
-            || !Member(body, at, "at", variables, null, out var point)) return false;
+        if (!Member(create.Parent, variables, null, out var parent)
+            || !Member(create.Slot, variables, null, out var slot)
+            || !Member(create.Point, variables, null, out var point)) return false;
 
         var attributes = new Dictionary<string, object?>(StringComparer.Ordinal);
-        foreach (var property in DislJson.Members(body, "attributes"))
+        foreach ((string name, DislActionValue declared) in create.Attributes)
         {
-            if (!Value(property.Value, DislJson.Pointer(DislJson.Pointer(at, "attributes"), property.Name), variables, out var value)) return false;
-            if (value is not null) attributes[property.Name] = Stored(value);
+            if (!Value(declared, variables, out var value)) return false;
+            if (value is not null) attributes[name] = Stored(value);
         }
 
         DislElement created;
@@ -254,7 +260,7 @@ internal sealed class ActionRunner(DislSpecification specification, DislDiagram 
             return Refuse(e.Message);
         }
         _changes.Add(new DislChange.Create(type, created.Id, attributes, (parent as DislElement)?.Id, point));
-        if (DislJson.String(action, "as") is { } name) variables[name] = created;
+        if (create.As is { } bound) variables[bound] = created;
         return true;
     }
 
@@ -262,18 +268,19 @@ internal sealed class ActionRunner(DislSpecification specification, DislDiagram 
     /// A <c>connect</c> (§9.4): a relation of its <c>type</c> from its <c>source</c> to its <c>target</c>, both
     /// elements of the working diagram, with its <c>attributes</c>, under a new id; <c>as</c> names it.
     /// </summary>
-    private bool Connect(JsonElement action, JsonElement body, string at, Dictionary<string, object?> variables)
+    private bool Connect(DislAction.Connect connect, Dictionary<string, object?> variables)
     {
-        if (!Member(body, at, "type", variables, null, out var typeValue)) return false;
+        var at = connect.BodyAt;
+        if (!Member(connect.Type, variables, null, out var typeValue)) return false;
         if (typeValue is not string type || specification.Metamodel.TypeOf(type) is not { IsRelation: true, Abstract: false }) return Refuse($"The connect at {at} names no relation type it can create.");
-        if (!Member(body, at, "source", variables, null, out var source) || !Member(body, at, "target", variables, null, out var target)) return false;
+        if (!Member(connect.Source, variables, null, out var source) || !Member(connect.Target, variables, null, out var target)) return false;
         if (source is not DislElement from || target is not DislElement to) return Refuse($"The connect at {at} does not name two elements to connect.");
 
         var attributes = new Dictionary<string, object?>(StringComparer.Ordinal);
-        foreach (var property in DislJson.Members(body, "attributes"))
+        foreach ((string name, DislActionValue declared) in connect.Attributes)
         {
-            if (!Value(property.Value, DislJson.Pointer(DislJson.Pointer(at, "attributes"), property.Name), variables, out var value)) return false;
-            if (value is not null) attributes[property.Name] = Stored(value);
+            if (!Value(declared, variables, out var value)) return false;
+            if (value is not null) attributes[name] = Stored(value);
         }
 
         DislElement created;
@@ -286,7 +293,7 @@ internal sealed class ActionRunner(DislSpecification specification, DislDiagram 
             return Refuse(e.Message);
         }
         _changes.Add(new DislChange.Connect(type, created.Id, from.Id, to.Id, attributes));
-        if (DislJson.String(action, "as") is { } name) variables[name] = created;
+        if (connect.As is { } bound) variables[bound] = created;
         return true;
     }
 
@@ -295,19 +302,20 @@ internal sealed class ActionRunner(DislSpecification specification, DislDiagram 
     /// <c>behavior.retype</c> allows (<see cref="RetypePolicy"/>). The element changes type in the working
     /// diagram, so the actions after it see it as the new type.
     /// </summary>
-    private bool Retype(JsonElement body, string at, Dictionary<string, object?> variables)
+    private bool Retype(DislAction.Retype retype, Dictionary<string, object?> variables)
     {
-        if (!Member(body, at, "target", variables, variables.GetValueOrDefault("self"), out var target)
-            || !Member(body, at, "to", variables, null, out var to)) return false;
+        var at = retype.BodyAt;
+        if (!Member(retype.Target, variables, variables.GetValueOrDefault("self"), out var target)
+            || !Member(retype.To, variables, null, out var to)) return false;
         if (target is not DislElement element) return Refuse($"The retype at {at} has no element to change.");
         if (to is not string type) return Refuse($"The retype at {at} names no type.");
 
         var transaction = RetypePolicy.Change(specification, element, type);
         if (!transaction.WasApplied) return Refuse(transaction.Refusal!);
-        var retype = (DislChange.Retype)transaction.Changes[0];
+        var change = (DislChange.Retype)transaction.Changes[0];
         if (Before is not null && !Before.ContainsKey(element)) Before[element] = element.Snapshot();
-        element.Retype(specification.Metamodel.TypeOf(type)!, retype.Attributes);
-        _changes.Add(retype);
+        element.Retype(specification.Metamodel.TypeOf(type)!, change.Attributes);
+        _changes.Add(change);
         return true;
     }
 
@@ -326,11 +334,12 @@ internal sealed class ActionRunner(DislSpecification specification, DislDiagram 
         return true;
     }
 
-    private bool Target(JsonElement action, string at, Dictionary<string, object?> variables, out DislElement target)
+    /// <summary>The action's <c>target</c>, or <c>self</c> when it names none; refused when it is no element.</summary>
+    private bool Target(DislActionValue? declared, string at, Dictionary<string, object?> variables, out DislElement target)
     {
         target = null!;
         object? value = variables.GetValueOrDefault("self");
-        if (action.TryGetProperty("target", out var declared) && !Value(declared, DislJson.Pointer(at, "target"), variables, out value)) return false;
+        if (declared is not null && !Value(declared, variables, out value)) return false;
         if (value is DislElement element)
         {
             target = element;
@@ -339,18 +348,17 @@ internal sealed class ActionRunner(DislSpecification specification, DislDiagram 
         return Refuse($"The action at {at} has no element to change.");
     }
 
-    private bool Member(JsonElement body, string at, string name, Dictionary<string, object?> variables, object? fallback, out object? value)
+    /// <summary>A member of an action's body: its value, or <paramref name="fallback"/> when the body states none.</summary>
+    private bool Member(DislActionValue? declared, Dictionary<string, object?> variables, object? fallback, out object? value)
     {
         value = fallback;
-        return body.ValueKind != JsonValueKind.Object || !body.TryGetProperty(name, out var json) || Value(json, DislJson.Pointer(at, name), variables, out value);
+        return declared is null || Value(declared, variables, out value);
     }
 
-    private bool Value(JsonElement json, string at, Dictionary<string, object?> variables, out object? value)
+    private bool Value(DislActionValue declared, Dictionary<string, object?> variables, out object? value)
     {
-        value = json.ValueKind is JsonValueKind.String or JsonValueKind.Object
-            ? DislEvaluation.Expression(specification, json, at, context, variables)
-            : DislValues.Json(json);
-        return value is not CelError error || Refuse($"{at}: {error.Message}");
+        value = declared.Evaluate(specification, context, variables);
+        return value is not CelError error || Refuse($"{declared.Pointer}: {error.Message}");
     }
 
     /// <summary>A value as an element stores it: an element by its id, a list item by item.</summary>

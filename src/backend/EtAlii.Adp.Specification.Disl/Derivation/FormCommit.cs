@@ -83,7 +83,8 @@ public static class FormCommit
             }
 
             var runner = new ActionRunner(specification, self.Diagram, DislIds.Fixed(), DislContext.Form);
-            if (parse.TryGetProperty("write", out var write)) runner.Run(write, DislJson.Pointer(parsePointer, "write"), text);
+            // Until the forms are typed at load, a parse's write is typed as it runs.
+            if (parse.TryGetProperty("write", out var write)) runner.Run(DislActionReader.List(specification, write, DislJson.Pointer(parsePointer, "write")), text);
             return runner.Transaction;
         }
 
@@ -196,7 +197,8 @@ public static class FormCommit
         }
 
         var runner = new ActionRunner(specification, self.Diagram, DislIds.Fixed(), DislContext.LabelParse);
-        if (parse.TryGetProperty("write", out var write)) runner.Run(write, DislJson.Pointer(parsePointer, "write"), variables);
+        // Until the notation's labels are typed at load, a parse's write is typed as it runs.
+        if (parse.TryGetProperty("write", out var write)) runner.Run(DislActionReader.List(specification, write, DislJson.Pointer(parsePointer, "write")), variables);
         return runner.Transaction;
     }
 
