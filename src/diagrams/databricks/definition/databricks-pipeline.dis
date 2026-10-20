@@ -304,6 +304,10 @@
   "constraints": {
     "doc": "Every finding is located at a line of the pipeline's settings: a rule on an element reports the element's `location()`, which the reader records, so both of the pipeline's findings stand on its first line.",
     "builtIn": {
+      "std.duplicateId": {
+        "enabled": false,
+        "doc": "Two libraries of one path and different kinds share an id, as do every library of kind `other` (finding B15), and the tool has never reported it: the writer edits the first."
+      },
       "std.unparseable": {
         "code": "databricks.unparseable",
         "severity": "error",
