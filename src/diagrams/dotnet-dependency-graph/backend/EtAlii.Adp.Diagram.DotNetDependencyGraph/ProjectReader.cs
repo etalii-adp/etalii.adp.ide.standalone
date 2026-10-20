@@ -1,4 +1,5 @@
 ﻿using System.Xml.Linq;
+using EtAlii.Adp.Documents;
 using Serilog;
 
 namespace EtAlii.Adp.Diagram.DotNetDependencyGraph;
@@ -46,7 +47,8 @@ public sealed class ProjectReader
             // The bytes once, so that a declaration's source can be given in them (Q6), and the
             // document from them with line information. XML declares its own encoding and the
             // load honours it as loading from the path did, so a file in UTF-16 still opens.
-            bytes = File.ReadAllBytes(projectPath);
+            // SharedDocumentReader, so that a project file being saved by an IDE still opens.
+            bytes = SharedDocumentReader.ReadAllBytes(projectPath);
             using var stream = new MemoryStream(bytes, writable: false);
             document = XDocument.Load(stream, LoadOptions.SetLineInfo);
         }

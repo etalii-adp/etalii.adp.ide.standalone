@@ -82,7 +82,7 @@ public sealed class DotNetBody
         }
 
         var plugin = new DotNetSolutionPlugin(subject);
-        var body = PluginBody.Open(bytes, LoadedBinding.Value, plugin, System.IO.Path.GetFileName(path));
+        var body = PluginBody.Open(bytes, LoadedBinding.Value, plugin, Path.GetFileName(path));
         return new DotNetBody(path, plugin.Graph, body.Model, body.WatchPaths);
     }
 
