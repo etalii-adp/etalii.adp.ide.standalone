@@ -3,10 +3,10 @@
   "lines": {
     "totals": {
       "all": {
-        "projects": 7,
-        "files": 10,
-        "lines": 164,
-        "code_lines": 145
+        "projects": 8,
+        "files": 11,
+        "lines": 173,
+        "code_lines": 153
       },
       "core": {
         "projects": 4,
@@ -44,6 +44,18 @@
         "lines": 17,
         "code_lines": 14
       },
+      "other": {
+        "projects": 1,
+        "files": 1,
+        "lines": 9,
+        "code_lines": 8
+      },
+      "other/test": {
+        "projects": 1,
+        "files": 1,
+        "lines": 9,
+        "code_lines": 8
+      },
       "production": {
         "projects": 4,
         "files": 7,
@@ -51,10 +63,10 @@
         "code_lines": 112
       },
       "test": {
-        "projects": 3,
-        "files": 3,
-        "lines": 39,
-        "code_lines": 33
+        "projects": 4,
+        "files": 4,
+        "lines": 48,
+        "code_lines": 41
       }
     },
     "production_lines_per_module": {
@@ -124,6 +136,15 @@
         "files": 3,
         "lines": 26,
         "code_lines": 21
+      },
+      {
+        "project": "EtAlii.Adp.Modules.Tests",
+        "kind": "other",
+        "group": "test",
+        "module": null,
+        "files": 1,
+        "lines": 9,
+        "code_lines": 8
       }
     ]
   },
@@ -227,20 +248,21 @@
     }
   },
   "graph": {
-    "projects": 7,
+    "projects": 8,
     "edges_per_kind": {
-      "ProjectReference": 6,
+      "ProjectReference": 8,
       "PackageReference": 2,
       "FrameworkReference": 1,
-      "InternalsVisibleTo": 1
+      "InternalsVisibleTo": 2
     },
     "referenced_by": {
-      "EtAlii.Adp.Core": 3,
-      "EtAlii.Adp.TestSupport": 2,
+      "EtAlii.Adp.Core": 4,
+      "EtAlii.Adp.TestSupport": 3,
       "EtAlii.Adp.Diagram.Alpha": 1,
       "EtAlii.Adp.Diagram.Alpha.Tests": 0,
       "EtAlii.Adp.Diagram.BetaGamma": 0,
       "EtAlii.Adp.Empty": 0,
+      "EtAlii.Adp.Modules.Tests": 0,
       "EtAlii.Adp.TestSupport.Host": 0
     },
     "without_cs_file": [
@@ -263,6 +285,11 @@
         "from": "EtAlii.Adp.Core",
         "kind": "InternalsVisibleTo",
         "to": "EtAlii.Adp.Diagram.Alpha"
+      },
+      {
+        "from": "EtAlii.Adp.Core",
+        "kind": "InternalsVisibleTo",
+        "to": "EtAlii.Adp.Modules.Tests"
       },
       {
         "from": "EtAlii.Adp.Empty",
@@ -304,6 +331,17 @@
         "from": "EtAlii.Adp.Diagram.BetaGamma",
         "kind": "ProjectReference",
         "to": "EtAlii.Adp.Core"
+      },
+      {
+        "from": "EtAlii.Adp.Modules.Tests",
+        "kind": "ProjectReference",
+        "to": "EtAlii.Adp.Core"
+      },
+      {
+        "from": "EtAlii.Adp.Modules.Tests",
+        "kind": "ProjectReference",
+        "to": "EtAlii.Adp.TestSupport",
+        "via": "src/Directory.Build.targets"
       }
     ]
   },
