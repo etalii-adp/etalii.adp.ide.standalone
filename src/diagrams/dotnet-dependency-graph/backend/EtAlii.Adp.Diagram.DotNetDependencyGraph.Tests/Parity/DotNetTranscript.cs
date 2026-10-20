@@ -140,10 +140,12 @@ internal static partial class DotNetTranscript
 
         // A shipped copy of an example is written as the one it is the same as, so it costs a line
         // while it stays identical. Equal bytes alone are not enough: a solution is the files it
-        // names too, so the projects are compared through the graph they give.
+        // names too, so the projects are compared through the graph they give. And the extension is
+        // part of it: the reader chooses its pattern by extension, so the same bytes under another
+        // one are another document (finding B11's new document is Empty.slnx's bytes under .sln).
         using var store = new DependencyGraphStore(new SolutionReader(), new ProjectReader(), new PackageDescriptionReader(FixtureCache));
         var graph = store.GetOrLoad(path);
-        var key = $"{sha}|{Fingerprint(graph)}";
+        var key = $"{sha}|{Path.GetExtension(relative)}|{Fingerprint(graph)}";
         if (recorded.TryGetValue(key, out var first))
         {
             json.WriteString("sameAs", first);
