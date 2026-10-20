@@ -1,4 +1,5 @@
 using EtAlii.Adp.TestSupport.Host;
+using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using Xunit;
 
@@ -49,5 +50,34 @@ public class LogCaptureThroughAFlowHostTests
         // Assert.
         Assert.Contains(capture.Warnings, warning => warning.Contains("while the host runs", StringComparison.Ordinal));
         Assert.Contains(capture.Warnings, warning => warning.Contains("after the host stopped", StringComparison.Ordinal));
+    }
+
+    /// <summary>
+    /// The window before the host's pipeline is installed: while the host is being built the global
+    /// is the bootstrap logger, and a static logger first touched then keeps it for the process.
+    /// <c>LogCaptureReachesModuleTestProjectsTests</c> failed that way in a full run and passed alone.
+    /// Deterministic when no other host is live, which is the only case the window exists in.
+    /// </summary>
+    [Fact]
+    public void ALoggerBoundWhileAFlowHostIsBeingBuilt_IsCaptured()
+    {
+        // Arrange.
+        using var capture = LogCapture.Start();
+        using var host = new BindingHostFixture();
+
+        // Act.
+        Assert.NotNull(host.Services);
+        host.BoundWhileBuilding!.Warning("A guard says: {Sentinel}", "bound while the host was being built");
+
+        // Assert.
+        Assert.Contains(capture.Warnings, warning => warning.Contains("bound while the host was being built", StringComparison.Ordinal));
+    }
+
+    /// <summary>A flow host that binds a logger while its services are being configured, inside the build.</summary>
+    private sealed class BindingHostFixture : HostFixture
+    {
+        public ILogger? BoundWhileBuilding { get; private set; }
+
+        protected override void ConfigureServices(IServiceCollection services) => BoundWhileBuilding = Log.ForContext<BindingHostFixture>();
     }
 }

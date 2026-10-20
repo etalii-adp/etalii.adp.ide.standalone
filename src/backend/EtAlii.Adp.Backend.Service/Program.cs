@@ -201,7 +201,15 @@ internal static class HostLoggers
             {
                 // Kept across a host that fails to build, so its bootstrap is never mistaken for it.
                 _outside ??= Log.Logger;
-                Log.Logger = bootstrap();
+                // The bootstrap also hands its events on to what was there before: a static logger
+                // first touched while the host is being built keeps the bootstrap for the process,
+                // and in a test assembly it would otherwise never reach LogCapture's pipeline. In
+                // production that is Serilog's silent logger, so nothing changes there.
+                Log.Logger = new LoggerConfiguration()
+                    .MinimumLevel.Verbose()
+                    .WriteTo.Logger(bootstrap())
+                    .WriteTo.Logger(_outside)
+                    .CreateLogger();
             }
         }
     }
