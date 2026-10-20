@@ -13,7 +13,7 @@ namespace EtAlii.Adp.Specification.Fbl.Registration;
 /// when the registration has no matching block and written back by json splices while it exists;
 /// this library never creates one.
 /// </summary>
-public sealed class LegacySidecar : SplicedFile
+internal sealed class LegacySidecar : SplicedFile
 {
     private static readonly FblBinding _json = new()
     {

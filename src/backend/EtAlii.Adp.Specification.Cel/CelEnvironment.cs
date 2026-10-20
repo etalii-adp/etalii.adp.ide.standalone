@@ -79,7 +79,7 @@ public sealed class CelEnvironment
     }
 
     /// <summary>Adds <paramref name="macro"/>, replacing one of the same name.</summary>
-    public CelEnvironment AddMacro(CelMacro macro)
+    internal CelEnvironment AddMacro(CelMacro macro)
     {
         _macros[macro.Name] = macro;
         return this;
@@ -88,7 +88,7 @@ public sealed class CelEnvironment
     public bool TryGetFunction(string name, CelCallStyle style, out CelFunction function) =>
         _functions.TryGetValue((name, style), out function!);
 
-    public bool TryGetMacro(string name, out CelMacro macro) => _macros.TryGetValue(name, out macro!);
+    internal bool TryGetMacro(string name, out CelMacro macro) => _macros.TryGetValue(name, out macro!);
 
     public bool IsVariable(string name) => _variables.Contains(name);
 

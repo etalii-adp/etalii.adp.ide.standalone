@@ -3,7 +3,7 @@
 namespace EtAlii.Adp.Specification.Fbl.Documents;
 
 /// <summary>What writing an empty value does (FBL §5.2 <c>empty</c>, §6.2): write it, leave its slot out, or refuse.</summary>
-public enum EmptyRule
+internal enum EmptyRule
 {
     Keep,
     Remove,
@@ -12,14 +12,14 @@ public enum EmptyRule
 
 /// <summary>What setting a value does when its slot is absent from the entry (FBL §5.2 <c>absent</c>).</summary>
 [UsedImplicitly(ImplicitUseTargetFlags.WithMembers)] // Every case is read from a binding by its name, whether or not code names it.
-public enum AbsentRule
+internal enum AbsentRule
 {
     Insert,
     Refuse,
 }
 
 /// <summary>What a yaml or json slot reads from a scalar (FBL 0.5 §5.2 <c>read</c>).</summary>
-public enum ReadAs
+internal enum ReadAs
 {
     Text,
     Typed,
@@ -27,7 +27,7 @@ public enum ReadAs
 
 /// <summary>Whether a quoted yaml scalar read as typed converts from its written text (FBL 0.5 §5.2 <c>quoted</c>).</summary>
 [UsedImplicitly(ImplicitUseTargetFlags.WithMembers)] // Every case is read from a binding by its name, whether or not code names it.
-public enum QuotedRule
+internal enum QuotedRule
 {
     Text,
     Convert,
@@ -35,7 +35,7 @@ public enum QuotedRule
 
 /// <summary>The style a new yaml scalar is written in (FBL §5.2 <c>style</c>).</summary>
 [UsedImplicitly(ImplicitUseTargetFlags.WithMembers)] // Every case is read from a binding by its name, whether or not code names it.
-public enum WrittenStyle
+internal enum WrittenStyle
 {
     Plain,
     Double,
@@ -45,7 +45,7 @@ public enum WrittenStyle
 }
 
 /// <summary>The quoting of a new yaml scalar that cannot be plain (FBL §6.3 <c>text.quote</c>).</summary>
-public enum QuoteStyle
+internal enum QuoteStyle
 {
     Double,
     Single,
@@ -53,7 +53,7 @@ public enum QuoteStyle
 
 /// <summary>Where a new entry goes (FBL §6.2 <c>insert.place</c>); <see cref="Before"/> is <c>{before: key}</c>.</summary>
 [UsedImplicitly(ImplicitUseTargetFlags.WithMembers)] // Every case is read from a binding by its name, whether or not code names it.
-public enum InsertPlace
+internal enum InsertPlace
 {
     AfterLast,
     End,
@@ -66,7 +66,7 @@ public enum InsertPlace
 }
 
 /// <summary>Where a missing xml child holding a value is created (FBL §5.2 <c>create.place</c>); <see cref="Before"/> is <c>{before: name}</c>.</summary>
-public enum ChildPlace
+internal enum ChildPlace
 {
     First,
     Last,
@@ -74,7 +74,7 @@ public enum ChildPlace
 }
 
 /// <summary>Where a missing container is created (FBL §6.2 <c>insert.create.at</c>).</summary>
-public enum ContainerPlace
+internal enum ContainerPlace
 {
     EndOfDocument,
     Before,
@@ -84,7 +84,7 @@ public enum ContainerPlace
 }
 
 /// <summary>A setting's name as a binding writes it, and back: <c>AfterLast</c> is <c>after-last</c>.</summary>
-public static class WireName
+internal static class WireName
 {
     public static string Of<T>(T value) where T : struct, Enum
     {

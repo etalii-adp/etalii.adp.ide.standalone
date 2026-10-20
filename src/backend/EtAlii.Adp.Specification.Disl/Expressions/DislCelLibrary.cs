@@ -12,7 +12,7 @@ namespace EtAlii.Adp.Specification.Disl;
 /// implemented by the model's elements (<see cref="ICelObject"/>), and calling one on any other value
 /// is an evaluation error.
 /// </remarks>
-public static class DislCelLibrary
+internal static class DislCelLibrary
 {
     /// <summary>The methods of DISL's Element and Diagram types (§12.2) this runtime implements, with their arities.</summary>
     private static readonly (string Name, int Min, int Max)[] Methods =

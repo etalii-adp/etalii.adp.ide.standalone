@@ -5,7 +5,7 @@ namespace EtAlii.Adp.Specification.Cel;
 /// <c>hasValue()</c>, <c>value()</c>, <c>orValue(v)</c> and <c>or(o)</c>. The syntax <c>x.?f</c> and
 /// <c>m[?k]</c> is the parser's.
 /// </summary>
-public static class CelOptionals
+internal static class CelOptionals
 {
     public static void Register(CelEnvironment environment)
     {

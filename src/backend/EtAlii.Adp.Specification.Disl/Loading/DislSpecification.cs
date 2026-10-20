@@ -102,7 +102,7 @@ public sealed class DislSpecification
     public DislMetamodel Metamodel { get; }
 
     /// <summary>The user functions (§3.4), in declaration order.</summary>
-    public IReadOnlyList<DislFunctionDeclaration> Functions { get; }
+    internal IReadOnlyList<DislFunctionDeclaration> Functions { get; }
 
     /// <summary>Every compiled expression outside the functions, in document order.</summary>
     public IReadOnlyList<DislExpression> Expressions { get; }
@@ -202,7 +202,7 @@ public sealed class DislSpecification
     /// linearisation, or the top-level one; with the prefix it gives the type (§11.5): the rule's own,
     /// else the top level's for the nearest type in the linearisation that the map names.
     /// </summary>
-    public DislIdRule IdRuleOf(string type)
+    internal DislIdRule IdRuleOf(string type)
     {
         var linearisation = Metamodel.TypeOf(type)?.Linearisation ?? [type];
         var rule = linearisation.Select(candidate => IdTypes.GetValueOrDefault(candidate)).FirstOrDefault(found => found is not null) ?? Ids;
