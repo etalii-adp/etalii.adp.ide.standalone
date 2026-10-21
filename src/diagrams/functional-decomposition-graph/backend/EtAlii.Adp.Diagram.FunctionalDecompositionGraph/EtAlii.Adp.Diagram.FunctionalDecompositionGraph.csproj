@@ -15,6 +15,8 @@
     <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.History\EtAlii.Adp.History.csproj" />
     <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Context\EtAlii.Adp.Context.csproj" />
     <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Hierarchy\EtAlii.Adp.Hierarchy.csproj" />
+    <!-- The bundled DISL definition is loaded by the library; nothing derives from it yet. -->
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Specification.Disl\EtAlii.Adp.Specification.Disl.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -30,6 +32,12 @@
   <ItemGroup>
     <!-- This type's own wire payload, packed into the core Element's Any. -->
     <Protobuf Include="..\..\api\*.proto" ProtoRoot="..\..\api" GrpcServices="None" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The DISL definition bundled from etalii-adp/etalii.adp (src/diagrams/tools/bundle-disl.sh), and its provenance. -->
+    <EmbeddedResource Include="..\..\definition\functional-decomposition-graph.dis" LogicalName="functional-decomposition-graph.dis" />
+    <EmbeddedResource Include="..\..\definition\provenance.json" LogicalName="functional-decomposition-graph.provenance.json" />
   </ItemGroup>
 
   <ItemGroup>
