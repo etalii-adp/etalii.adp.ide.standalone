@@ -18,6 +18,22 @@ namespace EtAlii.Adp.Specification.Disl;
 /// <c>last</c>), which reports a group of duplicates once, at that member, rather than once for each
 /// member after the first. <c>std.endpoints</c> binds <c>detail.violation</c> (§8.7): <c>source</c>,
 /// <c>target</c>, <c>selfLoop</c> or <c>parallel</c>, one finding per limit broken.
+/// <c>std.multiplicity</c> from a relation end's <c>max</c> (§4.9): one finding per element with
+/// more relations at that end than it allows, binding <c>detail</c> with <c>min</c> (when the end
+/// states one), <c>max</c>, <c>count</c>, <c>relationType</c> and <c>end</c>; an end that names no
+/// element counts for nothing. <c>std.acyclic</c> from <c>acyclic: true</c> over the type and its
+/// subtypes: one finding per elementary cycle as <c>diagram.cycles</c> gives it (§12.4), a
+/// self-loop a cycle of one, binding <c>detail</c> with <c>relationType</c> and <c>cycle</c>.
+/// </para>
+/// <para>
+/// <b>The runtime's choices where DISL 8.7 is silent</b>. 8.7 lists no <c>detail</c> for
+/// <c>std.multiplicity</c> and <c>std.acyclic</c>; they bind the keys of their <c>violation</c>
+/// (§8.4), <c>cycle</c> included. Nor does it say where their findings are: a breach of a
+/// <c>max</c> is located at the last relation at that end, the one that went over it, and is about
+/// the element and then those relations; a cycle is located at, and its <c>self</c> is, its member
+/// with the least id as <c>persistence.ids.compare</c> orders ids, whichever member it starts at,
+/// and is about its members in loop order. Not checked: an end's <c>min</c>, the type-level
+/// <c>multiplicity</c>, <c>children</c> and port bounds, and an undirected acyclic type.
 /// </para>
 /// <para>
 /// <b>Order</b>: without <c>constraints.order</c>, §8.6's - the reader's findings, the built-ins,
@@ -58,7 +74,9 @@ public static class ConstraintEvaluator
         if (!run.PrimaryUnparseable)
         {
             run.DuplicateIds();
+            run.Multiplicity();
             run.Endpoints();
+            run.Acyclic();
             run.References();
             run.Rules();
         }
@@ -67,6 +85,9 @@ public static class ConstraintEvaluator
 
     private sealed class Run(DislSpecification specification, DislDiagram diagram, DislConstraintOptions options)
     {
+        /// <summary>The most cycles <c>std.acyclic</c> reports per type, which keeps an evaluation bounded however tangled the graph is.</summary>
+        private const long MaxCycles = 1000;
+
         private readonly List<(DislFinding Finding, int Reading, int? Position)> _found = [];
         private readonly DislConstraints _constraints = specification.Constraints;
         private readonly CelMap _env = (options.Env ?? new DislEnv()).ToCel();
@@ -153,6 +174,63 @@ public static class ConstraintEvaluator
                     "parallel" => $"A {relation.Type.Name} already connects these two elements.",
                     _ => $"A {relation.Type.Name} cannot have this {end}.",
                 }, position);
+            }
+        }
+
+        /// <summary>
+        /// <c>std.multiplicity</c> from relation ends (§4.9): per element in model order, and per end
+        /// that states a <c>max</c> in relation type declaration order, the source end before the
+        /// target, the relations that are the end's type or one of its subtypes and have the element at
+        /// that end, when there are more than <c>max</c>. An end is checked once, for the type that
+        /// declares it, so a subtype that inherits it is counted with its supertype.
+        /// </summary>
+        public void Multiplicity()
+        {
+            var setting = Setting("std.multiplicity");
+            if (!setting.Enabled) return;
+            var ends = specification.Metamodel.Relations.Values
+                .SelectMany(type => new[] { (Side: "source", End: type.Source), (Side: "target", End: type.Target) })
+                .Where(end => end.End is { Max: not null, DeclaredBy: not null })
+                .Select(end => (end.Side, End: end.End!))
+                .DistinctBy(end => (end.Side, end.End.DeclaredBy))
+                .ToList();
+            if (ends.Count == 0) return;
+            foreach (var element in diagram.Elements)
+            {
+                foreach ((string side, DislRelationEnd end) in ends)
+                {
+                    var relations = diagram.Relations
+                        .Where(relation => relation.IsA(end.DeclaredBy!) && ReferenceEquals(side == "source" ? relation.Source : relation.Target, element))
+                        .ToList();
+                    if (relations.Count <= end.Max) continue;
+                    var detail = new CelMap { ["max"] = end.Max, ["count"] = (long)relations.Count, ["relationType"] = end.DeclaredBy, ["end"] = side };
+                    if (end.Min is { } min) detail["min"] = min;
+                    var noun = side == "source" ? "outgoing" : "incoming";
+                    Add(setting, "std.multiplicity", element, detail, $"'{WrittenId(element)}' has {relations.Count} {noun} {end.DeclaredBy} relations; it may have {end.Max}.", element, relations[^1], [WrittenId(element), .. relations.Select(WrittenId)]);
+                }
+            }
+        }
+
+        /// <summary>
+        /// <c>std.acyclic</c> (§4.9): per relation type whose own declaration states <c>acyclic</c>, and
+        /// that has no acyclic supertype to cover it, each elementary cycle over it and its subtypes, in
+        /// the order of <c>diagram.cycles</c>, at most <see cref="MaxCycles"/> of them.
+        /// </summary>
+        public void Acyclic()
+        {
+            var setting = Setting("std.acyclic");
+            if (!setting.Enabled) return;
+            var types = specification.Metamodel.Relations.Values
+                .Where(type => type is { Acyclic: true } && !type.Linearisation.Skip(1).Any(name => specification.Metamodel.TypeOf(name) is { Acyclic: true }));
+            foreach (var type in types)
+            {
+                foreach (var cycle in diagram.Cycles(type.Name, MaxCycles).Cycles)
+                {
+                    var least = cycle.Aggregate((one, other) => specification.IdComparer.Compare(WrittenId(other), WrittenId(one)) < 0 ? other : one);
+                    var detail = new CelMap { ["relationType"] = type.Name, ["cycle"] = cycle.Select(View).ToList() };
+                    var members = string.Join(" -> ", cycle.Append(cycle[0]).Select(WrittenId));
+                    Add(setting, "std.acyclic", least, detail, $"These {type.Name} relations form a cycle: {members}.", least, least, [.. cycle.Select(WrittenId)]);
+                }
             }
         }
 
@@ -296,10 +374,14 @@ public static class ConstraintEvaluator
         }
 
         /// <summary>A built-in's finding on <paramref name="self"/>, ordered as <paramref name="position"/> is in the document: a group of duplicates where its first member is.</summary>
-        private void Add(BuiltIn setting, string builtIn, DislElement self, CelMap detail, string fallback, DislElement position)
+        private void Add(BuiltIn setting, string builtIn, DislElement self, CelMap detail, string fallback, DislElement position) =>
+            Add(setting, builtIn, self, detail, fallback, position, self, [WrittenId(self)]);
+
+        /// <summary>A built-in's finding on <paramref name="self"/>, located at <paramref name="at"/> and about <paramref name="about"/>, ordered as <paramref name="position"/> is.</summary>
+        private void Add(BuiltIn setting, string builtIn, DislElement self, CelMap detail, string fallback, DislElement position, DislElement at, IReadOnlyList<string> about)
         {
             var variables = Variables(View(self), detail);
-            _found.Add((new DislFinding(setting.CodeOf(variables), builtIn, setting.Severity, setting.MessageOf(variables, fallback), [WrittenId(self)], self.Line, self.Location.File), -1, position.Line));
+            _found.Add((new DislFinding(setting.CodeOf(variables), builtIn, setting.Severity, setting.MessageOf(variables, fallback), about, at.Line, at.Location.File), -1, position.Line));
         }
 
         private Dictionary<string, object?> Variables(object self, CelMap? detail)

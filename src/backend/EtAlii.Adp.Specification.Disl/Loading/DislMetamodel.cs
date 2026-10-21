@@ -58,7 +58,13 @@ public sealed record DislEnum(string Name, IReadOnlyList<DislEnumValue> Values, 
 }
 
 /// <summary>One end of a relation type (DISL §4.9): the types it accepts, those it excludes, and whether it may be missing.</summary>
-internal sealed record DislRelationEnd(IReadOnlyList<string> Types, IReadOnlyList<string> Exclude, bool Optional);
+/// <param name="Types">The types it accepts; none for every type.</param>
+/// <param name="Exclude">The subtypes it excludes from <paramref name="Types"/>.</param>
+/// <param name="Optional">Whether a relation may be stored without it (a <c>target</c> end only).</param>
+/// <param name="Min">Its <c>min</c>, when it states one as an int; null otherwise.</param>
+/// <param name="Max">Its <c>max</c>, when it states one as an int; null, unbounded, otherwise.</param>
+/// <param name="DeclaredBy">The relation type whose declaration this end is: the type itself, or the supertype it inherits it from.</param>
+internal sealed record DislRelationEnd(IReadOnlyList<string> Types, IReadOnlyList<string> Exclude, bool Optional, long? Min = null, long? Max = null, string? DeclaredBy = null);
 
 /// <summary>
 /// A node type (DISL §4.6) or a relation type (§4.9), inheritance flattened (§4.7): its C3
@@ -76,6 +82,7 @@ public sealed class DislType
         Icon = JsonProperties.String(json, "icon");
         AllowSelfLoops = Flag(json, "allowSelfLoops");
         AllowParallel = Flag(json, "allowParallel");
+        Acyclic = Flag(json, "acyclic") ?? false;
         Directed = Flag(json, "directed");
         var derived = json.ValueKind == JsonValueKind.Object && json.TryGetProperty("derived", out var declared) && declared.ValueKind == JsonValueKind.Object ? declared : default;
         ConnectEdit = derived.ValueKind == JsonValueKind.Object && derived.TryGetProperty("edits", out var edits) ? JsonProperties.String(edits, "connect") : null;
@@ -103,6 +110,9 @@ public sealed class DislType
 
     /// <summary>A relation type's <c>allowParallel</c> (§4.9) when it states it as a boolean; null otherwise.</summary>
     internal bool? AllowParallel { get; }
+
+    /// <summary>Whether a relation type's own declaration states <c>acyclic: true</c> (§4.9); a subtype of such a type is acyclic through it.</summary>
+    internal bool Acyclic { get; }
 
     /// <summary>A relation type's <c>directed</c> (§4.9) when it states it as a boolean; null otherwise.</summary>
     internal bool? Directed { get; }

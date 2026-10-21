@@ -298,13 +298,13 @@ public sealed class DislElement : ICelObject
         return true;
     }
 
-    /// <summary><c>e.positionIn(l)</c>: the zero-based position of this element in <paramref name="list"/>, by identity, or −1 (§12.4).</summary>
+    /// <summary><c>e.positionIn(l)</c>: the zero-based position of this element in <paramref name="list"/>, by identity, or −1 (§12.4); an item that is this element named by its written id is this element.</summary>
     private long PositionIn(object? list)
     {
         if (list is not IReadOnlyList<object?> items) throw new CelException("positionIn() takes a list.");
         for (var index = 0; index < items.Count; index++)
         {
-            if (ReferenceEquals(items[index], this)) return index;
+            if (ReferenceEquals(items[index], this) || items[index] is DislWrittenElement written && ReferenceEquals(written.Element, this)) return index;
         }
         return -1;
     }
