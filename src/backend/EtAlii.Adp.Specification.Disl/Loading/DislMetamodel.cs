@@ -38,6 +38,24 @@ public sealed record DislAttribute(string Name, string Type, bool Many, JsonElem
     internal object? DefaultValue { get; init; }
 
     /// <summary>
+    /// Whether it declares <c>fixed</c> (§4.3), read at load: it always has <see cref="FixedValue"/>, is read-only, and is
+    /// never stored, so a reader ignores a stored value and a writer never writes one.
+    /// </summary>
+    internal bool IsFixed { get; } = Json.ValueKind == JsonValueKind.Object && Json.TryGetProperty("fixed", out _);
+
+    /// <summary>
+    /// Its <c>fixed</c> value as CEL sees it, converted at load; null without one, or when it is not a value of the
+    /// attribute's type. A reading gets a copy of its own (<see cref="DislValues.Copy"/>).
+    /// </summary>
+    internal object? FixedValue { get; init; }
+
+    /// <summary>
+    /// Its own <c>readOnlyReasons</c> (§4.3), in priority order, set at load with the programs the loader compiled in the
+    /// <c>element</c> context; none when it states none.
+    /// </summary>
+    internal IReadOnlyList<DislReason> ReadOnlyReasons { get; set; } = [];
+
+    /// <summary>
     /// The program the loader compiled at a derived attribute's <c>derived</c> (§4.3), set at load; null when it compiled
     /// none there, and the attribute then reads as unset.
     /// </summary>

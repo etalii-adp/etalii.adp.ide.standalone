@@ -11,7 +11,8 @@ namespace EtAlii.Adp.Specification.Disl;
 /// <remarks>
 /// <para>
 /// <b>An unset attribute reads as its default, else its type's zero value</b>, while
-/// <c>has(e.attr)</c> holds only for a stored value (§4.3). A reference attribute reads as the
+/// <c>has(e.attr)</c> holds only for a stored value (§4.3). A <c>fixed</c> attribute reads as its
+/// value and <c>has()</c> is false for it, whatever is stored. A reference attribute reads as the
 /// element its stored id names, or <c>null</c>.
 /// </para>
 /// <para>
@@ -115,13 +116,15 @@ public sealed class DislElement : ICelObject
     public bool IsA(string type) => Type.Linearisation.Contains(type);
 
     /// <summary>
-    /// The value CEL reads for <paramref name="name"/>: a derived attribute's expression (§4.3), else
-    /// stored, else its default, else its type's zero value; a reference resolved to its element.
+    /// The value CEL reads for <paramref name="name"/>: a derived attribute's expression (§4.3), else a
+    /// fixed attribute's value, whatever is stored, else stored, else its default, else its type's zero
+    /// value; a reference resolved to its element.
     /// </summary>
     public object? ValueOf(string name)
     {
         if (!Type.Attributes.TryGetValue(name, out var attribute)) throw new ArgumentException($"'{name}' is not an attribute of {Type.Name}.", nameof(name));
         if (attribute.IsDerived) return Derived(attribute);
+        if (attribute.IsFixed) return DislValues.Fixed(attribute, Diagram.Specification.Metamodel);
         if (!_attributes.TryGetValue(name, out var value)) return DislValues.Unset(attribute, Diagram.Specification.Metamodel);
         if (Diagram.Specification.Metamodel.TypeOf(attribute.Type) is null) return value;
         return value switch
@@ -243,7 +246,7 @@ public sealed class DislElement : ICelObject
 
     /// <inheritdoc />
     public bool HasMember(string name) => Type.Attributes.TryGetValue(name, out var attribute)
-        ? _attributes.ContainsKey(name) || attribute.IsDerived
+        ? !attribute.IsFixed && (_attributes.ContainsKey(name) || attribute.IsDerived)
         : Member(name) is var value && !ReferenceEquals(value, Missing) && value is not null;
 
     private object? Member(string name)
