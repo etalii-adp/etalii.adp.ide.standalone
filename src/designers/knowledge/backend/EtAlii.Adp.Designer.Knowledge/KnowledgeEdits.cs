@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Text.RegularExpressions;
 using EtAlii.Adp.Designer.TableModel;
 using EtAlii.Adp.Specification.Fbl.Planning;
 
@@ -36,7 +35,7 @@ internal sealed record KnowledgeSurroundings(string BodyPath, Func<KnowledgeProp
 /// changes it gives are made to the file through the FBL runtime and to what the table shows
 /// through <see cref="KnowledgeProjection"/>, so the two cannot mean different things.
 /// </summary>
-internal static partial class KnowledgeEdits
+internal static class KnowledgeEdits
 {
     private const string RowGone = "That row is no longer in this table.";
     private const string PropertyGone = "That property is no longer in this table.";
@@ -45,10 +44,6 @@ internal static partial class KnowledgeEdits
     private const string ViewNameNeeded = "A view needs a name.";
     public const string TitleStays = "The title property is always there: it cannot be deleted or hidden.";
     public const string LastView = "A table keeps at least one view.";
-    public const string NumberExpected = "A number is expected.";
-    public const string DateExpected = "A date is expected, as year-month-day.";
-    public const string DateTimeExpected = "A date and a time are expected.";
-    public const string TimeExpected = "A time is expected, as hours:minutes.";
     private const string Computed = "This side of the relation is filled in from the other table.";
     public const string RelationNeedsTarget = "A relation is added by choosing the table it relates to.";
     public const string TitleIsText = "The title property is always text.";
@@ -61,9 +56,6 @@ internal static partial class KnowledgeEdits
 
     /// <summary>How deep a filter's groups go: the bindings read a group inside a group and no further.</summary>
     private const int FilterDepth = 2;
-
-    [GeneratedRegex(@"(Z|[+-]\d\d:\d\d)$")]
-    private static partial Regex Offset();
 
     /// <param name="table">The table as it is shown now, edits not yet written included.</param>
     /// <param name="activeViewId">The view the connection shows, for a gesture that names none.</param>
@@ -204,11 +196,12 @@ internal static partial class KnowledgeEdits
 
         List<ModelChange> changes = [];
         var values = gesture.Values.Where(value => value.Length > 0).ToList();
+        var type = property.Type;
 
         // An option made while filling in the cell: made first, and then chosen like any other.
         if (gesture.Settings.TryGetValue("newOption", out var optionName) && optionName.Trim().Length > 0)
         {
-            if (property.ValueType is not ("selection" or "multipleSelection"))
+            if (!type.HoldsOptions)
             {
                 return Refused("Only a selection has options.");
             }
@@ -220,7 +213,7 @@ internal static partial class KnowledgeEdits
                 changes.Add(new ModelChange.Add("Option", optionId, Attributes(("name", optionName.Trim()), ("colour", ColourFor(property, optionName.Trim()))), property.Id));
             }
 
-            if (property.ValueType == "selection")
+            if (!type.HoldsSeveral)
             {
                 values = [optionId];
             }
@@ -229,7 +222,7 @@ internal static partial class KnowledgeEdits
                 values.Add(optionId);
             }
         }
-        else if (property.ValueType is "selection" or "multipleSelection" && values.FirstOrDefault(value => property.Options.All(option => option.Id != value)) is not null)
+        else if (type.HoldsOptions && values.FirstOrDefault(value => property.Options.All(option => option.Id != value)) is not null)
         {
             return Refused("That option is no longer one of this property's.");
         }
@@ -237,14 +230,14 @@ internal static partial class KnowledgeEdits
         var cellId = CellId(row.Id, property.Id);
         var cell = row.Cells.FirstOrDefault(candidate => candidate.PropertyId == property.Id);
 
-        if (property.ValueType is "multipleSelection" or "relation")
+        if (type.HoldsSeveral)
         {
-            if (property is { ValueType: "relation", Limit: "one" } && values.Count > 1)
+            if (property is { Type: KnowledgeRelationType, Limit: "one" } && values.Count > 1)
             {
                 return Refused("This relation holds one row.");
             }
 
-            if (property.ValueType == "relation")
+            if (type is KnowledgeRelationType)
             {
                 // A related row is a row of the target: one that is not there is not related to.
                 if (files?.TargetOf(property)?.Table is { } target && values.FirstOrDefault(value => target.Rows.All(candidate => candidate.Id != value)) is not null)
@@ -263,7 +256,7 @@ internal static partial class KnowledgeEdits
                 return SetMutual(table, row, property, values, changes);
             }
 
-            var key = property.ValueType == "relation" ? "row" : "option";
+            var key = type.StoredKey;
             var held = cell?.Values ?? [];
             if (values.Count == 0)
             {
@@ -285,10 +278,12 @@ internal static partial class KnowledgeEdits
             return cell is null ? KnowledgeEdit.Nothing : new KnowledgeEdit([.. changes, new ModelChange.Remove(cellId)]);
         }
 
-        if (Written(property.ValueType, values[0], out var name, out var written) is { Length: > 0 } refusal)
+        if (type.Write(values[0], out var written) is { Length: > 0 } refusal)
         {
             return Refused(refusal);
         }
+
+        var name = type.StoredKey;
 
         if (written is null)
         {
@@ -352,75 +347,7 @@ internal static partial class KnowledgeEdits
         changes.AddRange(added.Select(value => (ModelChange)new ModelChange.Add("CellItem", null, Attributes(("row", value)), cellId)));
         return new KnowledgeEdit(changes);
 
-        IReadOnlyList<string> Held(KnowledgeRow of) => of.Cells.FirstOrDefault(candidate => candidate.PropertyId == property.Id && candidate.Key == "rows")?.Values ?? [];
-    }
-
-    /// <summary>
-    /// A value as its type writes it: the key it is stored under and what is stored, or why it is
-    /// not a value of that type. Dates and times are ISO 8601, and a date and time carries its
-    /// offset: one given without is taken to be this machine's local time.
-    /// </summary>
-    private static string Written(string valueType, string value, out string key, out object? written)
-    {
-        key = valueType;
-        written = value;
-        switch (valueType)
-        {
-            case "text":
-                return "";
-            case "number":
-                if (long.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var whole))
-                {
-                    written = whole;
-                    return "";
-                }
-
-                if (double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var real) && double.IsFinite(real))
-                {
-                    written = real;
-                    return "";
-                }
-
-                return NumberExpected;
-            case "checkbox":
-                key = "checked";
-                written = value == "true" ? true : null;
-                return "";
-            case "date":
-                if (!DateOnly.TryParseExact(value, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date))
-                {
-                    return DateExpected;
-                }
-
-                written = date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
-                return "";
-            case "dateTime":
-                if (Offset().IsMatch(value))
-                {
-                    return DateTimeOffset.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out _) ? "" : DateTimeExpected;
-                }
-
-                if (!DateTime.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.None, out var local))
-                {
-                    return DateTimeExpected;
-                }
-
-                written = new DateTimeOffset(DateTime.SpecifyKind(local, DateTimeKind.Unspecified), TimeZoneInfo.Local.GetUtcOffset(local)).ToString("yyyy-MM-ddTHH:mm:sszzz", CultureInfo.InvariantCulture);
-                return "";
-            case "time":
-                if (!TimeOnly.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.None, out var time))
-                {
-                    return TimeExpected;
-                }
-
-                written = time.ToString(time.Second == 0 ? "HH:mm" : "HH:mm:ss", CultureInfo.InvariantCulture);
-                return "";
-            case "selection":
-                key = "option";
-                return "";
-            default:
-                return "This value cannot be set here.";
-        }
+        IReadOnlyList<string> Held(KnowledgeRow of) => of.Cells.FirstOrDefault(candidate => candidate.PropertyId == property.Id && candidate.Key == KnowledgeValueTypes.Relation.CellKey)?.Values ?? [];
     }
 
     private static KnowledgeEdit AddRow(KnowledgeTable table, KnowledgeView? view, TableGesture gesture, Func<string> newId)
@@ -434,25 +361,18 @@ internal static partial class KnowledgeEdits
 
         // A row added in a group is given the value that puts it there.
         if (gesture.Settings.TryGetValue("group", out var group) && group.Length > 0
-            && view is not null && table.Properties.FirstOrDefault(property => property.Id == view.GroupBy) is { IsComputed: false } grouped)
+            && view is not null && table.Properties.FirstOrDefault(property => property.Id == view.GroupBy) is { IsComputed: false } grouped
+            && grouped.Type.TakesGroup(grouped, group))
         {
-            var cellId = CellId(id, grouped.Id);
-            switch (grouped.ValueType)
+            var type = grouped.Type;
+            if (type.HoldsSeveral)
             {
-                case "selection" when grouped.Options.Any(option => option.Id == group):
-                    changes.Add(new ModelChange.Add("Cell", null, Attributes(("property", grouped.Id), ("option", group)), id));
-                    break;
-                case "multipleSelection" when grouped.Options.Any(option => option.Id == group):
-                    changes.Add(new ModelChange.Add("Cell", null, Attributes(("property", grouped.Id)), id));
-                    changes.Add(new ModelChange.Add("CellItem", null, Attributes(("option", group)), cellId));
-                    break;
-                case "relation":
-                    changes.Add(new ModelChange.Add("Cell", null, Attributes(("property", grouped.Id)), id));
-                    changes.Add(new ModelChange.Add("CellItem", null, Attributes(("row", group)), cellId));
-                    break;
-                case "checkbox" when group == "true":
-                    changes.Add(new ModelChange.Add("Cell", null, Attributes(("property", grouped.Id), ("checked", true)), id));
-                    break;
+                changes.Add(new ModelChange.Add("Cell", null, Attributes(("property", grouped.Id)), id));
+                changes.Add(new ModelChange.Add("CellItem", null, Attributes((type.StoredKey, group)), CellId(id, grouped.Id)));
+            }
+            else if (type.Write(group, out var written).Length == 0)
+            {
+                changes.Add(new ModelChange.Add("Cell", null, Attributes(("property", grouped.Id), (type.StoredKey, written)), id));
             }
         }
 
@@ -520,13 +440,14 @@ internal static partial class KnowledgeEdits
 
     private static KnowledgeEdit AddColumn(KnowledgeTable table, KnowledgeView? view, TableGesture gesture, Func<string> newId)
     {
-        var type = gesture.Settings.GetValueOrDefault("type") ?? "text";
-        if (type == "relation")
+        var type = gesture.Settings.GetValueOrDefault("type") ?? KnowledgeValueTypes.Text.Name;
+        var valueType = KnowledgeValueTypes.Of(type);
+        if (valueType is KnowledgeRelationType)
         {
             return Refused(RelationNeedsTarget);
         }
 
-        if (!KnowledgeVocabulary.ValueTypes.Contains(type) || KnowledgeDefinition.ValueTypeLabel(type) is not { } label)
+        if (!valueType.IsKnown || KnowledgeDefinition.ValueTypeLabel(type) is not { } label)
         {
             return Refused($"'{type}' is not a type a property can have.");
         }
@@ -599,7 +520,7 @@ internal static partial class KnowledgeEdits
         // own. It is never the title, and never the other side of the first one's relation.
         var id = newId();
         var attributes = Attributes(("name", UniqueName(table.Properties.Select(other => other.Name), property.Name)), ("valueType", property.ValueType));
-        if (property is { ValueType: "relation", IsComputed: false })
+        if (property is { Type: KnowledgeRelationType, IsComputed: false })
         {
             attributes["targetFile"] = property.TargetFile;
             attributes["limit"] = property.Limit is "one" ? "one" : null;
@@ -647,7 +568,7 @@ internal static partial class KnowledgeEdits
         var self = property.TargetFile is KnowledgeRelations.Self or "";
         var target = self ? null : files?.TargetOf(property);
         var related = self ? table : target?.Table;
-        if (property is not { ValueType: "relation", Counterpart.Length: > 0 } || related?.Properties.FirstOrDefault(candidate => candidate.Id == property.Counterpart) is not { } other)
+        if (property is not { Type: KnowledgeRelationType, Counterpart.Length: > 0 } || related?.Properties.FirstOrDefault(candidate => candidate.Id == property.Counterpart) is not { } other)
         {
             return new KnowledgeEdit(changes);
         }
@@ -714,7 +635,7 @@ internal static partial class KnowledgeEdits
         var id = newId();
         var attributes = Attributes(
             ("name", name),
-            ("valueType", "relation"),
+            ("valueType", KnowledgeValueTypes.Relation.Name),
             ("targetFile", self ? KnowledgeRelations.Self : KnowledgeRelations.TargetName(files.BodyPath, target.Path)),
             ("limit", gesture.Settings.GetValueOrDefault("limit") == "one" ? "one" : null));
 
@@ -740,7 +661,7 @@ internal static partial class KnowledgeEdits
             otherId,
             Attributes(
                 ("name", UniqueName(taken, otherName)),
-                ("valueType", "relation"),
+                ("valueType", KnowledgeValueTypes.Relation.Name),
                 ("targetFile", self ? KnowledgeRelations.Self : KnowledgeRelations.TargetName(target.Path, files.BodyPath)),
                 ("computed", true),
                 ("counterpart", id)));
@@ -766,7 +687,7 @@ internal static partial class KnowledgeEdits
 
     /// <summary>The relation of this table a gesture is about: one that holds its own values, not the shown side of another table's.</summary>
     private static KnowledgeProperty? OwnRelation(KnowledgeTable table, string propertyId) =>
-        table.Properties.FirstOrDefault(candidate => candidate.Id == propertyId) is { ValueType: "relation", IsComputed: false } property ? property : null;
+        table.Properties.FirstOrDefault(candidate => candidate.Id == propertyId) is { Type: KnowledgeRelationType, IsComputed: false } property ? property : null;
 
     /// <summary>
     /// How many rows a relation's cell may hold: one, or any number. Cells that hold more than a new
@@ -842,7 +763,7 @@ internal static partial class KnowledgeEdits
                 otherId,
                 Attributes(
                     ("name", UniqueName(related.Properties.Select(candidate => candidate.Name), asked.Length > 0 ? asked : OtherSideName(table))),
-                    ("valueType", "relation"),
+                    ("valueType", KnowledgeValueTypes.Relation.Name),
                     ("targetFile", self ? KnowledgeRelations.Self : KnowledgeRelations.TargetName(target!.Path, files!.BodyPath)),
                     ("computed", true),
                     ("counterpart", property.Id)));
@@ -876,7 +797,7 @@ internal static partial class KnowledgeEdits
             return KnowledgeEdit.Of(Set(property.Id, ("isParent", null)));
         }
 
-        if (property is not { ValueType: "relation", TargetFile: KnowledgeRelations.Self or "", Limit: "one", IsComputed: false })
+        if (property is not { Type: KnowledgeRelationType, TargetFile: KnowledgeRelations.Self or "", Limit: "one", IsComputed: false })
         {
             return Refused("Only a relation to this table that holds one row can be the parent relation.");
         }
@@ -907,7 +828,7 @@ internal static partial class KnowledgeEdits
             return Refused(PropertyGone);
         }
 
-        if (property.ValueType is not ("selection" or "multipleSelection"))
+        if (!property.Type.HoldsOptions)
         {
             return Refused(NotASelection);
         }
@@ -951,7 +872,7 @@ internal static partial class KnowledgeEdits
             return Refused(PropertyGone);
         }
 
-        if (property.ValueType is not ("selection" or "multipleSelection"))
+        if (!property.Type.HoldsOptions)
         {
             return Refused(NotASelection);
         }
@@ -1006,14 +927,6 @@ internal static partial class KnowledgeEdits
 
     // ---- a property's type ----
 
-    /// <summary>The key a cell holds a value of this type under: one of a cell's attributes, or the name of its list of several.</summary>
-    internal static string KeyOf(string valueType) => valueType switch
-    {
-        "multipleSelection" => "options",
-        "relation" => "rows",
-        _ => KnowledgeVocabulary.StoredKey(valueType),
-    };
-
     /// <summary>
     /// A change of type, with every value that has a meaning in the new type converted in the same
     /// step, as the conversion table of the designer's specification says. A value that has none
@@ -1038,19 +951,20 @@ internal static partial class KnowledgeEdits
             return Refused(TitleIsText);
         }
 
-        if (to == "relation")
+        var target = KnowledgeValueTypes.Of(to);
+        if (target is KnowledgeRelationType)
         {
             return Refused(RelationNeedsTarget);
         }
 
-        if (!KnowledgeVocabulary.ValueTypes.Contains(to))
+        if (!target.IsKnown)
         {
             return Refused($"'{to}' is not a type a property can have.");
         }
 
         List<ModelChange> changes = [Set(property.Id, ("valueType", to))];
-        var from = property.ValueType;
-        var held = KeyOf(from);
+        var from = property.Type;
+        var held = from.CellKey;
         var names = property.Options.ToDictionary(option => option.Id, option => option.Name, StringComparer.Ordinal);
         var ids = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         foreach (var option in property.Options)
@@ -1067,43 +981,7 @@ internal static partial class KnowledgeEdits
                 continue;
             }
 
-            var cellId = CellId(row.Id, property.Id);
-            var value = cell.Values[0];
-            switch (from, to)
-            {
-                case ("text", "checkbox") when value.Trim().ToLowerInvariant() is "true" or "false":
-                    changes.Add(Set(cellId, ("text", null), ("checked", value.Trim().Equals("true", StringComparison.OrdinalIgnoreCase))));
-                    break;
-                case ("text", "number" or "date" or "dateTime" or "time") when Written(to, value.Trim(), out var key, out var written).Length == 0:
-                    changes.Add(Set(cellId, ("text", null), (key, written)));
-                    break;
-                case ("text", "selection") when value.Trim().Length > 0:
-                    changes.Add(Set(cellId, ("text", null), ("option", Option(value.Trim()))));
-                    break;
-                case ("text", "multipleSelection") when value.Trim().Length > 0:
-                    var made = Option(value.Trim());
-                    changes.Add(Set(cellId, ("text", null)));
-                    changes.Add(new ModelChange.Add("CellItem", null, Attributes(("option", made)), cellId));
-                    break;
-                case ("number" or "checkbox" or "date" or "dateTime" or "time", "text"):
-                    changes.Add(Set(cellId, (held, null), ("text", value)));
-                    break;
-                case ("selection", "text") when names.TryGetValue(value, out var name):
-                    changes.Add(Set(cellId, ("option", null), ("text", name)));
-                    break;
-                case ("selection", "multipleSelection"):
-                    changes.Add(Set(cellId, ("option", null)));
-                    changes.Add(new ModelChange.Add("CellItem", null, Attributes(("option", value)), cellId));
-                    break;
-                case ("multipleSelection", "text") when cell.Values.All(names.ContainsKey):
-                    changes.Add(Set(cellId, ("text", string.Join(", ", cell.Values.Select(item => names[item])))));
-                    changes.AddRange(cell.Values.Select(item => (ModelChange)new ModelChange.Remove($"{cellId}/{item}")));
-                    break;
-                case ("multipleSelection", "selection") when cell.Values.Count == 1:
-                    changes.Add(new ModelChange.Remove($"{cellId}/{value}"));
-                    changes.Add(Set(cellId, ("option", value)));
-                    break;
-            }
+            from.ConvertTo(target, new KnowledgeConversion(CellId(row.Id, property.Id), cell, held, names, Option, changes));
         }
 
         return new KnowledgeEdit(changes);
@@ -1186,7 +1064,7 @@ internal static partial class KnowledgeEdits
             return Refused(PropertyGone);
         }
 
-        if (calculation.Length > 0 && !KnowledgeCalculations.For(property.ValueType).Contains(calculation))
+        if (calculation.Length > 0 && !KnowledgeCalculations.For(property.Type).Contains(calculation))
         {
             return Refused(KnowledgeCalculations.IsKnown(calculation) ? $"'{property.Name}' is not of a type that calculation is for." : "That is not a calculation.");
         }
@@ -1368,7 +1246,7 @@ internal static partial class KnowledgeEdits
                 return Refused(PropertyGone);
             }
 
-            if (property.ValueType is not ("selection" or "multipleSelection" or "checkbox" or "relation"))
+            if (!property.Type.CanGroup)
             {
                 return Refused("A view is grouped by a selection, a checkbox or a relation.");
             }
@@ -1437,7 +1315,7 @@ internal static partial class KnowledgeEdits
             return Refused(NotGrouped);
         }
 
-        var target = grouped.ValueType == "relation" ? files?.TargetOf(grouped) : null;
+        var target = grouped.Type is KnowledgeRelationType ? files?.TargetOf(grouped) : null;
         var groups = KnowledgeGroups.Of(table, view, grouped, target is null ? null : id => KnowledgeRelations.LabelOf(target, id));
         var named = groups.Where(group => group.Key != KnowledgeViewEngine.NoValue).OrderBy(group => group.Label, StringComparer.CurrentCultureIgnoreCase).Select(group => group.Key);
         List<string> desired = [.. gesture.Settings.GetValueOrDefault("order") == "descending" ? named.Reverse() : named, .. groups.Where(group => group.Key == KnowledgeViewEngine.NoValue).Select(group => group.Key)];
@@ -1554,7 +1432,7 @@ internal static partial class KnowledgeEdits
             return Refused("That group is no longer in this filter.");
         }
 
-        var comparison = gesture.Settings.GetValueOrDefault("comparison") is { Length: > 0 } asked ? Comparison(asked) : KnowledgeVocabulary.Comparisons.GetValueOrDefault(property.ValueType)?.FirstOrDefault() ?? "is-empty";
+        var comparison = gesture.Settings.GetValueOrDefault("comparison") is { Length: > 0 } asked ? Comparison(asked) : property.Type.Comparisons.FirstOrDefault() ?? "is-empty";
         return AddToFilter("Condition", Attributes(("property", property.Id), ("operator", comparison)), view, group, besideItsRule);
     }
 
@@ -1585,9 +1463,11 @@ internal static partial class KnowledgeEdits
 
         // One value under the key its property's type writes it under, and no other value left beside it.
         var attributes = Attributes(
+        [
             ("property", propertyId),
             ("operator", gesture.Settings.GetValueOrDefault("comparison") is { Length: > 0 } comparison ? Comparison(comparison) : condition.Operator),
-            ("text", null), ("number", null), ("checked", null), ("date", null), ("dateTime", null), ("time", null), ("option", null));
+            .. KnowledgeVocabulary.ValueKeys.Select(key => (key, (object?)null)),
+        ]);
         var value = gesture.Values.FirstOrDefault() ?? "";
         if (value.Length > 0)
         {
@@ -1603,23 +1483,8 @@ internal static partial class KnowledgeEdits
     }
 
     /// <summary>What a condition is compared with, as its property's type writes it. Several values are compared one at a time.</summary>
-    private static string ConditionValue(KnowledgeTable table, string propertyId, string value, out string key, out object? written)
-    {
-        var type = table.Properties.FirstOrDefault(property => property.Id == propertyId)?.ValueType ?? "text";
-        switch (type)
-        {
-            case "multipleSelection":
-                key = "option";
-                written = value;
-                return "";
-            case "relation":
-                key = "text";
-                written = value;
-                return "";
-            default:
-                return Written(type, value, out key, out written);
-        }
-    }
+    private static string ConditionValue(KnowledgeTable table, string propertyId, string value, out string key, out object? written) =>
+        (table.Properties.FirstOrDefault(property => property.Id == propertyId)?.Type ?? KnowledgeValueTypes.Text).WriteCondition(value, out key, out written);
 
     private static KnowledgeEdit SetFilterMatch(KnowledgeView view, TableGesture gesture)
     {

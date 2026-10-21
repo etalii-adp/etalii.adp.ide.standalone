@@ -151,7 +151,7 @@ public sealed class KnowledgeRowContextTests : IDisposable
         var relation = await Set("p5", "zh");
 
         // Assert: each refused with its reason, and nothing written.
-        Assert.Equal(KnowledgeEdits.NumberExpected, word.Error);
+        Assert.Equal(KnowledgeNumberType.Expected, word.Error);
         Assert.Equal("'Atlantis' is not one of the options of Country.", unknown.Error);
         Assert.Equal(KnowledgeRowPropertyProvider.RelationStays, relation.Error);
         Assert.Equal(bytes, await File.ReadAllBytesAsync(Cities, TestContext.Current.CancellationToken));

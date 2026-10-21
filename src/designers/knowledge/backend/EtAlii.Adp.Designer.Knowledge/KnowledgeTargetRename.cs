@@ -28,7 +28,7 @@ internal sealed class KnowledgeTargetRename(IKnowledgeDocumentStore documents, I
             }
 
             List<ModelChange> changes = [];
-            foreach (var property in body.Table.Properties.Where(property => property is { ValueType: "relation", TargetFile: { Length: > 0 } and not KnowledgeRelations.Self }))
+            foreach (var property in body.Table.Properties.Where(property => property is { Type: KnowledgeRelationType, TargetFile: { Length: > 0 } and not KnowledgeRelations.Self }))
             {
                 if (Now(KnowledgeRelations.TargetPath(path, property.TargetFile), fromPath, toPath) is { } target)
                 {

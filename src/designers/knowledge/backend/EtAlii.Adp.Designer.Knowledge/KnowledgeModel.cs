@@ -39,7 +39,11 @@ internal sealed record KnowledgeProperty(
     string Limit,
     string Counterpart,
     bool IsComputed,
-    bool IsParent);
+    bool IsParent)
+{
+    /// <summary>What its type means: the strategy of <see cref="ValueType"/>, which is a type of its own when the module does not know the name.</summary>
+    internal KnowledgeValueType Type => KnowledgeValueTypes.Of(ValueType);
+}
 
 /// <summary>One option of a selection.</summary>
 internal sealed record KnowledgeOption(string Id, string Name, string Colour);

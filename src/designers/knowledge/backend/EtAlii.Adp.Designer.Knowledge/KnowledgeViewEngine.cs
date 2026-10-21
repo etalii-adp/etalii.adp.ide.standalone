@@ -1,4 +1,3 @@
-using System.Globalization;
 using EtAlii.Adp.Designer.TableModel;
 
 namespace EtAlii.Adp.Designer.Knowledge;
@@ -103,15 +102,7 @@ internal static class KnowledgeViewEngine
     /// name, a related row by its title. A checkbox shows no text, and is never what a search finds.
     /// </summary>
     private static bool Mentions(KnowledgeRow row, string sought, Dictionary<string, KnowledgeProperty> properties, Func<string, string, string>? labelOf) =>
-        row.Cells.Any(cell => properties.TryGetValue(cell.PropertyId, out var property) && property.ValueType != "checkbox" && ValuesOf(row, property).Any(value => Shown(property, value, labelOf).Contains(sought, StringComparison.CurrentCultureIgnoreCase)));
-
-    /// <summary>A value as its cell shows it.</summary>
-    private static string Shown(KnowledgeProperty property, string value, Func<string, string, string>? labelOf) => property.ValueType switch
-    {
-        "selection" or "multipleSelection" => property.Options.FirstOrDefault(option => option.Id == value)?.Name ?? "",
-        "relation" => labelOf?.Invoke(property.Id, value) ?? "",
-        _ => value,
-    };
+        row.Cells.Any(cell => properties.TryGetValue(cell.PropertyId, out var property) && ValuesOf(row, property).Any(value => property.Type.Shown(property, value, labelOf) is { } shown && shown.Contains(sought, StringComparison.CurrentCultureIgnoreCase)));
 
     // ---- the filter ----
 
@@ -134,7 +125,7 @@ internal static class KnowledgeViewEngine
 
     /// <summary>The values a row has for a property, as values of the property's own type: none when the cell holds none, or holds one of another type.</summary>
     public static IReadOnlyList<string> ValuesOf(KnowledgeRow row, KnowledgeProperty property) =>
-        row.Cells.FirstOrDefault(candidate => candidate.PropertyId == property.Id) is { } cell && cell.Key == KnowledgeEdits.KeyOf(property.ValueType) ? cell.Values : [];
+        row.Cells.FirstOrDefault(candidate => candidate.PropertyId == property.Id) is { } cell && cell.Key == property.Type.CellKey ? cell.Values : [];
 
     private static bool Holds(KnowledgeCondition condition, KnowledgeRow row, Dictionary<string, KnowledgeProperty> properties)
     {
@@ -146,115 +137,21 @@ internal static class KnowledgeViewEngine
 
         // A comparison its property's type does not have - written by hand, or left from a type the
         // property had before - is a setting the view opens without, too.
-        if (!KnowledgeVocabulary.Compares(property.ValueType, condition.Operator))
+        var type = property.Type;
+        if (!type.Compares(condition.Operator))
         {
             return true;
         }
 
         var values = ValuesOf(row, property);
-        var value = values.Count > 0 ? values[0] : "";
-        var given = condition.Value;
-        switch (condition.Operator)
+        return condition.Operator switch
         {
-            case "is-empty":
-                return values.Count == 0;
-            case "is-not-empty":
-                return values.Count > 0;
-            case "is-checked":
-                return value == "true";
-            case "is-not-checked":
-                return value != "true";
-        }
-
-        // Every other comparison is with a value. Without one the condition is not finished, and filters nothing.
-        if (given.Length == 0)
-        {
-            return true;
-        }
-
-        switch (property.ValueType)
-        {
-            case "number":
-                if (!double.TryParse(given, NumberStyles.Float, CultureInfo.InvariantCulture, out var wanted))
-                {
-                    return true;
-                }
-
-                if (!double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var number))
-                {
-                    // A row without a number is not equal to one, and is neither more nor less.
-                    return condition.Operator == "does-not-equal";
-                }
-
-                return condition.Operator switch
-                {
-                    "equals" => number.Equals(wanted),
-                    "does-not-equal" => !number.Equals(wanted),
-                    "greater-than" => number > wanted,
-                    "less-than" => number < wanted,
-                    "at-least" => number >= wanted,
-                    "at-most" => number <= wanted,
-                    _ => true,
-                };
-            case "date" or "dateTime" or "time":
-                if (Moment(property.ValueType, given) is not { } asked)
-                {
-                    return true;
-                }
-
-                if (Moment(property.ValueType, value) is not { } moment)
-                {
-                    return false;
-                }
-
-                return condition.Operator switch
-                {
-                    "is" => moment == asked,
-                    "is-before" => moment < asked,
-                    "is-after" => moment > asked,
-                    "is-on-or-before" => moment <= asked,
-                    "is-on-or-after" => moment >= asked,
-                    _ => true,
-                };
-            case "multipleSelection" or "relation":
-                return condition.Operator switch
-                {
-                    "contains" => values.Contains(given),
-                    "does-not-contain" => !values.Contains(given),
-                    _ => true,
-                };
-            case "selection":
-                return condition.Operator switch
-                {
-                    "is" => value == given,
-                    "is-not" => value != given,
-                    _ => true,
-                };
-            default:
-                return condition.Operator switch
-                {
-                    "is" => string.Equals(value, given, StringComparison.OrdinalIgnoreCase),
-                    "is-not" => !string.Equals(value, given, StringComparison.OrdinalIgnoreCase),
-                    "contains" => value.Contains(given, StringComparison.OrdinalIgnoreCase),
-                    "does-not-contain" => !value.Contains(given, StringComparison.OrdinalIgnoreCase),
-                    "starts-with" => value.StartsWith(given, StringComparison.OrdinalIgnoreCase),
-                    "ends-with" => value.EndsWith(given, StringComparison.OrdinalIgnoreCase),
-                    _ => true,
-                };
-        }
+            "is-empty" => values.Count == 0,
+            "is-not-empty" => values.Count > 0,
+            // Every other comparison is the type's own.
+            _ => type.Holds(condition.Operator, values, condition.Value),
+        };
     }
-
-    /// <summary>
-    /// A date, a date and time or a time as a point to compare: ticks of the day, of the instant in
-    /// UTC, or of the time of day. Null for what is not one.
-    /// </summary>
-    public static long? Moment(string valueType, string value) => valueType switch
-    {
-        "date" when DateOnly.TryParseExact(value, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date) => date.DayNumber,
-        "dateTime" when DateTimeOffset.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out var instant) => instant.UtcTicks,
-        "time" when TimeOnly.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.None, out var time) => time.Ticks,
-        _ => null,
-    };
 
     // ---- the sorts ----
 
@@ -273,7 +170,7 @@ internal static class KnowledgeViewEngine
                 continue;
             }
 
-            var comparer = Comparer<SortKey>.Create((left, right) => SortKey.Compare(left, right, sort.Descending));
+            var comparer = Comparer<KnowledgeSortKey>.Create((left, right) => KnowledgeSortKey.Compare(left, right, sort.Descending));
             ordered = ordered is null
                 ? rows.OrderBy(row => KeyOf(row, property), comparer)
                 : ordered.ThenBy(row => KeyOf(row, property), comparer);
@@ -282,63 +179,10 @@ internal static class KnowledgeViewEngine
         return ordered is null ? rows : ordered;
     }
 
-    private static SortKey KeyOf(KnowledgeRow row, KnowledgeProperty property)
+    private static KnowledgeSortKey KeyOf(KnowledgeRow row, KnowledgeProperty property)
     {
         var values = ValuesOf(row, property);
-        if (values.Count == 0)
-        {
-            return SortKey.Empty;
-        }
-
-        var value = values[0];
-        switch (property.ValueType)
-        {
-            case "number":
-                return double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var number) ? new SortKey(number, "") : SortKey.Empty;
-            case "checkbox":
-                // Unticked first.
-                return new SortKey(value == "true" ? 1 : 0, "");
-            case "date" or "dateTime" or "time":
-                return Moment(property.ValueType, value) is { } moment ? new SortKey(moment, "") : SortKey.Empty;
-            case "selection" or "multipleSelection":
-                // By the option's place among the options, not by its name.
-                var place = -1;
-                for (var index = 0; index < property.Options.Count; index++)
-                {
-                    if (property.Options[index].Id == value)
-                    {
-                        place = index;
-                        break;
-                    }
-                }
-
-                return place < 0 ? SortKey.Empty : new SortKey(place, "");
-            default:
-                return new SortKey(0, value);
-        }
-    }
-
-    /// <summary>What a row is sorted by for one property: a number, or a text, or nothing.</summary>
-    private readonly record struct SortKey(double Number, string Text, bool HasValue = true)
-    {
-        public static SortKey Empty { get; } = new(0, "", HasValue: false);
-
-        public static int Compare(SortKey left, SortKey right, bool descending)
-        {
-            if (!left.HasValue || !right.HasValue)
-            {
-                // Without a value is last, in either direction.
-                return left.HasValue == right.HasValue ? 0 : left.HasValue ? -1 : 1;
-            }
-
-            var order = left.Number.CompareTo(right.Number);
-            if (order == 0)
-            {
-                order = string.Compare(left.Text, right.Text, StringComparison.OrdinalIgnoreCase);
-            }
-
-            return descending ? -order : order;
-        }
+        return values.Count == 0 ? KnowledgeSortKey.Empty : property.Type.SortKeyOf(property, values[0]);
     }
 
     // ---- groups ----
@@ -347,34 +191,26 @@ internal static class KnowledgeViewEngine
     {
         // The groups there are, in their natural order: an option each, in the options' order; unticked
         // and ticked; a related row each, as they are first met. The rows without a value come last.
-        List<(string Key, string Label)> groups = grouped.ValueType switch
-        {
-            "selection" or "multipleSelection" => [.. grouped.Options.Select(option => (option.Id, option.Name))],
-            "checkbox" => [("false", "Not checked"), ("true", "Checked")],
+        var type = grouped.Type;
+        List<(string Key, string Label)> groups = type.NamedGroups(grouped) is { } named
+            ? [.. named]
             // A related row is a group under its title; one that is not found, under the id it is named by.
-            _ => [.. rows.SelectMany(row => ValuesOf(row, grouped)).Distinct().Select(id => (id, labelOf?.Invoke(grouped.Id, id) is { Length: > 0 } title ? title : id))],
-        };
+            : [.. rows.SelectMany(row => ValuesOf(row, grouped)).Distinct().Select(id => (id, labelOf?.Invoke(grouped.Id, id) is { Length: > 0 } title ? title : id))];
 
         // A checkbox has no row without a value: unticked is one. Every other grouping has a group for them.
         List<KnowledgeRow> without = [];
         var members = groups.ToDictionary(group => group.Key, _ => new List<KnowledgeRow>(), StringComparer.Ordinal);
-        if (grouped.ValueType != "checkbox")
+        if (type.HasNoValueGroup)
         {
             groups.Add((NoValue, $"No {grouped.Name}"));
             members[NoValue] = without;
         }
+
         foreach (var row in rows)
         {
-            var values = ValuesOf(row, grouped);
-            if (grouped.ValueType == "checkbox")
-            {
-                members[values.FirstOrDefault() == "true" ? "true" : "false"].Add(row);
-                continue;
-            }
-
-            // A row with several values is under each of them. One naming a group that is not there has no group.
+            // A row with several values is under each of them, a checkbox's under ticked or unticked. One naming a group that is not there has no group.
             var placed = false;
-            foreach (var value in values.Distinct())
+            foreach (var value in type.GroupsOf(ValuesOf(row, grouped)))
             {
                 if (value != NoValue && members.TryGetValue(value, out var group))
                 {
