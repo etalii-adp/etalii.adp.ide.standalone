@@ -102,6 +102,7 @@ public class LayeringTests
     [InlineData(CyclePolicy.BackEdgeIgnored)]
     [InlineData(CyclePolicy.BackEdgeIsZeroPerNode)]
     [InlineData(CyclePolicy.Kahn)]
+    [InlineData(CyclePolicy.Relaxation)]
     public void EveryPolicy_AgreesWithBackEdgeIsZero_WithoutACycle(CyclePolicy policy)
     {
         // Arrange: a diamond with a tail, so a node is reached along two paths.
@@ -138,6 +139,7 @@ public class LayeringTests
     [InlineData(CyclePolicy.BackEdgeIgnored)]
     [InlineData(CyclePolicy.BackEdgeIsZeroPerNode)]
     [InlineData(CyclePolicy.Kahn)]
+    [InlineData(CyclePolicy.Relaxation)]
     public void AFloor_RaisesItsNode_AndPushesWhatComesAfter(CyclePolicy policy)
     {
         // Arrange: b may sit no further left than layer three, so c, after it, is four.
@@ -151,6 +153,24 @@ public class LayeringTests
         Assert.Equal(0, layers["a"]);
         Assert.Equal(3, layers["b"]);
         Assert.Equal(4, layers["c"]);
+    }
+
+    [Fact]
+    public void Relaxation_LetsACycleClimbALayerARound_UntilTheBound()
+    {
+        // Arrange: a and b wait for each other. Two nodes, so two rounds: a lifts b to one and b
+        // lifts a to two, then b to three and a to four, and the bound stops it there.
+        (string, string)[] edges = [("a", "b"), ("b", "a")];
+
+        // Act.
+        var aFirst = Layering.LongestPath(["a", "b"], edges, CyclePolicy.Relaxation);
+        var bFirst = Layering.LongestPath(["b", "a"], edges, CyclePolicy.Relaxation);
+
+        // Assert: where the members end depends on the order they are walked in.
+        Assert.Equal(4, aFirst["a"]);
+        Assert.Equal(3, aFirst["b"]);
+        Assert.Equal(3, bFirst["a"]);
+        Assert.Equal(4, bFirst["b"]);
     }
 
     [Fact]

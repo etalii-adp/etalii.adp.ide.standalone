@@ -37,4 +37,13 @@ public enum CyclePolicy
     /// that were. Fed edges with the cycles already taken out, it is plain longest-path layering.
     /// </summary>
     Kahn,
+
+    /// <summary>
+    /// Bounded relaxation: in each round every edge, in the order of the nodes and then of the
+    /// edges, raises its target to one past its source; the rounds stop when one moves nothing, and
+    /// after as many rounds as there are nodes whatever moved. Without cycles that is longest-path
+    /// layering. On a cycle its members climb by a layer a round until the bound stops them, so where
+    /// they end depends on the bound and on the order - C4's ranking, kept as it was.
+    /// </summary>
+    Relaxation,
 }
