@@ -18,9 +18,9 @@ namespace EtAlii.Adp.Diagram.DotNetDependencyGraph;
 /// empty with today's sentence, and no <c>fbl.missing-body</c> is raised (Q2). Nothing here throws on content.
 /// </para>
 /// <para>
-/// <b>The property rows are not yet derived from <see cref="Disl"/></b>: <c>DotNetDefinition</c> still builds its
-/// model from <see cref="Graph"/> (the specification's task 6 switches it), and the builder parity test holds the
-/// two models equal element for element meanwhile.
+/// <b>The property rows are derived from <see cref="Disl"/></b>: <c>DotNetDefinition.Rows</c> reads this model and no
+/// other, and the builder parity test holds it equal, element for element, to the hand-built oracle of the test project.
+/// A graph no solution gave, as a test builds one, is read as the plugin would deliver it (<see cref="Of"/>).
 /// </para>
 /// </remarks>
 public sealed class DotNetBody
@@ -40,7 +40,7 @@ public sealed class DotNetBody
         _disl = new Lazy<DislModel>(() => DislModelBuilder.From(Reading, DotNetDefinition.Specification));
     }
 
-    /// <summary>The solution's full path.</summary>
+    /// <summary>The solution's full path; empty for a body of a graph no solution gave (<see cref="Of"/>).</summary>
     public string SolutionPath { get; }
 
     /// <summary>The graph the plugin derived, with the failures that travel with it.</summary>
@@ -80,6 +80,16 @@ public sealed class DotNetBody
         var plugin = new DotNetSolutionPlugin(subject);
         var body = PluginBody.Open(bytes, LoadedBinding.Value, plugin, Path.GetFileName(path));
         return new DotNetBody(path, plugin.Graph, body.Model);
+    }
+
+    /// <summary>
+    /// The body of <paramref name="graph"/> when no solution was read for it, as a test builds one: the plugin's elements of the
+    /// graph, with no source, and the model the shared builder builds from them.
+    /// </summary>
+    public static DotNetBody Of(DependencyGraphModel graph)
+    {
+        ArgumentNullException.ThrowIfNull(graph);
+        return new DotNetBody(string.Empty, graph, new FblModel(DotNetSolutionPlugin.Elements(graph), [], false));
     }
 
     /// <summary>The body of a solution that was not read: the graph of its failure, and nothing read.</summary>

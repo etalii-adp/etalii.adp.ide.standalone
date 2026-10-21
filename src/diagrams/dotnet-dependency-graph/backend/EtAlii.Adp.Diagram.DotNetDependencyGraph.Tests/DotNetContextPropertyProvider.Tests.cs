@@ -185,6 +185,33 @@ public class DotNetContextPropertyProviderTests
         Assert.Empty(rows);
     }
 
+    /// <summary>A store whose body was read apart from the graph it hands out, so the two can disagree.</summary>
+    private sealed class ReadingStore(DependencyGraphModel graph, DotNetBody body) : IDependencyGraphStore
+    {
+        public DependencyGraphModel GetOrLoad(string diagramPath) => graph;
+
+        public DotNetBody BodyOf(DependencyGraphModel asked) => body;
+    }
+
+    [Fact]
+    public async Task TheRows_ReadTheModelOfTheStoresBody_NotTheGraph()
+    {
+        // dotnet-dependency-graph-disl-fbl, task 6 (Requirement 3.7): the rows are derived from the model the
+        // shared builder built from the plugin's reading, the body the store keeps with the graph. A provider that
+        // built its model from the graph again would show the graph's description here.
+
+        // Arrange.
+        var graph = GraphOf(package: new PackageNode("package:Serilog", "Serilog", ["4.4.0"], false, "From the graph"));
+        var body = DotNetBody.Of(GraphOf(package: new PackageNode("package:Serilog", "Serilog", ["4.4.0"], false, "From the reading")));
+        var provider = new DotNetContextPropertyProvider(new ReadingStore(graph, body));
+
+        // Act.
+        var rows = await provider.DescribeAsync(TargetOf("package:Serilog"), TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.Equal("From the reading", Assert.Single(rows, row => row.Id == "dotnet.package-description").Value);
+    }
+
     /// <summary>Counts which files the provider asked the store to read.</summary>
     private sealed class CountingStore : IDependencyGraphStore
     {

@@ -9,14 +9,14 @@ namespace EtAlii.Adp.Diagram.DotNetDependencyGraph.Tests.Parity;
 
 /// <summary>
 /// The shared builder's model equals the hand-built one (dotnet-dependency-graph-disl-fbl, task 5, Requirement
-/// 3.2): <see cref="DislModelBuilder"/> over the plugin's elements against <see cref="DotNetDefinition.Build"/> over
+/// 3.2): <see cref="DislModelBuilder"/> over the plugin's elements against <see cref="HandBuiltDotNetModel.Build"/> over
 /// the same graph, element for element - type, id, ends, parent and every attribute with its type - for every
 /// solution of the transcript's corpus and every hand-built graph, so that a difference names the document and the
 /// element.
 /// </summary>
 /// <remarks>
-/// The rows are still built by <c>Build</c> while this holds; the specification's task 6 makes them read the
-/// builder's model and moves <c>Build</c> here as this test's oracle.
+/// The rows read the builder's model (task 6), so this is what holds that model to the hand-built one, which left
+/// the product code for this test project as the oracle.
 /// </remarks>
 public sealed class DotNetBuilderParityTests
 {
@@ -39,7 +39,7 @@ public sealed class DotNetBuilderParityTests
 
         // Act.
         var built = body.Disl;
-        var oracle = DotNetDefinition.Build(body.Graph);
+        var oracle = HandBuiltDotNetModel.Build(body.Graph);
 
         // Assert.
         Assert.Empty(built.Findings);
@@ -55,7 +55,7 @@ public sealed class DotNetBuilderParityTests
 
         // Act.
         var built = DislModelBuilder.From(new FblModel(DotNetSolutionPlugin.Elements(graph), [], false), DotNetDefinition.Specification);
-        var oracle = DotNetDefinition.Build(graph);
+        var oracle = HandBuiltDotNetModel.Build(graph);
 
         // Assert.
         Assert.Empty(built.Findings);
