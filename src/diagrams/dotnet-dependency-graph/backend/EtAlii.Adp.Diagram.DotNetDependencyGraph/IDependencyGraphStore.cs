@@ -5,9 +5,9 @@ namespace EtAlii.Adp.Diagram.DotNetDependencyGraph;
 /// one graph rather than each deriving its own.
 /// </summary>
 /// <remarks>
-/// The seam exists at task 6 so the property provider can be built and tested against a graph
-/// without a filesystem, a session or a watcher behind it; task 7 supplies the implementation
-/// that actually reads, caches and refreshes.
+/// The seam exists so the property provider can be built and tested against a graph without a
+/// filesystem, a session or a watcher behind it. <see cref="DependencyGraphStore"/> is the one that
+/// reads, caches and refreshes, watching what the plugin says a reading depends on.
 /// </remarks>
 public interface IDependencyGraphStore
 {

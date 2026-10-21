@@ -49,6 +49,9 @@ public sealed class DotNetSolutionPlugin(DotNetSolutionSubject subject) : IPersi
     private readonly DotNetSolutionSubject _subject = subject ?? throw new ArgumentNullException(nameof(subject));
     private readonly DependencyGraph _graphs = new();
 
+    /// <summary>What the last read depends on beyond the body, as <see cref="Watch"/> gives it; nothing before the first.</summary>
+    private IReadOnlyList<string> _dependsOn = [];
+
     /// <inheritdoc />
     public string Id => PluginId;
 
@@ -80,6 +83,8 @@ public sealed class DotNetSolutionPlugin(DotNetSolutionSubject subject) : IPersi
             Packages = [.. graph.Packages.Select(package => package with { Description = _subject.Description(package.PackageId, package.Versions) })],
         };
 
+        _dependsOn = DependsOn(solution, readings);
+
         _logger.Debug("Read {Solution} through the plugin", _subject.SolutionPath);
         return new PluginReadResult(Elements(Graph, Sources(body.Bytes, solution, readings)), [], false);
     }
@@ -97,8 +102,35 @@ public sealed class DotNetSolutionPlugin(DotNetSolutionSubject subject) : IPersi
     public byte[] Template(PluginTemplateRequest request) =>
         throw new NotSupportedException("The binding's template.text is the new body; the plugin has no template of its own.");
 
-    /// <summary>Nothing yet: the session still watches the files through the store (the specification's task 7 moves it here).</summary>
-    public IReadOnlyList<string> Watch(PluginReadResult last) => [];
+    /// <summary>
+    /// What the last read depends on beyond the body, as full paths (FBL 11.2, Requirement 4.1): every project file it
+    /// read, every folder a wildcard <c>Include</c> listed, and a <c>Directory.Packages.props</c> in every folder above
+    /// each project whether or not one is there, so a versions file created later is heard (finding B15).
+    /// </summary>
+    /// <remarks>
+    /// The paths of the last <see cref="Read"/>, which is the read <paramref name="last"/> is the result of: the host asks
+    /// after every read, and what a reading depends on is known while it is made rather than recoverable from its elements.
+    /// </remarks>
+    public IReadOnlyList<string> Watch(PluginReadResult last) => _dependsOn;
+
+    /// <summary>The files and folders one reading depends on beyond the body, each once, in reading order.</summary>
+    private IReadOnlyList<string> DependsOn(SolutionReading solution, Dictionary<string, ProjectReading> readings)
+    {
+        var paths = new List<string>();
+        foreach (var project in solution.Projects)
+        {
+            // An unreadable project stays watched, so its return causes a re-read.
+            paths.Add(project.AbsolutePath);
+            if (readings.TryGetValue(project.AbsolutePath, out var reading))
+            {
+                paths.AddRange(reading.ListedFolders);
+            }
+
+            paths.AddRange(_subject.VersionsFiles(project.AbsolutePath));
+        }
+
+        return [.. paths.Distinct(StringComparer.OrdinalIgnoreCase)];
+    }
 
     private static IReadOnlyList<FblElement> Elements(DependencyGraphModel graph, Dictionary<string, ElementSource> sources)
     {

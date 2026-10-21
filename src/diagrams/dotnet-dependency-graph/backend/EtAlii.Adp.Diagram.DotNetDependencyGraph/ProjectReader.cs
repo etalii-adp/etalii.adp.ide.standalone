@@ -33,7 +33,8 @@ public sealed class ProjectReader
 {
     private static readonly ILogger _logger = Log.ForContext<ProjectReader>();
 
-    private const string CentralPackageVersionsFile = "Directory.Packages.props";
+    /// <summary>The central versions file MSBuild looks for in a project's folder and every folder above it.</summary>
+    internal const string CentralPackageVersionsFile = "Directory.Packages.props";
 
     /// <summary>Reads <paramref name="projectPath"/>; never throws for a bad project file.</summary>
     public ProjectReading Read(string projectPath)
@@ -61,12 +62,16 @@ public sealed class ProjectReader
         }
 
         var directory = Path.GetDirectoryName(Path.GetFullPath(projectPath)) ?? string.Empty;
+        var listed = new List<string>();
 
         return new ProjectReading(
             TargetFrameworksOf(document),
-            ProjectReferencesOf(document, bytes, directory),
+            ProjectReferencesOf(document, bytes, directory, listed),
             PackageReferencesOf(document, bytes, directory),
-            []);
+            [])
+        {
+            ListedFolders = [.. listed.Distinct(StringComparer.OrdinalIgnoreCase)],
+        };
     }
 
     /// <summary>
@@ -92,7 +97,7 @@ public sealed class ProjectReader
     /// Project-to-project references, each resolved to a full path so the graph can match them
     /// against the solution's own projects rather than comparing two spellings of one path.
     /// </summary>
-    private static IReadOnlyList<ProjectReferenceReading> ProjectReferencesOf(XDocument document, byte[] bytes, string directory)
+    private static IReadOnlyList<ProjectReferenceReading> ProjectReferencesOf(XDocument document, byte[] bytes, string directory, List<string> listed)
     {
         var references = new List<ProjectReferenceReading>();
 
@@ -114,7 +119,7 @@ public sealed class ProjectReader
                 // pattern as a literal path reports one unresolvable reference and draws none
                 // of the sixty-plus real edges behind it - a graph that is not wrong so much as
                 // quietly missing most of its subject. Found by measuring EtAlii.Adp.slnx.
-                foreach (var match in ExpandWildcard(directory, normalized))
+                foreach (var match in ExpandWildcard(directory, normalized, listed))
                 {
                     references.Add(new ProjectReferenceReading(include, match) { Source = source });
                 }
@@ -130,7 +135,9 @@ public sealed class ProjectReader
 
     /// <summary>
     /// Every file a wildcard <c>Include</c> names, expanded segment by segment so a <c>*</c> at
-    /// any depth works - <c>..\..\diagrams\*\backend\*\*.csproj</c> is three of them.
+    /// any depth works - <c>..\..\diagrams\*\backend\*\*.csproj</c> is three of them. Every folder a wildcard
+    /// segment was listed in is added to <paramref name="listed"/>: an entry added to one, or removed from it, is a
+    /// different expansion, so the reading depends on it (Requirement 4.4).
     /// </summary>
     /// <remarks>
     /// An <c>Exclude</c> is deliberately NOT applied: this reader reads what a project file
@@ -138,7 +145,7 @@ public sealed class ProjectReader
     /// than an honest over-inclusion. The module readme says so, beside the rest of what is not
     /// resolved.
     /// </remarks>
-    private static IReadOnlyList<string> ExpandWildcard(string directory, string pattern)
+    private static IReadOnlyList<string> ExpandWildcard(string directory, string pattern, List<string> listed)
     {
         var segments = pattern.Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries);
         var roots = new List<string> { directory };
@@ -160,6 +167,7 @@ public sealed class ProjectReader
                         continue;
                     }
 
+                    listed.Add(root);
                     next.AddRange(last
                         ? Directory.EnumerateFiles(root, segment)
                         : Directory.EnumerateDirectories(root, segment));

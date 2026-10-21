@@ -27,12 +27,18 @@ namespace EtAlii.Adp.Diagram.DotNetDependencyGraph;
 /// (Requirement 2.4) and a store that threw would take the diagram down with the file.
 /// </para>
 /// <para>
-/// <b>What is watched is what was read</b> - the solution, every project file it resolved, and
-/// every <c>Directory.Packages.props</c> above them, as <see cref="WatchedFiles"/> reports them,
-/// and keyed by the solution's path rather than its folder, which can hold two. A watch over only
-/// the solution would miss a reference added to a project; a watch over only project files would
-/// miss a version bump, which in a centrally managed repository lands in a props file and in no
-/// <c>.csproj</c> at all.
+/// <b>What is watched is what the reading depends on</b>, and the plugin says what that is
+/// (Requirement 4.1): the solution, and the body's <see cref="DotNetBody.WatchPaths"/> - every project
+/// file read, every folder a wildcard <c>Include</c> listed, and a <c>Directory.Packages.props</c> in
+/// every folder above each project, there or not. Keyed by the solution's path rather than its folder,
+/// which can hold two, and asked again after every read, so the watch follows the reading. A watch over
+/// only the files read would miss a project a wildcard begins to match and a versions file created
+/// after the diagram opened (finding B15).
+/// </para>
+/// <para>
+/// <b>The settle is the binding's</b> (<see cref="DotNetSolutionSubject.Settle"/>, Requirement 4.2): a
+/// build or a package restore rewrites many files in a burst, and a graph rebuilt per event would
+/// rebuild dozens of times for one logical change. A watcher overflow is a change, in the shared watcher.
 /// </para>
 /// </remarks>
 public sealed class DependencyGraphStore(
@@ -42,15 +48,9 @@ public sealed class DependencyGraphStore(
     TimeSpan? settleDelay = null,
     ProjectFileEvents? events = null,
     TimeProvider? time = null)
-    : WatchedFolderStore<DependencyGraphModel>(settleDelay ?? DefaultSettleDelay, events, time), IDependencyGraphStore
+    : WatchedFolderStore<DependencyGraphModel>(settleDelay ?? DotNetSolutionSubject.Settle, events, time), IDependencyGraphStore
 {
     private static readonly ILogger _logger = Log.ForContext<DependencyGraphStore>();
-
-    /// <summary>
-    /// A build or a package restore rewrites many files in a burst, and a graph rebuilt per event
-    /// would rebuild dozens of times for one logical change.
-    /// </summary>
-    private static readonly TimeSpan DefaultSettleDelay = TimeSpan.FromMilliseconds(250);
 
     private readonly SolutionReader _solutions = solutions ?? throw new ArgumentNullException(nameof(solutions));
     private readonly ProjectReader _projects = projects ?? throw new ArgumentNullException(nameof(projects));
@@ -64,39 +64,9 @@ public sealed class DependencyGraphStore(
         return _bodies.TryGetValue(graph, out var body) ? body : DotNetBody.Of(graph);
     }
 
-    /// <summary>
-    /// Every file whose change should make this graph stale: the solution, each project file it
-    /// resolved, and every <c>Directory.Packages.props</c> above them. The store watches this
-    /// rather than guessing, so a graph derived from a file is refreshed by that file.
-    /// </summary>
-    protected override IReadOnlyCollection<string> WatchedFiles(string folder, DependencyGraphModel snapshot)
-    {
-        var full = IoPath.GetFullPath(folder);
-        var reading = _solutions.Read(full);
-        var files = new List<string> { full };
-
-        foreach (var project in reading.Projects)
-        {
-            files.Add(project.AbsolutePath);
-
-            // The central versions files above each project: a version bump lands in one of
-            // these and in no .csproj at all, so a watcher that knew only project files would
-            // show a stale version until something else happened to change.
-            var directory = new DirectoryInfo(IoPath.GetDirectoryName(project.AbsolutePath) ?? string.Empty);
-            while (directory is not null)
-            {
-                var props = IoPath.Combine(directory.FullName, "Directory.Packages.props");
-                if (File.Exists(props))
-                {
-                    files.Add(props);
-                }
-
-                directory = directory.Parent;
-            }
-        }
-
-        return files.Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
-    }
+    /// <summary>The solution, and what the plugin said its reading depends on beyond it.</summary>
+    protected override IReadOnlyCollection<string> WatchedFiles(string folder, DependencyGraphModel snapshot) =>
+        [IoPath.GetFullPath(folder), .. BodyOf(snapshot).WatchPaths];
 
     /// <summary>Derives the graph of the solution at <paramref name="folder"/>, which names the solution file.</summary>
     protected override DependencyGraphModel Read(string folder) => Derive(folder);

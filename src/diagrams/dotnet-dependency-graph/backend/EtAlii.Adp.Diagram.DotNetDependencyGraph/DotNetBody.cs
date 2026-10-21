@@ -32,11 +32,12 @@ public sealed class DotNetBody
 
     private readonly Lazy<DislModel> _disl;
 
-    private DotNetBody(string solutionPath, DependencyGraphModel graph, FblModel reading)
+    private DotNetBody(string solutionPath, DependencyGraphModel graph, FblModel reading, IReadOnlyList<string> watchPaths)
     {
         SolutionPath = solutionPath;
         Graph = graph;
         Reading = reading;
+        WatchPaths = watchPaths;
         _disl = new Lazy<DislModel>(() => DislModelBuilder.From(Reading, DotNetDefinition.Specification));
     }
 
@@ -48,6 +49,16 @@ public sealed class DotNetBody
 
     /// <summary>What the plugin read: an element per project, package and reference, each with its source.</summary>
     public FblModel Reading { get; }
+
+    /// <summary>
+    /// What the reading depends on beyond the solution, as the plugin's <c>watch</c> named it after the read
+    /// (<see cref="PluginBody.WatchPaths"/>): full paths of files, whether or not they exist, and of folders whose entries
+    /// count. Empty for a solution that was not read, whose own path is all there is to watch.
+    /// </summary>
+    public IReadOnlyList<string> WatchPaths { get; }
+
+    /// <summary>The module's binding, <c>dotnet-dependency-graph.fbl#solution</c>, as the embedded document loads it.</summary>
+    internal static FblBinding Binding => LoadedBinding.Value;
 
     /// <summary>The DISL model the shared builder builds from <see cref="Reading"/>, once, when first asked.</summary>
     public DislModel Disl => _disl.Value;
@@ -79,7 +90,7 @@ public sealed class DotNetBody
 
         var plugin = new DotNetSolutionPlugin(subject);
         var body = PluginBody.Open(bytes, LoadedBinding.Value, plugin, Path.GetFileName(path));
-        return new DotNetBody(path, plugin.Graph, body.Model);
+        return new DotNetBody(path, plugin.Graph, body.Model, body.WatchPaths);
     }
 
     /// <summary>
@@ -89,10 +100,10 @@ public sealed class DotNetBody
     public static DotNetBody Of(DependencyGraphModel graph)
     {
         ArgumentNullException.ThrowIfNull(graph);
-        return new DotNetBody(string.Empty, graph, new FblModel(DotNetSolutionPlugin.Elements(graph), [], false));
+        return new DotNetBody(string.Empty, graph, new FblModel(DotNetSolutionPlugin.Elements(graph), [], false), []);
     }
 
     /// <summary>The body of a solution that was not read: the graph of its failure, and nothing read.</summary>
     private static DotNetBody Failed(string path, SolutionReading failure) =>
-        new(path, new DependencyGraph().Derive(failure, new Dictionary<string, ProjectReading>()), new FblModel([], [], false));
+        new(path, new DependencyGraph().Derive(failure, new Dictionary<string, ProjectReading>()), new FblModel([], [], false), []);
 }
