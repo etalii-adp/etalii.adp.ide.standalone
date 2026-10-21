@@ -16,9 +16,11 @@ namespace EtAlii.Adp.Diagram.DotNetDependencyGraph;
 /// </para>
 /// <para>
 /// <b>The only thing this session writes is a position</b>, into the registration's
-/// <c>layout:</c> block, as core's <see cref="SetRegistrationLayoutCommand"/> - so a drag is one
-/// undo away like every other edit in ADP, and the module owns no command of its own
-/// (Requirement 6.6). No <c>.csproj</c>, <c>.sln</c> or <c>.slnx</c> is ever written.
+/// <c>layout:</c> block, as core's <see cref="PlaceInRegistrationCommand"/>, which writes it through
+/// FBL's registration writer - so a drag is one undo away like every other edit in ADP, the undo
+/// restores the registration byte for byte, and the module owns no command of its own
+/// (dotnet-dependency-graph-disl-fbl Requirement 5.1). No <c>.csproj</c>, <c>.sln</c> or
+/// <c>.slnx</c> is ever written.
 /// </para>
 /// <para>
 /// <b>Elements are draggable although the subject is read-only</b> (Requirement 6.5):
@@ -157,7 +159,7 @@ internal sealed class DotNetDependencyGraphSession : IDiagramSession
         }
 
         var result = await _history.ExecuteAsync(
-            new SetRegistrationLayoutCommand(_registrationPath, elementId, x, y),
+            new PlaceInRegistrationCommand(_registrationPath, elementId, x, y),
             cancellationToken);
 
         return result.IsSuccess ? "" : result.Error;

@@ -15,7 +15,7 @@ namespace EtAlii.Adp.Diagram.DotNetDependencyGraph;
 /// holds two.
 /// <para>
 /// It takes the history store like every other module's factory, for the module's single edit:
-/// a reposition, dispatched as core's <c>SetRegistrationLayoutCommand</c>. The solution and its
+/// a reposition, dispatched as core's <c>PlaceInRegistrationCommand</c>. The solution and its
 /// project files stay read-only.
 /// </para>
 /// </remarks>

@@ -16,6 +16,10 @@
     <ProjectReference Include="..\EtAlii.Adp.Projects\EtAlii.Adp.Projects.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Editor\EtAlii.Adp.Editor.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Designer\EtAlii.Adp.Designer.csproj" />
+    <!-- The library's registration writer, through which PlaceInRegistrationCommand places an element
+         (dotnet-dependency-graph-disl-fbl task 8). FBL references no project of this solution but the
+         shared primitives, CEL and JSON ones, so no cycle. -->
+    <ProjectReference Include="..\EtAlii.Adp.Specification.Fbl\EtAlii.Adp.Specification.Fbl.csproj" />
   </ItemGroup>
 
   <ItemGroup>

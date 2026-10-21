@@ -11,7 +11,7 @@ export interface DotNetDependencyGraphStream {
   failed: boolean;
   /**
    * Stores a box's authored position. A drag is a layout edit and nothing more: the backend
-   * dispatches the core SetRegistrationLayoutCommand, the position lands in the `.adp`'s
+   * dispatches the core PlaceInRegistrationCommand, the position lands in the `.adp`'s
    * `layout:` block, never in a `.csproj`, `.sln` or `.slnx` - and the change is one undo away
    * (Requirement 6.6). It is the ONLY edit this type has: elements drag although the subject is
    * read-only, because arrangement is a view concern rather than an edit to the solution
