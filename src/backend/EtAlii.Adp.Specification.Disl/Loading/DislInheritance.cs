@@ -215,7 +215,8 @@ internal static class DislInheritance
     private static DislRelationEnd End(DislType relation, string side, Dictionary<string, DislType> all, string pointer, List<LoadDiagnostic> diagnostics)
     {
         // An end is inherited from the nearest supertype that declares it.
-        var declaring = relation.Linearisation.Select(name => all[name].Json).FirstOrDefault(json => json.TryGetProperty(side, out _));
+        var declaringType = relation.Linearisation.Select(name => all[name]).FirstOrDefault(type => type.Json.TryGetProperty(side, out _));
+        var declaring = declaringType?.Json ?? default;
         if (declaring.ValueKind != JsonValueKind.Object)
         {
             if (relation is { Abstract: false, Derived: null }) diagnostics.Add(DislLoader.Error(pointer, $"The relation type '{relation.Name}' has no {side} end (DISL §4.9)."));
@@ -228,8 +229,12 @@ internal static class DislInheritance
         {
             diagnostics.Add(DislLoader.Error(JsonPointer.Append(pointer, side), $"'{name}' is not a type of this specification (DISL §4.9)."));
         }
-        return new DislRelationEnd(types, exclude, side == "target" && JsonProperties.Bool(end, "optional"));
+        return new DislRelationEnd(types, exclude, side == "target" && JsonProperties.Bool(end, "optional"), Bound(end, "min"), Bound(end, "max"), declaringType!.Name);
     }
+
+    /// <summary>A relation end's <c>min</c> or <c>max</c> (§4.9) when it is an int; null when it is absent, <c>null</c> or anything else.</summary>
+    private static long? Bound(JsonElement end, string name) =>
+        end.ValueKind == JsonValueKind.Object && end.TryGetProperty(name, out var bound) && bound.ValueKind == JsonValueKind.Number && bound.TryGetInt64(out var value) ? value : null;
 }
 
 /// <summary>The names an attribute's type may be: a primitive, an enum, a data type, or a node or relation type (DISL §4.3).</summary>
