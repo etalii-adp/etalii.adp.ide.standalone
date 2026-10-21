@@ -11,4 +11,8 @@ namespace EtAlii.Adp.Diagram.DotNetDependencyGraph;
 /// and the property grid renders them differently (Requirement 4.4). A reference whose version
 /// cannot be resolved still becomes an edge - dropping it would misrepresent the project.
 /// </param>
-public sealed record PackageReferenceReading(string PackageId, string? Version);
+public sealed record PackageReferenceReading(string PackageId, string? Version)
+{
+    /// <summary>Where the declaration is in the project file: its line, 1-based, and the bytes of its start tag (<see cref="EntrySpan"/>).</summary>
+    public EntrySource Source { get; init; }
+}

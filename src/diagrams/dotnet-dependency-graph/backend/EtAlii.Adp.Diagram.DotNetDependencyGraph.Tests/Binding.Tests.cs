@@ -12,8 +12,8 @@ namespace EtAlii.Adp.Diagram.DotNetDependencyGraph.Tests;
 /// definition.
 /// </summary>
 /// <remarks>
-/// Nothing reads through the binding yet: the readers still build the graph (task 5 switches reading). So these
-/// tests hold what the binding says, not what a reading through it gives.
+/// These tests hold what the binding says; what a reading through it gives is held by <c>DotNetSolutionPlugin.Tests.cs</c>
+/// and the builder parity test (task 5).
 /// </remarks>
 public sealed class BindingTests
 {

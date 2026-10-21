@@ -261,17 +261,23 @@ public sealed class DependencyGraph
         return new DependencyGraphModel(projects, packages, edges, failures);
     }
 
+    /// <summary>What a project's element id begins with, before its path; the definition's <c>persistence.ids.prefix</c> of <c>Project</c>.</summary>
+    internal const string ProjectPrefix = "project:";
+
+    /// <summary>What a package's element id begins with, before its id; the definition's <c>persistence.ids.prefix</c> of <c>Package</c>.</summary>
+    internal const string PackagePrefix = "package:";
+
     /// <summary>A project's element id: its path relative to the solution.</summary>
-    private static string IdOfProject(string relativePath) => $"project:{relativePath}";
+    internal static string IdOfProject(string relativePath) => $"{ProjectPrefix}{relativePath}";
 
     /// <summary>
     /// A package's element id: <b>the package id, and never the version</b>. The whole of the
     /// design decision this module's guarding test exists to pin.
     /// </summary>
-    private static string IdOfPackage(string packageId) => $"package:{packageId}";
+    internal static string IdOfPackage(string packageId) => $"{PackagePrefix}{packageId}";
 
     /// <summary>An edge's id, from its two ends, so a redrawn graph names the same edge.</summary>
-    private static string IdOfEdge(string fromId, string toId) => $"depends:{fromId}->{toId}";
+    internal static string IdOfEdge(string fromId, string toId) => $"depends:{fromId}->{toId}";
 
     /// <summary>
     /// The .NET version the frameworks name, where they name one. Absence rather than a guess

@@ -53,8 +53,7 @@ public sealed class SolutionReader
 
         if (!File.Exists(solutionPath))
         {
-            _logger.Warning("Solution {Solution} does not exist", solutionPath);
-            return SolutionReading.OfFailure(solutionPath, "The solution file does not exist.");
+            return Absent(solutionPath);
         }
 
         string text;
@@ -70,9 +69,22 @@ public sealed class SolutionReader
         {
             // Locked by a build, or unreadable by this account. A diagram that cannot be drawn
             // is still a diagram that opens, with the reason on it.
-            _logger.Warning(error, "Solution {Solution} could not be read", solutionPath);
-            return SolutionReading.OfFailure(solutionPath, $"The solution file could not be read: {error.Message}");
+            return Unreadable(solutionPath, error);
         }
+
+        return Read(solutionPath, text);
+    }
+
+    /// <summary>
+    /// Reads the solution at <paramref name="solutionPath"/> from <paramref name="text"/>, its content already read,
+    /// so that the file is read once: by the host, which hands its bytes to the plugin. The path still decides the
+    /// serialization, by its extension, and is where the projects it names are resolved from. Never throws for a
+    /// bad solution.
+    /// </summary>
+    public SolutionReading Read(string solutionPath, string text)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(solutionPath);
+        ArgumentNullException.ThrowIfNull(text);
 
         var extension = Path.GetExtension(solutionPath);
         if (string.Equals(extension, Diagram.AlternateDocumentExtension, StringComparison.OrdinalIgnoreCase))
@@ -92,17 +104,32 @@ public sealed class SolutionReader
         return Resolve(ReadClassic(text), solutionPath);
     }
 
+    /// <summary>The reading of a solution that does not exist: no projects, and today's sentence.</summary>
+    internal static SolutionReading Absent(string solutionPath)
+    {
+        _logger.Warning("Solution {Solution} does not exist", solutionPath);
+        return SolutionReading.OfFailure(solutionPath, "The solution file does not exist.");
+    }
+
+    /// <summary>The reading of a solution that could not be read: no projects, and the reason.</summary>
+    internal static SolutionReading Unreadable(string solutionPath, Exception error)
+    {
+        _logger.Warning(error, "Solution {Solution} could not be read", solutionPath);
+        return SolutionReading.OfFailure(solutionPath, $"The solution file could not be read: {error.Message}");
+    }
+
     /// <summary>
     /// The XML serialization: <c>Project Path=</c>, at any depth inside folders. <c>null</c>
     /// when the document will not parse - distinct from an empty list, which is a solution that
     /// genuinely names no projects.
     /// </summary>
-    private static IReadOnlyList<string>? ReadSlnx(string text, string solutionPath)
+    private static IReadOnlyList<DeclaredProject>? ReadSlnx(string text, string solutionPath)
     {
         XDocument document;
         try
         {
-            document = XDocument.Parse(text);
+            // With line information, so that a project's source is its entry (Q6).
+            document = XDocument.Parse(text, LoadOptions.SetLineInfo);
         }
         catch (System.Xml.XmlException error)
         {
@@ -117,16 +144,20 @@ public sealed class SolutionReader
         return document
             .Descendants()
             .Where(element => element.Name.LocalName == "Project")
-            .Select(element => (string?)element.Attribute("Path"))
-            .Where(path => !string.IsNullOrWhiteSpace(path))
-            .Select(path => path!)
+            .Select(element => (Element: element, Path: (string?)element.Attribute("Path")))
+            .Where(entry => !string.IsNullOrWhiteSpace(entry.Path))
+            .Select(entry =>
+            {
+                (int line, int column) = EntrySpan.PositionOf(entry.Element);
+                return new DeclaredProject(entry.Path!, line, column);
+            })
             .ToArray();
     }
 
     /// <summary>The classic serialization: one <c>Project(...)</c> line each, folders included.</summary>
-    private static IReadOnlyList<string> ReadClassic(string text)
+    private static IReadOnlyList<DeclaredProject> ReadClassic(string text)
     {
-        var declared = new List<string>();
+        var declared = new List<DeclaredProject>();
         foreach (Match match in _classicProjectLine.Matches(text))
         {
             var type = match.Groups["type"].Value;
@@ -138,7 +169,7 @@ public sealed class SolutionReader
                 continue;
             }
 
-            declared.Add(match.Groups["path"].Value);
+            declared.Add(new DeclaredProject(match.Groups["path"].Value, LineOf(text, match.Index), 0));
         }
 
         return declared;
@@ -148,13 +179,13 @@ public sealed class SolutionReader
     /// Turns declared paths into projects on disk, relative to the solution. A path that
     /// resolves to nothing becomes a failure naming it, never a silently dropped project.
     /// </summary>
-    private static SolutionReading Resolve(IReadOnlyList<string> declared, string solutionPath)
+    private static SolutionReading Resolve(IReadOnlyList<DeclaredProject> declared, string solutionPath)
     {
         var directory = Path.GetDirectoryName(Path.GetFullPath(solutionPath)) ?? string.Empty;
         var projects = new List<SolutionProject>();
         var failures = new List<SolutionFailure>();
 
-        foreach (var relative in declared)
+        foreach ((string relative, int line, int column) in declared)
         {
             // Solution files write Windows separators whatever the platform reading them, so
             // the separator is normalised rather than trusted.
@@ -172,7 +203,11 @@ public sealed class SolutionReader
             projects.Add(new SolutionProject(
                 Path.GetFileNameWithoutExtension(absolute),
                 RelativePathOf(directory, absolute),
-                absolute));
+                absolute)
+            {
+                Line = line,
+                Column = column,
+            });
         }
 
         _logger.Information(
@@ -193,4 +228,10 @@ public sealed class SolutionReader
     /// </summary>
     private static string RelativePathOf(string solutionDirectory, string absoluteProjectPath) =>
         Path.GetRelativePath(solutionDirectory, absoluteProjectPath).Replace('\\', '/');
+
+    /// <summary>The 1-based line of the character at <paramref name="index"/>: one more than the line feeds before it.</summary>
+    private static int LineOf(string text, int index) => text.AsSpan(0, index).Count('\n') + 1;
+
+    /// <summary>A project as the solution declares it: the path as written, and where its entry is.</summary>
+    private readonly record struct DeclaredProject(string Path, int Line, int Column);
 }
