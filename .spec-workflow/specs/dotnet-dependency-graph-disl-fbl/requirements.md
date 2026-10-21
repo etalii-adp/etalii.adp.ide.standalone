@@ -75,7 +75,7 @@ The three kinds are those of `causal-loop-disl-fbl`: a **definition defect** is 
 3. **FBL: an element with several source entries, or with a file as its entry** (B7), and **DISL: whether a plugin may deliver a grouped element as stored** (A5).
 4. **FBL: whether `read` may deliver a relation with an end that names nothing** (B8).
 5. **FBL: a template per extension, and creating under a read-only binding** (B11, B12).
-6. **FBL: a body that is not UTF-8 where its format declares its encoding** (B16), and **XML namespaces in selectors** (B17).
+6. **FBL: a body that is not UTF-8 where its format declares its encoding** (B16). ~~and **XML namespaces in selectors** (B17)~~ (B17 struck, ruled in chat 2026-10-21; see table B).
 7. **FBL: the sentence of a refused first placement** (B13).
 8. **FBL 11.5's row for this tool** (B3): say what is evaluated and what is not.
 
