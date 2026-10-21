@@ -103,7 +103,7 @@ internal static class KnowledgeTableMapper
         // A view that nests its rows by the parent relation has no groups to list.
         if (table.Properties.FirstOrDefault(property => property.Id == view.GroupBy) is { IsParent: false } grouped)
         {
-            var target = grouped.ValueType == "relation" ? targetOf?.Invoke(grouped) : null;
+            var target = grouped.Type is KnowledgeRelationType ? targetOf?.Invoke(grouped) : null;
             var groups = KnowledgeGroups.Of(table, view, grouped, target is null ? null : id => KnowledgeRelations.LabelOf(target, id));
             settings[Groups] = System.Text.Json.JsonSerializer.Serialize(groups.Select(group => new { key = group.Key, label = group.Label, hidden = view.HiddenGroups.Contains(group.Key) }));
         }
@@ -160,7 +160,7 @@ internal static class KnowledgeTableMapper
         // The calculations a column of this type can be given, what this one is given, and what it comes to.
         var settings = new Dictionary<string, string>(StringComparer.Ordinal)
         {
-            ["calculations"] = string.Join(',', KnowledgeCalculations.For(property.ValueType)),
+            ["calculations"] = string.Join(',', KnowledgeCalculations.For(property.Type)),
         };
         if (column is { Calculate.Length: > 0 })
         {
@@ -183,7 +183,7 @@ internal static class KnowledgeTableMapper
                 settings[UsesPrefix + option.Id] = count.ToString(System.Globalization.CultureInfo.InvariantCulture);
             }
         }
-        if (property.ValueType == "relation")
+        if (property.Type is KnowledgeRelationType)
         {
             settings["limit"] = property.Limit;
             if (property.IsComputed)

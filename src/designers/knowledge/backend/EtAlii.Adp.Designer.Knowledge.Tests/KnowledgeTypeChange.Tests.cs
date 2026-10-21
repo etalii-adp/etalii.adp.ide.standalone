@@ -151,7 +151,7 @@ public sealed class KnowledgeTypeChangeTests : IDisposable
         }
 
         var before = table.OnDisk().Rows.Single(row => row.Id == rowId).Cells.Single(cell => cell.PropertyId == propertyId);
-        Assert.Equal(KnowledgeEdits.KeyOf(from), before.Key);
+        Assert.Equal(KnowledgeValueTypes.Of(from).CellKey, before.Key);
 
         // Act.
         await table.Edit(new TableGesture("setColumnType", ColumnId: propertyId, Settings: new Dictionary<string, string> { ["type"] = to }));
@@ -168,7 +168,7 @@ public sealed class KnowledgeTypeChangeTests : IDisposable
         }
         else
         {
-            Assert.Equal(KnowledgeEdits.KeyOf(to), after.Key);
+            Assert.Equal(KnowledgeValueTypes.Of(to).CellKey, after.Key);
         }
 
         // One step, whatever it converted.

@@ -70,7 +70,7 @@ internal static class KnowledgeValidator
             Warn(SeveralTitles, $"'{extra.Name}' is marked as the title, and so is '{titles[0].Name}'; the first is used.", columnId: extra.Id);
         }
 
-        foreach (var title in titles.Where(title => title.ValueType != "text"))
+        foreach (var title in titles.Where(title => title.Type is not KnowledgeTextType))
         {
             Error(TitleNotText, $"The title property '{title.Name}' is a {title.ValueType}; a title is text.", columnId: title.Id);
         }
@@ -83,7 +83,7 @@ internal static class KnowledgeValidator
                 Error(DuplicatePropertyName, $"Another property is already called '{property.Name}'.", columnId: property.Id);
             }
 
-            if (!KnowledgeVocabulary.ValueTypes.Contains(property.ValueType))
+            if (!property.Type.IsKnown)
             {
                 Warn(UnknownType, $"'{property.Name}' has the type '{property.ValueType}', which is none this application knows; its values are shown and cannot be changed here.", columnId: property.Id);
             }
@@ -101,18 +101,19 @@ internal static class KnowledgeValidator
                     continue;
                 }
 
-                if (cell.Values.Count == 0 || !KnowledgeVocabulary.ValueTypes.Contains(property.ValueType))
+                var type = property.Type;
+                if (cell.Values.Count == 0 || !type.IsKnown)
                 {
                     continue;
                 }
 
-                if (cell.Key != KnowledgeEdits.KeyOf(property.ValueType))
+                if (cell.Key != type.CellKey)
                 {
                     Warn(ValueOfAnotherType, $"This value is not a {property.ValueType}; it is kept as it is.", row.Id, property.Id);
                     continue;
                 }
 
-                if (property.ValueType is "selection" or "multipleSelection")
+                if (type.HoldsOptions)
                 {
                     foreach (var value in cell.Values.Where(value => property.Options.All(option => option.Id != value)))
                     {
@@ -120,7 +121,7 @@ internal static class KnowledgeValidator
                     }
                 }
 
-                if (property is { ValueType: "relation", Limit: "one" } && cell.Values.Count > 1)
+                if (property is { Type: KnowledgeRelationType, Limit: "one" } && cell.Values.Count > 1)
                 {
                     Warn(RelationOverLimit, $"'{property.Name}' relates to one row, and this cell names {cell.Values.Count}; they are kept as they are.", row.Id, property.Id);
                 }
@@ -129,7 +130,7 @@ internal static class KnowledgeValidator
 
         // ---- relations: a target that is not there, and a row that is not in it. The value stays either way. ----
 
-        foreach (var relation in table.Properties.Where(property => property.ValueType == "relation" && targetOf is not null))
+        foreach (var relation in table.Properties.Where(property => property.Type is KnowledgeRelationType && targetOf is not null))
         {
             var target = targetOf!(relation);
             if (target?.Table is not { } related)
