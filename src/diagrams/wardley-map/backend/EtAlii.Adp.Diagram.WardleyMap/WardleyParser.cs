@@ -17,7 +17,7 @@ namespace EtAlii.Adp.Diagram.WardleyMap;
 /// <b>It never fails.</b> A line it does not recognise is skipped - the document keeps it
 /// (Requirement 3.3) and the validator judges what it can (Requirement 14). Parsing and judging
 /// are kept apart deliberately: it is what lets a map with a dangling link still open and render
-/// (Requirement 3.5). <see cref="Outcome"/> reports each skipped line as a problem
+/// (Requirement 3.5). <see cref="Outcome(LineDocument)"/> reports each skipped line as a problem
 /// (code-structure FR-049); a statement the DSL knows and this module does not model, such as
 /// <c>y_axis</c>, is not one.
 /// </para>
@@ -35,32 +35,17 @@ public static partial class WardleyParser
     /// statement whose shape it does not recognise, or a line that is no statement at all. The
     /// outcome is always usable, because a map with a bad line still draws every good one.
     /// </summary>
-    public static ParseOutcome<WardleyMap> Outcome(LineDocument document)
+    public static ParseOutcome<WardleyMap> Outcome(LineDocument document) => Outcome(document, Statements);
+
+    /// <summary>
+    /// <see cref="Outcome(LineDocument)"/> with the statement table given, so that a test can
+    /// show the table's order does not matter.
+    /// </summary>
+    internal static ParseOutcome<WardleyMap> Outcome(LineDocument document, IReadOnlyList<Statement> statements)
     {
         ArgumentNullException.ThrowIfNull(document);
 
-        var problems = new List<ParseProblem>();
-        void Skipped(WardleyLine line, string message) => problems.Add(new ParseProblem((int)line.Number - 1, message));
-
-        var title = "";
-        var style = "";
-        WardleyMapSize? size = null;
-        WardleyCoordinate? annotationsPosition = null;
-        var components = new List<WardleyComponent>();
-        var links = new List<WardleyLink>();
-        var pipelines = new List<WardleyPipeline>();
-        var evolves = new List<WardleyEvolve>();
-        var attitudes = new List<WardleyAttitude>();
-        var accelerators = new List<WardleyAccelerator>();
-        var notes = new List<WardleyNote>();
-        var annotations = new List<WardleyAnnotation>();
-        var urls = new List<WardleyUrlDefinition>();
-
-        // The pipeline currently being filled, and the children gathered for it. Null means the
-        // reader is at the top level, which is where it spends almost all of its time.
-        WardleyPipeline? openPipeline = null;
-        var openChildren = new List<WardleyPipelineChild>();
-
+        var reading = new Reading();
         foreach (var line in CodeLines(document))
         {
             var text = _comments.StripComment(line.Text).Trim();
@@ -69,244 +54,230 @@ public static partial class WardleyParser
                 continue;
             }
 
-            if (openPipeline is not null)
+            if (reading.InPipeline)
             {
-                if (text.StartsWith('}'))
-                {
-                    pipelines.Add(openPipeline with { Children = openChildren.ToArray() });
-                    openPipeline = null;
-                    openChildren = [];
-                    continue;
-                }
-
-                if (ParsePipelineChild(text, line.Number) is { } child)
-                {
-                    openChildren.Add(child);
-                }
-                else if (!text.StartsWith('{'))
-                {
-                    Skipped(line, "This line inside a pipeline is not a component of it, so it was passed over.");
-                }
-
+                reading.ReadInPipeline(text, line);
                 continue;
             }
 
             // An opening brace on its own line belongs to the pipeline above it; the pipeline
-            // branch below has already opened, so this is only reached when a document braces
+            // statement has already opened, so this is only reached when a document braces
             // something else, which this module does not model.
-            if (text.StartsWith('{'))
+            if (!text.StartsWith('{'))
             {
-                continue;
-            }
-
-            if (TryKeyword(text, "title", out var titleRest))
-            {
-                title = titleRest;
-                continue;
-            }
-
-            if (TryKeyword(text, "style", out var styleRest))
-            {
-                style = styleRest;
-                continue;
-            }
-
-            if (TryKeyword(text, "size", out var sizeRest))
-            {
-                if (ParseSize(sizeRest) is { } parsedSize)
-                {
-                    size = parsedSize;
-                }
-                else
-                {
-                    Skipped(line, Unread("size"));
-                }
-
-                continue;
-            }
-
-            // Before `annotation`, because TryKeyword requires whitespace after the keyword and
-            // `annotations [0.6, 0.02]` would otherwise be tried as a numbered annotation.
-            if (TryKeyword(text, "annotations", out var annotationsRest))
-            {
-                if (ParseCoordinateIn(annotationsRest) is { } position)
-                {
-                    annotationsPosition = position;
-                }
-                else
-                {
-                    Skipped(line, Unread("annotations"));
-                }
-
-                continue;
-            }
-
-            if (TryKeyword(text, "annotation", out var annotationRest))
-            {
-                if (ParseAnnotation(annotationRest, line.Number) is { } annotation)
-                {
-                    annotations.Add(annotation);
-                }
-                else
-                {
-                    Skipped(line, Unread("annotation"));
-                }
-
-                continue;
-            }
-
-            if (TryKeyword(text, "evolve", out var evolveRest))
-            {
-                if (ParseEvolve(evolveRest, line.Number) is { } evolve)
-                {
-                    evolves.Add(evolve);
-                }
-                else
-                {
-                    Skipped(line, Unread("evolve"));
-                }
-
-                continue;
-            }
-
-            if (TryKeyword(text, "note", out var noteRest))
-            {
-                if (ParseNote(noteRest, line.Number) is { } note)
-                {
-                    notes.Add(note);
-                }
-                else
-                {
-                    Skipped(line, Unread("note"));
-                }
-
-                continue;
-            }
-
-            if (TryKeyword(text, "url", out var urlRest))
-            {
-                if (ParseUrlDefinition(urlRest, line.Number) is { } url)
-                {
-                    urls.Add(url);
-                }
-                else
-                {
-                    Skipped(line, Unread("url"));
-                }
-
-                continue;
-            }
-
-            if (AttitudeOf(text, out var attitudeRest) is { } attitudeKind)
-            {
-                if (ParseAttitude(attitudeKind, attitudeRest, line.Number) is { } attitude)
-                {
-                    attitudes.Add(attitude);
-                }
-                else
-                {
-                    Skipped(line, Unread(FirstToken(text)));
-                }
-
-                continue;
-            }
-
-            if (TryKeyword(text, "accelerator", out var acceleratorRest))
-            {
-                if (ParseAccelerator(acceleratorRest, line.Number, isDeaccelerator: false) is { } accelerator)
-                {
-                    accelerators.Add(accelerator);
-                }
-                else
-                {
-                    Skipped(line, Unread("accelerator"));
-                }
-
-                continue;
-            }
-
-            if (TryKeyword(text, "deaccelerator", out var deacceleratorRest))
-            {
-                if (ParseAccelerator(deacceleratorRest, line.Number, isDeaccelerator: true) is { } deaccelerator)
-                {
-                    accelerators.Add(deaccelerator);
-                }
-                else
-                {
-                    Skipped(line, Unread("deaccelerator"));
-                }
-
-                continue;
-            }
-
-            if (TryKeyword(text, "pipeline", out var pipelineRest))
-            {
-                openPipeline = ParsePipelineHeader(pipelineRest, line.Number);
-                openChildren = [];
-                if (openPipeline is null)
-                {
-                    Skipped(line, Unread("pipeline"));
-                }
-
-                // The legacy form is complete on its own line: no block follows, so close it now.
-                if (openPipeline is { Form: WardleyPipelineForm.Legacy })
-                {
-                    pipelines.Add(openPipeline);
-                    openPipeline = null;
-                }
-
-                continue;
-            }
-
-            if (ParseComponent(text, line.Number) is { } component)
-            {
-                components.Add(component);
-                continue;
-            }
-
-            if (ParseLink(text, line.Number) is { } link)
-            {
-                links.Add(link);
-                continue;
-            }
-
-            var keyword = FirstToken(text);
-            if (!UnmodelledKeywords.Contains(keyword))
-            {
-                Skipped(line, KnownKeywords.Contains(keyword)
-                    ? Unread(keyword)
-                    : "This line is not a statement of a Wardley map, so it was passed over.");
+                ReadStatement(reading, statements, text, line);
             }
         }
 
-        // A document that opens a pipeline and never closes it still yields the children it
-        // gathered, rather than losing them to a missing brace.
-        if (openPipeline is not null)
+        return reading.Finish();
+    }
+
+    /// <summary>
+    /// The statements the DSL starts with a keyword and this module reads, each with how it is
+    /// read. A reader answers false for a statement it could not read, which is then passed over.
+    /// </summary>
+    /// <remarks>
+    /// <b>Order does not matter.</b> A statement is found by its first word, whole and ignoring
+    /// case, and no two entries share a keyword, so `annotations [0.6, 0.02]` is never tried as
+    /// an `annotation`, wherever the two stand. The parser's tests shuffle this table and require
+    /// the same outcome.
+    /// </remarks>
+    internal static readonly IReadOnlyList<Statement> Statements =
+    [
+        new("title", (map, rest, _) => Kept(rest, value => map.Title = value)),
+        new("style", (map, rest, _) => Kept(rest, value => map.Style = value)),
+        new("size", (map, rest, _) => Kept(ParseSize(rest), value => map.Size = value)),
+        new("annotations", (map, rest, _) => Kept(ParseCoordinateIn(rest), value => map.AnnotationsPosition = value)),
+        new("annotation", (map, rest, number) => Kept(ParseAnnotation(rest, number), map.Annotations.Add)),
+        new("evolve", (map, rest, number) => Kept(ParseEvolve(rest, number), map.Evolves.Add)),
+        new("note", (map, rest, number) => Kept(ParseNote(rest, number), map.Notes.Add)),
+        new("url", (map, rest, number) => Kept(ParseUrlDefinition(rest, number), map.Urls.Add)),
+        new("pioneers", (map, rest, number) => Kept(ParseAttitude(WardleyAttitudeKind.Pioneers, rest, number), map.Attitudes.Add)),
+        new("settlers", (map, rest, number) => Kept(ParseAttitude(WardleyAttitudeKind.Settlers, rest, number), map.Attitudes.Add)),
+        new("townplanners", (map, rest, number) => Kept(ParseAttitude(WardleyAttitudeKind.TownPlanners, rest, number), map.Attitudes.Add)),
+        new("accelerator", (map, rest, number) => Kept(ParseAccelerator(rest, number, isDeaccelerator: false), map.Accelerators.Add)),
+        new("deaccelerator", (map, rest, number) => Kept(ParseAccelerator(rest, number, isDeaccelerator: true), map.Accelerators.Add)),
+        new("pipeline", (map, rest, number) => map.Open(ParsePipelineHeader(rest, number))),
+        new("component", (map, rest, number) => Kept(ParseComponent(WardleyElementKind.Component, rest, number), map.Components.Add)),
+        new("anchor", (map, rest, number) => Kept(ParseComponent(WardleyElementKind.Anchor, rest, number), map.Components.Add)),
+        new("submap", (map, rest, number) => Kept(ParseComponent(WardleyElementKind.Submap, rest, number), map.Components.Add)),
+    ];
+
+    /// <summary>One statement of <see cref="Statements"/>: its keyword, and how the rest of its line is read.</summary>
+    internal sealed record Statement(string Keyword, Func<Reading, string, uint, bool> Read);
+
+    /// <summary>What one parse has read so far, the pipeline it is filling, and the lines it passed over.</summary>
+    internal sealed class Reading
+    {
+        private readonly List<ParseProblem> _problems = [];
+        private readonly List<WardleyPipeline> _pipelines = [];
+
+        // The pipeline currently being filled, and the children gathered for it. Null means the
+        // reader is at the top level, which is where it spends almost all of its time.
+        private WardleyPipeline? _openPipeline;
+        private List<WardleyPipelineChild> _openChildren = [];
+
+        public string Title { get; set; } = "";
+
+        public string Style { get; set; } = "";
+
+        public WardleyMapSize? Size { get; set; }
+
+        public WardleyCoordinate? AnnotationsPosition { get; set; }
+
+        public List<WardleyComponent> Components { get; } = [];
+
+        public List<WardleyLink> Links { get; } = [];
+
+        public List<WardleyEvolve> Evolves { get; } = [];
+
+        public List<WardleyAttitude> Attitudes { get; } = [];
+
+        public List<WardleyAccelerator> Accelerators { get; } = [];
+
+        public List<WardleyNote> Notes { get; } = [];
+
+        public List<WardleyAnnotation> Annotations { get; } = [];
+
+        public List<WardleyUrlDefinition> Urls { get; } = [];
+
+        public bool InPipeline => _openPipeline is not null;
+
+        public void Skipped(WardleyLine line, string message) => _problems.Add(new ParseProblem((int)line.Number - 1, message));
+
+        /// <summary>
+        /// Opens <paramref name="pipeline"/> for its children, or, in the legacy form, which is
+        /// complete on its own line and has no block, keeps it at once. False when there is none.
+        /// </summary>
+        public bool Open(WardleyPipeline? pipeline)
         {
-            pipelines.Add(openPipeline with { Children = openChildren.ToArray() });
+            if (pipeline is null)
+            {
+                return false;
+            }
+
+            if (pipeline.Form == WardleyPipelineForm.Legacy)
+            {
+                _pipelines.Add(pipeline);
+            }
+            else
+            {
+                _openPipeline = pipeline;
+                _openChildren = [];
+            }
+
+            return true;
         }
 
-        return new ParseOutcome<WardleyMap>(new WardleyMap(
-            title,
-            components.ToArray(),
-            links.ToArray(),
-            pipelines.ToArray(),
-            evolves.ToArray(),
-            attitudes.ToArray(),
-            accelerators.ToArray(),
-            notes.ToArray(),
-            annotations.ToArray(),
-            urls.ToArray(),
-            size,
-            style,
-            annotationsPosition), problems);
+        /// <summary>A line inside the open pipeline: its closing brace, one of its children, or a line passed over.</summary>
+        public void ReadInPipeline(string text, WardleyLine line)
+        {
+            if (text.StartsWith('}'))
+            {
+                Close();
+            }
+            else if (ParsePipelineChild(text, line.Number) is { } child)
+            {
+                _openChildren.Add(child);
+            }
+            else if (!text.StartsWith('{'))
+            {
+                Skipped(line, "This line inside a pipeline is not a component of it, so it was passed over.");
+            }
+        }
+
+        public ParseOutcome<WardleyMap> Finish()
+        {
+            // A document that opens a pipeline and never closes it still yields the children it
+            // gathered, rather than losing them to a missing brace.
+            Close();
+
+            return new ParseOutcome<WardleyMap>(new WardleyMap(
+                Title,
+                Components.ToArray(),
+                Links.ToArray(),
+                _pipelines.ToArray(),
+                Evolves.ToArray(),
+                Attitudes.ToArray(),
+                Accelerators.ToArray(),
+                Notes.ToArray(),
+                Annotations.ToArray(),
+                Urls.ToArray(),
+                Size,
+                Style,
+                AnnotationsPosition), _problems);
+        }
+
+        private void Close()
+        {
+            if (_openPipeline is { } pipeline)
+            {
+                _pipelines.Add(pipeline with { Children = _openChildren.ToArray() });
+            }
+
+            _openPipeline = null;
+            _openChildren = [];
+        }
+    }
+
+    /// <summary>
+    /// One top-level line: the statement its keyword names, else a link, else a line passed over -
+    /// unless it is a statement this module skips by design.
+    /// </summary>
+    private static void ReadStatement(Reading reading, IReadOnlyList<Statement> statements, string text, WardleyLine line)
+    {
+        (string keyword, string rest) = KeywordOf(text);
+        var statement = statements.FirstOrDefault(entry => string.Equals(entry.Keyword, keyword, StringComparison.OrdinalIgnoreCase));
+        if (statement is not null)
+        {
+            if (!statement.Read(reading, rest, line.Number))
+            {
+                reading.Skipped(line, Unread(statement.Keyword));
+            }
+
+            return;
+        }
+
+        if (ParseLink(text, line.Number) is { } link)
+        {
+            reading.Links.Add(link);
+        }
+        else if (!UnmodelledKeywords.Contains(keyword))
+        {
+            reading.Skipped(line, "This line is not a statement of a Wardley map, so it was passed over.");
+        }
+    }
+
+    /// <summary>Hands <paramref name="value"/> to <paramref name="keep"/> when there is one, and says whether there was.</summary>
+    private static bool Kept<T>(T? value, Action<T> keep)
+        where T : class
+    {
+        if (value is null)
+        {
+            return false;
+        }
+
+        keep(value);
+        return true;
     }
 
     private static string Unread(string keyword) =>
         $"This {keyword.ToLowerInvariant()} statement could not be read, so it was passed over.";
 
-    private static string FirstToken(string text) =>
-        text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "";
+    /// <summary>
+    /// A statement's keyword - its first word, whole - and the rest of the line after it. Whole,
+    /// so `titles` is not `title` and `annotations` is not `annotation`.
+    /// </summary>
+    private static (string Keyword, string Remainder) KeywordOf(string text)
+    {
+        var end = 0;
+        while (end < text.Length && !char.IsWhiteSpace(text[end]))
+        {
+            end++;
+        }
+
+        return end == text.Length ? (text, "") : (text[..end], text[(end + 1)..].Trim());
+    }
 
     /// <summary>
     /// `evolve Name x` or `evolve Name-&gt;NewName x`, where the trailing number is the target
@@ -324,21 +295,6 @@ public static partial class WardleyParser
         return name.Length == 0 || !TryNumber(match.Groups["maturity"].Value, out var maturity)
             ? null
             : new WardleyEvolve(name, maturity, number, match.Groups["override"].Value.Trim());
-    }
-
-    private static WardleyAttitudeKind? AttitudeOf(string text, out string rest)
-    {
-        if (TryKeyword(text, "pioneers", out rest))
-        {
-            return WardleyAttitudeKind.Pioneers;
-        }
-
-        if (TryKeyword(text, "settlers", out rest))
-        {
-            return WardleyAttitudeKind.Settlers;
-        }
-
-        return TryKeyword(text, "townplanners", out rest) ? WardleyAttitudeKind.TownPlanners : null;
     }
 
     /// <summary>
@@ -460,37 +416,13 @@ public static partial class WardleyParser
     /// </remarks>
     private static readonly LineLexer _comments = new(new CommentPolicy(["//"], OutsideQuotesOnly: false, NotAfter: ':'), EscapePolicy.None);
 
-    /// <summary>Matches `keyword rest`, requiring whitespace after the keyword so `titles` is not `title`.</summary>
-    private static bool TryKeyword(string text, string keyword, out string rest)
+    /// <summary>
+    /// One of the three statement kinds, from the rest of its line after the keyword. `market`
+    /// and `ecosystem` look like kinds and are decorators, so they have no entry in
+    /// <see cref="Statements"/> (Requirement 5.1).
+    /// </summary>
+    private static WardleyComponent? ParseComponent(WardleyElementKind kind, string rest, uint number)
     {
-        rest = "";
-        if (!text.StartsWith(keyword, StringComparison.OrdinalIgnoreCase))
-        {
-            return false;
-        }
-
-        if (text.Length == keyword.Length)
-        {
-            return true;
-        }
-
-        if (!char.IsWhiteSpace(text[keyword.Length]))
-        {
-            return false;
-        }
-
-        rest = text[(keyword.Length + 1)..].Trim();
-        return true;
-    }
-
-    private static WardleyComponent? ParseComponent(string text, uint number)
-    {
-        var kind = KindOf(text, out var rest);
-        if (kind is null)
-        {
-            return null;
-        }
-
         var coordinates = CoordinateExpression().Match(rest);
         if (!coordinates.Success)
         {
@@ -514,7 +446,7 @@ public static partial class WardleyParser
         var trailer = rest[(coordinates.Index + coordinates.Length)..];
         return new WardleyComponent(
             name,
-            kind.Value,
+            kind,
             position,
             number,
             DecoratorsIn(trailer),
@@ -524,24 +456,14 @@ public static partial class WardleyParser
     }
 
     /// <summary>
-    /// Which of the three statement kinds this line declares, and the rest of the line after
-    /// the keyword. Null when the line is not one of them - including `market` and `ecosystem`,
-    /// which look like kinds and are decorators (Requirement 5.1).
+    /// The keywords the reference parser knows and this module does not model. A statement that
+    /// starts with one is skipped by design, so a skip of one is no problem, and the document
+    /// keeps it because nothing ever splices it.
     /// </summary>
-    private static WardleyElementKind? KindOf(string text, out string rest)
+    private static readonly HashSet<string> UnmodelledKeywords = new(StringComparer.OrdinalIgnoreCase)
     {
-        if (TryKeyword(text, "component", out rest))
-        {
-            return WardleyElementKind.Component;
-        }
-
-        if (TryKeyword(text, "anchor", out rest))
-        {
-            return WardleyElementKind.Anchor;
-        }
-
-        return TryKeyword(text, "submap", out rest) ? WardleyElementKind.Submap : null;
-    }
+        "y_axis", "x_axis", "evolution", "presentation",
+    };
 
     /// <summary>
     /// Every keyword the DSL starts a statement with, whether or not this module models it.
@@ -551,31 +473,18 @@ public static partial class WardleyParser
     /// something else. `y_axis Value chain-&gt;Invisible-&gt;Visible` contains two arrows and would
     /// otherwise read as a link, putting an element on the canvas that the document never
     /// declared - which is a worse failure than not modelling the statement at all, and the
-    /// opposite of what Requirement 3.3 asks for.
+    /// opposite of what Requirement 3.3 asks for. They are those of <see cref="Statements"/> and
+    /// those of <see cref="UnmodelledKeywords"/>, declared after both because a static field is
+    /// initialised in the order the fields are written.
     /// </remarks>
-    private static readonly HashSet<string> KnownKeywords = new(StringComparer.OrdinalIgnoreCase)
-    {
-        // Modelled here, in task 5.
-        "component", "anchor", "submap", "pipeline", "title", "size", "style",
-        // Modelled in task 6, and already guarded so they never read as links.
-        "evolve", "note", "annotation", "annotations", "url",
-        "pioneers", "settlers", "townplanners", "accelerator", "deaccelerator",
-        // Known to the reference parser, not modelled by this spec. Skipped, and preserved by
-        // the document because nothing ever splices them.
-        "y_axis", "x_axis", "evolution", "presentation",
-    };
-
-    /// <summary>The keywords of <see cref="KnownKeywords"/> this module skips by design, so a skip of one is no problem.</summary>
-    private static readonly HashSet<string> UnmodelledKeywords = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "y_axis", "x_axis", "evolution", "presentation",
-    };
+    private static readonly HashSet<string> KnownKeywords =
+        new(Statements.Select(statement => statement.Keyword).Concat(UnmodelledKeywords), StringComparer.OrdinalIgnoreCase);
 
     private static WardleyLink? ParseLink(string text, uint number)
     {
         // A statement that opens with a keyword is that statement, never a link - even when it
         // happens to contain an arrow.
-        if (KnownKeywords.Contains(FirstToken(text)))
+        if (KnownKeywords.Contains(KeywordOf(text).Keyword))
         {
             return null;
         }
@@ -623,7 +532,8 @@ public static partial class WardleyParser
 
     private static WardleyPipelineChild? ParsePipelineChild(string text, uint number)
     {
-        if (!TryKeyword(text, "component", out var rest))
+        (string keyword, string rest) = KeywordOf(text);
+        if (!string.Equals(keyword, "component", StringComparison.OrdinalIgnoreCase))
         {
             return null;
         }
