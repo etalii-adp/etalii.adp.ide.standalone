@@ -56,10 +56,7 @@ public static class SparqlParser
 
     private sealed class Parser
     {
-        private readonly string _text;
-        private readonly SparqlTokenizer _tokenizer;
-        private readonly List<SparqlToken> _tokens;
-        private int _index;
+        private readonly SparqlTokenCursor _cursor;
 
         private readonly List<SparqlPrefixDeclaration> _prefixes = [];
         private readonly Dictionary<string, string> _prefixMap = [];
@@ -67,12 +64,7 @@ public static class SparqlParser
         private string _baseIri = "";
         private int _anonymousOrdinal;
 
-        public Parser(string text)
-        {
-            _text = text;
-            _tokenizer = new SparqlTokenizer(text);
-            _tokens = _tokenizer.Tokenize();
-        }
+        public Parser(string text) => _cursor = new SparqlTokenCursor(text);
 
         public SparqlQueryModel ParseQuery()
         {
@@ -131,16 +123,16 @@ public static class SparqlParser
             {
                 if (Current.IsKeyword("PREFIX"))
                 {
-                    var line = LineOf(Current);
+                    var line = _cursor.LineOf(Current);
                     Advance();
-                    var name = Expect(SparqlTokenKind.PrefixedName, "a prefix name ending in ':'");
+                    var name = _cursor.Expect(SparqlTokenKind.PrefixedName, "a prefix name ending in ':'");
                     var colon = name.Value.IndexOf(':');
                     if (colon != name.Value.Length - 1)
                     {
                         throw Error($"A PREFIX declaration names the prefix alone, ending in ':' - found '{name.Value}'.", name);
                     }
 
-                    var iri = Expect(SparqlTokenKind.Iri, "the prefix's <IRI>");
+                    var iri = _cursor.Expect(SparqlTokenKind.Iri, "the prefix's <IRI>");
                     var prefix = name.Value[..colon];
                     var expanded = Unbracket(iri.Value);
                     _prefixMap[prefix] = expanded;
@@ -149,7 +141,7 @@ public static class SparqlParser
                 else if (Current.IsKeyword("BASE"))
                 {
                     Advance();
-                    var iri = Expect(SparqlTokenKind.Iri, "the base <IRI>");
+                    var iri = _cursor.Expect(SparqlTokenKind.Iri, "the base <IRI>");
                     _baseIri = Unbracket(iri.Value);
                 }
                 else
@@ -269,31 +261,7 @@ public static class SparqlParser
             }
             else
             {
-                while (Current.Kind is SparqlTokenKind.Variable or SparqlTokenKind.Iri or SparqlTokenKind.PrefixedName)
-                {
-                    var token = Current;
-                    targets.Add(token.Value);
-                    switch (token.Kind)
-                    {
-                        case SparqlTokenKind.Variable:
-                            projection.Add(new SparqlProjectionItem(token.Value[1..], ""));
-                            terms.Add(new VariableTerm(token.Value[1..], token.Value));
-                            break;
-                        case SparqlTokenKind.Iri:
-                            terms.Add(new IriTerm(ResolveIri(token), token.Value));
-                            break;
-                        default:
-                            terms.Add(new IriTerm(ExpandPrefixed(token), token.Value));
-                            break;
-                    }
-
-                    Advance();
-                }
-
-                if (targets.Count == 0)
-                {
-                    throw Error("DESCRIBE names at least one variable or IRI, or '*'.", Current);
-                }
+                ParseDescribeTargets(targets, terms, projection);
             }
 
             var datasets = ParseDatasetClauses();
@@ -322,6 +290,36 @@ public static class SparqlParser
             });
         }
 
+        /// <summary>The variables and IRIs DESCRIBE names, each as written, as a term, and - for a variable - as a projected name.</summary>
+        private void ParseDescribeTargets(List<string> targets, List<SparqlTerm> terms, List<SparqlProjectionItem> projection)
+        {
+            while (Current.Kind is SparqlTokenKind.Variable or SparqlTokenKind.Iri or SparqlTokenKind.PrefixedName)
+            {
+                var token = Current;
+                targets.Add(token.Value);
+                switch (token.Kind)
+                {
+                    case SparqlTokenKind.Variable:
+                        projection.Add(new SparqlProjectionItem(token.Value[1..], ""));
+                        terms.Add(new VariableTerm(token.Value[1..], token.Value));
+                        break;
+                    case SparqlTokenKind.Iri:
+                        terms.Add(new IriTerm(ResolveIri(token), token.Value));
+                        break;
+                    default:
+                        terms.Add(new IriTerm(ExpandPrefixed(token), token.Value));
+                        break;
+                }
+
+                Advance();
+            }
+
+            if (targets.Count == 0)
+            {
+                throw Error("DESCRIBE names at least one variable or IRI, or '*'.", Current);
+            }
+        }
+
         private (bool ProjectsAll, List<SparqlProjectionItem> Items) ParseProjection()
         {
             if (Current.IsPunct("*"))
@@ -341,23 +339,23 @@ public static class SparqlParser
                 else if (Current.IsPunct("("))
                 {
                     // (expression AS ?name) - the expression stays as written, tier two.
-                    var open = _index;
-                    var close = FindBalancedEnd(open);
-                    var asIndex = FindTopLevelKeyword(open + 1, close, "AS");
+                    var open = _cursor.Index;
+                    var close = _cursor.FindBalancedEnd(open);
+                    var asIndex = _cursor.FindTopLevelKeyword(open + 1, close, "AS");
                     if (asIndex < 0)
                     {
                         throw Error("A parenthesized projection item is written '(expression AS ?name)'.", Current);
                     }
 
-                    var variable = _tokens[asIndex + 1];
+                    var variable = _cursor[asIndex + 1];
                     if (variable.Kind != SparqlTokenKind.Variable)
                     {
                         throw Error("AS names the variable the expression defines.", variable);
                     }
 
-                    var expression = SliceTokens(open + 1, asIndex - 1);
+                    var expression = _cursor.SliceTokens(open + 1, asIndex - 1);
                     items.Add(new SparqlProjectionItem(variable.Value[1..], expression));
-                    _index = close + 1;
+                    _cursor.Index = close + 1;
                 }
                 else
                 {
@@ -375,7 +373,7 @@ public static class SparqlParser
             var rows = new List<string>();
             while (Current.IsKeyword("FROM"))
             {
-                var start = _index;
+                var start = _cursor.Index;
                 Advance();
                 if (Current.IsKeyword("NAMED"))
                 {
@@ -388,7 +386,7 @@ public static class SparqlParser
                 }
 
                 Advance();
-                rows.Add(SliceTokens(start, _index - 1));
+                rows.Add(_cursor.SliceTokens(start, _cursor.Index - 1));
             }
 
             return rows;
@@ -408,7 +406,7 @@ public static class SparqlParser
 
         private GroupScope ParseGroupGraphPattern(GroupScopeKind kind, int ordinal, string label = "")
         {
-            ExpectPunct("{");
+            _cursor.ExpectPunct("{");
             var scope = new GroupScope { Kind = kind, Ordinal = ordinal, Label = label };
 
             while (true)
@@ -431,89 +429,96 @@ public static class SparqlParser
                     continue;
                 }
 
-                if (token.IsPunct("{"))
+                ParseGroupMember(scope, token);
+            }
+        }
+
+        /// <summary>One member of a group, starting at <paramref name="token"/>: a nested group or subquery, a constraint, or a triples block.</summary>
+        private void ParseGroupMember(GroupScope scope, SparqlToken token)
+        {
+            if (token.IsPunct("{"))
+            {
+                if (Next.IsKeyword("SELECT"))
                 {
-                    if (Next.IsKeyword("SELECT"))
-                    {
-                        ParseSubSelect(scope);
-                    }
-                    else
-                    {
-                        ParseGroupOrUnion(scope);
-                    }
-
-                    continue;
+                    ParseSubSelect(scope);
                 }
-
-                if (token.IsKeyword("OPTIONAL"))
+                else
                 {
-                    Advance();
-                    scope.Children.Add(ParseGroupGraphPattern(GroupScopeKind.Optional, NextOrdinal(scope, GroupScopeKind.Optional)));
-                    continue;
+                    ParseGroupOrUnion(scope);
                 }
-
-                if (token.IsKeyword("MINUS"))
-                {
-                    Advance();
-                    scope.Children.Add(ParseGroupGraphPattern(GroupScopeKind.Minus, NextOrdinal(scope, GroupScopeKind.Minus)));
-                    continue;
-                }
-
-                if (token.IsKeyword("GRAPH"))
-                {
-                    Advance();
-                    var term = Current;
-                    if (term.Kind is not (SparqlTokenKind.Variable or SparqlTokenKind.Iri or SparqlTokenKind.PrefixedName))
-                    {
-                        throw Error("GRAPH names its graph by variable or IRI.", term);
-                    }
-
-                    Advance();
-                    scope.Children.Add(ParseGroupGraphPattern(GroupScopeKind.Graph, NextOrdinal(scope, GroupScopeKind.Graph), term.Value));
-                    continue;
-                }
-
-                if (token.IsKeyword("SERVICE"))
-                {
-                    Advance();
-                    var silent = Current.IsKeyword("SILENT");
-                    if (silent)
-                    {
-                        Advance();
-                    }
-
-                    var term = Current;
-                    if (term.Kind is not (SparqlTokenKind.Variable or SparqlTokenKind.Iri or SparqlTokenKind.PrefixedName))
-                    {
-                        throw Error("SERVICE names its endpoint by variable or IRI.", term);
-                    }
-
-                    Advance();
-                    var serviceLabel = silent ? $"SILENT {term.Value}" : term.Value;
-                    scope.Children.Add(ParseGroupGraphPattern(GroupScopeKind.Service, NextOrdinal(scope, GroupScopeKind.Service), serviceLabel));
-                    continue;
-                }
-
-                if (token.IsKeyword("FILTER"))
-                {
-                    scope.Constraints.Add(ParseFilter());
-                    continue;
-                }
-
-                if (token.IsKeyword("BIND"))
-                {
-                    scope.Constraints.Add(ParseBind());
-                    continue;
-                }
-
-                if (token.IsKeyword("VALUES"))
-                {
-                    scope.Constraints.Add(ParseValues());
-                    continue;
-                }
-
+            }
+            else if (token.IsKeyword("OPTIONAL"))
+            {
+                ParseKeywordGroup(scope, GroupScopeKind.Optional);
+            }
+            else if (token.IsKeyword("MINUS"))
+            {
+                ParseKeywordGroup(scope, GroupScopeKind.Minus);
+            }
+            else if (token.IsKeyword("GRAPH"))
+            {
+                ParseGraph(scope);
+            }
+            else if (token.IsKeyword("SERVICE"))
+            {
+                ParseService(scope);
+            }
+            else if (token.IsKeyword("FILTER"))
+            {
+                scope.Constraints.Add(ParseFilter());
+            }
+            else if (token.IsKeyword("BIND"))
+            {
+                scope.Constraints.Add(ParseBind());
+            }
+            else if (token.IsKeyword("VALUES"))
+            {
+                scope.Constraints.Add(ParseValues());
+            }
+            else
+            {
                 ParseTriplesBlock(scope);
             }
+        }
+
+        /// <summary><c>OPTIONAL { ... }</c> or <c>MINUS { ... }</c>: the keyword, then the group it introduces.</summary>
+        private void ParseKeywordGroup(GroupScope scope, GroupScopeKind kind)
+        {
+            Advance(); // OPTIONAL or MINUS
+            scope.Children.Add(ParseGroupGraphPattern(kind, NextOrdinal(scope, kind)));
+        }
+
+        private void ParseGraph(GroupScope scope)
+        {
+            Advance(); // GRAPH
+            var term = Current;
+            if (term.Kind is not (SparqlTokenKind.Variable or SparqlTokenKind.Iri or SparqlTokenKind.PrefixedName))
+            {
+                throw Error("GRAPH names its graph by variable or IRI.", term);
+            }
+
+            Advance();
+            scope.Children.Add(ParseGroupGraphPattern(GroupScopeKind.Graph, NextOrdinal(scope, GroupScopeKind.Graph), term.Value));
+        }
+
+        private void ParseService(GroupScope scope)
+        {
+            Advance(); // SERVICE
+            var silent = Current.IsKeyword("SILENT");
+            if (silent)
+            {
+                Advance();
+            }
+
+            var term = Current;
+            if (term.Kind is not (SparqlTokenKind.Variable or SparqlTokenKind.Iri or SparqlTokenKind.PrefixedName))
+            {
+                throw Error("SERVICE names its endpoint by variable or IRI.", term);
+            }
+
+            Advance();
+            var serviceLabel = silent ? $"SILENT {term.Value}" : term.Value;
+            scope.Children.Add(ParseGroupGraphPattern(GroupScopeKind.Service, NextOrdinal(scope, GroupScopeKind.Service), serviceLabel));
         }
 
         /// <summary>The ordinal a new child of <paramref name="kind"/> takes under <paramref name="parent"/>: its count among same-kind siblings so far.</summary>
@@ -551,17 +556,44 @@ public static class SparqlParser
 
         private void ParseSubSelect(GroupScope parent)
         {
-            var open = _index;
-            var close = FindBalancedEnd(open);
+            var open = _cursor.Index;
+            var close = _cursor.FindBalancedEnd(open);
 
             // The projection: everything between SELECT and the point its clause ends.
             var select = open + 1;
+            (int projectionEnd, List<string> projectedNames, bool projectsAll) = ReadSubSelectProjection(select, close);
+
+            if (projectsAll)
+            {
+                // SELECT * projects the subquery's own in-scope names; what can be read from
+                // its text is every variable it mentions.
+                foreach (var name in _cursor.VariablesBetween(select + 1, close - 1))
+                {
+                    if (!projectedNames.Contains(name))
+                    {
+                        projectedNames.Add(name);
+                    }
+                }
+            }
+
+            var projectionText = _cursor.SliceTokens(select, Math.Max(select, projectionEnd));
+            var text = _cursor.SliceTokens(open, close);
+            parent.SubSelects.Add(new SparqlSubSelect(projectionText, text, projectedNames, projectsAll, parent.SubSelects.Count));
+            _cursor.Index = close + 1;
+        }
+
+        /// <summary>
+        /// The projection of the subquery whose SELECT is at <paramref name="select"/>: the index of
+        /// its last token, the names it projects and whether it is <c>*</c>.
+        /// </summary>
+        private (int ProjectionEnd, List<string> Names, bool ProjectsAll) ReadSubSelectProjection(int select, int close)
+        {
             var projectionEnd = select + 1;
             var projectedNames = new List<string>();
             var projectsAll = false;
             for (var i = select + 1; i < close; i++)
             {
-                var token = _tokens[i];
+                var token = _cursor[i];
                 if (token.IsKeyword("WHERE") || token.IsKeyword("FROM") || token.IsPunct("{"))
                 {
                     projectionEnd = i - 1;
@@ -574,11 +606,11 @@ public static class SparqlParser
                     // Inside '(expr AS ?n)' only the aliased name is projected; a plain item is
                     // its own name. Both arrive here; the AS-form's inner references are pruned
                     // by only counting names at clause depth or directly after AS.
-                    if (i > select + 1 && _tokens[i - 1].IsKeyword("AS"))
+                    if (i > select + 1 && _cursor[i - 1].IsKeyword("AS"))
                     {
                         projectedNames.Add(name);
                     }
-                    else if (DepthBetween(select + 1, i) == 0)
+                    else if (_cursor.DepthBetween(select + 1, i) == 0)
                     {
                         projectedNames.Add(name);
                     }
@@ -589,40 +621,20 @@ public static class SparqlParser
                 }
             }
 
-            if (projectsAll)
-            {
-                // SELECT * projects the subquery's own in-scope names; what can be read from
-                // its text is every variable it mentions.
-                for (var i = select + 1; i < close; i++)
-                {
-                    if (_tokens[i].Kind == SparqlTokenKind.Variable)
-                    {
-                        var name = _tokens[i].Value[1..];
-                        if (!projectedNames.Contains(name))
-                        {
-                            projectedNames.Add(name);
-                        }
-                    }
-                }
-            }
-
-            var projectionText = SliceTokens(select, Math.Max(select, projectionEnd));
-            var text = SliceTokens(open, close);
-            parent.SubSelects.Add(new SparqlSubSelect(projectionText, text, projectedNames, projectsAll, parent.SubSelects.Count));
-            _index = close + 1;
+            return (projectionEnd, projectedNames, projectsAll);
         }
 
         // -- Constraints: tier two, sliced as written ----------------------------------------
 
         private SparqlConstraint ParseFilter()
         {
-            var start = _index;
+            var start = _cursor.Index;
             Advance(); // FILTER
 
             if (Current.IsKeyword("EXISTS"))
             {
                 Advance();
-                SkipBalanced("{");
+                _cursor.SkipBalanced("{");
             }
             else if (Current.IsKeyword("NOT"))
             {
@@ -633,60 +645,60 @@ public static class SparqlParser
                 }
 
                 Advance();
-                SkipBalanced("{");
+                _cursor.SkipBalanced("{");
             }
             else if (Current.IsPunct("("))
             {
-                SkipBalanced("(");
+                _cursor.SkipBalanced("(");
             }
             else if (Current.Kind is SparqlTokenKind.Name or SparqlTokenKind.Iri or SparqlTokenKind.PrefixedName)
             {
                 // A built-in or named function call: REGEX(...), ex:matches(...).
                 Advance();
-                SkipBalanced("(");
+                _cursor.SkipBalanced("(");
             }
             else
             {
                 throw Error("FILTER takes a bracketed expression, a function call, or EXISTS { ... }.", Current);
             }
 
-            var end = _index - 1;
+            var end = _cursor.Index - 1;
             return new SparqlConstraint(
                 SparqlConstraintKind.Filter,
-                SliceTokens(start, end),
+                _cursor.SliceTokens(start, end),
                 "",
-                VariablesBetween(start, end));
+                _cursor.VariablesBetween(start, end));
         }
 
         private SparqlConstraint ParseBind()
         {
-            var start = _index;
+            var start = _cursor.Index;
             Advance(); // BIND
             if (!Current.IsPunct("("))
             {
                 throw Error("BIND is written 'BIND(expression AS ?name)'.", Current);
             }
 
-            var open = _index;
-            var close = FindBalancedEnd(open);
-            var asIndex = FindTopLevelKeyword(open + 1, close, "AS");
-            if (asIndex < 0 || _tokens[asIndex + 1].Kind != SparqlTokenKind.Variable)
+            var open = _cursor.Index;
+            var close = _cursor.FindBalancedEnd(open);
+            var asIndex = _cursor.FindTopLevelKeyword(open + 1, close, "AS");
+            if (asIndex < 0 || _cursor[asIndex + 1].Kind != SparqlTokenKind.Variable)
             {
-                throw Error("BIND is written 'BIND(expression AS ?name)'.", _tokens[open]);
+                throw Error("BIND is written 'BIND(expression AS ?name)'.", _cursor[open]);
             }
 
-            var defined = _tokens[asIndex + 1].Value[1..];
-            _index = close + 1;
+            var defined = _cursor[asIndex + 1].Value[1..];
+            _cursor.Index = close + 1;
             return new SparqlConstraint(
                 SparqlConstraintKind.Bind,
-                SliceTokens(start, close),
+                _cursor.SliceTokens(start, close),
                 defined,
-                VariablesBetween(open + 1, asIndex - 1));
+                _cursor.VariablesBetween(open + 1, asIndex - 1));
         }
 
         private SparqlConstraint ParseValues()
         {
-            var start = _index;
+            var start = _cursor.Index;
             Advance(); // VALUES
 
             var referenced = new List<string>();
@@ -697,9 +709,9 @@ public static class SparqlParser
             }
             else if (Current.IsPunct("("))
             {
-                var close = FindBalancedEnd(_index);
-                referenced.AddRange(VariablesBetween(_index + 1, close - 1));
-                _index = close + 1;
+                var close = _cursor.FindBalancedEnd(_cursor.Index);
+                referenced.AddRange(_cursor.VariablesBetween(_cursor.Index + 1, close - 1));
+                _cursor.Index = close + 1;
             }
             else
             {
@@ -711,10 +723,10 @@ public static class SparqlParser
                 throw Error("VALUES takes its rows in a { ... } block.", Current);
             }
 
-            SkipBalanced("{");
+            _cursor.SkipBalanced("{");
             return new SparqlConstraint(
                 SparqlConstraintKind.Values,
-                SliceTokens(start, _index - 1),
+                _cursor.SliceTokens(start, _cursor.Index - 1),
                 "",
                 referenced);
         }
@@ -799,13 +811,13 @@ public static class SparqlParser
                 return new VariableTerm(token.Value[1..], token.Value);
             }
 
-            var start = _index;
+            var start = _cursor.Index;
             ConsumePathExpression();
-            var end = _index - 1;
+            var end = _cursor.Index - 1;
 
             if (end == start)
             {
-                var only = _tokens[start];
+                var only = _cursor[start];
                 if (only.IsKeyword("a"))
                 {
                     return new IriTerm(SparqlVocabulary.Type, "a");
@@ -822,7 +834,7 @@ public static class SparqlParser
                 }
             }
 
-            return new PathTerm(SliceTokens(start, end));
+            return new PathTerm(_cursor.SliceTokens(start, end));
         }
 
         /// <summary>Consumes one property-path expression: alternatives of sequences of possibly-inverted, possibly-negated, possibly-repeated path atoms.</summary>
@@ -848,7 +860,7 @@ public static class SparqlParser
                 Advance();
                 if (Current.IsPunct("("))
                 {
-                    SkipBalanced("(");
+                    _cursor.SkipBalanced("(");
                     ConsumePathPostfix();
                     return;
                 }
@@ -856,12 +868,12 @@ public static class SparqlParser
 
             if (Current.IsPunct("("))
             {
-                var open = _index;
+                var open = _cursor.Index;
                 Advance();
                 ConsumePathExpression();
                 if (!Current.IsPunct(")"))
                 {
-                    throw Error("The path group that starts here is never closed with ')'.", _tokens[open]);
+                    throw Error("The path group that starts here is never closed with ')'.", _cursor[open]);
                 }
 
                 Advance();
@@ -906,13 +918,7 @@ public static class SparqlParser
 
                 case SparqlTokenKind.BlankNodeLabel:
                     Advance();
-                    if (!_labeledAnonymous.TryGetValue(token.Value, out var labeled))
-                    {
-                        labeled = new AnonymousTerm(_anonymousOrdinal++, token.Value);
-                        _labeledAnonymous[token.Value] = labeled;
-                    }
-
-                    return labeled;
+                    return LabeledAnonymous(token);
 
                 case SparqlTokenKind.String:
                     return ParseLiteral(token);
@@ -928,17 +934,7 @@ public static class SparqlParser
 
             if (token.IsPunct("["))
             {
-                var anonymous = new AnonymousTerm(_anonymousOrdinal++, "");
-                Advance();
-                if (Current.IsPunct("]"))
-                {
-                    Advance();
-                    return anonymous;
-                }
-
-                ParsePropertyList(scope, anonymous);
-                ExpectPunct("]");
-                return anonymous;
+                return ParseBlankNodePropertyList(scope);
             }
 
             if (token.IsPunct("("))
@@ -948,6 +944,34 @@ public static class SparqlParser
 
             var position = subjectPosition ? "subject" : "object";
             throw Error($"Expected a {position} term, found '{token.Value}'.", token);
+        }
+
+        /// <summary>The one anonymous term a blank node label stands for, however often the query writes it.</summary>
+        private AnonymousTerm LabeledAnonymous(SparqlToken label)
+        {
+            if (!_labeledAnonymous.TryGetValue(label.Value, out var labeled))
+            {
+                labeled = new AnonymousTerm(_anonymousOrdinal++, label.Value);
+                _labeledAnonymous[label.Value] = labeled;
+            }
+
+            return labeled;
+        }
+
+        /// <summary><c>[ ... ]</c>: a fresh anonymous term, and the patterns its property list gives it.</summary>
+        private AnonymousTerm ParseBlankNodePropertyList(GroupScope scope)
+        {
+            var anonymous = new AnonymousTerm(_anonymousOrdinal++, "");
+            Advance(); // [
+            if (Current.IsPunct("]"))
+            {
+                Advance();
+                return anonymous;
+            }
+
+            ParsePropertyList(scope, anonymous);
+            _cursor.ExpectPunct("]");
+            return anonymous;
         }
 
         private SparqlTerm ParseCollection(GroupScope scope)
@@ -993,7 +1017,7 @@ public static class SparqlParser
             {
                 var tag = Current.Value[1..];
                 Advance();
-                return new LiteralTerm(lexical, "", tag, SliceTokens(_index - 2, _index - 1));
+                return new LiteralTerm(lexical, "", tag, _cursor.SliceTokens(_cursor.Index - 2, _cursor.Index - 1));
             }
 
             if (Current.IsPunct("^^"))
@@ -1003,13 +1027,13 @@ public static class SparqlParser
                 if (datatype.Kind == SparqlTokenKind.Iri)
                 {
                     Advance();
-                    return new LiteralTerm(lexical, ResolveIri(datatype), "", SliceTokens(_index - 3, _index - 1));
+                    return new LiteralTerm(lexical, ResolveIri(datatype), "", _cursor.SliceTokens(_cursor.Index - 3, _cursor.Index - 1));
                 }
 
                 if (datatype.Kind == SparqlTokenKind.PrefixedName)
                 {
                     Advance();
-                    return new LiteralTerm(lexical, ExpandPrefixed(datatype), "", SliceTokens(_index - 3, _index - 1));
+                    return new LiteralTerm(lexical, ExpandPrefixed(datatype), "", _cursor.SliceTokens(_cursor.Index - 3, _cursor.Index - 1));
                 }
 
                 throw Error("After '^^' comes the datatype IRI.", datatype);
@@ -1041,10 +1065,10 @@ public static class SparqlParser
                 }
                 else if (Current.IsKeyword("LIMIT") || Current.IsKeyword("OFFSET"))
                 {
-                    var start = _index;
+                    var start = _cursor.Index;
                     Advance();
-                    Expect(SparqlTokenKind.Number, "a whole number");
-                    rows.Add(SliceTokens(start, _index - 1));
+                    _cursor.Expect(SparqlTokenKind.Number, "a whole number");
+                    rows.Add(_cursor.SliceTokens(start, _cursor.Index - 1));
                 }
                 else if (Current.IsKeyword("VALUES"))
                 {
@@ -1059,7 +1083,7 @@ public static class SparqlParser
 
         private string SliceModifier(string[] stopKeywords)
         {
-            var start = _index;
+            var start = _cursor.Index;
             Advance();
 
             while (Current.Kind != SparqlTokenKind.EndOfFile)
@@ -1071,155 +1095,19 @@ public static class SparqlParser
 
                 if (Current.IsPunct("("))
                 {
-                    SkipBalanced("(");
+                    _cursor.SkipBalanced("(");
                     continue;
                 }
 
                 Advance();
             }
 
-            return SliceTokens(start, _index - 1);
+            return _cursor.SliceTokens(start, _cursor.Index - 1);
         }
 
-        // -- Finishing: paths and the variable index ------------------------------------------
-
-        private SparqlQueryModel Finish(SparqlQueryModel model)
-        {
-            model.Where.Path = "where";
-            AssignPaths(model.Where);
-            if (model.Template is not null)
-            {
-                model.Template.Path = "template";
-                AssignPaths(model.Template);
-            }
-
-            var usages = new Dictionary<string, UsageBuilder>(StringComparer.Ordinal);
-            IndexScope(model.Where, usages);
-            if (model.Template is not null)
-            {
-                IndexScope(model.Template, usages);
-            }
-
-            var projection = model.Projection;
-            if (model is { ProjectsAll: true, Form: SparqlQueryForm.Select })
-            {
-                projection = usages.Keys.OrderBy(name => usages[name].FirstSeen).Select(name => new SparqlProjectionItem(name, "")).ToList();
-            }
-
-            foreach (var item in projection)
-            {
-                var builder = GetOrAdd(usages, item.Name);
-                builder.Projected = true;
-                if (item.ExpressionText.Length > 0)
-                {
-                    builder.DefiningExpression = item.ExpressionText;
-                }
-            }
-
-            return model with
-            {
-                BaseIri = _baseIri,
-                Prefixes = _prefixes,
-                Projection = projection,
-                Variables = usages.ToDictionary(
-                    pair => pair.Key,
-                    pair => new SparqlVariableUsage(
-                        pair.Key,
-                        pair.Value.PatternOccurrences,
-                        pair.Value.Projected,
-                        pair.Value.DefiningExpression,
-                        pair.Value.ScopePaths)),
-            };
-        }
-
-        private static void AssignPaths(GroupScope scope)
-        {
-            foreach (var child in scope.Children)
-            {
-                child.Path = $"{scope.Path}/{child.Kind.ToString().ToLowerInvariant()}.{child.Ordinal}";
-                AssignPaths(child);
-            }
-        }
-
-        private sealed class UsageBuilder
-        {
-            public int PatternOccurrences;
-            public bool Projected;
-            public string DefiningExpression = "";
-            public List<string> ScopePaths { get; } = [];
-            public int FirstSeen;
-        }
-
-        private int _seenCounter;
-
-        private UsageBuilder GetOrAdd(Dictionary<string, UsageBuilder> usages, string name)
-        {
-            if (!usages.TryGetValue(name, out var builder))
-            {
-                builder = new UsageBuilder { FirstSeen = _seenCounter++ };
-                usages[name] = builder;
-            }
-
-            return builder;
-        }
-
-        private void IndexScope(GroupScope scope, Dictionary<string, UsageBuilder> usages)
-        {
-            foreach (var pattern in scope.Patterns)
-            {
-                foreach (var term in (SparqlTerm[])[pattern.Subject, pattern.Predicate, pattern.Object])
-                {
-                    if (term is VariableTerm variable)
-                    {
-                        Touch(variable.Name, patternPosition: true);
-                    }
-                }
-            }
-
-            foreach (var constraint in scope.Constraints)
-            {
-                foreach (var name in constraint.ReferencedVariables)
-                {
-                    Touch(name, patternPosition: false);
-                }
-
-                if (constraint.DefinedVariable.Length > 0)
-                {
-                    var builder = GetOrAdd(usages, constraint.DefinedVariable);
-                    builder.DefiningExpression = constraint.Text;
-                    Touch(constraint.DefinedVariable, patternPosition: false);
-                }
-            }
-
-            foreach (var subSelect in scope.SubSelects)
-            {
-                foreach (var name in subSelect.ProjectedNames)
-                {
-                    Touch(name, patternPosition: false);
-                }
-            }
-
-            foreach (var child in scope.Children)
-            {
-                IndexScope(child, usages);
-            }
-
-            return;
-
-            void Touch(string name, bool patternPosition)
-            {
-                var builder = GetOrAdd(usages, name);
-                if (patternPosition)
-                {
-                    builder.PatternOccurrences++;
-                }
-
-                if (!builder.ScopePaths.Contains(scope.Path))
-                {
-                    builder.ScopePaths.Add(scope.Path);
-                }
-            }
-        }
+        /// <summary>The query read, handed to the scope analysis with the prologue it was read under.</summary>
+        private SparqlQueryModel Finish(SparqlQueryModel model) =>
+            SparqlScopeAnalyzer.Finish(model with { BaseIri = _baseIri, Prefixes = _prefixes });
 
         // -- Names, IRIs and strings -----------------------------------------------------------
 
@@ -1255,7 +1143,7 @@ public static class SparqlParser
             // An escape SPARQL does not know is refused at its own line (behaviour changes B-18).
             if (RdfEscapes.Refusal(token.Value) is var (offset, message))
             {
-                throw new SparqlParseException(message, _tokenizer.LineOf(token.Start + offset) + 1);
+                throw new SparqlParseException(message, _cursor.LineAt(token.Start + offset));
             }
 
             return RdfEscapes.String(token.Value);
@@ -1263,150 +1151,12 @@ public static class SparqlParser
 
         // -- Token plumbing ----------------------------------------------------------------------
 
-        private SparqlToken Current => _tokens[_index];
+        private SparqlToken Current => _cursor.Current;
 
-        private SparqlToken Next => _index + 1 < _tokens.Count ? _tokens[_index + 1] : _tokens[^1];
+        private SparqlToken Next => _cursor.Next;
 
-        private void Advance() => _index = Math.Min(_index + 1, _tokens.Count - 1);
+        private void Advance() => _cursor.Advance();
 
-        private SparqlToken Expect(SparqlTokenKind kind, string described)
-        {
-            var token = Current;
-            if (token.Kind != kind)
-            {
-                throw Error($"Expected {described}, found '{(token.Kind == SparqlTokenKind.EndOfFile ? "the end of the file" : token.Value)}'.", token);
-            }
-
-            Advance();
-            return token;
-        }
-
-        private void ExpectPunct(string punctuation)
-        {
-            if (!Current.IsPunct(punctuation))
-            {
-                throw Error($"Expected '{punctuation}', found '{(Current.Kind == SparqlTokenKind.EndOfFile ? "the end of the file" : Current.Value)}'.", Current);
-            }
-
-            Advance();
-        }
-
-        /// <summary>The index of the token closing the bracket at <paramref name="openIndex"/> - '(' , '{' and '[' counted together, strings and IRIs already single tokens.</summary>
-        private int FindBalancedEnd(int openIndex)
-        {
-            var depth = 0;
-            for (var i = openIndex; i < _tokens.Count; i++)
-            {
-                var token = _tokens[i];
-                if (token.Kind == SparqlTokenKind.Punct)
-                {
-                    if (token.Value is "(" or "{" or "[")
-                    {
-                        depth++;
-                    }
-                    else if (token.Value is ")" or "}" or "]")
-                    {
-                        depth--;
-                        if (depth == 0)
-                        {
-                            return i;
-                        }
-                    }
-                }
-            }
-
-            throw Error("The bracket that opens here is never closed.", _tokens[openIndex]);
-        }
-
-        /// <summary>Consumes from the current opening bracket through its balanced close.</summary>
-        private void SkipBalanced(string expectedOpen)
-        {
-            if (!Current.IsPunct(expectedOpen))
-            {
-                throw Error($"Expected '{expectedOpen}', found '{Current.Value}'.", Current);
-            }
-
-            _index = FindBalancedEnd(_index) + 1;
-        }
-
-        /// <summary>The first <paramref name="keyword"/> between the bounds sitting at bracket depth zero relative to <paramref name="start"/>.</summary>
-        private int FindTopLevelKeyword(int start, int endExclusive, string keyword)
-        {
-            var depth = 0;
-            for (var i = start; i < endExclusive; i++)
-            {
-                var token = _tokens[i];
-                if (token.Kind == SparqlTokenKind.Punct)
-                {
-                    if (token.Value is "(" or "{" or "[")
-                    {
-                        depth++;
-                    }
-                    else if (token.Value is ")" or "}" or "]")
-                    {
-                        depth--;
-                    }
-                }
-                else if (depth == 0 && token.IsKeyword(keyword))
-                {
-                    return i;
-                }
-            }
-
-            return -1;
-        }
-
-        private int DepthBetween(int start, int endExclusive)
-        {
-            var depth = 0;
-            for (var i = start; i < endExclusive; i++)
-            {
-                var token = _tokens[i];
-                if (token.Kind == SparqlTokenKind.Punct)
-                {
-                    if (token.Value is "(" or "{" or "[")
-                    {
-                        depth++;
-                    }
-                    else if (token.Value is ")" or "}" or "]")
-                    {
-                        depth--;
-                    }
-                }
-            }
-
-            return depth;
-        }
-
-        private List<string> VariablesBetween(int start, int endInclusive)
-        {
-            var names = new List<string>();
-            for (var i = start; i <= endInclusive && i < _tokens.Count; i++)
-            {
-                if (_tokens[i].Kind == SparqlTokenKind.Variable)
-                {
-                    var name = _tokens[i].Value[1..];
-                    if (!names.Contains(name))
-                    {
-                        names.Add(name);
-                    }
-                }
-            }
-
-            return names;
-        }
-
-        /// <summary>The raw source text from the first token through the last, exactly as written - tier two's whole mechanism.</summary>
-        private string SliceTokens(int firstIndex, int lastIndex)
-        {
-            var first = _tokens[firstIndex];
-            var last = _tokens[Math.Max(firstIndex, lastIndex)];
-            return _text[first.Start..last.End];
-        }
-
-        private int LineOf(SparqlToken token) => _tokenizer.LineOf(token.Start) + 1;
-
-        private SparqlParseException Error(string message, SparqlToken at) =>
-            new(message, LineOf(at));
+        private SparqlParseException Error(string message, SparqlToken at) => _cursor.Error(message, at);
     }
 }

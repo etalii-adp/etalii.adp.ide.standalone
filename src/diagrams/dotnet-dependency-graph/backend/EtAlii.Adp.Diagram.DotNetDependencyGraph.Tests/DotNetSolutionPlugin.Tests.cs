@@ -1,4 +1,5 @@
 using System.Text;
+using EtAlii.Adp.Diagram.DotNetDependencyGraph.Tests.Parity;
 using EtAlii.Adp.Specification.Fbl;
 using Xunit;
 using Path = System.IO.Path;
@@ -227,10 +228,27 @@ public sealed class DotNetSolutionPluginTests : IDisposable
         var body = store.BodyOf(graph);
 
         // Assert.
-        Assert.NotNull(body);
         Assert.Same(graph, body.Graph);
         Assert.Equal(Path.GetFullPath(solution), body.SolutionPath);
-        Assert.Null(store.BodyOf(DependencyGraphModel.Empty));
+        Assert.NotEmpty(body.Reading.Elements);
+        Assert.Same(body, store.BodyOf(graph));
+    }
+
+    [Fact]
+    public void TheStore_ReadsAGraphItDidNotRead_AsThePluginWouldDeliverIt()
+    {
+        // Arrange.
+        using var store = new DependencyGraphStore(new SolutionReader(), new ProjectReader(), new PackageDescriptionReader(Path.Combine(Fixtures, "cache")));
+        var graph = DotNetTranscript.HandBuiltGraphs().First().Graph;
+
+        // Act.
+        var body = store.BodyOf(graph);
+
+        // Assert.
+        Assert.Same(graph, body.Graph);
+        Assert.Equal(string.Empty, body.SolutionPath);
+        Assert.Equal(DotNetSolutionPlugin.Elements(graph).Select(element => element.Id), body.Reading.Elements.Select(element => element.Id));
+        Assert.Equal(graph.Projects.Select(project => project.Id), body.Disl.Diagram.Elements.Where(element => element.Type.Name == "Project").Select(element => element.Id));
     }
 
     private static DotNetBody Open(string solution) =>

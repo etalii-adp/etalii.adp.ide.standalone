@@ -57,11 +57,11 @@ public sealed class DependencyGraphStore(
     private readonly PackageDescriptionReader _descriptions = descriptions ?? throw new ArgumentNullException(nameof(descriptions));
     private readonly ConditionalWeakTable<DependencyGraphModel, DotNetBody> _bodies = [];
 
-    /// <summary>The body <paramref name="graph"/> was read from, when this store read it; null for any other graph.</summary>
-    public DotNetBody? BodyOf(DependencyGraphModel graph)
+    /// <summary>The body <paramref name="graph"/> was read from, when this store read it; for any other graph, the graph as the plugin would deliver it (<see cref="DotNetBody.Of"/>).</summary>
+    public DotNetBody BodyOf(DependencyGraphModel graph)
     {
         ArgumentNullException.ThrowIfNull(graph);
-        return _bodies.TryGetValue(graph, out var body) ? body : null;
+        return _bodies.TryGetValue(graph, out var body) ? body : DotNetBody.Of(graph);
     }
 
     /// <summary>
