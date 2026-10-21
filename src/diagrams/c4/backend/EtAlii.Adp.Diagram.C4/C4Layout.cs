@@ -611,51 +611,23 @@ public static class C4LayoutEngine
         SweepApart(boxes, pushedVertically.Where(entry => entry.Value).Select(entry => entry.Key), horizontally: true, nodeSeparation);
         SweepApart(boxes, pushedVertically.Where(entry => !entry.Value).Select(entry => entry.Key), horizontally: false, nodeSeparation);
 
-        // Stage two, bounded so a set that cannot be separated cannot spin either.
-        foreach (var _ in outsiders)
+        // Stage two, the shared layout's push-off rule (code-structure T239): each pushed outsider
+        // moves off whatever it still overlaps along the axis it was not pushed out on, bounded so a
+        // set that cannot be separated cannot spin either. A tie goes to the ordinally smaller id,
+        // which is arbitrary but never the same answer for both.
+        var index = outsiders.Select((id, position) => (id, position)).ToDictionary(entry => entry.id, entry => entry.position, StringComparer.OrdinalIgnoreCase);
+        var arranged = outsiders.Select(id => boxes[id]).ToArray();
+        var movers = pushedVertically.Select(entry => (index[entry.Key], entry.Value)).ToArray();
+        var tieRank = new int[outsiders.Count];
+        foreach ((string id, int rank) in outsiders.Order(StringComparer.Ordinal).Select((id, rank) => (id, rank)))
         {
-            var moved = false;
-            foreach ((string id, bool vertically) in pushedVertically)
-            {
-                foreach (var other in outsiders)
-                {
-                    if (string.Equals(other, id, StringComparison.OrdinalIgnoreCase) || !boxes[id].Overlaps(boxes[other]))
-                    {
-                        continue;
-                    }
+            tieRank[index[id]] = rank;
+        }
 
-                    var box = boxes[id];
-                    var blocker = boxes[other];
-
-                    // A tie means the two are symmetric about each other, and answering it the
-                    // same way for both is how lockstep starts. The ordinally smaller id goes
-                    // first, which is arbitrary but never the same answer for both.
-                    var goesFirst = string.CompareOrdinal(id, other) < 0;
-                    if (vertically)
-                    {
-                        var toLeft = box.Right - blocker.X + nodeSeparation;
-                        var toRight = blocker.Right - box.X + nodeSeparation;
-                        boxes[id] = (toLeft < toRight || (Math.Abs(toLeft - toRight) < Tolerance && goesFirst))
-                            ? box with { X = Math.Round(box.X - toLeft, 2) }
-                            : box with { X = Math.Round(box.X + toRight, 2) };
-                    }
-                    else
-                    {
-                        var up = box.Bottom - blocker.Y + nodeSeparation;
-                        var down = blocker.Bottom - box.Y + nodeSeparation;
-                        boxes[id] = (up < down || (Math.Abs(up - down) < Tolerance && goesFirst))
-                            ? box with { Y = Math.Round(box.Y - up, 2) }
-                            : box with { Y = Math.Round(box.Y + down, 2) };
-                    }
-
-                    moved = true;
-                }
-            }
-
-            if (!moved)
-            {
-                return;
-            }
+        OverlapResolver.PushOffAlongAxes(arranged, movers, tieRank, nodeSeparation, decimals: 2);
+        for (var position = 0; position < outsiders.Count; position++)
+        {
+            boxes[outsiders[position]] = arranged[position];
         }
     }
 
