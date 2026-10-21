@@ -142,7 +142,8 @@ internal static partial class DotNetTranscript
         // while it stays identical. Equal bytes alone are not enough: a solution is the files it
         // names too, so the projects are compared through the graph they give. And the extension is
         // part of it: the reader chooses its pattern by extension, so the same bytes under another
-        // one are another document (finding B11's new document is Empty.slnx's bytes under .sln).
+        // one are another document (finding B11's new document was Empty.slnx's bytes under .sln until
+        // task 9 made it a .slnx, which is now recorded as the same document as Empty.slnx).
         using var store = new DependencyGraphStore(new SolutionReader(), new ProjectReader(), new PackageDescriptionReader(FixtureCache));
         var graph = store.GetOrLoad(path);
         var key = $"{sha}|{Path.GetExtension(relative)}|{Fingerprint(graph)}";
