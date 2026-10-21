@@ -7,9 +7,9 @@ using Microsoft.Extensions.DependencyInjection;
 namespace EtAlii.Adp.Diagram.DotNetDependencyGraph;
 
 /// <summary>
-/// Registers the .NET dependency graph module against core's seams. Empty at task 1 by
-/// design: the module registers as a type and draws nothing, so every later task is a change
-/// to a module that already builds rather than a step in one that never has.
+/// Registers the .NET dependency graph module against core's seams: the readers the plugin runs,
+/// the store of opened solutions, the new document made from the binding's template, the mapper,
+/// the session factory, and the selection and property-grid seams.
 /// </summary>
 /// <remarks>
 /// <para>

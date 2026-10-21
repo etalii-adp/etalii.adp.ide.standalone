@@ -11,9 +11,8 @@ namespace EtAlii.Adp.Specification.Fbl.Registration;
 /// </summary>
 /// <remarks>
 /// Public because another project uses it (T226's rule): <c>EtAlii.Adp.Hierarchy</c>'s
-/// <c>PlaceInRegistrationCommand</c> writes a moved element's position through it
-/// (dotnet-dependency-graph-disl-fbl task 8). The document it reads stays internal; a caller places
-/// and takes the bytes.
+/// <c>PlaceInRegistrationCommand</c> writes a moved element's position through it. The document it
+/// reads stays internal; a caller places and takes the bytes.
 /// </remarks>
 public sealed class OpenRegistration : SplicedFile
 {

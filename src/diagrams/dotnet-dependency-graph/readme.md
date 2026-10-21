@@ -18,6 +18,33 @@ authored**.
 a `.csproj`, a `.sln` or a `.slnx`. The solution is the truth; the registration holds only where
 you put the boxes.
 
+* **A move is written through the FBL library's registration writer**, by core's tool-neutral
+  `PlaceInRegistrationCommand` (`EtAlii.Adp.Hierarchy`): only the moved entry is spliced in, at
+  the byte order of its id's UTF-8 encoding, in the registration's own line ending, and every
+  other byte stays as it was. Its undo puts the registration's earlier bytes back, and is refused
+  once the file has been changed on disk since the move rather than writing over that change.
+* **One file is created, once**: a new diagram's empty solution, `<name>.slnx`, made from the
+  binding's `template` by core's `TemplateDocumentFactory`. Core refuses a name either
+  serialization already holds, so creating can never overwrite a solution.
+
+## How a solution is read
+
+**Through the module's FBL binding, `dotnet-dependency-graph.fbl`, by a persistence plugin.**
+`DotNetBody` opens the solution as a plugin body; `DotNetSolutionPlugin`
+(`net.etalii.adp.dotnet.solution`) runs the readers below and `DependencyGraph` inside it; the
+shared `DislModelBuilder` builds the model the property rows are derived from. The plugin is
+handed the solution's bytes only, and reaches the project files, the versions files above them and
+the NuGet cache through `DotNetSolutionSubject`, the named stand-in for what FBL cannot yet
+declare: a subject that is one file with the files it leads to, and reading outside the
+workspace. Every class left in this module, and what keeps it, is listed in the companion,
+`definition/dotnet-dependency-graph.md`, under *What stays code in the standalone module*.
+
+**What is watched is what the plugin says the reading depends on**: the solution, every project
+file read, every folder a wildcard `Include` listed, and a `Directory.Packages.props` in every
+folder above each project whether or not one is there, through the shared watched-folder store,
+settling for the binding's 250 ms. A project file the solution names but that is not on disk is
+not watched yet; the companion records it under *Known gaps*.
+
 ## What the readers resolve, and what they do not
 
 This matters more here than in an authored diagram, because a missing edge in a *derived* graph
@@ -117,6 +144,7 @@ recorded decision, taken over a more capable recommendation, to keep the product
 "no infrastructure beyond the workspace's own files" principle absolute.
 
 The cost is accepted and explicit: **a package that has never been restored on this machine
-shows no description.** That is never an error, never a wait, and never an empty diagram — and
-it is why a refresh can be asked for explicitly, since a `restore` makes descriptions available
-without touching any file the watcher is watching.
+shows no description.** That is never an error, never a wait, and never an empty diagram. A
+`restore` makes descriptions available without touching any file that is watched, so they appear
+when a watched file next changes or the diagram is opened again: the session's explicit refresh is
+not yet reachable by a user (the companion's *Known gaps*).
