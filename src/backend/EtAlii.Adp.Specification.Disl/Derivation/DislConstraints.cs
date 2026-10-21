@@ -82,7 +82,8 @@ internal sealed record DislConstraintRule
 /// <param name="CodeText">Its <c>code</c> when it is a string.</param>
 /// <param name="Code">Its <c>code</c> when it is an object: a <c>{cel}</c> computed per finding.</param>
 /// <param name="Message">Its <c>message</c>, or null when it states none.</param>
-internal sealed record DislBuiltIn(bool Enabled, string? Severity, string? OncePerGroup, string? CodeText, DislExpressionField? Code, DislMessage? Message)
+/// <param name="Refusal">Its <c>refusal</c> (§8.1, §8.4), the wording of a gesture it refuses, or null when it states none.</param>
+internal sealed record DislBuiltIn(bool Enabled, string? Severity, string? OncePerGroup, string? CodeText, DislExpressionField? Code, DislMessage? Message, DislMessage? Refusal = null)
 {
     /// <summary>A built-in the definition configures nothing of.</summary>
     public static DislBuiltIn Default { get; } = new(true, null, null, null, null, null);

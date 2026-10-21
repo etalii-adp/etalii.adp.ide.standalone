@@ -81,6 +81,7 @@ internal static class DislConstraintReader
             JsonProperties.String(setting, "oncePerGroup"),
             code.ValueKind == JsonValueKind.String ? code.GetString() : null,
             code.ValueKind == JsonValueKind.Object ? DislFieldReader.Expression(specification, code, JsonPointer.Append(pointer, "code")) : null,
-            setting.TryGetProperty("message", out var message) ? DislFieldReader.Message(specification, message, JsonPointer.Append(pointer, "message")) : null);
+            setting.TryGetProperty("message", out var message) ? DislFieldReader.Message(specification, message, JsonPointer.Append(pointer, "message")) : null,
+            setting.TryGetProperty("refusal", out var refusal) ? DislFieldReader.Message(specification, refusal, JsonPointer.Append(pointer, "refusal")) : null);
     }
 }

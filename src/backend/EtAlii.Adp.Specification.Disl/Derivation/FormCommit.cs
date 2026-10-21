@@ -18,8 +18,9 @@ public sealed record FormRequestField(string Attribute, string Label, string? Wi
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>A row's commit</b> runs in the order §7.5 gives: the row's read-only reasons (4.3), or on a read-only diagram
-/// <c>std.readOnly</c>; then each <c>validate</c> of severity <c>error</c>, whatever its timing, since a commit is when
+/// <b>A row's commit</b> runs in the order §7.5 gives: the row's read-only reasons (4.3), with a <c>fixed</c>
+/// attribute's own and its runtime sentence, or on a read-only diagram <c>std.readOnly</c>, as
+/// <see cref="FormDerivation"/> shows them; then each <c>validate</c> of severity <c>error</c>, whatever its timing, since a commit is when
 /// both kinds are judged; then the <c>parse</c>, whose <c>accepts</c> refuses with its <c>refusal</c> and whose
 /// <c>write</c> makes the transaction. A row without a <c>parse</c> sets its attribute to the value, typed by the
 /// attribute; a computed row without one cannot be committed.
@@ -58,8 +59,7 @@ public static class FormCommit
         var cel = env.ToCel();
         var current = Variables(self, declared is null ? null : self.ValueOf(declared.Name), cel);
 
-        if (DislReason.First(item.ReadOnlyReasons, specification, current) is { } reason) return DislTransaction.Refused(reason);
-        if (env.ReadOnly) return DislTransaction.Refused(DislEvaluation.StandardMessage(specification, "std.readOnly", current, "This diagram is read-only."));
+        if (FormDerivation.ReadOnlyReason(specification, item, declared, current, env) is { } reason) return DislTransaction.Refused(reason);
 
         var chosen = Chosen(item, current, value);
         if (Invalid(item, Variables(self, chosen, cel)) is { } invalid) return DislTransaction.Refused(invalid);
