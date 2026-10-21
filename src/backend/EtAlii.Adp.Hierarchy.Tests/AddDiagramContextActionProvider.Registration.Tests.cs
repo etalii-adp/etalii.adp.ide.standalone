@@ -218,4 +218,74 @@ public class AddDiagramContextActionProviderRegistrationTests : IDisposable
         Assert.Equal(2, vendor.Children!.Count);
         Assert.Contains(vendor.Children!, node => node.Id == MarkedReading.Origin.Key);
     }
+
+    // ---- a type with two serializations ------------------------------------------------
+    //
+    // A file of the alternate extension is registered like one of the primary, and the registration
+    // opens the file that was registered: header-less where its own name derives that file, with a
+    // body: header where a file of the primary sits beside it (dotnet-dependency-graph-disl-fbl task 9).
+
+    private static readonly DiagramDefinition TwoSerializations =
+        new(new ToolOrigin("test", "two-serializations"), "Two serializations", Extension: ".new", SharedExtension: true, AlternateExtension: ".old");
+
+    private AddDiagramContextActionProvider TwoSerializationsProvider()
+    {
+        var catalog = new DiagramDefinitionCatalog { All = [TwoSerializations] };
+        return new AddDiagramContextActionProvider(_historyStacks, NoFactories, catalog, new DiagramFileRouter(catalog));
+    }
+
+    [Fact]
+    public async Task CommitAsync_OnALoneFileOfTheAlternateExtension_WritesARegistrationThatOpensIt()
+    {
+        // Arrange.
+        var path = CreateFile("solution.old", "old");
+        var provider = TwoSerializationsProvider();
+        var catalog = new DiagramDefinitionCatalog { All = [TwoSerializations] };
+
+        // Act.
+        var result = await provider.CommitAsync(
+            FileTarget(path), AddDiagramContextActionProvider.AddActionId, TwoSerializations.Origin.Key, "", TestContext.Current.CancellationToken);
+
+        // Assert: offered and written without a header, and its own name derives the file registered.
+        Assert.Equal("", result.Error);
+        var adp = IoPath.ChangeExtension(path, ".adp");
+        Assert.Equal("test/two-serializations\r\n", await File.ReadAllTextAsync(adp, TestContext.Current.CancellationToken));
+        Assert.Equal(path, DiagramFilePair.BodyOf(adp, catalog, _root)!.Value.Path);
+    }
+
+    [Fact]
+    public async Task CommitAsync_OnAFileOfTheAlternateExtension_BesideOneOfThePrimary_NamesItsBody()
+    {
+        // Arrange.
+        var path = CreateFile("solution.old", "old");
+        CreateFile("solution.new", "new");
+        var provider = TwoSerializationsProvider();
+        var catalog = new DiagramDefinitionCatalog { All = [TwoSerializations] };
+
+        // Act.
+        var result = await provider.CommitAsync(
+            FileTarget(path), AddDiagramContextActionProvider.AddActionId, TwoSerializations.Origin.Key, "", TestContext.Current.CancellationToken);
+
+        // Assert: a header-less registration would open solution.new, so this one names solution.old.
+        Assert.Equal("", result.Error);
+        var adp = IoPath.ChangeExtension(path, ".adp");
+        Assert.Equal("test/two-serializations\r\nbody: solution.old\r\n", await File.ReadAllTextAsync(adp, TestContext.Current.CancellationToken));
+        Assert.Equal(path, DiagramFilePair.BodyOf(adp, catalog, _root)!.Value.Path);
+    }
+
+    [Fact]
+    public async Task CommitAsync_OnAFileOfThePrimaryExtension_BesideOneOfTheAlternate_WritesNoHeader()
+    {
+        // Arrange.
+        var path = CreateFile("solution.new", "new");
+        CreateFile("solution.old", "old");
+
+        // Act.
+        var result = await TwoSerializationsProvider().CommitAsync(
+            FileTarget(path), AddDiagramContextActionProvider.AddActionId, TwoSerializations.Origin.Key, "", TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.Equal("", result.Error);
+        Assert.Equal("test/two-serializations\r\n", await File.ReadAllTextAsync(IoPath.ChangeExtension(path, ".adp"), TestContext.Current.CancellationToken));
+    }
 }
