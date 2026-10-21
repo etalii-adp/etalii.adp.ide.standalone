@@ -53,7 +53,7 @@ public sealed class DotNetWatchingTests : IDisposable
 
         // Assert.
         Assert.True(
-            await SettlesAsync(() => Store.GetOrLoad(solution).Edges.Any(edge => edge.FromElementId == "project:Host/Host.csproj" && edge.ToElementId == "project:mods/B/B.csproj"), cancellationToken),
+            await SettlesAsync(() => Store.GetOrLoad(solution).Edges.Any(edge => edge is { FromElementId: "project:Host/Host.csproj", ToElementId: "project:mods/B/B.csproj" }), cancellationToken),
             "The project the wildcard began to match was not read.");
     }
 

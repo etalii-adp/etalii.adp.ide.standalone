@@ -260,7 +260,7 @@ public sealed class DotNetDependencyGraphSessionTests : IDisposable
         Assert.True(after.ContainsKey(newEdge) && !before.ContainsKey(newEdge), "The edit did not add the edge it was written to add.");
         foreach ((string id, DiagramElement element) in after.Where(entry => before.ContainsKey(entry.Key)))
         {
-            Assert.True(before[id].X == element.X && before[id].Y == element.Y, $"{id} moved from ({before[id].X}, {before[id].Y}) to ({element.X}, {element.Y}).");
+            Assert.True(before[id].X.Equals(element.X) && before[id].Y.Equals(element.Y), $"{id} moved from ({before[id].X}, {before[id].Y}) to ({element.X}, {element.Y}).");
         }
 
         var changed = after.Values.Where(element => !before.TryGetValue(element.Id, out var was) || was.Type != element.Type || !was.Payload.Span.SequenceEqual(element.Payload.Span)).Select(element => element.Id).Order(StringComparer.Ordinal);
