@@ -21,6 +21,9 @@ namespace EtAlii.Adp.Specification.Disl;
 /// element changed, a relation's ends, and an attribute that holds elements.
 /// </para>
 /// <para>
+/// <b>A <c>fixed</c> attribute is never written</b> (§4.3): a change that names one writes the others.
+/// </para>
+/// <para>
 /// <b>A <see cref="DislChange.Connect"/> is written as an add of the relation</b>, with its ends in the
 /// attributes <c>persistence.typeMap</c> maps to <c>source</c> and <c>target</c>, or as <c>source</c>
 /// and <c>target</c> where it maps none.
@@ -92,10 +95,14 @@ public static class DislWrite
     }
 
     private static Dictionary<string, object?> Written(DislSpecification specification, DislTypeMap map, string type, IReadOnlyDictionary<string, object?> attributes) =>
-        attributes.ToDictionary(
+        attributes.Where(attribute => !IsFixed(specification, type, attribute.Key)).ToDictionary(
             attribute => map.BindingAttributeOf(type, attribute.Key),
             attribute => StoredForm(specification, type, attribute.Key, attribute.Value),
             StringComparer.Ordinal);
+
+    /// <summary>Whether <paramref name="attribute"/> of <paramref name="type"/> is <c>fixed</c> (§4.3), which a writer never writes.</summary>
+    private static bool IsFixed(DislSpecification specification, string type, string attribute) =>
+        specification.Metamodel.TypeOf(type) is { } declared && declared.Attributes.TryGetValue(attribute, out var definition) && definition.IsFixed;
 
     private static object? Stored(DislSpecification specification, string type, object? value) => value switch
     {

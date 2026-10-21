@@ -17,6 +17,13 @@ namespace EtAlii.Adp.Specification.Disl;
 /// </remarks>
 internal static class DislValues
 {
+    /// <summary>
+    /// The value a <c>fixed</c> attribute always has (§4.3): its fixed value, a copy of its own; else, when that is
+    /// not a value of its type, what it reads as unset.
+    /// </summary>
+    public static object? Fixed(DislAttribute attribute, DislMetamodel metamodel) =>
+        attribute.FixedValue is { } value ? Copy(value) : Unset(attribute, metamodel);
+
     /// <summary>What an unset attribute reads as: its default, else its type's zero value (§4.3).</summary>
     public static object? Unset(DislAttribute attribute, DislMetamodel metamodel)
     {

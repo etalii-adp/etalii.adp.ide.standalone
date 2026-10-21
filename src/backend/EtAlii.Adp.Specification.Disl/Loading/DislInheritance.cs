@@ -206,6 +206,7 @@ internal static class DislInheritance
             attributes[member.Name] = new DislAttribute(member.Name, type ?? "json", many, literalDefault, declaredBy, member.Value)
             {
                 DefaultValue = literalDefault is { } literal ? DislLiterals.FromJson(literal, type ?? "json", many, known.DataTypes) : null,
+                FixedValue = member.Value.TryGetProperty("fixed", out var declaredFixed) ? DislLiterals.FromJson(declaredFixed, type ?? "json", many, known.DataTypes) : null,
             };
         }
         return attributes;
