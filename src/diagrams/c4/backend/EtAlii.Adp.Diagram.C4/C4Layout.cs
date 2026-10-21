@@ -36,8 +36,6 @@ public sealed record C4Layout(
 /// </remarks>
 public static class C4LayoutEngine
 {
-    private const double Tolerance = 0.000001f;
-
     /// <param name="view">The view to compute the layout for.</param>
     /// <param name="metrics">The metrics of the view.</param>
     /// <param name="authored">
@@ -73,7 +71,7 @@ public static class C4LayoutEngine
 
         if (view.Kind == C4ViewKind.Deployment)
         {
-            return ComputeNested(workspace, view, members, metrics, authored, direction, rankSeparation, nodeSeparation);
+            return C4BoundaryPacker.ComputeNested(workspace, view, members, metrics, authored, direction, rankSeparation, nodeSeparation);
         }
 
         var sizes = members.ToDictionary(
@@ -100,8 +98,8 @@ public static class C4LayoutEngine
             }
         }
 
-        var boundaries = BoundariesFor(workspace, view, members, boxes, metrics);
-        boundaries = PushOutsiders(workspace, view, members, boxes, boundaries, metrics);
+        var boundaries = C4BoundaryPacker.BoundariesFor(workspace, view, members, boxes, metrics);
+        boundaries = C4BoundaryPacker.PushOutsiders(workspace, view, members, boxes, boundaries, metrics);
         return new C4Layout(boxes, boundaries, authoredIgnored);
     }
 
@@ -194,174 +192,11 @@ public static class C4LayoutEngine
         return element.Technology.Length > 0 ? $"[{type}: {element.Technology}]" : $"[{type}]";
     }
 
-    private static Rect MeasureOf(C4Workspace workspace, C4Element element, C4Metrics metrics)
+    internal static Rect MeasureOf(C4Workspace workspace, C4Element element, C4Metrics metrics)
     {
         var displayed = Displayed(workspace, element);
         return metrics.Measure(displayed.Name, TypeLineOf(displayed), displayed.Description);
     }
-
-    /// <summary>
-    /// A deployment view's layout: nested rather than flat. Deployment elements are joined by
-    /// what runs inside what, not by relationships, so the flat ranking put every one of them in
-    /// rank 0 - one long row with nothing inside anything (c4-diagrams Requirement 9.2). Here a
-    /// deployment node that hosts something on the view is drawn as a boundary around what it
-    /// hosts, to any depth, and the siblings inside each node are ranked along the
-    /// relationships between them as a flat view is.
-    /// </summary>
-    /// <remarks>
-    /// A position the user arranged is honoured only for an element no node encloses: one
-    /// inside a node is placed by it, or a drag could carry it out of the node it runs on.
-    /// </remarks>
-    private static C4Layout ComputeNested(
-        C4Workspace workspace,
-        C4View view,
-        IReadOnlyList<C4Element> members,
-        C4Metrics metrics,
-        IReadOnlyDictionary<string, C4SidecarPosition>? authored,
-        string direction,
-        int rankSeparation,
-        int nodeSeparation)
-    {
-        var byId = members.ToDictionary(element => element.Id, StringComparer.OrdinalIgnoreCase);
-
-        var hosts = members.ToDictionary(element => element.Id, HostOf, StringComparer.OrdinalIgnoreCase);
-        var hosted = members
-            .Where(element => hosts[element.Id] is not null)
-            .ToLookup(element => hosts[element.Id]!, StringComparer.OrdinalIgnoreCase);
-        var edges = DeploymentRelationshipsOf(workspace, members)
-            .Select(relationship => (relationship.SourceId, relationship.DestinationId))
-            .ToArray();
-
-        var padding = metrics.BoundaryPadding;
-        var boxes = new Dictionary<string, Rect>(StringComparer.OrdinalIgnoreCase);
-        var boundaries = new List<C4Boundary>();
-
-        (Dictionary<string, Rect> topBoxes, List<C4Boundary> topBoundaries, _, _) = Arrange(members.Where(element => hosts[element.Id] is null).ToArray());
-        foreach ((string id, Rect box) in topBoxes)
-        {
-            boxes[id] = box;
-        }
-
-        boundaries.AddRange(topBoundaries);
-
-        var hasAuthored = authored is { Count: > 0 } && authored.Keys.Any(boxes.ContainsKey);
-        var authoredIgnored = hasAuthored && view.AutoLayout is not null;
-        if (hasAuthored && !authoredIgnored)
-        {
-            foreach ((string id, C4SidecarPosition position) in authored!)
-            {
-                if (boxes.TryGetValue(id, out var box) && byId.TryGetValue(id, out var element) && hosts[element.Id] is null)
-                {
-                    boxes[id] = box with { X = Math.Round(position.X, 2), Y = Math.Round(position.Y, 2) };
-                }
-            }
-        }
-
-        return new C4Layout(boxes, boundaries, authoredIgnored);
-
-        // Lays out one set of siblings with its top-left corner at the origin, returning every box
-        // and boundary inside it relative to that corner, and the extent it takes up.
-        (Dictionary<string, Rect> Boxes, List<C4Boundary> Boundaries, double Width, double Height) Arrange(IReadOnlyList<C4Element> siblings)
-        {
-            var sizes = new Dictionary<string, Rect>(StringComparer.OrdinalIgnoreCase);
-            var inner = new Dictionary<string, (Dictionary<string, Rect> Boxes, List<C4Boundary> Boundaries)>(StringComparer.OrdinalIgnoreCase);
-            foreach (var sibling in siblings)
-            {
-                var children = hosted[sibling.Id].ToArray();
-                if (children.Length == 0)
-                {
-                    sizes[sibling.Id] = MeasureOf(workspace, sibling, metrics);
-                    continue;
-                }
-
-                (Dictionary<string, Rect> childBoxes, List<C4Boundary> childBoundaries, double width, double height) = Arrange(children);
-                inner[sibling.Id] = (childBoxes, childBoundaries);
-                var labelWidth = TextMetric.WidthOf(BoundaryLabelOf(sibling), metrics.FontSize) + 2 * metrics.HorizontalPadding;
-                sizes[sibling.Id] = new Rect(0, 0, Math.Round(Math.Max(width + 2 * padding, labelWidth), 2), Math.Round(height + 2 * padding + metrics.FontSize * metrics.LineHeight, 2));
-            }
-
-            // Rank the siblings along the relationships between them, each end standing in for
-            // the sibling that hosts it.
-            var siblingIds = siblings.Select(element => element.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-            var siblingEdges = edges
-                .Select(edge => (SourceId: SiblingOf(edge.SourceId), DestinationId: SiblingOf(edge.DestinationId)))
-                .Where(edge => edge.SourceId is not null && edge.DestinationId is not null && !string.Equals(edge.SourceId, edge.DestinationId, StringComparison.OrdinalIgnoreCase))
-                .Select(edge => (edge.SourceId!, edge.DestinationId!));
-            var ranks = Rank(siblings, siblingEdges);
-
-            var placed = Place(siblings, sizes, ranks, direction, rankSeparation, nodeSeparation);
-            var left = placed.Values.Min(box => box.X);
-            var top = placed.Values.Min(box => box.Y);
-
-            var resultBoxes = new Dictionary<string, Rect>(StringComparer.OrdinalIgnoreCase);
-            var resultBoundaries = new List<C4Boundary>();
-            foreach (var sibling in siblings)
-            {
-                var box = placed[sibling.Id] with { X = Math.Round(placed[sibling.Id].X - left, 2), Y = Math.Round(placed[sibling.Id].Y - top, 2) };
-                if (!inner.TryGetValue(sibling.Id, out var contents))
-                {
-                    resultBoxes[sibling.Id] = box;
-                    continue;
-                }
-
-                // Outermost first, so a canvas drawing them in order puts the inner ones on top.
-                resultBoundaries.Add(new C4Boundary($"{C4Boundary.IdPrefix}{sibling.Id}", sibling.Name, BoundaryKindOf(sibling), box));
-                var dx = box.X + padding;
-                var dy = box.Y + padding;
-                foreach ((string id, Rect child) in contents.Boxes)
-                {
-                    resultBoxes[id] = Offset(child, dx, dy);
-                }
-
-                resultBoundaries.AddRange(contents.Boundaries.Select(boundary => boundary with { Box = Offset(boundary.Box, dx, dy) }));
-            }
-
-            var extentWidth = placed.Values.Max(box => box.Right) - left;
-            var extentHeight = placed.Values.Max(box => box.Bottom) - top;
-            return (resultBoxes, resultBoundaries, extentWidth, extentHeight);
-
-            string? SiblingOf(string id)
-            {
-                for (var current = id; current is not null; current = hosts.GetValueOrDefault(current))
-                {
-                    if (siblingIds.Contains(current))
-                    {
-                        return current;
-                    }
-                }
-
-                return null;
-            }
-        }
-
-        // The nearest ancestor that is on the view: a node the view excludes does not stop what
-        // it hosts from being drawn inside the next node up.
-        string? HostOf(C4Element element)
-        {
-            var parentId = element.ParentId;
-            while (parentId is not null)
-            {
-                if (byId.TryGetValue(parentId, out C4Element? elementForParentId))
-                {
-                    return elementForParentId.Id;
-                }
-
-                parentId = workspace.Find(parentId)?.ParentId;
-            }
-
-            return null;
-        }
-    }
-
-    private static Rect Offset(Rect box, double dx, double dy) =>
-        box with { X = Math.Round(box.X + dx, 2), Y = Math.Round(box.Y + dy, 2) };
-
-    /// <summary>What a deployment node's boundary says after its name, in its brackets.</summary>
-    private static string BoundaryKindOf(C4Element element) =>
-        element.Technology.Length > 0 ? $"Deployment Node: {element.Technology}" : "Deployment Node";
-
-    private static string BoundaryLabelOf(C4Element element) => $"{element.Name} [{BoundaryKindOf(element)}]";
 
     /// <summary>
     /// How far each element sits from a source. Longest-path ranking over the relationships the
@@ -382,7 +217,7 @@ public static class C4LayoutEngine
     /// acyclic path, and bounded so a cycle cannot spin. Edges with an end outside the members are
     /// ignored.
     /// </summary>
-    private static Dictionary<string, int> Rank(IReadOnlyList<C4Element> members, IEnumerable<(string SourceId, string DestinationId)> edges)
+    internal static Dictionary<string, int> Rank(IReadOnlyList<C4Element> members, IEnumerable<(string SourceId, string DestinationId)> edges)
     {
         // A C4 identifier matches without regard to case and the layering compares ordinally, so
         // each end is named as its member is.
@@ -400,7 +235,7 @@ public static class C4LayoutEngine
     /// horizontal), centred on the widest rank so the diagram reads as a whole rather than
     /// hugging one edge.
     /// </summary>
-    private static Dictionary<string, Rect> Place(
+    internal static Dictionary<string, Rect> Place(
         IReadOnlyList<C4Element> members,
         Dictionary<string, Rect> sizes,
         Dictionary<string, int> ranks,
@@ -461,214 +296,5 @@ public static class C4LayoutEngine
                 ? pair.Value with { X = Math.Round(extent - pair.Value.Right, 2) }
                 : pair.Value with { Y = Math.Round(extent - pair.Value.Bottom, 2) },
             StringComparer.OrdinalIgnoreCase);
-    }
-
-    /// <summary>
-    /// Moves anything *not* inside a boundary out of it, and re-sizes the boundary
-    /// afterward. A boundary means "these are the parts of that system", so an external system
-    /// drawn inside one says the opposite of what the diagram means - and the layered layout,
-    /// which ranks by relationship distance, has no reason on its own to keep them apart
-    /// (found by the manual pass).
-    /// </summary>
-    private static IReadOnlyList<C4Boundary> PushOutsiders(
-        C4Workspace workspace,
-        C4View view,
-        IReadOnlyList<C4Element> members,
-        Dictionary<string, Rect> boxes,
-        IReadOnlyList<C4Boundary> boundaries,
-        C4Metrics metrics)
-    {
-        if (boundaries.Count == 0 || view.ScopeId is not { } scopeId)
-        {
-            return boundaries;
-        }
-
-        var inside = members
-            .Where(element => string.Equals(element.ParentId, scopeId, StringComparison.OrdinalIgnoreCase))
-            .Select(element => element.Id)
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-        var boundary = boundaries[0].Box;
-        var outsiders = members.Where(element => !inside.Contains(element.Id)).Select(element => element.Id).ToArray();
-        var pushedVertically = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
-
-        foreach (var id in outsiders)
-        {
-            var box = boxes[id];
-            if (!box.Overlaps(boundary))
-            {
-                continue;
-            }
-
-            // Out by the shortest route, so an element that merely clips the edge does not fly
-            // across the diagram.
-            var left = box.Right - boundary.X + metrics.NodeSeparation;
-            var right = boundary.Right - box.X + metrics.NodeSeparation;
-            var up = box.Bottom - boundary.Y + metrics.NodeSeparation;
-            var down = boundary.Bottom - box.Y + metrics.NodeSeparation;
-            var shortest = Math.Min(Math.Min(left, right), Math.Min(up, down));
-
-            boxes[id] = Math.Abs(shortest - left) < Tolerance ? box with { X = Math.Round(box.X - left, 2) }
-                : Math.Abs(shortest - right) < Tolerance ? box with { X = Math.Round(box.X + right, 2) }
-                : Math.Abs(shortest - up) < Tolerance ? box with { Y = Math.Round(box.Y - up, 2) }
-                : box with { Y = Math.Round(box.Y + down, 2) };
-            pushedVertically[id] = Math.Abs(shortest - up) < Tolerance || Math.Abs(shortest - down) < Tolerance;
-        }
-
-        Spread(boxes, outsiders, pushedVertically, metrics.NodeSeparation);
-
-        // The boundary is sized to its members, which did not move - but recomputing keeps this
-        // honest if that ever changes.
-        return BoundariesFor(workspace, view, members, boxes, metrics);
-    }
-
-
-    /// <summary>
-    /// The boundary a view draws, when it has one: a container view encloses its system's
-    /// containers, a component view its container's components (Requirements 6.5, 7.3). Sized
-    /// to its contents with a margin, so it never clips what it contains (Requirement 8.6).
-    /// </summary>
-    private static IReadOnlyList<C4Boundary> BoundariesFor(
-        C4Workspace workspace,
-        C4View view,
-        IReadOnlyList<C4Element> members,
-        IReadOnlyDictionary<string, Rect> boxes,
-        C4Metrics metrics)
-    {
-        if (view.Kind is not (C4ViewKind.Container or C4ViewKind.Component) || view.ScopeId is not { } scopeId)
-        {
-            return [];
-        }
-
-        var scope = workspace.Find(scopeId);
-        if (scope is null)
-        {
-            return [];
-        }
-
-        var inside = members
-            .Where(element => string.Equals(element.ParentId, scope.Id, StringComparison.OrdinalIgnoreCase))
-            .Select(element => boxes[element.Id])
-            .ToArray();
-
-        if (inside.Length == 0)
-        {
-            return [];
-        }
-
-        var padding = metrics.BoundaryPadding;
-        var x = inside.Min(box => box.X) - padding;
-        var y = inside.Min(box => box.Y) - padding;
-        var right = inside.Max(box => box.Right) + padding;
-        // Extra room at the foot for the boundary's own label.
-        var bottom = inside.Max(box => box.Bottom) + padding + metrics.FontSize * metrics.LineHeight;
-
-        var kind = view.Kind == C4ViewKind.Container ? "Software System" : "Container";
-        return [new C4Boundary($"{C4Boundary.IdPrefix}{scope.Id}", scope.Name, kind, new Rect(Math.Round(x, 2), Math.Round(y, 2), Math.Round(right - x, 2), Math.Round(bottom - y, 2)))];
-    }
-    /// <summary>
-    /// Separates outsiders that landed on each other on the way out of a boundary.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// Each one leaves by its own shortest route, knowing nothing of the others, so two that
-    /// share an edge arrive at the same place: on the C4 worked example's container view the
-    /// customer and the mainframe banking system both left through the top and ended up drawn
-    /// one on top of the other.
-    /// </para>
-    /// <para>
-    /// This runs in two stages, and the first is the one that matters. Nudging pairs apart one
-    /// at a time - which is all this used to do - cannot separate two boxes that are exactly
-    /// coincident: identical geometry means identical arithmetic, so both compute the same
-    /// escape and move together, in lockstep, for as many passes as they are given. Coincidence
-    /// is not a corner case either. Two elements in different ranks routinely share a position
-    /// along their rank, and pushing both out of the same edge sets the other coordinate equal
-    /// as well.
-    /// </para>
-    /// <para>
-    /// So the first stage sweeps rather than nudges: everything pushed off the same axis is laid
-    /// out in order along the perpendicular one, each element placed after the last. That
-    /// terminates in a single pass, cannot leave two members of a group overlapping, and moves
-    /// elements only forwards - so the coordinate that carried them clear of the boundary is
-    /// never touched and nothing walks back inside. The second stage is the old pairwise nudge,
-    /// kept for the collisions a per-axis sweep cannot see: a vertically pushed element against
-    /// a horizontally pushed one, or against an outsider that never needed pushing at all.
-    /// </para>
-    /// </remarks>
-    private static void Spread(
-        Dictionary<string, Rect> boxes,
-        IReadOnlyList<string> outsiders,
-        Dictionary<string, bool> pushedVertically,
-        double nodeSeparation)
-    {
-        if (pushedVertically.Count == 0)
-        {
-            return;
-        }
-
-        // Stage one: everything pushed vertically spreads along X, everything pushed
-        // horizontally spreads along Y.
-        SweepApart(boxes, pushedVertically.Where(entry => entry.Value).Select(entry => entry.Key), horizontally: true, nodeSeparation);
-        SweepApart(boxes, pushedVertically.Where(entry => !entry.Value).Select(entry => entry.Key), horizontally: false, nodeSeparation);
-
-        // Stage two, the shared layout's push-off rule (code-structure T239): each pushed outsider
-        // moves off whatever it still overlaps along the axis it was not pushed out on, bounded so a
-        // set that cannot be separated cannot spin either. A tie goes to the ordinally smaller id,
-        // which is arbitrary but never the same answer for both.
-        var index = outsiders.Select((id, position) => (id, position)).ToDictionary(entry => entry.id, entry => entry.position, StringComparer.OrdinalIgnoreCase);
-        var arranged = outsiders.Select(id => boxes[id]).ToArray();
-        var movers = pushedVertically.Select(entry => (index[entry.Key], entry.Value)).ToArray();
-        var tieRank = new int[outsiders.Count];
-        foreach ((string id, int rank) in outsiders.Order(StringComparer.Ordinal).Select((id, rank) => (id, rank)))
-        {
-            tieRank[index[id]] = rank;
-        }
-
-        OverlapResolver.PushOffAlongAxes(arranged, movers, tieRank, nodeSeparation, decimals: 2);
-        for (var position = 0; position < outsiders.Count; position++)
-        {
-            boxes[outsiders[position]] = arranged[position];
-        }
-    }
-
-    /// <summary>
-    /// Lays <paramref name="ids"/> out in a row (or a column) so no two of them overlap on that
-    /// axis - and therefore not at all.
-    /// </summary>
-    /// <remarks>
-    /// Order is by current position and then by id, so the result is what the rank layout already
-    /// intended and is the same on every run rather than the order a dictionary happened to
-    /// enumerate. Elements only ever move forwards along the axis: an element already clear of
-    /// its predecessor is left exactly where it was.
-    /// </remarks>
-    private static void SweepApart(
-        Dictionary<string, Rect> boxes,
-        IEnumerable<string> ids,
-        bool horizontally,
-        double nodeSeparation)
-    {
-        var ordered = ids
-            .OrderBy(id => horizontally ? boxes[id].X : boxes[id].Y)
-            .ThenBy(id => id, StringComparer.Ordinal)
-            .ToArray();
-
-        double? cursor = null;
-        foreach (var id in ordered)
-        {
-            var box = boxes[id];
-            var start = horizontally ? box.X : box.Y;
-            var size = horizontally ? box.Width : box.Height;
-
-            if (cursor is { } from && start < from)
-            {
-                box = horizontally
-                    ? box with { X = Math.Round(from, 2) }
-                    : box with { Y = Math.Round(from, 2) };
-                boxes[id] = box;
-                start = from;
-            }
-
-            cursor = start + size + nodeSeparation;
-        }
     }
 }

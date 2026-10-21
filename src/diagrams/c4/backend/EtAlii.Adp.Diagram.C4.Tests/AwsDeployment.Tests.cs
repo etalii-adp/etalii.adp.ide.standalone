@@ -173,4 +173,21 @@ public class AwsDeploymentTests
             }
         }
     }
+
+    [Fact]
+    public void AHandPlacedPosition_IsIgnored_ForAnElementInsideANode()
+    {
+        // Arrange: a position far off for every card the view draws, each of which runs on a node.
+        // Without autoLayout, which would ignore every hand-placed position and so hide the rule.
+        var view = Workspace.Views[0] with { AutoLayout = null };
+        var computed = C4LayoutEngine.Compute(Workspace, view, C4Metrics.Default);
+        var authored = computed.Boxes.Keys.ToDictionary(id => id, _ => new C4SidecarPosition(-1000, -1000), StringComparer.OrdinalIgnoreCase);
+
+        // Act.
+        var layout = C4LayoutEngine.Compute(Workspace, view, C4Metrics.Default, authored);
+
+        // Assert: the node places what it hosts, or a drag could carry a card out of the node it runs on.
+        Assert.False(layout.AuthoredPositionsIgnored);
+        Assert.Equal(computed.Boxes.OrderBy(pair => pair.Key, StringComparer.Ordinal), layout.Boxes.OrderBy(pair => pair.Key, StringComparer.Ordinal));
+    }
 }
