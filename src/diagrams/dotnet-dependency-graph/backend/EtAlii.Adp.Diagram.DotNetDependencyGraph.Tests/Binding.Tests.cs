@@ -73,7 +73,7 @@ public sealed class BindingTests
         var claims = Binding().Claims;
 
         // Assert: a solution in the workspace is not a diagram until the user adds one, as today.
-        Assert.Equal([Diagram.AlternateDocumentExtension, Diagram.DocumentExtension], claims.Extensions);
+        Assert.Equal([Diagram.DocumentExtension, Diagram.AlternateDocumentExtension], claims.Extensions);
         Assert.Equal([Diagram.DependencyGraph.Origin.Key], claims.Origins);
         Assert.True(claims.Shared);
         Assert.True(claims.RegistrationOnly);

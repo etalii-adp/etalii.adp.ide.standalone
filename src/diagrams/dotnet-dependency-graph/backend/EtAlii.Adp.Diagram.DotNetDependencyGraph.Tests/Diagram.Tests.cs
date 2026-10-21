@@ -33,6 +33,18 @@ public class DiagramTests
     }
 
     [Fact]
+    public void ThePrimaryExtension_IsTheXmlSerialization_InTheOrderOfTheBindingsClaims()
+    {
+        // Arrange, act and assert.
+        // Q4, ruled 2026-10-11: a new document is a .slnx, and core names a new body by the primary
+        // extension, so .slnx is the primary and .sln the alternate - the order of the binding's
+        // claims.extensions, in which FBL 8.2 takes the first that exists.
+        Assert.Equal(".slnx", Diagram.DependencyGraph.Extension);
+        Assert.Equal(".sln", Diagram.DependencyGraph.AlternateExtension);
+        Assert.Equal([Diagram.DependencyGraph.Extension, Diagram.DependencyGraph.AlternateExtension], DotNetBody.Binding.Claims.Extensions);
+    }
+
+    [Fact]
     public void TheDefinition_SharesItsExtension_SoASolutionBecomesADiagramOnlyWhenSaidSo()
     {
         // Arrange, act and assert.

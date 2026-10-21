@@ -20,6 +20,11 @@ namespace EtAlii.Adp.Hierarchy;
 /// type whose body may have one of several extensions, where the registration's own name does
 /// not say which file beside it is the body.
 /// </param>
+/// <param name="NamedBody">
+/// The file a registration of an existing body names in a <c>body:</c> header, or empty for none: set
+/// when the registration's own name would derive another file beside it, as it does for a body of a
+/// type's alternate extension beside a file of its primary one.
+/// </param>
 /// <remarks>
 /// The command carries no diagram type of its own: what a diagram file starts as, and what
 /// its body starts as, is decided where the user chose it - the provider resolves the type's
@@ -33,7 +38,8 @@ public sealed record CreateDiagramFileCommand(
     string FirstLine,
     string SiblingFileName = "",
     string SiblingContent = "",
-    bool NamesBody = false) : ICommand
+    bool NamesBody = false,
+    string NamedBody = "") : ICommand
 {
     public bool HasSibling => SiblingFileName.Length > 0;
 }
@@ -63,7 +69,9 @@ public sealed class CreateDiagramFileCommandHandler : ICommandHandler<CreateDiag
             return Task.FromResult(CommandResult.Failure("The folder no longer exists."));
         }
 
-        var registration = AdpRegistration.Compose(command.FirstLine, command is { NamesBody: true, HasSibling: true } ? command.SiblingFileName : null);
+        var registration = AdpRegistration.Compose(
+            command.FirstLine,
+            command is { NamesBody: true, HasSibling: true } ? command.SiblingFileName : command.NamedBody.Length > 0 ? command.NamedBody : null);
 
         var files = new List<(string FileName, string Content)> { (command.FileName, registration) };
         if (command.HasSibling)

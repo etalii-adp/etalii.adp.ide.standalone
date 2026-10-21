@@ -236,4 +236,94 @@ public class DiagramFilePairDerivationTests : IDisposable
             TestFolder.TryDelete(elsewhere);
         }
     }
+
+    // ---- a type with two serializations ------------------------------------------------
+    //
+    // A header-less registration derives its body from the type's primary extension, and from the
+    // alternate when no file of the primary is there (FBL 8.2's "the first that exists, in the order of
+    // claims.extensions"; dotnet-dependency-graph-disl-fbl task 9, ruled 2026-10-11). The names are
+    // neutral: core names no tool.
+
+    private static readonly DiagramDefinition _twoSerializations =
+        new(new ToolOrigin("test", "two-serializations"), "Two serializations", "A test type.", Extension: ".new", SharedExtension: true, AlternateExtension: ".old");
+
+    private readonly IDiagramDefinitionCatalog _twoCatalog = new DiagramDefinitionCatalog { All = [_twoSerializations] };
+
+    [Fact]
+    public void AHeaderlessRegistration_BesideOnlyTheAlternate_DerivesTheAlternate()
+    {
+        // Arrange.
+        var adp = Write("solution.adp", "test/two-serializations");
+        Write("solution.old", "old");
+
+        // Act.
+        var body = DiagramFilePair.BodyOf(adp, _twoCatalog, projectRoot: null);
+
+        // Assert: opened, and owned as an unqualified registration's sibling always is.
+        Assert.NotNull(body);
+        Assert.Equal(IoPath.Combine(_root, "solution.old"), body.Value.Path);
+        Assert.True(body.Value.IsOwned);
+        Assert.Equal(IoPath.Combine(_root, "solution.old"), DiagramFilePair.SiblingOf(adp, _twoCatalog));
+    }
+
+    [Fact]
+    public void AHeaderlessRegistration_BesideBothSerializations_DerivesThePrimary()
+    {
+        // Arrange.
+        var adp = Write("solution.adp", "test/two-serializations");
+        Write("solution.old", "old");
+        Write("solution.new", "new");
+
+        // Act.
+        var body = DiagramFilePair.BodyOf(adp, _twoCatalog, projectRoot: null);
+
+        // Assert.
+        Assert.Equal(IoPath.Combine(_root, "solution.new"), body!.Value.Path);
+    }
+
+    [Fact]
+    public void AHeaderlessRegistration_BesideNeither_DerivesThePrimary()
+    {
+        // Arrange: the body a later Add would create, so a missing body is reported under the primary's name.
+        var adp = Write("solution.adp", "test/two-serializations");
+
+        // Act.
+        var body = DiagramFilePair.BodyOf(adp, _twoCatalog, projectRoot: null);
+
+        // Assert.
+        Assert.Equal(IoPath.Combine(_root, "solution.new"), body!.Value.Path);
+    }
+
+    [Fact]
+    public void AQualifiedRegistration_BesideOnlyTheAlternateOfItsSubject_DerivesThatAlternate()
+    {
+        // Arrange.
+        var adp = Write("solution.first.adp", "test/two-serializations");
+        Write("solution.old", "old");
+
+        // Act.
+        var body = DiagramFilePair.BodyOf(adp, _twoCatalog, projectRoot: null);
+
+        // Assert: shared, as a qualified reading's subject always is.
+        Assert.Equal(IoPath.Combine(_root, "solution.old"), body!.Value.Path);
+        Assert.False(body.Value.IsOwned);
+        Assert.Null(body.Value.AmbiguousWith);
+    }
+
+    [Fact]
+    public void AQualifiedRegistration_WhoseWholeNameHasOnlyTheAlternate_DerivesTheWholeName()
+    {
+        // Arrange: the longer reading exists in the alternate only, the shorter in the primary.
+        var adp = Write("my.config.adp", "test/two-serializations");
+        Write("my.config.old", "old");
+        Write("my.new", "new");
+
+        // Act.
+        var body = DiagramFilePair.BodyOf(adp, _twoCatalog, projectRoot: null);
+
+        // Assert.
+        Assert.Equal(IoPath.Combine(_root, "my.config.old"), body!.Value.Path);
+        Assert.Equal(IoPath.Combine(_root, "my.new"), body.Value.AmbiguousWith);
+        Assert.True(body.Value.IsOwned);
+    }
 }

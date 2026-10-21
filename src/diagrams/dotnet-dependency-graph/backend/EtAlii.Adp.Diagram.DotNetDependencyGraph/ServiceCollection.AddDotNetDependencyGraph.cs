@@ -1,4 +1,6 @@
 ﻿using EtAlii.Adp.Context;
+using EtAlii.Adp.Documents;
+using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.Sessions;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -39,19 +41,17 @@ public static class ServiceCollectionAddDotNetDependencyGraphExtension
         services.AddSingleton<DependencyGraphStore>();
         services.AddSingleton<IDependencyGraphStore>(provider => provider.GetRequiredService<DependencyGraphStore>());
 
-        // A new diagram's body is an empty solution in the newer serialization: valid, openable by
-        // the .NET tooling (`dotnet solution list` answers "No projects found in the solution."),
-        // and drawn as a graph with nothing in it until the user adds projects with their own
-        // tools. It has to exist: Requirement 2.3 names the solution through a body: header, core
-        // honours one only for a type that declares a document extension
-        // (DiagramFilePair.BodyOf), and the host refuses to start for such a type without an
-        // empty document. That this does not breach the never-write-a-solution requirement is
-        // not a judgement call: core refuses to create at a name anything already occupies (the
-        // File.Exists(siblingPath) || Directory.Exists(siblingPath) guard in
-        // EtAlii.Adp.Hierarchy/AddDiagramContextActionProvider.cs), so creation can only ever
-        // produce a new file, and the requirement's target - the diagram never mutating the build
-        // it describes - is untouched. The ordinary way in is registering a solution that exists.
-        services.AddEmptyDocument(Diagram.DependencyGraph.Origin, "<Solution>\r\n</Solution>\r\n");
+        // A new diagram's body is the binding's template, an empty solution in the newer
+        // serialization under its own extension, .slnx: valid, openable by the .NET tooling
+        // (`dotnet sln list` answers "No projects found in the solution."), and drawn as a graph
+        // with nothing in it until the user adds projects with their own tools (Requirement 5.3,
+        // Q4). It has to exist: the host refuses to start for a type that declares a document
+        // extension without a new document. That this does not breach the never-write-a-solution
+        // requirement is not a judgement call: core refuses to create at a name either
+        // serialization already occupies (DiagramAddOptions.PlanNewDocument in EtAlii.Adp.Hierarchy),
+        // so creation can only ever produce a new file. The ordinary way in is registering a
+        // solution that exists.
+        services.AddSingleton<IDiagramDocumentFactory>(new TemplateDocumentFactory(Diagram.DependencyGraph, DotNetBody.Binding));
 
         services.AddSingleton<DependencyElementMapper>();
         services.AddSingleton<IDiagramSessionFactory, DotNetDependencyGraphSessionFactory>();

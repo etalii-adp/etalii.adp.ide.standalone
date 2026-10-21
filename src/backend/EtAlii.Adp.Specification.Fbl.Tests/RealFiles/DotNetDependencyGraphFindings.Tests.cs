@@ -25,8 +25,13 @@ namespace EtAlii.Adp.Specification.Fbl.Tests.RealFiles;
 /// </remarks>
 public sealed class DotNetDependencyGraphFindingsTests
 {
-    /// <summary>The primary extension of the .NET dependency graph today, from which core derives a header-less registration's body.</summary>
-    private const string PrimaryExtension = ".sln";
+    /// <summary>
+    /// The extensions of the .NET dependency graph, from which core derives a header-less registration's body: the
+    /// primary, and the alternate where no file of the primary is there. Until task 9 the primary was <c>.sln</c> and the
+    /// alternate derived nothing.
+    /// </summary>
+    private static readonly DiagramDefinition _definition =
+        new(new ToolOrigin("dotnet", "dependency-graph"), ".NET dependency graph", Extension: ".slnx", SharedExtension: true, AlternateExtension: ".sln");
 
     /// <summary>The binding of the requirements' appendix, as far as finding a body depends on it: its claims.</summary>
     private const string DraftBinding = """
@@ -52,17 +57,19 @@ public sealed class DotNetDependencyGraphFindingsTests
         // Arrange.
         var registration = Path.Combine(Fixtures, "headerless", "Both.adp");
 
-        // Act: core derives the sibling from the primary extension; FBL 8.2 takes the first of
-        // claims.extensions that exists, in the order the draft binding gives them.
-        var core = DiagramFilePair.SiblingPathFor(registration, PrimaryExtension);
+        // Act: core derives the sibling from the primary extension, falling back to the alternate; FBL 8.2
+        // takes the first of claims.extensions that exists, in the order the draft binding gives them.
+        var core = DiagramFilePair.SiblingPathFor(registration, _definition);
         var located = BodyLocator.Locate(registration, RegistrationDocument.Read(File.ReadAllBytes(registration)), Binding(), Fixtures);
 
         var observed = string.Equals(core, located.Path, StringComparison.Ordinal)
             ? null
             : $"core opens {Path.GetFileName(core)}; FBL 8.2 under the draft's claims.extensions [.slnx, .sln] opens {Path.GetFileName(located.Path)}";
 
-        // Assert.
-        Shows("B11", observed, "core opens Both.sln; FBL 8.2 under the draft's claims.extensions [.slnx, .sln] opens Both.slnx");
+        // Assert: resolved by task 9, the Q4 change of the one opening that differs (ruled 2026-10-11). Until then this
+        // pinned "core opens Both.sln; FBL 8.2 under the draft's claims.extensions [.slnx, .sln] opens Both.slnx".
+        Assert.Null(observed);
+        Assert.Equal("Both.slnx", Path.GetFileName(core));
     }
 
     [Fact]

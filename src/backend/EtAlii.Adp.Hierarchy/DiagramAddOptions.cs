@@ -44,8 +44,9 @@ internal sealed class DiagramAddOptions
 
     /// <summary>
     /// The diagram types that could claim <paramref name="target"/>, which is a file: those
-    /// declaring its extension. Empty when nothing declares it, or when an <c>.adp</c> already
-    /// sits beside it - a file that is already a diagram is opened, not registered again.
+    /// declaring its extension, the alternate a second serialization of the format uses included.
+    /// Empty when nothing declares it, or when an <c>.adp</c> already sits beside it - a file that
+    /// is already a diagram is opened, not registered again.
     /// </summary>
     public IReadOnlyList<DiagramDefinition> RegistrableFor(ContextTarget target)
     {
@@ -63,7 +64,7 @@ internal sealed class DiagramAddOptions
         return
         [
             .. _definitions
-                .Where(definition => string.Equals(definition.Extension, extension, StringComparison.OrdinalIgnoreCase))
+                .Where(definition => definition.DeclaresExtension(extension))
                 .Where(definition => SuggestsFor(definition, target)),
         ];
     }
@@ -137,7 +138,16 @@ internal sealed class DiagramAddOptions
         var fileName = DiagramFileName.WithExtension(IoPath.GetFileNameWithoutExtension(target.ResolvedFullPath));
         _logger.Debug("Registering {File} as a {Origin} diagram", target.ResolvedFullPath, definition.Origin.Key);
 
-        return (new CreateDiagramFileCommand(folder, fileName, definition.Origin.MimeType), "");
+        // A registration without a body: header opens the file its own name derives, which is the
+        // file being registered unless another serialization of the same name sits beside it - a
+        // body of the alternate extension beside one of the primary. Then it names its body, so
+        // what was registered is what opens.
+        var derived = DiagramFilePair.SiblingPathFor(IoPath.Combine(folder, fileName), definition);
+        var namedBody = string.Equals(IoPath.GetFullPath(derived), IoPath.GetFullPath(target.ResolvedFullPath), StringComparison.Ordinal)
+            ? ""
+            : IoPath.GetFileName(target.ResolvedFullPath);
+
+        return (new CreateDiagramFileCommand(folder, fileName, definition.Origin.MimeType, NamedBody: namedBody), "");
     }
 
     /// <summary>
@@ -222,13 +232,21 @@ internal sealed class DiagramAddOptions
 
         var baseName = DiagramFileName.StripExtension(fileName);
         var siblingFileName = baseName + definition.Extension;
-        var siblingContent = factory.CreateEmptyDocument(baseName);
 
-        var siblingPath = IoPath.Combine(target.ResolvedFullPath, siblingFileName);
-        if (File.Exists(siblingPath) || Directory.Exists(siblingPath))
+        // Nothing is ever written over: not the body's own name, and not the alternate serialization
+        // of it either, beside which a registration without a body: header would open the new file
+        // rather than the one that was there.
+        string[] names = definition.AlternateExtension.Length > 0 ? [siblingFileName, baseName + definition.AlternateExtension] : [siblingFileName];
+        foreach (var taken in names)
         {
-            return (null, $"An item named '{siblingFileName}' already exists in this folder.");
+            var takenPath = IoPath.Combine(target.ResolvedFullPath, taken);
+            if (File.Exists(takenPath) || Directory.Exists(takenPath))
+            {
+                return (null, $"An item named '{taken}' already exists in this folder.");
+            }
         }
+
+        var siblingContent = factory.CreateEmptyDocument(baseName);
 
         return (Created(target, definition, fileName, siblingFileName, siblingContent), "");
     }

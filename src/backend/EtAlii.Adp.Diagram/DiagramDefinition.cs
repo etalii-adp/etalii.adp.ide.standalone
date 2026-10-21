@@ -77,8 +77,9 @@ public sealed record DiagramDefinition(
     /// Whether this type declares <paramref name="extension"/> - its own, or the alternate a
     /// second serialization of the same format uses (<c>.nt</c> beside <c>.ttl</c> for the RDF
     /// family). The alternate shares the primary's <see cref="SharedExtension"/> stance and
-    /// routes through the same engine; it does not derive registration siblings, so a body
-    /// carrying it registers with an explicit <c>body:</c> header.
+    /// routes through the same engine. A registration without a <c>body:</c> header derives the
+    /// alternate's sibling only where no file of the primary is there, and a body carrying it is
+    /// registered with an explicit <c>body:</c> header where one of the primary is.
     /// </summary>
     public bool DeclaresExtension(string extension) =>
         Extension.Length > 0

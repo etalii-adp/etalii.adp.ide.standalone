@@ -10,6 +10,8 @@
       with this module absent (structure.md's dependency direction), and core learns no .NET,
       MSBuild, NuGet or solution vocabulary from it.
     -->
+    <!-- A new document is made from the binding's template by the shared TemplateDocumentFactory. -->
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Hierarchy\EtAlii.Adp.Hierarchy.csproj" />
     <!-- The format is stated by the binding below, and every solution is read through it by the module's plugin. -->
     <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Specification.Fbl\EtAlii.Adp.Specification.Fbl.csproj" />
     <!-- The property rows are derived from the bundled DISL definition. -->

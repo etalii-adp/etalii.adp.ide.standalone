@@ -220,7 +220,7 @@
       ]
     },
     {
-      "solution": "diagrams/dotnet-dependency-graph/backend/EtAlii.Adp.Diagram.DotNetDependencyGraph.Tests/Fixtures/new-document/New.sln",
+      "solution": "diagrams/dotnet-dependency-graph/backend/EtAlii.Adp.Diagram.DotNetDependencyGraph.Tests/Fixtures/new-document/New.slnx",
       "sha256": "3c3218784f99806d32d3531be1bdea5b130f5c75458574775e15151459a1027b",
       "projects": [],
       "packages": [],
@@ -516,28 +516,7 @@
     {
       "solution": "diagrams/dotnet-dependency-graph/backend/EtAlii.Adp.Diagram.DotNetDependencyGraph.Tests/Fixtures/solution/Empty.slnx",
       "sha256": "3c3218784f99806d32d3531be1bdea5b130f5c75458574775e15151459a1027b",
-      "projects": [],
-      "packages": [],
-      "references": [],
-      "failures": [],
-      "payloads": [],
-      "rows": [
-        {
-          "target": "",
-          "rows": []
-        },
-        {
-          "target": "parity:unknown",
-          "rows": []
-        }
-      ],
-      "rowsOfAnotherFile": " of a .adp => 0 rows",
-      "write": "refused: A .NET dependency graph shows the solution as it is and changes nothing in it. Edit the project file this value comes from, and the diagram will follow.",
-      "session": [
-        "baseline => 0 elements added",
-        "reparent parity:unknown => A .NET dependency graph is drawn from the solution's own files, so nothing on it can be moved from here. Change a reference in the project file, and the diagram will follow.",
-        "move parity:unknown to (10, 20) => This diagram is read-only."
-      ]
+      "sameAs": "diagrams/dotnet-dependency-graph/backend/EtAlii.Adp.Diagram.DotNetDependencyGraph.Tests/Fixtures/new-document/New.slnx"
     },
     {
       "solution": "diagrams/dotnet-dependency-graph/backend/EtAlii.Adp.Diagram.DotNetDependencyGraph.Tests/Fixtures/solution/Flat.sln",
