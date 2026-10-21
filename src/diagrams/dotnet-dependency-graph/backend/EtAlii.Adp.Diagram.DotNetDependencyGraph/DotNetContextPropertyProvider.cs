@@ -68,8 +68,9 @@ public sealed class DotNetContextPropertyProvider : IContextPropertyProvider
             return Empty;
         }
 
+        // The rows read the model the shared builder built from the plugin's reading of this graph's body.
         var graph = _store.GetOrLoad(target.ResolvedFullPath);
-        return ValueTask.FromResult(DotNetDefinition.Rows(graph, target.ElementId));
+        return ValueTask.FromResult(DotNetDefinition.Rows(_store.BodyOf(graph), target.ElementId));
     }
 
     private static bool IsSolution(string path)

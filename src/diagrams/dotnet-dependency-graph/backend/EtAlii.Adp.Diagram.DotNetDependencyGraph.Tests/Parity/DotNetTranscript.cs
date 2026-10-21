@@ -105,7 +105,7 @@ internal static partial class DotNetTranscript
             {
                 json.WriteStartObject();
                 json.WriteString("graph", name);
-                await WriteGraphAsync(json, graph, @"C:\parity\Parity.slnx", cancellationToken);
+                await WriteGraphAsync(json, DotNetBody.Of(graph), @"C:\parity\Parity.slnx", cancellationToken);
                 json.WriteEndObject();
             }
 
@@ -154,7 +154,7 @@ internal static partial class DotNetTranscript
         }
 
         recorded[key] = relative;
-        await WriteGraphAsync(json, graph, path, cancellationToken);
+        await WriteGraphAsync(json, store.BodyOf(graph), path, cancellationToken);
 
         // The session's answers that do not depend on a history: a reparent is refused whatever the
         // element, and a move without a history is refused as read-only.
@@ -172,8 +172,9 @@ internal static partial class DotNetTranscript
         json.WriteEndObject();
     }
 
-    private static async Task WriteGraphAsync(Utf8JsonWriter json, DependencyGraphModel graph, string solutionPath, CancellationToken cancellationToken)
+    private static async Task WriteGraphAsync(Utf8JsonWriter json, DotNetBody body, string solutionPath, CancellationToken cancellationToken)
     {
+        var graph = body.Graph;
         json.WritePropertyName("projects");
         json.WriteLines([.. graph.Projects.Select(project => $"{project.Id} | {project.Name} | {project.RelativePath} | [{string.Join(", ", project.TargetFrameworks)}] | {TranscriptText.Quoted(project.DotNetVersion)}")]);
 
@@ -205,7 +206,7 @@ internal static partial class DotNetTranscript
                 .Select(element => TranscriptText.PayloadLine(element.Id, element.X, element.Y, element.Type, element.PayloadTypeUrl, element.Payload, _payloadTypes))]);
         }
 
-        var provider = new DotNetContextPropertyProvider(new FixedStore(graph));
+        var provider = new DotNetContextPropertyProvider(new FixedStore(body));
         List<string> targets =
         [
             .. graph.Projects.Select(project => project.Id),
@@ -309,9 +310,11 @@ internal static partial class DotNetTranscript
     [GeneratedRegex(@"\{src\}[^\s'""]*")]
     private static partial Regex SourcePath();
 
-    /// <summary>A store that holds one graph, whatever it is asked for: the provider's view of a store.</summary>
-    private sealed class FixedStore(DependencyGraphModel graph) : IDependencyGraphStore
+    /// <summary>A store that holds one body, whatever it is asked for: the provider's view of a store.</summary>
+    private sealed class FixedStore(DotNetBody body) : IDependencyGraphStore
     {
-        public DependencyGraphModel GetOrLoad(string diagramPath) => graph;
+        public DependencyGraphModel GetOrLoad(string diagramPath) => body.Graph;
+
+        public DotNetBody BodyOf(DependencyGraphModel graph) => body;
     }
 }

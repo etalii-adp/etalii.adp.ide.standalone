@@ -17,4 +17,10 @@ public interface IDependencyGraphStore
     /// carrying its failures is the answer, because the diagram opens either way.
     /// </summary>
     DependencyGraphModel GetOrLoad(string diagramPath);
+
+    /// <summary>
+    /// The body <paramref name="graph"/> was read from, whose model the property rows read. A store that read no
+    /// solution for it - a test's, holding a graph built by hand - answers the graph as the plugin would deliver it.
+    /// </summary>
+    DotNetBody BodyOf(DependencyGraphModel graph) => DotNetBody.Of(graph);
 }
