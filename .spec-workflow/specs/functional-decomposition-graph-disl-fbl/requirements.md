@@ -87,7 +87,7 @@ The three kinds are those of `causal-loop-disl-fbl`: a **definition defect** is 
 6. **FBL: the wording of a body that cannot be read and of a planner's refusal** (B8, B16). A binding cannot word either.
 7. **DISL: which relation a pointer gesture creates when several relation types claim it** (A9).
 8. **DISL: an order of findings that is not by code and then by line** (A13), in three places: within one code, across the link codes in document order, and by relation for cardinality. The user ruled in chat on 2026-10-11 that today's order stays.
-9. **DISL: a size below its minimum that is clamped on commit, not refused** (A6).
+9. ~~**DISL: a size below its minimum that is clamped on commit, not refused** (A6).~~ Answered by DISL 0.2's `outOfRange: clamp`, which clamps a drag and a typed value alike (ruled in chat 2026-10-21); what remains is the runtime's to do.
 10. **FBL: a number written in quotes** (B2), if the fixture shows FBL refuses what the tool reads.
 
 These are candidates. Requirement 9 says they are recorded with their evidence and reported, and never worked around silently.
