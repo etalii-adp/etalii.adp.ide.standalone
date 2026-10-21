@@ -66,7 +66,7 @@ internal static class FdgDisl
     }
 
     /// <summary>A model of <paramref name="model"/> of its own.</summary>
-    public static DislDiagram Build(FdgModel model)
+    private static DislDiagram Build(FdgModel model)
     {
         ArgumentNullException.ThrowIfNull(model);
 

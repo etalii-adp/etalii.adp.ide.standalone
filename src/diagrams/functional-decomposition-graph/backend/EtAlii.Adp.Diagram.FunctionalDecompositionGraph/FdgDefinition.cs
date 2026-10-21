@@ -79,7 +79,7 @@ internal static class FdgDefinition
     }
 
     /// <summary>The id written in the document, the binding's <c>storedId</c>: empty for an entry without one.</summary>
-    public static string WrittenId(DislElement element)
+    private static string WrittenId(DislElement element)
     {
         ArgumentNullException.ThrowIfNull(element);
         return element.HostAttributes.TryGetValue(FdgDisl.StoredId, out var stored) ? stored as string ?? "" : "";
