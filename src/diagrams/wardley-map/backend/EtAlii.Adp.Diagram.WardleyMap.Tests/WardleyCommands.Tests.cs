@@ -96,6 +96,23 @@ public sealed class WardleyCommandsTests : IDisposable
     }
 
     [Fact]
+    public async Task Add_WritesTheKindInLowerCase_AndADecoratorAfterTheCoordinates()
+    {
+        // Arrange. The kind is accepted in any case and written as the format spells it, and
+        // the toolbox's Market and Ecosystem drop a component carrying that decorator.
+        Write("title Tea\n");
+
+        // Act.
+        var submap = await Execute(new AddWardleyElementCommand(_path, "Submap", "Kitchen", 0.8d, 0.25d));
+        var market = await Execute(new AddWardleyElementCommand(_path, "component", "Tea Shop", 0.35d, 0.6d, WardleyDecorator.Market));
+
+        // Assert. The whole text, because every space and bracket of it is the writer's to get right.
+        Assert.True(submap.IsSuccess, submap.Error);
+        Assert.True(market.IsSuccess, market.Error);
+        Assert.Equal("title Tea\nsubmap Kitchen [0.8, 0.25]\ncomponent Tea Shop [0.35, 0.6] (market)\n", Read());
+    }
+
+    [Fact]
     public async Task Add_ClampsAPositionOutsideTheMap()
     {
         // Arrange.
@@ -299,6 +316,36 @@ public sealed class WardleyCommandsTests : IDisposable
         Assert.Equal("component Payment [0.70, 0.72] (buy)\n", Read());
     }
 
+    // ---- notes and annotations ----------------------------------------------------------------
+
+    [Fact]
+    public async Task AddNote_AppendsItsTrimmedTextBeforeItsPosition()
+    {
+        // Arrange.
+        Write("component Alpha [0.5, 0.5]\n");
+
+        // Act.
+        var result = await Execute(new AddWardleyNoteCommand(_path, "  Standardising soon  ", 0.3d, 0.7d));
+
+        // Assert. A note's text comes first and its position last, unlike an annotation's.
+        Assert.True(result.IsSuccess, result.Error);
+        Assert.Equal("component Alpha [0.5, 0.5]\nnote Standardising soon [0.3, 0.7]\n", Read());
+    }
+
+    [Fact]
+    public async Task AddAnnotation_NumbersOnePastTheHighest_AndWritesItsTrimmedTextAfterItsPosition()
+    {
+        // Arrange. Annotation 2 was deleted, so the next one is 4 rather than a second 3.
+        Write("annotation 1 [0.1, 0.2] First\nannotation 3 [0.4, 0.5] Third\n");
+
+        // Act.
+        var result = await Execute(new AddWardleyAnnotationCommand(_path, "  Fourth  ", 0.3d, 0.7d));
+
+        // Assert.
+        Assert.True(result.IsSuccess, result.Error);
+        Assert.Equal("annotation 1 [0.1, 0.2] First\nannotation 3 [0.4, 0.5] Third\nannotation 4 [0.3, 0.7] Fourth\n", Read());
+    }
+
     // ---- links --------------------------------------------------------------------------------
 
     [Fact]
@@ -314,6 +361,24 @@ public sealed class WardleyCommandsTests : IDisposable
         // Assert. A flow link is written with its own arrow, and its context after a semicolon.
         Assert.True(result.IsSuccess, result.Error);
         Assert.Equal("component Alpha [0.5, 0.5]\ncomponent Beta [0.2, 0.2]\nAlpha+>Beta; cash\n", Read());
+    }
+
+    [Fact]
+    public async Task SetLink_WithoutAContext_WritesTheBareArrow()
+    {
+        // Arrange. A context of nothing but spaces is no context, so it leaves no semicolon.
+        Write("component Alpha [0.5, 0.5]\ncomponent Beta [0.2, 0.2]\ncomponent Gamma [0.1, 0.1]\n");
+
+        // Act.
+        var bare = await Execute(new SetWardleyLinkCommand(
+            _path, await IdOfAsync("Alpha"), await IdOfAsync("Beta"), WardleyLinkKind.Dependency, Present: true));
+        var blank = await Execute(new SetWardleyLinkCommand(
+            _path, await IdOfAsync("Alpha"), await IdOfAsync("Gamma"), WardleyLinkKind.Dependency, Present: true, "   "));
+
+        // Assert.
+        Assert.True(bare.IsSuccess, bare.Error);
+        Assert.True(blank.IsSuccess, blank.Error);
+        Assert.Equal("component Alpha [0.5, 0.5]\ncomponent Beta [0.2, 0.2]\ncomponent Gamma [0.1, 0.1]\nAlpha->Beta\nAlpha->Gamma\n", Read());
     }
 
     [Fact]

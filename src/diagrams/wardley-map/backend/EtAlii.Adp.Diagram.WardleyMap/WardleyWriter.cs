@@ -4,15 +4,21 @@ using EtAlii.Adp.Documents;
 namespace EtAlii.Adp.Diagram.WardleyMap;
 
 /// <summary>
-/// Rewrites the statements an edit touches, and nothing else (Requirement 3.2).
+/// Rewrites the statements an edit touches, and nothing else (Requirement 3.2), and writes the
+/// text of every statement an edit adds.
 /// </summary>
 /// <remarks>
 /// <para>
-/// Every method here <b>splices a span inside one line</b> rather than rebuilding the line from
-/// the model. That is the difference between an edit and a reformat: a line rebuilt from
-/// `component Name [v, m]` loses the trailing comment, the decorators, the label offset and
-/// whatever spacing its author chose, all of which the model either does not carry or does not
-/// carry positionally.
+/// Every method that changes an existing statement <b>splices a span inside one line</b> rather
+/// than rebuilding the line from the model. That is the difference between an edit and a
+/// reformat: a line rebuilt from `component Name [v, m]` loses the trailing comment, the
+/// decorators, the label offset and whatever spacing its author chose, all of which the model
+/// either does not carry or does not carry positionally.
+/// </para>
+/// <para>
+/// A statement that is new, or that replaces one whole (a link or an `evolve` set again), has no
+/// author's text to keep, so it is built here in full by one of the statement builders, and the
+/// command handlers only decide which one to write and where (code-structure FR-089).
 /// </para>
 /// <para>
 /// Names are matched by <b>span</b>, never by substring replacement. Renaming `Tea` with a
@@ -126,6 +132,63 @@ public static partial class WardleyWriter
 
         return changed;
     }
+
+    /// <summary>
+    /// The declaration of a new element, `component Name [v, m]` or the same with `anchor` or
+    /// `submap`, the keyword in lower case whatever case it came in, and a decorator the element
+    /// carries from the start after the coordinates: `component Name [v, m] (market)`.
+    /// </summary>
+    internal static string ElementStatement(string kind, string name, WardleyCoordinate position, WardleyDecorator? decorator)
+    {
+        var decoration = decorator is { } word ? $" ({word.ToString().ToLowerInvariant()})" : "";
+        return $"{kind.ToLowerInvariant()} {name} {CoordinatePair(position)}{decoration}";
+    }
+
+    /// <summary>A `note Text [v, m]`: the text first, trimmed, and its position last.</summary>
+    internal static string NoteStatement(string text, WardleyCoordinate position) =>
+        $"note {text.Trim()} {CoordinatePair(position)}";
+
+    /// <summary>An `annotation N [v, m] Text`: the number and position first, the trimmed text last.</summary>
+    internal static string AnnotationStatement(int number, WardleyCoordinate position, string text) =>
+        $"annotation {number} {CoordinatePair(position)} {text.Trim()}";
+
+    /// <summary>
+    /// A link, `Source->Target` for a dependency or `Source+>Target` for a flow, with its context
+    /// after a semicolon when, trimmed, it has one: `Source->Target; context`.
+    /// </summary>
+    internal static string LinkStatement(string source, string target, WardleyLinkKind kind, string context)
+    {
+        var arrow = kind == WardleyLinkKind.Flow ? "+>" : "->";
+        var trimmed = context.Trim();
+        return trimmed.Length > 0
+            ? $"{source}{arrow}{target}; {trimmed}"
+            : $"{source}{arrow}{target}";
+    }
+
+    /// <summary>
+    /// An `evolve Name x`, or `evolve Name->NewName x` when the component takes another name on
+    /// arrival, which is given trimmed and is left out when nothing remains of it.
+    /// </summary>
+    internal static string EvolveStatement(string name, string arrivingName, double maturity)
+    {
+        var trimmed = arrivingName.Trim();
+        var named = trimmed.Length > 0 ? $"{name}->{trimmed}" : name;
+        return $"evolve {named} {DslNumber.Format(maturity)}";
+    }
+
+    /// <summary>
+    /// A pipeline child, `  component Name [m]`: indented as a line of the block, and with an
+    /// evolution position only, since its visibility is the parent's (Requirement 7.4).
+    /// </summary>
+    internal static string PipelineChildStatement(string name, double maturity) =>
+        $"  component {name} [{DslNumber.Format(maturity)}]";
+
+    /// <summary>
+    /// A new pipeline in the nested form, holding its first child: the `pipeline Parent` line, the
+    /// opening brace, the child and the closing brace, one line each.
+    /// </summary>
+    internal static IReadOnlyList<string> PipelineStatements(string parent, string childName, double childMaturity) =>
+        [$"pipeline {parent}", "{", PipelineChildStatement(childName, childMaturity), "}"];
 
     /// <summary>
     /// Appends a statement at the end of the document. New statements go at the end rather than
@@ -346,6 +409,9 @@ public static partial class WardleyWriter
 
     private static string? LineAt(LineDocument document, uint number) =>
         number >= 1 && number <= document.Lines.Count ? document.Lines[(int)number - 1].Text : null;
+
+    private static string CoordinatePair(WardleyCoordinate position) =>
+        $"[{DslNumber.Format(position.Visibility)}, {DslNumber.Format(position.Maturity)}]";
 
     private static string Splice(string line, int index, int length, string replacement) =>
         string.Concat(line.AsSpan(0, index), replacement, line.AsSpan(index + length));

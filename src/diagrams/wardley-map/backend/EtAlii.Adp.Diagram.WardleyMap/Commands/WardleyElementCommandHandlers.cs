@@ -84,10 +84,7 @@ public sealed class AddWardleyElementCommandHandler(IWardleyDocumentStore docume
         }
 
         var position = WardleyAxis.Clamp(new WardleyCoordinate(command.Visibility, command.Maturity));
-        var decorator = command.Decorator is { } word ? $" ({word.ToString().ToLowerInvariant()})" : "";
-        WardleyWriter.Append(
-            body,
-            $"{command.Kind.ToLowerInvariant()} {command.Name} [{DslNumber.Format(position.Visibility)}, {DslNumber.Format(position.Maturity)}]{decorator}");
+        WardleyWriter.Append(body, WardleyWriter.ElementStatement(command.Kind, command.Name, position, command.Decorator));
         return EditOutcome.Applied;
     }
 }
@@ -233,9 +230,7 @@ public sealed class AddWardleyNoteCommandHandler(IWardleyDocumentStore documents
         }
 
         var position = WardleyAxis.Clamp(new WardleyCoordinate(command.Visibility, command.Maturity));
-        WardleyWriter.Append(
-            body,
-            $"note {command.Text.Trim()} [{DslNumber.Format(position.Visibility)}, {DslNumber.Format(position.Maturity)}]");
+        WardleyWriter.Append(body, WardleyWriter.NoteStatement(command.Text, position));
         return EditOutcome.Applied;
     }
 }
@@ -255,9 +250,7 @@ public sealed class AddWardleyAnnotationCommandHandler(IWardleyDocumentStore doc
         // deleted still has a 3, and reusing that number would put two of them on the map.
         var number = model.Annotations.Count == 0 ? 1 : model.Annotations.Max(annotation => annotation.Number) + 1;
 
-        WardleyWriter.Append(
-            body,
-            $"annotation {number} [{DslNumber.Format(position.Visibility)}, {DslNumber.Format(position.Maturity)}] {command.Text.Trim()}");
+        WardleyWriter.Append(body, WardleyWriter.AnnotationStatement(number, position, command.Text));
         return EditOutcome.Applied;
     }
 }
@@ -294,11 +287,7 @@ public sealed class SetWardleyLinkCommandHandler(IWardleyDocumentStore documents
             return EditOutcome.Applied;
         }
 
-        var arrow = command.Kind == WardleyLinkKind.Flow ? "+>" : "->";
-        var context = command.Context.Trim();
-        var statement = context.Length > 0
-            ? $"{source.Name}{arrow}{target.Name}; {context}"
-            : $"{source.Name}{arrow}{target.Name}";
+        var statement = WardleyWriter.LinkStatement(source.Name, target.Name, command.Kind, command.Context);
 
         // An existing link is rewritten in place rather than a second one being appended:
         // two statements saying the same thing is what Requirement 14.4 reports.
@@ -339,10 +328,7 @@ public sealed class SetWardleyEvolveCommandHandler(IWardleyDocumentStore documen
         // Clamped rather than refused, for the same reason a drag is: the axis has ends, and a
         // value past one of them is a slip rather than a different intention (Requirement 7.3).
         var maturity = Math.Clamp(command.Maturity, 0d, 1d);
-        var name = command.OverrideName.Trim().Length > 0
-            ? $"{component.Name}->{command.OverrideName.Trim()}"
-            : component.Name;
-        var statement = $"evolve {name} {DslNumber.Format(maturity)}";
+        var statement = WardleyWriter.EvolveStatement(component.Name, command.OverrideName, maturity);
 
         if (existing is null)
         {
@@ -404,16 +390,17 @@ public sealed class SetWardleyPipelineMembershipCommandHandler(IWardleyDocumentS
                 $"'{parent.Name}' has a pipeline written in the older two-coordinate form, which holds no components. Rewrite it as a nested pipeline first.");
         }
 
-        var statement = $"  component {command.ChildName} [{DslNumber.Format(Math.Clamp(command.Maturity, 0d, 1d))}]";
+        var maturity = Math.Clamp(command.Maturity, 0d, 1d);
 
         if (pipeline is null)
         {
             // No pipeline yet: the parent gains one, written in the nested form because that is
             // the form that can hold what is being added.
-            WardleyWriter.Append(body, $"pipeline {parent.Name}");
-            WardleyWriter.Append(body, "{");
-            WardleyWriter.Append(body, statement);
-            WardleyWriter.Append(body, "}");
+            foreach (var line in WardleyWriter.PipelineStatements(parent.Name, command.ChildName, maturity))
+            {
+                WardleyWriter.Append(body, line);
+            }
+
             return EditOutcome.Applied;
         }
 
@@ -425,7 +412,7 @@ public sealed class SetWardleyPipelineMembershipCommandHandler(IWardleyDocumentS
             return EditOutcome.Refused($"'{parent.Name}' has a pipeline that is missing its closing brace.");
         }
 
-        WardleyWriter.InsertLine(body, closing, statement);
+        WardleyWriter.InsertLine(body, closing, WardleyWriter.PipelineChildStatement(command.ChildName, maturity));
         return EditOutcome.Applied;
     }
 
