@@ -242,7 +242,7 @@ public sealed class KnowledgeRelationsTests : IDisposable
         (_, string answer) = table.Begin(new TableGesture("deleteColumn", ColumnId: near));
 
         // Assert: asked, nothing written, and the column names its other side so that the question can be put.
-        Assert.Equal(KnowledgeEdits.OtherSideChoice, answer);
+        Assert.Equal(KnowledgeColumnEdits.OtherSideChoice, answer);
         Assert.Equal(ours, table.Bytes());
         Assert.Equal(theirs, await File.ReadAllBytesAsync(Provinces, TestContext.Current.CancellationToken));
         Assert.Equal("Cities nearby", table.Session.Baseline().Columns.Single(column => column.Id == near).Settings["otherSide"]);
@@ -527,13 +527,13 @@ public sealed class KnowledgeRelationsTests : IDisposable
         bytes = table.Bytes();
         (_, string number) = table.Begin(new TableGesture("setRelationLimit", ColumnId: "p3", Settings: Settings(("limit", "one"))));
         (_, string side) = table.Begin(new TableGesture("setRelationOtherSide", ColumnId: "p3", Settings: Settings(("twoWay", "true"))));
-        Assert.Equal((KnowledgeEdits.NotARelation, KnowledgeEdits.NotARelation), (number, side));
+        Assert.Equal((KnowledgeColumnEdits.NotARelation, KnowledgeColumnEdits.NotARelation), (number, side));
         Assert.Equal(bytes, table.Bytes());
         await table.Edit(new TableGesture("addRelation", Values: ["Part of"], Settings: Settings(("target", KnowledgeRelations.Self), ("limit", "one"))));
         var partOf = Property(table, "Part of").Id;
         await table.Edit(new TableGesture("setColumnParent", ColumnId: partOf, Settings: Settings(("parent", "true"))));
         (_, string parent) = table.Begin(new TableGesture("setRelationLimit", ColumnId: partOf, Settings: Settings(("limit", "none"))));
-        Assert.Equal(KnowledgeEdits.ParentHoldsOne, parent);
+        Assert.Equal(KnowledgeColumnEdits.ParentHoldsOne, parent);
         return;
 
         KnowledgeProperty Province() => table.OnDisk().Properties.Single(property => property.Id == "p5");
@@ -661,8 +661,8 @@ public sealed class KnowledgeRelationsTests : IDisposable
         await table.Edit(new TableGesture("setCell", RowId: third, ColumnId: part, Values: ["r2"]));
 
         // Assert: a row is not its own parent, and not the parent of anything above it.
-        Assert.Equal(KnowledgeEdits.ParentCycle, table.Begin(new TableGesture("setCell", RowId: "r1", ColumnId: part, Values: ["r1"])).Answer);
-        Assert.Equal(KnowledgeEdits.ParentCycle, table.Begin(new TableGesture("setCell", RowId: "r1", ColumnId: part, Values: [third])).Answer);
+        Assert.Equal(KnowledgeCellEdits.ParentCycle, table.Begin(new TableGesture("setCell", RowId: "r1", ColumnId: part, Values: ["r1"])).Answer);
+        Assert.Equal(KnowledgeCellEdits.ParentCycle, table.Begin(new TableGesture("setCell", RowId: "r1", ColumnId: part, Values: [third])).Answer);
         Assert.True(Property(table, "Part of").IsParent);
 
         // Act: a view grouped by it.
