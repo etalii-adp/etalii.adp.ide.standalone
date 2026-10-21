@@ -264,7 +264,7 @@ public sealed class KnowledgeEditingTests : IDisposable
         Assert.Equal("Another property is already called 'mayor'.", taken);
 
         // Assert.
-        Assert.Equal(KnowledgeEdits.RelationNeedsTarget, answer);
+        Assert.Equal(KnowledgeColumnEdits.RelationNeedsTarget, answer);
     }
 
     [Theory]
@@ -283,7 +283,7 @@ public sealed class KnowledgeEditingTests : IDisposable
         // Assert.
         Assert.Equal("Inhabitants", table.OnDisk().Properties.Single(property => property.Id == "p3").Name);
         Assert.Equal("Another property is already called 'country'.", taken);
-        Assert.Equal(KnowledgeEdits.NameNeeded, empty);
+        Assert.Equal(KnowledgeColumnEdits.NameNeeded, empty);
         Assert.Equal(before, table.Bytes());
     }
 
@@ -381,7 +381,7 @@ public sealed class KnowledgeEditingTests : IDisposable
         Assert.Equal(["Large"], body.Table.Views.Select(view => view.Name));
         Assert.Equal("", body.Table.ActiveViewId);
         Assert.Empty(body.Model.Findings);
-        Assert.Equal(KnowledgeEdits.LastView, last);
+        Assert.Equal(KnowledgeViewEdits.LastView, last);
         Assert.Equal(before, table.Bytes());
     }
 
@@ -702,7 +702,7 @@ public sealed class KnowledgeEditingTests : IDisposable
         (_, string word) = table.Begin(new TableGesture("setCells", ColumnId: "p3", Values: ["a great many"], Settings: Settings(("rows", "r1,r2"))));
         (_, string made) = table.Begin(new TableGesture("setCells", ColumnId: "p2", Settings: Settings(("rows", "r1,r2"), ("newOption", "Luxembourg"))));
         Assert.Equal(KnowledgeNumberType.Expected, word);
-        Assert.Equal(KnowledgeEdits.OptionFirst, made);
+        Assert.Equal(KnowledgeCellEdits.OptionFirst, made);
         Assert.Equal(before, table.Bytes());
         return;
 

@@ -254,14 +254,14 @@ internal sealed class KnowledgeSession : IDesignerSession
                 IReadOnlyList<string> ids = gesture.Values.Count > 0 ? gesture.Values : [gesture.RowId];
                 if (KnowledgeProject.RowsRelatingTo(_root, _bodyPath, ids) is > 0 and var relating)
                 {
-                    return KnowledgeEdits.AskFirst(relating, ids.Count);
+                    return KnowledgeCellEdits.AskFirst(relating, ids.Count);
                 }
             }
 
             // A relation asked for without the table it relates to is answered with the tables there are to choose from.
             if (gesture.Kind == "addRelation" && string.IsNullOrWhiteSpace(gesture.Settings.GetValueOrDefault("target")))
             {
-                return KnowledgeEdits.ChooseTarget(KnowledgeProject.Targets(_root, _bodyPath));
+                return KnowledgeColumnEdits.ChooseTarget(KnowledgeProject.Targets(_root, _bodyPath));
             }
 
             var files = new KnowledgeSurroundings(_bodyPath, TargetOf, TargetOf);

@@ -164,7 +164,7 @@ public sealed class KnowledgeOptionsTests : IDisposable
         // Act.
 
         // Assert.
-        Assert.Equal(KnowledgeEdits.OptionNameNeeded, Answer(Option("addOption", "p2", name: "  ")));
+        Assert.Equal(KnowledgeColumnEdits.OptionNameNeeded, Answer(Option("addOption", "p2", name: "  ")));
         Assert.Equal("'Country' already has an option called 'belgium'.", Answer(Option("addOption", "p2", name: "belgium")));
         Assert.Equal("'Country' already has an option called 'Belgium'.", Answer(Option("renameOption", "p2", "o1", "Belgium")));
         Assert.Equal("'mauve' is not a colour an option can have.", Answer(Option("recolourOption", "p2", "o1", colour: "mauve")));
