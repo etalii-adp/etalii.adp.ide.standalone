@@ -1,0 +1,24 @@
+functional-decomposition-graph: 1
+# A11: two ui-child links into an id no element has.
+elements:
+  - id: u1
+    type: ui-element
+    name: u1
+    x: 0
+    y: 0
+    width: 100
+  - id: u2
+    type: ui-element
+    name: u2
+    x: 0
+    y: 100
+    width: 100
+connections:
+  - id: y1
+    type: ui-child
+    from: u1
+    to: ghost
+  - id: y2
+    type: ui-child
+    from: u2
+    to: ghost

@@ -1,0 +1,10 @@
+# B7: the header is present, but not first.
+elements:
+  - id: u1
+    type: ui-element
+    name: u1
+    x: 0
+    y: 0
+    width: 100
+connections: []
+functional-decomposition-graph: 1

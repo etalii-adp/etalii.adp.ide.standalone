@@ -1,0 +1,16 @@
+functional-decomposition-graph: 1
+# B11: an element with no description and a Comment with no text.
+elements:
+  - id: page
+    type: ui-element
+    name: Page
+    x: 0
+    y: 0
+    width: 100
+  - id: note
+    type: comment
+    x: 300
+    y: 0
+    width: 240
+    height: 96
+connections: []

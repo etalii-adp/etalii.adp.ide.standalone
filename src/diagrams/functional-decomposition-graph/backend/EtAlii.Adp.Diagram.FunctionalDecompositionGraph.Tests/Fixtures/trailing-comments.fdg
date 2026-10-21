@@ -1,0 +1,19 @@
+functional-decomposition-graph: 1
+# B10: trailing comments and an author's quotes.
+elements:
+  - id: page
+    type: ui-element
+    name: 'Task list' # the first screen
+    description: "Quoted words" # kept?
+    x: 120 # left
+    y: 80 # top
+    width: 140 # wide enough
+  - id: note
+    type: comment
+    text: |-
+      Offline first
+    x: 400
+    y: 0
+    width: 240 # w
+    height: 96 # h
+connections: []

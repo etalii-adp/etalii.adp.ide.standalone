@@ -1,0 +1,64 @@
+functional-decomposition-graph: 1
+# B2: positions and sizes in every spelling a scalar has.
+elements:
+  - id: quoted
+    type: ui-element
+    name: Quoted
+    x: "120"
+    y: 0
+    width: 100
+  - id: exponent
+    type: ui-element
+    name: Exponent
+    x: 1e2
+    y: 60
+    width: 100
+  - id: hex
+    type: ui-element
+    name: Hex
+    x: 0x10
+    y: 120
+    width: 100
+  - id: spaced
+    type: ui-element
+    name: Spaced
+    x: ' 12 '
+    y: 180
+    width: 100
+  - id: comma
+    type: ui-element
+    name: Comma
+    x: 1,5
+    y: 240
+    width: 100
+  - id: underscore
+    type: ui-element
+    name: Underscore
+    x: 1_000
+    y: 300
+    width: 100
+  - id: not-a-number
+    type: ui-element
+    name: NaN
+    x: NaN
+    y: 360
+    width: 100
+  - id: infinity
+    type: ui-element
+    name: Infinity
+    x: .inf
+    y: 420
+    width: 100
+  - id: leading-dot
+    type: ui-element
+    name: Leading dot
+    x: .5
+    y: 480
+    width: 100
+  - id: plus
+    type: ui-element
+    name: Plus
+    x: +12
+    y: 540
+    width: 100
+connections: []

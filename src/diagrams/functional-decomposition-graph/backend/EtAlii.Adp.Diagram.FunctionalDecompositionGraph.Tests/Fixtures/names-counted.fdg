@@ -1,0 +1,19 @@
+functional-decomposition-graph: 1
+# A14: the next UI element is named after every `name` here, whatever its entry.
+elements:
+  - id: stray
+    type: comment
+    name: New UI element
+    text: |-
+      A Comment that carries a name
+    x: 0
+    y: 0
+    width: 240
+    height: 96
+  - id: odd
+    type: screen
+    name: New UI element 2
+    x: 0
+    y: 200
+    width: 100
+connections: []

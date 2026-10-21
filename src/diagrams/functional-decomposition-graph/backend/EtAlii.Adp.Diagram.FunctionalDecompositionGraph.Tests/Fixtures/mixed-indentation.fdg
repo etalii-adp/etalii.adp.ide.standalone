@@ -1,0 +1,20 @@
+functional-decomposition-graph: 1
+# B17: the first entry has three spaces after its dash, the second one; the connections sit at column one.
+elements:
+  -   id: wide
+      type: ui-element
+      name: Wide
+      x: 0
+      y: 0
+      width: 100
+  - id: narrow
+    type: ui-element
+    name: Narrow
+    x: 0
+    y: 100
+    width: 100
+connections:
+- id: c1
+  type: ui-child
+  from: wide
+  to: narrow
