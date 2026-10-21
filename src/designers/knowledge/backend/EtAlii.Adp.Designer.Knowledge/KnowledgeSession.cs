@@ -33,6 +33,12 @@ namespace EtAlii.Adp.Designer.Knowledge;
 /// publish presents the name as absent for a moment and a single refused read would throw the
 /// only notification for that write away.
 /// </para>
+/// <para>
+/// <b>Its state is kept by job</b>: the edits not written yet and the writes that are to make them
+/// in a <see cref="PendingEditQueue"/>, what the connection looks at in a <see cref="KnowledgeViewState"/>,
+/// and the file in a <see cref="WatchedFile"/>. The first two are not thread-safe: they are touched
+/// with the session's one lock held, together with what is shown.
+/// </para>
 /// </remarks>
 internal sealed class KnowledgeSession : IDesignerSession
 {
@@ -48,8 +54,8 @@ internal sealed class KnowledgeSession : IDesignerSession
     private readonly IKnowledgeDocumentStore? _documents;
     private readonly Lock _gate = new();
 
-    /// <summary>The edits that are shown and not written yet, in the order they were made.</summary>
-    private readonly List<PendingEdit> _pending = [];
+    /// <summary>The edits that are shown and not written yet, and the writes that are to make them.</summary>
+    private readonly PendingEditQueue _edits = new();
 
     private KnowledgeBody? _body;
 
@@ -63,26 +69,8 @@ internal sealed class KnowledgeSession : IDesignerSession
     /// <summary>The tables this file's relations point at, by their paths, as they were last read. A target that was written through ADP is read again.</summary>
     private readonly Dictionary<string, KnowledgeTarget> _targets = new(StringComparer.OrdinalIgnoreCase);
 
-    private string _viewId;
-
-    /// <summary>The rows added while this view was open: they stay in sight until it is next opened, whatever its filter says.</summary>
-    private readonly HashSet<string> _kept = new(StringComparer.Ordinal);
-
-    /// <summary>What this connection searches the rows for; empty for all of them. It is in no file.</summary>
-    private string _search = "";
-    private (int First, int Count)? _window;
-
-    /// <summary>The writes still to come, each waiting for the one before it.</summary>
-    private Task _writes = Task.CompletedTask;
-
-    /// <summary>Raised by one when the pending edits are taken back, so the writes already queued for them do nothing.</summary>
-    private int _generation;
-
-    /// <summary>True while an edit of this session is being written: the file is then read when that write ends.</summary>
-    private bool _writing;
-
-    /// <summary>How many of this session's writes have started: an external re-read that began before one is older than that write's own re-read.</summary>
-    private int _writesStarted;
+    /// <summary>What this connection looks at: its view, the rows it keeps in sight, its search and its window.</summary>
+    private readonly KnowledgeViewState _viewState;
 
     private readonly ProjectRoot _root;
 
@@ -118,7 +106,7 @@ internal sealed class KnowledgeSession : IDesignerSession
 
         // The view the file was left in, by name from here on: another connection leaving the file
         // in another view does not move this one.
-        _viewId = _shown.ViewOrDefault("")?.Id ?? "";
+        _viewState = new KnowledgeViewState(_shown.ViewOrDefault("")?.Id ?? "");
 
         // Every event a publish raises reaches OnExternalChangeAsync, an overflow included, one
         // re-read at a time; a refused read is tried again, so a Deleted presented by a
@@ -169,7 +157,7 @@ internal sealed class KnowledgeSession : IDesignerSession
         TableChange? rows;
         lock (_gate)
         {
-            _window = (Math.Max(0, first), Math.Max(0, count));
+            _viewState.SetWindow(first, count);
             rows = RowsOfWindow();
         }
 
@@ -189,8 +177,7 @@ internal sealed class KnowledgeSession : IDesignerSession
                 return;
             }
 
-            _viewId = viewId;
-            _kept.Clear();
+            _viewState.Open(viewId);
 
             // The view a file is left in is in the file: switching is an edit, written and undone as any other.
             if (_write is not null && _body.ReadOnlyReason.Length == 0 && _shown.ActiveViewId != viewId)
@@ -223,7 +210,7 @@ internal sealed class KnowledgeSession : IDesignerSession
             // A search is this connection's own and changes no file: a table that cannot be edited is searched all the same.
             if (gesture.Kind == "search")
             {
-                _search = gesture.Values.Count > 0 ? gesture.Values[0].Trim() : "";
+                _viewState.SearchFor(gesture.Values.Count > 0 ? gesture.Values[0] : "");
                 changes.Add(new TableEditSettled(editId, Written: true));
                 changes.AddRange(Everything());
             }
@@ -237,61 +224,10 @@ internal sealed class KnowledgeSession : IDesignerSession
 
         lock (_gate)
         {
-            // A file that cannot be read, or is of another version, refuses every edit and is never written.
-            if (_body.ReadOnlyReason is { Length: > 0 } reason)
+            var refusal = Unplanned(_body, gesture) ?? Make(editId, gesture, changes);
+            if (refusal.Length > 0)
             {
-                return reason;
-            }
-
-            if (_write is null)
-            {
-                return NoWriter;
-            }
-
-            // Rows of other tables may relate to a row that is about to go: its author is told how many first.
-            if (gesture.Kind == "deleteRows" && _root.FullPath.Length > 0 && gesture.Settings.GetValueOrDefault("confirmed") != "true")
-            {
-                IReadOnlyList<string> ids = gesture.Values.Count > 0 ? gesture.Values : [gesture.RowId];
-                if (KnowledgeProject.RowsRelatingTo(_root, _bodyPath, ids) is > 0 and var relating)
-                {
-                    return KnowledgeEdits.AskFirst(relating, ids.Count);
-                }
-            }
-
-            // A relation asked for without the table it relates to is answered with the tables there are to choose from.
-            if (gesture.Kind == "addRelation" && string.IsNullOrWhiteSpace(gesture.Settings.GetValueOrDefault("target")))
-            {
-                return KnowledgeEdits.ChooseTarget(KnowledgeProject.Targets(_root, _bodyPath));
-            }
-
-            var files = new KnowledgeSurroundings(_bodyPath, TargetOf, TargetOf);
-            var edit = KnowledgeEdits.Plan(_shown, _viewId, gesture, () => ShortGuid.NewShortGuid().ToString(), _besideItsRule, files);
-            if (edit.IsRefused)
-            {
-                return edit.Refusal;
-            }
-
-            if (edit.Changes.Count == 0)
-            {
-                // Nothing to write: the edit is settled as it is made.
-                changes.Add(new TableEditSettled(editId, Written: true));
-            }
-            else
-            {
-                if (edit.NewViewId.Length > 0)
-                {
-                    // A view just made is the view its maker looks at.
-                    _viewId = edit.NewViewId;
-                    _kept.Clear();
-                }
-
-                if (edit.NewRowId.Length > 0)
-                {
-                    _kept.Add(edit.NewRowId);
-                }
-
-                Accept(editId, edit.Changes, gesture.Kind == "setCell" ? (gesture.RowId, gesture.ColumnId) : null, edit.Others);
-                changes.AddRange(Everything());
+                return refusal;
             }
         }
 
@@ -299,49 +235,107 @@ internal sealed class KnowledgeSession : IDesignerSession
         return "";
     }
 
+    /// <summary>Why a gesture is answered before it is planned: a table that is not to be written, or a question for its author first. Null when it is planned. Called with the lock held.</summary>
+    private string? Unplanned(KnowledgeBody body, TableGesture gesture)
+    {
+        // A file that cannot be read, or is of another version, refuses every edit and is never written.
+        if (body.ReadOnlyReason is { Length: > 0 } reason)
+        {
+            return reason;
+        }
+
+        if (_write is null)
+        {
+            return NoWriter;
+        }
+
+        // Rows of other tables may relate to a row that is about to go: its author is told how many first.
+        if (gesture.Kind == "deleteRows" && _root.FullPath.Length > 0 && gesture.Settings.GetValueOrDefault("confirmed") != "true")
+        {
+            IReadOnlyList<string> ids = gesture.Values.Count > 0 ? gesture.Values : [gesture.RowId];
+            if (KnowledgeProject.RowsRelatingTo(_root, _bodyPath, ids) is > 0 and var relating)
+            {
+                return KnowledgeCellEdits.AskFirst(relating, ids.Count);
+            }
+        }
+
+        // A relation asked for without the table it relates to is answered with the tables there are to choose from.
+        if (gesture.Kind == "addRelation" && string.IsNullOrWhiteSpace(gesture.Settings.GetValueOrDefault("target")))
+        {
+            return KnowledgeColumnEdits.ChooseTarget(KnowledgeProject.Targets(_root, _bodyPath));
+        }
+
+        return null;
+    }
+
+    /// <summary>Plans a gesture and takes what it changes as made, adding what the connection is to be sent to <paramref name="changes"/>. Called with the lock held.</summary>
+    /// <returns>Why it is refused, or empty when it is made.</returns>
+    private string Make(ShortGuid editId, TableGesture gesture, List<TableChange> changes)
+    {
+        var files = new KnowledgeSurroundings(_bodyPath, TargetOf, TargetOf);
+        var edit = KnowledgeEdits.Plan(_shown, _viewState.ViewId, gesture, () => ShortGuid.NewShortGuid().ToString(), _besideItsRule, files);
+        if (edit.IsRefused)
+        {
+            return edit.Refusal;
+        }
+
+        if (edit.Changes.Count == 0)
+        {
+            // Nothing to write: the edit is settled as it is made.
+            changes.Add(new TableEditSettled(editId, Written: true));
+            return "";
+        }
+
+        if (edit.NewViewId.Length > 0)
+        {
+            // A view just made is the view its maker looks at.
+            _viewState.Open(edit.NewViewId);
+        }
+
+        if (edit.NewRowId.Length > 0)
+        {
+            _viewState.Keep(edit.NewRowId);
+        }
+
+        Accept(editId, edit.Changes, gesture.Kind == "setCell" ? (gesture.RowId, gesture.ColumnId) : null, edit.Others);
+        changes.AddRange(Everything());
+        return "";
+    }
+
     /// <summary>Takes an edit as made: shown from now on, and queued to be written. Called with the lock held.</summary>
     private void Accept(ShortGuid editId, IReadOnlyList<ModelChange> edit, (string RowId, string ColumnId)? cell, IReadOnlyList<KnowledgeOtherFile>? others = null)
     {
-        _pending.Add(new PendingEdit(editId, edit, cell));
+        var generation = _edits.Add(editId, edit, cell);
         Project(edit);
-        Queue(editId, edit, others ?? []);
+
+        // Its write is queued behind those already waiting.
+        var command = new KnowledgeEditCommand(_bodyPath, edit, others ?? []);
+        _edits.Enqueue(() => WriteAsync(editId, generation, command));
     }
 
-    /// <summary>Queues one edit's write behind those already waiting. Called with the lock held.</summary>
-    private void Queue(ShortGuid editId, IReadOnlyList<ModelChange> edit, IReadOnlyList<KnowledgeOtherFile> others)
+    /// <summary>Writes one edit when its turn has come, unless it was taken back meanwhile, and settles it.</summary>
+    private async Task WriteAsync(ShortGuid editId, int generation, KnowledgeEditCommand command)
     {
-        var generation = _generation;
-        var command = new KnowledgeEditCommand(_bodyPath, edit, others);
-        _writes = _writes.ContinueWith(
-            async _ =>
+        lock (_gate)
+        {
+            if (!_edits.TryStart(generation))
             {
-                lock (_gate)
-                {
-                    if (generation != _generation)
-                    {
-                        // Taken back with an earlier edit that was refused: there is nothing to write.
-                        return;
-                    }
+                // Taken back with an earlier edit that was refused: there is nothing to write.
+                return;
+            }
+        }
 
-                    _writing = true;
-                    _writesStarted++;
-                }
+        CommandResult result;
+        try
+        {
+            result = await _write!(command).ConfigureAwait(false);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            result = CommandResult.Failure($"{Path.GetFileName(_bodyPath)} could not be written: {exception.Message}");
+        }
 
-                CommandResult result;
-                try
-                {
-                    result = await _write!(command).ConfigureAwait(false);
-                }
-                catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidOperationException)
-                {
-                    result = CommandResult.Failure($"{Path.GetFileName(_bodyPath)} could not be written: {exception.Message}");
-                }
-
-                await SettleAsync(editId, generation, result).ConfigureAwait(false);
-            },
-            CancellationToken.None,
-            TaskContinuationOptions.None,
-            TaskScheduler.Default).Unwrap();
+        await SettleAsync(editId, generation, result).ConfigureAwait(false);
     }
 
     /// <summary>What became of one edit's write: the file is read again, and the connection is told.</summary>
@@ -353,20 +347,9 @@ internal sealed class KnowledgeSession : IDesignerSession
         List<TableChange> changes = [];
         lock (_gate)
         {
-            _writing = false;
-            if (generation != _generation)
+            if (_edits.Settle(editId, generation, result.IsSuccess) is not { } takenBack)
             {
                 return;
-            }
-
-            IReadOnlyList<ShortGuid> takenBack = [];
-            _pending.RemoveAll(pending => pending.EditId == editId);
-            if (!result.IsSuccess)
-            {
-                // Every edit still waiting was made on top of this one, so it goes with it.
-                takenBack = [.. _pending.Select(pending => pending.EditId)];
-                _pending.Clear();
-                _generation++;
             }
 
             if (read.Body is not null)
@@ -452,13 +435,13 @@ internal sealed class KnowledgeSession : IDesignerSession
         int writesStarted;
         lock (_gate)
         {
-            if (_writing)
+            if (_edits.Writing)
             {
                 // This session's own write is landing: the file is read when it has, once.
                 return;
             }
 
-            writesStarted = _writesStarted;
+            writesStarted = _edits.WritesStarted;
         }
 
         (KnowledgeRead read, int reads) = await Watched.ReadAsync(_read, reading => reading.Body is not null).ConfigureAwait(false);
@@ -471,7 +454,7 @@ internal sealed class KnowledgeSession : IDesignerSession
         List<TableChange> changes = [];
         lock (_gate)
         {
-            if (_writing || writesStarted != _writesStarted)
+            if (_edits.Writing || writesStarted != _edits.WritesStarted)
             {
                 // A write of this session started while this was reading, so what was read may be the
                 // file from before it; the write's own re-read, made after it, is the newer (T282).
@@ -510,7 +493,7 @@ internal sealed class KnowledgeSession : IDesignerSession
         Task writes;
         lock (_gate)
         {
-            writes = _writes;
+            writes = _edits.Writes;
         }
 
         await writes.ConfigureAwait(false);
@@ -526,7 +509,7 @@ internal sealed class KnowledgeSession : IDesignerSession
         _body = body;
         _shownModel = body?.Model ?? new FblModel([], [], Unreadable: false);
         _shown = body?.Table ?? KnowledgeTable.Empty;
-        foreach (var pending in _pending)
+        foreach (var pending in _edits.Pending)
         {
             Project(pending.Changes);
         }
@@ -570,34 +553,21 @@ internal sealed class KnowledgeSession : IDesignerSession
     private TableStructureChanged Structure() => KnowledgeTableMapper.Structure(
         _view,
         _body?.ReadOnlyReason ?? "",
-        _viewId,
+        _viewState.ViewId,
         Lines().Count,
         TargetOf,
-        KnowledgeViewEngine.InSight(_view, _view.ViewOrDefault(_viewId), _kept, LabelOf, _search),
-        _search);
+        _viewState.InSight(_view, LabelOf),
+        _viewState.Search);
 
     /// <summary>
     /// The lines of the view this connection shows, in order: its rows filtered, sorted and grouped
     /// or nested as the view says, and - where the table can be edited - the lines a new row is added at.
     /// </summary>
-    private List<TableRow> Lines()
-    {
-        var unwritten = _pending.Where(pending => pending.Cell is not null).Select(pending => pending.Cell!.Value).ToHashSet();
-        return KnowledgeViewEngine.Lines(_view, _view.ViewOrDefault(_viewId), _kept, unwritten, editable: _body is { ReadOnlyReason.Length: 0 }, LabelOf, _search);
-    }
+    private List<TableRow> Lines() =>
+        _viewState.Lines(_view, _edits.UnwrittenCells(), editable: _body is { ReadOnlyReason.Length: 0 }, LabelOf);
 
     /// <summary>The lines the connection has in sight, or null while it has not said which.</summary>
-    private TableRowsChanged? RowsOfWindow()
-    {
-        if (_body is null || _window is not { } window)
-        {
-            return null;
-        }
-
-        var lines = Lines();
-        var first = Math.Min(window.First, lines.Count);
-        return new TableRowsChanged(first, lines.GetRange(first, Math.Min(window.Count, lines.Count - first)), lines.Count);
-    }
+    private TableRowsChanged? RowsOfWindow() => _body is null ? null : _viewState.RowsInWindow(Lines);
 
     private void Raise(params TableChange?[] changes)
     {
@@ -607,10 +577,4 @@ internal sealed class KnowledgeSession : IDesignerSession
             Changed?.Invoke(this, new TableChangedEventArgs(real));
         }
     }
-
-    /// <summary>An edit that is shown and not written yet.</summary>
-    /// <param name="EditId">The id its gesture arrived under.</param>
-    /// <param name="Changes">What it changes in the file.</param>
-    /// <param name="Cell">The cell it sets, which is marked as not written yet; null for any other edit.</param>
-    private sealed record PendingEdit(ShortGuid EditId, IReadOnlyList<ModelChange> Changes, (string RowId, string ColumnId)? Cell);
 }

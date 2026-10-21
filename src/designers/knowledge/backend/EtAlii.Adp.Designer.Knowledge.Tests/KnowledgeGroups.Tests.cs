@@ -191,7 +191,7 @@ public sealed class KnowledgeGroupsTests : IDisposable
         (_, string answer) = table.Begin(new TableGesture("moveRows", ViewId: "v1", RowId: before[0], TargetId: before[^1]));
 
         // Assert.
-        Assert.Equal(KnowledgeEdits.SortedRowsStay, answer);
+        Assert.Equal(KnowledgeCellEdits.SortedRowsStay, answer);
         Assert.Equal(bytes, table.Bytes());
     }
 }

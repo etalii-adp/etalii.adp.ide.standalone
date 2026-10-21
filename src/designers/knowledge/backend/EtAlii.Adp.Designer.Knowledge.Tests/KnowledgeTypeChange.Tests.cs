@@ -266,8 +266,8 @@ public sealed class KnowledgeTypeChangeTests : IDisposable
         (_, string relation) = table.Begin(new TableGesture("setColumnType", ColumnId: "p3", Settings: new Dictionary<string, string> { ["type"] = "relation" }));
 
         // Assert.
-        Assert.Equal(KnowledgeEdits.TitleIsText, title);
-        Assert.Equal(KnowledgeEdits.RelationNeedsTarget, relation);
+        Assert.Equal(KnowledgeColumnEdits.TitleIsText, title);
+        Assert.Equal(KnowledgeColumnEdits.RelationNeedsTarget, relation);
         Assert.Equal(before, table.Bytes());
     }
 }
