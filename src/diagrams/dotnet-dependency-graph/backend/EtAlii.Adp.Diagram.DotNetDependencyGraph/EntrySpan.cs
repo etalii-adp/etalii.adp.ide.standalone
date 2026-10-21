@@ -28,7 +28,7 @@ internal static class EntrySpan
     /// <summary>The source of <paramref name="element"/>, read from <paramref name="bytes"/>.</summary>
     public static EntrySource Of(byte[] bytes, XElement element)
     {
-        var (line, column) = PositionOf(element);
+        (int line, int column) = PositionOf(element);
         return new EntrySource(line, StartTag(bytes, line, column));
     }
 

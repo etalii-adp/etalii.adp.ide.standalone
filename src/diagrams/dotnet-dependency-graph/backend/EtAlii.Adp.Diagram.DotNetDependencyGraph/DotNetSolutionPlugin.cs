@@ -37,7 +37,7 @@ namespace EtAlii.Adp.Diagram.DotNetDependencyGraph;
 public sealed class DotNetSolutionPlugin(DotNetSolutionSubject subject) : IPersistencePlugin
 {
     /// <summary>The plugin's id, as the binding's <c>reader.plugin</c> names it.</summary>
-    public const string PluginId = "net.etalii.adp.dotnet.solution";
+    private const string PluginId = "net.etalii.adp.dotnet.solution";
 
     private const string ProjectType = "Project";
     private const string PackageType = "Package";

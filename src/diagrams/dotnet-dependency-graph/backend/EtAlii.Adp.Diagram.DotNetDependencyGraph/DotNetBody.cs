@@ -32,12 +32,11 @@ public sealed class DotNetBody
 
     private readonly Lazy<DislModel> _disl;
 
-    private DotNetBody(string solutionPath, DependencyGraphModel graph, FblModel reading, IReadOnlyList<string> watchPaths)
+    private DotNetBody(string solutionPath, DependencyGraphModel graph, FblModel reading)
     {
         SolutionPath = solutionPath;
         Graph = graph;
         Reading = reading;
-        WatchPaths = watchPaths;
         _disl = new Lazy<DislModel>(() => DislModelBuilder.From(Reading, DotNetDefinition.Specification));
     }
 
@@ -52,9 +51,6 @@ public sealed class DotNetBody
 
     /// <summary>The DISL model the shared builder builds from <see cref="Reading"/>, once, when first asked.</summary>
     public DislModel Disl => _disl.Value;
-
-    /// <summary>What the plugin's <c>watch</c> named after the read, beyond the body.</summary>
-    public IReadOnlyList<string> WatchPaths { get; }
 
     /// <summary>Opens the solution at <paramref name="solutionPath"/>, reading the files it leads to with the given readers; never throws on content.</summary>
     public static DotNetBody Open(string solutionPath, SolutionReader solutions, ProjectReader projects, PackageDescriptionReader descriptions)
@@ -83,10 +79,10 @@ public sealed class DotNetBody
 
         var plugin = new DotNetSolutionPlugin(subject);
         var body = PluginBody.Open(bytes, LoadedBinding.Value, plugin, Path.GetFileName(path));
-        return new DotNetBody(path, plugin.Graph, body.Model, body.WatchPaths);
+        return new DotNetBody(path, plugin.Graph, body.Model);
     }
 
     /// <summary>The body of a solution that was not read: the graph of its failure, and nothing read.</summary>
     private static DotNetBody Failed(string path, SolutionReading failure) =>
-        new(path, new DependencyGraph().Derive(failure, new Dictionary<string, ProjectReading>()), new FblModel([], [], false), []);
+        new(path, new DependencyGraph().Derive(failure, new Dictionary<string, ProjectReading>()), new FblModel([], [], false));
 }

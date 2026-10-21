@@ -148,7 +148,7 @@ public sealed class SolutionReader
             .Where(entry => !string.IsNullOrWhiteSpace(entry.Path))
             .Select(entry =>
             {
-                var (line, column) = EntrySpan.PositionOf(entry.Element);
+                (int line, int column) = EntrySpan.PositionOf(entry.Element);
                 return new DeclaredProject(entry.Path!, line, column);
             })
             .ToArray();
@@ -185,7 +185,7 @@ public sealed class SolutionReader
         var projects = new List<SolutionProject>();
         var failures = new List<SolutionFailure>();
 
-        foreach (var (relative, line, column) in declared)
+        foreach ((string relative, int line, int column) in declared)
         {
             // Solution files write Windows separators whatever the platform reading them, so
             // the separator is normalised rather than trusted.
