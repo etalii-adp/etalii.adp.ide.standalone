@@ -16,19 +16,17 @@ internal static class KnowledgeGroups
     /// <param name="labelOf">What a related row is called, by its id; null where relations are not resolved, and a row is then called by its id.</param>
     public static List<(string Key, string Label)> Of(KnowledgeTable table, KnowledgeView view, KnowledgeProperty grouped, Func<string, string>? labelOf = null)
     {
-        List<(string Key, string Label)> natural = grouped.ValueType switch
-        {
-            "selection" or "multipleSelection" => [.. grouped.Options.Select(option => (option.Id, option.Name))],
-            "checkbox" => [("false", "Not checked"), ("true", "Checked")],
-            _ =>
+        var type = grouped.Type;
+        List<(string Key, string Label)> natural = type.NamedGroups(grouped) is { } named
+            ? [.. named]
+            :
             [
                 .. table.Rows
-                    .SelectMany(row => row.Cells.Where(cell => cell.PropertyId == grouped.Id && cell.Key == KnowledgeEdits.KeyOf(grouped.ValueType)).SelectMany(cell => cell.Values))
+                    .SelectMany(row => row.Cells.Where(cell => cell.PropertyId == grouped.Id && cell.Key == type.CellKey).SelectMany(cell => cell.Values))
                     .Distinct()
                     .Select(id => (id, labelOf?.Invoke(id) is { Length: > 0 } title ? title : id)),
-            ],
-        };
-        if (grouped.ValueType != "checkbox")
+            ];
+        if (type.HasNoValueGroup)
         {
             natural.Add((KnowledgeViewEngine.NoValue, $"No {grouped.Name}"));
         }

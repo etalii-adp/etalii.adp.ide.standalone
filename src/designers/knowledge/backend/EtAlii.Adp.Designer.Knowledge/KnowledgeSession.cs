@@ -414,7 +414,7 @@ internal sealed class KnowledgeSession : IDesignerSession
     }
 
     /// <summary>What a relation property of this file points at, read once and kept until the target is written again. Called with the lock held.</summary>
-    private KnowledgeTarget? TargetOf(KnowledgeProperty property) => property.ValueType == "relation" ? TargetOf(property.TargetFile) : null;
+    private KnowledgeTarget? TargetOf(KnowledgeProperty property) => property.Type is KnowledgeRelationType ? TargetOf(property.TargetFile) : null;
 
     /// <summary>What a target named from this file is: a relative path, or <c>.</c> for the file itself. Called with the lock held.</summary>
     private KnowledgeTarget TargetOf(string targetFile)

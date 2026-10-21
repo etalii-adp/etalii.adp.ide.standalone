@@ -136,10 +136,10 @@ public sealed class KnowledgeEditingTests : IDisposable
     }
 
     [Theory]
-    [InlineData("p3", "many", KnowledgeEdits.NumberExpected)]
-    [InlineData("p7", "27 October", KnowledgeEdits.DateExpected)]
-    [InlineData("p8", "yesterday", KnowledgeEdits.DateTimeExpected)]
-    [InlineData("p9", "noon", KnowledgeEdits.TimeExpected)]
+    [InlineData("p3", "many", KnowledgeNumberType.Expected)]
+    [InlineData("p7", "27 October", KnowledgeDateType.Expected)]
+    [InlineData("p8", "yesterday", KnowledgeDateTimeType.Expected)]
+    [InlineData("p9", "noon", KnowledgeTimeType.Expected)]
     [InlineData("p2", "nothing-like-an-option", "That option is no longer one of this property's.")]
     public async Task AValueThatIsNotOfItsType_IsRefused_AndNothingIsWritten(string propertyId, string value, string refusal)
     {
@@ -701,7 +701,7 @@ public sealed class KnowledgeEditingTests : IDisposable
         // A value one of the rows cannot hold is given to none, and an option is not made on the way.
         (_, string word) = table.Begin(new TableGesture("setCells", ColumnId: "p3", Values: ["a great many"], Settings: Settings(("rows", "r1,r2"))));
         (_, string made) = table.Begin(new TableGesture("setCells", ColumnId: "p2", Settings: Settings(("rows", "r1,r2"), ("newOption", "Luxembourg"))));
-        Assert.Equal(KnowledgeEdits.NumberExpected, word);
+        Assert.Equal(KnowledgeNumberType.Expected, word);
         Assert.Equal(KnowledgeEdits.OptionFirst, made);
         Assert.Equal(before, table.Bytes());
         return;

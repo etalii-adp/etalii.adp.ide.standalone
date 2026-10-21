@@ -83,7 +83,7 @@ internal static class KnowledgeProject
 
             // The side of a two-way relation that holds no values of its own names nothing.
             var naming = body.Table.Properties
-                .Where(property => property is { ValueType: "relation", IsComputed: false, TargetFile: { Length: > 0 } and not KnowledgeRelations.Self }
+                .Where(property => property is { Type: KnowledgeRelationType, IsComputed: false, TargetFile: { Length: > 0 } and not KnowledgeRelations.Self }
                                    && string.Equals(KnowledgeRelations.TargetPath(path, property.TargetFile), target, StringComparison.OrdinalIgnoreCase))
                 .Select(property => property.Id)
                 .ToHashSet(StringComparer.Ordinal);

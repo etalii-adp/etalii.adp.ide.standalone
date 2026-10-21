@@ -17,10 +17,10 @@ internal static class KnowledgeCalculations
     private static readonly string[] _numbers = ["sum", "average", "median", "min", "max", "range"];
 
     /// <summary>The calculations a property of a type can have, in the order they are offered.</summary>
-    public static IReadOnlyList<string> For(string valueType) => valueType switch
+    public static IReadOnlyList<string> For(KnowledgeValueType type) => type.Figures switch
     {
-        "number" => [.. _counts, .. _numbers],
-        "date" or "dateTime" => [.. _counts, .. _dates],
+        KnowledgeFigures.Numbers => [.. _counts, .. _numbers],
+        KnowledgeFigures.Dates => [.. _counts, .. _dates],
         _ => _counts,
     };
 
@@ -33,13 +33,14 @@ internal static class KnowledgeCalculations
         ArgumentNullException.ThrowIfNull(property);
         ArgumentNullException.ThrowIfNull(rows);
 
-        if (!For(property.ValueType).Contains(calculation))
+        var type = property.Type;
+        if (!For(type).Contains(calculation))
         {
             return "";
         }
 
         // A box that is not ticked holds nothing, as a cell without a value does.
-        List<IReadOnlyList<string>> values = [.. rows.Select(row => (IReadOnlyList<string>)[.. KnowledgeViewEngine.ValuesOf(row, property).Where(value => property.ValueType != "checkbox" || KnowledgeValues.IsTrue(value))])];
+        List<IReadOnlyList<string>> values = [.. rows.Select(row => (IReadOnlyList<string>)[.. KnowledgeViewEngine.ValuesOf(row, property).Where(type.IsValue)])];
         var filled = values.Count(held => held.Count > 0);
         switch (calculation)
         {
@@ -59,7 +60,7 @@ internal static class KnowledgeCalculations
                 return Share(filled, rows.Count);
         }
 
-        if (property.ValueType == "number")
+        if (type.Figures == KnowledgeFigures.Numbers)
         {
             List<double> numbers = [.. values.SelectMany(held => held).Select(Number).OfType<double>().Order()];
             if (numbers.Count == 0)
@@ -82,7 +83,7 @@ internal static class KnowledgeCalculations
         List<(long At, string Written)> moments =
         [
             .. values.SelectMany(held => held)
-                .Select(value => (At: KnowledgeViewEngine.Moment(property.ValueType, value), Written: value))
+                .Select(value => (At: type.Moment(value), Written: value))
                 .Where(moment => moment.At is not null)
                 .Select(moment => (moment.At!.Value, moment.Written))
                 .OrderBy(moment => moment.Value),
@@ -96,7 +97,7 @@ internal static class KnowledgeCalculations
         {
             "earliest" => moments[0].Written,
             "latest" => moments[^1].Written,
-            _ => Span(property.ValueType == "date" ? TimeSpan.FromDays(moments[^1].At - moments[0].At) : TimeSpan.FromTicks(moments[^1].At - moments[0].At)),
+            _ => Span(type.Between(moments[0].At, moments[^1].At)),
         };
     }
 

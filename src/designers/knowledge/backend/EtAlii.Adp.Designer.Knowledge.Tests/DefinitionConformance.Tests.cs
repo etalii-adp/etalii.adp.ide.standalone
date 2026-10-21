@@ -60,8 +60,8 @@ public sealed class DefinitionConformanceTests
 
         // Assert.
         var differing = surface.EnumerateObject()
-            .Where(type => type.Value.GetProperty("key").GetString() != KnowledgeVocabulary.StoredKey(type.Name))
-            .Select(type => $"{type.Name}: the definition stores it under '{type.Value.GetProperty("key").GetString()}', the module under '{KnowledgeVocabulary.StoredKey(type.Name)}'.");
+            .Where(type => type.Value.GetProperty("key").GetString() != KnowledgeValueTypes.Of(type.Name).StoredKey)
+            .Select(type => $"{type.Name}: the definition stores it under '{type.Value.GetProperty("key").GetString()}', the module under '{KnowledgeValueTypes.Of(type.Name).StoredKey}'.");
         Assert.Empty(differing);
 
         // The keys of a cell that holds one value are the cell's value attributes in the metamodel.

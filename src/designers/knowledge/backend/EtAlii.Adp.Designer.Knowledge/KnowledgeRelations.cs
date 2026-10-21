@@ -44,7 +44,7 @@ internal static class KnowledgeRelations
     public static string TitleOf(KnowledgeTable table, KnowledgeRow row)
     {
         var title = table.Properties.FirstOrDefault(property => property.IsTitle);
-        var text = title is null ? null : row.Cells.FirstOrDefault(cell => cell.PropertyId == title.Id && cell.Key == "text")?.Values.FirstOrDefault();
+        var text = title is null ? null : row.Cells.FirstOrDefault(cell => cell.PropertyId == title.Id && cell.Key == KnowledgeValueTypes.Text.CellKey)?.Values.FirstOrDefault();
         return text is { Length: > 0 } ? text : row.Id;
     }
 
@@ -63,7 +63,7 @@ internal static class KnowledgeRelations
     /// and is not the parent relation, which has a direction by what it is.
     /// </summary>
     public static bool IsMutual(KnowledgeProperty property) =>
-        property is { ValueType: "relation", TargetFile: Self, Counterpart: "", IsParent: false, IsComputed: false };
+        property is { Type: KnowledgeRelationType, TargetFile: Self, Counterpart: "", IsParent: false, IsComputed: false };
 
     /// <summary>The table with each mutual relation shown from both ends: a row also shows the rows that name it.</summary>
     private static KnowledgeTable WithMutual(KnowledgeTable table)
@@ -122,7 +122,7 @@ internal static class KnowledgeRelations
     public static KnowledgeTable WithComputed(KnowledgeTable table, Func<KnowledgeProperty, KnowledgeTarget?> targetOf)
     {
         table = WithMutual(table);
-        var computed = table.Properties.Where(property => property is { ValueType: "relation", IsComputed: true, Counterpart.Length: > 0 }).ToList();
+        var computed = table.Properties.Where(property => property is { Type: KnowledgeRelationType, IsComputed: true, Counterpart.Length: > 0 }).ToList();
         if (computed.Count == 0)
         {
             return table;

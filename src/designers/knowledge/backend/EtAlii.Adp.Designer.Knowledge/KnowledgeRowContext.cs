@@ -135,12 +135,12 @@ internal sealed class KnowledgeRowPropertyProvider(IHistoryStackStore histories)
     private static ContextPropertyDefinition Row(KnowledgeBody body, KnowledgeProperty property, KnowledgeRow row)
     {
         var values = row.Cells.FirstOrDefault(cell => cell.PropertyId == property.Id)?.Values ?? [];
-        return property.ValueType switch
+        return property.Type switch
         {
-            "checkbox" => new ContextPropertyDefinition(property.Id, property.Name, values.FirstOrDefault() == "true" ? "true" : "false", ContextPropertyEditor.Toggle, body.ReadOnlyReason),
-            "selection" => new ContextPropertyDefinition(property.Id, property.Name, values.Count > 0 ? NameOf(values[0]) : "", ContextPropertyEditor.Choice, body.ReadOnlyReason, Candidates: ["", .. property.Options.Select(option => option.Name)]),
-            "multipleSelection" => new ContextPropertyDefinition(property.Id, property.Name, string.Join(", ", values.Select(NameOf)), ContextPropertyEditor.Tags, body.ReadOnlyReason, Candidates: [.. property.Options.Select(option => option.Name)]),
-            "relation" => new ContextPropertyDefinition(property.Id, property.Name, string.Join(", ", values), ContextPropertyEditor.Line, property.IsComputed ? ComputedStays : RelationStays),
+            KnowledgeCheckboxType => new ContextPropertyDefinition(property.Id, property.Name, values.FirstOrDefault() == "true" ? "true" : "false", ContextPropertyEditor.Toggle, body.ReadOnlyReason),
+            KnowledgeSelectionType => new ContextPropertyDefinition(property.Id, property.Name, values.Count > 0 ? NameOf(values[0]) : "", ContextPropertyEditor.Choice, body.ReadOnlyReason, Candidates: ["", .. property.Options.Select(option => option.Name)]),
+            KnowledgeMultipleSelectionType => new ContextPropertyDefinition(property.Id, property.Name, string.Join(", ", values.Select(NameOf)), ContextPropertyEditor.Tags, body.ReadOnlyReason, Candidates: [.. property.Options.Select(option => option.Name)]),
+            KnowledgeRelationType => new ContextPropertyDefinition(property.Id, property.Name, string.Join(", ", values), ContextPropertyEditor.Line, property.IsComputed ? ComputedStays : RelationStays),
             _ => new ContextPropertyDefinition(property.Id, property.Name, values.FirstOrDefault() ?? "", ContextPropertyEditor.Line, body.ReadOnlyReason),
         };
         string NameOf(string optionId) => property.Options.FirstOrDefault(option => option.Id == optionId)?.Name ?? optionId;
@@ -168,9 +168,9 @@ internal sealed class KnowledgeRowPropertyProvider(IHistoryStackStore histories)
 
         // The grid speaks of options by their names; the file holds their ids.
         List<string> values = [];
-        if (property.ValueType is "selection" or "multipleSelection")
+        if (property.Type.HoldsOptions)
         {
-            foreach (var name in (property.ValueType == "selection" ? [value] : value.Split(',')).Select(part => part.Trim()).Where(part => part.Length > 0))
+            foreach (var name in (property.Type.HoldsSeveral ? value.Split(',') : [value]).Select(part => part.Trim()).Where(part => part.Length > 0))
             {
                 if (property.Options.FirstOrDefault(candidate => string.Equals(candidate.Name, name, StringComparison.OrdinalIgnoreCase)) is not { } option)
                 {
@@ -180,7 +180,7 @@ internal sealed class KnowledgeRowPropertyProvider(IHistoryStackStore histories)
                 values.Add(option.Id);
             }
         }
-        else if (property.ValueType == "relation")
+        else if (property.Type is KnowledgeRelationType)
         {
             return ContextPropertyResult.Failure(property.IsComputed ? ComputedStays : RelationStays);
         }
