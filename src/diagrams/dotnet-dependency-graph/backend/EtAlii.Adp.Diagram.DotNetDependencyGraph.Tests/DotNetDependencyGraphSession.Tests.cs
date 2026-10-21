@@ -22,16 +22,17 @@ public sealed class DotNetDependencyGraphSessionTests : IDisposable
     private readonly List<DependencyGraphStore> _stores = [];
 
     /// <summary>
-    /// Stands in for core's <c>SetRegistrationLayoutCommandHandler</c>, applying the one command
-    /// this module dispatches so that a stored position genuinely reaches the file - which is
-    /// what makes these integration tests rather than assertions about a mock.
+    /// Stands in for the history, running core's <c>PlaceInRegistrationCommandHandler</c> for the
+    /// one command this module dispatches so that a stored position genuinely reaches the file -
+    /// which is what makes these integration tests rather than assertions about a mock.
     /// </summary>
     /// <remarks>
     /// <c>ICommand</c> is a marker: a real stack resolves a handler for it. Standing in for that
     /// handler here keeps the test's subject THIS module - does it dispatch the right command,
     /// against the registration, for the right element - while the handler's own correctness and
-    /// its inverse stay core's, where <c>SetRegistrationLayoutCommand.Tests</c> already owns
-    /// them. Undo and redo are therefore inert here rather than half-implemented.
+    /// its inverse stay core's, where <c>PlaceInRegistrationCommand.Tests</c> owns them, and
+    /// <c>DotNetRegistration.Tests</c> runs the real history. Undo and redo are therefore inert
+    /// here rather than half-implemented.
     /// </remarks>
     private sealed class DirectHistoryStack : IHistoryStack
     {
@@ -49,9 +50,9 @@ public sealed class DotNetDependencyGraphSessionTests : IDisposable
 
         public async Task<CommandResult> ExecuteAsync(ICommand command, CancellationToken cancellationToken = default)
         {
-            if (command is SetRegistrationLayoutCommand layout)
+            if (command is PlaceInRegistrationCommand place)
             {
-                await RegistrationLayout.SetPositionAsync(new FileWriter(), layout.AdpPath, layout.ElementId, new RegistrationPosition(layout.X, layout.Y), cancellationToken);
+                await new PlaceInRegistrationCommandHandler(new FileWriter()).ExecuteAsync(place, cancellationToken);
             }
 
             // AFTER the write, as HistoryStack.ExecuteAsync does - it raises Changed once the

@@ -9,14 +9,20 @@ namespace EtAlii.Adp.Specification.Fbl.Registration;
 /// writes its layout entry by splices, in the ordinal order of ids, with numbers in
 /// <c>{decimals: 3}</c> form and the registration's own line ending (FBL §8.3).
 /// </summary>
-internal sealed class OpenRegistration : SplicedFile
+/// <remarks>
+/// Public because another project uses it (T226's rule): <c>EtAlii.Adp.Hierarchy</c>'s
+/// <c>PlaceInRegistrationCommand</c> writes a moved element's position through it
+/// (dotnet-dependency-graph-disl-fbl task 8). The document it reads stays internal; a caller places
+/// and takes the bytes.
+/// </remarks>
+public sealed class OpenRegistration : SplicedFile
 {
     private OpenRegistration(byte[] bytes) : base(bytes)
     {
         Document = RegistrationDocument.Read(bytes);
     }
 
-    public RegistrationDocument Document { get; private set; }
+    internal RegistrationDocument Document { get; private set; }
 
     /// <summary>
     /// The ids the reading has, when known. A layout entry for any other id is stale and is removed

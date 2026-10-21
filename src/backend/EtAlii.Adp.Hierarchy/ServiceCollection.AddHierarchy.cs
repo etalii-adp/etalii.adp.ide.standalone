@@ -107,6 +107,8 @@ public static class ServiceCollectionAddHierarchyExtension
         services.AddSingleton<ICommandHandler<RemoveCreatedFolderCommand>, RemoveCreatedFolderCommandHandler>();
         services.AddSingleton<ICommandHandler<SetRegistrationLayoutCommand>, SetRegistrationLayoutCommandHandler>();
         services.AddSingleton<ICommandHandler<RemoveRegistrationLayoutCommand>, RemoveRegistrationLayoutCommandHandler>();
+        services.AddSingleton<ICommandHandler<PlaceInRegistrationCommand>, PlaceInRegistrationCommandHandler>();
+        services.AddSingleton<ICommandHandler<RestoreRegistrationCommand>, RestoreRegistrationCommandHandler>();
         services.AddSingleton<ICommandHandler<CreateDiagramFileCommand>, CreateDiagramFileCommandHandler>();
         services.AddSingleton<ICommandHandler<SaveTextFileCommand>, SaveTextFileCommandHandler>();
 

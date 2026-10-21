@@ -14,7 +14,7 @@ namespace EtAlii.Adp.Diagram.DotNetDependencyGraph;
 /// <b>What will never appear in this list.</b> No
 /// <c>IDiagramToolboxProvider</c>: nothing can be dragged onto a diagram whose contents are
 /// derived. No command handlers of its own: the single edit this type permits - a reposition -
-/// is core's existing <c>SetRegistrationLayoutCommand</c>, so tech.md's every-change-is-a-command
+/// is core's <c>PlaceInRegistrationCommand</c>, so tech.md's every-change-is-a-command
 /// rule is satisfied by a command that already exists.
 /// </para>
 /// <para>
