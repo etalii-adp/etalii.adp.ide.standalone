@@ -177,9 +177,12 @@ public static class GestureConstraintEvaluator
     }
 
     /// <summary>Whether <paramref name="scope"/> takes <paramref name="self"/>, or for a connect gesture the relation type <paramref name="scoped"/>.</summary>
-    private static bool InScope(DislSpecification specification, IReadOnlyList<string> scope, DislElement? self, string? scoped) =>
-        self is not null ? scope.Any(self.IsA)
-        : scoped is not null && (scope.Contains("relation") || specification.Metamodel.TypeOf(scoped) is { } type && scope.Any(type.Linearisation.Contains));
+    private static bool InScope(DislSpecification specification, IReadOnlyList<string> scope, DislElement? self, string? scoped)
+    {
+        if (self is not null) return scope.Any(self.IsA);
+        if (scoped is null) return false;
+        return scope.Contains("relation") || specification.Metamodel.TypeOf(scoped) is { } type && scope.Any(type.Linearisation.Contains);
+    }
 
     /// <summary>What a refusal is about: <paramref name="self"/>, else a connect gesture's source and target.</summary>
     private static IReadOnlyList<string> About(DislElement? self, IReadOnlyDictionary<string, object?> gesture) =>

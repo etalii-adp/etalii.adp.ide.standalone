@@ -195,7 +195,7 @@ public static class FormDerivation
         /// <summary>An attribute's text: derived or fixed, else stored, else its default when it declares one, else empty.</summary>
         private string AttributeText(DislAttribute attribute)
         {
-            if (!self.Attributes.ContainsKey(attribute.Name) && attribute.Default is null && !attribute.IsDerived && !attribute.IsFixed) return "";
+            if (!self.Attributes.ContainsKey(attribute.Name) && attribute is { Default: null, IsDerived: false, IsFixed: false }) return "";
             return Format(self.ValueOf(attribute.Name), attribute.Type);
         }
 
