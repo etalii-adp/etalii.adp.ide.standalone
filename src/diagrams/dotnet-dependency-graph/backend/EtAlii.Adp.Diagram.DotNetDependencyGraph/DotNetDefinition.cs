@@ -13,13 +13,13 @@ namespace EtAlii.Adp.Diagram.DotNetDependencyGraph;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>The model is built from what the readers read</b>, not yet through the module's binding
-/// (<c>dotnet-dependency-graph.fbl</c>, which the definition's <c>persistence.binding</c> names): a graph spans
-/// the solution, every project file it names, the <c>Directory.Packages.props</c> files above them and the
-/// local NuGet cache, and FBL has no subject that is one named file with the files it leads to (the
-/// companion's language gap 1). <see cref="ModelOf"/> turns one <see cref="DependencyGraphModel"/>
-/// into a <see cref="DislDiagram"/> once, element for element and with the graph's own ids, and keeps it
-/// for as long as the graph lives, so every selection of one reading reads one model.
+/// <b>The rows' model is still built by hand from the graph</b>, although the graph is now read through the
+/// module's binding (<c>dotnet-dependency-graph.fbl</c>, which the definition's <c>persistence.binding</c> names)
+/// by <see cref="DotNetSolutionPlugin"/>, and <see cref="DotNetBody.Disl"/> holds the model the shared builder
+/// builds from that reading. <see cref="ModelOf"/> turns one <see cref="DependencyGraphModel"/> into a
+/// <see cref="DislDiagram"/> once, element for element and with the graph's own ids, and keeps it for as long
+/// as the graph lives, so every selection of one reading reads one model. The builder parity test holds the two
+/// models equal until the rows read the builder's (the specification's task 6).
 /// </para>
 /// <para>
 /// <b>The summaries are the readers'</b>: a package's versions, conflict, dependent count and ambient
@@ -45,7 +45,7 @@ internal static class DotNetDefinition
     private static readonly DislEnv Env = new(ReadOnly: true);
 
     /// <summary>The definition.</summary>
-    private static DislSpecification Specification => Loaded.Value.Specification;
+    internal static DislSpecification Specification => Loaded.Value.Specification;
 
     /// <summary>The wire ids of <c>x-dotnet</c>.</summary>
     private static WireIdMap Ids => LoadedIds.Value;
@@ -70,7 +70,8 @@ internal static class DotNetDefinition
         return Models.GetValue(graph, Build);
     }
 
-    private static DislDiagram Build(DependencyGraphModel graph)
+    /// <summary><paramref name="graph"/> as the definition's model, built by hand: what the builder parity test holds the shared builder's model to.</summary>
+    internal static DislDiagram Build(DependencyGraphModel graph)
     {
         var diagram = new DislDiagram(Specification);
         var nodes = new Dictionary<string, DislElement>(StringComparer.Ordinal);

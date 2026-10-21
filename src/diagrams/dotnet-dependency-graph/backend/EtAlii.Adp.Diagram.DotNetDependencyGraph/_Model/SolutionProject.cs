@@ -10,4 +10,14 @@ namespace EtAlii.Adp.Diagram.DotNetDependencyGraph;
 /// different operating system.
 /// </param>
 /// <param name="AbsolutePath">Where to read the project file from. Never written to.</param>
-public sealed record SolutionProject(string Name, string RelativePath, string AbsolutePath);
+public sealed record SolutionProject(string Name, string RelativePath, string AbsolutePath)
+{
+    /// <summary>The 1-based line of the project's entry in the solution; 0 when it is not known.</summary>
+    public int Line { get; init; }
+
+    /// <summary>
+    /// The 1-based column of the entry's element name in a <c>.slnx</c>, as the XML reader counts it; 0 for a
+    /// classic <c>.sln</c>, whose entry is a line and not an element.
+    /// </summary>
+    public int Column { get; init; }
+}

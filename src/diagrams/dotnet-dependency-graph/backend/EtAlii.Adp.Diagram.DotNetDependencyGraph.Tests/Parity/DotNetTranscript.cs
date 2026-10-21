@@ -54,12 +54,12 @@ internal static partial class DotNetTranscript
     /// <summary>The checked-in transcript.</summary>
     public static string CheckedInPath => Path.Combine(ModuleFolder, "backend", TestProject, "Parity", FileName);
 
-    private static string SourceFolder => Path.GetFullPath(Path.Combine(ModuleFolder, "..", ".."));
+    internal static string SourceFolder => Path.GetFullPath(Path.Combine(ModuleFolder, "..", ".."));
 
-    private static string FixtureCache => Path.Combine(ModuleFolder, "backend", TestProject, "Fixtures", "cache");
+    internal static string FixtureCache => Path.Combine(ModuleFolder, "backend", TestProject, "Fixtures", "cache");
 
     /// <summary>The corpus, as paths relative to <c>src/</c> with forward slashes, in the order they are recorded.</summary>
-    private static IReadOnlyList<string> Corpus()
+    internal static IReadOnlyList<string> Corpus()
     {
         return
         [
@@ -253,7 +253,7 @@ internal static partial class DotNetTranscript
     /// Graphs no solution of the corpus gives, built by hand: each case the rows, the payloads and the
     /// layout distinguish.
     /// </summary>
-    private static IEnumerable<(string Name, DependencyGraphModel Graph)> HandBuiltGraphs()
+    internal static IEnumerable<(string Name, DependencyGraphModel Graph)> HandBuiltGraphs()
     {
         yield return ("descriptions and conflicts", new DependencyGraphModel(
             [

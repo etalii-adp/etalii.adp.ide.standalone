@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using EtAlii.Adp.Files;
 using Serilog;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
@@ -14,6 +15,11 @@ namespace EtAlii.Adp.Diagram.DotNetDependencyGraph;
 /// <b>Nothing here writes.</b> It reads a solution, the project files it names, the central
 /// package versions above them and the local NuGet cache - and that is the whole of its contact
 /// with the filesystem.
+/// </para>
+/// <para>
+/// <b>Each graph is the reading of one body.</b> A solution is opened through the module's binding as a
+/// <see cref="DotNetBody"/>, read by the plugin, and the body is kept with the graph it gave for as long as that
+/// graph is the store's, so the graph and its body are one reading (<see cref="BodyOf"/>).
 /// </para>
 /// <para>
 /// <b>An unreadable subject is a graph, not an exception.</b> A solution that will not parse
@@ -49,7 +55,14 @@ public sealed class DependencyGraphStore(
     private readonly SolutionReader _solutions = solutions ?? throw new ArgumentNullException(nameof(solutions));
     private readonly ProjectReader _projects = projects ?? throw new ArgumentNullException(nameof(projects));
     private readonly PackageDescriptionReader _descriptions = descriptions ?? throw new ArgumentNullException(nameof(descriptions));
-    private readonly DependencyGraph _graphs = new();
+    private readonly ConditionalWeakTable<DependencyGraphModel, DotNetBody> _bodies = [];
+
+    /// <summary>The body <paramref name="graph"/> was read from, when this store read it; null for any other graph.</summary>
+    public DotNetBody? BodyOf(DependencyGraphModel graph)
+    {
+        ArgumentNullException.ThrowIfNull(graph);
+        return _bodies.TryGetValue(graph, out var body) ? body : null;
+    }
 
     /// <summary>
     /// Every file whose change should make this graph stale: the solution, each project file it
@@ -90,26 +103,11 @@ public sealed class DependencyGraphStore(
 
     private DependencyGraphModel Derive(string solutionPath)
     {
-        var solution = _solutions.Read(solutionPath);
-
-        var readings = new Dictionary<string, ProjectReading>(StringComparer.OrdinalIgnoreCase);
-        foreach (var project in solution.Projects)
-        {
-            readings[project.AbsolutePath] = _projects.Read(project.AbsolutePath);
-        }
-
-        var graph = _graphs.Derive(solution, readings);
-
-        // Descriptions last, and separately: they come from outside the workspace entirely - the
-        // machine's package cache - so a graph is complete without them and merely less
-        // informative. A package the cache has never seen keeps a null description, which the
-        // property grid renders as an explicit absence.
-        var described = graph.Packages
-            .Select(package => package with { Description = _descriptions.Read(package.PackageId, package.Versions) })
-            .ToArray();
+        var body = DotNetBody.Open(solutionPath, _solutions, _projects, _descriptions);
+        _bodies.AddOrUpdate(body.Graph, body);
 
         _logger.Information("Derived the dependency graph for {Solution}", solutionPath);
 
-        return graph with { Packages = described };
+        return body.Graph;
     }
 }
