@@ -173,55 +173,96 @@ public sealed class DependencyGraph
                 reading.TargetFrameworks,
                 DotNetVersionOf(reading.TargetFrameworks)));
 
-            foreach (var reference in reading.ProjectReferences)
-            {
-                if (!idByProjectPath.TryGetValue(reference.AbsolutePath, out var targetId))
-                {
-                    // Declared, but pointing outside the solution's project set. Reported, not
-                    // invented: drawing a node the solution does not contain would make the
-                    // graph disagree with its own subject.
-                    failures.Add(new SolutionFailure(
-                        reference.Include,
-                        $"{project.Name} references this project, but the solution does not contain it."));
-                    continue;
-                }
-
-                edges.Add(new DependsOnEdge(IdOfEdge(id, targetId), id, targetId, DependsOnKind.Project));
-            }
-
-            foreach (var reference in reading.PackageReferences)
-            {
-                var packageId = IdOfPackage(reference.PackageId);
-
-                if (!versionsByPackage.TryGetValue(reference.PackageId, out var versions))
-                {
-                    versions = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
-                    versionsByPackage[reference.PackageId] = versions;
-                }
-
-                if (reference.Version is null)
-                {
-                    // Recorded separately from the versions: an undiscoverable version must not
-                    // masquerade as a version, and must not be lost either.
-                    versionlessPackages.Add(reference.PackageId);
-                }
-                else
-                {
-                    versions.Add(reference.Version);
-                }
-
-                var edge = new DependsOnEdge(IdOfEdge(id, packageId), id, packageId, DependsOnKind.Package);
-                if (edges.All(existing => existing.Id != edge.Id))
-                {
-                    // One project declaring the same package twice - across two ItemGroups, or
-                    // once per target framework - is one dependency, not two edges.
-                    edges.Add(edge);
-                }
-            }
+            AddProjectReferences(project, reading, id, idByProjectPath, edges, failures);
+            AddPackageReferences(reading, id, versionsByPackage, versionlessPackages, edges);
         }
 
+        var packages = DerivePackages(versionsByPackage, versionlessPackages, edges, projects.Count);
+
+        _logger.Information(
+            "Derived {Projects} projects, {Packages} packages and {Edges} edges; {Failures} declarations did not resolve",
+            projects.Count.ToString(CultureInfo.InvariantCulture),
+            packages.Length.ToString(CultureInfo.InvariantCulture),
+            edges.Count.ToString(CultureInfo.InvariantCulture),
+            failures.Count.ToString(CultureInfo.InvariantCulture));
+
+        return new DependencyGraphModel(projects, packages, edges, failures);
+    }
+
+    /// <summary>One edge per declared project reference of <paramref name="project"/>, or a failure where it points outside the solution.</summary>
+    private static void AddProjectReferences(
+        SolutionProject project,
+        ProjectReading reading,
+        string id,
+        Dictionary<string, string> idByProjectPath,
+        List<DependsOnEdge> edges,
+        List<SolutionFailure> failures)
+    {
+        foreach (var reference in reading.ProjectReferences)
+        {
+            if (!idByProjectPath.TryGetValue(reference.AbsolutePath, out var targetId))
+            {
+                // Declared, but pointing outside the solution's project set. Reported, not
+                // invented: drawing a node the solution does not contain would make the
+                // graph disagree with its own subject.
+                failures.Add(new SolutionFailure(
+                    reference.Include,
+                    $"{project.Name} references this project, but the solution does not contain it."));
+                continue;
+            }
+
+            edges.Add(new DependsOnEdge(IdOfEdge(id, targetId), id, targetId, DependsOnKind.Project));
+        }
+    }
+
+    /// <summary>One edge per package the project references, recording every version asked for along the way.</summary>
+    private static void AddPackageReferences(
+        ProjectReading reading,
+        string id,
+        Dictionary<string, SortedSet<string>> versionsByPackage,
+        HashSet<string> versionlessPackages,
+        List<DependsOnEdge> edges)
+    {
+        foreach (var reference in reading.PackageReferences)
+        {
+            var packageId = IdOfPackage(reference.PackageId);
+
+            if (!versionsByPackage.TryGetValue(reference.PackageId, out var versions))
+            {
+                versions = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
+                versionsByPackage[reference.PackageId] = versions;
+            }
+
+            if (reference.Version is null)
+            {
+                // Recorded separately from the versions: an undiscoverable version must not
+                // masquerade as a version, and must not be lost either.
+                versionlessPackages.Add(reference.PackageId);
+            }
+            else
+            {
+                versions.Add(reference.Version);
+            }
+
+            var edge = new DependsOnEdge(IdOfEdge(id, packageId), id, packageId, DependsOnKind.Package);
+            if (edges.All(existing => existing.Id != edge.Id))
+            {
+                // One project declaring the same package twice - across two ItemGroups, or
+                // once per target framework - is one dependency, not two edges.
+                edges.Add(edge);
+            }
+        }
+    }
+
+    /// <summary>One node per package id, ordered by id, with its versions, its conflict and whether it is ambient.</summary>
+    private static PackageNode[] DerivePackages(
+        Dictionary<string, SortedSet<string>> versionsByPackage,
+        HashSet<string> versionlessPackages,
+        List<DependsOnEdge> edges,
+        int projectCount)
+    {
         // How many projects reference each package. One edge per project per package by
-        // construction above, so counting edges counts projects.
+        // construction in AddPackageReferences, so counting edges counts projects.
         var dependents = edges
             .Where(edge => edge.Kind == DependsOnKind.Package)
             .GroupBy(edge => edge.ToElementId, StringComparer.Ordinal)
@@ -230,9 +271,9 @@ public sealed class DependencyGraph
         // The threshold in projects rather than in a fraction, so the comparison below is
         // integer and the number can be stated. Ceiling, so the share is a floor rather than
         // something a rounding could slip under.
-        var ambientAt = Math.Max(AmbientFloor, (int)Math.Ceiling(projects.Count * AmbientShare));
+        var ambientAt = Math.Max(AmbientFloor, (int)Math.Ceiling(projectCount * AmbientShare));
 
-        var packages = versionsByPackage
+        return versionsByPackage
             .Select(entry =>
             {
                 var id = IdOfPackage(entry.Key);
@@ -250,15 +291,6 @@ public sealed class DependencyGraph
             })
             .OrderBy(package => package.PackageId, StringComparer.OrdinalIgnoreCase)
             .ToArray();
-
-        _logger.Information(
-            "Derived {Projects} projects, {Packages} packages and {Edges} edges; {Failures} declarations did not resolve",
-            projects.Count.ToString(CultureInfo.InvariantCulture),
-            packages.Length.ToString(CultureInfo.InvariantCulture),
-            edges.Count.ToString(CultureInfo.InvariantCulture),
-            failures.Count.ToString(CultureInfo.InvariantCulture));
-
-        return new DependencyGraphModel(projects, packages, edges, failures);
     }
 
     /// <summary>What a project's element id begins with, before its path; the definition's <c>persistence.ids.prefix</c> of <c>Project</c>.</summary>

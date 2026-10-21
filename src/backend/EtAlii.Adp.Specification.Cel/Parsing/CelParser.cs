@@ -303,28 +303,7 @@ internal sealed class CelParser(string source, CelEnvironment environment)
             }
             if (char.IsAsciiDigit(c))
             {
-                var start = i;
-                while (i < source.Length && char.IsAsciiDigit(source[i])) i++;
-                var isDouble = false;
-                if (i + 1 < source.Length && source[i] == '.' && char.IsAsciiDigit(source[i + 1]))
-                {
-                    isDouble = true;
-                    i++;
-                    while (i < source.Length && char.IsAsciiDigit(source[i])) i++;
-                }
-                if (i < source.Length && source[i] is 'e' or 'E')
-                {
-                    var exponent = i + 1;
-                    if (exponent < source.Length && source[exponent] is '+' or '-') exponent++;
-                    if (exponent < source.Length && char.IsAsciiDigit(source[exponent]))
-                    {
-                        isDouble = true;
-                        i = exponent;
-                        while (i < source.Length && char.IsAsciiDigit(source[i])) i++;
-                    }
-                }
-                if (i < source.Length && source[i] is 'u' or 'U') throw new CelException("Unsigned integers are not supported by this CEL evaluator.");
-                tokens.Add((isDouble ? "double" : "int", source[start..i]));
+                tokens.Add(ReadNumber(source, ref i));
                 continue;
             }
             if (char.IsAsciiLetter(c) || c == '_')
@@ -336,30 +315,7 @@ internal sealed class CelParser(string source, CelEnvironment environment)
             }
             if (c is '\'' or '"')
             {
-                var builder = new StringBuilder();
-                i++;
-                while (i < source.Length && source[i] != c)
-                {
-                    if (source[i] == '\\' && i + 1 < source.Length)
-                    {
-                        i++;
-                        builder.Append(source[i] switch
-                        {
-                            'n' => '\n',
-                            't' => '\t',
-                            'r' => '\r',
-                            _ => source[i],
-                        });
-                    }
-                    else
-                    {
-                        builder.Append(source[i]);
-                    }
-                    i++;
-                }
-                if (i >= source.Length) throw new CelException($"A string is not closed in '{source}'.");
-                i++;
-                tokens.Add(("string", builder.ToString()));
+                tokens.Add(("string", ReadString(source, ref i)));
                 continue;
             }
             var two = i + 1 < source.Length ? source.Substring(i, 2) : "";
@@ -380,5 +336,62 @@ internal sealed class CelParser(string source, CelEnvironment environment)
         }
         // 'in' is an operator spelled as a name.
         return tokens.Select(t => t is ("ident", "in") ? ("op", "in") : t).ToList();
+    }
+
+    /// <summary>An int or double literal starting at <paramref name="i"/>, which is left just past it.</summary>
+    private static (string Kind, string Text) ReadNumber(string source, ref int i)
+    {
+        var start = i;
+        while (i < source.Length && char.IsAsciiDigit(source[i])) i++;
+        var isDouble = false;
+        if (i + 1 < source.Length && source[i] == '.' && char.IsAsciiDigit(source[i + 1]))
+        {
+            isDouble = true;
+            i++;
+            while (i < source.Length && char.IsAsciiDigit(source[i])) i++;
+        }
+        if (i < source.Length && source[i] is 'e' or 'E')
+        {
+            var exponent = i + 1;
+            if (exponent < source.Length && source[exponent] is '+' or '-') exponent++;
+            if (exponent < source.Length && char.IsAsciiDigit(source[exponent]))
+            {
+                isDouble = true;
+                i = exponent;
+                while (i < source.Length && char.IsAsciiDigit(source[i])) i++;
+            }
+        }
+        if (i < source.Length && source[i] is 'u' or 'U') throw new CelException("Unsigned integers are not supported by this CEL evaluator.");
+        return (isDouble ? "double" : "int", source[start..i]);
+    }
+
+    /// <summary>The unescaped text of the string literal whose opening quote is at <paramref name="i"/>, which is left just past its closing quote.</summary>
+    private static string ReadString(string source, ref int i)
+    {
+        var quote = source[i];
+        var builder = new StringBuilder();
+        i++;
+        while (i < source.Length && source[i] != quote)
+        {
+            if (source[i] == '\\' && i + 1 < source.Length)
+            {
+                i++;
+                builder.Append(source[i] switch
+                {
+                    'n' => '\n',
+                    't' => '\t',
+                    'r' => '\r',
+                    _ => source[i],
+                });
+            }
+            else
+            {
+                builder.Append(source[i]);
+            }
+            i++;
+        }
+        if (i >= source.Length) throw new CelException($"A string is not closed in '{source}'.");
+        i++;
+        return builder.ToString();
     }
 }

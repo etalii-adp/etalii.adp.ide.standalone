@@ -39,6 +39,21 @@ public sealed class AnsibleGraph
         var nodes = new List<AnsibleNode>();
         var edges = new List<AnsibleEdge>();
 
+        AddNodes(project, nodes);
+
+        // Task files are drawn only when something includes them (Requirement 4.1), so they are
+        // added while the include edges are derived rather than up front.
+        var drawnTaskFiles = new HashSet<string>(StringComparer.Ordinal);
+
+        AddPlaybookEdges(project, edges);
+        AddRoleEdges(project, nodes, edges, drawnTaskFiles);
+
+        return new AnsibleGraph(nodes, edges);
+    }
+
+    /// <summary>Every node known up front: playbooks, drawn plays, roles, inventories and their variable folders.</summary>
+    private static void AddNodes(AnsibleProject project, List<AnsibleNode> nodes)
+    {
         // A play gets a colour index in declaration order across the whole project, so two
         // playbooks' plays never share one (Requirement 6.3).
         var playIndex = 0;
@@ -82,11 +97,11 @@ public sealed class AnsibleGraph
                 nodes.Add(new AnsibleNode(VariableFolderId(folder), AnsibleNodeKind.VariableFolder, folder.Name, folder.RelativePath));
             }
         }
+    }
 
-        // Task files are drawn only when something includes them (Requirement 4.1), so they are
-        // added while the include edges are derived rather than up front.
-        var drawnTaskFiles = new HashSet<string>(StringComparer.Ordinal);
-
+    /// <summary>Each playbook's imports, and each play's role references and inventory targets.</summary>
+    private static void AddPlaybookEdges(AnsibleProject project, List<AnsibleEdge> edges)
+    {
         foreach (var playbook in project.Playbooks)
         {
             var playsAreDrawn = playbook.Plays.Count > 1;
@@ -130,7 +145,11 @@ public sealed class AnsibleGraph
                 }
             }
         }
+    }
 
+    /// <summary>Each role's dependencies, the roles it uses and the task files it includes - adding each included task file's node the first time.</summary>
+    private static void AddRoleEdges(AnsibleProject project, List<AnsibleNode> nodes, List<AnsibleEdge> edges, HashSet<string> drawnTaskFiles)
+    {
         foreach (var role in project.Roles)
         {
             foreach (var dependency in role.Dependencies)
@@ -174,8 +193,6 @@ public sealed class AnsibleGraph
                     include));
             }
         }
-
-        return new AnsibleGraph(nodes, edges);
     }
 
     /// <summary>
