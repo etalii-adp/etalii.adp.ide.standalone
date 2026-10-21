@@ -5,7 +5,7 @@ namespace EtAlii.Adp.Specification.Disl;
 
 /// <summary>
 /// Reads what the metamodel derives (DISL §4.3, §4.9, §4.11.3) over the programs the loader compiled: each derived
-/// attribute's program, and each derived relation type's <c>derived</c> as a <see cref="DislDerivedRelation"/>.
+/// attribute's program, each attribute's own <c>readOnlyReasons</c>, and each derived relation type's <c>derived</c> as a <see cref="DislDerivedRelation"/>.
 /// </summary>
 /// <remarks>
 /// A position is given the program compiled at exactly its pointer, as the model looked it up when it read the JSON
@@ -23,11 +23,15 @@ internal static class DislDerivedReader
         }
         foreach (var type in metamodel.Types.Values.Concat(metamodel.Relations.Values))
         {
-            foreach (var attribute in type.Attributes.Values.Where(attribute => attribute.IsDerived))
+            foreach (var attribute in type.Attributes.Values)
             {
                 var declaredIn = metamodel.Types.ContainsKey(attribute.DeclaredBy) ? "/metamodel/types" : "/metamodel/relations";
-                var pointer = JsonPointer.Append(JsonPointer.Append(JsonPointer.Append(JsonPointer.Append(declaredIn, attribute.DeclaredBy), "attributes"), attribute.Name), "derived");
-                attribute.DerivedProgram = ProgramAt(specification, pointer);
+                var at = JsonPointer.Append(JsonPointer.Append(JsonPointer.Append(declaredIn, attribute.DeclaredBy), "attributes"), attribute.Name);
+                if (attribute.IsDerived) attribute.DerivedProgram = ProgramAt(specification, JsonPointer.Append(at, "derived"));
+                if (attribute.Json.ValueKind == JsonValueKind.Object && attribute.Json.TryGetProperty("readOnlyReasons", out var reasons))
+                {
+                    attribute.ReadOnlyReasons = DislFieldReader.Reasons(specification, reasons, JsonPointer.Append(at, "readOnlyReasons"));
+                }
             }
         }
         foreach (var relation in metamodel.Relations.Values)

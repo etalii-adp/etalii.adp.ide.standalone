@@ -374,7 +374,7 @@ public static class DislModelBuilder
         && (end is null || end.Types.Count == 0 || end.Types.Any(element.IsA))
         && (end is null || !end.Exclude.Any(element.IsA));
 
-    /// <summary>A binding element's attributes: the metamodel's typed, the ends named, the rest kept as read.</summary>
+    /// <summary>A binding element's attributes: the metamodel's typed, a fixed one's ignored, the ends named, the rest kept as read.</summary>
     private static Dictionary<string, object?> Attributes(
         FblElement element,
         DislTypeMapping mapping,
@@ -395,7 +395,8 @@ public static class DislModelBuilder
             }
             else if (!mapping.HostAttributes.Contains(name) && type.Attributes.TryGetValue(target, out var attribute))
             {
-                if (DislValues.TryFromRead(raw, attribute, metamodel, out var value)) attributes[target] = value;
+                // A fixed attribute is never stored (§4.3): a value the reader finds for one is ignored.
+                if (!attribute.IsFixed && DislValues.TryFromRead(raw, attribute, metamodel, out var value)) attributes[target] = value;
             }
             else
             {

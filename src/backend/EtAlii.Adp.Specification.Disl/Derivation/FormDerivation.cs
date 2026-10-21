@@ -22,6 +22,10 @@ public sealed record DerivedRow(string Id, string Label, string Value, string? W
 /// </summary>
 /// <remarks>
 /// <para>
+/// <b>A fixed attribute has a row only where a form asks for it</b>, as every attribute: rows are a form's
+/// items, never the type's attributes.
+/// </para>
+/// <para>
 /// <b>A row's value</b> is its <c>display</c> when it has one (the tool's own text, DISL 0.3 §7.5), else
 /// a type item's <c>optionLabel</c> for the element's own type, else a computed item's <c>value</c>,
 /// else the attribute's text: a stored value as
@@ -29,8 +33,10 @@ public sealed record DerivedRow(string Id, string Label, string Value, string? W
 /// its default when it has one, else empty.
 /// </para>
 /// <para>
-/// <b>A row's read-only reason</b> is the first of its <c>readOnlyReasons</c> that applies, else, on a
-/// read-only diagram, <c>behavior.messages</c>' <c>std.readOnly</c>. A computed item without reasons
+/// <b>A row's read-only reason</b> is the first of its <c>readOnlyReasons</c> that applies, else, for a
+/// <c>fixed</c> attribute (§4.3), the first of the attribute's own, else, on a read-only diagram,
+/// <c>behavior.messages</c>' <c>std.readOnly</c>, else, for a fixed attribute, the runtime's sentence.
+/// The attribute's own reasons are not read for an attribute that is not fixed. A computed item without reasons
 /// is the host's to accept or refuse a value for, as its <c>parse</c> says.
 /// </para>
 /// <para>
@@ -59,6 +65,24 @@ public static class FormDerivation
         walk.Items(form.Items, "");
         return rows;
     }
+
+    /// <summary>
+    /// Why the row of <paramref name="item"/> cannot be edited, in the order of §4.3: the first of the item's
+    /// <c>readOnlyReasons</c> that applies; for a <c>fixed</c> attribute, then the first of the attribute's own; on a
+    /// read-only diagram, then <c>std.readOnly</c>; and for a fixed attribute that none of them names, the runtime's
+    /// sentence. Null when the row can be edited.
+    /// </summary>
+    internal static string? ReadOnlyReason(DislSpecification specification, DislFormItem item, DislAttribute? attribute, IReadOnlyDictionary<string, object?> variables, DislEnv env)
+    {
+        var fixedAttribute = attribute is { IsFixed: true };
+        return DislReason.First(item.ReadOnlyReasons, specification, variables)
+            ?? (fixedAttribute ? DislReason.First(attribute!.ReadOnlyReasons, specification, variables) : null)
+            ?? (env.ReadOnly ? DislEvaluation.StandardMessage(specification, "std.readOnly", variables, "This diagram is read-only.") : null)
+            ?? (fixedAttribute ? FixedReason : null);
+    }
+
+    /// <summary>The runtime's sentence for a <c>fixed</c> attribute (§4.3) whose field and declaration give no reason.</summary>
+    private const string FixedReason = "This value is fixed by the diagram type.";
 
     private sealed class Walk(DislSpecification specification, DislElement self, DislEnv env, WireIdMap ids, List<DerivedRow> rows)
     {
@@ -123,8 +147,7 @@ public static class FormDerivation
                 value = declared is null ? "" : AttributeText(declared);
             }
 
-            var reason = DislReason.First(item.ReadOnlyReasons, specification, variables);
-            if (reason is null && env.ReadOnly) reason = DislEvaluation.StandardMessage(specification, "std.readOnly", variables, "This diagram is read-only.");
+            var reason = ReadOnlyReason(specification, item, declared, variables, env);
 
             var key = item.Id ?? attribute ?? label;
             return item.Kind == "type"
@@ -169,10 +192,10 @@ public static class FormDerivation
             _ => Text(option),
         };
 
-        /// <summary>An attribute's text: derived, else stored, else its default when it declares one, else empty.</summary>
+        /// <summary>An attribute's text: derived or fixed, else stored, else its default when it declares one, else empty.</summary>
         private string AttributeText(DislAttribute attribute)
         {
-            if (!self.Attributes.ContainsKey(attribute.Name) && attribute.Default is null && !attribute.IsDerived) return "";
+            if (!self.Attributes.ContainsKey(attribute.Name) && attribute.Default is null && !attribute.IsDerived && !attribute.IsFixed) return "";
             return Format(self.ValueOf(attribute.Name), attribute.Type);
         }
 
