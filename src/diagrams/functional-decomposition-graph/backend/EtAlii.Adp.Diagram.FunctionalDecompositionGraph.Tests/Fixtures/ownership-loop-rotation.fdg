@@ -1,0 +1,34 @@
+functional-decomposition-graph: 1
+# A12: the loop is found from d-zeta and written from d-alpha, on d-alpha's line.
+elements:
+  - id: d-zeta
+    type: data-element
+    name: Zeta
+    x: 0
+    y: 0
+    width: 100
+  - id: d-alpha
+    type: data-element
+    name: Alpha
+    x: 0
+    y: 100
+    width: 100
+  - id: d-mid
+    type: data-element
+    name: Mid
+    x: 0
+    y: 200
+    width: 100
+connections:
+  - id: o1
+    type: owns-data
+    from: d-zeta
+    to: d-mid
+  - id: o2
+    type: owns-data
+    from: d-mid
+    to: d-alpha
+  - id: o3
+    type: owns-data
+    from: d-alpha
+    to: d-zeta

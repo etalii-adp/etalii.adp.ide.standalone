@@ -1,0 +1,82 @@
+functional-decomposition-graph: 1
+# A12: f1 is in two loops; g1 -> g4 -> g2 -> g3 -> g1 shares three members with g1 -> g2 -> g3 -> g1.
+elements:
+  - id: f1
+    type: function
+    name: f1
+    x: 0
+    y: 0
+    width: 100
+  - id: f2
+    type: function
+    name: f2
+    x: 0
+    y: 100
+    width: 100
+  - id: f3
+    type: function
+    name: f3
+    x: 0
+    y: 200
+    width: 100
+  - id: g1
+    type: function
+    name: g1
+    x: 300
+    y: 0
+    width: 100
+  - id: g2
+    type: function
+    name: g2
+    x: 300
+    y: 100
+    width: 100
+  - id: g3
+    type: function
+    name: g3
+    x: 300
+    y: 200
+    width: 100
+  - id: g4
+    type: function
+    name: g4
+    x: 300
+    y: 300
+    width: 100
+connections:
+  - id: l1
+    type: owns-function
+    from: f1
+    to: f2
+  - id: l2
+    type: owns-function
+    from: f2
+    to: f1
+  - id: l3
+    type: owns-function
+    from: f1
+    to: f3
+  - id: l4
+    type: owns-function
+    from: f3
+    to: f1
+  - id: m1
+    type: owns-function
+    from: g1
+    to: g2
+  - id: m2
+    type: owns-function
+    from: g2
+    to: g3
+  - id: m3
+    type: owns-function
+    from: g3
+    to: g1
+  - id: m4
+    type: owns-function
+    from: g1
+    to: g4
+  - id: m5
+    type: owns-function
+    from: g4
+    to: g2

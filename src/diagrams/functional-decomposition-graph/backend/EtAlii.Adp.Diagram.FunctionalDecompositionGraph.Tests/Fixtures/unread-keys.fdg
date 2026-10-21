@@ -1,0 +1,33 @@
+functional-decomposition-graph: 1
+# B6: a key the reader does not read, a Comment's name, and entries that are not mappings.
+elements:
+  - id: u1
+    type: ui-element
+    name: u1
+    colour: puce
+    x: 0
+    y: 0
+    width: 100
+  - id: c1
+    type: comment
+    name: A Comment's name
+    text: |-
+      Text
+    x: 300
+    y: 0
+    width: 240
+    height: 96
+  - just a line of text
+  - id: a1
+    type: action
+    name: a1
+    x: 0
+    y: 100
+    width: 100
+connections:
+  - id: k1
+    type: owns-action
+    from: u1
+    to: a1
+    weight: 3
+  - [u1, c1]

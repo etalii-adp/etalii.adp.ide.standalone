@@ -1,0 +1,22 @@
+functional-decomposition-graph: 1
+# B12: each element is renamed to a name the writer writes plain.
+elements:
+  - id: n1
+    type: ui-element
+    name: One
+    x: 0
+    y: 0
+    width: 100
+  - id: n2
+    type: ui-element
+    name: Two
+    x: 0
+    y: 100
+    width: 100
+  - id: n3
+    type: ui-element
+    name: Three
+    x: 0
+    y: 200
+    width: 100
+connections: []

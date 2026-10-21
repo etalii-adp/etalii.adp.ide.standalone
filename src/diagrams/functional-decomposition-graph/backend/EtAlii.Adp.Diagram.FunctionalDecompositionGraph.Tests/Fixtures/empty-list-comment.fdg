@@ -1,0 +1,4 @@
+functional-decomposition-graph: 1
+# B14: empty flow lists that carry a comment.
+elements: [] # none yet
+connections: []  # none yet either

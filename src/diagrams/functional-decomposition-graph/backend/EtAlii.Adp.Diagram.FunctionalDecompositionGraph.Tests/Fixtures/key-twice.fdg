@@ -1,0 +1,11 @@
+functional-decomposition-graph: 1
+# B9: `name` twice in one entry.
+elements:
+  - id: u1
+    type: ui-element
+    name: First
+    name: Second
+    x: 0
+    y: 0
+    width: 100
+connections: []

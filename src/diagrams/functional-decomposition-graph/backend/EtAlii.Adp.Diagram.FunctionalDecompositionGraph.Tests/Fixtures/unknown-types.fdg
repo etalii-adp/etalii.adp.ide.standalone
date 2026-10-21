@@ -1,0 +1,39 @@
+functional-decomposition-graph: 1
+# B3: an unknown element type and an unknown relation are kept and counted.
+elements:
+  - id: u1
+    type: ui-element
+    name: u1
+    x: 0
+    y: 0
+    width: 100
+  - id: u2
+    type: ui-element
+    name: u2
+    x: 0
+    y: 100
+    width: 100
+  - id: odd
+    type: screen
+    name: A screen by another name
+    x: 0
+    y: 200
+    width: 100
+  - id: untyped
+    name: No type at all
+    x: 0
+    y: 300
+    width: 100
+connections:
+  - id: z1
+    type: ui-child
+    from: u1
+    to: odd
+  - id: z2
+    type: navigates
+    from: u1
+    to: u2
+  - id: odd
+    type: ui-child
+    from: u1
+    to: u2

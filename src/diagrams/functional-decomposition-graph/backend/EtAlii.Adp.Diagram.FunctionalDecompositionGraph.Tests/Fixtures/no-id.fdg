@@ -1,0 +1,25 @@
+functional-decomposition-graph: 1
+# B18: an element and a connection with no id, and a height on a named element.
+elements:
+  - type: ui-element
+    name: No id
+    x: 0
+    y: 0
+    width: 100
+  - id: u2
+    type: ui-element
+    name: Has a height
+    height: 30
+    x: 0
+    y: 100
+    width: 100
+  - id: u3
+    type: ui-element
+    name: u3
+    x: 0
+    y: 200
+    width: 100
+connections:
+  - type: ui-child
+    from: u2
+    to: u3

@@ -1,0 +1,15 @@
+functional-decomposition-graph: 1
+# B16: there is no `connections:` key.
+elements:
+  - id: u1
+    type: ui-element
+    name: u1
+    x: 0
+    y: 0
+    width: 100
+  - id: u2
+    type: ui-element
+    name: u2
+    x: 0
+    y: 100
+    width: 100

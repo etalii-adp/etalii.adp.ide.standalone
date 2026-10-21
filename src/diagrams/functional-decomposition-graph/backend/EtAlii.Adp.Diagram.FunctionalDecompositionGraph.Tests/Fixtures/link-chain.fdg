@@ -1,0 +1,64 @@
+functional-decomposition-graph: 1
+# A11: each connection is reported by the first link check it fails, and no later one.
+elements:
+  - id: u1
+    type: ui-element
+    name: u1
+    x: 0
+    y: 0
+    width: 100
+  - id: u2
+    type: ui-element
+    name: u2
+    x: 0
+    y: 100
+    width: 100
+  - id: a1
+    type: action
+    name: a1
+    x: 0
+    y: 200
+    width: 100
+  - id: cm
+    type: comment
+    text: |-
+      A note
+    x: 300
+    y: 0
+    width: 240
+    height: 96
+connections:
+  # Dangling at both ends: only the first missing end is named.
+  - id: c-dangle-both
+    type: owns-action
+    from: ghost-a
+    to: ghost-b
+  # Dangling and a self link: dangling wins.
+  - id: c-dangle-self
+    type: ui-child
+    from: ghost-c
+    to: ghost-c
+  # A self link of an unknown relation: the self link wins.
+  - id: c-self-unknown
+    type: not-a-relation
+    from: u1
+    to: u1
+  # An unknown relation between a Comment and a UI element: the unknown relation wins.
+  - id: c-unknown-pair
+    type: not-a-relation
+    from: cm
+    to: u1
+  # An inadmissible pair.
+  - id: c-pair
+    type: ui-child
+    from: a1
+    to: u2
+  # Two ui-child links into u2: the second is also an inadmissible pair, and both are counted.
+  - id: c-card
+    type: ui-child
+    from: u1
+    to: u2
+  - id: c-card-comment
+    type: ui-child
+    from: cm
+    to: u2

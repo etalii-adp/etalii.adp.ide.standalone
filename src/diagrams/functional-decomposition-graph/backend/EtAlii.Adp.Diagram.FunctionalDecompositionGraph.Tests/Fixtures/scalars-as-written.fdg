@@ -1,0 +1,71 @@
+functional-decomposition-graph: 1
+# B1: every name is read as the text it was written with.
+elements:
+  - id: n-decimal
+    type: ui-element
+    name: 1.0
+    x: 0
+    y: 0
+    width: 100
+  - id: n-true
+    type: ui-element
+    name: true
+    x: 0
+    y: 60
+    width: 100
+  - id: n-null
+    type: ui-element
+    name: null
+    x: 0
+    y: 120
+    width: 100
+  - id: n-tilde
+    type: ui-element
+    name: ~
+    x: 0
+    y: 180
+    width: 100
+  - id: n-hex
+    type: ui-element
+    name: 0x10
+    x: 0
+    y: 240
+    width: 100
+  - id: n-exp
+    type: ui-element
+    name: 1e2
+    x: 0
+    y: 300
+    width: 100
+  - id: n-quoted
+    type: ui-element
+    name: '007'
+    x: 0
+    y: 360
+    width: 100
+  - id: 007
+    type: action
+    name: 007
+    description: 1.0
+    x: 0
+    y: 420
+    width: 100
+  - id: n-empty
+    type: ui-element
+    name:
+    x: 0
+    y: 480
+    width: 100
+  - id: t-decimal
+    type: comment
+    text: 1.0
+    x: 300
+    y: 0
+    width: 240
+    height: 96
+connections:
+  - id: c-007
+    type: owns-action
+    from: n-decimal
+    to: 007
+    name: 1.10

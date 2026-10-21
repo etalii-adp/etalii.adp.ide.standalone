@@ -1,0 +1,23 @@
+functional-decomposition-graph: 1
+# B15: a comment line directly above an element.
+elements:
+  # The screens.
+  - id: first
+    type: ui-element
+    name: First
+    x: 0
+    y: 0
+    width: 100
+  # The actions.
+  - id: second
+    type: action
+    name: Second
+    x: 0
+    y: 100
+    width: 100
+connections:
+  # The one link.
+  - id: c1
+    type: owns-action
+    from: first
+    to: second

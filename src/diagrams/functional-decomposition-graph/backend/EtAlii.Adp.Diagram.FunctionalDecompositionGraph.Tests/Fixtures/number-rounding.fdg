@@ -1,0 +1,11 @@
+functional-decomposition-graph: 1
+# B19: four decimals, halves, a value rounding to zero from below, and blank descriptions.
+elements:
+  - id: r1
+    type: ui-element
+    name: Rounded
+    description: Some words
+    x: 10.00005
+    y: 0
+    width: 140.12345
+connections: []

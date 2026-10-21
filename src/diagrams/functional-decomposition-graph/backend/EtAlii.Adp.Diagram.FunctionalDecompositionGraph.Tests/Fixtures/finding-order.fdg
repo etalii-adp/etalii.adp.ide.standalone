@@ -1,0 +1,70 @@
+functional-decomposition-graph: 2
+# A13: duplicates, then what the reader passed over (elements, connections, header), sizes, links, cardinality by relation, loops.
+elements:
+  - id: e1
+    type: ui-element
+    name: e1
+    colour: red
+    x: 0
+    y: 0
+    width: 100
+  - id: e3
+    type: ui-element
+    name: e3
+    x: 0
+    y: 100
+    width: 100
+  - id: e4
+    type: ui-element
+    name: e4
+    x: 0
+    y: 200
+    width: 100
+  - id: e2
+    type: action
+    name: e2
+    x: 0
+    y: 300
+    width: 10
+  - id: d1
+    type: data-element
+    name: d1
+    x: 0
+    y: 400
+    width: 100
+  - id: d2
+    type: data-element
+    name: d2
+    x: 0
+    y: 500
+    width: 100
+connections:
+  - id: k1
+    type: shows
+    from: e2
+    to: e3
+    weight: 3
+  - id: k2
+    type: shows
+    from: e2
+    to: e4
+  - id: k3
+    type: ui-child
+    from: e1
+    to: e4
+  - id: k4
+    type: ui-child
+    from: e3
+    to: e4
+  - id: k5
+    type: owns-data
+    from: d1
+    to: d2
+  - id: k6
+    type: owns-data
+    from: d2
+    to: d1
+  - id: e2
+    type: owns-action
+    from: e1
+    to: ghost
