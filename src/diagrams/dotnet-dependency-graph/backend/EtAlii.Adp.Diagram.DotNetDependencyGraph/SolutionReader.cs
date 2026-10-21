@@ -87,7 +87,7 @@ public sealed class SolutionReader
         ArgumentNullException.ThrowIfNull(text);
 
         var extension = Path.GetExtension(solutionPath);
-        if (string.Equals(extension, Diagram.AlternateDocumentExtension, StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(extension, Diagram.DocumentExtension, StringComparison.OrdinalIgnoreCase))
         {
             var parsed = ReadSlnx(text, solutionPath);
 

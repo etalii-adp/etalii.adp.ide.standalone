@@ -140,10 +140,14 @@ public sealed class FindingsTests
     }
 
     [Fact]
-    public void B11_ANewDocument_IsTheSlnxSerializationUnderTheClassicExtension()
+    public void B11_ANewDocument_IsTheSlnxSerializationUnderItsOwnExtension()
     {
         // Arrange: the new document exactly as core creates it, the base name plus the primary
         // extension holding the module's empty document, beside a registration without a body: header.
+        // Resolved by task 9 (Q4, ruled 2026-10-11): the primary became .slnx and the fixture, which was
+        // New.sln, became New.slnx with the same bytes. Until then this pinned "core creates New.sln, which
+        // the registration opens, holding the .slnx serialization <Solution>\r\n</Solution>\r\n; the reader
+        // chooses the classic pattern by its extension and reads 0 projects and 0 failures".
         var factory = new ServiceCollection().AddDotNetDependencyGraph().BuildServiceProvider()
             .GetServices<IDiagramDocumentFactory>().Single(candidate => candidate.Origin == Diagram.DependencyGraph.Origin);
         var content = factory.CreateEmptyDocument("New");
@@ -162,10 +166,8 @@ public sealed class FindingsTests
             : $"core creates {Path.GetFileName(body)}, which the registration opens, holding the {serialization} serialization {Visible(content)}; "
               + $"the reader chooses the classic pattern by its extension and reads {reading.Projects.Count} projects and {reading.Failures.Count} failures";
 
-        // Assert.
-        Shows("B11", observed,
-            "core creates New.sln, which the registration opens, holding the .slnx serialization <Solution>\\r\\n</Solution>\\r\\n; "
-            + "the reader chooses the classic pattern by its extension and reads 0 projects and 0 failures");
+        // Assert: no longer a difference.
+        Shows("B11", observed, pinned: null);
     }
 
     [Fact]
@@ -246,11 +248,11 @@ public sealed class FindingsTests
     {
         try
         {
-            return XDocument.Parse(text).Root?.Name.LocalName == "Solution" ? Diagram.AlternateDocumentExtension : Diagram.DocumentExtension;
+            return XDocument.Parse(text).Root?.Name.LocalName == "Solution" ? Diagram.DocumentExtension : Diagram.AlternateDocumentExtension;
         }
         catch (XmlException)
         {
-            return Diagram.DocumentExtension;
+            return Diagram.AlternateDocumentExtension;
         }
     }
 

@@ -18,7 +18,10 @@ namespace EtAlii.Adp.Diagram.DotNetDependencyGraph;
 /// <b>Two extensions, one notation.</b> <c>.slnx</c> is the newer XML serialization of the same
 /// solution <c>.sln</c> has always described, which is precisely what
 /// <see cref="DiagramDefinition.AlternateExtension"/> exists for: one engine, one catalog row,
-/// two readable forms.
+/// two readable forms. <c>.slnx</c> is the primary, in the order of the binding's
+/// <c>claims.extensions</c>, so a new document is one (Q4, ruled 2026-10-11); a registration
+/// without a <c>body:</c> header beside a lone <c>.sln</c> still opens it, because core derives
+/// the alternate's sibling where no file of the primary is there.
 /// </para>
 /// <para>
 /// <b>The extension is shared, deliberately.</b> A workspace is full of solutions their owners
@@ -31,11 +34,11 @@ namespace EtAlii.Adp.Diagram.DotNetDependencyGraph;
 [UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
 public static class Diagram
 {
-    /// <summary>The classic solution serialization; the one most repositories still carry.</summary>
-    public const string DocumentExtension = ".sln";
+    /// <summary>The XML serialization of a solution, which this repository itself uses, and which a new document is.</summary>
+    public const string DocumentExtension = ".slnx";
 
-    /// <summary>The XML serialization of the same solution, which this repository itself uses.</summary>
-    public const string AlternateDocumentExtension = ".slnx";
+    /// <summary>The classic serialization of the same solution; the one most repositories still carry.</summary>
+    public const string AlternateDocumentExtension = ".sln";
 
     /// <summary>
     /// This module's one type, named so the module's own registrations can say which type they

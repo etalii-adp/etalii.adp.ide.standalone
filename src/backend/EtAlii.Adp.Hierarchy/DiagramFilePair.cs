@@ -76,7 +76,7 @@ public static class DiagramFilePair
             // No header: the body is the sibling of this file's own name, exactly as every
             // type has always behaved. A view key without a body still applies - one
             // registration beside its own document may still name a view within it.
-            (string path, string? ambiguousWith, bool subjectIsShared) = ResolveSibling(adpPath, definition.Extension);
+            (string path, string? ambiguousWith, bool subjectIsShared) = ResolveSibling(adpPath, definition.Extension, definition.AlternateExtension);
 
             // A folder-scoped registration has no derived body at all, rather than one whose path
             // is the bare extension (Requirement 4.4).
@@ -133,7 +133,17 @@ public static class DiagramFilePair
     }
 
     /// <summary>The sibling path a registration file at <paramref name="adpPath"/> would have for <paramref name="extension"/>.</summary>
-    public static string SiblingPathFor(string adpPath, string extension) => ResolveSibling(adpPath, extension).Path;
+    public static string SiblingPathFor(string adpPath, string extension) => ResolveSibling(adpPath, extension, alternate: "").Path;
+
+    /// <summary>
+    /// The body a registration file at <paramref name="adpPath"/> without a <c>body:</c> header would open for
+    /// <paramref name="definition"/>: its primary extension's sibling, or its alternate's where only that one exists.
+    /// </summary>
+    public static string SiblingPathFor(string adpPath, DiagramDefinition definition)
+    {
+        ArgumentNullException.ThrowIfNull(definition);
+        return ResolveSibling(adpPath, definition.Extension, definition.AlternateExtension).Path;
+    }
 
     /// <summary>
     /// The body a registration's own name derives, and the other candidate when the name is
@@ -158,11 +168,20 @@ public static class DiagramFilePair
     /// produce a path that is just the extension - which Requirement 4.4 asks to be excluded
     /// rather than produced.
     /// </para>
+    /// <para>
+    /// A type with an <see cref="DiagramDefinition.AlternateExtension"/> derives each reading's body
+    /// as the first of the two extensions whose file exists, the primary first, and the primary's
+    /// name when neither does - FBL 8.2's "the first that exists, in the order of
+    /// <c>claims.extensions</c>" (dotnet-dependency-graph-disl-fbl task 9, ruled 2026-10-11). A
+    /// registration beside a lone file of the alternate therefore keeps opening it when the alternate
+    /// was the primary before; beside both, it opens the primary's.
+    /// </para>
     /// </remarks>
-    private static (string Path, string? AmbiguousWith, bool SubjectIsShared) ResolveSibling(string adpPath, string extension)
+    private static (string Path, string? AmbiguousWith, bool SubjectIsShared) ResolveSibling(string adpPath, string extension, string alternate)
     {
         ArgumentNullException.ThrowIfNull(adpPath);
         ArgumentNullException.ThrowIfNull(extension);
+        ArgumentNullException.ThrowIfNull(alternate);
 
         var name = DiagramRegistrationName.TryParse(IoPath.GetFileName(adpPath));
         if (name is null || name.IsFolderScoped)
@@ -171,22 +190,40 @@ public static class DiagramFilePair
         }
 
         var directory = IoPath.GetDirectoryName(adpPath) ?? "";
-        var subject = IoPath.Combine(directory, name.SubjectBase + extension);
+        var subject = Existing(directory, name.SubjectBase, extension, alternate);
         if (!name.IsQualified)
         {
-            return (subject, null, false);
+            return (subject ?? IoPath.Combine(directory, name.SubjectBase + extension), null, false);
         }
 
-        var whole = IoPath.Combine(directory, name.FullBase + extension);
-        return !File.Exists(whole)
+        return Existing(directory, name.FullBase, extension, alternate) is not { } whole
             // The qualified reading won: the derived subject is shared by construction, since
             // any other qualifier over the same subject derives the same file.
-            ? (subject, null, true)
+            ? (subject ?? IoPath.Combine(directory, name.SubjectBase + extension), null, true)
             // Both readings name a real file, so the name alone cannot say which was meant. The
             // longer wins, and that is the unqualified reading - the name IS that subject.
-            : (whole, File.Exists(subject)
-                ? subject
-                : null, false);
+            : (whole, subject, false);
+    }
+
+    /// <summary>
+    /// The file <paramref name="baseName"/> names in <paramref name="directory"/> under <paramref name="extension"/>,
+    /// else under <paramref name="alternate"/> when there is one, whichever exists first; null when neither does.
+    /// </summary>
+    private static string? Existing(string directory, string baseName, string extension, string alternate)
+    {
+        var primary = IoPath.Combine(directory, baseName + extension);
+        if (File.Exists(primary))
+        {
+            return primary;
+        }
+
+        if (alternate.Length == 0)
+        {
+            return null;
+        }
+
+        var other = IoPath.Combine(directory, baseName + alternate);
+        return File.Exists(other) ? other : null;
     }
 
     /// <summary>
