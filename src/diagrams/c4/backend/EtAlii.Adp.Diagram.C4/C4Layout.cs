@@ -376,40 +376,23 @@ public static class C4LayoutEngine
         return Rank(members, edges);
     }
 
-    /// <summary>Longest-path ranks of <paramref name="members"/> over <paramref name="edges"/>; edges with an end outside the members are ignored.</summary>
+    /// <summary>
+    /// Longest-path ranks of <paramref name="members"/> over <paramref name="edges"/>, by the shared
+    /// layering's bounded relaxation (code-structure T239): enough rounds for the longest possible
+    /// acyclic path, and bounded so a cycle cannot spin. Edges with an end outside the members are
+    /// ignored.
+    /// </summary>
     private static Dictionary<string, int> Rank(IReadOnlyList<C4Element> members, IEnumerable<(string SourceId, string DestinationId)> edges)
     {
-        var ids = members.Select(element => element.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
-        var outgoing = edges
-            .Where(edge => ids.Contains(edge.SourceId) && ids.Contains(edge.DestinationId))
-            .ToLookup(edge => edge.SourceId, edge => edge.DestinationId, StringComparer.OrdinalIgnoreCase);
+        // A C4 identifier matches without regard to case and the layering compares ordinally, so
+        // each end is named as its member is.
+        var ids = members.ToDictionary(element => element.Id, element => element.Id, StringComparer.OrdinalIgnoreCase);
+        var named = edges
+            .Where(edge => ids.ContainsKey(edge.SourceId) && ids.ContainsKey(edge.DestinationId))
+            .Select(edge => (ids[edge.SourceId], ids[edge.DestinationId]));
 
-        var ranks = members.ToDictionary(element => element.Id, _ => 0, StringComparer.OrdinalIgnoreCase);
-
-        // Relax the ranks as many times as there are elements: enough for the longest possible
-        // acyclic path, and bounded so a cycle cannot spin.
-        foreach (var _ in members)
-        {
-            var moved = false;
-            foreach (var element in members)
-            {
-                foreach (var destination in outgoing[element.Id])
-                {
-                    if (ranks[destination] < ranks[element.Id] + 1)
-                    {
-                        ranks[destination] = ranks[element.Id] + 1;
-                        moved = true;
-                    }
-                }
-            }
-
-            if (!moved)
-            {
-                break;
-            }
-        }
-
-        return ranks;
+        var layers = Layering.LongestPath(members.Select(element => element.Id), named, CyclePolicy.Relaxation);
+        return new Dictionary<string, int>(layers, StringComparer.OrdinalIgnoreCase);
     }
 
     /// <summary>

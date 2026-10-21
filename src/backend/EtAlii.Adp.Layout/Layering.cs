@@ -21,9 +21,11 @@ public static class Layering
         floor ??= _ => 0;
         var order = nodes.ToList();
         var before = new Dictionary<string, List<string>>(StringComparer.Ordinal);
+        var after = new Dictionary<string, List<string>>(StringComparer.Ordinal);
         foreach (var node in order)
         {
             before.TryAdd(node, []);
+            after.TryAdd(node, []);
         }
 
         foreach ((string from, string to) in edges)
@@ -31,6 +33,7 @@ public static class Layering
             if (before.ContainsKey(from) && before.TryGetValue(to, out var dependencies))
             {
                 dependencies.Add(from);
+                after[from].Add(to);
             }
         }
 
@@ -41,6 +44,7 @@ public static class Layering
             CyclePolicy.BackEdgeIsZeroPerNode => order.Distinct(StringComparer.Ordinal).ToDictionary(
                 node => node, node => Unremembered(node, before, floor, []), StringComparer.Ordinal),
             CyclePolicy.Kahn => Kahn(before, floor),
+            CyclePolicy.Relaxation => Relax(order, after, floor),
             _ => throw new ArgumentOutOfRangeException(nameof(policy), policy, null),
         };
     }
@@ -159,6 +163,43 @@ public static class Layering
             layers[node] = depth;
             return depth;
         }
+    }
+
+    /// <summary>
+    /// Bounded relaxation: a round raises every edge's target to one past its source, nodes in order
+    /// and each node's edges in order, until a round moves nothing or there have been as many rounds
+    /// as nodes.
+    /// </summary>
+    private static Dictionary<string, int> Relax(List<string> order, Dictionary<string, List<string>> after, Func<string, int> floor)
+    {
+        var layers = new Dictionary<string, int>(StringComparer.Ordinal);
+        foreach (var node in order)
+        {
+            layers.TryAdd(node, floor(node));
+        }
+
+        foreach (var _ in order)
+        {
+            var moved = false;
+            foreach (var node in order)
+            {
+                foreach (var next in after[node])
+                {
+                    if (layers[next] < layers[node] + 1)
+                    {
+                        layers[next] = layers[node] + 1;
+                        moved = true;
+                    }
+                }
+            }
+
+            if (!moved)
+            {
+                break;
+            }
+        }
+
+        return layers;
     }
 
     /// <summary>
