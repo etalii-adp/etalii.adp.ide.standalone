@@ -229,6 +229,50 @@ public sealed class DotNetDependencyGraphSessionTests : IDisposable
     }
 
     [Fact]
+    public async Task AReReadOfAnEditedCorpusSolution_KeepsEverySurvivingPosition_AndPushesOnlyTheDifferences()
+    {
+        // Requirement 4.3, over a solution of the corpus: the example's registration arranges every element, then the
+        // Cli stops referencing Storage and the tests take System.Text.Json between two reads.
+
+        // Arrange.
+        var cancellationToken = TestContext.Current.CancellationToken;
+        var example = Path.Combine(_root, "pipeline-toolkit");
+        TestFolder.CopyTree(Path.Combine(Parity.DotNetTranscript.SourceFolder, "examples", "diagrams", "dotnet-dependency-graph", "pipeline-toolkit"), example);
+        var solution = Path.Combine(example, "PipelineToolkit.slnx");
+        var registration = Path.Combine(example, "PipelineToolkit.adp");
+        var session = SessionFor(solution, registration);
+        var before = Elements(await session.BaselineAsync(cancellationToken));
+        var pushed = new List<DiagramDelta>();
+        session.Changed += (_, args) => pushed.AddRange(args.Deltas);
+
+        // Act.
+        var cli = Path.Combine(example, "src", "Pipeline.Cli", "Pipeline.Cli.csproj");
+        await File.WriteAllTextAsync(cli, (await File.ReadAllTextAsync(cli, cancellationToken)).Replace("""<ProjectReference Include="..\Pipeline.Storage\Pipeline.Storage.csproj" />""", "", StringComparison.Ordinal), cancellationToken);
+        var tests = Path.Combine(example, "tests", "Pipeline.Core.Tests", "Pipeline.Core.Tests.csproj");
+        await File.WriteAllTextAsync(tests, (await File.ReadAllTextAsync(tests, cancellationToken)).Replace("""<PackageReference Include="xunit.v3" />""", """<PackageReference Include="xunit.v3" /><PackageReference Include="System.Text.Json" />""", StringComparison.Ordinal), cancellationToken);
+        session.Refresh();
+
+        // Assert: what a fresh reading gives, compared with what was delivered, is exactly what was pushed.
+        var after = Elements(await SessionFor(solution, registration).BaselineAsync(cancellationToken));
+        const string goneEdge = "depends:project:src/Pipeline.Cli/Pipeline.Cli.csproj->project:src/Pipeline.Storage/Pipeline.Storage.csproj";
+        const string newEdge = "depends:project:tests/Pipeline.Core.Tests/Pipeline.Core.Tests.csproj->package:System.Text.Json";
+        Assert.True(before.ContainsKey(goneEdge) && !after.ContainsKey(goneEdge), "The edit did not remove the edge it was written to remove.");
+        Assert.True(after.ContainsKey(newEdge) && !before.ContainsKey(newEdge), "The edit did not add the edge it was written to add.");
+        foreach ((string id, DiagramElement element) in after.Where(entry => before.ContainsKey(entry.Key)))
+        {
+            Assert.True(before[id].X.Equals(element.X) && before[id].Y.Equals(element.Y), $"{id} moved from ({before[id].X}, {before[id].Y}) to ({element.X}, {element.Y}).");
+        }
+
+        var changed = after.Values.Where(element => !before.TryGetValue(element.Id, out var was) || was.Type != element.Type || !was.Payload.Span.SequenceEqual(element.Payload.Span)).Select(element => element.Id).Order(StringComparer.Ordinal);
+        Assert.Equal([goneEdge], pushed.OfType<DiagramRemoveDelta>().SelectMany(delta => delta.ElementIds));
+        Assert.Equal(changed, pushed.OfType<DiagramAddDelta>().SelectMany(delta => delta.Elements).Select(element => element.Id).Order(StringComparer.Ordinal));
+        Assert.DoesNotContain(pushed.OfType<DiagramAddDelta>().SelectMany(delta => delta.Elements), element => element.Id == "package:xunit.v3");
+
+        static Dictionary<string, DiagramElement> Elements(IReadOnlyList<DiagramDelta> baseline) =>
+            baseline.OfType<DiagramAddDelta>().SelectMany(delta => delta.Elements).ToDictionary(element => element.Id, StringComparer.Ordinal);
+    }
+
+    [Fact]
     public async Task ARemovedProject_DisappearsFromTheDiagram()
     {
         // Requirement 7.3.
