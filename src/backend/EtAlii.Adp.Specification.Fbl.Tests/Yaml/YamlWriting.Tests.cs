@@ -248,7 +248,7 @@ public class YamlWritingTests
         // Assert.
         Assert.IsType<PlanResult.Planned>(result);
         Assert.Equal("items:\n  - id: a\n    label: two\n    row: wide\n", Text(body));
-        Assert.Equal(0.0, body.Model.Elements[0].Attributes["row"]);
+        Assert.Equal(0L, body.Model.Elements[0].Attributes["row"]);
     }
 
     [Fact]

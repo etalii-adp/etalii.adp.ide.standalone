@@ -86,9 +86,9 @@ public class ScalarConversionTests
         Assert.Equal(expected, observed);
     }
 
-    // A default or a fallback is read from the binding's JSON as a double, as every default is.
+    // A default or a fallback is read from the binding's JSON as a body's reader reads it: 0 as an int (B-38).
     [Theory]
-    [InlineData("i", 0.0)]
+    [InlineData("i", 0L)]
     [InlineData("n", Absent)]
     [InlineData("b", Absent)]
     [InlineData("o", Absent)]
@@ -101,6 +101,25 @@ public class ScalarConversionTests
         // Assert.
         Assert.Equal(expected, empty);
         Assert.Equal(expected, missing);
+    }
+
+    // Behaviour change B-38: a default 0 and a written 0 are one CEL type, typed by an attribute or not.
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void ADefaultAndAWrittenValueReadAsTheSameCelType(bool typed)
+    {
+        // Arrange.
+        var options = typed ? _types : new FblOptions { FileName = "plan.t" };
+
+        // Act.
+        var written = Observe(OpenBody.Open("items:\n  - id: a\n    i: 0\n"u8.ToArray(), _binding, options).Model, "i");
+        var defaulted = Observe(OpenBody.Open("items:\n  - id: a\n"u8.ToArray(), _binding, options).Model, "i");
+
+        // Assert.
+        Assert.Equal(0L, written);
+        Assert.Equal(written?.GetType(), defaulted?.GetType());
+        Assert.Equal(written, defaulted);
     }
 
     [Theory]
@@ -129,7 +148,7 @@ public class ScalarConversionTests
         var model = OpenBody.Open(Encoding.UTF8.GetBytes(body), binding, _types).Model;
 
         // Assert: the entry is read, its attribute is the fallback, and one warning says what was written.
-        Assert.Equal(0.0, model.Find("a")!.Attributes["i"]);
+        Assert.Equal(0L, model.Find("a")!.Attributes["i"]);
         var finding = Assert.Single(model.Findings);
         Assert.Equal(FindingCodes.UnconvertedValue, finding.Code);
         Assert.Equal(FindingSeverity.Warning, finding.Severity);
@@ -148,7 +167,7 @@ public class ScalarConversionTests
         var model = OpenBody.Open("items:\n  - id: a\n    i: wide\n"u8.ToArray(), binding, _types).Model;
 
         // Assert.
-        Assert.Equal(0.0, model.Find("a")!.Attributes["i"]);
+        Assert.Equal(0L, model.Find("a")!.Attributes["i"]);
         Assert.Empty(model.Findings);
     }
 
