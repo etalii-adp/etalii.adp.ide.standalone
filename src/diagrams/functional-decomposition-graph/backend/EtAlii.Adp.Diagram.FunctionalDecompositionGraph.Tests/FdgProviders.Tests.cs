@@ -298,7 +298,7 @@ public sealed class FdgProvidersTests : IDisposable
     public void TheToolbox_OffersTheFiveTypes_EachDroppingItsAddAction()
     {
         // Act.
-        var items = new FdgToolboxProvider().Items;
+        var items = FdgDefinition.Definition.Toolbox;
 
         // Assert.
         Assert.Equal(
