@@ -1,6 +1,5 @@
 using EtAlii.Adp.Specification.Cel;
 using EtAlii.Adp.Specification.Fbl;
-using EtAlii.Adp.Specification.Fbl.Documents;
 using EtAlii.Adp.Specification.Fbl.Planning;
 using Xunit;
 
