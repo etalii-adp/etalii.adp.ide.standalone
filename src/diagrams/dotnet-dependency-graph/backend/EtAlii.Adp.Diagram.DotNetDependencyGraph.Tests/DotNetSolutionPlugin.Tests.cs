@@ -1,6 +1,6 @@
 using System.Text;
-using EtAlii.Adp.Specification.Fbl;
 using EtAlii.Adp.Diagram.DotNetDependencyGraph.Tests.Parity;
+using EtAlii.Adp.Specification.Fbl;
 using Xunit;
 using Path = System.IO.Path;
 
