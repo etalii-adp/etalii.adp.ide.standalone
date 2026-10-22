@@ -1,7 +1,7 @@
+using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.Specification.Fbl;
 using EtAlii.Adp.Specification.Fbl.Plugins;
-using Serilog;
 
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
@@ -22,7 +22,7 @@ namespace EtAlii.Adp.Diagram.HelmChart;
 /// <para>
 /// <b>The library reads, settles and reads again; this watches.</b> The folder body opens no watcher, so an
 /// opened body hears the folder and everything under it (<see cref="WatchedTree"/>: through the watched project
-/// root that holds it, or through a watcher of its own where none does) and hands every path it hears to
+/// root that holds it, or through a watcher of its own where none does) and hands every path it hears, through <see cref="FolderBodyEvents"/>, to
 /// <see cref="FolderBody.Notify"/>, which ignores what the reading does not depend on and reads once after the
 /// binding's <c>settle</c>. An overflow is a change: a lost event is the only sign that the watcher dropped
 /// events, and which path changed is then unknowable, so the folder itself is notified and read again.
@@ -39,8 +39,6 @@ namespace EtAlii.Adp.Diagram.HelmChart;
 /// </remarks>
 public sealed class HelmBody : IDisposable
 {
-    private static readonly ILogger _logger = Log.ForContext<HelmBody>();
-
     private readonly string _path;
     private readonly FolderBody _body;
     private volatile HelmReading _current;
@@ -113,36 +111,6 @@ public sealed class HelmBody : IDisposable
         Changed?.Invoke(this, change);
     }
 
-    private void Heard(FileEvent heard)
-    {
-        switch (heard)
-        {
-            case { Kind: FileEventKind.Lost }:
-                // Which path changed is unknowable, so the folder itself is read again.
-                _logger.Warning("Events under {Path} may have been lost; reading it again", _path);
-                Notify(_path);
-                break;
-            case { Kind: FileEventKind.Renamed, OldPath: { } oldPath }:
-                // Either name counts: a file renamed away is as much a change as one renamed in.
-                Notify(oldPath);
-                Notify(heard.Path);
-                break;
-            default:
-                Notify(heard.Path);
-                break;
-        }
-    }
-
-    /// <summary>Hands a path the watcher reported to the folder body. Guarded: this runs on the watcher's thread, where an exception ends the process.</summary>
-    private void Notify(string path)
-    {
-        try
-        {
-            _body.Notify(path);
-        }
-        catch (Exception exception)
-        {
-            _logger.Error(exception, "Taking the change to {Changed} in {Path} failed", path, _path);
-        }
-    }
+    /// <summary>Hands what the watcher heard to the folder body, as the paths it names.</summary>
+    private void Heard(FileEvent heard) => FolderBodyEvents.Notify(_body, _path, heard);
 }

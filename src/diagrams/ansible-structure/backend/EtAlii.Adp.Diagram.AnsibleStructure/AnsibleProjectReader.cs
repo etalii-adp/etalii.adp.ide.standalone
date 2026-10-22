@@ -1,3 +1,4 @@
+using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Specification.Fbl;
 using EtAlii.Adp.Specification.Fbl.Plugins;
@@ -159,7 +160,7 @@ public sealed class AnsibleProjectReader
         var playbooks = new List<AnsiblePlaybook>();
         foreach ((string relative, PluginFile file) in candidates)
         {
-            var result = AnsibleYaml.Read(file, relative);
+            var result = PluginFileYaml.Read(file, relative);
             if (result is not TolerantYamlDocument document)
             {
                 Record(result, failures);
@@ -284,7 +285,7 @@ public sealed class AnsibleProjectReader
         }
 
         var relative = meta.Relative;
-        var result = AnsibleYaml.Read(meta.File, relative);
+        var result = PluginFileYaml.Read(meta.File, relative);
         if (result is not TolerantYamlDocument { Root: YamlMappingNode mapping })
         {
             Record(result, failures);
@@ -323,7 +324,7 @@ public sealed class AnsibleProjectReader
         var directives = new List<AnsibleDirective>();
         foreach ((string relative, PluginFile file) in YamlFilesIn(reading, roleFolder + "/tasks"))
         {
-            var result = AnsibleYaml.Read(file, relative);
+            var result = PluginFileYaml.Read(file, relative);
             if (result is not TolerantYamlDocument { Root: YamlSequenceNode tasks })
             {
                 Record(result, failures);
@@ -437,7 +438,7 @@ public sealed class AnsibleProjectReader
 
     private static IReadOnlyList<AnsibleInventoryGroup> GroupsOf(string relative, PluginFile file, List<TolerantYamlFailure> failures)
     {
-        var result = AnsibleYaml.Read(file, relative);
+        var result = PluginFileYaml.Read(file, relative);
         if (result is not TolerantYamlDocument { Root: YamlMappingNode mapping })
         {
             // An INI-format inventory is not YAML and will not parse. That is not the user's
@@ -577,7 +578,7 @@ public sealed class AnsibleProjectReader
         string? section = null;
         var sectionIsChildren = false;
 
-        using var text = AnsibleYaml.Text(file);
+        using var text = PluginFileYaml.Text(file);
         while (text.ReadLine() is { } raw)
         {
             var line = raw.Trim();

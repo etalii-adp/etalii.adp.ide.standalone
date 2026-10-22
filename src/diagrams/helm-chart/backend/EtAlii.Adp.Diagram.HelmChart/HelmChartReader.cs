@@ -1,3 +1,4 @@
+using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Specification.Fbl.Plugins;
 using EtAlii.Adp.Specification.Fbl.Routing;
@@ -14,7 +15,7 @@ namespace EtAlii.Adp.Diagram.HelmChart;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Chart-owned YAML goes through <see cref="HelmYaml"/>; <c>templates/</c> content goes
+/// Chart-owned YAML goes through <see cref="PluginFileYaml"/>; <c>templates/</c> content goes
 /// through <see cref="TemplateScan"/> and is never parsed as YAML (Requirement 3.2). Files
 /// and folders beyond the recognized inventory - a <c>ci/</c> folder, readmes, source code -
 /// are not handed by the binding, and a handed file the reader does not use is passed over without
@@ -49,7 +50,7 @@ public sealed class HelmChartReader
         YamlMappingNode? chartRoot = null;
         if (handed.File("Chart.yaml") is { } chartYaml)
         {
-            switch (HelmYaml.Read(chartYaml, "Chart.yaml"))
+            switch (PluginFileYaml.Read(chartYaml, "Chart.yaml"))
             {
                 case TolerantYamlDocument { Root: YamlMappingNode mapping }:
                     chartRoot = mapping;
@@ -124,7 +125,7 @@ public sealed class HelmChartReader
             var isDefault = string.Equals(name, "values.yaml", StringComparison.OrdinalIgnoreCase)
                             || string.Equals(name, "values.yml", StringComparison.OrdinalIgnoreCase);
 
-            switch (HelmYaml.Read(file, name))
+            switch (PluginFileYaml.Read(file, name))
             {
                 case TolerantYamlDocument { Root: YamlMappingNode mapping }:
                     if (isDefault)
@@ -189,7 +190,7 @@ public sealed class HelmChartReader
             return new TemplateFacts([], [], [], []);
         }
 
-        using var text = HelmYaml.Text(file);
+        using var text = PluginFileYaml.Text(file);
         return TemplateScan.Scan(text.ReadToEnd());
     }
 
@@ -212,7 +213,7 @@ public sealed class HelmChartReader
             }
 
             count++;
-            if (HelmYaml.Read(file, file.RelativePath) is TolerantYamlUnreadable unreadable)
+            if (PluginFileYaml.Read(file, file.RelativePath) is TolerantYamlUnreadable unreadable)
             {
                 failures.Add(unreadable.Failure);
             }
@@ -231,7 +232,7 @@ public sealed class HelmChartReader
             // failure is a reportable fact, not a silent absence (Requirement 10.3).
             if (handed.File("requirements.yaml") is { } requirements)
             {
-                switch (HelmYaml.Read(requirements, "requirements.yaml"))
+                switch (PluginFileYaml.Read(requirements, "requirements.yaml"))
                 {
                     case TolerantYamlDocument { Root: YamlMappingNode root }:
                         root.Children.TryGetValue(new YamlScalarNode("dependencies"), out list);
@@ -352,7 +353,7 @@ public sealed class HelmChartReader
             return new VendoredEntry(entryName, relative, false, null, null, "application", templateCount, deeperCount, null);
         }
 
-        return HelmYaml.Read(nested, nested.RelativePath) switch
+        return PluginFileYaml.Read(nested, nested.RelativePath) switch
         {
             TolerantYamlDocument { Root: YamlMappingNode mapping } => Summarize(mapping),
             TolerantYamlUnreadable unreadable => new VendoredEntry(
@@ -384,7 +385,7 @@ public sealed class HelmChartReader
             return null;
         }
 
-        switch (HelmYaml.Read(file, name))
+        switch (PluginFileYaml.Read(file, name))
         {
             case TolerantYamlUnreadable unreadable:
                 return new LockFile(name, [], unreadable.Failure);
