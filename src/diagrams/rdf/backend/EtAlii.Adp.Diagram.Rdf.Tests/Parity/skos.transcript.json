@@ -25,7 +25,13 @@
         "line 2 | Error | rdf.unparseable | This is not RDF that can be read: Expected an object, found ''."
       ],
       "payloads": [],
-      "edits": [],
+      "edits": [
+        {
+          "do": "add prefix parity",
+          "answer": "refused: broken.ttl could not be read, so nothing can be edited until it can: it does not parse at line 2. Expected an object, found ''.",
+          "unchanged": true
+        }
+      ],
       "undoAll": "0 undone; the original text is back"
     },
     {

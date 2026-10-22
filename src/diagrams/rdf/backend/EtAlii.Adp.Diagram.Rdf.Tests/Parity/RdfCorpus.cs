@@ -22,7 +22,7 @@ internal static class RdfCorpus
     private const string TestProject = "EtAlii.Adp.Diagram.Rdf.Tests";
 
     /// <summary>The module's folder, <c>src/diagrams/rdf</c>.</summary>
-    public static string ModuleFolder { get; } = RepositoryPaths.Under("src", "diagrams", "rdf");
+    private static string ModuleFolder { get; } = RepositoryPaths.Under("src", "diagrams", "rdf");
 
     /// <summary><c>src/</c>, which the corpus's paths are relative to.</summary>
     public static string SourceFolder => Path.GetFullPath(Path.Combine(ModuleFolder, "..", ".."));
@@ -31,7 +31,7 @@ internal static class RdfCorpus
     public static string ParityFolder => Path.Combine(ModuleFolder, "backend", TestProject, "Parity");
 
     /// <summary>The bodies, as paths relative to <c>src/</c> with forward slashes, in the order they are recorded.</summary>
-    public static IReadOnlyList<string> Bodies()
+    private static IReadOnlyList<string> Bodies()
     {
         var fixtures = Directory.GetFiles(Path.Combine(ModuleFolder, "backend", TestProject, "Fixtures"));
         var examples = Directory.GetFiles(Path.Combine(ModuleFolder, "examples"), "*", SearchOption.AllDirectories);
@@ -70,7 +70,7 @@ internal static class RdfCorpus
     }
 
     /// <summary>The registrations in the body's folder that name it in their <c>body:</c> header, by path.</summary>
-    public static IReadOnlyList<string> RegistrationsOf(string body)
+    private static IReadOnlyList<string> RegistrationsOf(string body)
     {
         var name = Path.GetFileName(body);
         return
@@ -82,7 +82,7 @@ internal static class RdfCorpus
     }
 
     /// <summary>The origin a registration states on its first line.</summary>
-    public static string OriginOf(string registration) => File.ReadLines(registration).FirstOrDefault()?.Trim() ?? "";
+    private static string OriginOf(string registration) => File.ReadLines(registration).FirstOrDefault()?.Trim() ?? "";
 
     private static bool IsBody(string path) => Path.GetExtension(path) is ".ttl" or ".nt";
 }

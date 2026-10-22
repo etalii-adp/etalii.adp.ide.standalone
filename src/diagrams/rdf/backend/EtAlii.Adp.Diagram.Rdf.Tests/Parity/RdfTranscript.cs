@@ -1,10 +1,9 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using EtAlii.Adp.Context;
-using EtAlii.Adp.Documents;
-using EtAlii.Adp.Files;
-using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.Diagram.Rdf.Shacl;
+using EtAlii.Adp.Documents;
+using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Sessions;
 using Google.Protobuf.Reflection;
@@ -275,6 +274,13 @@ internal static partial class RdfTranscript
             }
         }
 
+        if (!session.IsUsable)
+        {
+            // A body that does not parse offers no menu, so the one edit that reaches the edit handler's
+            // refusal (finding B14) is sent as a command, as nothing else in the script could send it.
+            await script.CommandAsync("add prefix parity", new AddRdfPrefixCommand(session.Body, "parity", "http://example.org/parity#"));
+        }
+
         List<string> targets = [GestureIds.Placement(240, 160), ""];
         if (resource is not null && other is not null) targets.Add(GestureIds.Relation(resource, other));
         if (edge is not null) targets.Add(edge);
@@ -331,6 +337,9 @@ internal static partial class RdfTranscript
 
         /// <summary>Opens the document, as the diagram's first open does.</summary>
         public async Task ReadAsync(CancellationToken cancellationToken) => await Store.GetOrLoadAsync(Body, cancellationToken);
+
+        /// <summary>Whether the document as it is now could be read.</summary>
+        public bool IsUsable => Store.Get(Body)?.IsUsable ?? false;
 
         /// <summary>What the diagram session sends for the document as it is now: the elements its baseline adds, none when it adds none.</summary>
         public async Task<IReadOnlyList<DiagramElement>> DrawnAsync(CancellationToken cancellationToken) =>
@@ -408,6 +417,23 @@ internal static partial class RdfTranscript
             }
 
             await RecordAsync($"set {Mask(target)} {propertyId} = {TranscriptText.Quoted(value)}", answer);
+        }
+
+        /// <summary>Sends <paramref name="command"/> through the project's history, as a menu's commit would.</summary>
+        public async Task CommandAsync(string step, ICommand command)
+        {
+            string answer;
+            try
+            {
+                var result = await session.History.Get(ProjectRoot.From(session.Folder)).ExecuteAsync(command, cancellationToken);
+                answer = result.IsSuccess ? "ok" : $"refused: {result.Error}";
+            }
+            catch (Exception exception) when (exception is not OperationCanceledException)
+            {
+                answer = Thrown(exception);
+            }
+
+            await RecordAsync(step, answer);
         }
 
         /// <summary>A drag of <paramref name="target"/> 40 to the right of where the session draws it.</summary>
