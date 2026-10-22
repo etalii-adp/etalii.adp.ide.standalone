@@ -59,7 +59,7 @@ internal static partial class PluginFunctions
 
         if (implementations.TryGet(name, out var implementation))
         {
-            return new CelFunction(name, CelCallStyle.Global, arity, arity, call => implementation([.. call.Arguments.Select(Unwrapped)]), _ => cost);
+            return new CelFunction(name, CelCallStyle.Global, arity, arity, call => implementation([.. call.Arguments.Select(Unwrapped)], Used(name, uses, call)), _ => cost);
         }
 
         if (JsonProperties.String(declaration, "fallback") is not { } fallback)
@@ -98,6 +98,19 @@ internal static partial class PluginFunctions
             var result = program.Evaluate(variables, call.Budget);
             return result is CelError error ? throw new CelException(error.Message) : result;
         }, _ => cost);
+    }
+
+    /// <summary>What a function's <c>uses</c> names (§13.1.1), as the expression calling it has them.</summary>
+    private static Dictionary<string, object?> Used(string name, IReadOnlyList<string> uses, CelCall call)
+    {
+        var used = new Dictionary<string, object?>(StringComparer.Ordinal);
+        foreach (var use in uses)
+        {
+            used[use] = call.Variables.TryGetValue(use, out var value)
+                ? value
+                : throw new CelException($"'{name}' uses '{use}', which the expression calling it has no value for.");
+        }
+        return used;
     }
 
     /// <summary>An element as the model holds it, also when a finding shows it under its written id.</summary>

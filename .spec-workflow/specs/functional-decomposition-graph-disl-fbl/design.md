@@ -147,7 +147,7 @@ Each is added with a test seen to fail first. Requirement 8.2 asks for the list 
 | L3 | The built-ins' refusal of a connect gesture: a `Connect` beside `GestureConstraintEvaluator.Change` and `.Placement`, giving the first refusal in the order of DISL 8.4. | The class has those two methods only and says the built-ins "are checked by the host". `DislContexts.BuiltInRefusal` is declared and walked by the loader and evaluated nowhere. | 3 |
 | L4 | A `fixed` attribute (DISL 4.3): read as its value, never written, no row unless the form asks. | Searched for `fixed` in the library: only `DislIds.Fixed`. | 3 |
 | L5 | `compileNotation`: a relation end's `max` compiled to `maxIntoTarget` and `maxFromSource`; `acyclic` on an abstract relation type compiled to one rule over its subtypes. | `maxIntoTarget` occurs in `diagramDefinition.ts` and `DiagramCanvas.tsx` only; `compile()` makes one `acyclic` rule per relation type that states it. | 6 |
-| L6 | FBL: a slot that reads a scalar as written, and a constant an `insert` writes in `keys` order, **as etalii.adp defines them**. | Searched `FblDocumentLoader.cs` for `"as"` and `"constant"`: none. | 7, waits |
+| L6 | FBL: ~~a slot that reads a scalar as written, and~~ a constant an `insert` writes in `keys` order, **as etalii.adp defines it** (FBL spec 033, etalii-adp/etalii.adp#420). The slot that reads a scalar as written is FBL 0.5's `read`, which the library reads already (`BindingReader`) (ruled in chat 2026-10-22). | Searched `FblDocumentLoader.cs` for `"as"` and `"constant"`: none. | 7, waits |
 | L7 | FBL defects the fixtures of step 1 show: a block scalar whose first line begins with a space (B13), an empty flow list with a trailing comment (B14, the case at "An empty flow sequence" in `YamlFamily.cs`), the indentation of a new entry (B17), a number that rounds to zero (B19). Each is repaired only if its fixture fails. | To be shown by fixture. | 7, 8 |
 
 ## Data Models
@@ -172,7 +172,7 @@ One JSON file, `Parity/functional-decomposition-graph.transcript.json`, shaped a
 
 | What | Waits on | Meanwhile |
 | --- | --- | --- |
-| Steps 7 and 8, and so Requirements 4, 5, 6.1, 6.2 for `FdgParser` and `FdgWriter`, and 8.3 | FBL gaining a slot that reads a scalar as written (gap 1) and a constant written by an `insert` (gap 2), in etalii-adp/etalii.adp, and Q3 of `timeline-disl-fbl` not being ruled otherwise | The tool reads with `FdgParser` and writes with `FdgWriter`; menus, rows, findings and refusals are already the definition's. The binding of the requirements' appendix stays a draft. |
+| Steps 7 and 8, and so Requirements 4, 5, 6.1, 6.2 for `FdgParser` and `FdgWriter`, and 8.3 | FBL gaining ~~a slot that reads a scalar as written (gap 1) and~~ a constant written by an `insert` (gap 2), in etalii-adp/etalii.adp (FBL spec 033, #420; gap 1 is answered by FBL 0.5 (ruled in chat 2026-10-22)), and Q3 of `timeline-disl-fbl` not being ruled otherwise | The tool reads with `FdgParser` and writes with `FdgWriter`; menus, rows, findings and refusals are already the definition's. The binding of the requirements' appendix stays a draft. |
 | The end of `FdgCommentKeeper`, `FdgFindingOrder`, `FdgSizeClamp` and the unknown types | Gaps 5, 8, 9 and 2 answered | The stand-ins, each named in the companion |
 | The end of `FdgLinkChain` | The user ruling on the items of Q4 one by one, after this conversion | Today's findings |
 

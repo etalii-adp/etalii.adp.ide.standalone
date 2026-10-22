@@ -76,4 +76,64 @@ public class DerivedRelationKeyTests
         Assert.Equal(DislModelBuilder.DerivedFailed, finding.Code);
         Assert.Equal("Items of Broken were dropped: the key of an item is not a string, number, bool or list of those", finding.Message);
     }
+
+    /// <summary>
+    /// The example of §4.11.3: each stored relationship lifted to the nearest ancestor of each end that the view draws,
+    /// several landing on one pair drawn as one line carrying the first one's description. <c>inView</c> is a function
+    /// of the example's own here, and <c>liftTo</c> takes the first of the list by its size, as this runtime has no
+    /// optional types.
+    /// </summary>
+    private static readonly DislSpecification Lifting = Specifications.Loaded(Specifications.With("""
+        "functions": {
+          "inView": { "params": [{ "name": "e", "type": "Element" }], "returns": "bool", "cel": "e.shown" },
+          "liftTo": {
+            "params": [{ "name": "e", "type": "Element" }], "returns": "Element", "uses": ["diagram"],
+            "cel": "cel.bind(l, ([e] + e.ancestors()).filter(a, inView(a)), l.size() > 0 ? l[0] : null)"
+          }
+        },
+        "metamodel": {
+          "types": { "Element": { "attributes": { "shown": { "type": "bool" } }, "children": { "allowed": ["Element"] } } },
+          "relations": {
+            "Relationship": { "source": "Element", "target": "Element", "attributes": { "description": { "type": "string" }, "technology": { "type": "string" } } },
+            "DrawnRelationship": {
+              "source": "Element", "target": "Element",
+              "attributes": { "description": { "type": "string" }, "technology": { "type": "string" } },
+              "derived": {
+                "from": "diagram.relationsOfType('Relationship').filter(r, liftTo(r.source) != null && liftTo(r.target) != null && liftTo(r.source) != liftTo(r.target))",
+                "key": "[liftTo(item.source).id, liftTo(item.target).id]",
+                "id": "'rel:' + liftTo(item.source).id + '->' + liftTo(item.target).id",
+                "source": "liftTo(item.source)",
+                "target": "liftTo(item.target)",
+                "attributes": { "description": "item.description", "technology": "item.technology" },
+                "edits": { "attribute:description": "describeRelationship", "delete": "deleteRelationships" }
+              }
+            }
+          }
+        }
+        """));
+
+    private static FblElement Element(string id, bool shown, string? parent, int line) =>
+        new(id, true, "Element", "element", false, new Dictionary<string, object?> { ["shown"] = shown }, parent, parent is null ? null : "children", null, null, new Span(0, 0), line);
+
+    private static FblElement Relationship(string id, string source, string target, string description, int line) =>
+        new(id, true, "Relationship", "relationship", true, new Dictionary<string, object?> { ["description"] = description, ["technology"] = "HTTPS" }, null, null, source, target, new Span(0, 0), line);
+
+    [Fact]
+    public void TheExampleOf4113_LiftsRelationshipsToWhatTheViewDraws_OneLinePerPair()
+    {
+        // Act.
+        var model = DislModelBuilder.From(new FblModel(
+        [
+            Element("web", true, null, 1), Element("api", false, "web", 2), Element("db", true, null, 3), Element("store", false, "db", 4),
+            Relationship("r1", "api", "store", "Reads orders", 5),
+            Relationship("r2", "web", "db", "Writes orders", 6),
+            Relationship("r3", "api", "web", "Inside one container", 7),
+        ], [], false), Lifting);
+
+        // Assert.
+        var drawn = Assert.Single(model.Diagram.RelationsOfType("DrawnRelationship"));
+        Assert.Equal(("rel:web->db", "web", "db"), (drawn.Id, drawn.Source!.Id, drawn.Target!.Id));
+        Assert.Equal("Reads orders", drawn.ValueOf("description"));
+        Assert.Equal(["r1", "r2"], drawn.Sources.Select(source => source.Id));
+    }
 }
