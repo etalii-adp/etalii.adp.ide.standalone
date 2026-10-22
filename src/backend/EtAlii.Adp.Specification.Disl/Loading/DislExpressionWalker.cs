@@ -365,6 +365,9 @@ internal static partial class DislExpressionWalker
                 };
             }
 
+            // std.notApplicable is worded in the operation context, with operationId bound (§9.1, §12.3).
+            if (key == "std.notApplicable" && path is [_, "messages"]) return frame.In(DislContext.Operation).Binding(["operationId"]);
+
             // An operation whose body is a simulation (§9.3, §9.6): its initial, next and until are
             // Expressions of the simulation context, which binds state and step besides the operation's p.
             if (key == "simulate" && path is [_, "operations", _]) return frame.In(DislContext.Simulation).As(Mode.Literal);

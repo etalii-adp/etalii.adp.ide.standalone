@@ -114,6 +114,9 @@ public sealed class DislType
         var derived = json.ValueKind == JsonValueKind.Object && json.TryGetProperty("derived", out var declared) && declared.ValueKind == JsonValueKind.Object ? declared : default;
         ConnectEdit = derived.ValueKind == JsonValueKind.Object && derived.TryGetProperty("edits", out var edits) ? JsonProperties.String(edits, "connect") : null;
         DerivedReason = JsonProperties.String(derived, "reason");
+        DerivedEdits = DislJson.Members(derived, "edits")
+            .Where(edit => edit.Value.ValueKind == JsonValueKind.String)
+            .ToDictionary(edit => edit.Name, edit => edit.Value.GetString()!, StringComparer.Ordinal);
     }
 
     public string Name { get; }
@@ -173,6 +176,22 @@ public sealed class DislType
     /// for a stored type, and for one whose <c>derived</c> is neither an Expression nor an object.
     /// </summary>
     internal DislDerivedRelation? DerivedRelation { get; set; }
+
+    /// <summary>
+    /// A derived node type's <c>derived</c> (§4.11.2), typed at load with the programs the loader compiled; null for a
+    /// stored type, for a relation type, and for one whose <c>derived</c> is not an object.
+    /// </summary>
+    internal DislDerivedNode? DerivedNode { get; set; }
+
+    /// <summary>
+    /// What a derived type's <c>edits</c> carries out by an operation instead of refusing (§4.11.4): the operation by
+    /// gesture - <c>delete</c>, <c>reparent</c>, <c>move</c>, <c>connect</c>, <c>rename</c>, <c>attribute:&lt;name&gt;</c> - in
+    /// declaration order; empty when it maps none.
+    /// </summary>
+    public IReadOnlyDictionary<string, string> DerivedEdits { get; }
+
+    /// <summary>A derived type's <c>reason</c>, why a gesture on its elements is refused (§4.11.4), or null when it states none.</summary>
+    public string? Reason => DerivedReason;
 
     /// <summary>The operation a derived relation's <c>edits.connect</c> runs when one is drawn (§4.11), or null when it names none.</summary>
     internal string? ConnectEdit { get; }
