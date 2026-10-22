@@ -75,6 +75,27 @@ describe("compileNotation", () => {
     ]);
   });
 
+  it("compiles a relation end's max to the library's limit at that end, beside one per direction", () => {
+    const spec = specOf();
+    spec.metamodel.relations = {
+      Link: { source: { types: ["Card", "Box"], max: 2 }, target: { types: ["Card"], max: 1 }, directed: true, allowSelfLoops: false, allowParallel: false },
+    };
+    const [link] = compileNotation(spec, BINDINGS).relationTypes;
+    expect(link?.endpoints?.cardinality).toEqual({ perPair: "ordered", maxFromSource: 2, maxIntoTarget: 1 });
+  });
+
+  it("compiles acyclic on an abstract relation type to one rule over the subtypes it draws", () => {
+    const spec = specOf();
+    spec.metamodel.relations = {
+      Owns: { abstract: true, acyclic: true },
+      Holds: { extends: "Owns", source: "Card", target: "Card" },
+      Grips: { extends: "Owns", source: "Card", target: "Card", acyclic: true },
+      Link: { source: ["Card", "Box"], target: "Card" },
+    };
+    spec.notation.edges = { Holds: {}, Grips: {}, Link: {} };
+    expect(compileNotation(spec, BINDINGS).acyclic).toEqual([{ relationTypes: ["holds", "grips"] }]);
+  });
+
   it("maps the relation: route, DISL's open arrow to the library's, one per direction", () => {
     const [link] = compileNotation(specOf(), BINDINGS).relationTypes;
     expect(link).toEqual({

@@ -322,6 +322,14 @@ const BADGE_TOP = 5;
 const LINK_SIZE = 11;
 
 /** What a relation takes from its supertype where it does not state it (DISL 4.7). */
+/**
+ * A relation end's `max` (DISL §4.9) as the library's limit at that end - `maxFromSource` for the source,
+ * `maxIntoTarget` for the target - or nothing for an end that states none.
+ */
+function endLimit(end: unknown, limit: "maxFromSource" | "maxIntoTarget"): { maxFromSource?: number; maxIntoTarget?: number } {
+  return isObject(end) && typeof end.max === "number" ? { [limit]: end.max } : {};
+}
+
 const INHERITED_RELATION_KEYS = ["source", "target", "directed", "allowSelfLoops", "allowParallel", "acyclic"] as const;
 
 /** Whether a filter is a switch whose value is kept with the diagram (DISL 0.4 §6.13.1). */
@@ -487,9 +495,7 @@ class Compiler {
     const spec = this.spec;
     const elementTypes = this.nodeNames.map((name) => this.elementType(name, spec.notation.nodes[name]!));
     const relationTypes = Object.entries(spec.notation.edges ?? {}).map(([name]) => this.relationType(name));
-    const acyclic = Object.entries(spec.metamodel.relations ?? {})
-      .filter(([, relation]) => relation.acyclic === true)
-      .map(([name]) => ({ relationTypes: [this.typeId(name)] }));
+    const acyclic = this.acyclicRules();
     const actions = this.actions();
     const snap = this.snap();
     const rulers = this.rulers(this.system);
@@ -1314,6 +1320,8 @@ class Compiler {
     // is directed. A derived relation's count follows from its derivation and is not declared.
     const perPair = relation.derived === undefined && relation.allowParallel === false ? (relation.directed === false ? "unordered" : "ordered") : undefined;
     const held = this.heldOnce(relation);
+    const limits = { ...endLimit(relation.source, "maxFromSource"), ...endLimit(relation.target, "maxIntoTarget") };
+    const cardinality = { ...(perPair !== undefined ? { perPair } : {}), ...held, ...limits };
 
     return {
       id: this.typeId(name),
@@ -1334,8 +1342,7 @@ class Compiler {
         source: endpoint(sourceTypes, "source"),
         target: endpoint(targetTypes, "target"),
         allowSelf: relation.allowSelfLoops === true,
-        ...(perPair !== undefined ? { cardinality: { perPair } } : {}),
-        ...(held !== undefined ? { cardinality: held } : {}),
+        ...(Object.keys(cardinality).length > 0 ? { cardinality } : {}),
       },
       ...(this.createsOnEmptyRelease(name, edge) ? { emptyRelease: "complete" as const } : {}),
     };
@@ -1399,6 +1406,31 @@ class Compiler {
     }
 
     return undefined;
+  }
+
+  /**
+   * The canvas's cycle rules (DISL §4.9 `acyclic`): one per relation type that states it and has no acyclic
+   * supertype to cover it, over that type and every subtype the notation draws, so `acyclic` on an abstract
+   * type forbids a loop through any mix of its subtypes, as the backend's `std.acyclic` does.
+   */
+  private acyclicRules(): { relationTypes: string[] }[] {
+    const relations = this.spec.metamodel.relations ?? {};
+    const supertypes = (name: string): string[] => {
+      const chain: string[] = [];
+      for (let current = relations[name]?.extends; current !== undefined && !chain.includes(current) && current !== name; current = relations[current]?.extends) {
+        chain.push(current);
+      }
+      return chain;
+    };
+    const drawn = Object.keys(this.spec.notation.edges ?? {});
+    return Object.entries(relations)
+      .filter(([name, relation]) => relation.acyclic === true && !supertypes(name).some((supertype) => relations[supertype]?.acyclic === true))
+      .map(([name, relation]) => {
+        const members = drawn.filter((edge) => edge === name || supertypes(edge).includes(name));
+        return relation.abstract === true || members.includes(name) ? members : [name, ...members];
+      })
+      .filter((members) => members.length > 0)
+      .map((members) => ({ relationTypes: members.map((member) => this.typeId(member)) }));
   }
 
   /** A DISL marker as the library draws it. */
