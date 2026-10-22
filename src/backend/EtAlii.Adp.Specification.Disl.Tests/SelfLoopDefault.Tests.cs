@@ -34,7 +34,7 @@ public class SelfLoopDefaultTests
     {
         var diagram = new DislDiagram(Specification);
         var box = diagram.AddNode("Box", "a");
-        return GestureConstraintEvaluator.Connect(Specification, diagram, relationType, box, box, null)?.Message ?? "";
+        return GestureConstraintEvaluator.Connect(Specification, diagram, relationType, box, box)?.Message ?? "";
     }
 
     [Fact]
