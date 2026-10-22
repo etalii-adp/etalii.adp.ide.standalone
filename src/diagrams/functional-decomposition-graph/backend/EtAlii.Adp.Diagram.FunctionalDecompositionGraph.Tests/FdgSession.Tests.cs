@@ -171,7 +171,7 @@ public sealed class FdgSessionTests : IDisposable
     private async Task EditAsync(ICommand command)
     {
         var text = await File.ReadAllTextAsync(Body, TestContext.Current.CancellationToken);
-        var (edited, refusal) = await FdgEditing.RunAsync(text, command, TestContext.Current.CancellationToken);
+        (string? edited, string? refusal) = await FdgEditing.RunAsync(text, command, TestContext.Current.CancellationToken);
         Assert.True(edited is not null, refusal);
         await File.WriteAllTextAsync(Body, edited, TestContext.Current.CancellationToken);
         await _store.ReloadAsync(Body, TestContext.Current.CancellationToken);

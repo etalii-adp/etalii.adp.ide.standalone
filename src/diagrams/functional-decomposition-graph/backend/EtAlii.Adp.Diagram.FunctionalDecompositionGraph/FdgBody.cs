@@ -118,7 +118,7 @@ public sealed class FdgBody : ITextBody<FdgBody>
         return change switch
         {
             ModelChange.Set set => set with { Id = BindingIdOf(set.Id) },
-            ModelChange.Remove remove => remove with { Id = BindingIdOf(remove.Id) },
+            ModelChange.Remove remove => new ModelChange.Remove(BindingIdOf(remove.Id)),
             ModelChange.Add add => add with { Attributes = add.Attributes.ToDictionary(pair => pair.Key, pair => pair.Key is "from" or "to" ? WrittenIdOf(pair.Value) : pair.Value, StringComparer.Ordinal) },
             _ => change,
         };
@@ -127,7 +127,7 @@ public sealed class FdgBody : ITextBody<FdgBody>
     private string BindingIdOf(string id) => BindingIds.GetValueOrDefault(id, id);
 
     private object? WrittenIdOf(object? end) =>
-        end is string id && Disl.Diagram.Elements.FirstOrDefault(element => element.Id == id) is { } element ? FdgDefinition.WrittenId(element) : end;
+        end is string id && Disl.Diagram.Elements.FirstOrDefault(candidate => candidate.Id == id) is { } element ? FdgDefinition.WrittenId(element) : end;
 
     /// <summary>Plans and applies one change; the refusal's sentence when the library refuses it.</summary>
     internal EditOutcome Change(ModelChange change) => _edits.Change(change);

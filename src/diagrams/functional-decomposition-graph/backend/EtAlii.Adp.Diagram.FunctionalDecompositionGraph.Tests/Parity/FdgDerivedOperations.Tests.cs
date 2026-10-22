@@ -49,7 +49,7 @@ public class FdgDerivedOperationsTests
         foreach (var command in Commands(model))
         {
             compared++;
-            var (saved, refusal) = await FdgEditing.RunAsync(text, command, TestContext.Current.CancellationToken);
+            (string? saved, string? refusal) = await FdgEditing.RunAsync(text, command, TestContext.Current.CancellationToken);
             var actual = saved is null ? $"refused: {refusal}" : Reading(saved);
 
             var document = LineDocument.Parse(text);

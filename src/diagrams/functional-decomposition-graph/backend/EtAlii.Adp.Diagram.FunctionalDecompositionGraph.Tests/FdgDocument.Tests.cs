@@ -174,7 +174,7 @@ public class FdgDocumentTests
         var before = LineDocument.Parse(text).Lines.Select(line => line.Text).ToList();
         var moved = FdgParser.Parse(LineDocument.Parse(text)).Elements.Single(element => element.Id == "open-task");
 
-        var (edited, refusal) = await FdgEditing.RunAsync(text, new SetFdgPlacementCommand("crlf-line-endings.fdg", "open-task", 300, 400), TestContext.Current.CancellationToken);
+        (string? edited, string? refusal) = await FdgEditing.RunAsync(text, new SetFdgPlacementCommand("crlf-line-endings.fdg", "open-task", 300, 400), TestContext.Current.CancellationToken);
         Assert.True(edited is not null, refusal);
 
         var after = LineDocument.Parse(edited).Lines.Select(line => line.Text).ToList();
@@ -201,7 +201,7 @@ public class FdgDocumentTests
         var text = Load("lf-line-endings.fdg").Text;
         var first = FdgParser.Parse(LineDocument.Parse(text)).Elements[0];
 
-        var (edited, refusal) = await FdgEditing.RunAsync(text, new SetFdgPlacementCommand("lf-line-endings.fdg", first.Id, 1, 2), TestContext.Current.CancellationToken);
+        (string? edited, string? refusal) = await FdgEditing.RunAsync(text, new SetFdgPlacementCommand("lf-line-endings.fdg", first.Id, 1, 2), TestContext.Current.CancellationToken);
 
         Assert.True(edited is not null, refusal);
         Assert.NotEqual(text, edited);
@@ -231,7 +231,7 @@ public class FdgDocumentTests
     {
         var text = FdgBody.Template.Replace("\r\n", "\n", StringComparison.Ordinal);
 
-        var (edited, refusal) = await FdgEditing.RunAsync(text, new AddFdgElementCommand("empty.fdg", FdgElementTypes.Function, 10, 20, "first"), TestContext.Current.CancellationToken);
+        (string? edited, string? refusal) = await FdgEditing.RunAsync(text, new AddFdgElementCommand("empty.fdg", FdgElementTypes.Function, 10, 20, "first"), TestContext.Current.CancellationToken);
 
         Assert.True(edited is not null, refusal);
         var reread = FdgParser.Parse(LineDocument.Parse(edited));
@@ -246,7 +246,7 @@ public class FdgDocumentTests
     {
         var text = Load("crlf-line-endings.fdg").Text;
 
-        var (edited, refusal) = await FdgEditing.RunAsync(text, new RemoveFdgElementCommand("crlf-line-endings.fdg", "open-task"), TestContext.Current.CancellationToken);
+        (string? edited, string? refusal) = await FdgEditing.RunAsync(text, new RemoveFdgElementCommand("crlf-line-endings.fdg", "open-task"), TestContext.Current.CancellationToken);
 
         Assert.True(edited is not null, refusal);
         var reread = FdgParser.Parse(LineDocument.Parse(edited));
@@ -266,7 +266,7 @@ public class FdgDocumentTests
     {
         var text = Load("crlf-line-endings.fdg").Text;
 
-        var (edited, refusal) = await FdgEditing.RunAsync(text, new SetFdgSizeCommand("crlf-line-endings.fdg", id, width, height), TestContext.Current.CancellationToken);
+        (string? edited, string? refusal) = await FdgEditing.RunAsync(text, new SetFdgSizeCommand("crlf-line-endings.fdg", id, width, height), TestContext.Current.CancellationToken);
 
         Assert.True(edited is not null, refusal);
         Assert.Contains(written, edited, StringComparison.Ordinal);
@@ -278,7 +278,7 @@ public class FdgDocumentTests
     {
         var text = Load("crlf-line-endings.fdg").Text;
 
-        var (edited, refusal) = await FdgEditing.RunAsync(text, new SetFdgSizeCommand("crlf-line-endings.fdg", "open-task", 200, 300), TestContext.Current.CancellationToken);
+        (string? edited, string? refusal) = await FdgEditing.RunAsync(text, new SetFdgSizeCommand("crlf-line-endings.fdg", "open-task", 200, 300), TestContext.Current.CancellationToken);
 
         Assert.Null(edited);
         Assert.Equal("Only a Comment has its own height; the others share one.", refusal);
@@ -295,7 +295,7 @@ public class FdgDocumentTests
         var text = (await File.ReadAllTextAsync(FieldServiceExample.Path, TestContext.Current.CancellationToken)).ReplaceLineEndings("\n");
         Assert.Contains("elements:\n  # The screens.\n  - id: planning\n", text, StringComparison.Ordinal);
 
-        var (edited, refusal) = await FdgEditing.RunAsync(text, new RemoveFdgElementCommand("field-service.fdg", "planning"), TestContext.Current.CancellationToken);
+        (string? edited, string? refusal) = await FdgEditing.RunAsync(text, new RemoveFdgElementCommand("field-service.fdg", "planning"), TestContext.Current.CancellationToken);
 
         Assert.True(edited is not null, refusal);
         Assert.Contains("elements:\n  # The screens.\n  - id: task-list\n", edited, StringComparison.Ordinal);
@@ -307,7 +307,7 @@ public class FdgDocumentTests
     {
         var text = Load("no-connections-section.fdg").Text;
 
-        var (edited, refusal) = await FdgEditing.RunAsync(text, new ConnectFdgElementsCommand("no-connections-section.fdg", FdgConnectionTypes.UiChild, "u1", "u2"), TestContext.Current.CancellationToken);
+        (string? edited, string? refusal) = await FdgEditing.RunAsync(text, new ConnectFdgElementsCommand("no-connections-section.fdg", FdgConnectionTypes.UiChild, "u1", "u2"), TestContext.Current.CancellationToken);
 
         Assert.Null(edited);
         Assert.Equal("The document has no `connections:` section to add to.", refusal);
