@@ -4,7 +4,7 @@ using EtAlii.Adp.TestSupport.Host;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Diagram.C4.Tests;
 
 /// <summary>
 /// A toolbox entry dropped on a C4 element, over the real host, sent as the canvas sends it: the

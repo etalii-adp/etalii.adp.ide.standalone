@@ -5,7 +5,7 @@ using Xunit;
 using IoPath = System.IO.Path;
 using Path = EtAlii.Adp.Documents.Wire.Path;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Diagram.DotNetDependencyGraph.Tests;
 
 /// <summary>
 /// The shipped showcase, opened over the real host exactly as the client opens it.

@@ -9,7 +9,7 @@ using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 using Path = EtAlii.Adp.Documents.Wire.Path;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline.Tests;
 
 /// <summary>
 /// The Azure Pipelines arc over the real host: a <c>.yml</c> that is not a diagram until somebody
