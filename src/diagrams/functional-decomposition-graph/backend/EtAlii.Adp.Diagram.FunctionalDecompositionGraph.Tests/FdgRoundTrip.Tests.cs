@@ -2,6 +2,7 @@ using EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests.Parity;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Specification.Disl;
 using Xunit;
 using Path = System.IO.Path;
 
@@ -136,7 +137,7 @@ public sealed class FdgRoundTripTests
         }
     }
 
-    private static Dictionary<string, object?> Values(string attribute, EtAlii.Adp.Specification.Disl.DislElement element) =>
+    private static Dictionary<string, object?> Values(string attribute, DislElement element) =>
         new(StringComparer.Ordinal) { [attribute] = element.Attributes.GetValueOrDefault(attribute) };
 
     /// <summary>A temporary folder holding copies of corpus documents, removed afterwards.</summary>

@@ -73,22 +73,19 @@ public class FdgDerivedOperationsTests
 
     /// <summary>
     /// The finding an edit's hand-written body shows, when the oracle cannot read it back as the command wrote it:
-    /// a Comment's text that its literal block does not hold, a first line that begins with a space or an empty text (B13), or a first entry added below an empty flow list
-    /// that carries a comment (B14). Null for every other edit, which is compared.
+    /// a Comment's text that its literal block does not hold, a first line that begins with a space or an empty
+    /// text (B13), or a first entry added below an empty flow list that carries a comment (B14). Null for every other edit, which is compared.
     /// </summary>
     private static string? Repaired(string text, ICommand command, string handWritten)
     {
         var read = FdgParser.Parse(LineDocument.Parse(handWritten));
-        switch (command)
+        var before = FdgParser.Parse(LineDocument.Parse(text));
+        return command switch
         {
-            case RenameFdgElementCommand rename when FdgParser.Parse(LineDocument.Parse(text)).ElementOf(rename.ElementId) is { IsComment: true }
-                                                     && read.ElementOf(rename.ElementId)?.Text != rename.Value:
-                return "B13";
-            case AddFdgElementCommand or ConnectFdgElementsCommand when read.Problems.Count > FdgParser.Parse(LineDocument.Parse(text)).Problems.Count:
-                return "B14";
-            default:
-                return null;
-        }
+            RenameFdgElementCommand rename when before.ElementOf(rename.ElementId) is { IsComment: true } && read.ElementOf(rename.ElementId)?.Text != rename.Value => "B13",
+            AddFdgElementCommand or ConnectFdgElementsCommand when read.Problems.Count > before.Problems.Count => "B14",
+            _ => null,
+        };
     }
 
     /// <summary>The commands tried on <paramref name="model"/>: adds and connects, the edits of a sample of its entries, and ids that are not there.</summary>
