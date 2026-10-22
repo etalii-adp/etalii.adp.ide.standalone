@@ -102,23 +102,16 @@ public class ConformanceFixturesTests
         var original = File.ReadAllText(Path.Combine(folder, "fixture.json"));
         var changed = original.Replace("\"label\": \"yes\"", "\"label\": true", StringComparison.Ordinal);
         Assert.NotEqual(original, changed);
-        var copy = Path.Combine(Path.GetTempPath(), $"fbl-{Guid.NewGuid():N}", "fixture.json");
-        Directory.CreateDirectory(Path.GetDirectoryName(copy)!);
+        using var scratch = TestFolder.Create("fbl");
+        var copy = scratch.Combine("fixture.json");
         File.WriteAllText(copy, changed);
 
-        try
-        {
-            // Act.
-            var failure = Record.Exception(() => Run("timeline-written-text", folder, File.ReadAllBytes(copy)));
+        // Act.
+        var failure = Record.Exception(() => Run("timeline-written-text", folder, File.ReadAllBytes(copy)));
 
-            // Assert: it fails, naming the attribute.
-            Assert.NotNull(failure);
-            Assert.Contains("'label'", failure.Message, StringComparison.Ordinal);
-        }
-        finally
-        {
-            Directory.Delete(Path.GetDirectoryName(copy)!, true);
-        }
+        // Assert: it fails, naming the attribute.
+        Assert.NotNull(failure);
+        Assert.Contains("'label'", failure.Message, StringComparison.Ordinal);
     }
 
     /// <summary>Runs a fixture's reading and steps; its binding and input are found from <paramref name="folder"/>.</summary>

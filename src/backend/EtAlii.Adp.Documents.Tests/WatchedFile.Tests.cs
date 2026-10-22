@@ -17,10 +17,13 @@ public sealed class WatchedFileTests : IDisposable
 {
     private static readonly TimeSpan Patience = TimeSpan.FromSeconds(10);
 
-    private readonly string _root = Directory.CreateTempSubdirectory("adp-watched-file-").FullName;
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-watched-file");
+    private readonly string _root;
     private readonly FakeTimeProvider _clock = new();
 
-    public void Dispose() => TestFolder.TryDelete(_root);
+    public WatchedFileTests() => _root = _testFolder.Path;
+
+    public void Dispose() => _testFolder.Dispose();
 
     // ---- the read-retry --------------------------------------------------------------------------
 

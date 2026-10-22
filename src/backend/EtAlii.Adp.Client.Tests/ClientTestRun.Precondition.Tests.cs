@@ -37,15 +37,14 @@ namespace EtAlii.Adp.Client.Tests;
 /// </remarks>
 public class ClientTestRunPreconditionTests : IDisposable
 {
-    private readonly string _root = IoPath.Combine(
-        IoPath.GetTempPath(),
-        "adp-client-precondition-" + Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-client-precondition");
+    private readonly string _root;
 
-    public ClientTestRunPreconditionTests() => Directory.CreateDirectory(_root);
+    public ClientTestRunPreconditionTests() => _root = _testFolder.Path;
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
 
         GC.SuppressFinalize(this);
     }

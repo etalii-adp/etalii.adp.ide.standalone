@@ -19,13 +19,14 @@ public class DestinationStateTests : IDisposable
 {
     private readonly FileWriter _writer = new();
 
-    private readonly string _folder = IoPath.Combine(IoPath.GetTempPath(), "adp-destination-state-" + Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-destination-state");
+    private readonly string _folder;
 
-    public DestinationStateTests() => Directory.CreateDirectory(_folder);
+    public DestinationStateTests() => _folder = _testFolder.Path;
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_folder);
+        _testFolder.Dispose();
         GC.SuppressFinalize(this);
     }
 

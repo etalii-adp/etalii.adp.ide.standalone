@@ -17,14 +17,14 @@ public class DesignerAddOptionsExistingTests : IDisposable
 {
     private const string OptionId = RequirementsDesigner.Origin + "@.md";
 
+    private readonly TestFolder _testFolder = TestFolder.Create("designer-add-options");
     private readonly string _root;
     private readonly IHistoryStack _history;
     private readonly AddDiagramContextActionProvider _provider;
 
     public DesignerAddOptionsExistingTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
         _history = TestHistory.Create(_root, out var historyStacks, [RequirementsDesigner.Definition]);
         var catalog = new DiagramDefinitionCatalog { All = [] };
         var designers = new DesignerAddOptions(
@@ -33,7 +33,7 @@ public class DesignerAddOptionsExistingTests : IDisposable
         _provider = new AddDiagramContextActionProvider(historyStacks, new DiagramDocumentFactories([]), catalog, new DiagramFileRouter(catalog), designers);
     }
 
-    public void Dispose() => TestFolder.TryDelete(_root);
+    public void Dispose() => _testFolder.Dispose();
 
     private ContextTarget Folder => new(ContextScope.Hierarchy, _root, IsContainer: true, ShortGuid.NewShortGuid(), Root: ProjectRoot.From(_root));
 

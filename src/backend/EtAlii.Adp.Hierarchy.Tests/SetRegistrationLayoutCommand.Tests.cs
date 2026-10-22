@@ -11,19 +11,19 @@ namespace EtAlii.Adp.Hierarchy.Tests;
 /// </summary>
 public class SetRegistrationLayoutCommandTests : IDisposable
 {
+    private readonly TestFolder _testFolder = TestFolder.Create("registration-layout");
     private readonly string _root;
     private readonly IHistoryStack _history;
 
     public SetRegistrationLayoutCommandTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
         _history = TestHistory.Create(_root, out _);
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     private string WriteAdp(string content)
