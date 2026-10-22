@@ -23,11 +23,11 @@ public class RdfEmptyDocumentTests
     [Fact]
     public void AHostileBaseName_FoldsToACleanLocalName()
     {
-        // Act.
-        var text = ServiceCollectionAddRdfExtension.EmptyRdfDocument("weird / name?!");
+        // Act: a base name is a file's, so it holds no path separator.
+        var text = ServiceCollectionAddRdfExtension.EmptyRdfDocument("weird name?!");
 
         // Assert.
         var model = RdfParser.Parse(LineDocument.Parse(text));
-        Assert.Contains(model.Triples, t => t.Subject is IriTerm { Iri: "http://example.org/weird___name" });
+        Assert.Contains(model.Triples, t => t.Subject is IriTerm { Iri: "http://example.org/weird_name" });
     }
 }

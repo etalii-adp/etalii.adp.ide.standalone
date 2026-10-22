@@ -47,6 +47,7 @@ public static class ServiceCollectionAddShaclExtension
     /// The minimal document a new shapes diagram starts as: one node shape with a class target and
     /// one property row, parsing and validating clean, so a fresh shapes file opens as a card with
     /// something on it rather than as an empty canvas.
+    /// It is the module binding's template for this reading (FBL §13), which writes the bytes the module wrote before.
     /// </summary>
     /// <remarks>
     /// The starter targets a class the file does not describe, which is the normal case for this
@@ -54,23 +55,5 @@ public static class ServiceCollectionAddShaclExtension
     /// chip on the new card says so, which makes the first thing a user sees also the thing this
     /// reading most needs them to understand.
     /// </remarks>
-    private static string EmptyDocument(string baseName)
-    {
-        ArgumentNullException.ThrowIfNull(baseName);
-
-        var local = RdfLocalName.Of(baseName);
-        return "@prefix sh: <http://www.w3.org/ns/shacl#> .\r\n"
-            + "@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\r\n"
-            + "@prefix ex: <http://example.org/> .\r\n"
-            + "\r\n"
-            + $"ex:{local}Shape a sh:NodeShape ;\r\n"
-            + $"    sh:targetClass ex:{local} ;\r\n"
-            + $"    sh:name \"{baseName}\" ;\r\n"
-            + "    sh:property [\r\n"
-            + "        sh:path ex:name ;\r\n"
-            + "        sh:datatype xsd:string ;\r\n"
-            + "        sh:minCount 1 ;\r\n"
-            + "        sh:maxCount 1 ;\r\n"
-            + "    ] .\r\n";
-    }
+    private static string EmptyDocument(string baseName) => RdfDefinitions.NewDocument(ShaclOrigin, baseName);
 }
