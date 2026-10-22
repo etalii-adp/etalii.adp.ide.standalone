@@ -3883,6 +3883,64 @@ writes a size - is evidenced by the module's own suites. Requirements 13.1 and 1
   - After Undo the `tls.yml` text tab opened in step 5 became active rather than the diagram, as the Helm pass saw.
   - The diagram's tab has an empty caption, its file being named `.adp`; its title reads `ansible-pass/.adp`.
 
+## The compiled functional decomposition graph canvas, in a browser (functional-decomposition-graph-disl-fbl, task 8, Requirement 7.4)
+
+**Why this is a browser pass and not a test:** the compiled definition is held to the hand-written one
+key for key and markup for markup by `fdgCompiledDefinition.test.tsx`, but jsdom applies no CSS and
+lays out no text, so a fill, a centred Comment and a drag that writes a size are evidenced only here.
+
+- **Preconditions**: a locally running developer build of the branch. A **copy** of
+  `src/diagrams/functional-decomposition-graph/examples/field-service/` added as a project, because
+  the rows edit the document; open `field-service.fdg` by selecting it in Hierarchy and pressing
+  **Enter**. Read every result from the document on disk, not from the canvas. The instrument traps of
+  the task 18 entry above apply: in a hidden browser pane hold a dispatched gesture about three
+  seconds **after its last move** before releasing, and re-read positions after anything that
+  re-fits the canvas (an add re-fits it).
+- **Rows**:
+  1. **Five shapes and fills, both themes.** Read each shape's **computed** fill: light `#aaed92`,
+     `#ededed`, `#9edcfa`, `#86e6d9`, `#fcf281`; dark `#2e7814`, `#696969`, `#086fa1`, `#187569`,
+     `#736a03`. Labels and the Comment's text are `--color-text` in both; the Comment's text is
+     centred in its box.
+  2. **A drop of each palette entry** onto empty canvas writes one entry of that type, named as the
+     tool names a new one ("New UI element", …, a Comment "New comment", 240 by 96).
+  3. **A right-button drag for each of the five relations** writes it: UI to UI (`ui-child`), UI to
+     Action (`owns-action`), Action to Data (`owns-data`), Data to Function (`owns-function`), and a
+     **Shows from an Action to the page that owns it**. **One refused drag per check**, each with the
+     forbidden highlight and nothing written: a type (Action to Action), a cardinality (a second
+     parent) and a cycle (a child onto its own parent).
+  4. **Inline rename** of a name (F2, type, Enter) and of a Comment's text (F2, the multiline
+     editor) writes the new value.
+  5. **Resize**: a named element shows a left and a right handle only; dragging the right edge writes
+     the width, the left edge the width and `x`, the right edge staying put. A Comment shows four
+     handles; each of its four edges writes.
+  6. **Remove**: an element with no connection goes without asking; one with a connection asks
+     "Removing this element also removes the 1 connection to or from it." and, confirmed, takes the
+     connection with it.
+  7. **A right-click on empty canvas** opens the specification's menu: "Add ui element here", "Add
+     data element here", "Add action here", "Add function here", "Add comment here". The hand-written
+     canvas opened nothing here; this addition is on a card for the user.
+- **Result 2026-10-22, agent-7 (Developer), branch `features/functional-decomposition-graph-disl-fbl-8`
+  at `cace83f44`, macOS, light and dark via emulated `prefers-color-scheme`, in the IDE's built-in
+  browser with its pane hidden: all seven rows pass. Every gesture was dispatched as pointer, drag and
+  key events from the page, not made with a hand.** Measured:
+  1. Light fills `rgb(170, 237, 146)`, `rgb(237, 237, 237)`, `rgb(158, 220, 250)`,
+     `rgb(134, 230, 217)`, `rgb(252, 242, 129)`; dark `rgb(46, 120, 20)`, `rgb(105, 105, 105)`,
+     `rgb(8, 111, 161)`, `rgb(24, 117, 105)`, `rgb(115, 106, 3)`: the tokens exactly. Label and Comment
+     text `rgb(15, 23, 42)` light and `rgb(241, 245, 249)` dark. `note-offline`'s text is anchored at
+     x 1690, the middle of its box (1560 + 260 / 2).
+  2. Five entries written, each of its type and name; the canvas went from 19 elements to 24.
+  3. All five relations written with the relation the pair admits, the Shows from the new Action to
+     the new UI Element that owns it included; the three refusals showed the forbidden highlight only
+     and the document kept its 47 entries.
+  4. `name: Browser renamed screen` and a two-line `text: |-` written.
+  5. `task-row`: 2 handles; right edge 140 -> 203 with `x` 280; left edge 203 -> 266 with `x`
+     280 -> 217.014. `note-round-trip`: 4 handles; 260 by 96 -> 344 by 181, `x` 20 -> -21.9906,
+     `y` 520 -> 477.0715.
+  6. The new Comment went with no dialog; the new Function asked with the sentence above and,
+     confirmed, went with its `owns-function` connection: 47 -> 44 entries.
+  7. The five entries, in that order, in the context menu.
+- **Owed to a real hand**: the gesture START of a right-button drag and of a palette drag, as in task 18.
+
 ## A .NET dependency graph follows its files, keeps a drag, and is created as a `.slnx` (dotnet-dependency-graph-disl-fbl, task 9)
 
 **Why this is a browser pass and not only tests:** the module's tests read, watch, write and create through the real pipeline, but only the running app shows what the canvas draws after a change on disk, what a drag on it writes, and what the Add dialog creates, and only the .NET tooling says whether the created file is a solution it opens.
