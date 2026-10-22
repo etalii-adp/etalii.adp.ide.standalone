@@ -22,6 +22,8 @@ public sealed class DislDiagram : ICelObject
     private readonly List<DislView> _views = [];
     private Dictionary<DislElement, (List<DislElement> Incoming, List<DislElement> Outgoing)>? _ends;
     private readonly Dictionary<(string Type, long Max), (IReadOnlyList<IReadOnlyList<DislElement>> Cycles, bool Truncated)> _cycles = [];
+    private readonly Dictionary<string, IReadOnlyList<IReadOnlyList<DislElement>>> _knots = new(StringComparer.Ordinal);
+    private bool _computingBudgets;
 
     /// <summary>The derived diagram attributes being computed, so one that reads itself stops.</summary>
     private readonly HashSet<string> _computing = new(StringComparer.Ordinal);
@@ -186,13 +188,67 @@ public sealed class DislDiagram : ICelObject
     {
         _ends = null;
         _cycles.Clear();
+        _knots.Clear();
         ViewsChanged();
     }
 
-    /// <summary>An element changed: the views' members are computed again.</summary>
+    /// <summary>An element changed: the views' members are computed again, and the budgets.</summary>
     internal void ViewsChanged()
     {
+        // Null drops the memo, so the next read computes the budgets again.
+        Budgets = null!;
         foreach (var view in _views) view.Changed();
+    }
+
+    /// <summary>
+    /// The state of every budget (§3.2.1), in declaration order: computed when first asked for, and again after the
+    /// diagram changes.
+    /// </summary>
+    /// <exception cref="CelException">A budget's measure, order or unit is read while the budgets are computed, or a measure does not give an int.</exception>
+    public IReadOnlyList<DislBudgetState> Budgets
+    {
+        get => field ??= ComputedBudgets();
+        private set;
+    }
+
+    private IReadOnlyList<DislBudgetState> ComputedBudgets()
+    {
+        if (_computingBudgets) throw new CelException("A budget is read while the budgets are computed.");
+        _computingBudgets = true;
+        try
+        {
+            return DislBudgets.Compute(this);
+        }
+        finally
+        {
+            _computingBudgets = false;
+        }
+    }
+
+    /// <summary>The state of the budget <paramref name="id"/> (§3.2.1), or null when the specification declares none by that id.</summary>
+    public DislBudgetState? Budget(string id) => Budgets.FirstOrDefault(budget => budget.Id == id);
+
+    /// <summary>
+    /// Whether <paramref name="element"/> is drawn under the budgets (§3.2.1): no truncating budget cuts it, and for a
+    /// relation, both its ends are drawn.
+    /// </summary>
+    public bool IsDrawn(DislElement element)
+    {
+        ArgumentNullException.ThrowIfNull(element);
+        if (Budgets.Any(budget => budget.Cut.Contains(element))) return false;
+        return !element.Type.IsRelation
+            || (element.Source is null || IsDrawn(element.Source)) && (element.Target is null || IsDrawn(element.Target));
+    }
+
+    /// <summary>
+    /// The strongly connected components over the relations that are <paramref name="relationType"/> or one of its
+    /// subtypes that have more than one member or a self-loop (§12.4, <c>diagram.knots</c>): members in model order,
+    /// components ordered by their first member. Memoised until the diagram changes.
+    /// </summary>
+    public IReadOnlyList<IReadOnlyList<DislElement>> Knots(string relationType)
+    {
+        if (_knots.TryGetValue(relationType, out var known)) return known;
+        return _knots[relationType] = DislKnots.Find(_nodes, [.. _relations.Where(relation => relation.IsA(relationType))]);
     }
 
     /// <summary>The children of <paramref name="parent"/>, or the top-level nodes, in model order.</summary>

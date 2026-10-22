@@ -77,6 +77,7 @@ public static class FormDerivation
         var fixedAttribute = attribute is { IsFixed: true };
         return DislReason.First(item.ReadOnlyReasons, specification, variables)
             ?? (fixedAttribute ? DislReason.First(attribute!.ReadOnlyReasons, specification, variables) : null)
+            ?? (variables.GetValueOrDefault("diagram") is DislDiagram diagram ? DislBudgets.WithheldReason(diagram, viewData: false) : null)
             ?? (env.ReadOnly ? DislEvaluation.StandardMessage(specification, "std.readOnly", variables, "This diagram is read-only.") : null)
             ?? (fixedAttribute ? FixedReason : null);
     }

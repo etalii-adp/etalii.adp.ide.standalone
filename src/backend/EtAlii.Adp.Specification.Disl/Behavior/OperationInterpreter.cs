@@ -265,6 +265,7 @@ public static class OperationInterpreter
         if (!operation.AppliesTo(isA)) return NotApplicable(specification, diagram, operation.Id);
 
         if (DislReason.First(specification.Operations.EditGate, specification, Gate(diagram, variables)) is { } gated) return gated;
+        if (DislBudgets.Changes(operation) is { } changes && DislBudgets.WithheldReason(diagram, changes == "view") is { } withheld) return withheld;
 
         // An operation that is not an object threw here when it was read from the JSON at run time, and still does.
         if (operation.NotAnObject is { } malformed) throw new InvalidOperationException(malformed);

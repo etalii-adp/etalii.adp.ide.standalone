@@ -47,6 +47,8 @@ internal static class DislCelLibrary
 
         environment.AddFunction(CelFunction.Receiver("cycles", 2, arguments => Cycles(arguments).Cycles.Select(cycle => (object?)cycle.Cast<object?>().ToList()).ToList(), CyclesCost));
         environment.AddFunction(CelFunction.Receiver("cyclesTruncated", 2, arguments => Cycles(arguments).Truncated, CyclesCost));
+        environment.AddFunction(CelFunction.Receiver("knots", 1, Knots, KnotsCost));
+        environment.AddFunction(new CelFunction("budget", CelCallStyle.Global, 0, 1, Budget, _ => 1));
         environment.AddFunction(CelFunction.Global("enumLabel", 2, arguments => EnumLabel(enums, arguments[0], arguments[1])));
         environment.AddFunction(CelFunction.Receiver("avg", 0, arguments => Average(arguments[0]), arguments => arguments[0] is IReadOnlyList<object?> list ? list.Count : 1));
         environment.AddFunction(CelFunction.Receiver("center", 0, arguments => Center(arguments[0])));
@@ -63,6 +65,56 @@ internal static class DislCelLibrary
         environment.AddFunction(CelFunction.Receiver("year", 0, arguments => YearMonth.YearOf(Int(arguments[0]))));
         environment.AddFunction(CelFunction.Receiver("month", 0, arguments => YearMonth.MonthOf(Int(arguments[0]))));
     }
+
+    /// <summary><c>diagram.knots(relType)</c> (§12.4), on the diagram that receives it.</summary>
+    private static object Knots(IReadOnlyList<object?> arguments)
+    {
+        var diagram = Receiving(arguments[0]) ?? throw new CelException("knots() is a method of the diagram.");
+        return diagram.Knots(Text(arguments[1])).Select(knot => (object?)knot.Cast<object?>().ToList()).ToList();
+    }
+
+    /// <summary>A knot search is proportional to the relations of the type (§12.4).</summary>
+    private static long KnotsCost(IReadOnlyList<object?> arguments) =>
+        Receiving(arguments[0]) is { } diagram ? diagram.Relations.Count + diagram.Nodes.Count + 1 : 1;
+
+    /// <summary>
+    /// <c>budget(id)</c> (§12.4): the state of a budget of the diagram the calling expression has, as a map of
+    /// <c>shown</c>, <c>total</c>, <c>truncated</c> and <c>withheld</c>.
+    /// </summary>
+    private static object Budget(CelCall call)
+    {
+        var diagram = (call.Variables.TryGetValue("diagram", out var value) ? Receiving(value) : null)
+            ?? throw new CelException("budget() reads the budgets of the diagram, which this expression has none of.");
+        if (call.Arguments.Count == 0)
+        {
+            // Every budget at once: truncated and withheld when they are for any.
+            var states = diagram.Budgets;
+            return new CelMap
+            {
+                ["shown"] = states.Sum(state => state.Shown),
+                ["total"] = states.Sum(state => state.Total),
+                ["truncated"] = states.Any(state => state.Truncated),
+                ["withheld"] = states.Any(state => state.Withheld),
+            };
+        }
+        var id = Text(call.Arguments[0]);
+        var budget = diagram.Budget(id) ?? throw new CelException($"'{id}' is not a budget of this specification (§3.2.1).");
+        return new CelMap
+        {
+            ["shown"] = budget.Shown,
+            ["total"] = budget.Total,
+            ["truncated"] = budget.Truncated,
+            ["withheld"] = budget.Withheld,
+        };
+    }
+
+    /// <summary>The diagram a value is, also where a drawn diagram stands in for it.</summary>
+    private static DislDiagram? Receiving(object? value) => value switch
+    {
+        DislDiagram diagram => diagram,
+        DislDrawnDiagram drawn => drawn.Diagram,
+        _ => null,
+    };
 
     /// <summary><c>diagram.cycles(relType, max)</c> and <c>diagram.cyclesTruncated(relType, max)</c> (§12.4), on the diagram that receives them.</summary>
     private static (IReadOnlyList<IReadOnlyList<DislElement>> Cycles, bool Truncated) Cycles(IReadOnlyList<object?> arguments)
