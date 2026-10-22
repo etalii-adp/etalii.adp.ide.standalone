@@ -5,8 +5,8 @@ namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
 
 /// <summary>
 /// The link checks as a chain: per connection, the first of dangling, self, unknown relation and
-/// inadmissible pair it fails, and no later one; and the cardinality of connections whose shared end
-/// names no element.
+/// inadmissible pair it fails, and no later one, nor the loop of one a self-link is to <c>std.acyclic</c>;
+/// and the cardinality of connections whose shared end names no element.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -14,6 +14,12 @@ namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
 /// functional-decomposition-graph-disl-fbl): DISL's built-ins are independent, so <c>std.references</c>
 /// reports each end that names nothing and <c>std.endpoints</c> a loop and a pair both, where the tool
 /// reports one finding per connection. Deleted, part by part, as the user rules on Q4's items one by one.
+/// </para>
+/// <para>
+/// <b>A self-link is no ownership loop</b>: <c>diagram.cycles</c> counts a self-loop as a cycle of one, so
+/// <c>std.acyclic</c> reports an ownership self-link a second time, as "Ownership loops: a -> a.". It is
+/// <c>fdg.self-link</c>'s alone, as the chain keeps every connection's first finding alone. Every loop of
+/// two members or more is <c>std.acyclic</c>'s as it reports it (ruled by the user, 2026-10-22).
 /// </para>
 /// <para>
 /// <b>Stands in for gap 11</b> of the companion as well: CEL cannot read the id an unresolved end was
@@ -43,8 +49,11 @@ internal static class FdgLinkChain
         }
 
         var keep = first.Values.Select(entry => entry.Finding).ToHashSet(ReferenceEqualityComparer.Instance);
-        return [.. findings.Where(finding => Rank(finding) is null || keep.Contains(finding)), .. Unresolved(diagram)];
+        return [.. findings.Where(finding => !IsSelfLoop(finding) && (Rank(finding) is null || keep.Contains(finding))), .. Unresolved(diagram)];
     }
+
+    /// <summary>Whether <paramref name="finding"/> is <c>std.acyclic</c>'s cycle of one, a self-link's.</summary>
+    private static bool IsSelfLoop(DislFinding finding) => finding is { ConstraintId: "std.acyclic", ElementIds.Count: 1 };
 
     /// <summary>A link finding's place in the chain: dangling, self, unknown relation, inadmissible pair; null for any other finding.</summary>
     private static int? Rank(DislFinding finding) => finding.ConstraintId switch

@@ -79,6 +79,30 @@ public class FdgValidatorTests
         Assert.All(problems, problem => Assert.Equal(expected, problem.Severity));
     }
 
+    /// <summary>
+    /// Every elementary ownership loop reaches the panel, as DISL's <c>std.acyclic</c> reports it (ruled by the
+    /// user, 2026-10-22): g1 -> g4 -> g2 -> g3 -> g1 runs through members of g1 -> g2 -> g3 -> g1, which a walk
+    /// that visits each element once never reaches; and a self-link is no loop, only <c>fdg.self-link</c>.
+    /// </summary>
+    [Fact]
+    public async Task EveryElementaryOwnershipLoop_IsReported()
+    {
+        var loops = (await ProblemsIn("ownership-loops-sharing-a-member.fdg"))
+            .Where(problem => problem.RuleId == FdgRuleIds.OwnershipCycle)
+            .Select(problem => problem.Message);
+        var selfLink = await ProblemsIn("rule-self-link.fdg");
+
+        Assert.Equal(
+            [
+                "Ownership loops: f1 -> f2 -> f1.",
+                "Ownership loops: f1 -> f3 -> f1.",
+                "Ownership loops: g1 -> g2 -> g3 -> g1.",
+                "Ownership loops: g1 -> g4 -> g2 -> g3 -> g1.",
+            ],
+            loops);
+        Assert.DoesNotContain(selfLink, problem => problem.RuleId == FdgRuleIds.OwnershipCycle);
+    }
+
     /// <summary>The line is one-based, as the panel counts: the narrow element's entry starts on line 3.</summary>
     [Fact]
     public async Task TheLocation_IsTheBreachsLineCountedFromOne()

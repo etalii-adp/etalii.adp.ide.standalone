@@ -73,8 +73,9 @@ internal static class FdgDefinition
     /// <summary>
     /// The findings of <paramref name="model"/>: the definition's built-ins and rules over its model with the
     /// reader's sentences (<see cref="FdgReaderSentences"/>), held to the tool's findings by the stand-ins
-    /// <see cref="FdgLinkChain"/>, <see cref="FdgOwnershipWalk"/> and <see cref="FdgFindingOrder"/>, each named
-    /// for the gap or the ruling that keeps it.
+    /// <see cref="FdgLinkChain"/> and <see cref="FdgFindingOrder"/>, each named for the gap or the ruling that
+    /// keeps it. The ownership loops are <c>std.acyclic</c>'s, every elementary loop (ruled by the user,
+    /// 2026-10-22).
     /// </summary>
     public static IReadOnlyList<DislFinding> Findings(FdgModel model)
     {
@@ -82,7 +83,7 @@ internal static class FdgDefinition
         var diagram = FdgDisl.Of(model);
         var options = new DislConstraintOptions(Env, FdgReaderSentences.Of(model), WrittenId);
         var evaluated = ConstraintEvaluator.Evaluate(Specification, diagram, options);
-        return FdgFindingOrder.Apply(FdgOwnershipWalk.Keep(FdgLinkChain.Apply(evaluated, diagram), diagram), model);
+        return FdgFindingOrder.Apply(FdgLinkChain.Apply(evaluated, diagram), model);
     }
 
     /// <summary>
