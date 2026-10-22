@@ -40,9 +40,13 @@ internal static class DislFieldReader
     {
         JsonValueKind.String => new DislMessage.Plain(json.GetString()!),
         JsonValueKind.Object when json.TryGetProperty("cel", out _) => new DislMessage.Cel(Expression(specification, json, pointer)),
-        JsonValueKind.Object => new DislMessage.Localized(DislEvaluation.Localized(json.EnumerateObject().Select(entry => (entry.Name, entry.Value.ValueKind == JsonValueKind.String ? entry.Value.GetString() : null)))),
+        JsonValueKind.Object => new DislMessage.Localized(LocalizedText(json)),
         _ => new DislMessage.None(),
     };
+
+    /// <summary>A LocalizedText map's text (§2.3), as <see cref="DislEvaluation.Localized"/> selects it; null when it has none.</summary>
+    public static string? LocalizedText(JsonElement map) =>
+        DislEvaluation.Localized(map.EnumerateObject().Select(entry => (entry.Name, entry.Value.ValueKind == JsonValueKind.String ? entry.Value.GetString() : null)));
 
     /// <summary>A list of Reasons (§2.3) at <paramref name="pointer"/>; none when it is not a list.</summary>
     public static IReadOnlyList<DislReason> Reasons(DislSpecification specification, JsonElement json, string pointer)
