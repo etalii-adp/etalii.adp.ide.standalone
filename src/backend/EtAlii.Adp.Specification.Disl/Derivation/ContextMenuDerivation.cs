@@ -271,6 +271,10 @@ public static class ContextMenuDerivation
         {
             return inheritedReason;
         }
+        var changes = tool.Kind is "delete" or "duplicate" or "create-connected" or "create-child" or "connect" ? "model"
+            : operation is not null ? DislBudgets.Changes(operation)
+            : null;
+        if (changes is not null && DislBudgets.WithheldReason(target.Diagram, changes == "view") is { } withheld) return withheld;
         if (tool.Kind is "moveUp" or "moveDown" && target is DislMenuTarget.OnElement { Self: { } self })
         {
             var siblings = self.Parent?.Children ?? [.. self.Diagram.Nodes.Where(node => node.Parent is null)];

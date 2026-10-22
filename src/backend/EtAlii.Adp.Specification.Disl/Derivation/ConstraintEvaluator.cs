@@ -82,6 +82,7 @@ public static class ConstraintEvaluator
             run.References();
             run.Facets();
             run.Rules();
+            run.Budgets();
         }
         return run.Ordered();
     }
@@ -116,6 +117,23 @@ public static class ConstraintEvaluator
                 var variables = Variables(diagram, detail);
                 var fallback = detail.TryGetValue("reason", out var reason) && reason is string text ? text : finding.BuiltIn;
                 _found.Add((new DislFinding(setting.CodeOf(variables), finding.BuiltIn, setting.Severity, setting.MessageOf(variables, fallback), [], finding.Line, finding.File), reading++, finding.Line));
+            }
+        }
+
+        /// <summary>
+        /// A budget's <c>finding</c> (§3.2.1), one diagram-level finding while it is exceeded, with the budget's id as
+        /// the finding's code and constraint.
+        /// </summary>
+        public void Budgets()
+        {
+            var budgets = specification.Budgets;
+            var states = diagram.Budgets;
+            for (var index = 0; index < budgets.Count; index++)
+            {
+                if (budgets[index] is not { FindingSeverity: { } severity } budget || !states[index].Exceeded) continue;
+                var variables = Variables(diagram, null);
+                var message = budget.FindingMessage?.Text(variables, budget.Id) ?? budget.Id;
+                _found.Add((new DislFinding("budget:" + budget.Id, budget.Id, severity, message, [], null), -1, null));
             }
         }
 

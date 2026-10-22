@@ -71,6 +71,7 @@ public sealed class DislSpecification
         TypeMap = DislTypeMapReader.Read(persistence);
         DislDerivedReader.Read(this);
 
+        Budgets = DislBudgetReader.Read(this, root);
         Operations = DislOperationReader.Read(this, root);
         Toolbox = DislToolboxReader.Read(this, root);
         Forms = DislFormReader.Read(this, root);
@@ -112,6 +113,9 @@ public sealed class DislSpecification
 
     /// <summary>Every compiled expression outside the functions, in document order.</summary>
     public IReadOnlyList<DislExpression> Expressions { get; }
+
+    /// <summary>The budgets of <c>language.limits.budgets</c> (§3.2.1), in declaration order.</summary>
+    internal IReadOnlyList<DislBudget> Budgets { get; }
 
     /// <summary>The top-level id rule (§11.5).</summary>
     private DislIdRule Ids { get; }
