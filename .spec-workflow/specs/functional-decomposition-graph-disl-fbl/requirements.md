@@ -57,7 +57,7 @@ The three kinds are those of `causal-loop-disl-fbl`: a **definition defect** is 
 
 | # | Finding | Kind | Known |
 | --- | --- | --- | --- |
-| B1 | **A value is the text it was written with.** A name written `1.0`, `true` or `null` is that text to this tool (YamlDotNet's representation model types nothing). FBL's YAML reading types a plain scalar by the core schema and gives a slot no way to ask for the scalar as written. The hype cycle turns the typed value back into text in module code (`GhgParser.Text`), which loses the spelling: `1.0` comes back `1`. | Language gap | Recorded for the timeline (`TimelineDisl.cs`); read here |
+| B1 | **A value is the text it was written with.** A name written `1.0`, `true` or `null` is that text to this tool (YamlDotNet's representation model types nothing). FBL's YAML reading types a plain scalar by the core schema and gives a slot no way to ask for the scalar as written. The hype cycle turns the typed value back into text in module code (`GhgParser.Text`), which loses the spelling: `1.0` comes back `1`. (Answered (ruled in chat 2026-10-22): FBL 0.5 reads a scalar's written text, section 4.1.5, and a string attribute, an id and a reference read it unasked, section 5.2, `read`.) | Language gap | Recorded for the timeline (`TimelineDisl.cs`); read here |
 | B2 | **A number is read from any scalar, by .NET.** `x: "120"` in quotes reads 120, `x: 1e2` reads 100, and `x: 0x10` is "not a number; zero was used." where the YAML core schema reads 16. A value that will not read keeps the element at zero and is reported on the value's line. FBL 7.4 makes a value that does not convert an unreadable entry. | Definition defect, or a language gap (C10), to settle by fixture | Read |
 | B3 | **The type of an entry is a value.** FBL fixes a rule's `type`, and `typeMap` maps one binding type to one metamodel type, so the binding needs ten rules told apart by `when`, and catch-all rules behind them. Two things follow. A new entry must write `type:` as its second key, and no slot holds a constant: `skeleton` writes after the keys. And an entry whose type is unknown stays in the model today (its id counts, a connection to it is `fdg.forbidden-link`, a connection of an unknown relation is kept and reported as `fdg.forbidden-link`); mapped `unreadable` it leaves the model, and those findings change code and severity. | Language gap (C2), and a behaviour to keep (Requirement 4.4) | Read; `malformed-entries.fdg` holds the unknown element type |
 | B4 | **A connection whose end names no element** is kept, not drawn, and reported as `fdg.dangling-reference`. FBL 5.4 creates no relation. The hype cycle's pattern answers it: the entry is read as an element with reference attributes and `typeMap` makes it a relation with an unset end. | Definition defect, with a known pattern | Recorded (`rule-dangling-reference.fdg`) |
@@ -79,7 +79,7 @@ The three kinds are those of `causal-loop-disl-fbl`: a **definition defect** is 
 
 ### C. Language gaps, as they would be reported to etalii-adp/etalii.adp
 
-1. **FBL: a slot that reads a YAML scalar as written** (B1). The timeline's first gap, now shown by a second tool, and worked around lossily by a third.
+1. ~~**FBL: a slot that reads a YAML scalar as written** (B1). The timeline's first gap, now shown by a second tool, and worked around lossily by a third.~~ Answered by FBL 0.5 (sections 4.1.5 and 5.2, `read`) (ruled in chat 2026-10-22).
 2. **FBL: a rule chosen by a value cannot write that value** (B3). Candidate: a `constant` map on `insert`, placed by `keys`; or a rule whose `type` is read from a key through a map, which would also make ten rules two.
 3. **FBL: the indentation indicator of a block scalar** (B13), and whether a one-line value that becomes several lines changes style.
 4. **FBL: opening an empty flow collection** (B14). The runtime does it; the splice catalogue does not name it.
@@ -102,7 +102,7 @@ Each is put to the user as a selection. The option marked **(default)** is what 
 | Q2 | Removing an element that has a comment line directly above it (finding B15). | **(default) The comment stays, as today**: the gap is reported, and until FBL answers it the removal is narrowed by a stand-in the companion document names. · **The comment goes with the element**, as FBL's line span says: the transcript's hunk is regenerated and named. · Other. | 5.5 |
 | Q3 | A body that is not YAML (finding B8). | **(default) It opens empty and read-only**, as FBL 7.5 says, and keeps today's code (`fdg.unreadable-entry`), severity and sentence up to the reader's own message, which becomes FBL's. Editing text the reader could not read is treated as a defect. · **It stays editable**, as today. · **It becomes `std.unparseable`, an error**, as FBL reports it. · Other. | 4.6 |
 | Q4 | Findings and refusals the languages would add or change (two findings on one connection, a missing id, a stray height, a key written twice, the header's code, a created section, the order in the three places finding A13 names). | **(default) Switched off or held to today's in this conversion**, so the findings before and after are the same list in the same order, and each is raised afterwards as a small change of its own. · **Adopted now**, each named in the transcript's diff. · Other. | 3.3, 3.4, 4.5, 5.6 |
-| Q5 | Finding B1 has no answer in FBL 0.2. What happens meanwhile? | **(default) Whatever is ruled for Q3 of `timeline-disl-fbl`**, so that two tools with one gap get one answer. · **Work around it as the hype cycle does**: the typed value is turned back into text, and a name written `1.0` reads `1`. · **Narrow the format**: a name that reads as a number, a boolean or null must be quoted, and the example is checked for it. · Other. | 4.2 |
+| Q5 | Finding B1 has no answer in FBL 0.2. What happens meanwhile? (Moot (ruled in chat 2026-10-22): FBL 0.5 answers B1.) | **(default) Whatever is ruled for Q3 of `timeline-disl-fbl`**, so that two tools with one gap get one answer. · **Work around it as the hype cycle does**: the typed value is turned back into text, and a name written `1.0` reads `1`. · **Narrow the format**: a name that reads as a number, a boolean or null must be quoted, and the example is checked for it. · Other. | 4.2 |
 | Q6 | The module defects ~~B12,~~ B13 and B14, and A15 (B12 struck (ruled in chat 2026-10-21)). | **(default) Repaired in this conversion, each with a test seen to fail against today's code first**, because FBL's writing repairs ~~three~~ two of them whether asked or not. · **Left as they are**, which for ~~B12 to B14~~ B13 and B14 needs module code that restates the defect. · Other. | 5.8, 3.2 |
 | Q7 | Is the client's canvas definition in scope? | **(default) Yes**: compiled from the bundled definition with `compileNotation`, with today's hand-written definition kept in a test as the oracle. · **No**: backend only. · Other. | 7 |
 
@@ -158,7 +158,7 @@ The product direction (2026-09-26) is that every tool is a markup definition int
 #### Acceptance Criteria
 
 1. The module SHALL own its binding, `backend/EtAlii.Adp.Diagram.FunctionalDecompositionGraph/functional-decomposition-graph.fbl`, embedded in the backend project, as the hype cycle owns its own.
-2. Every name, description, text, id and end SHALL be read as the text it was written with (finding B1), by what Q5 rules.
+2. Every name, description, text, id and end SHALL be read as the text it was written with (finding B1), ~~by what Q5 rules~~ as FBL 0.5 reads a scalar's written text (ruled in chat 2026-10-22).
 3. A position and a size SHALL be read as today from every scalar the tool reads a number from, and a value that does not read SHALL keep its element at zero and be reported with today's sentence on its line (finding B2).
 4. An entry whose type the notation does not have, and a connection whose relation it does not have, SHALL stay what they are today: kept byte for byte, not drawn, counted where ids are counted, and reported with today's codes and sentences (finding B3).
 5. A connection whose end names no element SHALL be kept, not drawn and reported as `fdg.dangling-reference` (finding B4); an id written more than once SHALL be reported once on its last holder's line with its count, and found by its first holder (finding B5); and no finding of FBL's own SHALL reach the user where the tool gives none today (findings B7, B9, B18, Q4).
@@ -268,11 +268,11 @@ The product direction (2026-09-26) is that every tool is a markup definition int
 
 ## Appendix: the binding, as drafted
 
-A draft against FBL 0.2, to be settled in the design; no binding existed. It follows the hype cycle's: the header and every entry are elements, a connection is an element with reference attributes (finding B4), every entry carries the id it was written with (B5) and the keys the tool does not read (B6). Two properties in it are **not FBL**: `"as": "text"` marks where the construct of finding B1 is needed, and `"constant"` on an `insert` marks where that of finding B3 is. The rules for `data-element`, `action` and `function` are the first rule with the other name, type and value, and those for `owns-action`, `owns-data`, `owns-function` and `shows` likewise; they are left out here for length.
+A draft against ~~FBL 0.2~~ FBL 0.5 (ruled in chat 2026-10-22), to be settled in the design; no binding existed. It follows the hype cycle's: the header and every entry are elements, a connection is an element with reference attributes (finding B4), every entry carries the id it was written with (B5) and the keys the tool does not read (B6). ~~Two properties in it are **not FBL**: `"as": "text"` marks where the construct of finding B1 is needed, and~~ One property in it is **not FBL**: `"constant"` on an `insert` marks where the construct of finding B3 is needed, which etalii.adp specifies as FBL spec 033 (etalii-adp/etalii.adp#420). Finding B1 is FBL 0.5's: a string attribute, an id, a reference and a host attribute read the written text unasked, and the header's `version` says `"read": "text"`; the draft's `"as": "text"` is gone (ruled in chat 2026-10-22). The rules for `data-element`, `action` and `function` are the first rule with the other name, type and value, and those for `owns-action`, `owns-data`, `owns-function` and `shows` likewise; they are left out here for length.
 
 ```json
 {
-  "fbl": "0.2",
+  "fbl": "0.5",
   "bindings": {
     "fdg": {
       "title": "Functional decomposition graph",
@@ -284,17 +284,17 @@ A draft against FBL 0.2, to be settled in the design; no binding existed. It fol
         {
           "name": "graph", "type": "Graph", "at": "/",
           "readOnly": "The graph's version is changed in the file itself.",
-          "attributes": { "version": { "key": "functional-decomposition-graph", "as": "text" } }
+          "attributes": { "version": { "key": "functional-decomposition-graph", "read": "text" } }
         },
         {
           "name": "ui-element", "type": "UiElement", "at": "/elements/*",
           "when": "entry.all(k, true) && has(entry.type) && entry.type == 'ui-element'",
           "id": { "from": { "key": "id" } },
           "attributes": {
-            "storedId": { "key": "id", "as": "text", "readOnly": true },
+            "storedId": { "key": "id", "readOnly": true },
             "unknownKeys": { "value": "entry.filter(k, !(k in ['id', 'type', 'name', 'description', 'text', 'x', 'y', 'width', 'height']))" },
-            "name": { "key": "name", "as": "text", "empty": "keep" },
-            "description": { "key": "description", "as": "text", "empty": "remove" },
+            "name": { "key": "name", "empty": "keep" },
+            "description": { "key": "description", "empty": "remove" },
             "x": { "key": "x", "number": { "decimals": 4 } }, "y": { "key": "y", "number": { "decimals": 4 } }, "width": { "key": "width", "number": { "decimals": 4 } }
           },
           "insert": { "place": "after-last", "container": "/elements", "constant": { "type": "ui-element" }, "keys": ["id", "type", "name", "description", "x", "y", "width"] },
@@ -305,11 +305,11 @@ A draft against FBL 0.2, to be settled in the design; no binding existed. It fol
           "when": "entry.all(k, true) && has(entry.type) && entry.type == 'comment'",
           "id": { "from": { "key": "id" } },
           "attributes": {
-            "storedId": { "key": "id", "as": "text", "readOnly": true },
+            "storedId": { "key": "id", "readOnly": true },
             "unknownKeys": { "value": "entry.filter(k, !(k in ['id', 'type', 'name', 'description', 'text', 'x', 'y', 'width', 'height']))" },
-            "strayName": { "key": "name", "as": "text", "readOnly": true },
-            "text": { "key": "text", "as": "text", "style": "literal", "empty": "keep" },
-            "description": { "key": "description", "as": "text", "empty": "remove" },
+            "strayName": { "key": "name", "readOnly": true },
+            "text": { "key": "text", "style": "literal", "empty": "keep" },
+            "description": { "key": "description", "empty": "remove" },
             "x": { "key": "x", "number": { "decimals": 4 } }, "y": { "key": "y", "number": { "decimals": 4 } }, "width": { "key": "width", "number": { "decimals": 4 } }, "height": { "key": "height", "number": { "decimals": 4 } }
           },
           "insert": { "place": "after-last", "container": "/elements", "constant": { "type": "comment" }, "keys": ["id", "type", "text", "description", "x", "y", "width", "height"] },
@@ -318,7 +318,7 @@ A draft against FBL 0.2, to be settled in the design; no binding existed. It fol
         {
           "name": "unknown-element", "type": "UnknownElement", "at": "/elements/*", "when": "entry.all(k, true)",
           "readOnly": "This entry's type is not one this notation has, so it is kept as it is.",
-          "attributes": { "storedId": { "key": "id", "as": "text" }, "documentType": { "key": "type", "as": "text" }, "strayName": { "key": "name", "as": "text" } }
+          "attributes": { "storedId": { "key": "id" }, "documentType": { "key": "type" }, "strayName": { "key": "name" } }
         },
         { "name": "element-not-a-mapping", "type": "Unreadable", "at": "/elements/*", "readOnly": "This entry is not a mapping, so it is kept as it is." },
         {
@@ -326,12 +326,12 @@ A draft against FBL 0.2, to be settled in the design; no binding existed. It fol
           "when": "entry.all(k, true) && has(entry.type) && entry.type == 'ui-child'",
           "id": { "from": { "key": "id" } },
           "attributes": {
-            "storedId": { "key": "id", "as": "text", "readOnly": true },
+            "storedId": { "key": "id", "readOnly": true },
             "unknownKeys": { "value": "entry.filter(k, !(k in ['id', 'type', 'from', 'to', 'name', 'description']))" },
-            "from": { "key": "from", "as": "text", "reference": { "to": ["ui-element", "data-element", "action", "function", "comment", "unknown-element"], "by": "storedId" } },
-            "to": { "key": "to", "as": "text", "reference": { "to": ["ui-element", "data-element", "action", "function", "comment", "unknown-element"], "by": "storedId" } },
-            "name": { "key": "name", "as": "text", "empty": "keep" },
-            "description": { "key": "description", "as": "text", "empty": "remove" }
+            "from": { "key": "from", "reference": { "to": ["ui-element", "data-element", "action", "function", "comment", "unknown-element"], "by": "storedId" } },
+            "to": { "key": "to", "reference": { "to": ["ui-element", "data-element", "action", "function", "comment", "unknown-element"], "by": "storedId" } },
+            "name": { "key": "name", "empty": "keep" },
+            "description": { "key": "description", "empty": "remove" }
           },
           "insert": { "place": "after-last", "container": "/connections", "constant": { "type": "ui-child" }, "keys": ["id", "type", "from", "to", "name", "description"] },
           "remove": {}
@@ -339,7 +339,7 @@ A draft against FBL 0.2, to be settled in the design; no binding existed. It fol
         {
           "name": "unknown-connection", "type": "UnknownConnection", "at": "/connections/*", "when": "entry.all(k, true)",
           "readOnly": "This entry's relation is not one this notation has, so it is kept as it is.",
-          "attributes": { "storedId": { "key": "id", "as": "text" }, "documentType": { "key": "type", "as": "text" }, "from": { "key": "from", "as": "text" }, "to": { "key": "to", "as": "text" } },
+          "attributes": { "storedId": { "key": "id" }, "documentType": { "key": "type" }, "from": { "key": "from" }, "to": { "key": "to" } },
           "remove": {}
         },
         { "name": "connection-not-a-mapping", "type": "Unreadable", "at": "/connections/*", "readOnly": "This entry is not a mapping, so it is kept as it is." }
