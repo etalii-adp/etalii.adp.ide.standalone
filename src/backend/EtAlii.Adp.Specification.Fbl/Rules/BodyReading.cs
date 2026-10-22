@@ -1,4 +1,5 @@
 using EtAlii.Adp.Specification.Cel;
+using EtAlii.Adp.Specification.Fbl.Bullets;
 using EtAlii.Adp.Specification.Fbl.Documents;
 using EtAlii.Adp.Specification.Fbl.Expressions;
 using EtAlii.Adp.Specification.Fbl.Json;
@@ -83,6 +84,7 @@ internal sealed class BodyReading
         {
             Documents.Family.Lines => new LinesFamily(text, binding, options, blocks: false),
             Documents.Family.Blocks => new LinesFamily(text, binding, options, blocks: true),
+            Documents.Family.Bullets => new BulletsFamily(text, binding, options),
             Documents.Family.Yaml => new YamlFamily(text, binding, options),
             Documents.Family.Json => new JsonFamily(text, binding, options),
             Documents.Family.Xml => new XmlFamily(text, binding, options),

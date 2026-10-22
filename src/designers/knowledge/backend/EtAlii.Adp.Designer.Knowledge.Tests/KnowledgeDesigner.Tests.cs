@@ -15,7 +15,7 @@ using Path = EtAlii.Adp.Documents.Wire.Path;
 using Proto = EtAlii.Adp.Designer.Wire;
 using WorkspaceService = EtAlii.Adp.Diagram.Wire.WorkspaceService;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Designer.Knowledge.Tests;
 
 /// <summary>
 /// The Knowledge designer through the host, over gRPC (knowledge-designer Requirements 10.1, 8.1

@@ -107,10 +107,10 @@ public sealed class DislType
         Abstract = JsonProperties.Bool(json, "abstract");
         Label = JsonProperties.String(json, "label");
         Icon = JsonProperties.String(json, "icon");
-        AllowSelfLoops = Flag(json, "allowSelfLoops");
-        AllowParallel = Flag(json, "allowParallel");
+        StatedAllowSelfLoops = Flag(json, "allowSelfLoops");
+        StatedAllowParallel = Flag(json, "allowParallel");
         Acyclic = Flag(json, "acyclic") ?? false;
-        Directed = Flag(json, "directed");
+        StatedDirected = Flag(json, "directed");
         var derived = json.ValueKind == JsonValueKind.Object && json.TryGetProperty("derived", out var declared) && declared.ValueKind == JsonValueKind.Object ? declared : default;
         ConnectEdit = derived.ValueKind == JsonValueKind.Object && derived.TryGetProperty("edits", out var edits) ? JsonProperties.String(edits, "connect") : null;
         DerivedReason = JsonProperties.String(derived, "reason");
@@ -135,17 +135,35 @@ public sealed class DislType
     /// <summary>Its <c>icon</c>, read at load; null when it states none.</summary>
     internal string? Icon { get; }
 
-    /// <summary>A relation type's <c>allowSelfLoops</c> (§4.9) when it states it as a boolean; null otherwise, which forbids a loop (its default is false).</summary>
-    internal bool? AllowSelfLoops { get; }
+    /// <summary>
+    /// A relation type's <c>allowSelfLoops</c> (§4.9), set at load: what it states, else what the nearest type of its
+    /// linearisation states, else the default, <c>false</c> (DISL 0.6, §4.7).
+    /// </summary>
+    internal bool AllowSelfLoops { get; set; }
 
-    /// <summary>A relation type's <c>allowParallel</c> (§4.9) when it states it as a boolean; null otherwise.</summary>
-    internal bool? AllowParallel { get; }
+    /// <summary>
+    /// A relation type's <c>allowParallel</c> (§4.9), set at load: what it states, else what the nearest type of its
+    /// linearisation states, else the default, <c>true</c> (DISL 0.6, §4.7).
+    /// </summary>
+    internal bool AllowParallel { get; set; } = true;
 
     /// <summary>Whether a relation type's own declaration states <c>acyclic: true</c> (§4.9); a subtype of such a type is acyclic through it.</summary>
     internal bool Acyclic { get; }
 
-    /// <summary>A relation type's <c>directed</c> (§4.9) when it states it as a boolean; null otherwise.</summary>
-    internal bool? Directed { get; }
+    /// <summary>
+    /// A relation type's <c>directed</c> (§4.9), set at load: what it states, else what the nearest type of its
+    /// linearisation states, else the default, <c>true</c> (DISL 0.6, §4.7).
+    /// </summary>
+    internal bool Directed { get; set; } = true;
+
+    /// <summary>A relation type's own <c>allowSelfLoops</c> when it states it as a boolean; null otherwise. The narrowing checks read it (§4.7).</summary>
+    internal bool? StatedAllowSelfLoops { get; }
+
+    /// <summary>A relation type's own <c>allowParallel</c> when it states it as a boolean; null otherwise. The narrowing checks read it (§4.7).</summary>
+    internal bool? StatedAllowParallel { get; }
+
+    /// <summary>A relation type's own <c>directed</c> when it states it as a boolean; null otherwise. The narrowing checks read it (§4.7).</summary>
+    internal bool? StatedDirected { get; }
 
     /// <summary>The supertypes it names, in the order it names them.</summary>
     public IReadOnlyList<string> Extends { get; internal set; } = [];

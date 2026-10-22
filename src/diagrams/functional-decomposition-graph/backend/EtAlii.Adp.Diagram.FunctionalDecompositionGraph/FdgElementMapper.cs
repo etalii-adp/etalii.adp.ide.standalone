@@ -34,34 +34,34 @@ public sealed class FdgElementMapper
     private const string Prefix = "etalii/functional-decomposition-graph+";
 
     /// <summary>The library type of a UI Element.</summary>
-    public const string UiElementType = Prefix + FdgElementTypes.UiElement;
+    public const string UiElementType = Prefix + "ui-element";
 
     /// <summary>The library type of a Data Element.</summary>
-    public const string DataElementType = Prefix + FdgElementTypes.DataElement;
+    public const string DataElementType = Prefix + "data-element";
 
     /// <summary>The library type of an Action.</summary>
-    public const string ActionType = Prefix + FdgElementTypes.Action;
+    public const string ActionType = Prefix + "action";
 
     /// <summary>The library type of a Function.</summary>
-    public const string FunctionType = Prefix + FdgElementTypes.Function;
+    public const string FunctionType = Prefix + "function";
 
     /// <summary>The library type of a Comment.</summary>
-    public const string CommentType = Prefix + FdgElementTypes.Comment;
+    public const string CommentType = Prefix + "comment";
 
     /// <summary>The library type of a UI child connection.</summary>
-    public const string UiChildType = Prefix + FdgConnectionTypes.UiChild;
+    public const string UiChildType = Prefix + "ui-child";
 
     /// <summary>The library type of an Action connection.</summary>
-    public const string OwnsActionType = Prefix + FdgConnectionTypes.OwnsAction;
+    public const string OwnsActionType = Prefix + "owns-action";
 
     /// <summary>The library type of a Data connection.</summary>
-    public const string OwnsDataType = Prefix + FdgConnectionTypes.OwnsData;
+    public const string OwnsDataType = Prefix + "owns-data";
 
     /// <summary>The library type of a Function connection.</summary>
-    public const string OwnsFunctionType = Prefix + FdgConnectionTypes.OwnsFunction;
+    public const string OwnsFunctionType = Prefix + "owns-function";
 
     /// <summary>The library type of a Shows connection.</summary>
-    public const string ShowsType = Prefix + FdgConnectionTypes.Shows;
+    public const string ShowsType = Prefix + "shows";
 
     /// <summary>
     /// The elements and connections a view of <paramref name="viewport"/> should hold: every element
@@ -181,7 +181,7 @@ public sealed class FdgElementMapper
         new(id, x, y, type, $"type.googleapis.com/{payload.Descriptor.FullName}", payload.ToByteArray());
 
     /// <summary>An element as it is drawn: its written id, its type, its label and its box.</summary>
-    /// <remarks>A Comment shows its text and has its own height; the other four show their name and share <see cref="FdgGeometry.SharedHeight"/>.</remarks>
+    /// <remarks>A Comment shows its text and has its own height; the other four show their name and share the definition's fixed height (<see cref="FdgDefinition.SharedHeight"/>).</remarks>
     private sealed record Drawn(string Id, string Type, string Name, string Text, double X, double Y, double Width, double Height)
     {
         public static Drawn Of(DislElement element)
@@ -195,7 +195,7 @@ public sealed class FdgElementMapper
                 FdgDefinition.NumberOf(element, "x"),
                 FdgDefinition.NumberOf(element, "y"),
                 FdgDefinition.NumberOf(element, "width"),
-                isComment ? FdgDefinition.NumberOf(element, "height") : FdgGeometry.SharedHeight);
+                isComment ? FdgDefinition.NumberOf(element, "height") : FdgDefinition.SharedHeight);
         }
     }
 

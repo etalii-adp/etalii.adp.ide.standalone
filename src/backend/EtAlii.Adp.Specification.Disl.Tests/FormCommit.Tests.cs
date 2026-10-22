@@ -23,7 +23,12 @@ public class FormCommitTests
           { "id": "badge", "text": { "cel": "self.code" }, "editable": "inline",
             "parse": { "write": [ { "set": { "code": "value" } } ] } },
           { "id": "plain", "text": "self.note", "editable": "inline" },
-          { "id": "word", "text": "Untitled", "editable": "inline" } ] } } },
+          { "id": "word", "text": "Untitled", "editable": "inline" },
+          { "id": "editPlain", "text": { "cel": "self.code" }, "editText": "self.note", "editable": "inline" },
+          { "id": "editWord", "text": { "cel": "self.code" }, "editText": "Untitled", "editable": "inline" },
+          { "id": "editBound", "text": { "cel": "self.note + '!'" }, "editText": { "attribute": "note" }, "editable": "inline" },
+          { "id": "bound", "text": { "attribute": "note" }, "editable": "inline" },
+          { "id": "editLocalized", "text": { "cel": "self.note" }, "editText": { "nl": "Naamloos", "en": "Untitled" }, "editable": "inline" } ] } } },
         "forms": {
           "gauge": {
             "for": "Gauge",
@@ -271,5 +276,47 @@ public class FormCommitTests
 
         // Assert.
         Assert.Equal(expected, text);
+    }
+
+    [Theory]
+    [InlineData("editPlain", "self.note")]
+    [InlineData("editWord", "Untitled")]
+    public void ALabelsEditor_OpensOnItsBareStringEditTextAsALiteral(string label, string expected)
+    {
+        // DISL §2.3: editText is a Message, whose bare string is a LocalizedText, that is literal text (behaviour change
+        // B-41) - neither the one that would compile (to the note) nor the one that would not (to no text) is evaluated.
+
+        // Act.
+        var text = FormCommit.EditText(Specification, Gauge(), label, Editable);
+
+        // Assert.
+        Assert.Equal(expected, text);
+    }
+
+    [Theory]
+    [InlineData("editBound")]
+    [InlineData("bound")]
+    public void ALabelsEditor_BoundToAnAttribute_OpensOnThatAttributesValue(string label)
+    {
+        // DISL §6.12: the editor starts with "the value of the attribute it binds", whether the binding is its editText or,
+        // without one, its text (behaviour change B-42).
+
+        // Act.
+        var text = FormCommit.EditText(Specification, Gauge(), label, Editable);
+
+        // Assert.
+        Assert.Equal("first", text);
+    }
+
+    [Fact]
+    public void ALabelsEditor_WithALocalizedEditText_OpensOnTheLocalesText()
+    {
+        // DISL §2.3: a LocalizedText map gives the text of the locale, English here, not merely its first (behaviour change B-42).
+
+        // Act.
+        var text = FormCommit.EditText(Specification, Gauge(), "editLocalized", Editable);
+
+        // Assert.
+        Assert.Equal("Untitled", text);
     }
 }

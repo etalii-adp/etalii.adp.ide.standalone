@@ -183,8 +183,9 @@ public static class FormCommit
 
     /// <summary>
     /// The text the inline editor of <paramref name="self"/>'s label <paramref name="label"/> opens on (DISL §6.12): its
-    /// <c>editText</c>, else its <c>text</c>, which as a bare string is the literal it states (§2.5 b); null when there is
-    /// no such label or it does not evaluate to text.
+    /// <c>editText</c>, else its <c>text</c>: a bare string or a LocalizedText map as the literal text it states (§2.3,
+    /// §2.5 b), an <c>{attribute}</c> binding as that attribute's value, a <c>{cel}</c> as what it evaluates to; null
+    /// when there is no such label or it does not evaluate to text.
     /// </summary>
     public static string? EditText(DislSpecification specification, DislElement self, string label, DislEnv env)
     {
@@ -196,6 +197,7 @@ public static class FormCommit
         return specification.Notation.LabelOf(self.Type.Name, label)?.EditText switch
         {
             DislBindable.Literal { Value: string literal } => literal,
+            DislBindable.Attribute attribute => self.TryGetMember(attribute.Name, out var value) ? DislEvaluation.TextOf(value) : null,
             DislBindable.Expression expression => expression.Field.Evaluate(Variables(self, null, env.ToCel())) as string,
             _ => null,
         };

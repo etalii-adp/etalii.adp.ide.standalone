@@ -5,7 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Modules.Tests;
 
 /// <summary>
 /// Every tracked example registration under <c>src/diagrams/*/examples/</c>, opened against the

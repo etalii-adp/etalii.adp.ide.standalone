@@ -71,7 +71,8 @@ export type DislRelationEnd = string | readonly string[] | { types: string | rea
 
 export interface DislRelation extends Extensions {
   abstract?: boolean;
-  extends?: string;
+  /** Its supertypes, one name or a list of them (DISL §4.7). */
+  extends?: string | readonly string[];
   label?: string;
   source: DislRelationEnd;
   target: DislRelationEnd;
