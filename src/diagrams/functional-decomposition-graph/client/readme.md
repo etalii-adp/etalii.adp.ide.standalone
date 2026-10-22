@@ -21,8 +21,13 @@ script.
 
 ## What this canvas declares
 
-**It draws nothing itself.** `FdgCanvas.tsx` is a definition, a fold from the stream into the
-library's model, and event handlers.
+**It draws nothing itself, and states nothing it can read from its specification.** `FdgCanvas.tsx`
+compiles its definition from the bundled `../definition/functional-decomposition-graph.dis` with
+`parseDisl` and `compileNotation`, folds the stream into the library's model, and handles events.
+What the library cannot read from the specification - the stylesheet's class names, the relations'
+edge-anchored target ends and the diode bound to the library's own - is `fdgBindings.ts`. The
+hand-written definition it replaced is `handWrittenDefinition.ts`, kept as the oracle
+`fdgCompiledDefinition.test.tsx` holds the compiled one to.
 
 - **Five element types on the library's built-in shapes** — a UI Element is a superellipse, a
   Data Element a parallelogram, an Action a trapezoid, a Function a diode and a Comment a box.
@@ -58,10 +63,10 @@ move, and undoes in two steps.
 
 ## What is not settled yet
 
-The library picks a connect gesture's relation when the gesture starts, from the source element
-alone. Every relation here is identified by its target type, so from an Action only one of Shows,
-owns-data and owns-function can be drawn, and from a UI Element one of four.
-`fdgConnect.test.tsx` fails its two Shows cases against that until it is resolved.
+Nothing of the canvas. The connect gesture's relation is chosen by the pair of ends (the library's
+`relationOnto`), so every relation is drawn from the same element, and `fdgConnect.test.tsx`'s two
+Shows cases pass. Whether a right-click on empty canvas opens the specification's "Add … here" menu,
+which the compiled definition offers and the hand-written one did not, is the user's to rule.
 
 See [../../readme.md](../../readme.md) for what this folder is for, and
 [`functional-decomposition-graph`](../../../../.spec-workflow/specs/functional-decomposition-graph/)

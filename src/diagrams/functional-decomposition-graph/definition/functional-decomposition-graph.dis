@@ -352,7 +352,7 @@
       "dataElement": { "extends": "element", "fill": { "token": "color.fdg.data-element" } },
       "action": { "extends": "element", "fill": { "token": "color.fdg.action" } },
       "function": { "extends": "element", "fill": { "token": "color.fdg.function" } },
-      "comment": { "extends": "element", "fill": { "token": "color.fdg.comment" }, "textAlign": "left", "verticalAlign": "top" },
+      "comment": { "extends": "element", "fill": { "token": "color.fdg.comment" } },
       "link": {
         "stroke": { "color": { "token": "color.text" }, "width": 1.5 },
         "font": { "size": 12, "color": { "token": "color.text" } }
@@ -422,11 +422,10 @@
         "size": { "default": [240, 96], "min": [80, 48], "width": { "attribute": "width" }, "height": { "attribute": "height" }, "resizable": true },
         "placement": { "system": "canvas", "x": { "attribute": "x" }, "y": { "attribute": "y" }, "anchor": "top-left", "movable": true, "resizable": true },
         "labels": [ { "id": "text", "text": { "attribute": "text" }, "editable": "multiline", "wrap": "word",
-                      "maxWidth": "parent", "overflow": "ellipsis", "position": "top-left",
-                      "tooltip": { "cel": "self.text" } } ],
+                      "maxWidth": "parent", "overflow": "ellipsis" } ],
         "connectable": false,
         "doubleClick": "editLabel",
-        "doc": "A box filled with the Comment colour, resizable in both directions, its text wrapped inside it. It has no anchors: no connection starts or ends on it and it is never highlighted as a target."
+        "doc": "A box filled with the Comment colour, resizable in both directions, its text wrapped inside it and centred, as the element labels are; text that does not fit ends in an ellipsis and its whole is shown on hover. It has no anchors: no connection starts or ends on it and it is never highlighted as a target."
       }
     },
 
