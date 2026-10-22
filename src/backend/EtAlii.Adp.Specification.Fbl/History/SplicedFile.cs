@@ -14,6 +14,9 @@ public abstract class SplicedFile
 
     public const string DriftRedo = "The file has changed since this edit was undone, so it cannot be redone.";
 
+    /// <summary>FBL 0.7 §7.2's sentence for an edit refused because the file changed after it was read, before the edit was applied.</summary>
+    public const string DriftEdit = "The file has changed since this edit was made, so it was not written.";
+
     private readonly EditHistory _history = new();
 
     /// <summary>The bytes before the open group, or null when no group is open.</summary>

@@ -11,8 +11,8 @@ namespace EtAlii.Adp.Specification.Fbl.Lines;
 /// <summary>A named group of one statement as one rule's <c>line</c> matched it.</summary>
 internal sealed record Group(string Value, Span Span);
 
-/// <summary>The <c>lines</c> and <c>blocks</c> families (FBL §4.6, §4.7).</summary>
-internal sealed class LinesFamily(BodyText text, FblBinding binding, FblOptions options, bool blocks) : FamilyReader(text, binding, options)
+/// <summary>The <c>lines</c> and <c>blocks</c> families (FBL §4.6, §4.7), and the base of the <c>bullets</c> family, whose item text is matched and written as a statement is.</summary>
+internal class LinesFamily(BodyText text, FblBinding binding, FblOptions options, bool blocks) : FamilyReader(text, binding, options)
 {
     private List<Span> _leaves = [];
     private List<Statement> _statements = [];
@@ -52,7 +52,7 @@ internal sealed class LinesFamily(BodyText text, FblBinding binding, FblOptions 
     private void TimedOut(BoundedRegex regex, Statement statement) =>
         Report(FindingCodes.RegexTimeout, FindingSeverity.Warning, $"The expression '{regex.Expression}' took too long on this statement; it is read as not matching.", statement.Own);
 
-    private IReadOnlyDictionary<string, Group>? Match(string expression, bool caseInsensitive, Statement statement)
+    protected IReadOnlyDictionary<string, Group>? Match(string expression, bool caseInsensitive, Statement statement)
     {
         if (_matches.TryGetValue((expression, statement), out var cached)) return cached;
         var regex = Regex(expression, caseInsensitive);
@@ -261,6 +261,15 @@ internal sealed class LinesFamily(BodyText text, FblBinding binding, FblOptions 
             ? "\"" + text + "\""
             : text;
 
+    /// <summary>
+    /// Whether a placeholder of <paramref name="rule"/>'s emit writes a text holding a space between quotes, so that it
+    /// reads back as one word (FBL §4.6): every placeholder of a statement, whose groups are read as words.
+    /// </summary>
+    protected virtual bool QuotesSpaces(Rule rule, string name) => true;
+
+    private string? Quoted(Rule rule, string template, string name, object? value, string? text) =>
+        QuotesSpaces(rule, name) ? AsWord(template, name, value, text) : text;
+
     /// <summary>Whether <paramref name="value"/> is the number <paramref name="read"/> already holds, however it is spelled there.</summary>
     private static bool SameNumber(SlotRead read, object? value) =>
         NewText.TryNumber(value, out var number) && read.Wire is { } wire
@@ -330,7 +339,7 @@ internal sealed class LinesFamily(BodyText text, FblBinding binding, FblOptions 
         }
         var values = new Dictionary<string, object?>(element.Attributes, StringComparer.Ordinal);
         foreach (var change in changes) values[change.Attribute] = change.IsEmpty ? null : change.Value;
-        var line = NewText.Render(emit, name => AsWord(emit, name, values.GetValueOrDefault(name), Placeholder(element.Rule, name, values, element.IdRead?.Value as string ?? element.Id,
+        var line = NewText.Render(emit, name => Quoted(element.Rule, emit, name, values.GetValueOrDefault(name), Placeholder(element.Rule, name, values, element.IdRead?.Value as string ?? element.Id,
             element.SourceRead?.Value as string, element.TargetRead?.Value as string)));
         plan.Add(SpliceOperation.ReEmitLine, ReEmitSpan(statement), line);
     }
@@ -469,8 +478,8 @@ internal sealed class LinesFamily(BodyText text, FblBinding binding, FblOptions 
         {
             offset += Encoding.UTF8.GetByteCount(between);
         }
-        var template = "[" + string.Concat(parts.Where(p => p.Segment == segment).Select(p => p.Literal ?? "{" + p.Placeholder + "}")) + "]";
-        var segmentText = NewText.Render(template, name => name == change.Attribute ? AsWord(template, name, change.Value, Emitted(change.Binding, change.Value)) : null);
+        var template = "[" + string.Concat(parts.Where(p => p.Segment == segment).Select(p => p.Literal?.Replace("[", "\\[", StringComparison.Ordinal).Replace("]", "\\]", StringComparison.Ordinal) ?? "{" + p.Placeholder + "}")) + "]";
+        var segmentText = NewText.Render(template, name => name == change.Attribute ? Quoted(change.Rule, template, name, change.Value, Emitted(change.Binding, change.Value)) : null);
         return segmentText.Length == 0 ? null : (offset, segmentText);
     }
 
@@ -490,7 +499,7 @@ internal sealed class LinesFamily(BodyText text, FblBinding binding, FblOptions 
             Plan.Refuse($"The binding gives no form to write a new {rule.Type} in.");
             return;
         }
-        var line = NewText.Render(emit, name => AsWord(emit, name, request.Values.GetValueOrDefault(name), Placeholder(rule, name, request.Values, request.Id, request.Source?.Key, request.Target?.Key)));
+        var line = Render(emit, rule, request.Values, request.Id, request.Source?.Key, request.Target?.Key);
         var insert = rule.Insert;
         Statement? container = null;
         if (blocks)
@@ -535,6 +544,10 @@ internal sealed class LinesFamily(BodyText text, FblBinding binding, FblOptions 
         var indent = previous?.Indent ?? siblings.FirstOrDefault()?.Indent ?? (container is null ? 0 : container.Indent + Step);
         plan.Add(SpliceOperation.InsertEntry, offset, offset, NewLine(offset, Indentation(indent) + line));
     }
+
+    /// <summary>The line <paramref name="emit"/> writes for a new entry of <paramref name="rule"/> with <paramref name="values"/> (FBL §6.3).</summary>
+    protected string Render(string emit, Rule rule, IReadOnlyDictionary<string, object?> values, string? id, string? source, string? target) =>
+        NewText.Render(emit, name => Quoted(rule, emit, name, values.GetValueOrDefault(name), Placeholder(rule, name, values, id, source, target)));
 
     /// <summary>The text of a new line at <paramref name="offset"/>, a line start or the end of a body without a final newline (FBL §6.3).</summary>
     private string NewLine(int offset, string line)

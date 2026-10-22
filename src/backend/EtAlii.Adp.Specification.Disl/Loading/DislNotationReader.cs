@@ -85,18 +85,21 @@ internal static class DislNotationReader
     }
 
     /// <summary>
-    /// The text a label's inline editor opens on. Its <c>text</c> is a Bindable (§2.5 b), whose bare string is always a
-    /// literal, so the editor opens on that string itself (behaviour change B-40). A bare string in <c>editText</c>
-    /// (<paramref name="key"/>) is compiled in the element context with the entered text's <c>value</c> bound, as the
-    /// runtime always read it, and opens on no text when it does not compile; any other value is an Expression.
+    /// The text a label's inline editor opens on (§6.12): its <c>editText</c>, a Message or an <c>{attribute}</c>, else
+    /// its <c>text</c>, a Bindable (<paramref name="key"/> says which). A bare string is literal text in both: a
+    /// Bindable's is always a literal (§2.5 b, behaviour change B-40), and a Message's is a LocalizedText (§2.3, B-41).
+    /// An object with <c>cel</c> is an Expression, an <c>{attribute}</c> binding the value of that attribute (B-42), and
+    /// any other object in <c>editText</c> a LocalizedText map, its locale's text (§2.3, B-42); anything else is an
+    /// Expression without source, which opens on no text.
     /// </summary>
-    private static DislBindable EditText(DislSpecification specification, string key, JsonElement text, string pointer)
+    private static DislBindable EditText(DislSpecification specification, string key, JsonElement text, string pointer) => text.ValueKind switch
     {
-        if (text.ValueKind != JsonValueKind.String) return new DislBindable.Expression(DislFieldReader.Expression(specification, text, pointer));
-        var source = text.GetString()!;
-        if (key == "text") return new DislBindable.Literal(source);
-        return new DislBindable.Expression(new DislExpressionField(pointer, source, specification.Programs.TryGet(DislProgramKey.Of(DislContext.Element, source, ["value"]), out var program, out _) ? program : null));
-    }
+        JsonValueKind.String => new DislBindable.Literal(text.GetString()),
+        JsonValueKind.Object when text.TryGetProperty("cel", out _) => new DislBindable.Expression(DislFieldReader.Expression(specification, text, pointer)),
+        JsonValueKind.Object when JsonProperties.String(text, "attribute") is { } attribute => new DislBindable.Attribute(attribute),
+        JsonValueKind.Object when key == "editText" => new DislBindable.Literal(DislFieldReader.LocalizedText(text)),
+        _ => new DislBindable.Expression(DislFieldReader.Expression(specification, text, pointer)),
+    };
 
     private static DislEdgeNotation Edge(JsonElement edge) =>
         DislFieldReader.NotAnObject(edge) is { } malformed

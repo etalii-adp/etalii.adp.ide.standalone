@@ -35,7 +35,9 @@ public class KnowledgeFixturesTests
         var data = new TheoryData<string>();
         foreach (var fixture in Directory.GetFiles(FixturesRoot, "fixture.json", SearchOption.AllDirectories).Order(StringComparer.Ordinal))
         {
-            data.Add(Path.GetRelativePath(FixturesRoot, Path.GetDirectoryName(fixture)!).Replace('\\', '/'));
+            // The corpus holds other tool types' fixtures in the same layout; the conformance run runs those.
+            var name = Path.GetRelativePath(FixturesRoot, Path.GetDirectoryName(fixture)!).Replace('\\', '/');
+            if (name.StartsWith("knowledge-", StringComparison.Ordinal)) data.Add(name);
         }
         return data;
     }
