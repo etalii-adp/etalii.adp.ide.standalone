@@ -52,6 +52,13 @@ public sealed class OpenRegistration : SplicedFile
     /// </summary>
     public Func<string, IReadOnlyList<KeyValuePair<string, string>>?>? AbsentMembers { get; set; }
 
+    /// <summary>
+    /// The entries of the declared block <paramref name="block"/> (FBL 0.7 §8.1), by key and value in their order, or null
+    /// when the registration does not hold it.
+    /// </summary>
+    public IReadOnlyList<KeyValuePair<string, string>>? BlockEntries(string block) =>
+        Document.Block(block)?.Entries.Select(entry => new KeyValuePair<string, string>(entry.Key, entry.Value)).ToList();
+
     /// <summary>The natural keys the reading has, when known: an <c>identities</c> entry for any other key is stale (FBL §8.6).</summary>
     public IReadOnlySet<string>? KnownKeys { get; set; }
 
