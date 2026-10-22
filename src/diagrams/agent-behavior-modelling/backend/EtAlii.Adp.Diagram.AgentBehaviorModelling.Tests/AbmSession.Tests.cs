@@ -1,5 +1,6 @@
 using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.AgentBehaviorModelling.Tests;
@@ -21,6 +22,9 @@ public sealed class AbmSessionTests : IDisposable
 
     private string Registration => Path.Combine(_folder, "agent.adp");
 
+    /// <summary>The host's command pipeline over this test's store.</summary>
+    private ICommandDispatcher Dispatcher() => TestHistory.Dispatcher(s => { s.AddAgentBehaviorModelling(); s.AddSingleton<IAbmDocumentStore>(_store); });
+
     public void Dispose()
     {
         try
@@ -41,7 +45,7 @@ public sealed class AbmSessionTests : IDisposable
     public async Task ADragDown_MovesTheWholeRowAndEverythingBeneathIt_PushedAsADelta_AndUndone()
     {
         // Arrange.
-        var history = new HistoryStack(new AbmTestDispatcher(_store));
+        var history = new HistoryStack(Dispatcher());
         await using var session = new AbmSession(Body, Registration, _store, new AbmElementMapper(), history);
         await session.BaselineAsync(TestContext.Current.CancellationToken);
         var markdown = await File.ReadAllBytesAsync(Body, TestContext.Current.CancellationToken);
@@ -77,7 +81,7 @@ public sealed class AbmSessionTests : IDisposable
     public async Task ADragAcross_PastASibling_SwapsThemInTheMarkdown_TheirRowsFollow_AndOneUndoPutsBothFilesBack()
     {
         // Arrange: the first child's own children are dragged 40 lower first.
-        var history = new HistoryStack(new AbmTestDispatcher(_store));
+        var history = new HistoryStack(Dispatcher());
         await using var session = new AbmSession(Body, Registration, _store, new AbmElementMapper(), history);
         await session.BaselineAsync(TestContext.Current.CancellationToken);
         var computed = AbmLayout.Compute(await ModelAsync());
@@ -120,7 +124,7 @@ public sealed class AbmSessionTests : IDisposable
     public async Task ADropWhereItWas_WritesNothing()
     {
         // Arrange.
-        var history = new HistoryStack(new AbmTestDispatcher(_store));
+        var history = new HistoryStack(Dispatcher());
         await using var session = new AbmSession(Body, Registration, _store, new AbmElementMapper(), history);
         var computed = AbmLayout.Compute(await ModelAsync());
 
@@ -137,7 +141,7 @@ public sealed class AbmSessionTests : IDisposable
     public async Task ARowDraggedAboveItsParent_StopsJustBelowIt()
     {
         // Arrange.
-        var history = new HistoryStack(new AbmTestDispatcher(_store));
+        var history = new HistoryStack(Dispatcher());
         await using var session = new AbmSession(Body, Registration, _store, new AbmElementMapper(), history);
         var computed = AbmLayout.Compute(await ModelAsync());
 
@@ -152,7 +156,7 @@ public sealed class AbmSessionTests : IDisposable
     public async Task AnEdit_IsPushedToTheSession()
     {
         // Arrange.
-        var history = new HistoryStack(new AbmTestDispatcher(_store));
+        var history = new HistoryStack(Dispatcher());
         await using var session = new AbmSession(Body, Registration, _store, new AbmElementMapper(), history);
         await session.BaselineAsync(TestContext.Current.CancellationToken);
         var pushed = new List<DiagramDelta>();
@@ -170,7 +174,7 @@ public sealed class AbmSessionTests : IDisposable
     public async Task ADragWithoutARegistration_IsRefused()
     {
         // Arrange.
-        var history = new HistoryStack(new AbmTestDispatcher(_store));
+        var history = new HistoryStack(Dispatcher());
         await using var session = new AbmSession(Body, null, _store, new AbmElementMapper(), history);
 
         // Act.
@@ -184,7 +188,7 @@ public sealed class AbmSessionTests : IDisposable
     public async Task ADragOntoAnotherNode_MovesItUnderThatNode_OnTheHistory()
     {
         // Arrange.
-        var history = new HistoryStack(new AbmTestDispatcher(_store));
+        var history = new HistoryStack(Dispatcher());
         await using var session = new AbmSession(Body, Registration, _store, new AbmElementMapper(), history);
         var children = (await ModelAsync()).NodeOf("1.1")!.ChildIds.Count;
 

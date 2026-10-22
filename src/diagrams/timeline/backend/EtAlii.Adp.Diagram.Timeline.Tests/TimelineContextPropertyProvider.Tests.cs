@@ -1,6 +1,7 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -18,12 +19,12 @@ public class TimelineContextPropertyProviderTests : IDisposable
 
     private readonly TimelineDocumentStore _store = new(new FileWriter());
     private readonly TimelineContextPropertyProvider _properties;
-    private readonly HistoryStackStore _historyStacks;
+    private readonly IHistoryStackStore _historyStacks;
 
     public TimelineContextPropertyProviderTests()
     {
         Directory.CreateDirectory(_workspace);
-        _historyStacks = new HistoryStackStore(new TimelineTestDispatcher(_store));
+        _historyStacks = TestHistory.For(s => { s.AddTimeline(); s.AddSingleton<ITimelineDocumentStore>(_store); });
         _properties = new TimelineContextPropertyProvider(_historyStacks, _store);
     }
 

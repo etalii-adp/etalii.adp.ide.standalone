@@ -1,6 +1,7 @@
 using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Specification.Fbl.Planning;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
@@ -19,12 +20,12 @@ public sealed class DependencyGraphDefectGuardsTests : IDisposable
 {
     private readonly string _workspace = IoPath.Combine(IoPath.GetTempPath(), "adp-dgr-guards-" + Guid.NewGuid().ToString("N"));
     private readonly DependencyGraphDocumentStore _store = new(new FileWriter());
-    private readonly HistoryStackStore _historyStacks;
+    private readonly IHistoryStackStore _historyStacks;
 
     public DependencyGraphDefectGuardsTests()
     {
         Directory.CreateDirectory(_workspace);
-        _historyStacks = new HistoryStackStore(new DependencyGraphTestDispatcher(_store));
+        _historyStacks = TestHistory.For(s => { s.AddDependencyGraph(); s.AddSingleton<IDependencyGraphDocumentStore>(_store); });
     }
 
     public void Dispose() => TestFolder.TryDelete(_workspace);

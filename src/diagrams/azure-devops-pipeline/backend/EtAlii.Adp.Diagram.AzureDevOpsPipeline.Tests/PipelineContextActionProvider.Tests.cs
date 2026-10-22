@@ -2,6 +2,7 @@ using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -26,13 +27,13 @@ public class PipelineContextActionProviderTests : IDisposable
 
     private readonly PipelineDocumentStore _store = new(new FileWriter());
     private readonly PipelineViewState _views = new();
-    private readonly HistoryStackStore _historyStacks;
+    private readonly IHistoryStackStore _historyStacks;
     private readonly PipelineContextActionProvider _provider;
 
     public PipelineContextActionProviderTests()
     {
         Directory.CreateDirectory(_workspace);
-        _historyStacks = new HistoryStackStore(new PipelineTestDispatcher(_store));
+        _historyStacks = TestHistory.For(s => { s.AddAzurePipeline(); s.AddSingleton<IPipelineDocumentStore>(_store); });
         _provider = new PipelineContextActionProvider(_historyStacks, _store, _views);
     }
 

@@ -4,8 +4,6 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using EtAlii.Adp.Diagram.AzureDevOpsPipeline.Tests.Parity;
 using EtAlii.Adp.Documents;
-using EtAlii.Adp.Files;
-using EtAlii.Adp.History;
 using EtAlii.Adp.Specification.Disl;
 using EtAlii.Adp.Specification.Fbl.Documents;
 using EtAlii.Adp.Specification.Json;
@@ -158,7 +156,7 @@ public sealed partial class BundledDefinitionTests
     public async Task TheBindingsTemplate_IsTheFactorysBytes()
     {
         var services = new ServiceCollection();
-        services.AddSingleton<IHistoryStackStore>(new HistoryStackStore(new PipelineTestDispatcher(new PipelineDocumentStore(new FileWriter()))));
+        services.AddSingleton(TestHistory.For(s => s.AddAzurePipeline()));
         services.AddAzurePipeline();
         await using var provider = services.BuildServiceProvider();
         var factory = provider.GetServices<IDiagramDocumentFactory>().Single(candidate => candidate.Origin == Diagram.Pipeline.Origin);

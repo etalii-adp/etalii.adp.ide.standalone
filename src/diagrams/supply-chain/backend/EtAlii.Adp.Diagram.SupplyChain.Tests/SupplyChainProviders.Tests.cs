@@ -2,6 +2,7 @@ using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.SupplyChain.Tests;
@@ -11,20 +12,20 @@ public sealed class SupplyChainProvidersTests : IDisposable
 {
     private readonly SupplyChainTestFolder _folder = new(Path.Combine(AppContext.BaseDirectory, "Fixtures", "lf-line-endings.supply"), "small.supply");
     private readonly SupplyChainDocumentStore _store = new(new FileWriter());
-    private readonly HistoryStackStore _historyStacks;
+    private readonly IHistoryStackStore _historyStacks;
     private readonly SupplyChainContextPropertyProvider _properties;
     private readonly SupplyChainContextActionProvider _actions;
 
     public SupplyChainProvidersTests()
     {
-        _historyStacks = new HistoryStackStore(new SupplyChainTestDispatcher(_store));
+        _historyStacks = TestHistory.For(s => { s.AddSupplyChain(); s.AddSingleton<ISupplyChainDocumentStore>(_store); });
         _properties = new SupplyChainContextPropertyProvider(_historyStacks, _store);
         _actions = new SupplyChainContextActionProvider(_historyStacks, _store);
     }
 
     public void Dispose()
     {
-        _historyStacks.Dispose();
+        (_historyStacks as IDisposable)?.Dispose();
         _folder.Dispose();
     }
 

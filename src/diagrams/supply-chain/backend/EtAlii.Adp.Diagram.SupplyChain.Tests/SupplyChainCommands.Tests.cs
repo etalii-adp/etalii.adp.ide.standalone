@@ -1,6 +1,7 @@
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.SupplyChain.Tests;
@@ -13,13 +14,13 @@ public sealed class SupplyChainCommandsTests : IDisposable
 {
     private readonly SupplyChainTestFolder _folder = new(Path.Combine(AppContext.BaseDirectory, "Fixtures", "crlf-line-endings.supply"), "small.supply");
     private readonly SupplyChainDocumentStore _store = new(new FileWriter());
-    private readonly SupplyChainTestDispatcher _dispatcher;
+    private readonly ICommandDispatcher _dispatcher;
     private readonly byte[] _original;
 
     public SupplyChainCommandsTests()
     {
         _original = File.ReadAllBytes(Body);
-        _dispatcher = new SupplyChainTestDispatcher(_store);
+        _dispatcher = TestHistory.Dispatcher(s => { s.AddSupplyChain(); s.AddSingleton<ISupplyChainDocumentStore>(_store); });
     }
 
     private string Body => _folder.Body;

@@ -1,6 +1,7 @@
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.Sankey.Tests;
@@ -13,13 +14,13 @@ public sealed class SankeyCommandsTests : IDisposable
 {
     private readonly SankeyTestFolder _folder = new(Path.Combine(AppContext.BaseDirectory, "Fixtures", "crlf-line-endings.skv"), "small.skv");
     private readonly SankeyDocumentStore _store = new(new FileWriter());
-    private readonly SankeyTestDispatcher _dispatcher;
+    private readonly ICommandDispatcher _dispatcher;
     private readonly byte[] _original;
 
     public SankeyCommandsTests()
     {
         _original = File.ReadAllBytes(Body);
-        _dispatcher = new SankeyTestDispatcher(_store);
+        _dispatcher = TestHistory.Dispatcher(s => { s.AddSankey(); s.AddSingleton<ISankeyDocumentStore>(_store); });
     }
 
     private string Body => _folder.Body;

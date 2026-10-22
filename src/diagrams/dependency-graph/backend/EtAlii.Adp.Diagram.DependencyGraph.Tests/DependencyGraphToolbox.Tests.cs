@@ -2,7 +2,7 @@ using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Files;
-using EtAlii.Adp.History;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -26,7 +26,7 @@ public class DependencyGraphToolboxTests : IDisposable
     {
         Directory.CreateDirectory(_workspace);
         _actions = new DependencyGraphContextActionProvider(
-            new HistoryStackStore(new DependencyGraphTestDispatcher(_store)), _store);
+            TestHistory.For(s => { s.AddDependencyGraph(); s.AddSingleton<IDependencyGraphDocumentStore>(_store); }), _store);
     }
 
     public void Dispose()

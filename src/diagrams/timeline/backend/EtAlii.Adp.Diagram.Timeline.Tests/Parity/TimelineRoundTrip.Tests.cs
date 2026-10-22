@@ -4,6 +4,7 @@ using System.Text.RegularExpressions;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Specification.Fbl.Planning;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using Path = System.IO.Path;
 
@@ -139,7 +140,7 @@ public sealed class TimelineRoundTripTests : IDisposable
         {
             var path = await CopyAsync(bytes);
             var store = new TimelineDocumentStore(new FileWriter());
-            using var history = new HistoryStackStore(new TimelineTestDispatcher(store));
+            var history = TestHistory.For(s => { s.AddTimeline(); s.AddSingleton<ITimelineDocumentStore>(store); });
             var stack = history.Get(ProjectRoot.From(_folder.Path));
 
             // Act.

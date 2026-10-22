@@ -1,6 +1,7 @@
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph.Tests;
@@ -23,7 +24,7 @@ public sealed class GhgCommandsTests : IDisposable
 {
     private readonly string _folder = Path.Combine(Path.GetTempPath(), "EtAlii.Adp.GhgCommandsTests", Guid.NewGuid().ToString("N"));
     private readonly GhgDocumentStore _store = new(new FileWriter());
-    private readonly GhgTestDispatcher _dispatcher;
+    private readonly ICommandDispatcher _dispatcher;
     private readonly byte[] _original;
 
     public GhgCommandsTests()
@@ -31,7 +32,7 @@ public sealed class GhgCommandsTests : IDisposable
         Directory.CreateDirectory(_folder);
         File.Copy(GhgModuleFiles.Example, Body);
         _original = File.ReadAllBytes(Body);
-        _dispatcher = new GhgTestDispatcher(_store);
+        _dispatcher = TestHistory.Dispatcher(s => { s.AddGartnerHypeCycleGraph(); s.AddSingleton<IGhgDocumentStore>(_store); });
     }
 
     private string Body => Path.Combine(_folder, "technology-trends.ghg");
@@ -282,7 +283,7 @@ public sealed class GhgCommandsTests : IDisposable
         Assert.False(entry.IsUsable);
         Assert.Empty(entry.Model.Trends);
 
-        var edited = await new GhgTestDispatcher(store).DispatchAsync(
+        var edited = await TestHistory.Dispatcher(s => { s.AddGartnerHypeCycleGraph(); s.AddSingleton<IGhgDocumentStore>(store); }).DispatchAsync(
             new RenameGhgElementCommand(Body, "railways", "Railroads"),
             TestContext.Current.CancellationToken);
         var saved = await store.SaveAsync(Body, GhgBody.Parse(GhgParser.EmptyDocument("\n")), TestContext.Current.CancellationToken);

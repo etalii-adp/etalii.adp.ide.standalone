@@ -4,6 +4,7 @@ using EtAlii.Adp.Documents;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using Google.Protobuf.Reflection;
+using Microsoft.Extensions.DependencyInjection;
 using Path = System.IO.Path;
 
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph.Tests.Parity;
@@ -394,7 +395,7 @@ internal static class GhgTranscript
         {
             Folder = folder;
             Body = body;
-            History = new HistoryStackStore(new GhgTestDispatcher(Store));
+            History = TestHistory.For(s => { s.AddGartnerHypeCycleGraph(); s.AddSingleton<IGhgDocumentStore>(Store); });
             var readOnly = new ReadOnlyStore(Store);
             Actions = new GhgContextActionProvider(History, Store);
             ReadOnlyActions = new GhgContextActionProvider(History, readOnly);
@@ -408,7 +409,7 @@ internal static class GhgTranscript
 
         public GhgDocumentStore Store { get; } = new(new FileWriter());
 
-        public HistoryStackStore History { get; }
+        public IHistoryStackStore History { get; }
 
         public GhgContextActionProvider Actions { get; }
 
@@ -426,7 +427,7 @@ internal static class GhgTranscript
         public ContextTarget Target(string elementId) =>
             ContextTarget.ForElement(Body, elementId, ProjectRoot.From(Folder), origin: Diagram.HypeCycleGraph.Origin);
 
-        public void Dispose() => History.Dispose();
+        public void Dispose() => (History as IDisposable)?.Dispose();
     }
 
     /// <summary>The store's own entries, each marked as unreadable: the backend's one read-only case.</summary>
