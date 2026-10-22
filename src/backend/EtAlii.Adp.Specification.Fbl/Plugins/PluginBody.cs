@@ -14,10 +14,14 @@ public sealed class PluginBody : SplicedFile
     private readonly IPersistencePlugin? _plugin;
     private PluginReadResult _last;
 
-    private PluginBody(byte[] bytes, FblBinding binding, IPersistencePlugin? plugin, string fileName) : base(bytes)
+    /// <summary>The sentence a plan for an unreadable body is refused with when the tool words none.</summary>
+    public const string Unreadable = "The file could not be read, so it is never written.";
+
+    private PluginBody(byte[] bytes, FblBinding binding, IPersistencePlugin? plugin, string fileName, string unreadable) : base(bytes)
     {
         Binding = binding;
         FileName = fileName;
+        UnreadableSentence = unreadable;
         _plugin = plugin is not null && plugin.Id == binding.Plugin!.Plugin ? plugin : null;
         _last = ReadNow();
     }
@@ -25,6 +29,9 @@ public sealed class PluginBody : SplicedFile
     private FblBinding Binding { get; }
 
     private string FileName { get; }
+
+    /// <summary>The sentence a plan for an unreadable body is refused with: the tool's, or <see cref="Unreadable"/>.</summary>
+    private string UnreadableSentence { get; }
 
     public FblModel Model => new(_last.Elements, _last.Findings, _last.Unreadable);
 
@@ -41,22 +48,24 @@ public sealed class PluginBody : SplicedFile
 
     /// <summary>
     /// Opens a body whose binding names a plugin. <paramref name="plugin"/> is the one the caller has
-    /// installed, or null; a plugin with another id counts as missing.
+    /// installed, or null; a plugin with another id counts as missing. <paramref name="unreadable"/> is the
+    /// sentence the tool refuses an edit of a body the plugin cannot read with; <see cref="Unreadable"/> when it
+    /// words none.
     /// </summary>
-    public static PluginBody Open(byte[] bytes, FblBinding binding, IPersistencePlugin? plugin, string fileName = "body")
+    public static PluginBody Open(byte[] bytes, FblBinding binding, IPersistencePlugin? plugin, string fileName = "body", string? unreadable = null)
     {
         ArgumentNullException.ThrowIfNull(bytes);
         ArgumentNullException.ThrowIfNull(binding);
         return binding.Plugin is null
             ? throw new ArgumentException($"The binding '{binding.Name}' is read by its declared rules, not by a plugin.", nameof(binding))
-            : new PluginBody(bytes, binding, plugin, fileName);
+            : new PluginBody(bytes, binding, plugin, fileName, unreadable ?? Unreadable);
     }
 
     public PlanResult Plan(ModelChange change)
     {
         ArgumentNullException.ThrowIfNull(change);
         if (_plugin is null) return new PlanResult.Refused(MissingReason);
-        if (_last.Unreadable) return new PlanResult.Refused("The file could not be read, so it is never written.");
+        if (_last.Unreadable) return new PlanResult.Refused(UnreadableSentence);
         if (Binding.ReadOnly is { } reason) return new PlanResult.Refused(reason.Length > 0 ? reason : "This file is read-only.");
         if (change is ModelChange.Save) return new PlanResult.Planned(new Edit([]));
         var result = _plugin.Plan(new PluginPlanRequest([new PluginFile("", Bytes)], _last, change));

@@ -16,6 +16,9 @@ public abstract class SplicedFile
 
     private readonly EditHistory _history = new();
 
+    /// <summary>The bytes before the open group, or null when no group is open.</summary>
+    private byte[]? _groupBefore;
+
     protected SplicedFile(byte[] bytes)
     {
         Bytes = bytes;
@@ -33,8 +36,53 @@ public abstract class SplicedFile
         if (edit.Splices.Count == 0) return;
         var before = Bytes;
         var after = Edit.Apply(before, edit.Splices);
-        _history.Record(before, after, edit);
+        if (_groupBefore is null) _history.Record(before, after, edit);
         Replace(after);
+    }
+
+    /// <summary>
+    /// Applies the edits <paramref name="edits"/> makes as one history entry, so that the changes of one gesture are
+    /// one undo step: inside the group each edit is applied and the file read again as usual, and when it closes the
+    /// file before it and after it are recorded as one edit, the smallest splice between them. A group that changes
+    /// nothing records nothing; one whose action throws records what it applied before it threw.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">A group is already open on this file.</exception>
+    public void Group(Action edits)
+    {
+        ArgumentNullException.ThrowIfNull(edits);
+        if (_groupBefore is not null) throw new InvalidOperationException("A group is already open on this file.");
+        _groupBefore = Bytes;
+        try
+        {
+            edits();
+        }
+        finally
+        {
+            var before = _groupBefore;
+            _groupBefore = null;
+            if (!before.AsSpan().SequenceEqual(Bytes)) _history.Record(before, Bytes, new Edit([Difference(before, Bytes)]));
+        }
+    }
+
+    /// <summary>
+    /// The one splice that turns <paramref name="before"/> into <paramref name="after"/>: everything between their common
+    /// start and their common end, those widened to whole UTF-8 characters so that the replaced text decodes.
+    /// </summary>
+    private static Splice Difference(byte[] before, byte[] after)
+    {
+        var start = 0;
+        var shorter = Math.Min(before.Length, after.Length);
+        while (start < shorter && before[start] == after[start]) start++;
+        while (start > 0 && IsContinuation(before, start)) start--;
+
+        var end = 0;
+        while (end < shorter - start && before[^(end + 1)] == after[^(end + 1)]) end++;
+        while (end > 0 && IsContinuation(before, before.Length - end)) end--;
+
+        var text = System.Text.Encoding.UTF8.GetString(after, start, after.Length - end - start);
+        return new Splice(SpliceOperation.ReEmitLine, start, before.Length - end, text);
+
+        static bool IsContinuation(byte[] bytes, int index) => index < bytes.Length && (bytes[index] & 0xC0) == 0x80;
     }
 
     /// <summary>

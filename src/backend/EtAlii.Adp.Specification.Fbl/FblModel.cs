@@ -23,6 +23,13 @@ public sealed record FblElement(
     /// that read it says (FBL §11.2); null for an element of a file body, whose file is the body's.
     /// </summary>
     public string? File { get; init; }
+
+    /// <summary>
+    /// Where each of its writable values is written, by attribute, beside <see cref="OwnSpan"/>: what a persistence
+    /// plugin's <c>read</c> reports as the span of every writable value (FBL §11.2). A value without an entry has no
+    /// span of its own, as one written once for several elements does not; empty when the reader reports none.
+    /// </summary>
+    public IReadOnlyDictionary<string, Span> ValueSpans { get; init; } = new Dictionary<string, Span>();
 }
 
 /// <summary>What reading a body gives: its elements and relations in document order, and its findings.</summary>
