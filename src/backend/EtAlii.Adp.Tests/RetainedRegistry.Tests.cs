@@ -217,4 +217,67 @@ public sealed class RetainedRegistryTests
         // Assert.
         Assert.Equal([1, 0], counts);
     }
+
+    // ---- a window of zero: claim-counted, no grace (code-structure T294) --------------------------
+
+    [Fact]
+    public void WithNoWindow_TheLastReleaseDropsAtOnce_AndOneOfTwoKeepsTheValue()
+    {
+        // Arrange.
+        using var registry = new RetainedRegistry<string, object>(TimeSpan.Zero, (key, _) => _dropped.Add(key), _clock);
+        var value = registry.Retain("a", Create);
+        registry.Retain("a", Create);
+
+        // Act and assert, step by step, with the clock never moving: one release of two holds it still.
+        registry.Release("a");
+        Assert.Empty(_dropped);
+        Assert.True(registry.TryGet("a", out var kept));
+        Assert.Same(value, kept);
+
+        registry.Release("a");
+        Assert.Equal(["a"], _dropped);
+        Assert.False(registry.TryGet("a", out _));
+        Assert.NotSame(value, registry.Retain("a", Create));
+    }
+
+    [Fact]
+    public void WithNoWindow_AnUnclaimedValueIsKept_UntilARelease()
+    {
+        // Arrange.
+        using var registry = new RetainedRegistry<string, object>(TimeSpan.Zero, (key, _) => _dropped.Add(key), _clock);
+        registry.GetOrAdd("a", Create);
+        _clock.Advance(Window * 2);
+        Assert.Empty(_dropped);
+
+        // Act.
+        registry.Release("a");
+
+        // Assert.
+        Assert.Equal(["a"], _dropped);
+    }
+
+    [Fact]
+    public void WithNoWindow_DisposeDropsEveryValueOnce_AndAgainIsHarmless()
+    {
+        // Arrange.
+        var registry = new RetainedRegistry<string, object>(TimeSpan.Zero, (key, _) => _dropped.Add(key), _clock);
+        registry.Retain("held", Create);
+        registry.GetOrAdd("unclaimed", Create);
+
+        // Act.
+        registry.Dispose();
+        registry.Dispose();
+
+        // Assert.
+        Assert.Equal(["held", "unclaimed"], _dropped.Order());
+    }
+
+    [Fact]
+    public void ANegativeWindow_OrNoWindowWithUnclaimedDrops_IsRefused()
+    {
+        // Act and assert: with no window there is none in which to drop an unclaimed value.
+        Assert.Throws<ArgumentOutOfRangeException>(() => new RetainedRegistry<string, object>(TimeSpan.FromSeconds(-1), (_, _) => { }, _clock));
+        Assert.Throws<ArgumentException>(() => new RetainedRegistry<string, object>(TimeSpan.Zero, (_, _) => { }, _clock, dropUnclaimed: true));
+        Assert.Throws<ArgumentNullException>(() => new RetainedRegistry<string, object>(TimeSpan.Zero, (_, _) => { }, null!));
+    }
 }

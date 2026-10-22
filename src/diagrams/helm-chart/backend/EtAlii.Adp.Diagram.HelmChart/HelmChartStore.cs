@@ -1,7 +1,5 @@
+using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Files;
-using Serilog;
-
-using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
 namespace EtAlii.Adp.Diagram.HelmChart;
 
@@ -28,6 +26,9 @@ namespace EtAlii.Adp.Diagram.HelmChart;
 /// stored in, so the folder body watches the registration each session writes to; a folder opened without one
 /// is keyed by its own path.
 /// </para>
+/// <para>
+/// The registry, its claims and its watches are the shared <see cref="OpenFolders{TFolder}"/>'s.
+/// </para>
 /// </remarks>
 /// <param name="reader">The reader the plugin reads every folder with.</param>
 /// <param name="time">The clock a burst of changes settles on; the system's when none is given.</param>
@@ -37,15 +38,7 @@ namespace EtAlii.Adp.Diagram.HelmChart;
 /// </param>
 public sealed class HelmChartStore(HelmChartReader reader, TimeProvider? time = null, ProjectFileEvents? events = null) : IHelmChartStore, IDisposable
 {
-    private static readonly ILogger _logger = Log.ForContext<HelmChartStore>();
-
-    private readonly HelmChartReader _reader = reader ?? throw new ArgumentNullException(nameof(reader));
-
-    private readonly Dictionary<string, Entry> _open = new(StringComparer.Ordinal);
-    private readonly Lock _gate = new();
-
-    /// <summary>Raised after an open folder's burst of changes settled; <see cref="Watch"/> hears one folder of it.</summary>
-    private event Action<string, HelmBody>? Changed;
+    private readonly OpenFolders<HelmBody> _open = Folders(reader ?? throw new ArgumentNullException(nameof(reader)), time, events);
 
     /// <summary>A store over the module's own reader; the shape the host and most tests want.</summary>
     public HelmChartStore()
@@ -54,108 +47,20 @@ public sealed class HelmChartStore(HelmChartReader reader, TimeProvider? time = 
     }
 
     /// <inheritdoc />
-    public HelmBody GetOrLoad(string folder, string? registration = null)
-    {
-        lock (_gate)
-        {
-            return Opened(folder, registration).Body;
-        }
-    }
+    public HelmBody GetOrLoad(string folder, string? registration = null) => _open.GetOrLoad(folder, registration);
 
     /// <inheritdoc />
-    public HelmBody Acquire(string folder, string? registration = null)
-    {
-        lock (_gate)
-        {
-            var entry = Opened(folder, registration);
-            entry.Claims++;
-            return entry.Body;
-        }
-    }
+    public HelmBody Acquire(string folder, string? registration = null) => _open.Acquire(folder, registration);
 
     /// <inheritdoc />
-    public void Release(string folder, string? registration = null)
-    {
-        Entry? closed = null;
-        lock (_gate)
-        {
-            var key = Key(folder, registration);
-            if (!_open.TryGetValue(key, out var entry)) return;
-            entry.Claims = Math.Max(0, entry.Claims - 1);
-            if (entry.Claims == 0 && _open.Remove(key, out closed))
-            {
-                _logger.Debug("No longer watching {Folder}: its last viewer left", key);
-            }
-        }
-
-        closed?.Body.Dispose();
-    }
+    public void Release(string folder, string? registration = null) => _open.Release(folder, registration);
 
     /// <inheritdoc />
     /// <remarks>Once the subscription is disposed no call follows, and disposing it twice is harmless.</remarks>
-    public IDisposable Watch(string folder, string? registration, Action<HelmBody> onChanged)
-    {
-        ArgumentNullException.ThrowIfNull(onChanged);
-        var key = Key(folder, registration);
-        var disposed = false;
-        Changed += OnChanged;
-        return new Subscription(() =>
-        {
-            disposed = true;
-            Changed -= OnChanged;
-        });
+    public IDisposable Watch(string folder, string? registration, Action<HelmBody> onChanged) => _open.Watch(folder, registration, onChanged);
 
-        void OnChanged(string changed, HelmBody opened)
-        {
-            // A raise already under way when the subscription went still reaches this handler; the flag
-            // keeps the promise that no call follows a dispose.
-            if (!disposed && string.Equals(changed, key, StringComparison.Ordinal)) onChanged(opened);
-        }
-    }
+    public void Dispose() => _open.Dispose();
 
-    public void Dispose()
-    {
-        List<Entry> open;
-        lock (_gate)
-        {
-            open = [.. _open.Values];
-            _open.Clear();
-        }
-
-        foreach (var entry in open)
-        {
-            entry.Body.Dispose();
-        }
-    }
-
-    /// <summary>The open folder, opened now if it is not; the caller holds the gate.</summary>
-    private Entry Opened(string folder, string? registration)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(folder);
-        var key = Key(folder, registration);
-        if (_open.TryGetValue(key, out var entry)) return entry;
-
-        _logger.Debug("Reading and watching {Folder}", key);
-        var opened = HelmBody.Open(folder, registration, time, _reader, events);
-        opened.Changed += (_, _) => Changed?.Invoke(key, opened);
-        entry = new Entry(opened);
-        _open[key] = entry;
-        return entry;
-    }
-
-    private static string Key(string folder, string? registration) => IoPath.GetFullPath(registration ?? folder);
-
-    private sealed class Entry(HelmBody body)
-    {
-        public HelmBody Body { get; } = body;
-
-        public int Claims { get; set; }
-    }
-
-    private sealed class Subscription(Action dispose) : IDisposable
-    {
-        private Action? _dispose = dispose;
-
-        public void Dispose() => Interlocked.Exchange(ref _dispose, null)?.Invoke();
-    }
+    private static OpenFolders<HelmBody> Folders(HelmChartReader reader, TimeProvider? time, ProjectFileEvents? events) =>
+        new((folder, registration) => HelmBody.Open(folder, registration, time, reader, events), (opened, settled) => opened.Changed += (_, _) => settled());
 }
