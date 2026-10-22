@@ -27,6 +27,7 @@ public sealed class DesignerAddOptions
 
     private readonly IDesignerDefinitionCatalog _catalog;
     private readonly DesignerDocumentTemplates _templates;
+    private readonly FirstLineCache _firstLines = new();
 
     public DesignerAddOptions(IDesignerDefinitionCatalog catalog, DesignerDocumentTemplates templates)
     {
@@ -95,10 +96,11 @@ public sealed class DesignerAddOptions
     }
 
     /// <summary>
-    /// The command that creates a document named <paramref name="baseName"/> in
-    /// <paramref name="folder"/>: the body from the type's template for the format, and the
-    /// registration beside it holding the origin and nothing else. Null with a reason when it
-    /// cannot be created.
+    /// What adding a document named <paramref name="baseName"/> in <paramref name="folder"/> comes
+    /// down to: the body from the type's template for the format, and the registration beside it
+    /// holding the origin and nothing else; or, for a type recognised by its envelope, the body
+    /// alone, or the file of that name that carries the envelope already, opened as it is (spec 029
+    /// R5). Refused with a reason when it cannot be added.
     /// </summary>
     /// <remarks>
     /// The registration names its body in a <c>body:</c> line, always. The two files share a
@@ -107,22 +109,42 @@ public sealed class DesignerAddOptions
     /// created as <c>cities.json</c> - for its body. It carries no layout; a designer has none,
     /// and all it stores is in the body (Requirement 2.2).
     /// </remarks>
-    public (CreateDiagramFileCommand? Command, string Error) Plan(DesignerDefinition definition, DesignerFormat format, string folder, string baseName)
+    public DesignerAddPlan Plan(DesignerDefinition definition, DesignerFormat format, string folder, string baseName)
     {
         ArgumentNullException.ThrowIfNull(definition);
         ArgumentNullException.ThrowIfNull(format);
 
         var bodyName = baseName + format.Extension;
         var bodyPath = IoPath.Combine(folder, bodyName);
+        var claim = definition.Claim is { } candidate && candidate.Extensions.Contains(format.Extension, StringComparer.OrdinalIgnoreCase) ? candidate : null;
+        if (claim is not null && File.Exists(bodyPath))
+        {
+            // The envelope decides: a file that carries it is the document already, and nothing is written; one that
+            // does not is refused with the line it needs, which no dialog offers to write (R5).
+            return claim.Matches(bodyName, _firstLines.Read(bodyPath))
+                ? new DesignerAddPlan(null, bodyPath, "")
+                : DesignerAddPlan.Refused($"'{bodyName}' has no envelope on its first line, so it is not a {definition.Title} document. The first line it would need is: {claim.Envelope}");
+        }
+
         if (File.Exists(bodyPath) || Directory.Exists(bodyPath))
         {
-            return (null, $"An item named '{bodyName}' already exists in this folder.");
+            return DesignerAddPlan.Refused($"An item named '{bodyName}' already exists in this folder.");
         }
 
         var content = _templates.Find(definition.Origin)?.Create(format, bodyName);
-        return content is null
-            ? (null, $"A {definition.Title} document cannot be created as {format.Title}: its module is incomplete.")
-            : (new CreateDiagramFileCommand(folder, DiagramFileName.WithExtension(baseName), definition.Origin, bodyName, content, NamesBody: true), "");
+        if (content is null)
+        {
+            return DesignerAddPlan.Refused($"A {definition.Title} document cannot be created as {format.Title}: its module is incomplete.");
+        }
+
+        if (claim is { CreatesRegistration: true })
+        {
+            // The registration is created with the first setting the user changes (FBL section 8.4).
+            return new DesignerAddPlan(new CreateDocumentBodyCommand(folder, bodyName, content), bodyPath, "");
+        }
+
+        var command = new CreateDiagramFileCommand(folder, DiagramFileName.WithExtension(baseName), definition.Origin, bodyName, content, NamesBody: true);
+        return new DesignerAddPlan(command, CreateDiagramFileCommandHandler.DestinationOf(command), "");
     }
 
     /// <summary>
