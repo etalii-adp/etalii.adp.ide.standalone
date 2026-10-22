@@ -1,3 +1,4 @@
+using EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests.Parity;
 using EtAlii.Adp.Documents;
 using Xunit;
 
@@ -54,7 +55,7 @@ public class FdgExampleTests
         Assert.True(
             breaches.Count == 0,
             "The example breaks the rules it exists to demonstrate: "
-            + string.Join("; ", breaches.Select(breach => $"{breach.RuleId} at line {breach.Line + 1}: {breach.Message}")));
+            + string.Join("; ", breaches.Select(breach => $"{breach.Code} at line {breach.Line}: {breach.Message}")));
     }
 
     /// <summary>Requirement 11.2: every element type appears at least once.</summary>

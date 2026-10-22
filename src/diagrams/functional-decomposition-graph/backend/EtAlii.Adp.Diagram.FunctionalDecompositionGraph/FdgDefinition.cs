@@ -70,6 +70,40 @@ internal static class FdgDefinition
             : null;
     }
 
+    /// <summary>
+    /// The findings of <paramref name="model"/>: the definition's built-ins and rules over its model with the
+    /// reader's sentences (<see cref="FdgReaderSentences"/>), held to the tool's findings by the stand-ins
+    /// <see cref="FdgLinkChain"/>, <see cref="FdgOwnershipWalk"/> and <see cref="FdgFindingOrder"/>, each named
+    /// for the gap or the ruling that keeps it.
+    /// </summary>
+    public static IReadOnlyList<DislFinding> Findings(FdgModel model)
+    {
+        ArgumentNullException.ThrowIfNull(model);
+        var diagram = FdgDisl.Of(model);
+        var options = new DislConstraintOptions(Env, FdgReaderSentences.Of(model), WrittenId);
+        var evaluated = ConstraintEvaluator.Evaluate(Specification, diagram, options);
+        return FdgFindingOrder.Apply(FdgOwnershipWalk.Keep(FdgLinkChain.Apply(evaluated, diagram), diagram), model);
+    }
+
+    /// <summary>
+    /// The definition's refusal of a <paramref name="relationType"/> connection from <paramref name="from"/> to
+    /// <paramref name="to"/> in <paramref name="model"/> as it is: the first of the type, cardinality and cycle checks
+    /// it fails, worded by the built-in's <c>refusal</c> (DISL 8.4); null when none refuses.
+    /// </summary>
+    public static string? ConnectRefusal(FdgModel model, string relationType, DislElement from, DislElement to)
+    {
+        ArgumentNullException.ThrowIfNull(model);
+        ArgumentNullException.ThrowIfNull(relationType);
+        return GestureConstraintEvaluator.Connect(Specification, FdgDisl.Of(model), relationType, from, to, env: Env)?.Message;
+    }
+
+    /// <summary>The element <paramref name="id"/> names, never a connection, as a connect finds its ends; null for none.</summary>
+    public static DislElement? EndOf(FdgModel model, string id)
+    {
+        ArgumentNullException.ThrowIfNull(model);
+        return ElementOf(FdgDisl.Of(model), id) is { Type.IsRelation: false } element ? element : null;
+    }
+
     /// <summary>The element or connection <paramref name="id"/> names, as <see cref="FdgModel"/> finds it; null for none.</summary>
     public static DislElement? ElementOf(DislDiagram diagram, string id)
     {
@@ -79,7 +113,7 @@ internal static class FdgDefinition
     }
 
     /// <summary>The id written in the document, the binding's <c>storedId</c>: empty for an entry without one.</summary>
-    private static string WrittenId(DislElement element)
+    public static string WrittenId(DislElement element)
     {
         ArgumentNullException.ThrowIfNull(element);
         return element.HostAttributes.TryGetValue(FdgDisl.StoredId, out var stored) ? stored as string ?? "" : "";

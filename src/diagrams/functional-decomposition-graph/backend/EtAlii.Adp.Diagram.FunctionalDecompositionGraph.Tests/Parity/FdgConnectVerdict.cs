@@ -1,7 +1,8 @@
-namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
+namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests.Parity;
 
 /// <summary>
 /// Whether a link may be written: the same three checks the canvas makes before it offers a target.
+/// <para>Kept verbatim as the oracle the definition's findings and refusals are compared with (functional-decomposition-graph-disl-fbl task 7).</para>
 /// </summary>
 /// <remarks>
 /// <para>

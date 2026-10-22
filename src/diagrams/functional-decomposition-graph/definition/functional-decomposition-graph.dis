@@ -227,6 +227,7 @@
       },
       "UiChild": {
         "extends": "Ownership",
+        "allowSelfLoops": false,
         "label": "UI child",
         "source": "UiElement",
         "target": { "types": ["UiElement"], "max": 1, "role": "child",
@@ -236,6 +237,7 @@
       },
       "OwnsAction": {
         "extends": "Ownership",
+        "allowSelfLoops": false,
         "label": "Action",
         "source": "UiElement",
         "target": { "types": ["Action"], "max": 1, "role": "action",
@@ -245,6 +247,7 @@
       },
       "OwnsData": {
         "extends": "Ownership",
+        "allowSelfLoops": false,
         "label": "Data",
         "source": ["UiElement", "Action", "DataElement"],
         "target": { "types": ["DataElement"], "max": 1, "role": "data",
@@ -254,6 +257,7 @@
       },
       "OwnsFunction": {
         "extends": "Ownership",
+        "allowSelfLoops": false,
         "label": "Function",
         "source": ["UiElement", "Action", "DataElement", "Function"],
         "target": { "types": ["Function"], "max": 1, "role": "function",
@@ -263,6 +267,7 @@
       },
       "Shows": {
         "extends": "FdgRelation",
+        "allowSelfLoops": false,
         "label": "Shows",
         "source": { "types": ["Action"], "max": 1, "role": "action",
                     "doc": "An Action shows or updates at most one UI Element." },
@@ -275,6 +280,7 @@
       },
       "UnknownConnection": {
         "extends": "FdgRelation",
+        "allowSelfLoops": false,
         "label": "Unknown connection",
         "source": ["FdgElement"],
         "target": ["FdgElement"],

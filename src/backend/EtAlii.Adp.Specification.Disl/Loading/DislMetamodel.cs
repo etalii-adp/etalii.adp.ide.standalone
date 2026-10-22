@@ -25,6 +25,12 @@ public sealed record DislAttribute(string Name, string Type, bool Many, JsonElem
     /// <summary>Its <c>label</c>, read at load; null when it states none.</summary>
     internal string? Label { get; } = JsonProperties.String(Json, "label");
 
+    /// <summary>Its <c>min</c> (§4.3), read at load: the least number it may hold; null when it states none or one that is not a number.</summary>
+    internal double? Min { get; } = Bound(Json, "min");
+
+    /// <summary>Its <c>max</c> (§4.3), read at load: the greatest number it may hold; null when it states none or one that is not a number.</summary>
+    internal double? Max { get; } = Bound(Json, "max");
+
     /// <summary>Whether it is a <c>key</c> (§4.3), read at load: a part of its type's natural id.</summary>
     internal bool Key { get; } = JsonProperties.Bool(Json, "key");
 
@@ -60,6 +66,9 @@ public sealed record DislAttribute(string Name, string Type, bool Many, JsonElem
     /// none there, and the attribute then reads as unset.
     /// </summary>
     internal CelProgram? DerivedProgram { get; set; }
+
+    private static double? Bound(JsonElement json, string name) =>
+        json.ValueKind == JsonValueKind.Object && json.TryGetProperty(name, out var bound) && bound.ValueKind == JsonValueKind.Number ? bound.GetDouble() : null;
 }
 
 /// <summary>One value of an enumeration (DISL §4.5): its key, which CEL sees, and its stored form, which is written.</summary>

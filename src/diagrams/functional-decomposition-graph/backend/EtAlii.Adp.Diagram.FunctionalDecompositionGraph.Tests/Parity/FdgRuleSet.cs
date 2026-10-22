@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
+namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests.Parity;
 
 /// <summary>One breach, named by rule and by the elements involved.</summary>
 /// <param name="RuleId">The rule broken, one of <see cref="FdgRuleIds"/>.</param>
@@ -21,7 +21,7 @@ public static class FdgRuleIds
 }
 
 /// <summary>
-/// Requirement 5.5: a document that breaks the rules still opens, and every breach is reported.
+/// Requirement 5.5: a document that breaks the rules still opens, and every breach is reported. Kept verbatim as the oracle the definition's findings and refusals are compared with (functional-decomposition-graph-disl-fbl task 7).
 /// </summary>
 /// <remarks>
 /// <para>

@@ -41,7 +41,7 @@ namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests.Parity;
 /// machine. Two sentences of the rule set format a number with the machine's culture (finding A15
 /// of the specification); the probe of <c>width-fraction.fdg</c> records them once more under a
 /// culture whose decimal separator is a comma, so that the defect is in the transcript and its
-/// repair is a named change of it.
+/// repair is a named change of it. Task 7 repaired it: the probe reads "12.5" under both cultures.
 /// </para>
 /// </remarks>
 internal static class FdgTranscript
