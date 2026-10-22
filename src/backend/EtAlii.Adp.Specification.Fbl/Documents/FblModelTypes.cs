@@ -19,6 +19,7 @@ public enum Family
     Xml,
     Lines,
     Blocks,
+    Bullets,
 }
 
 /// <summary>One binding (FBL §3): how one format maps to a language's model.</summary>
@@ -47,6 +48,9 @@ public sealed class FblBinding
     public bool ReportUnmatched { get; init; }
 
     internal IReadOnlyList<BlockRule> Blocks { get; init; } = [];
+
+    /// <summary>The sections of a <c>bullets</c> body (FBL 0.7 §4.8), each found by its first matching heading.</summary>
+    internal IReadOnlyList<SectionRule> Sections { get; init; } = [];
 
     public IReadOnlyList<Rule> Elements { get; init; } = [];
 
@@ -133,6 +137,9 @@ internal sealed class TextDefaults
 internal sealed record HeaderSettings(string? Key, JsonElement? Value, string? Line, bool Required);
 
 internal sealed record BlockRule(string Name, string Line, IReadOnlyList<string>? Within, bool CaseInsensitive, string? View);
+
+/// <summary>A section of a <c>bullets</c> body (FBL 0.7 §4.8): its name, and the expression its heading's text matches.</summary>
+internal sealed record SectionRule(string Name, string Heading, bool CaseInsensitive);
 
 /// <summary>An element rule or a relation rule (FBL §5.1, §5.4).</summary>
 public sealed partial class Rule
@@ -305,6 +312,12 @@ public abstract record SlotKind
     public sealed record Capture(string Name) : SlotKind
     {
         public override string ToString() => $"capture {Name}";
+    }
+
+    /// <summary>The continuation of a <c>bullets</c> item (FBL 0.7 §4.8): its lines before its first nested item.</summary>
+    public sealed record Continuation : SlotKind
+    {
+        public override string ToString() => "continuation";
     }
 
     /// <summary>A value computed by CEL, read-only.</summary>

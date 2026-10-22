@@ -213,8 +213,8 @@ public static class GestureConstraintEvaluator
             string? violation =
                 !Allows(type.Source, source) ? "source"
                 : !Allows(type.Target, target) ? "target"
-                : ReferenceEquals(source, target) && !(type.AllowSelfLoops ?? false) ? "selfLoop"
-                : !(type.AllowParallel ?? true) && Others().Any(Parallel) ? "parallel"
+                : ReferenceEquals(source, target) && !type.AllowSelfLoops ? "selfLoop"
+                : !type.AllowParallel && Others().Any(Parallel) ? "parallel"
                 : null;
             if (violation is null) return null;
             var end = violation is "source" or "target" ? violation : "target";
@@ -299,7 +299,7 @@ public static class GestureConstraintEvaluator
         private bool Parallel(DislElement relation) =>
             ReferenceEquals(relation.Type, type)
             && (ReferenceEquals(relation.Source, source) && ReferenceEquals(relation.Target, target)
-                || !(type.Directed ?? true) && ReferenceEquals(relation.Source, target) && ReferenceEquals(relation.Target, source));
+                || !type.Directed && ReferenceEquals(relation.Source, target) && ReferenceEquals(relation.Target, source));
 
         private bool Enabled(string builtIn) => specification.Constraints.BuiltIn(builtIn).Enabled;
 

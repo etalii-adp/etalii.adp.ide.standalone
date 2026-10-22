@@ -8,7 +8,7 @@ using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 using Path = EtAlii.Adp.Documents.Wire.Path;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Modules.Tests;
 
 /// <summary>
 /// Where an XML file lands in the real host (xml-editor Requirements 2.2, 2.3, 2.5): a file no

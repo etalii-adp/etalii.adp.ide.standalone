@@ -5,7 +5,7 @@ namespace EtAlii.Adp.Specification.Disl;
 
 /// <summary>
 /// Step 6 of loading (DISL §14.1): the metamodel's types with their supertypes resolved, their C3
-/// linearisations computed, and their attributes, containment and label attribute merged (§4.7).
+/// linearisations computed, and their attributes, containment, label attribute and relation flags merged (§4.7).
 /// </summary>
 internal static class DislInheritance
 {
@@ -43,6 +43,7 @@ internal static class DislInheritance
             relation.Source = End(relation, "source", all, pointer, diagnostics);
             relation.Target = End(relation, "target", all, pointer, diagnostics);
         }
+        Flags(relations, diagnostics);
 
         var diagram = metamodel.TryGetProperty("diagram", out var diagramJson) ? diagramJson : default;
         var diagramAttributes = Attributes(diagram, "diagram", "/metamodel/diagram", known, diagnostics);
@@ -210,6 +211,66 @@ internal static class DislInheritance
             };
         }
         return attributes;
+    }
+
+    /// <summary>A relation flag (§4.9): its name, its default, and what a relation type states of it.</summary>
+    private sealed record RelationFlag(string Name, bool Default, Func<DislType, bool?> Stated);
+
+    private static readonly RelationFlag[] RelationFlags =
+    [
+        new("directed", true, type => type.StatedDirected),
+        new("allowSelfLoops", false, type => type.StatedAllowSelfLoops),
+        new("allowParallel", true, type => type.StatedAllowParallel),
+    ];
+
+    /// <summary>
+    /// Each relation type's <c>directed</c>, <c>allowSelfLoops</c> and <c>allowParallel</c> (DISL 0.6, §4.7): the value of
+    /// the nearest type of its linearisation that states it, else the §4.9 default. A stated flag only narrows every direct
+    /// supertype's value (<c>true</c> to <c>false</c>; <c>directed</c> never differs), and direct supertypes that differ in a
+    /// flag the type does not state are an error, as for conflicting inherited attributes.
+    /// </summary>
+    private static void Flags(OrderedDictionary<string, DislType> relations, List<LoadDiagnostic> diagnostics)
+    {
+        foreach (var relation in relations.Values)
+        {
+            relation.Directed = Effective(relation, RelationFlags[0]);
+            relation.AllowSelfLoops = Effective(relation, RelationFlags[1]);
+            relation.AllowParallel = Effective(relation, RelationFlags[2]);
+        }
+        foreach (var relation in relations.Values)
+        {
+            var pointer = JsonPointer.Append("/metamodel/relations", relation.Name);
+            foreach (var flag in RelationFlags)
+            {
+                var inherited = relation.Extends.Select(parent => (Parent: parent, Value: Effective(relations[parent], flag))).ToList();
+                if (flag.Stated(relation) is { } stated)
+                {
+                    foreach ((string parent, bool value) in inherited)
+                    {
+                        if (flag.Name == "directed" && stated != value)
+                        {
+                            diagnostics.Add(DislLoader.Error(JsonPointer.Append(pointer, flag.Name), $"'{relation.Name}' states {flag.Name} {Text(stated)}, which differs from the {Text(value)} of its supertype '{parent}' (DISL §4.7)."));
+                        }
+                        else if (flag.Name != "directed" && stated && !value)
+                        {
+                            diagnostics.Add(DislLoader.Error(JsonPointer.Append(pointer, flag.Name), $"'{relation.Name}' states {flag.Name} true, which widens the false of its supertype '{parent}'; a subtype may only narrow it (DISL §4.7)."));
+                        }
+                    }
+                }
+                else if (inherited.Select(supertype => supertype.Value).Distinct().Count() > 1)
+                {
+                    var given = string.Join(", ", inherited.Select(supertype => $"{Text(supertype.Value)} from '{supertype.Parent}'"));
+                    diagnostics.Add(DislLoader.Error(pointer, $"'{relation.Name}' inherits {flag.Name} differently, {given}, and does not redeclare it (DISL §4.7)."));
+                }
+            }
+        }
+
+        return;
+
+        bool Effective(DislType relation, RelationFlag flag) =>
+            relation.Linearisation.Select(name => relations.TryGetValue(name, out var type) ? flag.Stated(type) : null).FirstOrDefault(value => value is not null) ?? flag.Default;
+
+        static string Text(bool value) => value ? "true" : "false";
     }
 
     /// <summary>A relation end (§4.9): a TypeRef, a TypeRef[] or a RelationEnd, its types resolved.</summary>

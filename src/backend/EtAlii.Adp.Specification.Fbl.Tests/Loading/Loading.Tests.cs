@@ -58,7 +58,7 @@ public class LoadingTests
     public void ANewerMinorVersionLoadsWithAWarning()
     {
         // Act.
-        var problems = FblDocumentLoader.Load(Encoding.UTF8.GetBytes($$"""{ "fbl": "0.6", "bindings": { "t": {{Binding()}} } }"""), out var document);
+        var problems = FblDocumentLoader.Load(Encoding.UTF8.GetBytes($$"""{ "fbl": "0.8", "bindings": { "t": {{Binding()}} } }"""), out var document);
 
         // Assert.
         Assert.NotNull(document);

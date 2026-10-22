@@ -1597,6 +1597,7 @@
       },
       "PropertyEdge": {
         "abstract": true,
+        "allowSelfLoops": true,
         "doc": {
           "summary": "A property drawn as an edge from each stated domain to each stated range.",
           "description": "No triple backs the edge itself; it is the property. Selecting it shows the property's IRI and axioms, all read-only."

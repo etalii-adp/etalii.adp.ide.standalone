@@ -60,8 +60,9 @@ internal sealed record DislTypeLabels(IReadOnlyList<DislLabel>? Labels, string? 
 /// <summary>A label of a notation (DISL §6.12), as its inline editor reads it, typed at load.</summary>
 /// <param name="Id">Its <c>id</c>.</param>
 /// <param name="EditText">
-/// Its <c>editText</c>, else its <c>text</c>, read as the text the editor opens on: a bare <c>text</c> is the literal it
-/// states (§2.5 b), anything else an Expression; null when it states neither.
+/// Its <c>editText</c>, else its <c>text</c>, read as the text the editor opens on: a bare string or an
+/// <c>editText</c>'s LocalizedText map is the literal text it states (§2.3, §2.5 b), an <c>{attribute}</c> binding that
+/// attribute, anything else an Expression; null when it states neither.
 /// </param>
 /// <param name="Parse">Its <c>parse</c>, or null when it states none, so that it cannot be edited.</param>
 internal sealed record DislLabel(string? Id, DislBindable? EditText, DislFormParse? Parse);
