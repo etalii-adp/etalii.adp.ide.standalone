@@ -58,6 +58,11 @@ public sealed class DislSpecification
         IdEncoding = ids.ValueKind == JsonValueKind.Object ? JsonProperties.String(ids, "encoding") ?? "hex" : "hex";
         IdTypeNames = [.. DislJson.Members(ids, "types").Select(type => type.Name)];
         foreach (var type in DislJson.Members(ids, "types")) IdTypes[type.Name] = IdRuleOf(type.Value);
+        Ephemerality = DislEphemerality.Read(this, ids, "/persistence/ids");
+        foreach (var type in DislJson.Members(ids, "types"))
+        {
+            EphemeralityByType[type.Name] = DislEphemerality.Read(this, type.Value, JsonPointer.Append("/persistence/ids/types", type.Name));
+        }
         if (ids.ValueKind == JsonValueKind.Object && ids.TryGetProperty("prefix", out var prefix) && prefix.ValueKind == JsonValueKind.Object)
         {
             foreach (var type in prefix.EnumerateObject().Where(type => type.Value.ValueKind == JsonValueKind.String)) IdPrefixes[type.Name] = type.Value.GetString()!;
@@ -66,6 +71,7 @@ public sealed class DislSpecification
         TypeMap = DislTypeMapReader.Read(persistence);
         DislDerivedReader.Read(this);
 
+        Budgets = DislBudgetReader.Read(this, root);
         Operations = DislOperationReader.Read(this, root);
         Toolbox = DislToolboxReader.Read(this, root);
         Forms = DislFormReader.Read(this, root);
@@ -108,11 +114,20 @@ public sealed class DislSpecification
     /// <summary>Every compiled expression outside the functions, in document order.</summary>
     public IReadOnlyList<DislExpression> Expressions { get; }
 
+    /// <summary>The budgets of <c>language.limits.budgets</c> (§3.2.1), in declaration order.</summary>
+    internal IReadOnlyList<DislBudget> Budgets { get; }
+
     /// <summary>The top-level id rule (§11.5).</summary>
     private DislIdRule Ids { get; }
 
     /// <summary>The per-type id rules (§11.5.2), by type name.</summary>
     private Dictionary<string, DislIdRule> IdTypes { get; } = new(StringComparer.Ordinal);
+
+    /// <summary>The top-level id rule's <c>ephemeral</c> and <c>reason</c> (§11.5.3).</summary>
+    private DislEphemerality Ephemerality { get; }
+
+    /// <summary>The per-type id rules' <c>ephemeral</c> and <c>reason</c> (§11.5.3), by type name.</summary>
+    private Dictionary<string, DislEphemerality> EphemeralityByType { get; } = new(StringComparer.Ordinal);
 
     /// <summary>The top level's <c>prefix</c> when it is a map (§11.5), by type name.</summary>
     private Dictionary<string, string> IdPrefixes { get; } = new(StringComparer.Ordinal);
@@ -210,6 +225,35 @@ public sealed class DislSpecification
         if (rule.Prefix is not null) return rule;
         var prefix = linearisation.Select(candidate => IdPrefixes.GetValueOrDefault(candidate)).FirstOrDefault(found => found is not null) ?? Ids.Prefix;
         return prefix is null ? rule : rule with { Prefix = prefix };
+    }
+
+    /// <summary>
+    /// Whether <paramref name="element"/>'s id is ephemeral (§11.5.3): the id rule that applies to its type - its own,
+    /// the nearest in its linearisation, or the top-level one - states <c>ephemeral: true</c>, or an Expression that holds
+    /// for it. Nothing may be stored for an ephemeral id, and a gesture that would store one is refused with
+    /// <see cref="EphemeralReason"/>.
+    /// </summary>
+    public bool IsEphemeral(DislElement element)
+    {
+        ArgumentNullException.ThrowIfNull(element);
+        return EphemeralityOf(element.Type.Name).Holds(element);
+    }
+
+    /// <summary>
+    /// Why a gesture that would store <paramref name="element"/>'s id is refused (§11.5.3): the <c>reason</c> of the id
+    /// rule that makes it ephemeral, evaluated for it; null when it is not ephemeral or that rule states none.
+    /// </summary>
+    public string? EphemeralReason(DislElement element)
+    {
+        ArgumentNullException.ThrowIfNull(element);
+        var rule = EphemeralityOf(element.Type.Name);
+        return rule.Holds(element) ? rule.Reason?.Text(this, DislEphemerality.Variables(element)) : null;
+    }
+
+    private DislEphemerality EphemeralityOf(string type)
+    {
+        var linearisation = Metamodel.TypeOf(type)?.Linearisation ?? [type];
+        return linearisation.Select(candidate => EphemeralityByType.GetValueOrDefault(candidate)).FirstOrDefault(found => found is not null) ?? Ephemerality;
     }
 
     /// <summary>A rule as declared; its prefix only when it is one string, which a map (top level only) is not.</summary>

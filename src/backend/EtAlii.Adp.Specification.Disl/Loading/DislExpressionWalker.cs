@@ -183,7 +183,7 @@ internal static partial class DislExpressionWalker
                 "behavior" => Behavior(frame, key, path),
                 "notation" or "viewpoints" => Notation(frame, key, path),
                 "coordinates" => Coordinates(frame, key),
-                "language" => key is "order" or "unit" or "measure" && path.Contains("budgets") ? frame.As(Mode.Expression) : frame,
+                "language" => path.Contains("budgets") ? Budget(frame, key, path) : frame,
                 _ => frame,
             };
 
@@ -349,6 +349,21 @@ internal static partial class DislExpressionWalker
             };
         }
 
+        /// <summary>
+        /// A budget's members (§3.2.1): its order and unit Expressions and a <c>cel</c> measure in the budget context - the
+        /// types a <c>count</c> measure names being literal - its notice's text in the chrome context, its finding's message in
+        /// the constraint context and its withheld reason in the element context.
+        /// </summary>
+        private static Frame Budget(Frame frame, string key, IReadOnlyList<string> path) => key switch
+        {
+            "order" or "unit" when path[^1] != "measure" => frame.In(DislContext.Budget).As(Mode.Expression),
+            "measure" => frame.In(DislContext.Budget).As(Mode.Literal),
+            "notice" => frame.In(DislContext.Chrome).As(Mode.Literal),
+            "finding" => frame.In(DislContext.Constraint).As(Mode.Literal),
+            "withhold" => frame.In(DislContext.Element).As(Mode.Literal),
+            _ => frame,
+        };
+
         private static Frame Behavior(Frame frame, string key, IReadOnlyList<string> path)
         {
             if (path.Count == 1)
@@ -364,6 +379,9 @@ internal static partial class DislExpressionWalker
                     _ => frame,
                 };
             }
+
+            // std.notApplicable is worded in the operation context, with operationId bound (§9.1, §12.3).
+            if (key == "std.notApplicable" && path is [_, "messages"]) return frame.In(DislContext.Operation).Binding(["operationId"]);
 
             // An operation whose body is a simulation (§9.3, §9.6): its initial, next and until are
             // Expressions of the simulation context, which binds state and step besides the operation's p.

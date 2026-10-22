@@ -21,7 +21,15 @@ public sealed record DerivedLegend(string Title, string? Position, IReadOnlyList
 /// <param name="Title">The title's text, or null when the canvas states no title or it is not visible.</param>
 /// <param name="Header">The header band's rows that are visible, in order; empty when it states none or the band is not visible.</param>
 /// <param name="Legend">The legend, or null when the canvas states none or it is not visible.</param>
-public sealed record DerivedCanvasChrome(string? Title, IReadOnlyList<string> Header, DerivedLegend? Legend);
+/// <param name="Notices">The built-in notices of the budgets that truncate now (§3.2.1), in declaration order; empty when none does.</param>
+public sealed record DerivedCanvasChrome(string? Title, IReadOnlyList<string> Header, DerivedLegend? Legend, IReadOnlyList<DerivedNotice>? Notices = null);
+
+/// <summary>A notice a canvas shows (DISL §6.13).</summary>
+/// <param name="Id">Its id: <c>budget:&lt;id&gt;</c> for a budget's.</param>
+/// <param name="Text">Its text.</param>
+/// <param name="Severity">Its severity: <c>info</c>, <c>warning</c> or <c>error</c>.</param>
+/// <param name="Position">Where it is shown, or null for the host's place.</param>
+public sealed record DerivedNotice(string Id, string Text, string Severity, string? Position);
 
 /// <summary>
 /// A canvas's title, header band and legend (DISL §6.13), for the elements a host draws: the texts a
@@ -81,7 +89,27 @@ public static class CanvasChromeDerivation
         }
 
         var legend = Property(specification, env, canvas => canvas.Legend) is { } declared ? Legend(diagram, declared, drawn, chrome, cel) : null;
-        return new DerivedCanvasChrome(title, header, legend);
+        return new DerivedCanvasChrome(title, header, legend, Notices(diagram, variables));
+    }
+
+    /// <summary>
+    /// The notice of each budget that truncates now and shows one (§3.2.1, §6.13): its <c>text</c> in the chrome
+    /// context, or a sentence naming how many of how many are shown and, while they are, that edits are withheld.
+    /// </summary>
+    private static List<DerivedNotice> Notices(DislDiagram diagram, IReadOnlyDictionary<string, object?> variables)
+    {
+        var notices = new List<DerivedNotice>();
+        var budgets = diagram.Specification.Budgets;
+        var states = diagram.Budgets;
+        for (var index = 0; index < budgets.Count; index++)
+        {
+            (DislBudget budget, DislBudgetState state) = (budgets[index], states[index]);
+            if (!budget.Notice || !state.Truncated) continue;
+            var fallback = $"Showing {state.Shown} of {state.Total}." + (state.Withheld ? " Edits are withheld while the view is partial." : "");
+            var text = budget.NoticeText?.Text(variables, fallback) ?? fallback;
+            notices.Add(new DerivedNotice("budget:" + budget.Id, text, budget.NoticeSeverity, budget.NoticePosition));
+        }
+        return notices;
     }
 
     /// <summary>A canvas property: the active viewpoint's, else the notation's; null when neither states it.</summary>
@@ -221,6 +249,9 @@ public static class CanvasChromeDerivation
 /// </summary>
 internal sealed class DislDrawnDiagram(DislDiagram diagram, IReadOnlyList<DislElement> drawn) : ICelObject
 {
+    /// <summary>The diagram it stands in for.</summary>
+    public DislDiagram Diagram => diagram;
+
     public bool TryGetMember(string name, out object? value)
     {
         if (name == "drawn")

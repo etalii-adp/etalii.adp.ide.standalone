@@ -73,6 +73,7 @@ public static class GestureConstraintEvaluator
             ["sourcePort"] = null,
             ["targetPort"] = null,
         };
+        if (DislBudgets.Refusal(diagram, viewData: false, self) is { } withheld) return withheld;
         var connect = new ConnectGesture(specification, diagram, type, source, target, self, gesture, (env ?? new DislEnv()).ToCel());
         return connect.Endpoints() ?? connect.Multiplicity() ?? connect.Acyclic()
             ?? Refusals(specification, "connect", self, gesture, env, diagram, relationType).FirstOrDefault();
@@ -149,6 +150,10 @@ public static class GestureConstraintEvaluator
         ArgumentNullException.ThrowIfNull(specification);
         ArgumentNullException.ThrowIfNull(kind);
         ArgumentNullException.ThrowIfNull(gesture);
+
+        // A withheld edit is refused before every constraint (§3.2.1); a move or a resize writes view data only.
+        var viewData = kind == "placement" && gesture.GetValueOrDefault("gesture") is "move" or "resize";
+        if ((diagram ?? self?.Diagram) is { } judged && DislBudgets.Refusal(judged, viewData, self) is { } withheld) return [withheld];
 
         List<DislFinding> refusals = [];
         if (specification.Constraints.Rules is not { } rules) return refusals;
