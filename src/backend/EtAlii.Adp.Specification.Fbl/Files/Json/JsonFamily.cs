@@ -194,7 +194,7 @@ internal sealed class JsonFamily(BodyText text, FblBinding binding, FblOptions o
         }
         else
         {
-            var members = InsertValues(request).Select(v => $"{Quote(v.Key)}: {(v.Binding is null ? Quote(NewText.Plain(v.Value, null)) : Write(v.Value, v.Binding))}").ToList();
+            var members = InsertValues(request).Select(v => $"{Quote(v.Key)}: {Write(v.Value, v.Binding)}").ToList();
             IReadOnlyList<TreeEntry> entries = container is null ? [] : container.Value.Entries;
             var neighbour = entries.Count == 0 ? null : insert.Place == InsertPlace.Start ? entries[0] : entries[^1];
             text = NewObject(members, neighbour);

@@ -288,15 +288,29 @@ internal abstract class FamilyReader(BodyText text, FblBinding binding, FblOptio
     /// the add gives. Only <c>insert.keys</c> is written when the rule names them. A computed attribute
     /// and one under a <c>child</c> mapping write nothing. An empty value is written as a set writes it,
     /// and left out only under <c>empty: "remove"</c>; the planner has refused it under <c>refuse</c>
-    /// (FBL 0.6 §6.2, spec 025 B-09).
+    /// (FBL 0.6 §6.2, spec 025 B-09). The insert's constants are written as they are, with no binding: one that
+    /// <c>insert.keys</c> names at its place there, every other after the other keys in the constant's member
+    /// order (FBL 0.8 §6.2, etalii.adp spec 033).
     /// </summary>
     protected static IEnumerable<InsertedValue> InsertValues(InsertRequest request)
     {
         var rule = request.Rule;
+        var keys = rule.Insert!.Keys;
+        var constant = rule.Insert.Constant ?? [];
         foreach (var key in rule.KeyOrder(null))
         {
-            if (rule.Insert!.Keys.Count > 0 && !rule.Insert.Keys.Contains(key)) continue;
+            if (keys.Count > 0 && !keys.Contains(key)) continue;
+            var given = constant.FirstOrDefault(c => c.Key == key);
+            if (given.Key is not null)
+            {
+                if (keys.Contains(key)) yield return new InsertedValue(key, given.Value, null);
+                continue;
+            }
             if (InsertValue(request, key) is { } value) yield return value;
+        }
+        foreach ((string key, object? value) in constant)
+        {
+            if (!keys.Contains(key)) yield return new InsertedValue(key, value, null);
         }
     }
 

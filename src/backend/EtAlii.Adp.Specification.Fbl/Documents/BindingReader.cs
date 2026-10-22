@@ -229,7 +229,31 @@ internal static class BindingReader
         Emit = JsonProperties.String(json, "emit"),
         Skeleton = JsonProperties.String(json, "skeleton"),
         When = JsonProperties.String(json, "when"),
+        Constant = Object(json, "constant", pointer, "An insert's constant", problems) is { } constant ? ReadConstant(constant, pointer + "/constant", problems) : null,
     };
+
+    /// <summary>An insert's constant (FBL 0.8 §6.2): each member a scalar, kept in member order; a member that is not one is reported at its pointer.</summary>
+    private static List<KeyValuePair<string, object?>> ReadConstant(JsonElement json, string pointer, List<LoadDiagnostic> problems)
+    {
+        var constant = new List<KeyValuePair<string, object?>>();
+        foreach (var member in json.EnumerateObject())
+        {
+            object? value = member.Value.ValueKind switch
+            {
+                JsonValueKind.String => member.Value.GetString(),
+                JsonValueKind.Number => member.Value.GetDouble(),
+                JsonValueKind.True => true,
+                JsonValueKind.False => false,
+                _ => null,
+            };
+            if (member.Value.ValueKind is JsonValueKind.Object or JsonValueKind.Array)
+            {
+                problems.Add(new LoadDiagnostic(JsonPointer.Append(pointer, member.Name), LoadSeverity.Error, "A constant's value is a string, a number, a boolean or null."));
+            }
+            else constant.Add(new KeyValuePair<string, object?>(member.Name, value));
+        }
+        return constant;
+    }
 
     /// <summary>An insert's place: its name, or "before" for <c>{before: key}</c>, which is recognised so every family can refuse it; no family places by it yet.</summary>
     private static InsertPlace ReadPlace(JsonElement json, string pointer, List<LoadDiagnostic> problems)
