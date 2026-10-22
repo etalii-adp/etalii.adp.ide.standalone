@@ -44,6 +44,14 @@ public sealed class OpenRegistration : SplicedFile
     /// <summary>Whether DISL marks an id ephemeral: such an element's position is never stored (FBL §8.5).</summary>
     public Func<string, bool>? IsEphemeral { get; set; }
 
+    /// <summary>
+    /// The members a declared block stands for while it is absent, by its name, in their order: the initial and the
+    /// implicit members of its list, which the specification gives and the body implies (DESL 0.2 §5.5, §7.7.2). The
+    /// first change to such a block writes them all, with the change applied (FBL 0.7 §8.4); null, or a block it
+    /// gives nothing for, writes the changed entry alone.
+    /// </summary>
+    public Func<string, IReadOnlyList<KeyValuePair<string, string>>?>? AbsentMembers { get; set; }
+
     /// <summary>The natural keys the reading has, when known: an <c>identities</c> entry for any other key is stale (FBL §8.6).</summary>
     public IReadOnlySet<string>? KnownKeys { get; set; }
 
@@ -90,7 +98,7 @@ public sealed class OpenRegistration : SplicedFile
                 }
                 try
                 {
-                    return new PlanResult.Planned(new Edit(DeclaredBlockWriter.Plan(Document, _declarations, declaration, setting, KnownIds)));
+                    return new PlanResult.Planned(new Edit(DeclaredBlockWriter.Plan(Document, _declarations, declaration, setting, KnownIds, AbsentMembers?.Invoke(setting.Block))));
                 }
                 catch (RefusedException refused)
                 {

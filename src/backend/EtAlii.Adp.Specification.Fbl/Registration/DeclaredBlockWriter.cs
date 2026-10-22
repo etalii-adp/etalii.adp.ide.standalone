@@ -12,10 +12,17 @@ namespace EtAlii.Adp.Specification.Fbl.Registration;
 /// </summary>
 internal static class DeclaredBlockWriter
 {
-    public static List<Splice> Plan(RegistrationDocument document, IReadOnlyList<RegistrationBlockDeclaration> declarations, RegistrationBlockDeclaration declaration, ModelChange.Setting setting, IReadOnlySet<string>? knownIds)
+    public static List<Splice> Plan(
+        RegistrationDocument document,
+        IReadOnlyList<RegistrationBlockDeclaration> declarations,
+        RegistrationBlockDeclaration declaration,
+        ModelChange.Setting setting,
+        IReadOnlySet<string>? knownIds,
+        IReadOnlyList<KeyValuePair<string, string>>? members = null)
     {
         var name = declaration.Name;
         var block = document.Block(name);
+        if (block is null && members is not null) return Whole(document, declarations, declaration, setting, members);
         var stale = block is null || !declaration.KeyedByIds || knownIds is null
             ? []
             : block.Entries.Where(entry => entry.Key != setting.Key && !knownIds.Contains(entry.Key)).ToList();
@@ -96,6 +103,83 @@ internal static class DeclaredBlockWriter
         var ending = text.NewlineAt(Math.Max(0, place - 1), "\n");
         splices.Add(new Splice(SpliceOperation.InsertEntry, place, place, Endless(text, place) ? $"{ending}{indent}{setting.Key}: {added}" : $"{indent}{setting.Key}: {added}{ending}"));
         return Ordered(splices);
+    }
+
+    /// <summary>
+    /// The first change to a block that is absent while its list has members (DESL 0.2 §5.5, absent or complete): the
+    /// whole list with the change applied, as one <c>ensure-container</c> and one <c>insert-entry</c> per member, all at
+    /// the place the block is created (FBL 0.7 §8.4). A member the change names is changed where it stands; a new one
+    /// goes at its position, else last.
+    /// </summary>
+    private static List<Splice> Whole(
+        RegistrationDocument document,
+        IReadOnlyList<RegistrationBlockDeclaration> declarations,
+        RegistrationBlockDeclaration declaration,
+        ModelChange.Setting setting,
+        IReadOnlyList<KeyValuePair<string, string>> members)
+    {
+        var name = declaration.Name;
+        var list = members.ToList();
+        var at = list.FindIndex(member => member.Key == setting.Key);
+        if (setting.Position is not null && !declaration.Kept)
+        {
+            Planning.Plan.Refuse($"The entries of '{name}' stand in the order of their keys, so none is moved.");
+        }
+        if (setting.RemoveEntry)
+        {
+            if (at < 0) Planning.Plan.Refuse($"The block '{name}' has no entry '{setting.Key}'.");
+            list.RemoveAt(at);
+        }
+        else
+        {
+            if (setting.Value is { } value) CheckValue(value);
+            if (at < 0)
+            {
+                CheckKey(setting.Key);
+                if (setting.Rename is not null) Planning.Plan.Refuse($"The block '{name}' has no entry '{setting.Key}' to rename.");
+                if (setting.Value is null) Planning.Plan.Refuse($"A new entry of '{name}' needs a value.");
+                list.Add(new KeyValuePair<string, string>(setting.Key, setting.Value!));
+                at = list.Count - 1;
+            }
+            var key = list[at].Key;
+            if (setting.Rename is { } rename && rename != key)
+            {
+                CheckKey(rename);
+                if (list.Any(member => member.Key == rename)) Planning.Plan.Refuse($"The block '{name}' has an entry '{rename}' already.");
+                key = rename;
+            }
+            var entry = new KeyValuePair<string, string>(key, setting.Value ?? list[at].Value);
+            list[at] = entry;
+            if (setting.Position is { } position)
+            {
+                list.RemoveAt(at);
+                list.Insert(Index(list, position), entry);
+            }
+        }
+        if (!declaration.Kept) list = [.. list.OrderBy(member => member.Key, Comparer<string>.Create(CompareUtf8))];
+        var splices = new List<Splice>();
+        if (list.Count == 0) return splices;
+        var text = document.Text;
+        var offset = CreateAt(document, declarations, name);
+        var newline = text.NewlineAt(Math.Max(0, offset - 1), "\n");
+        var endless = Endless(text, offset);
+        splices.Add(new Splice(SpliceOperation.EnsureContainer, offset, offset, endless ? newline + name + ":" : name + ":" + newline));
+        foreach (var member in list)
+        {
+            splices.Add(new Splice(SpliceOperation.InsertEntry, offset, offset, endless ? $"{newline}  {member.Key}: {member.Value}" : $"  {member.Key}: {member.Value}{newline}"));
+        }
+        return splices;
+    }
+
+    /// <summary>The place in <paramref name="list"/>, the moved member taken out, that <paramref name="position"/> names.</summary>
+    private static int Index(List<KeyValuePair<string, string>> list, SettingPosition position)
+    {
+        if (position.Index is { } index) return index >= 0 && index < list.Count ? index : list.Count;
+        var key = position.After ?? position.Before;
+        if (key is null) return list.Count;
+        var at = list.FindIndex(member => member.Key == key);
+        if (at < 0) Planning.Plan.Refuse($"The position names '{key}', which is no entry of the block.");
+        return position.After is not null ? at + 1 : at;
     }
 
     /// <summary>A value is one line of text, not empty, and holds no <c>": "</c>, since an entry's key is everything before the last one (FBL 0.7 §8.1).</summary>
