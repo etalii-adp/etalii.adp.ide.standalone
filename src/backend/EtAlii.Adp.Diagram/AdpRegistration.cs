@@ -44,13 +44,14 @@ public sealed class AdpRegistration
 
     private readonly IReadOnlyList<RawLine> _lines;
 
-    private AdpRegistration(string text, IReadOnlyList<RawLine> lines, string? mimeType, string? body, string? view, IReadOnlyDictionary<string, RegistrationPosition> layout)
+    private AdpRegistration(string text, IReadOnlyList<RawLine> lines, string? mimeType, string? body, string? view, string? firstView, IReadOnlyDictionary<string, RegistrationPosition> layout)
     {
         Text = text;
         _lines = lines;
         MimeType = mimeType;
         Body = body;
         View = view;
+        FirstView = firstView;
         Layout = layout;
     }
 
@@ -63,8 +64,19 @@ public sealed class AdpRegistration
     /// <summary>The <c>body:</c> header - a document this registration opens but does not own - or null.</summary>
     public string? Body { get; }
 
-    /// <summary>The <c>view:</c> header - which view within the body this registration opens - or null.</summary>
+    /// <summary>
+    /// The <c>view:</c> header - which view within the body this registration opens - or null. Where
+    /// the headers hold more than one, the last decides, as the hierarchy has always read it.
+    /// </summary>
     public string? View { get; }
+
+    /// <summary>
+    /// The first <c>view:</c> header, or null: <see cref="View"/> as the c4 diagrams have always read
+    /// it. The two differ only where the headers hold more than one <c>view:</c> line, and they are
+    /// kept apart rather than made one so that moving c4 onto this reader changed no answer
+    /// (code-structure T295); making them one is a behaviour change, to be ruled on as such.
+    /// </summary>
+    public string? FirstView { get; }
 
     /// <summary>The authored positions of the <c>layout:</c> block, empty when there is none.</summary>
     public IReadOnlyDictionary<string, RegistrationPosition> Layout { get; }
@@ -74,9 +86,9 @@ public sealed class AdpRegistration
     {
         ArgumentNullException.ThrowIfNull(text);
 
-        (string? mimeType, string? body, string? view) = ReadHead(text);
+        (string? mimeType, string? body, string? view, string? firstView) = ReadHead(text);
         var lines = SplitLines(text);
-        return new AdpRegistration(text, lines, mimeType, body, view, ReadLayout(lines));
+        return new AdpRegistration(text, lines, mimeType, body, view, firstView, ReadLayout(lines));
     }
 
     /// <summary>
@@ -240,13 +252,15 @@ public sealed class AdpRegistration
         return string.Join('\n', lines);
     }
 
-    private static (string? MimeType, string? Body, string? View) ReadHead(string text)
+    private static (string? MimeType, string? Body, string? View, string? FirstView) ReadHead(string text)
     {
         using var reader = new StringReader(text);
         var mimeType = reader.ReadLine()?.Trim();
 
         string? body = null;
         string? view = null;
+        string? firstView = null;
+        var viewSeen = false;
         for (var scanned = 0; scanned < HeaderScanLimit; scanned++)
         {
             var line = reader.ReadLine();
@@ -268,6 +282,8 @@ public sealed class AdpRegistration
             else if (trimmed.StartsWith(ViewHeader, StringComparison.OrdinalIgnoreCase))
             {
                 view = Value(trimmed, ViewHeader);
+                firstView = viewSeen ? firstView : view;
+                viewSeen = true;
             }
             else
             {
@@ -275,7 +291,7 @@ public sealed class AdpRegistration
             }
         }
 
-        return (mimeType, body, view);
+        return (mimeType, body, view, firstView);
 
         static string? Value(string line, string header)
         {
