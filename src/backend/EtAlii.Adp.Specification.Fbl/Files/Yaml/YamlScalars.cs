@@ -5,7 +5,8 @@ using System.Text.RegularExpressions;
 namespace EtAlii.Adp.Specification.Fbl.Yaml;
 
 /// <summary>Scalars as the YAML 1.2 core schema reads them, and as FBL §6.3 writes them.</summary>
-internal static partial class YamlScalars
+/// <remarks>Public because azure-devops-pipeline's planner writes its scalars through it (spec 025 T302, by T226's rule that a type another project uses is public).</remarks>
+public static partial class YamlScalars
 {
     [GeneratedRegex("^[-+]?[0-9]+$", RegexOptions.CultureInvariant)]
     private static partial Regex Decimal();
