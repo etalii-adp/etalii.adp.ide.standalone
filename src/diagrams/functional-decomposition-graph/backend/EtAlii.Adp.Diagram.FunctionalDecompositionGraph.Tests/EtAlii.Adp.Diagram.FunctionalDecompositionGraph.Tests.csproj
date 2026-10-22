@@ -10,6 +10,8 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="xunit.v3" />
     <PackageReference Include="xunit.runner.visualstudio" />
+    <!-- The hand-written parser kept as the oracle (Parity/FdgParser.cs) reads with it; the product reads through the binding. -->
+    <PackageReference Include="YamlDotNet" />
   </ItemGroup>
 
   <ItemGroup>

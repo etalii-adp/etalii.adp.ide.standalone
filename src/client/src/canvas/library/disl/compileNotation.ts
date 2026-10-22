@@ -333,6 +333,40 @@ function endLimit(end: unknown, limit: "maxFromSource" | "maxIntoTarget"): { max
 
 const INHERITED_RELATION_KEYS = ["source", "target", "directed", "allowSelfLoops", "allowParallel", "acyclic"] as const;
 
+/** The three relation flags a subtype may only narrow (DISL 0.6, §4.7), with their §4.9 defaults. */
+const RELATION_FLAGS = { directed: true, allowSelfLoops: false, allowParallel: true } as const;
+
+/** A type's direct supertypes, from an `extends` that names one or a list (DISL §4.7). */
+function supertypesOf(extended: string | readonly string[] | undefined): readonly string[] {
+  return extended === undefined ? [] : typeof extended === "string" ? [extended] : extended;
+}
+
+/**
+ * A type and its supertypes, most specific first: the C3 linearisation (DISL §4.7). A supertype the types do not
+ * declare is left out, and so is one that would close a cycle; supertypes that cannot be put in one order are refused.
+ */
+function linearisation(name: string, types: Readonly<Record<string, { extends?: string | readonly string[] }>>, visiting: readonly string[] = []): string[] {
+  const parents = supertypesOf(types[name]?.extends).filter((parent) => types[parent] !== undefined && parent !== name && !visiting.includes(parent));
+  const sequences = [...parents.map((parent) => linearisation(parent, types, [...visiting, name])), [...parents]];
+  const result = [name];
+  for (;;) {
+    const open = sequences.filter((sequence) => sequence.length > 0);
+    if (open.length === 0) {
+      return result;
+    }
+    const head = open.map((sequence) => sequence[0]!).find((candidate) => !open.some((sequence) => sequence.indexOf(candidate) > 0));
+    if (head === undefined) {
+      return fail(`"${name}" has supertypes that cannot be put in one order (C3, DISL §4.7).`);
+    }
+    result.push(head);
+    for (const sequence of open) {
+      if (sequence[0] === head) {
+        sequence.shift();
+      }
+    }
+  }
+}
+
 /** Whether a filter is a switch whose value is kept with the diagram (DISL 0.4 §6.13.1). */
 function isKeptSwitch(filter: { control?: string; persist?: boolean }): boolean {
   return filter.control === "switch" && filter.persist === true;
@@ -1269,17 +1303,17 @@ class Compiler {
   // ---- relation types -----------------------------------------------------------------------
 
   /**
-   * A relation with what it does not state itself taken from its supertypes (DISL 4.7): its ends and
-   * whether it is directed, loops, runs in parallel or is acyclic. Its own `derived`, `abstract` and
-   * label are its own.
+   * A relation with what it does not state itself taken from its supertypes along their C3 linearisation, the
+   * nearest type that states it winning (DISL 0.6, §4.7): its ends and whether it is directed, loops, runs in
+   * parallel or is acyclic. Its own `derived`, `abstract` and label are its own. A relation type that widens a flag,
+   * or whose supertypes differ in one it does not state, is refused, as the backend refuses it.
    */
   private relation(name: string): DislRelation {
     const relations = this.spec.metamodel.relations ?? {};
     const own = relations[name] ?? fail(`edge "${name}" has no relation in the metamodel.`);
+    this.checkRelationFlags(name);
     const merged: Record<string, unknown> = { ...own };
-    const seen = [name];
-    for (let current = own.extends; current !== undefined && !seen.includes(current); current = relations[current]?.extends) {
-      seen.push(current);
+    for (const current of linearisation(name, relations).slice(1)) {
       const supertype = relations[current];
       for (const key of INHERITED_RELATION_KEYS) {
         if (merged[key] === undefined && supertype?.[key] !== undefined) {
@@ -1288,6 +1322,34 @@ class Compiler {
       }
     }
     return merged as unknown as DislRelation;
+  }
+
+  /** A relation type's flag as DISL 0.6 reads it (§4.7): the nearest stating type of its linearisation, else the default. */
+  private relationFlag(name: string, flag: keyof typeof RELATION_FLAGS): boolean {
+    const relations = this.spec.metamodel.relations ?? {};
+    const stated = linearisation(name, relations).map((type) => relations[type]?.[flag]).find((value) => value !== undefined);
+    return stated ?? RELATION_FLAGS[flag];
+  }
+
+  /** Refuses a relation type that widens a flag of a direct supertype, or inherits two values of one it does not state (DISL 0.6, §4.7). */
+  private checkRelationFlags(name: string): void {
+    const relations = this.spec.metamodel.relations ?? {};
+    const parents = supertypesOf(relations[name]?.extends).filter((parent) => relations[parent] !== undefined);
+    for (const flag of Object.keys(RELATION_FLAGS) as (keyof typeof RELATION_FLAGS)[]) {
+      const stated = relations[name]?.[flag];
+      for (const parent of parents) {
+        const value = this.relationFlag(parent, flag);
+        if (flag === "directed" && stated !== undefined && stated !== value) {
+          fail(`relation "${name}" states ${flag} ${String(stated)}, which differs from the ${String(value)} of its supertype "${parent}" (DISL §4.7).`);
+        }
+        if (flag !== "directed" && stated === true && !value) {
+          fail(`relation "${name}" states ${flag} true, which widens the false of its supertype "${parent}" (DISL §4.7).`);
+        }
+      }
+      if (stated === undefined && new Set(parents.map((parent) => this.relationFlag(parent, flag))).size > 1) {
+        fail(`relation "${name}" inherits ${flag} differently from ${parents.map((parent) => `"${parent}"`).join(" and ")}, and does not state it (DISL §4.7).`);
+      }
+    }
   }
 
   private relationType(name: string): RelationTypeDefinition {
@@ -1416,13 +1478,7 @@ class Compiler {
    */
   private acyclicRules(): { relationTypes: string[] }[] {
     const relations = this.spec.metamodel.relations ?? {};
-    const supertypes = (name: string): string[] => {
-      const chain: string[] = [];
-      for (let current = relations[name]?.extends; current !== undefined && !chain.includes(current) && current !== name; current = relations[current]?.extends) {
-        chain.push(current);
-      }
-      return chain;
-    };
+    const supertypes = (name: string): string[] => linearisation(name, relations).slice(1);
     const drawn = Object.keys(this.spec.notation.edges ?? {});
     return Object.entries(relations)
       .filter(([name, relation]) => relation.acyclic === true && !supertypes(name).some((supertype) => relations[supertype]?.acyclic === true))
@@ -2347,14 +2403,8 @@ function mergedPerKey<T>(inherited: T, own: T): T {
  * notation of its own draws it merged per key over its supertypes'; and a concrete type with none draws
  * its nearest supertype's, in that supertype's place, in the metamodel's order.
  */
-function inherited<T>(notation: Readonly<Record<string, T>>, types: Readonly<Record<string, { abstract?: boolean; extends?: string }>>): Record<string, T> {
-  const chain = (type: string): string[] => {
-    const supertypes: string[] = [];
-    for (let current: string | undefined = type; current !== undefined && !supertypes.includes(current); current = types[current]?.extends) {
-      supertypes.push(current);
-    }
-    return supertypes;
-  };
+function inherited<T>(notation: Readonly<Record<string, T>>, types: Readonly<Record<string, { abstract?: boolean; extends?: string | readonly string[] }>>): Record<string, T> {
+  const chain = (type: string): string[] => linearisation(type, types);
   const resolved = (type: string): T =>
     chain(type).reverse().filter((name) => notation[name] !== undefined).reduce<T | undefined>((merged, name) => (merged === undefined ? notation[name]! : mergedPerKey(merged, notation[name]!)), undefined)!;
   const nearest = (type: string): string | undefined => chain(type).find((name) => notation[name] !== undefined);

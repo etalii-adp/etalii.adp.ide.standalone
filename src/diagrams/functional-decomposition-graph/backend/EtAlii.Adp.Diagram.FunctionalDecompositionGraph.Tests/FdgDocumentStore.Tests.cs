@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.Specification.Disl;
 
@@ -15,9 +14,8 @@ public sealed class FdgDocumentStoreTests : DocumentStoreContract<IFdgDocumentSt
 
     protected override void Edit(FdgBody document)
     {
-        var lines = LineDocument.Parse(document.Text);
-        lines.Insert(1, [EditMarker]);
-        document.Rewrite(lines.Text);
+        var named = document.Disl.Diagram.Elements.First(element => !element.Type.IsRelation && !FdgDefinition.IsComment(element));
+        FdgDefinition.Set(document, named, new Dictionary<string, object?>(StringComparer.Ordinal) { ["name"] = EditMarker });
     }
 
     protected override string TextOf(FdgBody document) => document.Text;

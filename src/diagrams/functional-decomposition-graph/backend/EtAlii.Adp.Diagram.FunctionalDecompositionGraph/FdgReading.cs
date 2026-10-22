@@ -121,10 +121,19 @@ internal static class FdgReading
         double.TryParse(TextOf(element, attribute), NumberStyles.Float, CultureInfo.InvariantCulture, out var value) ? value : 0;
 
     /// <summary>The reading the DISL model of <paramref name="reading"/> is built from.</summary>
-    public static FblModel Of(FblModel reading)
+    public static FblModel Of(FblModel reading) => Read(reading).Model;
+
+    /// <summary>
+    /// The id the binding gave each entry of <paramref name="reading"/>, by the id the DISL model gives it: what a
+    /// change of the model is written to the body with.
+    /// </summary>
+    public static IReadOnlyDictionary<string, string> BindingIds(FblModel reading) => Read(reading).BindingIds;
+
+    private static (FblModel Model, Dictionary<string, string> BindingIds) Read(FblModel reading)
     {
         ArgumentNullException.ThrowIfNull(reading);
-        if (IsUnreadable(reading)) return new FblModel([], reading.Findings, true);
+        var bindingIds = new Dictionary<string, string>(StringComparer.Ordinal);
+        if (IsUnreadable(reading)) return (new FblModel([], reading.Findings, true), bindingIds);
 
         var elements = reading.Elements.Where(IsElement).ToList();
         var connections = reading.Elements.Where(IsConnection).ToList();
@@ -138,17 +147,20 @@ internal static class FdgReading
         {
             var id = ModelId(Written(element));
             elementIds.TryAdd(Written(element), id);
+            bindingIds[id] = element.Id;
             read.Add(new FblElement(id, Written(element).Length > 0, element.Type, "element", false, ElementAttributes(element), null, null, null, null, default, element.Line));
         }
 
         foreach (var connection in connections)
         {
+            var id = ModelId(Written(connection));
+            bindingIds[id] = connection.Id;
             read.Add(new FblElement(
-                ModelId(Written(connection)), Written(connection).Length > 0, connection.Type, "connection", true, ConnectionAttributes(connection), null, null,
+                id, Written(connection).Length > 0, connection.Type, "connection", true, ConnectionAttributes(connection), null, null,
                 End(TextOf(connection, "from") ?? ""), End(TextOf(connection, "to") ?? ""), default, connection.Line));
         }
 
-        return new FblModel(read, [], false);
+        return (new FblModel(read, [], false), bindingIds);
 
         string ModelId(string id)
         {

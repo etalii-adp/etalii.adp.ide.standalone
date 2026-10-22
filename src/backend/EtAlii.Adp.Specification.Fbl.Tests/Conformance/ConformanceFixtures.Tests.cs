@@ -17,18 +17,39 @@ namespace EtAlii.Adp.Specification.Fbl.Tests.Conformance;
 /// </summary>
 public class ConformanceFixturesTests
 {
-    /// <summary>The number of fixtures vendored when this suite was written: fewer means the enumeration broke.</summary>
-    private const int MinimumFixtures = 12;
+    /// <summary>The number of fixtures vendored: fewer means the enumeration broke.</summary>
+    private const int MinimumFixtures = 22;
 
+    /// <summary>The fixtures copied in etalii.adp's own layout, beside the Knowledge designer's.</summary>
+    private const string AdpFixtures = "etalii.adp/specifications/fbl/fixtures";
+
+    /// <summary>
+    /// Every fixture, at any depth (FBL 0.7 §15.3): those under <c>fixtures/</c> by their path there, and those in
+    /// etalii.adp's layout by theirs from the corpus. The Knowledge designer's are run by
+    /// <see cref="KnowledgeFixturesTests"/>, with the attribute types and derived ids that tool type needs.
+    /// </summary>
     public static TheoryData<string> Fixtures()
     {
         var data = new TheoryData<string>();
-        foreach (var folder in Directory.GetDirectories(Path.Combine(Repository.Conformance, "fixtures")).Order(StringComparer.Ordinal))
+        foreach (var name in Under("fixtures", "").Concat(Under(AdpFixtures, AdpFixtures + "/")).Order(StringComparer.Ordinal))
         {
-            if (File.Exists(Path.Combine(folder, "fixture.json"))) data.Add(Path.GetFileName(folder));
+            if (!name.StartsWith(AdpFixtures + "/knowledge-", StringComparison.Ordinal)) data.Add(name);
         }
         return data;
+
+        static IEnumerable<string> Under(string folder, string prefix)
+        {
+            var root = Path.Combine(Repository.Conformance, folder);
+            return Directory.GetFiles(root, "fixture.json", SearchOption.AllDirectories)
+                .Select(fixture => prefix + Path.GetRelativePath(root, Path.GetDirectoryName(fixture)!).Replace('\\', '/'));
+        }
     }
+
+    /// <summary>The folder of the fixture <paramref name="name"/>, as <see cref="Fixtures"/> names it.</summary>
+    private static string Folder(string name) =>
+        name.StartsWith(AdpFixtures + "/", StringComparison.Ordinal)
+            ? Path.Combine(Repository.Conformance, name)
+            : Path.Combine(Repository.Conformance, "fixtures", name);
 
     [Fact]
     public void TheFixturesAreFound()
@@ -64,7 +85,7 @@ public class ConformanceFixturesTests
     [MemberData(nameof(Fixtures))]
     public void TheFixturePasses(string name)
     {
-        var folder = Path.Combine(Repository.Conformance, "fixtures", name);
+        var folder = Folder(name);
         Run(name, folder, File.ReadAllBytes(Path.Combine(folder, "fixture.json")));
     }
 
@@ -142,7 +163,7 @@ public class ConformanceFixturesTests
             }
             else
             {
-                var result = subject.Change(ReadChange(step.GetProperty("edit")));
+                var result = subject.Change(ReadChange(step.GetProperty("edit"), subject.Model));
                 if (step.TryGetProperty("refused", out var refused))
                 {
                     var refusal = Assert.IsType<PlanResult.Refused>(result);
@@ -177,7 +198,7 @@ public class ConformanceFixturesTests
     public void EveryByteOfTheInputBelongsToTheReading(string name)
     {
         // Arrange.
-        var folder = Path.Combine(Repository.Conformance, "fixtures", name);
+        var folder = Folder(name);
         var fixturePath = Path.Combine(folder, "fixture.json");
         using var fixture = JsonDocument.Parse(File.ReadAllBytes(fixturePath));
         var inputName = fixture.RootElement.GetProperty("input").GetString()!;
@@ -197,7 +218,7 @@ public class ConformanceFixturesTests
     public void AnUnchangedSaveOfTheInputPlansNoSpliceAndKeepsItsBytes(string name)
     {
         // Arrange.
-        var folder = Path.Combine(Repository.Conformance, "fixtures", name);
+        var folder = Folder(name);
         var fixturePath = Path.Combine(folder, "fixture.json");
         using var fixture = JsonDocument.Parse(File.ReadAllBytes(fixturePath));
         var inputName = fixture.RootElement.GetProperty("input").GetString()!;
@@ -227,6 +248,7 @@ public class ConformanceFixturesTests
                 var found = model.Find(id);
                 Assert.True(found is not null, $"{name}: no element '{id}' was read; read: {string.Join(", ", model.Elements.Select(e => $"{e.Id} ({e.Type})"))}.");
                 Assert.Equal(type, found.Type);
+                if (element.TryGetProperty("parent", out var parent)) Assert.True(parent.GetString() == found.ParentId, $"{name}: '{id}' is read in '{found.ParentId}', where the fixture reads '{parent.GetString()}'.");
                 if (element.TryGetProperty("attributes", out var attributes)) AssertAttributes(found, attributes, name);
             }
         }
@@ -284,11 +306,26 @@ public class ConformanceFixturesTests
         splice.GetProperty("end").GetInt32(),
         splice.GetProperty("text").GetString()!);
 
-    private static ModelChange ReadChange(JsonElement edit)
+    /// <summary>
+    /// A fixture's edit as a model change. A position (FBL 0.7 §11.2) is converted to the model change's index, which
+    /// counts the siblings as they are before the change, the moved element included; an <c>after</c> or <c>before</c>
+    /// is the place of that sibling, found in <paramref name="model"/> among the elements with the same parent and type.
+    /// </summary>
+    private static ModelChange ReadChange(JsonElement edit, FblModel? model)
     {
+        if (edit.ValueKind == JsonValueKind.Array) throw new NotSupportedException("A fixture edit that is a list of changes is not run yet.");
+        if (edit.TryGetProperty("setting", out _)) throw new NotSupportedException("A fixture's setting edit is not run yet.");
+        if (edit.TryGetProperty("move", out var move))
+        {
+            var id = move.GetProperty("element").GetString()!;
+            var parent = move.GetProperty("parent").GetString();
+            var type = model?.Find(id)?.Type;
+            return new ModelChange.Move(id, parent, Index(move.GetProperty("position"), model, parent, type) ?? -1);
+        }
         if (edit.TryGetProperty("save", out _)) return new ModelChange.Save();
         if (edit.TryGetProperty("set", out var set))
         {
+            if (set.TryGetProperty("occurrence", out _)) throw new NotSupportedException("A fixture edit naming an occurrence is not run yet.");
             return new ModelChange.Set(set.GetProperty("element").GetString()!, Attributes(set.GetProperty("attributes")));
         }
         if (edit.TryGetProperty("add", out var add))
@@ -297,12 +334,27 @@ public class ConformanceFixturesTests
                 add.GetProperty("type").GetString()!,
                 add.TryGetProperty("id", out var id) ? id.GetString() : null,
                 add.TryGetProperty("attributes", out var attributes) ? Attributes(attributes) : new Dictionary<string, object?>(),
-                add.TryGetProperty("parent", out var parent) ? parent.GetString() : null);
+                add.TryGetProperty("parent", out var parent) ? parent.GetString() : null,
+                add.TryGetProperty("position", out var position) ? Index(position, model, add.TryGetProperty("parent", out var under) ? under.GetString() : null, add.GetProperty("type").GetString()) : null,
+                add.TryGetProperty("slot", out var slot) ? slot.GetString() : null);
         }
         if (edit.TryGetProperty("remove", out var remove)) return new ModelChange.Remove(remove.GetProperty("element").GetString()!);
         return edit.TryGetProperty("place", out var place)
             ? new ModelChange.Place(place.GetProperty("element").GetString()!, place.GetProperty("x").GetDouble(), place.GetProperty("y").GetDouble())
             : throw new InvalidOperationException($"Unknown fixture edit: {edit}.");
+    }
+
+    /// <summary>The model change's index for a fixture's position among <paramref name="parent"/>'s children of <paramref name="type"/>.</summary>
+    private static int? Index(JsonElement position, FblModel? model, string? parent, string? type)
+    {
+        if (position.TryGetProperty("index", out var index)) return index.GetInt32();
+        var siblings = model?.Elements.Where(element => element.ParentId == parent && element.Type == type).Select(element => element.Id).ToList() ?? [];
+        if (position.TryGetProperty("after", out var after)) return Place(after.GetString()!) + 1;
+        if (position.TryGetProperty("before", out var before)) return Place(before.GetString()!);
+        throw new InvalidOperationException($"Unknown fixture position: {position}.");
+
+        int Place(string sibling) =>
+            siblings.IndexOf(sibling) is var at and >= 0 ? at : throw new InvalidOperationException($"The position names '{sibling}', which is no sibling here.");
     }
 
     private static Dictionary<string, object?> Attributes(JsonElement attributes) =>

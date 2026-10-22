@@ -167,10 +167,10 @@ public static class ConstraintEvaluator
                 var type = relation.Type;
                 if (!Allows(type.Source, source)) violations.Add((relation, "source"));
                 if (!Allows(type.Target, target)) violations.Add((relation, "target"));
-                if (ReferenceEquals(source, target) && !(type.AllowSelfLoops ?? false)) violations.Add((relation, "selfLoop"));
-                if (!(type.AllowParallel ?? true))
+                if (ReferenceEquals(source, target) && !type.AllowSelfLoops) violations.Add((relation, "selfLoop"));
+                if (!type.AllowParallel)
                 {
-                    var directed = type.Directed ?? true;
+                    var directed = type.Directed;
                     var key = directed || source.GetHashCode() <= target.GetHashCode() ? (type, source, target) : (type, target, source);
                     if (!parallels.TryGetValue(key, out var group)) parallels[key] = group = [];
                     group.Add(relation);

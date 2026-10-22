@@ -30,6 +30,15 @@
     <EmbeddedResource Include="Definitions\wide-reading.provenance.json" LogicalName="wide-reading.provenance.json" />
     <EmbeddedResource Include="Definitions\narrow-reading.dis" LogicalName="narrow-reading.dis" />
     <EmbeddedResource Include="Definitions\narrow-reading.provenance.json" LogicalName="narrow-reading.provenance.json" />
+    <!-- DISL 0.6, spec 034: the example of inherited relation flags and the three specifications a loader refuses, from etalii.adp. -->
+    <EmbeddedResource Include="Definitions\service-calls.dis" LogicalName="service-calls.dis" />
+    <EmbeddedResource Include="Definitions\service-calls.provenance.json" LogicalName="service-calls.provenance.json" />
+    <EmbeddedResource Include="Definitions\relation-flag-widened.dis" LogicalName="relation-flag-widened.dis" />
+    <EmbeddedResource Include="Definitions\relation-flag-widened.provenance.json" LogicalName="relation-flag-widened.provenance.json" />
+    <EmbeddedResource Include="Definitions\relation-flag-directed.dis" LogicalName="relation-flag-directed.dis" />
+    <EmbeddedResource Include="Definitions\relation-flag-directed.provenance.json" LogicalName="relation-flag-directed.provenance.json" />
+    <EmbeddedResource Include="Definitions\relation-flag-conflict.dis" LogicalName="relation-flag-conflict.dis" />
+    <EmbeddedResource Include="Definitions\relation-flag-conflict.provenance.json" LogicalName="relation-flag-conflict.provenance.json" />
   </ItemGroup>
 
 </Project>
