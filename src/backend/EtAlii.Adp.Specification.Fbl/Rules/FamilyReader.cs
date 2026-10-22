@@ -352,6 +352,21 @@ internal abstract class FamilyReader(BodyText text, FblBinding binding, FblOptio
         plan.Add(SpliceOperation.InsertEntry, offset, offset, Text.Text(span));
     }
 
+    /// <summary>
+    /// Whether a new or moved entry takes its place from its position among its siblings, and a move may
+    /// change its parent (FBL 0.7 §6.3): true for a family whose nesting is its indentation, false where
+    /// the binding's insert place alone decides and a position is a plugin's to honour.
+    /// </summary>
+    public virtual bool PlacesByPosition => false;
+
+    /// <summary>
+    /// Moves <paramref name="element"/>'s entry, with everything it contains, to <paramref name="index"/> among
+    /// <paramref name="parent"/>'s children as they are without it (the top level when it is null). Only a
+    /// family that <see cref="PlacesByPosition"/> plans one.
+    /// </summary>
+    public virtual void MoveTo(Plan plan, ReadElement element, ReadElement? parent, int index) =>
+        Plan.Refuse($"This file's binding cannot move a {element.Rule.Type} to another parent; only a persistence plugin can.");
+
     // ---- shared helpers ----
 
     protected string NewlineAt(int offset) => Text.NewlineAt(offset, Binding.Text.Newline);
@@ -431,8 +446,8 @@ internal sealed record SlotChange(string Attribute, AttributeBinding Binding, Ru
 /// <summary>One key of a new entry and the value written under it, with the attribute binding it comes from; none for an id, a source or a target.</summary>
 internal sealed record InsertedValue(string Key, object? Value, AttributeBinding? Binding);
 
-/// <summary>What adding an element or relation needs to know (FBL §6.2).</summary>
-internal sealed record InsertRequest(Rule Rule, string? Id, IReadOnlyDictionary<string, object?> Values, ReadElement? Parent, ReadElement? Source, ReadElement? Target);
+/// <summary>What adding an element or relation needs to know (FBL §6.2); <paramref name="Index"/> is the position among its siblings, for a family that <see cref="FamilyReader.PlacesByPosition"/>.</summary>
+internal sealed record InsertRequest(Rule Rule, string? Id, IReadOnlyDictionary<string, object?> Values, ReadElement? Parent, ReadElement? Source, ReadElement? Target, int? Index = null);
 
 /// <summary>Thrown inside planning when a change cannot be made; the edit is refused with its message (FBL §6.4).</summary>
 internal sealed class RefusedException(string reason) : Exception(reason);

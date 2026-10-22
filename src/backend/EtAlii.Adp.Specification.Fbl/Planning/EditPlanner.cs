@@ -219,8 +219,9 @@ internal static class EditPlanner
     private static void PlanAdd(Plan plan, ModelChange.Add add)
     {
         var reading = plan.Reading;
-        // A declared binding appends where its insert rule says; a position among siblings is a plugin's to honour.
-        if (add.Index is not null) Planning.Plan.Refuse($"This file's binding cannot add a {add.Type} at a position; only a persistence plugin can.");
+        // A declared binding appends where its insert rule says; a position among siblings is a plugin's to honour,
+        // or a family's whose nesting is its indentation (FBL 0.7 §6.3).
+        if (add.Index is not null && !reading.Family.PlacesByPosition) Planning.Plan.Refuse($"This file's binding cannot add a {add.Type} at a position; only a persistence plugin can.");
         var rules = reading.Binding.AllRules.Where(r => r.Type == add.Type && (add.Slot is null || r.Parent?.Slot == add.Slot)).ToList();
         if (rules.Count == 0) Planning.Plan.Refuse($"This file has no place for a {add.Type}.");
         // Several rules may write one type (a cell's items are options or rows; a filter's
@@ -275,7 +276,7 @@ internal static class EditPlanner
             Planning.Plan.Refuse($"Another element already has the id '{id}'.");
             _ = from;
         }
-        reading.Family.Insert(plan, new InsertRequest(rule, add.Id, values, parent, source, target));
+        reading.Family.Insert(plan, new InsertRequest(rule, add.Id, values, parent, source, target, add.Index));
         if (rule.SnapshotUndo) plan.Snapshot = true;
     }
 
@@ -307,6 +308,11 @@ internal static class EditPlanner
             Planning.Plan.Refuse($"A {element.Rule.Type} cannot be moved in this file.");
         }
         ReadElement? parent = move.NewParentId is { } parentId ? Element(reading, parentId) : null;
+        if (reading.Family.PlacesByPosition)
+        {
+            PlanMoveTo(plan, move, element, parent);
+            return;
+        }
         if (parent != element.Parent)
         {
             Planning.Plan.Refuse($"This file's binding cannot move a {element.Rule.Type} to another parent; only a persistence plugin can.");
@@ -316,6 +322,35 @@ internal static class EditPlanner
         var index = move.Index < 0 || move.Index > siblings.Count ? siblings.Count : move.Index;
         if (index == current || index == current + 1) return; // It is there already: no splice.
         reading.Family.Move(plan, element, index < siblings.Count ? siblings[index] : null, siblings[^1]);
+        if (element.Rule.SnapshotUndo) plan.Snapshot = true;
+    }
+
+    /// <summary>
+    /// A move in a family that places by position (FBL 0.7 §5.5, §6.3), to a sibling's place under the same
+    /// parent or under another: not into the element itself or anything it contains, and not into a parent its
+    /// rule cannot be nested in. The index counts the siblings before the move; the family is given it as they
+    /// are without the element.
+    /// </summary>
+    private static void PlanMoveTo(Plan plan, ModelChange.Move move, ReadElement element, ReadElement? parent)
+    {
+        var reading = plan.Reading;
+        for (var enclosing = parent; enclosing is not null; enclosing = enclosing.Parent)
+        {
+            if (enclosing == element) Planning.Plan.Refuse($"A {element.Rule.Type} cannot be moved into itself.");
+        }
+        if (parent is not null && element.Rule.Parent is { } containment && !containment.Rules.Contains(parent.Rule.Name))
+        {
+            Planning.Plan.Refuse($"A {element.Rule.Type} cannot be placed inside a {parent.Rule.Type}.");
+        }
+        var siblings = reading.Elements.Where(other => other.Parent == parent && other.Rule.Parent?.Slot == element.Rule.Parent?.Slot && (parent is not null || other.Rule.Type == element.Rule.Type)).ToList();
+        var index = move.Index < 0 || move.Index > siblings.Count ? siblings.Count : move.Index;
+        var current = siblings.IndexOf(element);
+        if (current >= 0)
+        {
+            if (index == current || index == current + 1) return; // It is there already: no splice.
+            if (index > current) index--;
+        }
+        reading.Family.MoveTo(plan, element, parent, index);
         if (element.Rule.SnapshotUndo) plan.Snapshot = true;
     }
 
