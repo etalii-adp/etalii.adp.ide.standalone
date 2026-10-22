@@ -32,10 +32,10 @@ internal sealed partial class RegistrationDocument
     public RegistrationBlock? Identities { get; private set; }
 
     /// <summary>Every block read, in the order the registration holds them, those the binding does not declare included.</summary>
-    public IReadOnlyList<RegistrationBlock> Blocks { get; private set; } = [];
+    private IReadOnlyList<RegistrationBlock> Blocks { get; set; } = [];
 
     /// <summary>The blocks neither FBL nor the binding declares (FBL 0.7 §8.1): kept as they are written.</summary>
-    public IReadOnlyList<RegistrationBlock> Undeclared { get; private set; } = [];
+    private IReadOnlyList<RegistrationBlock> Undeclared { get; set; } = [];
 
     /// <summary>The block <paramref name="name"/>, when the registration has it and it is FBL's or declared.</summary>
     public RegistrationBlock? Block(string name) => Blocks.FirstOrDefault(block => block.Name == name && !Undeclared.Contains(block));
@@ -73,7 +73,7 @@ internal sealed partial class RegistrationDocument
     /// <summary>The blocks neither FBL nor the binding declares, reported once each as <c>fbl.unknown-block</c> (FBL 0.7 §8.1).</summary>
     public IReadOnlyList<Finding> UnknownBlocks(string fileName) =>
         Undeclared.Select(block => Located(FindingCodes.UnknownBlock,
-            $"The block '{block.Name}' is neither FBL's nor the binding's; it is kept as it is.", new Span(block.NameLine.Start, block.NameLine.Start + block.Name.Length + 1), fileName)).ToList();
+            $"The block '{block.Name}' is neither FBL's nor the binding's; it is kept as it is.", block.NameLine with { End = block.NameLine.Start + block.Name.Length + 1 }, fileName)).ToList();
 
     /// <summary>
     /// Layout entries for ids the model does not have (FBL §8.5), and the entries of the declared blocks keyed by ids

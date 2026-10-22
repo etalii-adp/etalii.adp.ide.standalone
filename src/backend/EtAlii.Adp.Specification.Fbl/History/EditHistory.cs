@@ -54,7 +54,7 @@ internal sealed class EditHistory
                 return;
             }
             var before = Edit.Apply(state, inverse);
-            var edit = entry.Edit with { Splices = Edit.Inverse(state, inverse), Snapshot = false };
+            var edit = new Edit(Edit.Inverse(state, inverse));
             undo.Add(new HistoryEntry(edit, inverse, SHA256.HashData(before), SHA256.HashData(state), null));
             if (Moved(outside, entry.Inverse) is not { } earlier)
             {
@@ -75,7 +75,7 @@ internal sealed class EditHistory
                 return;
             }
             var after = Edit.Apply(state, splices);
-            redo.Add(new HistoryEntry(entry.Edit with { Splices = splices, Snapshot = false }, Edit.Inverse(state, splices), SHA256.HashData(state), SHA256.HashData(after), null));
+            redo.Add(new HistoryEntry(new Edit(splices), Edit.Inverse(state, splices), SHA256.HashData(state), SHA256.HashData(after), null));
             if (Moved(outside, entry.Edit.Splices) is not { } later)
             {
                 Clear();

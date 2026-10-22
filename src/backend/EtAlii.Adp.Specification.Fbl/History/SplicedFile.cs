@@ -49,7 +49,7 @@ public abstract class SplicedFile
     /// and writes its own splices at the offsets the edit moved. An entry whose splices the edit overlaps cannot be
     /// carried, and the history is cleared instead.
     /// </summary>
-    public void ApplyOutsideHistory(Edit edit)
+    protected void ApplyOutsideHistory(Edit edit)
     {
         ArgumentNullException.ThrowIfNull(edit);
         if (edit.Splices.Count == 0) return;

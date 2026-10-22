@@ -414,10 +414,8 @@ public class ConformanceFixturesTests
         {
             var registration = OpenRegistration.Open(input, binding);
             var subject = new Subject { _registration = registration };
-            var bodyName = registration.Document.Body;
-            var path = bodyName is null ? null : Path.Combine(folder, bodyName);
-            if (path is null || !File.Exists(path)) return subject;
-            var body = OpenBody.Open(File.ReadAllBytes(path), binding, new FblOptions { FileName = bodyName });
+            if (registration.Document.Body is not { } bodyName || !File.Exists(Path.Combine(folder, bodyName))) return subject;
+            var body = OpenBody.Open(File.ReadAllBytes(Path.Combine(folder, bodyName)), binding, new FblOptions { FileName = bodyName });
             registration.KnownIds = body.Model.Elements.Select(element => element.Id).ToHashSet(StringComparer.Ordinal);
             subject.Read = body.Model with { Findings = [.. body.Model.Findings, .. registration.Findings(name)] };
             return subject;
