@@ -36,6 +36,7 @@ public static class FindingCodes
     public const string MissingBody = "fbl.missing-body";
     public const string StaleViewData = "fbl.stale-view-data";
     public const string UnknownHeader = "fbl.unknown-header";
+    public const string UnknownBlock = "fbl.unknown-block";
     public const string RegexTimeout = "fbl.regex-timeout";
     public const string UnconvertedValue = "fbl.unconverted-value";
     public const string Unparseable = "std.unparseable";

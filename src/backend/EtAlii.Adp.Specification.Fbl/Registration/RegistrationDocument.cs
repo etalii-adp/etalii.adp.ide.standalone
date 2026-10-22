@@ -1,13 +1,16 @@
+using System.Text.RegularExpressions;
+using EtAlii.Adp.Specification.Fbl.Documents;
 using EtAlii.Adp.Specification.Fbl.Text;
 
 namespace EtAlii.Adp.Specification.Fbl.Registration;
 
 /// <summary>
 /// A registration (<c>.adp</c>) in the line form of FBL §8.1: the origin on line 1, headers, the
-/// <c>layout:</c> and <c>identities:</c> blocks, and whatever follows them kept as unbound content.
-/// Every part keeps its span, so the registration is written by splices like any body (FBL §8.4).
+/// <c>layout:</c> and <c>identities:</c> blocks and the blocks the binding declares, and whatever follows them kept as
+/// unbound content. A block the binding does not declare is read past and kept as it is (FBL 0.7 §8.1). Every part keeps
+/// its span, so the registration is written by splices like any body (FBL §8.4).
 /// </summary>
-internal sealed class RegistrationDocument
+internal sealed partial class RegistrationDocument
 {
     /// <summary>The headers FBL itself defines (FBL §8.1); a binding declares others.</summary>
     private static readonly IReadOnlyList<string> FblHeaders = ["body", "view", "resource"];
@@ -27,6 +30,15 @@ internal sealed class RegistrationDocument
     public RegistrationBlock? Layout { get; private set; }
 
     public RegistrationBlock? Identities { get; private set; }
+
+    /// <summary>Every block read, in the order the registration holds them, those the binding does not declare included.</summary>
+    private IReadOnlyList<RegistrationBlock> Blocks { get; set; } = [];
+
+    /// <summary>The blocks neither FBL nor the binding declares (FBL 0.7 §8.1): kept as they are written.</summary>
+    private IReadOnlyList<RegistrationBlock> Undeclared { get; set; } = [];
+
+    /// <summary>The block <paramref name="name"/>, when the registration has it and it is FBL's or declared.</summary>
+    public RegistrationBlock? Block(string name) => Blocks.FirstOrDefault(block => block.Name == name && !Undeclared.Contains(block));
 
     /// <summary>Where a new block goes: the end of the header region's last line.</summary>
     public int AfterHeaders { get; private set; }
@@ -58,26 +70,48 @@ internal sealed class RegistrationDocument
         return findings;
     }
 
+    /// <summary>The blocks neither FBL nor the binding declares, reported once each as <c>fbl.unknown-block</c> (FBL 0.7 §8.1).</summary>
+    public IReadOnlyList<Finding> UnknownBlocks(string fileName) =>
+        Undeclared.Select(block => Located(FindingCodes.UnknownBlock,
+            $"The block '{block.Name}' is neither FBL's nor the binding's; it is kept as it is.", block.NameLine with { End = block.NameLine.Start + block.Name.Length + 1 }, fileName)).ToList();
+
     /// <summary>
-    /// Layout entries for ids the model does not have (FBL §8.5): reported as <c>fbl.stale-view-data</c>,
-    /// applied to nothing, and removed at the registration's next write.
+    /// Layout entries for ids the model does not have (FBL §8.5), and the entries of the declared blocks keyed by ids
+    /// (FBL 0.7 §8.1): reported as <c>fbl.stale-view-data</c>, applied to nothing, and removed at the registration's
+    /// next write.
     /// </summary>
-    public IReadOnlyList<Finding> StaleEntries(IReadOnlySet<string> ids, string fileName)
+    public IReadOnlyList<Finding> StaleEntries(IReadOnlySet<string> ids, string fileName, IReadOnlyList<RegistrationBlockDeclaration>? declarations = null)
     {
         var findings = new List<Finding>();
         foreach (var entry in Layout?.Entries ?? [])
         {
             if (ids.Contains(entry.Key)) continue;
-            (int line, int column) = Text.Position(entry.KeySpan.Start);
-            findings.Add(new Finding(FindingCodes.StaleViewData, FindingSeverity.Info,
-                $"The layout keeps a position for '{entry.Key}', which the file no longer has; it is removed at the next save of the registration.",
-                new SourceLocation(fileName, line, column, Text.CodePoints(entry.KeySpan.Start, entry.KeySpan.End))));
+            findings.Add(Located(FindingCodes.StaleViewData,
+                $"The layout keeps a position for '{entry.Key}', which the file no longer has; it is removed at the next save of the registration.", entry.KeySpan, fileName));
+        }
+        foreach (var declaration in declarations ?? [])
+        {
+            if (!declaration.KeyedByIds || Block(declaration.Name) is not { } block) continue;
+            foreach (var entry in block.Entries.Where(entry => !ids.Contains(entry.Key)))
+            {
+                findings.Add(Located(FindingCodes.StaleViewData,
+                    $"The block '{block.Name}' keeps an entry for '{entry.Key}', which the file no longer has; it is removed at the next save of the registration.", entry.KeySpan, fileName));
+            }
         }
         return findings;
     }
 
-    /// <summary>Reads a registration. The line form has no syntax error: anything not understood is unbound content.</summary>
-    public static RegistrationDocument Read(byte[] bytes)
+    private Finding Located(string code, string message, Span span, string fileName)
+    {
+        (int line, int column) = Text.Position(span.Start);
+        return new Finding(code, FindingSeverity.Info, message, new SourceLocation(fileName, line, column, Text.CodePoints(span.Start, span.End)));
+    }
+
+    /// <summary>Reads a registration whose binding declares no block. The line form has no syntax error: anything not understood is unbound content.</summary>
+    public static RegistrationDocument Read(byte[] bytes) => Read(bytes, []);
+
+    /// <summary>Reads a registration whose binding declares the blocks <paramref name="declared"/> (FBL 0.7 §8.1).</summary>
+    public static RegistrationDocument Read(byte[] bytes, IReadOnlyCollection<string> declared)
     {
         ArgumentNullException.ThrowIfNull(bytes);
         var text = new BodyText(bytes);
@@ -92,13 +126,15 @@ internal sealed class RegistrationDocument
             var line = lines[index];
             var content = text.Text(line.Start, line.ContentEnd);
             if (content.Trim().Length == 0) continue;
-            if (BlockName(content) is not null) break;
+            if (BlockLine().IsMatch(content)) break;
             var separator = content.IndexOf(": ", StringComparison.Ordinal);
             if (separator <= 0 || char.IsWhiteSpace(content[0])) break;
             headers.Add(new RegistrationHeader(content[..separator], content[(separator + 2)..].Trim(), new Span(line.Start, line.End)));
             document.AfterHeaders = line.End;
         }
         document.Headers = headers;
+        var blocks = new List<RegistrationBlock>();
+        var undeclared = new List<RegistrationBlock>();
         while (index < lines.Count)
         {
             var line = lines[index];
@@ -108,21 +144,26 @@ internal sealed class RegistrationDocument
                 index++;
                 continue;
             }
-            var name = BlockName(content);
-            if (name is null || (name == "layout" && document.Layout is not null) || (name == "identities" && document.Identities is not null)) break;
+            var match = BlockLine().Match(content);
+            if (!match.Success) break;
+            var name = match.Groups["name"].Value;
+            // A second block of one name ends the blocks: it and what follows are unbound content.
+            if (blocks.Any(block => block.Name == name)) break;
+            var known = name is "layout" or "identities" || declared.Contains(name);
             var block = ReadBlock(text, name, ref index);
-            if (name == "layout") document.Layout = block;
-            else document.Identities = block;
+            blocks.Add(block);
+            if (!known) undeclared.Add(block);
+            else if (name == "layout") document.Layout = block;
+            else if (name == "identities") document.Identities = block;
         }
+        document.Blocks = blocks;
+        document.Undeclared = undeclared;
         return document;
     }
 
-    private static string? BlockName(string content) => content.TrimEnd(' ', '\t') switch
-    {
-        "layout:" => "layout",
-        "identities:" => "identities",
-        _ => null,
-    };
+    /// <summary>A line that opens a block (FBL §8.1): a Name and a colon, with nothing but whitespace after it.</summary>
+    [GeneratedRegex(@"^(?<name>[A-Za-z_][A-Za-z0-9_.-]*):[ \t]*$", RegexOptions.CultureInvariant)]
+    private static partial Regex BlockLine();
 
     private static RegistrationBlock ReadBlock(BodyText text, string name, ref int index)
     {
