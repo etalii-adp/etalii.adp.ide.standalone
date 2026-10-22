@@ -121,16 +121,15 @@
           "at": "/elements/*",
           "when": "type(entry) == map",
           "id": { "from": { "key": "id" } },
-          "readOnly": "This entry's type is not one this notation has, so it is kept as it is.",
           "attributes": {
             "storedId": { "key": "id", "readOnly": true },
             "unknownKeys": { "value": "entry.filter(k, !(k in ['id', 'type', 'name', 'description', 'text', 'x', 'y', 'width', 'height']))" },
-            "documentType": { "key": "type", "read": "text" },
-            "name": { "key": "name" },
-            "description": { "key": "description", "read": "text" },
-            "x": { "key": "x", "read": "text" },
-            "y": { "key": "y", "read": "text" },
-            "width": { "key": "width", "read": "text" }
+            "documentType": { "key": "type", "read": "text", "readOnly": true },
+            "name": { "key": "name", "empty": "keep" },
+            "description": { "key": "description", "read": "text", "empty": "remove" },
+            "x": { "key": "x", "read": "text", "number": { "decimals": 4 } },
+            "y": { "key": "y", "read": "text", "number": { "decimals": 4 } },
+            "width": { "key": "width", "read": "text", "number": { "decimals": 4 } }
           },
           "remove": { "cascade": ["ui-child", "owns-action", "owns-data", "owns-function", "shows", "unknown-connection"] }
         },
@@ -231,15 +230,14 @@
           "at": "/connections/*",
           "when": "type(entry) == map",
           "id": { "from": { "key": "id" } },
-          "readOnly": "This entry's relation is not one this notation has, so it is kept as it is.",
           "attributes": {
             "storedId": { "key": "id", "readOnly": true },
             "unknownKeys": { "value": "entry.filter(k, !(k in ['id', 'type', 'from', 'to', 'name', 'description']))" },
-            "documentType": { "key": "type", "read": "text" },
+            "documentType": { "key": "type", "read": "text", "readOnly": true },
             "from": { "key": "from", "reference": { "to": ["ui-element", "data-element", "action", "function", "comment", "unknown-element"], "by": "storedId" } },
             "to": { "key": "to", "reference": { "to": ["ui-element", "data-element", "action", "function", "comment", "unknown-element"], "by": "storedId" } },
-            "name": { "key": "name" },
-            "description": { "key": "description", "read": "text" }
+            "name": { "key": "name", "empty": "keep" },
+            "description": { "key": "description", "read": "text", "empty": "remove" }
           },
           "remove": {}
         },

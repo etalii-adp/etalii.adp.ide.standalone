@@ -105,7 +105,7 @@ internal sealed class KnowledgeBody
         catch (ArgumentException)
         {
             // What the edit names is not in the file as it is now: it was planned against an earlier state of it.
-            return (null, "The file has changed since this edit was made, so it was not written.");
+            return (null, SplicedFile.DriftEdit);
         }
 
         return (copy.Bytes, "");

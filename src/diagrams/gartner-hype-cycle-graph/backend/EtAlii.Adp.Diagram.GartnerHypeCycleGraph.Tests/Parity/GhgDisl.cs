@@ -21,8 +21,8 @@ internal static class GhgDisl
     /// <summary>Every document of the parity corpus: <c>src/</c>-relative path and text.</summary>
     public static IEnumerable<(string Path, string Text)> Texts()
     {
-        var source = Path.GetFullPath(Path.Combine(GhgTranscript.ModuleFolder, "..", ".."));
-        return GhgTranscript.Corpus().Select(relative => (relative, File.ReadAllText(Path.Combine(source, relative))));
+        var transcript = new GhgTranscript();
+        return transcript.Files().Select(relative => (relative, File.ReadAllText(Path.Combine(transcript.SourceFolder, relative))));
     }
 
     /// <summary>A diagram of <paramref name="model"/>'s unit holding its trends, in document order.</summary>

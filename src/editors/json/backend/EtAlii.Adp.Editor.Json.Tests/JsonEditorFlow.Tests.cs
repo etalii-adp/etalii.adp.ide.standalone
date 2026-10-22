@@ -8,7 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Editor.Json.Tests;
 
 /// <summary>
 /// The JSON editor over the real host (json-editor Requirements 2.2, 2.3, 2.5 and 8.2): what the

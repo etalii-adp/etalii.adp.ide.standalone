@@ -1,3 +1,4 @@
+using EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests.Parity;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
@@ -117,7 +118,7 @@ public sealed class FdgSessionTests : IDisposable
         await session.BaselineAsync(TestContext.Current.CancellationToken);
 
         // Act.
-        await EditAsync("task-list", (document, element) => FdgWriter.Resize(document, element, 220, null));
+        await EditAsync(new SetFdgSizeCommand(Body, "task-list", 220));
 
         // Assert.
         var changed = Assert.Single(Assert.IsType<DiagramAddDelta>(Assert.Single(Assert.Single(_raised).Deltas)).Elements);
@@ -138,13 +139,13 @@ public sealed class FdgSessionTests : IDisposable
         await session.BaselineAsync(TestContext.Current.CancellationToken);
 
         // Act: a Description only.
-        await EditAsync("task-list", (document, element) => FdgWriter.SetDescription(document, element, "A different description altogether."));
+        await EditAsync(new SetFdgDescriptionCommand(Body, "task-list", "A different description altogether."));
 
         // Assert.
         Assert.Empty(_raised);
 
         // Act, the presence that makes the absence mean something: a Name through the same path.
-        await EditAsync("task-list", (document, element) => FdgWriter.SetName(document, element, "Today"));
+        await EditAsync(new RenameFdgElementCommand(Body, "task-list", "Today"));
 
         // Assert.
         var changed = Assert.Single(Assert.IsType<DiagramAddDelta>(Assert.Single(Assert.Single(_raised).Deltas)).Elements);
@@ -166,12 +167,13 @@ public sealed class FdgSessionTests : IDisposable
         return session;
     }
 
-    private async Task EditAsync(string elementId, Func<LineDocument, FdgElement, EditOutcome> edit)
+    /// <summary>Writes the text <paramref name="command"/> makes of the file to disk, as another tool would, and has the store reload it.</summary>
+    private async Task EditAsync(ICommand command)
     {
-        var document = LineDocument.Parse(await File.ReadAllTextAsync(Body, TestContext.Current.CancellationToken));
-        var element = FdgParser.Parse(document).Elements.Single(candidate => candidate.Id == elementId);
-        Assert.True(edit(document, element).WasApplied);
-        await File.WriteAllTextAsync(Body, document.Text, TestContext.Current.CancellationToken);
+        var text = await File.ReadAllTextAsync(Body, TestContext.Current.CancellationToken);
+        (string? edited, string? refusal) = await FdgEditing.RunAsync(text, command, TestContext.Current.CancellationToken);
+        Assert.True(edited is not null, refusal);
+        await File.WriteAllTextAsync(Body, edited, TestContext.Current.CancellationToken);
         await _store.ReloadAsync(Body, TestContext.Current.CancellationToken);
     }
 

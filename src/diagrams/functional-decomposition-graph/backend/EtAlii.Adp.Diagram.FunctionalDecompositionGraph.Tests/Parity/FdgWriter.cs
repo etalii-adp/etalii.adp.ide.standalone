@@ -1,7 +1,7 @@
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
-namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
+namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests.Parity;
 
 /// <summary>
 /// Turns an edit into a splice of the lines that edit affects, and nothing else.

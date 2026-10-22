@@ -11,9 +11,10 @@ internal static class BindingChecker
     {
         var rules = binding.AllRules.ToList();
         var names = new HashSet<string>(StringComparer.Ordinal);
-        var ruleNames = rules.Select(r => r.Name).Concat(binding.Blocks.Select(b => b.Name)).ToHashSet(StringComparer.Ordinal);
+        var ruleNames = rules.Select(r => r.Name).Concat(binding.Blocks.Select(b => b.Name)).Concat(binding.Sections.Select(section => section.Name)).ToHashSet(StringComparer.Ordinal);
 
         CheckBlocks(binding, ruleNames, names, pointer, problems);
+        CheckSections(binding, pointer, problems);
         var elementCount = binding.Elements.Count;
         for (var i = 0; i < rules.Count; i++)
         {
@@ -33,6 +34,19 @@ internal static class BindingChecker
             if (!names.Add(block.Name)) problems.Add(new LoadDiagnostic(at + "/name", LoadSeverity.Error, $"The rule name '{block.Name}' is used twice."));
             CheckRegex(block.Line, at + "/line", problems);
             CheckWithin(block.Within, ruleNames, at + "/within", problems);
+        }
+    }
+
+    /// <summary>The sections of a bullets body (FBL 0.7 §4.8): a name each, used once, and a heading expression of FBL's subset.</summary>
+    private static void CheckSections(FblBinding binding, string pointer, List<LoadDiagnostic> problems)
+    {
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        for (var i = 0; i < binding.Sections.Count; i++)
+        {
+            var section = binding.Sections[i];
+            var at = $"{pointer}/sections/{i}";
+            if (!seen.Add(section.Name)) problems.Add(new LoadDiagnostic(at + "/name", LoadSeverity.Error, $"The section name '{section.Name}' is used twice."));
+            CheckRegex(section.Heading, at + "/heading", problems);
         }
     }
 
@@ -177,7 +191,7 @@ internal static class BindingChecker
     {
         var where = (scalars, attribute.Kind) switch
         {
-            (false, _) => "a slot of the xml, lines or blocks family",
+            (false, _) => "a slot of the xml, lines, blocks or bullets family",
             (_, SlotKind.Value) => "a value slot",
             (_, SlotKind.Capture) => "a capture slot",
             _ => null,

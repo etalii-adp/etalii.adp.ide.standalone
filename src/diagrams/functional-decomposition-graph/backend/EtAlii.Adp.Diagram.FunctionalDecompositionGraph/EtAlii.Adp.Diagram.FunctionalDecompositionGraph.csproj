@@ -22,8 +22,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- FdgParser reads with it, for FdgWriter and the cross-check, until every edit is written by splices (functional-decomposition-graph-disl-fbl task 10). -->
-    <PackageReference Include="YamlDotNet" />
     <!-- Google.Protobuf is the runtime; Grpc.Tools compiles the .proto below at build. -->
     <PackageReference Include="Google.Protobuf" />
     <PackageReference Include="Grpc.Tools">

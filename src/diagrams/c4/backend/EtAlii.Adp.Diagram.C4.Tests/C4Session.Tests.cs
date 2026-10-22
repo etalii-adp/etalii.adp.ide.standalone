@@ -88,6 +88,23 @@ public class C4SessionTests : IDisposable
     }
 
     [Fact]
+    public async Task ARegistrationNamingTwoViews_OpensTheFirst()
+    {
+        // Arrange: c4 has always opened the first view: header, where AdpRegistration's View takes
+        // the last; reading the registration through AdpRegistration keeps c4's answer (code-structure
+        // T295). The second view is also the document's first, so ignoring the header fails here too.
+        var body = WriteModel();
+        var adp = IoPath.Combine(_root, "two-views.adp");
+        await File.WriteAllTextAsync(adp, "c4/container\nbody: model.dsl\nview: containers\nview: context\n", TestContext.Current.CancellationToken);
+
+        // Act.
+        await using var session = Open(body, adp);
+
+        // Assert.
+        Assert.Equal("containers", (await session.ViewAsync(TestContext.Current.CancellationToken))!.Key);
+    }
+
+    [Fact]
     public async Task ADocumentOpenedWithoutARegistration_ShowsItsFirstView()
     {
         // Arrange.

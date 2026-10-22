@@ -1,5 +1,4 @@
-﻿using EtAlii.Adp.Documents;
-using EtAlii.Adp.History;
+﻿using EtAlii.Adp.History;
 using EtAlii.Adp.Sessions;
 
 namespace EtAlii.Adp.Diagram.C4;
@@ -33,52 +32,10 @@ public sealed class C4SessionFactory : IDiagramSessionFactory
 
     public IDiagramSession Open(ShortGuid watchId, ProjectRoot root, string bodyPath, string? registrationPath)
     {
-        var viewKey = registrationPath is { Length: > 0 } ? ReadViewKey(registrationPath) : null;
+        // The registration's first view: header, which is what c4 has always opened; AdpRegistration's
+        // View takes the last, and the two differ only on a registration holding two (code-structure T295).
+        var viewKey = registrationPath is { Length: > 0 } ? AdpRegistration.Read(registrationPath)?.FirstView : null;
         // The project's history, so a drag on this canvas is one undo away like every other edit.
         return new C4Session(bodyPath, viewKey, _documents, _mapper, _historyStacks.Get(root));
-    }
-
-    /// <summary>
-    /// The <c>view:</c> header of a registration file, or null. Read here rather than in core:
-    /// core hands the module its own file and interprets nothing in it.
-    /// </summary>
-    private static string? ReadViewKey(string registrationPath)
-    {
-        try
-        {
-            using var reader = SharedDocumentReader.OpenText(registrationPath);
-            reader.ReadLine(); // the MIME line
-            for (var scanned = 0; scanned < 8; scanned++)
-            {
-                var line = reader.ReadLine();
-                if (line is null)
-                {
-                    return null;
-                }
-
-                var trimmed = line.Trim();
-                if (trimmed.Length == 0)
-                {
-                    continue;
-                }
-
-                if (trimmed.StartsWith("view:", StringComparison.OrdinalIgnoreCase))
-                {
-                    var value = trimmed["view:".Length..].Trim();
-                    return value.Length == 0 ? null : value;
-                }
-
-                if (!trimmed.StartsWith("body:", StringComparison.OrdinalIgnoreCase))
-                {
-                    return null;
-                }
-            }
-
-            return null;
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            return null;
-        }
     }
 }
