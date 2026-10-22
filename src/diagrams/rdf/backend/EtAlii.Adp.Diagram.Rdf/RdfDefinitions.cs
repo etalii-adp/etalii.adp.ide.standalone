@@ -18,7 +18,7 @@ namespace EtAlii.Adp.Diagram.Rdf;
 internal static class RdfDefinitions
 {
     /// <summary>Each reading, with the resource its definition is embedded as and the key of its block of wire ids.</summary>
-    internal static IReadOnlyList<(ToolOrigin Origin, string Resource, string WireIds)> Readings { get; } =
+    private static IReadOnlyList<(ToolOrigin Origin, string Resource, string WireIds)> Readings { get; } =
     [
         (ServiceCollectionAddRdfExtension.RdfOrigin, "w3c-rdf.dis", "x-rdf"),
         (ServiceCollectionAddRdfExtension.OwlOrigin, "w3c-owl.dis", "x-owl"),
@@ -39,7 +39,7 @@ internal static class RdfDefinitions
     public static BundledDefinitionSet Set => _set.Value;
 
     /// <summary>The binding every body of the four readings is read with.</summary>
-    public static FblBinding Binding => _binding.Value;
+    private static FblBinding Binding => _binding.Value;
 
     /// <summary>The definition of the reading <paramref name="origin"/> names.</summary>
     /// <exception cref="KeyNotFoundException">No reading has that origin.</exception>
@@ -54,10 +54,10 @@ internal static class RdfDefinitions
     public static WireIdMap Ids(ToolOrigin origin)
     {
         ArgumentNullException.ThrowIfNull(origin);
-        var reading = Readings.FirstOrDefault(candidate => candidate.Origin == origin);
-        return reading.Resource is null
+        (ToolOrigin _, string? resource, string wireIds) = Readings.FirstOrDefault(candidate => candidate.Origin == origin);
+        return resource is null
             ? throw new KeyNotFoundException($"'{origin.Key}' is not a reading of a Turtle or N-Triples body.")
-            : WireIdMap.Of(For(origin).Specification, reading.WireIds);
+            : WireIdMap.Of(For(origin).Specification, wireIds);
     }
 
     /// <summary>

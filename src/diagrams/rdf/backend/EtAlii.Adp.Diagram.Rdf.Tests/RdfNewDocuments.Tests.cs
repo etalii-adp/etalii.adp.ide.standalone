@@ -39,13 +39,13 @@ public class RdfNewDocumentsTests
     public void ANewDocument_IsTheBytesTheFactoryWroteBefore(string origin, string baseName)
     {
         // Arrange.
-        var reading = _readings.Single(candidate => candidate.Origin.Key == origin);
+        (ToolOrigin reading, Func<string, string> today) = _readings.Single(candidate => candidate.Origin.Key == origin);
 
         // Act.
-        var text = Factory(reading.Origin).CreateEmptyDocument(baseName);
+        var text = Factory(reading).CreateEmptyDocument(baseName);
 
         // Assert.
-        Assert.Equal(reading.Today(baseName), text);
+        Assert.Equal(today(baseName), text);
     }
 
     [Theory]
@@ -69,10 +69,10 @@ public class RdfNewDocumentsTests
     public void ANewDocument_ParsesWithoutAFinding(string origin)
     {
         // Arrange.
-        var reading = _readings.Single(candidate => candidate.Origin.Key == origin);
+        var reading = _readings.Single(candidate => candidate.Origin.Key == origin).Origin;
 
         // Act.
-        var text = Factory(reading.Origin).CreateEmptyDocument("Starter");
+        var text = Factory(reading).CreateEmptyDocument("Starter");
         var model = RdfParser.Parse(LineDocument.Parse(text));
 
         // Assert.
