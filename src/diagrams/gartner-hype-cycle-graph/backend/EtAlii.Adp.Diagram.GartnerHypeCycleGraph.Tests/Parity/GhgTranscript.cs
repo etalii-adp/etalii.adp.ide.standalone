@@ -38,11 +38,8 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph.Tests.Parity;
 /// and the hashes alike. Every later step addresses it by the real id.
 /// </para>
 /// </remarks>
-internal static class GhgTranscript
+public sealed class GhgTranscript() : TranscriptAdapter("gartner-hype-cycle-graph", "EtAlii.Adp.Diagram.GartnerHypeCycleGraph.Tests", "ghg.transcript.json")
 {
-    /// <summary>The checked-in file's name, in this project's <c>Parity</c> folder.</summary>
-    private const string FileName = "ghg.transcript.json";
-
     /// <summary>A document with more elements than this has its property rows sampled rather than listed for every element.</summary>
     private const int FullRowsUpTo = 40;
 
@@ -53,108 +50,34 @@ internal static class GhgTranscript
     /// </summary>
     private const int ArrangeUpTo = 200;
 
-    private const string TestProject = "EtAlii.Adp.Diagram.GartnerHypeCycleGraph.Tests";
     private const string Unknown = "parity:unknown";
 
     private static readonly TypeRegistry _payloadTypes = TypeRegistry.FromFiles(GartnerHypecycleGraphReflection.Descriptor);
 
-    /// <summary>The module's folder, <c>src/diagrams/gartner-hype-cycle-graph</c>.</summary>
-    public static string ModuleFolder { get; } = RepositoryPaths.Under("src", "diagrams", "gartner-hype-cycle-graph");
+    public override string Origin => Diagram.HypeCycleGraph.Origin.Key;
 
-    /// <summary>The checked-in transcript.</summary>
-    public static string CheckedInPath => Path.Combine(ModuleFolder, "backend", TestProject, "Parity", FileName);
+    public override IReadOnlyList<ToolboxItemDefinition> Toolbox => GhgDefinition.Definition.Toolbox;
 
-    private static string SourceFolder => Path.GetFullPath(Path.Combine(ModuleFolder, "..", ".."));
+    /// <summary>The corpus, in the order it is recorded.</summary>
+    public override IReadOnlyList<TranscriptDocument> Corpus() => [.. Files().Select(OnDisk)];
 
     /// <summary>The corpus, as paths relative to <c>src/</c> with forward slashes, in the order they are recorded.</summary>
-    public static IReadOnlyList<string> Corpus()
+    public IReadOnlyList<string> Files()
     {
         var fixtures = Directory.GetFiles(Path.Combine(ModuleFolder, "backend", TestProject, "Fixtures"), "*.ghg");
         var examples = Directory.GetDirectories(Path.Combine(ModuleFolder, "examples")).SelectMany(folder => Directory.GetFiles(folder, "*.ghg"));
         var shipped = Directory.GetDirectories(Path.Combine(SourceFolder, "examples", "diagrams", "gartner-hype-cycle-graph")).SelectMany(folder => Directory.GetFiles(folder, "*.ghg"));
-        return [.. Sorted(fixtures), .. Sorted(examples), .. Sorted(shipped)];
-
-        static IEnumerable<string> Sorted(IEnumerable<string> paths) => paths.Select(path => Path.GetRelativePath(SourceFolder, path).Replace('\\', '/')).Order(StringComparer.Ordinal);
+        return [.. Relative(fixtures), .. Relative(examples), .. Relative(shipped)];
     }
 
-    /// <summary>The whole transcript, as the bytes the checked-in file must hold.</summary>
-    public static async Task<byte[]> GenerateAsync(CancellationToken cancellationToken)
+    public override async Task WriteDocumentAsync(Utf8JsonWriter json, TranscriptDocument document, byte[] bytes, string folder, CancellationToken cancellationToken)
     {
-        using var stream = new MemoryStream();
-        await using (var json = new Utf8JsonWriter(stream, TranscriptText.WriterOptions))
-        {
-            json.WriteStartObject();
-            json.WriteString("module", Diagram.HypeCycleGraph.Origin.Key);
-            json.WriteString("generator", $"src/diagrams/gartner-hype-cycle-graph/backend/{TestProject}/Parity/GhgTranscript.cs");
-            json.WriteString("regenerate", "ADP_WRITE_PARITY_TRANSCRIPTS=1 dotnet test --project <this test project> (then review the diff)");
-
-            // The toolbox is static: it does not read the document, so it is written once.
-            json.WriteStartArray("toolbox");
-            foreach (var item in GhgDefinition.Definition.Toolbox)
-            {
-                json.WriteStringValue($"{item.Id} | {item.Label} | {item.Icon} | drops {item.DropActionId} | {item.Description}");
-            }
-
-            json.WriteEndArray();
-
-            json.WriteStartArray("documents");
-            var recorded = new Dictionary<string, string>(StringComparer.Ordinal);
-            foreach (var relative in Corpus())
-            {
-                await WriteDocumentAsync(json, relative, recorded, cancellationToken);
-            }
-
-            json.WriteEndArray();
-            json.WriteEndObject();
-            await json.FlushAsync(cancellationToken);
-        }
-
-        stream.Write("\r\n"u8);
-        return stream.ToArray();
-    }
-
-    private static async Task WriteDocumentAsync(Utf8JsonWriter json, string relative, Dictionary<string, string> recorded, CancellationToken cancellationToken)
-    {
-        var source = Path.Combine(SourceFolder, relative);
-        var bytes = await File.ReadAllBytesAsync(source, cancellationToken);
-        var sha = TranscriptText.Sha256(bytes);
-
-        json.WriteStartObject();
-        json.WriteString("document", relative);
-        json.WriteString("sha256", sha);
-        if (recorded.TryGetValue(sha, out var first))
-        {
-            json.WriteString("sameAs", first);
-            json.WriteEndObject();
-            return;
-        }
-
-        recorded[sha] = relative;
-
-        var folder = Path.Combine(Path.GetTempPath(), "EtAlii.Adp.GhgTranscript", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(folder);
-        try
-        {
-            var body = Path.Combine(folder, Path.GetFileName(source));
-            await File.WriteAllBytesAsync(body, bytes, cancellationToken);
-            using var session = new Session(folder, body);
-            await session.ReadAsync(cancellationToken);
-            await WriteReadingsAsync(json, session, bytes, cancellationToken);
-            await WriteEditsAsync(json, session, cancellationToken);
-        }
-        finally
-        {
-            try
-            {
-                Directory.Delete(folder, recursive: true);
-            }
-            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-            {
-                // A temp folder left behind changes nothing recorded.
-            }
-        }
-
-        json.WriteEndObject();
+        var body = Path.Combine(folder, Path.GetFileName(document.Name));
+        await File.WriteAllBytesAsync(body, bytes, cancellationToken);
+        using var session = new Session(folder, body);
+        await session.ReadAsync(cancellationToken);
+        await WriteReadingsAsync(json, session, bytes, cancellationToken);
+        await WriteEditsAsync(json, session, cancellationToken);
     }
 
     private static async Task WriteReadingsAsync(Utf8JsonWriter json, Session session, byte[] bytes, CancellationToken cancellationToken)
