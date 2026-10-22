@@ -1,6 +1,6 @@
 using EtAlii.Adp.Documents;
 
-namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
+namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests.Parity;
 
 /// <summary>
 /// Everything one <c>.fdg</c> document declares: its elements, its connections, and what the

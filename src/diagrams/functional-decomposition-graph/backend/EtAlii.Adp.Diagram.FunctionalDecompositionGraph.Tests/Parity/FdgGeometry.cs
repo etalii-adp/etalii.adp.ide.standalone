@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
+namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests.Parity;
 
 /// <summary>The sizes the document does not state per element.</summary>
 /// <remarks>

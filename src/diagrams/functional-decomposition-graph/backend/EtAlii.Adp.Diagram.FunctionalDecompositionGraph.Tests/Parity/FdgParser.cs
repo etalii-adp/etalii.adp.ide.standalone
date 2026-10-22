@@ -3,7 +3,7 @@ using EtAlii.Adp.Documents;
 using YamlDotNet.Core;
 using YamlDotNet.RepresentationModel;
 
-namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
+namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests.Parity;
 
 /// <summary>
 /// Reads a <see cref="LineDocument"/> into an <see cref="FdgModel"/>, recording which lines

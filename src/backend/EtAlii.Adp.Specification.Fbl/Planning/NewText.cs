@@ -19,8 +19,12 @@ internal static class NewText
     {
         if (decimals is { } n)
         {
-            var rounded = Math.Round(value, n, MidpointRounding.AwayFromZero);
-            var text = rounded.ToString("F" + n.ToString(CultureInfo.InvariantCulture), CultureInfo.InvariantCulture);
+            // The number is rounded as the decimal it is written as, its shortest form, so that 200.00005 is a half
+            // although the double nearest to it lies below one; a number beyond a decimal's range rounds as a double.
+            var format = "F" + n.ToString(CultureInfo.InvariantCulture);
+            var text = n <= 28 && decimal.TryParse(value.ToString("R", CultureInfo.InvariantCulture), NumberStyles.Float, CultureInfo.InvariantCulture, out var written)
+                ? Math.Round(written, n, MidpointRounding.AwayFromZero).ToString(format, CultureInfo.InvariantCulture)
+                : Math.Round(value, n, MidpointRounding.AwayFromZero).ToString(format, CultureInfo.InvariantCulture);
             if (text.Contains('.')) text = text.TrimEnd('0').TrimEnd('.');
             return text == "-0" ? "0" : text;
         }
