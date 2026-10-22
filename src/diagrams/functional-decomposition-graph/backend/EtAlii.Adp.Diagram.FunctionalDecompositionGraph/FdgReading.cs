@@ -107,16 +107,17 @@ internal static class FdgReading
     public static string? TextOf(FblElement element, string attribute)
     {
         ArgumentNullException.ThrowIfNull(element);
-        return element.Attributes.TryGetValue(attribute, out var value) ? value switch
+        if (!element.Attributes.TryGetValue(attribute, out var value)) return null;
+        return value switch
         {
             null => "",
             string text => text,
             _ => null,
-        } : null;
+        };
     }
 
     /// <summary>A number as the tool reads one: zero for one that is not there, is not a scalar or does not read.</summary>
-    public static double NumberOf(FblElement element, string attribute) =>
+    private static double NumberOf(FblElement element, string attribute) =>
         double.TryParse(TextOf(element, attribute), NumberStyles.Float, CultureInfo.InvariantCulture, out var value) ? value : 0;
 
     /// <summary>The reading the DISL model of <paramref name="reading"/> is built from.</summary>

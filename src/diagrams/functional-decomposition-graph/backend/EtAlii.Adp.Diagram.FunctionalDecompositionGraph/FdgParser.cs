@@ -73,7 +73,7 @@ public static class FdgParser
     /// What the store keeps of <paramref name="document"/>: the model, its problems, and, for a text
     /// that is not YAML, why, so that nothing is edited or written until it is. <b>Never throws.</b>
     /// </summary>
-    public static ParseOutcome<FdgModel> Outcome(LineDocument document)
+    private static ParseOutcome<FdgModel> Outcome(LineDocument document)
     {
         ArgumentNullException.ThrowIfNull(document);
 

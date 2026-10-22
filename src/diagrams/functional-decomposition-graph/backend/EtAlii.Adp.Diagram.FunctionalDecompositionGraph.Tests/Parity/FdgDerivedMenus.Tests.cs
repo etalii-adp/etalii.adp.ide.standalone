@@ -29,7 +29,7 @@ public class FdgDerivedMenusTests
         // Act and assert.
         foreach (var target in FdgCorpus.Targets(readable.Model))
         {
-            foreach (var (entry, read) in new[] { (readable, derived), (readOnly, derivedReadOnly) })
+            foreach ((DocumentEntry<LineDocument, FdgModel> entry, DocumentEntry<FdgBody, DislModel> read) in new[] { (readable, derived), (readOnly, derivedReadOnly) })
             {
                 var expected = HandWrittenFdg.Menus(entry, target);
                 var actual = FdgDefinition.Menus(read, target);
@@ -51,7 +51,7 @@ public class FdgDerivedMenusTests
         // Act and assert.
         foreach (var target in FdgCorpus.Targets(readable.Model))
         {
-            foreach (var (entry, read) in new[] { (readable, derived), (readOnly, derivedReadOnly) })
+            foreach ((DocumentEntry<LineDocument, FdgModel> entry, DocumentEntry<FdgBody, DislModel> read) in new[] { (readable, derived), (readOnly, derivedReadOnly) })
             {
                 Assert.True(
                     Equals(HandWrittenFdg.Confirmation(entry, target), FdgDefinition.Confirmation(read, target)),

@@ -1,7 +1,6 @@
 using System.Text;
 using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Documents;
-using EtAlii.Adp.History;
 using EtAlii.Adp.Specification.Disl;
 using EtAlii.Adp.Specification.Fbl;
 using EtAlii.Adp.Specification.Fbl.Documents;
@@ -26,8 +25,7 @@ namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
 /// <para>
 /// <b>Writing is still <see cref="FdgWriter"/>'s</b> until every edit is written by splices
 /// (functional-decomposition-graph-disl-fbl task 10): a command writes a copy of the text with it, and
-/// <see cref="Rewrite"/> reads the copy's new text. <see cref="Change"/> and <see cref="Batch"/> are the
-/// library's, for the commands that will write through the binding.
+/// <see cref="Rewrite"/> reads the copy's new text.
 /// </para>
 /// <para>
 /// <b>A text read recently is not read again.</b> Reading is a pure function of the bytes, so
@@ -62,7 +60,7 @@ public sealed class FdgBody : ITextBody<FdgBody>
     }
 
     /// <summary>The binding every <c>.fdg</c> body is read with.</summary>
-    internal static FblBinding Binding => LoadedBinding.Value;
+    private static FblBinding Binding => LoadedBinding.Value;
 
     /// <summary>The text of a new, empty <c>.fdg</c> document: the binding's template.</summary>
     public static string Template => Binding.Template?.Text ?? throw new InvalidOperationException("The binding of a .fdg body has no template.");
@@ -138,10 +136,4 @@ public sealed class FdgBody : ITextBody<FdgBody>
 
         return range.Start;
     }
-
-    /// <summary>Plans and applies one change; the refusal's sentence when the library refuses it.</summary>
-    internal EditOutcome Change(ModelChange change) => _edits.Change(change);
-
-    /// <inheritdoc cref="FblBodyEdits.Batch"/>
-    internal void Batch(Action writes) => _edits.Batch(writes);
 }

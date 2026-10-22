@@ -25,7 +25,7 @@ public class FdgDerivedRowsTests
         // Act and assert.
         foreach (var target in FdgCorpus.Targets(readable.Model))
         {
-            foreach (var (entry, read) in new[] { (readable, derived), (readOnly, derivedReadOnly) })
+            foreach ((DocumentEntry<LineDocument, FdgModel> entry, DocumentEntry<FdgBody, DislModel> read) in new[] { (readable, derived), (readOnly, derivedReadOnly) })
             {
                 var expected = HandWrittenFdg.Rows(entry, target).Select(Text).ToList();
                 var actual = FdgDefinition.Rows(read, target).Select(Text).ToList();

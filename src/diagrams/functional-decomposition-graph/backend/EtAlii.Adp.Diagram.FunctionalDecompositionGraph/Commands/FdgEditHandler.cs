@@ -36,7 +36,7 @@ public abstract class FdgEditHandler<TCommand>(IFdgDocumentStore documents)
         ArgumentNullException.ThrowIfNull(body);
         var document = LineDocument.Parse(body.Text);
         var outcome = Apply(document, FdgParser.Parse(document), command);
-        if (outcome.WasApplied && !outcome.IsUnchanged) body.Rewrite(document.Text);
+        if (outcome is { WasApplied: true, IsUnchanged: false }) body.Rewrite(document.Text);
         return outcome;
     }
 
