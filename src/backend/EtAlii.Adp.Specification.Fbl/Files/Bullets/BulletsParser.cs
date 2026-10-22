@@ -15,7 +15,7 @@ internal sealed partial class BulletsParser(BodyText text)
     [GeneratedRegex(@"^[ \t]*(?:(?:-[ \t]*){3,}|(?:\*[ \t]*){3,}|(?:_[ \t]*){3,})$", RegexOptions.CultureInvariant)]
     private static partial Regex ThematicBreak();
 
-    [GeneratedRegex(@"^(`{3,}|~{3,})", RegexOptions.CultureInvariant)]
+    [GeneratedRegex("^(`{3,}|~{3,})", RegexOptions.CultureInvariant)]
     private static partial Regex FenceOpening();
 
     [GeneratedRegex(@"^(#{1,6})(?:[ \t]|$)", RegexOptions.CultureInvariant)]
@@ -102,7 +102,7 @@ internal sealed partial class BulletsParser(BodyText text)
         var line = text.Lines[index];
         var after = rest[1..];
         var itemText = after.TrimStart(' ', '\t');
-        var whitespace = after[..(after.Length - itemText.Length)];
+        var whitespace = after[..^itemText.Length];
         var textStart = first + 1 + Encoding.UTF8.GetByteCount(whitespace);
         var item = new Bullet
         {

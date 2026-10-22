@@ -29,13 +29,13 @@ internal sealed class Bullet : Statement
     public List<int> Continuation { get; } = [];
 
     /// <summary>Which of <see cref="Continuation"/> are blank lines, read as empty lines.</summary>
-    public HashSet<int> BlankLines { get; } = [];
+    private HashSet<int> BlankLines { get; } = [];
 
     /// <summary>The nested items, in document order.</summary>
-    public IEnumerable<Bullet> Nested => Children.OfType<Bullet>();
+    private IEnumerable<Bullet> Nested => Children.OfType<Bullet>();
 
     /// <summary>The 0-based line its spans end on: its last continuation line or its last nested item's, whichever is later.</summary>
-    public int LastLine { get; private set; }
+    private int LastLine { get; set; }
 
     /// <summary>A line that is no item and stands while this item is the deepest open one.</summary>
     public void AddLine(int line)

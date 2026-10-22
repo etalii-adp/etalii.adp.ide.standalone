@@ -8,9 +8,6 @@ internal static class Columns
     /// <summary>The columns of a run of spaces and tabs.</summary>
     public static int Of(string whitespace) => whitespace.Sum(character => character == '\t' ? 4 : 1);
 
-    /// <summary>The columns of the whitespace <paramref name="line"/> starts with.</summary>
-    public static int Leading(string line) => Of(line[..(line.Length - line.TrimStart(' ', '\t').Length)]);
-
     /// <summary>
     /// <paramref name="line"/> with the whitespace before <paramref name="column"/> taken off: a line indented
     /// less loses all of it, and a tab the column cuts into is replaced by the spaces that remain of it.
