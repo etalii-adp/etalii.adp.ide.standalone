@@ -53,7 +53,7 @@ internal static class FdgLinkChain
     }
 
     /// <summary>Whether <paramref name="finding"/> is <c>std.acyclic</c>'s cycle of one, a self-link's.</summary>
-    private static bool IsSelfLoop(DislFinding finding) => finding.ConstraintId == "std.acyclic" && finding.ElementIds.Count == 1;
+    private static bool IsSelfLoop(DislFinding finding) => finding is { ConstraintId: "std.acyclic", ElementIds.Count: 1 };
 
     /// <summary>A link finding's place in the chain: dangling, self, unknown relation, inadmissible pair; null for any other finding.</summary>
     private static int? Rank(DislFinding finding) => finding.ConstraintId switch
