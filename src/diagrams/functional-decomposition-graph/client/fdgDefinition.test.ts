@@ -4,9 +4,10 @@ import { FDG_DEFINITION } from "./FdgCanvas";
 import { FDG_ACTION_IDS, FDG_PROPERTY_IDS } from "./fdgIds";
 
 /**
- * Requirement 5's rules table, as the requirements state it. The backend states it once in
- * `FdgRelations`; the canvas states it in its declarations; this copy is what both are held to on
- * the client's side.
+ * Requirement 5's rules table, as the requirements state it. The bundled definition
+ * (`definition/functional-decomposition-graph.dis`) states it once, for the backend and for the canvas,
+ * which compiles it; the backend's former `FdgRelations` is kept in its test project as the oracle; this
+ * copy is what the canvas is held to on the client's side.
  */
 const RULES = [
   { id: "ui-child", sources: ["ui-element"], target: "ui-element", cardinality: { maxIntoTarget: 1 } },
