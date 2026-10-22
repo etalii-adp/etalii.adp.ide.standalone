@@ -49,7 +49,7 @@ One Developer owns this specification, per CLAUDE.md's one-owner-per-specificati
 
 ## The tasks
 
-- [ ] 1. Freeze the four parity transcripts from today's code
+- [-] 1. Freeze the four parity transcripts from today's code
   - Files: `src/diagrams/rdf/backend/EtAlii.Adp.Diagram.Rdf.Tests/Parity/RdfCorpus.cs` (new), `Parity/RdfTranscript.cs` (new), `Parity/RdfTranscript.Tests.cs` (new), `Parity/TranscriptText.cs` (new), `Parity/rdf.transcript.json`, `Parity/owl.transcript.json`, `Parity/shacl.transcript.json`, `Parity/skos.transcript.json` (new), `Fixtures/*.ttl`, `Fixtures/*.nt` and `Fixtures/*.adp` (new), `EtAlii.Adp.Diagram.Rdf.Tests.csproj`
   - Write the generator in the shape of the timeline's, one JSON file per reading: per document the menus (every element id, the empty canvas, a placement, a connect gesture, an unknown id), the rows, the findings, the payload of every mapped element, and a scripted edit sequence running every command once, with each step's answer, the hunks it made, and one undo.
   - Every document of the corpus is in all four transcripts, so an entry one reading shows under another is recorded before Q4 removes it.
