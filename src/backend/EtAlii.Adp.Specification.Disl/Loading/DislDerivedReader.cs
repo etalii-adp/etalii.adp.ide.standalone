@@ -4,8 +4,9 @@ using EtAlii.Adp.Specification.Json;
 namespace EtAlii.Adp.Specification.Disl;
 
 /// <summary>
-/// Reads what the metamodel derives (DISL §4.3, §4.9, §4.11.3) over the programs the loader compiled: each derived
-/// attribute's program, each attribute's own <c>readOnlyReasons</c>, and each derived relation type's <c>derived</c> as a <see cref="DislDerivedRelation"/>.
+/// Reads what the metamodel derives (DISL §4.3, §4.9, §4.11) over the programs the loader compiled: each derived
+/// attribute's program, each attribute's own <c>readOnlyReasons</c>, each derived node type's <c>derived</c> as a
+/// <see cref="DislDerivedNode"/> and each derived relation type's as a <see cref="DislDerivedRelation"/>.
 /// </summary>
 /// <remarks>
 /// A position is given the program compiled at exactly its pointer, as the model looked it up when it read the JSON
@@ -34,10 +35,28 @@ internal static class DislDerivedReader
                 }
             }
         }
+        foreach (var type in metamodel.Types.Values)
+        {
+            type.DerivedNode = Node(specification, type);
+        }
         foreach (var relation in metamodel.Relations.Values)
         {
             relation.DerivedRelation = Relation(specification, relation);
         }
+    }
+
+    private static DislDerivedNode? Node(DislSpecification specification, DislType type)
+    {
+        if (type.Derived is not { ValueKind: JsonValueKind.Object } derived) return null;
+        var pointer = JsonPointer.Append(JsonPointer.Append("/metamodel/types", type.Name), "derived");
+        return new DislDerivedNode(
+            Field(specification, JsonPointer.Append(pointer, "from")),
+            Optional(specification, derived, pointer, "key"),
+            Field(specification, JsonPointer.Append(pointer, "id")),
+            Optional(specification, derived, pointer, "parent"),
+            Optional(specification, derived, pointer, "slot"),
+            Optional(specification, derived, pointer, "sources"),
+            [.. DislJson.Members(derived, "attributes").Select(attribute => (attribute.Name, Field(specification, JsonPointer.Append(JsonPointer.Append(pointer, "attributes"), attribute.Name))))]);
     }
 
     private static DislDerivedRelation? Relation(DislSpecification specification, DislType relation)
