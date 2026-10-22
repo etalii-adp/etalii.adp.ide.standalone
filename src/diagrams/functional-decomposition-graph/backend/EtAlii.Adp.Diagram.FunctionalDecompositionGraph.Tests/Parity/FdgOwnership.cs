@@ -2,7 +2,7 @@ namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests.Parity;
 
 /// <summary>
 /// Cycles among the ownership relations. <b>The one cycle implementation.</b>
-/// <para>Kept verbatim as the oracle the definition's findings and refusals are compared with (functional-decomposition-graph-disl-fbl task 7).</para>
+/// <para>Kept as the oracle the definition's findings and refusals are compared with (functional-decomposition-graph-disl-fbl task 7), verbatim but for <see cref="CyclesIn"/>, which reports every elementary loop since the ruling of 2026-10-22.</para>
 /// </summary>
 /// <remarks>
 /// <para>
@@ -28,17 +28,36 @@ namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests.Parity;
 /// </remarks>
 public static class FdgOwnership
 {
-    /// <summary>Every ownership cycle in the model, each as its members in order.</summary>
+    /// <summary>
+    /// Every elementary ownership cycle in the model, each as its members in order, in the order
+    /// <c>diagram.cycles</c> gives them (DISL 12.4): by their member first in document order, then by
+    /// member order.
+    /// </summary>
+    /// <remarks>
+    /// <b>Every elementary loop, ruled by the user on 2026-10-22</b> (functional-decomposition-graph-disl-fbl,
+    /// "Report all"). Until then this was a walk that visited each element once and reported a loop where
+    /// it met its own path, which never reaches a loop through an element it already visited from another:
+    /// in <c>ownership-loops-sharing-a-member.fdg</c> it found g1 -> g2 -> g3 -> g1 and missed
+    /// g1 -> g4 -> g2 -> g3 -> g1. Only elements are members: an end that names no element is a dangling
+    /// reference, and closes no loop.
+    /// </remarks>
     public static IReadOnlyList<IReadOnlyList<string>> CyclesIn(FdgModel model)
     {
         ArgumentNullException.ThrowIfNull(model);
+
+        // Each id at the place of its first holder, as the model finds an element.
+        Dictionary<string, int> place = new(StringComparer.Ordinal);
+        foreach (var element in model.Elements)
+        {
+            place.TryAdd(element.Id, place.Count);
+        }
 
         // Only the four that own. A connection naming an unknown relation contributes no edge:
         // it is reported as a forbidden link, and guessing which relation the author meant would
         // be inventing ownership the document does not state.
         var edges = model.Connections
             .Where(connection => FdgRelations.ById(connection.Type) is { IsOwnership: true })
-            .Where(connection => !string.IsNullOrEmpty(connection.From) && !string.IsNullOrEmpty(connection.To))
+            .Where(connection => place.ContainsKey(connection.From) && place.ContainsKey(connection.To))
             // A SELF-EDGE IS NOT AN OWNERSHIP LOOP HERE, and leaving it in was measured rather
             // than reasoned about: the self-link fixture reported BOTH `fdg.self-link` and an
             // `fdg.ownership-cycle` reading "Ownership loops: u1 -> u1". Two findings for one
@@ -46,58 +65,49 @@ public static class FdgOwnership
             // element and itself, which is what `fdg.self-link` already says precisely. The
             // specific rule owns it; this one reports loops between DISTINCT elements.
             .Where(connection => !string.Equals(connection.From, connection.To, StringComparison.Ordinal))
-            .GroupBy(connection => connection.From, StringComparer.Ordinal)
-            .ToDictionary(
-                group => group.Key,
-                group => group.Select(connection => connection.To).Distinct(StringComparer.Ordinal).ToList(),
-                StringComparer.Ordinal);
+            .GroupBy(connection => place[connection.From])
+            .ToDictionary(group => group.Key, group => group.Select(connection => place[connection.To]).Distinct().ToList());
 
-        HashSet<string> visited = new(StringComparer.Ordinal);
-        HashSet<string> onPath = new(StringComparer.Ordinal);
-        List<string> path = [];
-        Dictionary<string, IReadOnlyList<string>> found = new(StringComparer.Ordinal);
-
-        foreach (var start in edges.Keys)
+        // Each elementary cycle once, from its member first in document order: from every start, the
+        // paths through later members only that come back to it.
+        List<List<int>> found = [];
+        List<int> path = [];
+        HashSet<int> onPath = [];
+        for (var start = 0; start < place.Count; start++)
         {
-            Walk(start);
+            Walk(start, start);
         }
 
-        return [.. found.Values];
+        var names = place.OrderBy(entry => entry.Value).Select(entry => entry.Key).ToList();
+        return
+        [
+            .. found
+                .OrderBy(cycle => cycle, Comparer<List<int>>.Create(Lexicographic))
+                .Select(cycle => Normalise([.. cycle.Select(at => names[at])])),
+        ];
 
-        void Walk(string node)
+        void Walk(int start, int node)
         {
-            if (onPath.Contains(node))
-            {
-                // The loop is the tail of the current path from where this node first appears.
-                var at = path.IndexOf(node);
-                if (at >= 0)
-                {
-                    var cycle = path.GetRange(at, path.Count - at);
-                    var key = Normalise(cycle);
-                    found.TryAdd(string.Join('\u0000', key), key);
-                }
-
-                return;
-            }
-
-            if (!visited.Add(node))
-            {
-                return;
-            }
-
-            onPath.Add(node);
             path.Add(node);
-
-            if (edges.TryGetValue(node, out var next))
+            onPath.Add(node);
+            foreach (var child in edges.GetValueOrDefault(node) ?? [])
             {
-                foreach (var child in next)
-                {
-                    Walk(child);
-                }
+                if (child == start) found.Add([.. path]);
+                else if (child > start && !onPath.Contains(child)) Walk(start, child);
             }
 
             path.RemoveAt(path.Count - 1);
             onPath.Remove(node);
+        }
+
+        static int Lexicographic(List<int> one, List<int> other)
+        {
+            for (var i = 0; i < Math.Min(one.Count, other.Count); i++)
+            {
+                if (one[i] != other[i]) return one[i].CompareTo(other[i]);
+            }
+
+            return one.Count.CompareTo(other.Count);
         }
     }
 
@@ -107,8 +117,7 @@ public static class FdgOwnership
     /// </summary>
     /// <remarks>
     /// <b>A reachability question, asked here rather than of <see cref="CyclesIn"/>.</b> That function
-    /// reports the cycles a document HAS, through a walk that visits each element once; asked of a
-    /// document that is already broken, it can report an old loop and never reach the new one. A link
+    /// reports the cycles a document HAS, and enumerating them is costly where reachability is not. A link
     /// closes a cycle exactly when its target already leads back to its source, and that has one
     /// exact answer. Kept in this file so the ownership rule stays in one place: the same four
     /// relations, `shows` excluded, and self-edges excluded as <see cref="CyclesIn"/> excludes them.
