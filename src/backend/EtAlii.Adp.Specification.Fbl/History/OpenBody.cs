@@ -70,6 +70,20 @@ public sealed class OpenBody : SplicedFile
     }
 
     /// <summary>
+    /// Plans and applies <paramref name="change"/> when <paramref name="current"/>, the file as it is now on disk or in
+    /// another editor's buffer, is the bytes it is planned against (FBL 0.7 §7.2). When it is not, the edit is refused
+    /// with <see cref="SplicedFile.DriftEdit"/>, nothing is written, and the body is read again from
+    /// <paramref name="current"/> (FBL §7.3).
+    /// </summary>
+    public PlanResult Change(ModelChange change, byte[] current)
+    {
+        ArgumentNullException.ThrowIfNull(current);
+        if (current.AsSpan().SequenceEqual(Bytes)) return Change(change);
+        Reload(current);
+        return new PlanResult.Refused(DriftEdit);
+    }
+
+    /// <summary>
     /// Hands the body's bytes to <paramref name="write"/>, the host's atomic writer (FBL §6.6), which in
     /// this repository is the host's <c>IFileWriter</c>. The library writes no file itself: it references no
     /// project of the solution, and a second temp-then-move beside the central one is what the

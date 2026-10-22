@@ -48,6 +48,7 @@ internal static class BindingReader
             Comment = JsonProperties.String(json, "comment"),
             ReportUnmatched = JsonProperties.String(json, "unmatched") == "report",
             Blocks = Array(json, "blocks").Select(b => new BlockRule(JsonProperties.String(b, "name") ?? "", JsonProperties.String(b, "line") ?? "", OptionalStrings(b, "within"), JsonProperties.Bool(b, "caseInsensitive"), JsonProperties.String(b, "view"))).ToList(),
+            Sections = Array(json, "sections").Select(section => new SectionRule(JsonProperties.String(section, "name") ?? "", JsonProperties.String(section, "heading") ?? "", JsonProperties.Bool(section, "caseInsensitive"))).ToList(),
             Elements = ReadRules(json, "elements", false, pointer, problems),
             Relations = ReadRules(json, "relations", true, pointer, problems),
             Registration = ReadRegistration(json, pointer, problems),
@@ -137,6 +138,7 @@ internal static class BindingReader
         "xml" => Family.Xml,
         "lines" => Family.Lines,
         "blocks" => Family.Blocks,
+        "bullets" => Family.Bullets,
         _ => null,
     };
 
@@ -306,6 +308,7 @@ internal static class BindingReader
         if (JsonProperties.String(json, "parent") is { } parent) kinds.Add(new SlotKind.Parent(parent));
         if (JsonProperties.String(json, "capture") is { } capture) kinds.Add(new SlotKind.Capture(capture));
         if (JsonProperties.String(json, "value") is { } value) kinds.Add(new SlotKind.Value(value));
+        if (JsonProperties.Bool(json, "continuation")) kinds.Add(new SlotKind.Continuation());
         if (kinds is [var kind]) return kind;
         problems.Add(new LoadDiagnostic(pointer, LoadSeverity.Error, problem));
         return null;

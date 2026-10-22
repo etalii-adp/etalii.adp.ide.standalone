@@ -146,39 +146,49 @@ internal static class NewText
     public static string Render(string template, Func<string, string?> value)
     {
         var output = new StringBuilder();
+        var start = 0;
         var i = 0;
         while (i < template.Length)
         {
-            var c = template[i];
-            if (c == '[')
+            if (IsEscape(template, i))
             {
-                var close = template.IndexOf(']', i + 1);
-                if (close > 0)
+                i += 2;
+                continue;
+            }
+            if (template[i] == '[' && Unescaped(template, ']', i + 1) is var close and >= 0)
+            {
+                output.Append(RenderPart(template[start..i], value));
+                var complete = true;
+                var rendered = RenderPart(template[(i + 1)..close], name =>
                 {
-                    var segment = template[(i + 1)..close];
-                    var complete = true;
-                    var rendered = RenderPart(segment, name =>
-                    {
-                        var v = value(name);
-                        if (string.IsNullOrEmpty(v)) complete = false;
-                        return v;
-                    });
-                    if (complete) output.Append(rendered);
-                    i = close + 1;
-                    continue;
-                }
+                    var v = value(name);
+                    if (string.IsNullOrEmpty(v)) complete = false;
+                    return v;
+                });
+                if (complete) output.Append(rendered);
+                i = close + 1;
+                start = i;
+                continue;
             }
-            var next = template.IndexOf('[', i);
-            var end = next < 0 ? template.Length : next;
-            output.Append(RenderPart(template[i..end], value));
-            i = end;
-            if (next >= 0 && template.IndexOf(']', next + 1) < 0)
-            {
-                output.Append('[');
-                i++;
-            }
+            i++;
         }
+        output.Append(RenderPart(template[start..], value));
         return output.ToString();
+    }
+
+    /// <summary>Whether <paramref name="template"/> holds <c>\[</c> or <c>\]</c> at <paramref name="at"/>: a literal bracket (FBL 0.7 §6.2).</summary>
+    private static bool IsEscape(string template, int at) =>
+        template[at] == '\\' && at + 1 < template.Length && template[at + 1] is '[' or ']';
+
+    /// <summary>The index of the next <paramref name="bracket"/> from <paramref name="from"/> that is not escaped, or -1.</summary>
+    private static int Unescaped(string template, char bracket, int from)
+    {
+        for (var i = from; i < template.Length; i++)
+        {
+            if (IsEscape(template, i)) i++;
+            else if (template[i] == bracket) return i;
+        }
+        return -1;
     }
 
     private static string RenderPart(string part, Func<string, string?> value)
@@ -187,6 +197,12 @@ internal static class NewText
         var i = 0;
         while (i < part.Length)
         {
+            if (IsEscape(part, i))
+            {
+                output.Append(part[i + 1]);
+                i += 2;
+                continue;
+            }
             if (part[i] == '{')
             {
                 var close = part.IndexOf('}', i + 1);
@@ -216,7 +232,12 @@ internal static class NewText
         for (var i = 0; i < template.Length; i++)
         {
             var c = template[i];
-            if (c == '[' && segment < 0 && template.IndexOf(']', i + 1) > 0)
+            if (IsEscape(template, i))
+            {
+                literal.Append(template[++i]);
+                continue;
+            }
+            if (c == '[' && segment < 0 && Unescaped(template, ']', i + 1) > 0)
             {
                 Flush();
                 segment = segments++;
