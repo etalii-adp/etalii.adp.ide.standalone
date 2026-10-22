@@ -38,7 +38,7 @@ public class StdFacetsTests
     private static string Line(DislFinding finding) =>
         $"{finding.Line} | {finding.Code} | {finding.Severity} | {finding.Message} | {string.Join(",", finding.ElementIds)}";
 
-    private static DislElement Node(DislDiagram diagram, string type, string id, int line, Dictionary<string, object?> attributes) =>
+    private static void Node(DislDiagram diagram, string type, string id, int line, Dictionary<string, object?> attributes) =>
         diagram.Add(new DislElement(diagram, diagram.Specification.Metamodel.TypeOf(type)!, id, attributes) { Line = line });
 
     private static IEnumerable<string> Facets(DislSpecification specification, DislDiagram diagram) =>

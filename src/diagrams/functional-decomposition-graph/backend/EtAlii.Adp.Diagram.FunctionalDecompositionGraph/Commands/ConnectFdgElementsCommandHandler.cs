@@ -16,9 +16,7 @@ public sealed class ConnectFdgElementsCommandHandler(IFdgDocumentStore documents
     /// <inheritdoc />
     protected override EditOutcome Apply(LineDocument document, FdgModel model, ConnectFdgElementsCommand command)
     {
-        // Checked against the document as it is now, never against what the client believed.
-        var refusal = FdgConnectVerdict.RefusalFor(model, command.RelationType, command.FromId, command.ToId);
-        if (refusal is not null)
+        if (RefusalOf(model, command.RelationType, command.FromId, command.ToId) is { } refusal)
         {
             return EditOutcome.Refused(refusal);
         }
@@ -38,5 +36,26 @@ public sealed class ConnectFdgElementsCommandHandler(IFdgDocumentStore documents
             Range: new LineRange(0, 0));
 
         return FdgWriter.Connect(document, model, connection);
+    }
+
+    /// <summary>
+    /// Why a <paramref name="relationType"/> connection from <paramref name="fromId"/> to <paramref name="toId"/>
+    /// may not be made in <paramref name="model"/> as it is now, never as the client believed; null when it may.
+    /// </summary>
+    /// <remarks>
+    /// The two refusals that are not checks are the tool's own: a relation the notation does not have, and an
+    /// end that is no longer an element. The type, cardinality and cycle checks are the definition's, in that
+    /// order (<see cref="FdgDefinition.ConnectRefusal"/>).
+    /// </remarks>
+    internal static string? RefusalOf(FdgModel model, string relationType, string fromId, string toId)
+    {
+        if (FdgDisl.RelationTypeOf(relationType) is not { } type)
+        {
+            return $"This notation has no `{relationType}` relation.";
+        }
+
+        return FdgDefinition.EndOf(model, fromId) is not { } from || FdgDefinition.EndOf(model, toId) is not { } to
+            ? "That link names an element that is no longer in this graph."
+            : FdgDefinition.ConnectRefusal(model, type, from, to);
     }
 }

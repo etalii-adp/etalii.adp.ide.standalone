@@ -19391,8 +19391,8 @@
         {
           "do": "findings under a culture whose decimal separator is a comma",
           "findings": [
-            "line 4 | Warning | fdg.unreadable-entry | `w` is 12,5 wide; the minimum is 80.",
-            "line 10 | Warning | fdg.unreadable-entry | `c` is 30,5 tall; a Comment's minimum is 48."
+            "line 4 | Warning | fdg.unreadable-entry | `w` is 12.5 wide; the minimum is 80.",
+            "line 10 | Warning | fdg.unreadable-entry | `c` is 30.5 tall; a Comment's minimum is 48."
           ]
         }
       ],

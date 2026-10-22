@@ -58,6 +58,13 @@ internal static class FdgDisl
         [FdgConnectionTypes.Shows] = "Shows",
     };
 
+    /// <summary>The relation type a connection's <c>type:</c> names (<c>ui-child</c> is <c>UiChild</c>); null for one the notation does not have.</summary>
+    public static string? RelationTypeOf(string documentType) => _relationTypes.GetValueOrDefault(documentType);
+
+    /// <summary>The document's spelling of a relation type (<c>UiChild</c> is <c>ui-child</c>); the name itself for one it does not spell.</summary>
+    public static string DocumentTypeOf(string relationType) =>
+        _relationTypes.FirstOrDefault(pair => pair.Value == relationType).Key ?? relationType;
+
     /// <summary>The model of <paramref name="model"/>, built once per parsed model; read it, never change it.</summary>
     public static DislDiagram Of(FdgModel model)
     {

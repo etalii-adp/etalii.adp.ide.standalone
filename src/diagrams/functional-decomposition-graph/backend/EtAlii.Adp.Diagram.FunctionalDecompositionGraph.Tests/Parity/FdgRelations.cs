@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
+namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests.Parity;
 
 /// <summary>One relation's rule: who may be its source, who may be its target, and how many.</summary>
 /// <param name="Id">The relation id, which is also the connection's <c>type</c> in the document.</param>
@@ -17,6 +17,7 @@ public sealed record FdgRelation(
 
 /// <summary>
 /// Requirement 5's table, as data, stated once on the backend.
+/// <para>Kept verbatim as the oracle the definition's findings and refusals are compared with (functional-decomposition-graph-disl-fbl task 7).</para>
 /// </summary>
 /// <remarks>
 /// <para>
