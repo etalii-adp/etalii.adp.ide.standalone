@@ -132,7 +132,7 @@ public sealed class DislType
     /// <summary>Its <c>icon</c>, read at load; null when it states none.</summary>
     internal string? Icon { get; }
 
-    /// <summary>A relation type's <c>allowSelfLoops</c> (§4.9) when it states it as a boolean; null otherwise.</summary>
+    /// <summary>A relation type's <c>allowSelfLoops</c> (§4.9) when it states it as a boolean; null otherwise, which forbids a loop (its default is false).</summary>
     internal bool? AllowSelfLoops { get; }
 
     /// <summary>A relation type's <c>allowParallel</c> (§4.9) when it states it as a boolean; null otherwise.</summary>

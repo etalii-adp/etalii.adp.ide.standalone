@@ -208,7 +208,7 @@ public static class GestureConstraintEvaluator
             string? violation =
                 !Allows(type.Source, source) ? "source"
                 : !Allows(type.Target, target) ? "target"
-                : ReferenceEquals(source, target) && !(type.AllowSelfLoops ?? true) ? "selfLoop"
+                : ReferenceEquals(source, target) && !(type.AllowSelfLoops ?? false) ? "selfLoop"
                 : !(type.AllowParallel ?? true) && Others().Any(Parallel) ? "parallel"
                 : null;
             if (violation is null) return null;
