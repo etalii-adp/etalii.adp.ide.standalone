@@ -359,8 +359,9 @@ internal static partial class BindingReader
     {
         var place = json.TryGetProperty("place", out var p) ? p : default;
         if (JsonProperties.String(json, "at") == "end") return new CreateChild("", ChildPlace.Last, null, true);
-        if (place.ValueKind == JsonValueKind.Object) return new CreateChild(JsonProperties.String(json, "emit") ?? "", ChildPlace.Before, JsonProperties.String(place, "before"));
-        return new CreateChild(JsonProperties.String(json, "emit") ?? "", Setting<ChildPlace>(json, "place", pointer, "A child's place", problems) ?? ChildPlace.Last, null);
+        return place.ValueKind == JsonValueKind.Object
+            ? new CreateChild(JsonProperties.String(json, "emit") ?? "", ChildPlace.Before, JsonProperties.String(place, "before"))
+            : new CreateChild(JsonProperties.String(json, "emit") ?? "", Setting<ChildPlace>(json, "place", pointer, "A child's place", problems) ?? ChildPlace.Last, null);
     }
 
     /// <summary>

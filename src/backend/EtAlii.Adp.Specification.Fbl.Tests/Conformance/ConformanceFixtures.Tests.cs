@@ -325,8 +325,7 @@ public class ConformanceFixturesTests
         if (edit.TryGetProperty("save", out _)) return new ModelChange.Save();
         if (edit.TryGetProperty("set", out var set))
         {
-            if (set.TryGetProperty("occurrence", out _)) throw new NotSupportedException("A fixture edit naming an occurrence is not run yet.");
-            return new ModelChange.Set(set.GetProperty("element").GetString()!, Attributes(set.GetProperty("attributes")));
+            return set.TryGetProperty("occurrence", out _) ? throw new NotSupportedException("A fixture edit naming an occurrence is not run yet.") : new ModelChange.Set(set.GetProperty("element").GetString()!, Attributes(set.GetProperty("attributes")));
         }
         if (edit.TryGetProperty("add", out var add))
         {
@@ -370,8 +369,9 @@ public class ConformanceFixturesTests
         if (position.TryGetProperty("index", out var index)) return index.GetInt32();
         var siblings = model?.Elements.Where(element => element.ParentId == parent && element.Type == type).Select(element => element.Id).ToList() ?? [];
         if (position.TryGetProperty("after", out var after)) return Place(after.GetString()!) + 1;
-        if (position.TryGetProperty("before", out var before)) return Place(before.GetString()!);
-        throw new InvalidOperationException($"Unknown fixture position: {position}.");
+        return position.TryGetProperty("before", out var before)
+            ? Place(before.GetString()!)
+            : throw new InvalidOperationException($"Unknown fixture position: {position}.");
 
         int Place(string sibling) =>
             siblings.IndexOf(sibling) is var at and >= 0 ? at : throw new InvalidOperationException($"The position names '{sibling}', which is no sibling here.");

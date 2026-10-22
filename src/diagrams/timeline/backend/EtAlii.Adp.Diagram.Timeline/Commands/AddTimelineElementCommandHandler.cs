@@ -29,13 +29,10 @@ public sealed class AddTimelineElementCommandHandler(ITimelineDocumentStore docu
     /// <inheritdoc />
     protected override EditOutcome Apply(TimelineBody body, TimelineModel model, AddTimelineElementCommand command)
     {
-        if (TimelineEdits.ElementOf(model, command.Id) is not null)
-        {
+        return TimelineEdits.ElementOf(model, command.Id) is not null
             // Redo lands here when the element survived - re-adding it would duplicate the id.
-            return EditOutcome.Refused("An element with that id is already in this timeline.");
-        }
-
-        return TimelineEdits.AddElement(body, command.Id, command.Label, command.Begin, command.End, command.Row);
+            ? EditOutcome.Refused("An element with that id is already in this timeline.")
+            : TimelineEdits.AddElement(body, command.Id, command.Label, command.Begin, command.End, command.Row);
     }
 
     private static bool Inverted(AddTimelineElementCommand command)
