@@ -1,5 +1,6 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Specification.Disl;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests.Parity;
@@ -23,14 +24,15 @@ public class FdgDerivedMenusTests
     {
         // Arrange.
         (DocumentEntry<LineDocument, FdgModel> readable, DocumentEntry<LineDocument, FdgModel> readOnly) = FdgCorpus.Entries(path);
+        (DocumentEntry<FdgBody, DislModel> derived, DocumentEntry<FdgBody, DislModel> derivedReadOnly) = FdgCorpus.Derived(path);
 
         // Act and assert.
         foreach (var target in FdgCorpus.Targets(readable.Model))
         {
-            foreach (var entry in new[] { readable, readOnly })
+            foreach ((DocumentEntry<LineDocument, FdgModel> entry, DocumentEntry<FdgBody, DislModel> read) in new[] { (readable, derived), (readOnly, derivedReadOnly) })
             {
                 var expected = HandWrittenFdg.Menus(entry, target);
-                var actual = FdgDefinition.Menus(entry, target);
+                var actual = FdgDefinition.Menus(read, target);
                 Assert.True(
                     expected.Select(Text).SequenceEqual(actual.Select(Text)),
                     $"{path} {target} (read-only: {!entry.IsUsable}):\nexpected {string.Join(" / ", expected.Select(Text))}\nactual   {string.Join(" / ", actual.Select(Text))}");
@@ -44,15 +46,16 @@ public class FdgDerivedMenusTests
     {
         // Arrange.
         (DocumentEntry<LineDocument, FdgModel> readable, DocumentEntry<LineDocument, FdgModel> readOnly) = FdgCorpus.Entries(path);
+        (DocumentEntry<FdgBody, DislModel> derived, DocumentEntry<FdgBody, DislModel> derivedReadOnly) = FdgCorpus.Derived(path);
 
         // Act and assert.
         foreach (var target in FdgCorpus.Targets(readable.Model))
         {
-            foreach (var entry in new[] { readable, readOnly })
+            foreach ((DocumentEntry<LineDocument, FdgModel> entry, DocumentEntry<FdgBody, DislModel> read) in new[] { (readable, derived), (readOnly, derivedReadOnly) })
             {
                 Assert.True(
-                    Equals(HandWrittenFdg.Confirmation(entry, target), FdgDefinition.Confirmation(entry, target)),
-                    $"{path} {target} (read-only: {!entry.IsUsable}):\nexpected {HandWrittenFdg.Confirmation(entry, target)}\nactual   {FdgDefinition.Confirmation(entry, target)}");
+                    Equals(HandWrittenFdg.Confirmation(entry, target), FdgDefinition.Confirmation(read, target)),
+                    $"{path} {target} (read-only: {!entry.IsUsable}):\nexpected {HandWrittenFdg.Confirmation(entry, target)}\nactual   {FdgDefinition.Confirmation(read, target)}");
             }
         }
     }

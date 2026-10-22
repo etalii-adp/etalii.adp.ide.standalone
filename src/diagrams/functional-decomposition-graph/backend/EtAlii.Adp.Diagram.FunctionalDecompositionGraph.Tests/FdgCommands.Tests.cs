@@ -2,6 +2,7 @@ using EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests.Parity;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Specification.Disl;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests;
@@ -256,20 +257,20 @@ public sealed class FdgCommandsTests : IDisposable
     {
         // Arrange: another program holds the file, so the first open cannot read it.
         var store = new FdgDocumentStore(new FileWriter());
-        DocumentEntry<LineDocument, FdgModel> entry;
+        DocumentEntry<FdgBody, DislModel> entry;
         await using (new FileStream(Body, FileMode.Open, FileAccess.Read, FileShare.None))
         {
             entry = await store.GetOrLoadAsync(Body, TestContext.Current.CancellationToken);
         }
 
         Assert.False(entry.IsUsable);
-        Assert.Empty(entry.Model.Elements);
+        Assert.Empty(entry.Model.Diagram.Elements);
 
         // Act: an edit, and a save straight through the store.
         var edited = await new FdgTestDispatcher(store).DispatchAsync(
             new RenameFdgElementCommand(Body, "planning", "Plan"),
             TestContext.Current.CancellationToken);
-        var saved = await store.SaveAsync(Body, LineDocument.Parse("functional-decomposition-graph: 1\r\nelements: []\r\nconnections: []\r\n"), TestContext.Current.CancellationToken);
+        var saved = await store.SaveAsync(Body, FdgBody.Parse("functional-decomposition-graph: 1\r\nelements: []\r\nconnections: []\r\n"), TestContext.Current.CancellationToken);
 
         // Assert: both refused, and the file is still the real diagram.
         Assert.False(edited.IsSuccess);

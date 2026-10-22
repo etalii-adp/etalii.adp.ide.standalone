@@ -3,6 +3,7 @@ using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Specification.Disl;
 
 namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
 
@@ -32,7 +33,7 @@ namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
 /// </para>
 /// </remarks>
 public sealed class FdgContextPropertyProvider(IHistoryStackStore historyStacks, IFdgDocumentStore documents)
-    : DiagramPropertyProvider<LineDocument, FdgModel>(historyStacks, documents)
+    : DiagramPropertyProvider<FdgBody, DislModel>(historyStacks, documents)
 {
     /// <summary>An element's Name, for the four named types.</summary>
     public const string NameProperty = "fdg.name";
@@ -56,16 +57,16 @@ public sealed class FdgContextPropertyProvider(IHistoryStackStore historyStacks,
     protected override bool IsBody(string path) => Diagram.IsBody(path);
 
     /// <inheritdoc />
-    protected override IReadOnlyList<ContextPropertyDefinition> Describe(DocumentEntry<LineDocument, FdgModel> entry, string elementId) =>
+    protected override IReadOnlyList<ContextPropertyDefinition> Describe(DocumentEntry<FdgBody, DislModel> entry, string elementId) =>
         // The definition's form for the element or connection, with the ids of its x-fdg block.
         FdgDefinition.Rows(entry, elementId);
 
     /// <inheritdoc />
-    protected override DiagramPropertyChange Change(ContextTarget target, FdgModel model, string propertyId, string value)
+    protected override DiagramPropertyChange Change(ContextTarget target, DislModel model, string propertyId, string value)
     {
         var body = target.ResolvedFullPath;
         var id = target.ElementId;
-        var element = model.ElementOf(id);
+        var element = FdgDefinition.EndOf(model.Diagram, id);
 
         // A size is validated before any command exists, so the refusal names the value - and an
         // invalid value is never written.
@@ -86,7 +87,7 @@ public sealed class FdgContextPropertyProvider(IHistoryStackStore historyStacks,
             NameProperty or TextProperty when element is not null => new RenameFdgElementCommand(body, id, value),
             DescriptionProperty => new SetFdgDescriptionCommand(body, id, value),
             WidthProperty when element is not null => new SetFdgSizeCommand(body, id, size!.Value),
-            HeightProperty when element is not null => new SetFdgSizeCommand(body, id, element.Width, size!.Value),
+            HeightProperty when element is not null => new SetFdgSizeCommand(body, id, FdgDefinition.NumberOf(element, "width"), size!.Value),
             ConnectionNameProperty => new RenameFdgConnectionCommand(body, id, value),
             _ => null,
         };

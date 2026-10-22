@@ -1,0 +1,257 @@
+{
+  "$schema": "https://etalii.net/adp/fbl/schema/0.1/fbl.schema.json#/$defs/Document",
+  "fbl": "0.8",
+  "doc": "The functional decomposition graph's .fdg body (definitions/diagrams/functional-decomposition-graph.dis, functional-decomposition-graph.md): ADP's own YAML, read through FBL instead of a hand-written parser. An entry's type is a value, so each of the five element types and the five relations is a rule of its own, chosen by its `type:` with `when`, and each writes that value into a new entry with its insert's constant (FBL 0.8 section 6.2), as the entry's second key. An entry whose type the notation does not have is taken by a catch-all rule and stays in the model as UnknownElement or UnknownConnection, so its id is counted and its links are checked. An entry that is not a mapping is taken by the list's not-a-mapping rule. A connection is an element with reference attributes rather than a relation, so one whose end names no element is kept and reported. Every rule reads the id as written as the host attribute storedId, so an id written more than once is reported and an element is found by its first holder. Every value is read as the text it was written with (FBL 0.5 section 5.2): a position and a size too, which the tool converts as it always has, so `x: \"120\"` is 120 and `x: 0x10` is not a number. There is no header, so a missing or other version line raises nothing of FBL's; the tool words those itself. A new entry goes after the last entry of its list whatever its type, as the tool has always added one.",
+  "bindings": {
+    "fdg": {
+      "title": "Functional decomposition graph",
+      "claims": {
+        "extensions": [".fdg"],
+        "origins": ["etalii/functional-decomposition-graph"]
+      },
+      "body": { "kind": "file", "family": "yaml" },
+      "reader": "declared",
+      "text": { "newline": "crlf", "indent": 2, "sequenceIndent": "indented", "finalNewline": true, "quote": "double" },
+      "elements": [
+        {
+          "name": "graph",
+          "type": "Graph",
+          "at": "/",
+          "when": "type(entry) == map",
+          "readOnly": "The graph's version is changed in the file itself.",
+          "attributes": {
+            "version": { "key": "functional-decomposition-graph", "read": "text" }
+          }
+        },
+        {
+          "name": "ui-element",
+          "type": "UiElement",
+          "at": "/elements/*",
+          "when": "type(entry) == map && has(entry.type) && entry.type == 'ui-element'",
+          "id": { "from": { "key": "id" } },
+          "attributes": {
+            "storedId": { "key": "id", "readOnly": true },
+            "unknownKeys": { "value": "entry.filter(k, !(k in ['id', 'type', 'name', 'description', 'text', 'x', 'y', 'width', 'height']))" },
+            "name": { "key": "name", "empty": "keep" },
+            "description": { "key": "description", "read": "text", "empty": "remove" },
+            "x": { "key": "x", "read": "text", "number": { "decimals": 4 } },
+            "y": { "key": "y", "read": "text", "number": { "decimals": 4 } },
+            "width": { "key": "width", "read": "text", "number": { "decimals": 4 } }
+          },
+          "insert": { "place": "end", "container": "/elements", "constant": { "type": "ui-element" }, "keys": ["id", "type", "name", "description", "x", "y", "width"] },
+          "remove": { "cascade": ["ui-child", "owns-action", "owns-data", "owns-function", "shows", "unknown-connection"] }
+        },
+        {
+          "name": "data-element",
+          "type": "DataElement",
+          "at": "/elements/*",
+          "when": "type(entry) == map && has(entry.type) && entry.type == 'data-element'",
+          "id": { "from": { "key": "id" } },
+          "attributes": {
+            "storedId": { "key": "id", "readOnly": true },
+            "unknownKeys": { "value": "entry.filter(k, !(k in ['id', 'type', 'name', 'description', 'text', 'x', 'y', 'width', 'height']))" },
+            "name": { "key": "name", "empty": "keep" },
+            "description": { "key": "description", "read": "text", "empty": "remove" },
+            "x": { "key": "x", "read": "text", "number": { "decimals": 4 } },
+            "y": { "key": "y", "read": "text", "number": { "decimals": 4 } },
+            "width": { "key": "width", "read": "text", "number": { "decimals": 4 } }
+          },
+          "insert": { "place": "end", "container": "/elements", "constant": { "type": "data-element" }, "keys": ["id", "type", "name", "description", "x", "y", "width"] },
+          "remove": { "cascade": ["ui-child", "owns-action", "owns-data", "owns-function", "shows", "unknown-connection"] }
+        },
+        {
+          "name": "action",
+          "type": "Action",
+          "at": "/elements/*",
+          "when": "type(entry) == map && has(entry.type) && entry.type == 'action'",
+          "id": { "from": { "key": "id" } },
+          "attributes": {
+            "storedId": { "key": "id", "readOnly": true },
+            "unknownKeys": { "value": "entry.filter(k, !(k in ['id', 'type', 'name', 'description', 'text', 'x', 'y', 'width', 'height']))" },
+            "name": { "key": "name", "empty": "keep" },
+            "description": { "key": "description", "read": "text", "empty": "remove" },
+            "x": { "key": "x", "read": "text", "number": { "decimals": 4 } },
+            "y": { "key": "y", "read": "text", "number": { "decimals": 4 } },
+            "width": { "key": "width", "read": "text", "number": { "decimals": 4 } }
+          },
+          "insert": { "place": "end", "container": "/elements", "constant": { "type": "action" }, "keys": ["id", "type", "name", "description", "x", "y", "width"] },
+          "remove": { "cascade": ["ui-child", "owns-action", "owns-data", "owns-function", "shows", "unknown-connection"] }
+        },
+        {
+          "name": "function",
+          "type": "Function",
+          "at": "/elements/*",
+          "when": "type(entry) == map && has(entry.type) && entry.type == 'function'",
+          "id": { "from": { "key": "id" } },
+          "attributes": {
+            "storedId": { "key": "id", "readOnly": true },
+            "unknownKeys": { "value": "entry.filter(k, !(k in ['id', 'type', 'name', 'description', 'text', 'x', 'y', 'width', 'height']))" },
+            "name": { "key": "name", "empty": "keep" },
+            "description": { "key": "description", "read": "text", "empty": "remove" },
+            "x": { "key": "x", "read": "text", "number": { "decimals": 4 } },
+            "y": { "key": "y", "read": "text", "number": { "decimals": 4 } },
+            "width": { "key": "width", "read": "text", "number": { "decimals": 4 } }
+          },
+          "insert": { "place": "end", "container": "/elements", "constant": { "type": "function" }, "keys": ["id", "type", "name", "description", "x", "y", "width"] },
+          "remove": { "cascade": ["ui-child", "owns-action", "owns-data", "owns-function", "shows", "unknown-connection"] }
+        },
+        {
+          "name": "comment",
+          "type": "Comment",
+          "at": "/elements/*",
+          "when": "type(entry) == map && has(entry.type) && entry.type == 'comment'",
+          "id": { "from": { "key": "id" } },
+          "attributes": {
+            "storedId": { "key": "id", "readOnly": true },
+            "unknownKeys": { "value": "entry.filter(k, !(k in ['id', 'type', 'name', 'description', 'text', 'x', 'y', 'width', 'height']))" },
+            "strayName": { "key": "name", "readOnly": true },
+            "text": { "key": "text", "read": "text", "style": "literal", "empty": "keep" },
+            "description": { "key": "description", "read": "text", "empty": "remove" },
+            "x": { "key": "x", "read": "text", "number": { "decimals": 4 } },
+            "y": { "key": "y", "read": "text", "number": { "decimals": 4 } },
+            "width": { "key": "width", "read": "text", "number": { "decimals": 4 } },
+            "height": { "key": "height", "read": "text", "number": { "decimals": 4 } }
+          },
+          "insert": { "place": "end", "container": "/elements", "constant": { "type": "comment" }, "keys": ["id", "type", "text", "description", "x", "y", "width", "height"] },
+          "remove": { "cascade": ["ui-child", "owns-action", "owns-data", "owns-function", "shows", "unknown-connection"] }
+        },
+        {
+          "name": "unknown-element",
+          "type": "UnknownElement",
+          "at": "/elements/*",
+          "when": "type(entry) == map",
+          "id": { "from": { "key": "id" } },
+          "readOnly": "This entry's type is not one this notation has, so it is kept as it is.",
+          "attributes": {
+            "storedId": { "key": "id", "readOnly": true },
+            "unknownKeys": { "value": "entry.filter(k, !(k in ['id', 'type', 'name', 'description', 'text', 'x', 'y', 'width', 'height']))" },
+            "documentType": { "key": "type", "read": "text" },
+            "name": { "key": "name" },
+            "description": { "key": "description", "read": "text" },
+            "x": { "key": "x", "read": "text" },
+            "y": { "key": "y", "read": "text" },
+            "width": { "key": "width", "read": "text" }
+          },
+          "remove": { "cascade": ["ui-child", "owns-action", "owns-data", "owns-function", "shows", "unknown-connection"] }
+        },
+        {
+          "name": "element-not-a-mapping",
+          "type": "Unreadable",
+          "at": "/elements/*",
+          "readOnly": "This entry is not a mapping, so it is kept as it is."
+        },
+        {
+          "name": "ui-child",
+          "type": "UiChild",
+          "at": "/connections/*",
+          "when": "type(entry) == map && has(entry.type) && entry.type == 'ui-child'",
+          "id": { "from": { "key": "id" } },
+          "attributes": {
+            "storedId": { "key": "id", "readOnly": true },
+            "unknownKeys": { "value": "entry.filter(k, !(k in ['id', 'type', 'from', 'to', 'name', 'description']))" },
+            "from": { "key": "from", "reference": { "to": ["ui-element", "data-element", "action", "function", "comment", "unknown-element"], "by": "storedId" } },
+            "to": { "key": "to", "reference": { "to": ["ui-element", "data-element", "action", "function", "comment", "unknown-element"], "by": "storedId" } },
+            "name": { "key": "name", "empty": "keep" },
+            "description": { "key": "description", "read": "text", "empty": "remove" }
+          },
+          "insert": { "place": "end", "container": "/connections", "constant": { "type": "ui-child" }, "keys": ["id", "type", "from", "to", "name", "description"] },
+          "remove": {}
+        },
+        {
+          "name": "owns-action",
+          "type": "OwnsAction",
+          "at": "/connections/*",
+          "when": "type(entry) == map && has(entry.type) && entry.type == 'owns-action'",
+          "id": { "from": { "key": "id" } },
+          "attributes": {
+            "storedId": { "key": "id", "readOnly": true },
+            "unknownKeys": { "value": "entry.filter(k, !(k in ['id', 'type', 'from', 'to', 'name', 'description']))" },
+            "from": { "key": "from", "reference": { "to": ["ui-element", "data-element", "action", "function", "comment", "unknown-element"], "by": "storedId" } },
+            "to": { "key": "to", "reference": { "to": ["ui-element", "data-element", "action", "function", "comment", "unknown-element"], "by": "storedId" } },
+            "name": { "key": "name", "empty": "keep" },
+            "description": { "key": "description", "read": "text", "empty": "remove" }
+          },
+          "insert": { "place": "end", "container": "/connections", "constant": { "type": "owns-action" }, "keys": ["id", "type", "from", "to", "name", "description"] },
+          "remove": {}
+        },
+        {
+          "name": "owns-data",
+          "type": "OwnsData",
+          "at": "/connections/*",
+          "when": "type(entry) == map && has(entry.type) && entry.type == 'owns-data'",
+          "id": { "from": { "key": "id" } },
+          "attributes": {
+            "storedId": { "key": "id", "readOnly": true },
+            "unknownKeys": { "value": "entry.filter(k, !(k in ['id', 'type', 'from', 'to', 'name', 'description']))" },
+            "from": { "key": "from", "reference": { "to": ["ui-element", "data-element", "action", "function", "comment", "unknown-element"], "by": "storedId" } },
+            "to": { "key": "to", "reference": { "to": ["ui-element", "data-element", "action", "function", "comment", "unknown-element"], "by": "storedId" } },
+            "name": { "key": "name", "empty": "keep" },
+            "description": { "key": "description", "read": "text", "empty": "remove" }
+          },
+          "insert": { "place": "end", "container": "/connections", "constant": { "type": "owns-data" }, "keys": ["id", "type", "from", "to", "name", "description"] },
+          "remove": {}
+        },
+        {
+          "name": "owns-function",
+          "type": "OwnsFunction",
+          "at": "/connections/*",
+          "when": "type(entry) == map && has(entry.type) && entry.type == 'owns-function'",
+          "id": { "from": { "key": "id" } },
+          "attributes": {
+            "storedId": { "key": "id", "readOnly": true },
+            "unknownKeys": { "value": "entry.filter(k, !(k in ['id', 'type', 'from', 'to', 'name', 'description']))" },
+            "from": { "key": "from", "reference": { "to": ["ui-element", "data-element", "action", "function", "comment", "unknown-element"], "by": "storedId" } },
+            "to": { "key": "to", "reference": { "to": ["ui-element", "data-element", "action", "function", "comment", "unknown-element"], "by": "storedId" } },
+            "name": { "key": "name", "empty": "keep" },
+            "description": { "key": "description", "read": "text", "empty": "remove" }
+          },
+          "insert": { "place": "end", "container": "/connections", "constant": { "type": "owns-function" }, "keys": ["id", "type", "from", "to", "name", "description"] },
+          "remove": {}
+        },
+        {
+          "name": "shows",
+          "type": "Shows",
+          "at": "/connections/*",
+          "when": "type(entry) == map && has(entry.type) && entry.type == 'shows'",
+          "id": { "from": { "key": "id" } },
+          "attributes": {
+            "storedId": { "key": "id", "readOnly": true },
+            "unknownKeys": { "value": "entry.filter(k, !(k in ['id', 'type', 'from', 'to', 'name', 'description']))" },
+            "from": { "key": "from", "reference": { "to": ["ui-element", "data-element", "action", "function", "comment", "unknown-element"], "by": "storedId" } },
+            "to": { "key": "to", "reference": { "to": ["ui-element", "data-element", "action", "function", "comment", "unknown-element"], "by": "storedId" } },
+            "name": { "key": "name", "empty": "keep" },
+            "description": { "key": "description", "read": "text", "empty": "remove" }
+          },
+          "insert": { "place": "end", "container": "/connections", "constant": { "type": "shows" }, "keys": ["id", "type", "from", "to", "name", "description"] },
+          "remove": {}
+        },
+        {
+          "name": "unknown-connection",
+          "type": "UnknownConnection",
+          "at": "/connections/*",
+          "when": "type(entry) == map",
+          "id": { "from": { "key": "id" } },
+          "readOnly": "This entry's relation is not one this notation has, so it is kept as it is.",
+          "attributes": {
+            "storedId": { "key": "id", "readOnly": true },
+            "unknownKeys": { "value": "entry.filter(k, !(k in ['id', 'type', 'from', 'to', 'name', 'description']))" },
+            "documentType": { "key": "type", "read": "text" },
+            "from": { "key": "from", "reference": { "to": ["ui-element", "data-element", "action", "function", "comment", "unknown-element"], "by": "storedId" } },
+            "to": { "key": "to", "reference": { "to": ["ui-element", "data-element", "action", "function", "comment", "unknown-element"], "by": "storedId" } },
+            "name": { "key": "name" },
+            "description": { "key": "description", "read": "text" }
+          },
+          "remove": {}
+        },
+        {
+          "name": "connection-not-a-mapping",
+          "type": "Unreadable",
+          "at": "/connections/*",
+          "readOnly": "This entry is not a mapping, so it is kept as it is."
+        }
+      ],
+      "registration": { "createOnFirstPlacement": false },
+      "template": { "text": "functional-decomposition-graph: 1\r\nelements: []\r\nconnections: []\r\n" }
+    }
+  }
+}

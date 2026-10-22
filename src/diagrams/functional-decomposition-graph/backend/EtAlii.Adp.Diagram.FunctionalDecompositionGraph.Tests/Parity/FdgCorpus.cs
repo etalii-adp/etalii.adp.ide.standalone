@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Specification.Disl;
 using Xunit;
 using Path = System.IO.Path;
 
@@ -19,6 +20,14 @@ internal static class FdgCorpus
     {
         var body = LineDocument.Parse(File.ReadAllText(Path.Combine(FdgTranscript.SourceFolder, relative)));
         var readable = new DocumentEntry<LineDocument, FdgModel>(body, FdgParser.Parse(body));
+        return (readable, readable with { Unreadable = "parity: read-only" });
+    }
+
+    /// <summary>The document at <paramref name="relative"/>, read through the binding as the store reads it now, and the same entry read-only.</summary>
+    public static (DocumentEntry<FdgBody, DislModel> Readable, DocumentEntry<FdgBody, DislModel> ReadOnly) Derived(string relative)
+    {
+        var body = FdgBody.Parse(File.ReadAllText(Path.Combine(FdgTranscript.SourceFolder, relative)));
+        var readable = new DocumentEntry<FdgBody, DislModel>(body, body.Disl);
         return (readable, readable with { Unreadable = "parity: read-only" });
     }
 

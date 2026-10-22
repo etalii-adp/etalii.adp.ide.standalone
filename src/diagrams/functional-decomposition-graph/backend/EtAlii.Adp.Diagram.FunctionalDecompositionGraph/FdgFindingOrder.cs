@@ -13,9 +13,9 @@ namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
 /// words it (ruled by the user in chat, 2026-10-11): module code keeps today's order in all three places.
 /// </para>
 /// <list type="bullet">
-/// <item><b>The reader's findings</b> keep the parser's order - per entry its unknown keys, its type, a
+/// <item><b>The reader's findings</b> keep the order the tool has always given them (<see cref="FdgReaderSentences"/>) - per entry its unknown keys, its type, a
 /// Comment's name, its numbers; the elements, then the connections, then the header - with the
-/// definition's sentence for an unknown type where the parser's stood, and the sizes below their
+/// definition's sentence for an unknown type where the reader's mark stands, and the sizes below their
 /// minimum after all of them.</item>
 /// <item><b>The link findings</b> are one per connection, in document order, whichever of
 /// <c>fdg.dangling-reference</c>, <c>fdg.self-link</c> and <c>fdg.forbidden-link</c> each is.</item>
@@ -35,20 +35,24 @@ internal static class FdgFindingOrder
             ? [.. order.EnumerateArray().Select(code => code.GetString() ?? "")]
             : []);
 
-    /// <summary><paramref name="findings"/>, ordered by <c>constraints.order</c>, in today's order where that order cannot state it.</summary>
-    public static IReadOnlyList<DislFinding> Apply(IReadOnlyList<DislFinding> findings, FdgModel model)
+    /// <summary>
+    /// <paramref name="findings"/>, ordered by <c>constraints.order</c>, in today's order where that order cannot
+    /// state it: the reader's by <paramref name="sentences"/>, the connections' by <paramref name="diagram"/>.
+    /// </summary>
+    public static IReadOnlyList<DislFinding> Apply(IReadOnlyList<DislFinding> findings, IReadOnlyList<FdgReaderSentence> sentences, DislDiagram diagram)
     {
         ArgumentNullException.ThrowIfNull(findings);
-        ArgumentNullException.ThrowIfNull(model);
+        ArgumentNullException.ThrowIfNull(sentences);
+        ArgumentNullException.ThrowIfNull(diagram);
 
         List<DislFinding> ordered = [];
         foreach (var block in findings.GroupBy(finding => Block(finding.Code)).OrderBy(block => block.Key))
         {
             var code = block.First().Code;
             ordered.AddRange(
-                code == UnreadableEntry ? Unreadable([.. block], model)
+                code == UnreadableEntry ? Unreadable([.. block], sentences)
                 : _links.Contains(code) ? block.OrderBy(finding => finding.Line ?? 0)
-                : _cardinality.Contains(code) ? block.OrderBy(finding => Relation(finding, model)).ThenBy(finding => FirstLine(finding, model))
+                : _cardinality.Contains(code) ? block.OrderBy(finding => Relation(finding, diagram)).ThenBy(finding => FirstLine(finding, diagram))
                 : block);
         }
 
@@ -63,20 +67,20 @@ internal static class FdgFindingOrder
         return at < 0 ? int.MaxValue : at;
     }
 
-    /// <summary>The reader's findings in the parser's order, each unknown type's where the parser's sentence stood, then the sizes.</summary>
-    private static IEnumerable<DislFinding> Unreadable(List<DislFinding> block, FdgModel model)
+    /// <summary>The reader's findings in the reader's order, each unknown type's where its mark stands, then the sizes.</summary>
+    private static IEnumerable<DislFinding> Unreadable(List<DislFinding> block, IReadOnlyList<FdgReaderSentence> sentences)
     {
-        var problems = model.Problems.Select((problem, index) => (Problem: problem, Index: index, IsType: FdgReaderSentences.IsTypeSentence(model, problem))).ToList();
-        var handed = problems.Where(entry => !entry.IsType).Select(entry => entry.Index).ToList();
-        var types = problems.Where(entry => entry.IsType).ToList();
+        var marked = sentences.Select((sentence, index) => (Sentence: sentence, Index: index)).ToList();
+        var handed = marked.Where(entry => !entry.Sentence.IsType).Select(entry => entry.Index).ToList();
+        var types = marked.Where(entry => entry.Sentence.IsType).ToList();
 
         var reading = 0;
-        var rest = problems.Count;
+        var rest = sentences.Count;
         return block
             .Select(finding => (Finding: finding, Place: finding.ConstraintId switch
             {
                 "std.unreadableEntry" or "std.unparseable" when reading < handed.Count => handed[reading++],
-                "unknownElementType" or "unknownRelationType" when types.FirstOrDefault(candidate => candidate.Problem.Line + 1 == finding.Line) is { Problem: not null } type => type.Index,
+                "unknownElementType" or "unknownRelationType" when types.FirstOrDefault(candidate => candidate.Sentence.Line + 1 == finding.Line) is { Sentence: not null } type => type.Index,
                 _ => rest++,
             }))
             .ToList()
@@ -84,15 +88,19 @@ internal static class FdgFindingOrder
             .Select(entry => entry.Finding);
     }
 
+    /// <summary>The connection <paramref name="id"/> names: the first written with it.</summary>
+    private static DislElement? ConnectionOf(DislDiagram diagram, string id) =>
+        diagram.Elements.FirstOrDefault(element => element.Type.IsRelation && FdgDefinition.WrittenId(element) == id);
+
     /// <summary>The place of a cardinality finding's relation among the notation's relations.</summary>
-    private static int Relation(DislFinding finding, FdgModel model)
+    private static int Relation(DislFinding finding, DislDiagram diagram)
     {
-        var type = finding.ElementIds.Skip(1).Select(model.ConnectionOf).FirstOrDefault(connection => connection is not null)?.Type;
-        var at = type is null ? -1 : FdgConnectionTypes.All.ToList().IndexOf(type);
+        var type = finding.ElementIds.Skip(1).Select(id => ConnectionOf(diagram, id)).FirstOrDefault(connection => connection is not null)?.Type.Name;
+        var at = type is null ? -1 : FdgReading.RelationTypes.ToList().IndexOf(type);
         return at < 0 ? int.MaxValue : at;
     }
 
     /// <summary>The line of the first connection of a cardinality finding's group.</summary>
-    private static int FirstLine(DislFinding finding, FdgModel model) =>
-        finding.ElementIds.Skip(1).Select(model.ConnectionOf).OfType<FdgConnection>().Select(connection => connection.Range.Start).DefaultIfEmpty(int.MaxValue).Min();
+    private static int FirstLine(DislFinding finding, DislDiagram diagram) =>
+        finding.ElementIds.Skip(1).Select(id => ConnectionOf(diagram, id)?.Line).OfType<int>().DefaultIfEmpty(int.MaxValue).Min();
 }

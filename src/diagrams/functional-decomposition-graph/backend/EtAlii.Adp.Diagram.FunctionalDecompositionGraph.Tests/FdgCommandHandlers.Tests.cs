@@ -1,11 +1,11 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Specification.Disl;
 
 namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests;
 
 /// <summary>What every handler does with a save, through the shared contract (code-structure FR-022).</summary>
-public sealed class FdgCommandHandlersTests : EditHandlerContract<IFdgDocumentStore, LineDocument, FdgModel>
+public sealed class FdgCommandHandlersTests : EditHandlerContract<IFdgDocumentStore, FdgBody, DislModel>
 {
     protected override string Example => FieldServiceExample.Path;
 
@@ -20,5 +20,5 @@ public sealed class FdgCommandHandlersTests : EditHandlerContract<IFdgDocumentSt
     protected override ICommand EditOfMissing(string bodyPath) => new RenameFdgElementCommand(bodyPath, "no-such-element", "Dispatch board");
 
     private sealed class WarningStore(IFdgDocumentStore inner, string warning)
-        : WarningDocumentStore<LineDocument, FdgModel>(inner, warning), IFdgDocumentStore;
+        : WarningDocumentStore<FdgBody, DislModel>(inner, warning), IFdgDocumentStore;
 }

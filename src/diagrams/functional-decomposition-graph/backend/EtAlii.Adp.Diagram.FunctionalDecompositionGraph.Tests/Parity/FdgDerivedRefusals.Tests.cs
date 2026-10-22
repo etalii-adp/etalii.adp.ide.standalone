@@ -20,6 +20,7 @@ public class FdgDerivedRefusalsTests
         // Arrange.
         (DocumentEntry<LineDocument, FdgModel> readable, _) = FdgCorpus.Entries(path);
         var model = readable.Model;
+        var diagram = FdgCorpus.Derived(path).Readable.Model.Diagram;
         List<string> ids = [.. model.Elements.Select(element => element.Id).Distinct(StringComparer.Ordinal), "parity:ghost"];
         List<string> differences = [];
 
@@ -31,7 +32,7 @@ public class FdgDerivedRefusalsTests
                 foreach (var to in ids)
                 {
                     var expected = FdgConnectVerdict.RefusalFor(model, relation, from, to);
-                    var actual = ConnectFdgElementsCommandHandler.RefusalOf(model, relation, from, to);
+                    var actual = ConnectFdgElementsCommandHandler.RefusalOf(diagram, relation, from, to);
                     if (expected != actual) differences.Add($"{relation} {from} -> {to}: expected {expected ?? "allowed"}, actual {actual ?? "allowed"}");
                 }
             }

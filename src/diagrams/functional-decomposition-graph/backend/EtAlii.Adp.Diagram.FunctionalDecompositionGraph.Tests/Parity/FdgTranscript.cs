@@ -4,6 +4,7 @@ using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Specification.Disl;
 using Google.Protobuf.Reflection;
 using Path = System.IO.Path;
 
@@ -244,7 +245,7 @@ internal static class FdgTranscript
         json.WriteLines(await FindingsAsync(session, TranscriptText.Decode(bytes), cancellationToken));
 
         json.WritePropertyName("payloads");
-        json.WriteLines([.. new FdgElementMapper().Visible(model, DiagramViewport.Unbounded)
+        json.WriteLines([.. new FdgElementMapper().Visible(session.Disl, DiagramViewport.Unbounded)
             .Select(element => TranscriptText.PayloadLine(element.Id, element.X, element.Y, element.Type, element.PayloadTypeUrl, element.Payload, _payloadTypes))]);
     }
 
@@ -428,7 +429,11 @@ internal static class FdgTranscript
         /// <summary>Opens the document, as the diagram's first open does; the readings and edits read what it holds.</summary>
         public async Task ReadAsync(CancellationToken cancellationToken) => await Store.GetOrLoadAsync(Body, cancellationToken);
 
-        public FdgModel Model => Store.Get(Body)!.Model;
+        /// <summary>The document as the old reader reads it: what the script picks its targets and edits from, so they stay the ones recorded.</summary>
+        public FdgModel Model => FdgParser.Parse(LineDocument.Parse(Store.Get(Body)!.Document.Text));
+
+        /// <summary>The DISL model the store holds, which the payloads are drawn from.</summary>
+        public DislModel Disl => Store.Get(Body)!.Model;
 
         public ContextTarget Target(string elementId) =>
             ContextTarget.ForElement(Body, elementId, ProjectRoot.From(Folder), origin: Diagram.FunctionalDecompositionGraph.Origin);
@@ -445,11 +450,11 @@ internal static class FdgTranscript
             remove => inner.Changed -= value;
         }
 
-        public async ValueTask<DocumentEntry<LineDocument, FdgModel>> GetOrLoadAsync(string path, CancellationToken cancellationToken) => await inner.GetOrLoadAsync(path, cancellationToken) with { Unreadable = "parity: read-only" };
+        public async ValueTask<DocumentEntry<FdgBody, DislModel>> GetOrLoadAsync(string path, CancellationToken cancellationToken) => await inner.GetOrLoadAsync(path, cancellationToken) with { Unreadable = "parity: read-only" };
 
-        public DocumentEntry<LineDocument, FdgModel>? Get(string path) => inner.Get(path) is { } held ? held with { Unreadable = "parity: read-only" } : null;
+        public DocumentEntry<FdgBody, DislModel>? Get(string path) => inner.Get(path) is { } held ? held with { Unreadable = "parity: read-only" } : null;
 
-        public Task<DocumentSaveResult> SaveAsync(string path, LineDocument document, CancellationToken cancellationToken) => inner.SaveAsync(path, document, cancellationToken);
+        public Task<DocumentSaveResult> SaveAsync(string path, FdgBody document, CancellationToken cancellationToken) => inner.SaveAsync(path, document, cancellationToken);
 
         public void Forget(string path) => inner.Forget(path);
 

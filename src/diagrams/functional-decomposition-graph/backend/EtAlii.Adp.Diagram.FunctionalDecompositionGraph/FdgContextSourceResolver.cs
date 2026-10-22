@@ -1,6 +1,6 @@
 using EtAlii.Adp.Diagram.Modules;
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
+using EtAlii.Adp.Specification.Disl;
 
 namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
 
@@ -27,7 +27,7 @@ namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
 /// or written.
 /// </para>
 /// </remarks>
-public sealed class FdgContextSourceResolver : DiagramElementSourceResolver<LineDocument, FdgModel>
+public sealed class FdgContextSourceResolver : DiagramElementSourceResolver<FdgBody, DislModel>
 {
     private readonly FdgElementMapper _mapper;
 
@@ -49,24 +49,27 @@ public sealed class FdgContextSourceResolver : DiagramElementSourceResolver<Line
         "New connection");
 
     /// <inheritdoc />
-    protected override DiagramElement? Drawn(FdgModel model, string elementId) =>
+    protected override DiagramElement? Drawn(DislModel model, string elementId) =>
         _mapper.Visible(model, DiagramViewport.Unbounded).FirstOrDefault(candidate => candidate.Id == elementId);
 
     /// <inheritdoc />
-    protected override (IReadOnlyList<string> Path, string Text)? Describe(FdgModel model, string elementId)
+    protected override (IReadOnlyList<string> Path, string Text)? Describe(DislModel model, string elementId)
     {
         // The first entry with the id, element before connection, as the mapper draws it.
-        var element = model.Elements.FirstOrDefault(candidate => candidate.Id == elementId);
+        var element = FdgDefinition.EndOf(model.Diagram, elementId);
         if (element is not null)
         {
-            var text = element.IsComment ? FirstLineOf(element.Text, "Comment") : Named(element.Name, element.Id);
+            var text = FdgDefinition.IsComment(element)
+                ? FirstLineOf(FdgDefinition.TextOf(element, "text"), "Comment")
+                : Named(FdgDefinition.TextOf(element, "name"), elementId);
             return ([text], text);
         }
 
-        var connection = model.Connections.FirstOrDefault(candidate => candidate.Id == elementId);
+        var connection = FdgDefinition.ConnectionOf(model.Diagram, elementId);
         if (connection is not null)
         {
-            var text = connection.Name.Length > 0 ? connection.Name : $"{connection.From} → {connection.To}";
+            var name = FdgDefinition.TextOf(connection, "name");
+            var text = name.Length > 0 ? name : $"{connection.SourceId} → {connection.TargetId}";
             return ([text], text);
         }
 

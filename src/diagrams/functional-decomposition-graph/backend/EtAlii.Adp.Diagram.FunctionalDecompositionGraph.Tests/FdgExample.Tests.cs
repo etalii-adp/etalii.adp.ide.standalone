@@ -50,7 +50,7 @@ public class FdgExampleTests
     [Fact]
     public void TheValidator_ReportsNothingForTheExample()
     {
-        var breaches = FdgValidator.Validate(Document());
+        var breaches = FdgValidator.Validate(FdgBody.Parse(Document().Text));
 
         Assert.True(
             breaches.Count == 0,
