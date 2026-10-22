@@ -77,7 +77,7 @@ internal static class FdgLinkChain
                              .GroupBy(relation => relation.TargetId!, StringComparer.Ordinal)
                              .Where(group => group.Count() > intoTarget))
                 {
-                    yield return Finding(SecondParent, $"`{group.Key}` has {group.Count()} `{FdgDisl.DocumentTypeOf(type.Name)}` parents; it may have {intoTarget}.", group.Key, [.. group]);
+                    yield return Finding(SecondParent, $"`{group.Key}` has {group.Count()} `{FdgReading.DocumentTypeOf(type.Name)}` parents; it may have {intoTarget}.", group.Key, [.. group]);
                 }
             }
 
@@ -87,7 +87,7 @@ internal static class FdgLinkChain
                              .GroupBy(relation => relation.SourceId!, StringComparer.Ordinal)
                              .Where(group => group.Count() > fromSource))
                 {
-                    yield return Finding(SecondShows, $"`{group.Key}` has {group.Count()} `{FdgDisl.DocumentTypeOf(type.Name)}` links; it may have {fromSource}.", group.Key, [.. group]);
+                    yield return Finding(SecondShows, $"`{group.Key}` has {group.Count()} `{FdgReading.DocumentTypeOf(type.Name)}` links; it may have {fromSource}.", group.Key, [.. group]);
                 }
             }
         }

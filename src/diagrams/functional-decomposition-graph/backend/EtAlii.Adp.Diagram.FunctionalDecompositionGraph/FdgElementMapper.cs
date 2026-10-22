@@ -1,12 +1,13 @@
 using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Layout;
+using EtAlii.Adp.Specification.Disl;
 using Google.Protobuf;
 
 namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
 
 /// <summary>
-/// An <c>.fdg</c> model as the library's elements: the five element types and the five relations,
-/// each as the canvas draws them.
+/// An <c>.fdg</c> body's DISL model as the library's elements: the five element types and the five
+/// relations, each as the canvas draws them.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -67,11 +68,11 @@ public sealed class FdgElementMapper
     /// that overlaps it, and every connection whose span does, together with that connection's two
     /// ends so it never arrives without them.
     /// </summary>
-    public IReadOnlyList<DiagramElement> Visible(FdgModel model, DiagramViewport viewport)
+    public IReadOnlyList<DiagramElement> Visible(DislModel model, DiagramViewport viewport)
     {
         ArgumentNullException.ThrowIfNull(model);
 
-        (IReadOnlyList<FdgElement> elements, IReadOnlyList<FdgConnection> connections) = Drawable(model);
+        (IReadOnlyList<Drawn> elements, IReadOnlyList<DrawnConnection> connections) = Drawable(model.Diagram);
         var byId = elements.ToDictionary(element => element.Id, StringComparer.Ordinal);
 
         var shownIds = elements
@@ -102,20 +103,27 @@ public sealed class FdgElementMapper
     /// <summary>The library type an FDG relation is drawn as.</summary>
     public static string ConnectionTypeOf(string relation) => Prefix + relation;
 
-    private static (IReadOnlyList<FdgElement> Elements, IReadOnlyList<FdgConnection> Connections) Drawable(FdgModel model)
+    private static (IReadOnlyList<Drawn> Elements, IReadOnlyList<DrawnConnection> Connections) Drawable(DislDiagram diagram)
     {
         // One id space across elements and connections, as the rule set checks it: the first entry
-        // with an id is drawn and every later one reusing it is not.
+        // with an id is drawn and every later one reusing it is not. Elements are read before
+        // connections, whatever the document's order.
         var taken = new HashSet<string>(StringComparer.Ordinal);
 
-        var elements = model.Elements
-            .Where(element => element.Id.Length > 0 && FdgElementTypes.IsKnown(element.Type) && taken.Add(element.Id))
+        var elements = diagram.Elements
+            .Where(element => !element.Type.IsRelation)
+            .Select(Drawn.Of)
+            .ToList()
+            .Where(element => element.Id.Length > 0 && FdgReading.ElementTypes.Contains(element.Type) && taken.Add(element.Id))
             .ToList();
 
         var elementIds = elements.Select(element => element.Id).ToHashSet(StringComparer.Ordinal);
-        var connections = model.Connections
+        var connections = diagram.Elements
+            .Where(element => element.Type.IsRelation)
+            .Select(DrawnConnection.Of)
+            .ToList()
             .Where(connection => connection.Id.Length > 0
-                && FdgConnectionTypes.IsKnown(connection.Type)
+                && FdgReading.RelationTypes.Contains(connection.Type)
                 && elementIds.Contains(connection.From)
                 && elementIds.Contains(connection.To)
                 && taken.Add(connection.Id))
@@ -124,11 +132,11 @@ public sealed class FdgElementMapper
         return (elements, connections);
     }
 
-    private static bool Overlaps(FdgElement element, DiagramViewport viewport) =>
-        viewport.Intersects(new Rect(element.X, element.Y, element.Width, element.DrawnHeight));
+    private static bool Overlaps(Drawn element, DiagramViewport viewport) =>
+        viewport.Intersects(new Rect(element.X, element.Y, element.Width, element.Height));
 
-    private static bool SpanOverlaps(FdgElement from, FdgElement to, DiagramViewport viewport) =>
-        viewport.Intersects(Hull(new Rect(from.X, from.Y, from.Width, from.DrawnHeight), new Rect(to.X, to.Y, to.Width, to.DrawnHeight)));
+    private static bool SpanOverlaps(Drawn from, Drawn to, DiagramViewport viewport) =>
+        viewport.Intersects(Hull(new Rect(from.X, from.Y, from.Width, from.Height), new Rect(to.X, to.Y, to.Width, to.Height)));
 
     private static Rect Hull(Rect a, Rect b)
     {
@@ -137,26 +145,26 @@ public sealed class FdgElementMapper
         return new Rect(x, y, Math.Max(a.Right, b.Right) - x, Math.Max(a.Bottom, b.Bottom) - y);
     }
 
-    private static DiagramElement Element(FdgElement element)
+    private static DiagramElement Element(Drawn element)
     {
         // The document holds the top-left; the library draws from the centre.
         var payload = new FdgElementPayload
         {
-            Name = element.IsComment ? "" : element.Name,
-            Text = element.IsComment ? element.Text : "",
+            Name = element.Name,
+            Text = element.Text,
             Width = element.Width,
-            Height = element.DrawnHeight,
+            Height = element.Height,
         };
 
         return Pack(
             element.Id,
             element.X + (element.Width / 2),
-            element.Y + (element.DrawnHeight / 2),
-            ElementTypeOf(element.Type),
+            element.Y + (element.Height / 2),
+            ElementTypeOf(FdgReading.DocumentTypeOf(element.Type)),
             payload);
     }
 
-    private static DiagramElement Connection(FdgConnection connection)
+    private static DiagramElement Connection(DrawnConnection connection)
     {
         // A connection has no position of its own; it follows its ends.
         var payload = new FdgConnectionPayload
@@ -166,9 +174,35 @@ public sealed class FdgElementMapper
             Name = connection.Name,
         };
 
-        return Pack(connection.Id, 0d, 0d, ConnectionTypeOf(connection.Type), payload);
+        return Pack(connection.Id, 0d, 0d, ConnectionTypeOf(FdgReading.DocumentTypeOf(connection.Type)), payload);
     }
 
     private static DiagramElement Pack(string id, double x, double y, string type, IMessage payload) =>
         new(id, x, y, type, $"type.googleapis.com/{payload.Descriptor.FullName}", payload.ToByteArray());
+
+    /// <summary>An element as it is drawn: its written id, its type, its label and its box.</summary>
+    /// <remarks>A Comment shows its text and has its own height; the other four show their name and share <see cref="FdgGeometry.SharedHeight"/>.</remarks>
+    private sealed record Drawn(string Id, string Type, string Name, string Text, double X, double Y, double Width, double Height)
+    {
+        public static Drawn Of(DislElement element)
+        {
+            var isComment = FdgDefinition.IsComment(element);
+            return new Drawn(
+                FdgDefinition.WrittenId(element),
+                element.Type.Name,
+                isComment ? "" : FdgDefinition.TextOf(element, "name"),
+                isComment ? FdgDefinition.TextOf(element, "text") : "",
+                FdgDefinition.NumberOf(element, "x"),
+                FdgDefinition.NumberOf(element, "y"),
+                FdgDefinition.NumberOf(element, "width"),
+                isComment ? FdgDefinition.NumberOf(element, "height") : FdgGeometry.SharedHeight);
+        }
+    }
+
+    /// <summary>A connection as it is drawn: its written id, its relation, its ends as written and its name.</summary>
+    private sealed record DrawnConnection(string Id, string Type, string From, string To, string Name)
+    {
+        public static DrawnConnection Of(DislElement connection) =>
+            new(FdgDefinition.WrittenId(connection), connection.Type.Name, connection.SourceId ?? "", connection.TargetId ?? "", FdgDefinition.TextOf(connection, "name"));
+    }
 }

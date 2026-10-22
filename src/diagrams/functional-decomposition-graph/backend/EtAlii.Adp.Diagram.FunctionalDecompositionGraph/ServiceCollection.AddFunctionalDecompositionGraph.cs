@@ -19,8 +19,8 @@ public static class ServiceCollectionAddFunctionalDecompositionGraphExtension
         ArgumentNullException.ThrowIfNull(services);
 
         // Without a document factory the host refuses to start: a type that declares an extension
-        // must be creatable from the Add dialog.
-        services.AddEmptyDocument(Diagram.FunctionalDecompositionGraph.Origin, FdgParser.EmptyDocument("\r\n"));
+        // must be creatable from the Add dialog. A new document is the binding's template.
+        services.AddEmptyDocument(Diagram.FunctionalDecompositionGraph.Origin, FdgBody.Template);
         services.AddSingleton<FdgElementMapper>();
 
         // One document per path, shared by every connection viewing it. TryAdd rather than Add so a

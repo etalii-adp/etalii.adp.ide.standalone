@@ -4835,7 +4835,7 @@
       ],
       "rows": [],
       "findings": [
-        "line 7 | Warning | fdg.unreadable-entry | The document could not be read as YAML: Duplicate key name"
+        "line 7 | Warning | fdg.unreadable-entry | The document could not be read as YAML: The key 'name' appears again in this mapping; only the first is read."
       ],
       "payloads": [],
       "edits": [
@@ -4886,62 +4886,62 @@
         },
         {
           "do": "command move parity:unknown to (1, 2)",
-          "answer": "refused: key-twice.fdg could not be read, so nothing can be edited until it can: The document could not be read as YAML: Duplicate key name",
+          "answer": "refused: key-twice.fdg could not be read, so nothing can be edited until it can: The document could not be read as YAML: The key 'name' appears again in this mapping; only the first is read.",
           "unchanged": true
         },
         {
           "do": "command size parity:unknown to 100",
-          "answer": "refused: key-twice.fdg could not be read, so nothing can be edited until it can: The document could not be read as YAML: Duplicate key name",
+          "answer": "refused: key-twice.fdg could not be read, so nothing can be edited until it can: The document could not be read as YAML: The key 'name' appears again in this mapping; only the first is read.",
           "unchanged": true
         },
         {
           "do": "command rename connection parity:unknown",
-          "answer": "refused: key-twice.fdg could not be read, so nothing can be edited until it can: The document could not be read as YAML: Duplicate key name",
+          "answer": "refused: key-twice.fdg could not be read, so nothing can be edited until it can: The document could not be read as YAML: The key 'name' appears again in this mapping; only the first is read.",
           "unchanged": true
         },
         {
           "do": "command disconnect parity:unknown",
-          "answer": "refused: key-twice.fdg could not be read, so nothing can be edited until it can: The document could not be read as YAML: Duplicate key name",
+          "answer": "refused: key-twice.fdg could not be read, so nothing can be edited until it can: The document could not be read as YAML: The key 'name' appears again in this mapping; only the first is read.",
           "unchanged": true
         },
         {
           "do": "command remove parity:unknown",
-          "answer": "refused: key-twice.fdg could not be read, so nothing can be edited until it can: The document could not be read as YAML: Duplicate key name",
+          "answer": "refused: key-twice.fdg could not be read, so nothing can be edited until it can: The document could not be read as YAML: The key 'name' appears again in this mapping; only the first is read.",
           "unchanged": true
         },
         {
           "do": "command add ui-element parity-ui-element at (240, 160)",
-          "answer": "refused: key-twice.fdg could not be read, so nothing can be edited until it can: The document could not be read as YAML: Duplicate key name",
+          "answer": "refused: key-twice.fdg could not be read, so nothing can be edited until it can: The document could not be read as YAML: The key 'name' appears again in this mapping; only the first is read.",
           "unchanged": true
         },
         {
           "do": "command add action parity-action at (240, 280)",
-          "answer": "refused: key-twice.fdg could not be read, so nothing can be edited until it can: The document could not be read as YAML: Duplicate key name",
+          "answer": "refused: key-twice.fdg could not be read, so nothing can be edited until it can: The document could not be read as YAML: The key 'name' appears again in this mapping; only the first is read.",
           "unchanged": true
         },
         {
           "do": "command add data-element parity-data-element at (240, 400)",
-          "answer": "refused: key-twice.fdg could not be read, so nothing can be edited until it can: The document could not be read as YAML: Duplicate key name",
+          "answer": "refused: key-twice.fdg could not be read, so nothing can be edited until it can: The document could not be read as YAML: The key 'name' appears again in this mapping; only the first is read.",
           "unchanged": true
         },
         {
           "do": "command add function parity-function at (240, 520)",
-          "answer": "refused: key-twice.fdg could not be read, so nothing can be edited until it can: The document could not be read as YAML: Duplicate key name",
+          "answer": "refused: key-twice.fdg could not be read, so nothing can be edited until it can: The document could not be read as YAML: The key 'name' appears again in this mapping; only the first is read.",
           "unchanged": true
         },
         {
           "do": "command add function parity-function-2 at (240, 640)",
-          "answer": "refused: key-twice.fdg could not be read, so nothing can be edited until it can: The document could not be read as YAML: Duplicate key name",
+          "answer": "refused: key-twice.fdg could not be read, so nothing can be edited until it can: The document could not be read as YAML: The key 'name' appears again in this mapping; only the first is read.",
           "unchanged": true
         },
         {
           "do": "command add comment parity-comment at (520, 160)",
-          "answer": "refused: key-twice.fdg could not be read, so nothing can be edited until it can: The document could not be read as YAML: Duplicate key name",
+          "answer": "refused: key-twice.fdg could not be read, so nothing can be edited until it can: The document could not be read as YAML: The key 'name' appears again in this mapping; only the first is read.",
           "unchanged": true
         },
         {
           "do": "command add ui-element parity-ui-element at (0, 0)",
-          "answer": "refused: key-twice.fdg could not be read, so nothing can be edited until it can: The document could not be read as YAML: Duplicate key name",
+          "answer": "refused: key-twice.fdg could not be read, so nothing can be edited until it can: The document could not be read as YAML: The key 'name' appears again in this mapping; only the first is read.",
           "unchanged": true
         },
         {
@@ -4981,27 +4981,27 @@
         },
         {
           "do": "command connect owns-action parity-ui-element -> parity-action as parity-owns-action",
-          "answer": "refused: key-twice.fdg could not be read, so nothing can be edited until it can: The document could not be read as YAML: Duplicate key name",
+          "answer": "refused: key-twice.fdg could not be read, so nothing can be edited until it can: The document could not be read as YAML: The key 'name' appears again in this mapping; only the first is read.",
           "unchanged": true
         },
         {
           "do": "command connect owns-data parity-action -> parity-data-element as parity-action",
-          "answer": "refused: key-twice.fdg could not be read, so nothing can be edited until it can: The document could not be read as YAML: Duplicate key name",
+          "answer": "refused: key-twice.fdg could not be read, so nothing can be edited until it can: The document could not be read as YAML: The key 'name' appears again in this mapping; only the first is read.",
           "unchanged": true
         },
         {
           "do": "command connect owns-data parity-action -> parity-data-element as parity-owns-data",
-          "answer": "refused: key-twice.fdg could not be read, so nothing can be edited until it can: The document could not be read as YAML: Duplicate key name",
+          "answer": "refused: key-twice.fdg could not be read, so nothing can be edited until it can: The document could not be read as YAML: The key 'name' appears again in this mapping; only the first is read.",
           "unchanged": true
         },
         {
           "do": "command connect owns-function parity-function -> parity-function-2 as parity-owns-function",
-          "answer": "refused: key-twice.fdg could not be read, so nothing can be edited until it can: The document could not be read as YAML: Duplicate key name",
+          "answer": "refused: key-twice.fdg could not be read, so nothing can be edited until it can: The document could not be read as YAML: The key 'name' appears again in this mapping; only the first is read.",
           "unchanged": true
         },
         {
           "do": "command connect shows parity-action -> parity-ui-element as parity-shows",
-          "answer": "refused: key-twice.fdg could not be read, so nothing can be edited until it can: The document could not be read as YAML: Duplicate key name",
+          "answer": "refused: key-twice.fdg could not be read, so nothing can be edited until it can: The document could not be read as YAML: The key 'name' appears again in this mapping; only the first is read.",
           "unchanged": true
         },
         {
@@ -5026,7 +5026,7 @@
         },
         {
           "do": "command disconnect parity-owns-function",
-          "answer": "refused: key-twice.fdg could not be read, so nothing can be edited until it can: The document could not be read as YAML: Duplicate key name",
+          "answer": "refused: key-twice.fdg could not be read, so nothing can be edited until it can: The document could not be read as YAML: The key 'name' appears again in this mapping; only the first is read.",
           "unchanged": true
         },
         {
@@ -5041,7 +5041,7 @@
         },
         {
           "do": "command remove parity-function",
-          "answer": "refused: key-twice.fdg could not be read, so nothing can be edited until it can: The document could not be read as YAML: Duplicate key name",
+          "answer": "refused: key-twice.fdg could not be read, so nothing can be edited until it can: The document could not be read as YAML: The key 'name' appears again in this mapping; only the first is read.",
           "unchanged": true
         }
       ],
@@ -5051,12 +5051,12 @@
           "do": "read u1",
           "rows": [],
           "findings": [
-            "line 7 | Warning | fdg.unreadable-entry | The document could not be read as YAML: Duplicate key name"
+            "line 7 | Warning | fdg.unreadable-entry | The document could not be read as YAML: The key 'name' appears again in this mapping; only the first is read."
           ]
         },
         {
           "do": "command add ui-element second at (240, 160)",
-          "answer": "refused: key-twice.fdg could not be read, so nothing can be edited until it can: The document could not be read as YAML: Duplicate key name",
+          "answer": "refused: key-twice.fdg could not be read, so nothing can be edited until it can: The document could not be read as YAML: The key 'name' appears again in this mapping; only the first is read.",
           "unchanged": true
         }
       ],

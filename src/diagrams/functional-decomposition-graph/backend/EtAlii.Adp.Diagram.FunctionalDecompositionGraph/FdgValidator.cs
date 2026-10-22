@@ -1,5 +1,4 @@
 using EtAlii.Adp.Diagram.Modules;
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Specification.Disl;
 
 namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
@@ -39,15 +38,15 @@ public sealed class FdgValidator : IDiagramValidator
         ArgumentNullException.ThrowIfNull(request);
         cancellationToken.ThrowIfCancellationRequested();
 
-        IReadOnlyList<DiagramProblem> problems = [.. Validate(LineDocument.Parse(request.Document)).Select(ToProblem)];
+        IReadOnlyList<DiagramProblem> problems = [.. Validate(FdgBody.Parse(request.Document)).Select(ToProblem)];
         return ValueTask.FromResult(problems);
     }
 
     /// <summary>Everything wrong with the document, reading problems and rule breaches together.</summary>
-    internal static IReadOnlyList<DislFinding> Validate(LineDocument document)
+    internal static IReadOnlyList<DislFinding> Validate(FdgBody document)
     {
         ArgumentNullException.ThrowIfNull(document);
-        return FdgDefinition.Findings(FdgParser.Parse(document));
+        return FdgDefinition.Findings(document);
     }
 
     private static DiagramProblem ToProblem(DislFinding finding) => new(

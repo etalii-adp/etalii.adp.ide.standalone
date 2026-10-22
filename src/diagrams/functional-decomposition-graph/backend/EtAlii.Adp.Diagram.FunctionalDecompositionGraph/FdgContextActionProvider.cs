@@ -2,6 +2,7 @@ using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Specification.Disl;
 
 namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
 
@@ -33,7 +34,7 @@ namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
 /// </para>
 /// </remarks>
 public sealed class FdgContextActionProvider(IHistoryStackStore historyStacks, IFdgDocumentStore documents)
-    : DiagramActionProvider<LineDocument, FdgModel>(historyStacks, documents)
+    : DiagramActionProvider<FdgBody, DislModel>(historyStacks, documents)
 {
     /// <summary>Rename an element in place - its Name, or a Comment's text.</summary>
     public const string RenameActionId = "fdg.rename";
@@ -57,7 +58,7 @@ public sealed class FdgContextActionProvider(IHistoryStackStore historyStacks, I
     protected override bool IsBody(string path) => Diagram.IsBody(path);
 
     /// <inheritdoc />
-    protected override IReadOnlyList<ContextActionGroupDefinition> Discover(DocumentEntry<LineDocument, FdgModel> entry, string elementId) =>
+    protected override IReadOnlyList<ContextActionGroupDefinition> Discover(DocumentEntry<FdgBody, DislModel> entry, string elementId) =>
         // Derived from the DISL definition: the element's or connection's, the empty canvas's or the
         // connect gesture's menu. Executing an action by id only finds actions its target discovers, so a
         // drop and a finished gesture each discover what may be executed against them.
@@ -66,18 +67,19 @@ public sealed class FdgContextActionProvider(IHistoryStackStore historyStacks, I
     /// <inheritdoc />
     protected override async ValueTask<ContextExecutionResult> RunAsync(
         ContextTarget target,
-        DocumentEntry<LineDocument, FdgModel> entry,
+        DocumentEntry<FdgBody, DislModel> entry,
         string actionId,
         CancellationToken cancellationToken)
     {
         var body = target.ResolvedFullPath;
-        var model = entry.Model;
-        var element = model.ElementOf(target.ElementId);
+        var diagram = entry.Model.Diagram;
+        var element = FdgDefinition.EndOf(diagram, target.ElementId);
+        var isComment = element is not null && FdgDefinition.IsComment(element);
 
         if (actionId.StartsWith(AddPrefix, StringComparison.Ordinal))
         {
             var type = actionId[AddPrefix.Length..];
-            if (!FdgElementTypes.IsKnown(type) || !GestureIds.TryParsePlacement(target.ElementId, out var x, out var y))
+            if (FdgReading.ElementTypeOf(type) is null || !GestureIds.TryParsePlacement(target.ElementId, out var x, out var y))
             {
                 return new ContextExecutionFailed("An element is added by dropping it where it belongs.");
             }
@@ -104,22 +106,22 @@ public sealed class FdgContextActionProvider(IHistoryStackStore historyStacks, I
             // In place, over the element's own label - multiline for a Comment, because its label is the
             // wrapped one.
             RenameActionId when element is not null => new ContextExecutionRequiresInput(new ContextInputRequest(
-                element.IsComment ? "Edit text" : "Rename",
+                isComment ? "Edit text" : "Rename",
                 "mdi-pencil-outline",
-                element.IsComment ? "Text" : "Name",
-                element.IsComment ? element.Text : element.Name,
-                element.IsComment ? "Save" : "Rename",
+                isComment ? "Text" : "Name",
+                FdgDefinition.TextOf(element, isComment ? "text" : "name"),
+                isComment ? "Save" : "Rename",
                 target.ElementId)),
 
-            RenameConnectionActionId when model.ConnectionOf(target.ElementId) is { } connection => new ContextExecutionRequiresInput(new ContextInputRequest(
-                "Rename", "mdi-pencil-outline", "Name", connection.Name, "Rename", target.ElementId)),
+            RenameConnectionActionId when FdgDefinition.ConnectionOf(diagram, target.ElementId) is { } connection => new ContextExecutionRequiresInput(new ContextInputRequest(
+                "Rename", "mdi-pencil-outline", "Name", FdgDefinition.TextOf(connection, "name"), "Rename", target.ElementId)),
 
             // The definition's deletion confirmation: how many connections go with it, asked before it
             // runs; with none, no ceremony - and so the removal happens here.
             RemoveActionId when element is not null =>
-                await RemoveAsync(target, new RemoveFdgElementCommand(body, element.Id), FdgDefinition.Confirmation(entry, target.ElementId), cancellationToken),
+                await RemoveAsync(target, new RemoveFdgElementCommand(body, target.ElementId), FdgDefinition.Confirmation(entry, target.ElementId), cancellationToken),
 
-            DisconnectActionId when model.ConnectionOf(target.ElementId) is not null =>
+            DisconnectActionId when FdgDefinition.ConnectionOf(diagram, target.ElementId) is not null =>
                 await DispatchAsync(target, new DisconnectFdgConnectionCommand(body, target.ElementId), cancellationToken),
 
             RenameActionId or RemoveActionId or RenameConnectionActionId or DisconnectActionId => new ContextExecutionFailed("That is no longer in this graph."),
@@ -129,12 +131,12 @@ public sealed class FdgContextActionProvider(IHistoryStackStore historyStacks, I
     }
 
     /// <inheritdoc />
-    protected override ICommand? CommitCommand(ContextTarget target, FdgModel model, string actionId, string value)
+    protected override ICommand? CommitCommand(ContextTarget target, DislModel model, string actionId, string value)
     {
         var body = target.ResolvedFullPath;
         var id = target.ElementId;
-        var isElement = model.ElementOf(id) is not null;
-        var isConnection = model.ConnectionOf(id) is not null;
+        var isElement = FdgDefinition.EndOf(model.Diagram, id) is not null;
+        var isConnection = FdgDefinition.ConnectionOf(model.Diagram, id) is not null;
 
         return actionId switch
         {
