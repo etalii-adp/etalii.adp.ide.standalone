@@ -7,7 +7,7 @@ using Xunit;
 using IoPath = System.IO.Path;
 using Path = EtAlii.Adp.Documents.Wire.Path;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Diagram.DotNetDependencyGraph.Tests;
 
 /// <summary>
 /// A .NET project node, selected through the real host, answers the property grid - whether the tab
