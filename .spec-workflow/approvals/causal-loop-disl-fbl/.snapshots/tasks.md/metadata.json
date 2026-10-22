@@ -1,6 +1,6 @@
 {
   "filePath": ".spec-workflow/specs/causal-loop-disl-fbl/tasks.md",
-  "currentVersion": 2,
+  "currentVersion": 3,
   "snapshots": [
     {
       "version": 1,
@@ -17,6 +17,14 @@
       "trigger": "approved",
       "approvalId": "approval_1791540464953_ut93hyln7",
       "approvalTitle": "tasks.md: converting the causal loop diagram to DISL and FBL"
+    },
+    {
+      "version": 3,
+      "filename": "snapshot-003.json",
+      "timestamp": "2026-10-14T23:31:44.459Z",
+      "trigger": "approved",
+      "approvalId": "approval_1792016337393_v4erw6m1c",
+      "approvalTitle": "tasks.md: causal loop task 11, the remaining provider logic through the definition (as chosen 2026-10-14)"
     }
   ]
 }
