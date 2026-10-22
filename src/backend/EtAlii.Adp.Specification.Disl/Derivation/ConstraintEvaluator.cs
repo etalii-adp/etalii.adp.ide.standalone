@@ -149,7 +149,7 @@ public static class ConstraintEvaluator
                 var type = relation.Type;
                 if (!Allows(type.Source, source)) violations.Add((relation, "source"));
                 if (!Allows(type.Target, target)) violations.Add((relation, "target"));
-                if (ReferenceEquals(source, target) && !(type.AllowSelfLoops ?? true)) violations.Add((relation, "selfLoop"));
+                if (ReferenceEquals(source, target) && !(type.AllowSelfLoops ?? false)) violations.Add((relation, "selfLoop"));
                 if (!(type.AllowParallel ?? true))
                 {
                     var directed = type.Directed ?? true;
