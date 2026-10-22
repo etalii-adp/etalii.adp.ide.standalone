@@ -6,12 +6,12 @@ using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would othe
 namespace EtAlii.Adp.Hierarchy;
 
 /// <summary>
-/// Decides which designer type a file on disk belongs to. A designer's document is always two
-/// files - a registration naming the type on its first line, and the body beside it - so the
-/// only thing that makes a file a designer's is a registration (knowledge-designer
-/// Requirements 2.1 and 10.2). A body is never claimed by its extension: a designer stores its
-/// documents in general formats, and a project is full of <c>.yaml</c> and <c>.json</c> files
-/// that are nobody's table.
+/// Decides which designer type a file on disk belongs to. A designer's document is a registration
+/// naming the type on its first line and the body beside it (knowledge-designer Requirements 2.1
+/// and 10.2), or a body whose own first line is the envelope of a type that claims it by that
+/// envelope (<see cref="DesignerDefinition.Claim"/>, spec 029 R3). A body is never claimed by its
+/// extension alone: a designer stores its documents in general formats, and a project is full of
+/// <c>.yaml</c>, <c>.json</c> and <c>.md</c> files that are nobody's document.
 /// </summary>
 /// <remarks>
 /// Asked after <see cref="DiagramFileRouter"/> and before the editor family. It never reports
@@ -23,6 +23,7 @@ public sealed class DesignerFileRouter
     private static readonly ILogger _logger = Log.ForContext<DesignerFileRouter>();
 
     private readonly IDesignerDefinitionCatalog _catalog;
+    private readonly FirstLineCache _firstLines = new();
 
     public DesignerFileRouter(IDesignerDefinitionCatalog catalog)
     {
@@ -63,6 +64,82 @@ public sealed class DesignerFileRouter
         }
 
         return new NotADesigner();
+    }
+
+    /// <summary>
+    /// The document a body is by its envelope (spec 029 R3, R4): the designer type whose <see cref="DesignerDefinition.Claim"/>
+    /// takes the file by its first line, with the registration of that type that names it, or none. Null when no type
+    /// claims it so. Only the first line of a file of a claimed extension is read, and that once until the file changes.
+    /// </summary>
+    /// <param name="path">A file that may be a body.</param>
+    public DesignerRouted? RouteByEnvelope(string path)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+
+        return ClaimantOf(path) is { } definition
+            ? new DesignerRouted(definition, RegistrationOf(path, definition), path)
+            : null;
+    }
+
+    /// <summary>The designer type whose envelope the file at <paramref name="path"/> carries on its first line, or null.</summary>
+    public DesignerDefinition? ClaimantOf(string path)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+
+        if (DiagramFilePair.IsRegistrationFile(path))
+        {
+            return null;
+        }
+
+        var extension = IoPath.GetExtension(path);
+        var claimants = _catalog.All
+            .Where(definition => definition.Claim is { } claim && claim.Extensions.Contains(extension, StringComparer.OrdinalIgnoreCase))
+            .ToList();
+        if (claimants.Count == 0)
+        {
+            return null;
+        }
+
+        var head = _firstLines.Read(path);
+        var name = IoPath.GetFileName(path);
+        return head.Length == 0 ? null : claimants.FirstOrDefault(definition => definition.Claim!.Matches(name, head));
+    }
+
+    /// <summary>
+    /// The registration of a body that has none in hand (FBL section 8.4): the <c>.adp</c> beside it whose first line is
+    /// the type's origin and whose <c>body:</c> names the body, or that names none and has the body's base name.
+    /// </summary>
+    private static string? RegistrationOf(string bodyPath, DesignerDefinition definition)
+    {
+        var folder = IoPath.GetDirectoryName(bodyPath);
+        if (folder is null || !Directory.Exists(folder))
+        {
+            return null;
+        }
+
+        var own = IoPath.ChangeExtension(bodyPath, DiagramFileName.Extension);
+        var body = IoPath.GetFullPath(bodyPath);
+        var candidates = Directory.EnumerateFiles(folder, "*" + DiagramFileName.Extension)
+            .OrderBy(candidate => !string.Equals(candidate, own, StringComparison.OrdinalIgnoreCase))
+            .ThenBy(candidate => candidate, StringComparer.Ordinal);
+        foreach (var candidate in candidates)
+        {
+            var registration = AdpRegistration.Read(candidate);
+            if (!string.Equals(registration?.MimeType, definition.Origin, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            var names = registration!.Body is { } named
+                ? string.Equals(IoPath.GetFullPath(IoPath.Combine(folder, named)), body, StringComparison.OrdinalIgnoreCase)
+                : string.Equals(candidate, own, StringComparison.OrdinalIgnoreCase);
+            if (names)
+            {
+                return candidate;
+            }
+        }
+
+        return null;
     }
 
     private DesignerRouting RouteRegistration(string adpPath, string? projectRoot)

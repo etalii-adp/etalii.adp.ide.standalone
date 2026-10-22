@@ -323,7 +323,38 @@ public class DependencyGraphContextActionProviderTests : IDisposable
 
         // Assert.
         var failed = Assert.IsType<ContextExecutionFailed>(result);
-        Assert.NotEmpty(failed.Message);
+        Assert.Equal("The node this dependency starts from is no longer in this graph.", failed.Message);
+    }
+
+    [Fact]
+    public async Task ARelationGestureFromEmptyCanvasIntoAVanishedNode_FailsWithAReason_AndAddsNothing()
+    {
+        // Arrange.
+        // The reversed gesture: the placement is the source, and the node it reaches is gone.
+        var path = Write();
+        var gesture = GestureIds.Relation(GestureIds.RowPlacement(-300, 1), "ghost");
+
+        // Act.
+        var result = await _actions.ExecuteAsync(
+            Target(path, gesture), DependencyGraphContextActionProvider.ConnectActionId, CancellationToken.None);
+
+        // Assert.
+        var failed = Assert.IsType<ContextExecutionFailed>(result);
+        Assert.Equal("The node this dependency reaches is no longer in this graph.", failed.Message);
+        Assert.Equal(2, (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model.Elements.Count);
+    }
+
+    [Fact]
+    public async Task RelabellingAVanishedDependency_FailsRatherThanAsking()
+    {
+        // Arrange & act.
+        var path = Write();
+        var result = await _actions.ExecuteAsync(
+            Target(path, "ghost"), DependencyGraphContextActionProvider.RelabelActionId, CancellationToken.None);
+
+        // Assert.
+        var failed = Assert.IsType<ContextExecutionFailed>(result);
+        Assert.Equal("That is no longer in this graph.", failed.Message);
     }
 
     [Fact]

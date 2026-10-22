@@ -1,3 +1,6 @@
+using EtAlii.Adp.Designer;
+using IoPath = System.IO.Path;
+
 namespace EtAlii.Adp.Hierarchy;
 
 /// <summary>
@@ -6,6 +9,11 @@ namespace EtAlii.Adp.Hierarchy;
 /// the questions of its own kind; what a caller combining them asks is asked here.
 /// </summary>
 /// <remarks>
+/// <para>
+/// <b>Envelopes before all.</b> A body whose first line is the envelope of a designer type that claims it so is that
+/// designer's document, registered or not, whatever another tool's registration says of it (spec 029 FR-002, R3); and
+/// another tool's registration that names such a body is refused, saying where the body opens.
+/// </para>
 /// <para>
 /// <b>Diagrams first.</b> A routed diagram is the answer, whether or not its body resolved inside the
 /// project, and an unreadable registration is refused rather than offered on.
@@ -57,8 +65,15 @@ public sealed class ToolRouter
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
 
+        if (_designers.RouteByEnvelope(path) is { } enveloped)
+        {
+            return enveloped;
+        }
+
         return Diagrams.Route(path, root) switch
         {
+            DiagramRouted { RegistrationPath: { } registration, BodyPath: { } body } when _designers.ClaimantOf(body) is { } claimant =>
+                new ToolUnreadable(registration, ClaimedBody(body, claimant)),
             DiagramRouted diagram => diagram,
             DiagramUnreadable unreadable => new ToolUnreadable(unreadable.Path, unreadable.Reason),
             _ => RouteBeyondDiagrams(path, root),
@@ -69,8 +84,15 @@ public sealed class ToolRouter
     private ToolRouting RouteBeyondDiagrams(string path, string? root) =>
         _designers.Route(path, root) switch
         {
+            DesignerRouted { RegistrationPath: { } registration, BodyPath: { } body } designer
+                when _designers.ClaimantOf(body) is { } claimant && claimant != designer.Definition =>
+                new ToolUnreadable(registration, ClaimedBody(body, claimant)),
             DesignerRouted designer => designer,
             DesignerUnreadable unreadable => new ToolUnreadable(unreadable.Path, unreadable.Reason),
             _ => Editors.Resolve(path) as EditorRouted ?? (ToolRouting)new NoTool(),
         };
+
+    /// <summary>Why a registration of one tool is not followed to a body that another's envelope claims.</summary>
+    private static string ClaimedBody(string body, DesignerDefinition claimant) =>
+        $"Its body, {IoPath.GetFileName(body)}, is a {claimant.Title} document by the envelope on its first line, and opens there; this registration is not followed.";
 }
