@@ -11948,7 +11948,8 @@
         "line 79 | Error | fdg.second-parent | `g2` has 2 `owns-function` parents; it may have 1.",
         "line 4 | Error | fdg.ownership-cycle | Ownership loops: f1 -> f2 -> f1.",
         "line 4 | Error | fdg.ownership-cycle | Ownership loops: f1 -> f3 -> f1.",
-        "line 22 | Error | fdg.ownership-cycle | Ownership loops: g1 -> g2 -> g3 -> g1."
+        "line 22 | Error | fdg.ownership-cycle | Ownership loops: g1 -> g2 -> g3 -> g1.",
+        "line 22 | Error | fdg.ownership-cycle | Ownership loops: g1 -> g4 -> g2 -> g3 -> g1."
       ],
       "payloads": [
         "f1 | etalii/functional-decomposition-graph+function | 50, 24 | FdgElementPayload { \"name\": \"f1\", \"width\": 100, \"height\": 48 }",
