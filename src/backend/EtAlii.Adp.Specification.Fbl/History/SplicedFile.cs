@@ -44,6 +44,22 @@ public abstract class SplicedFile
     }
 
     /// <summary>
+    /// Applies an edit that is no step of the history (FBL 0.7 §7.1, a block declared <c>history: false</c>), and reads the
+    /// file again. The history is kept: every entry is carried over the edit, so an undo or a redo after it passes it by
+    /// and writes its own splices at the offsets the edit moved. An entry whose splices the edit overlaps cannot be
+    /// carried, and the history is cleared instead.
+    /// </summary>
+    protected void ApplyOutsideHistory(Edit edit)
+    {
+        ArgumentNullException.ThrowIfNull(edit);
+        if (edit.Splices.Count == 0) return;
+        if (_groupBefore is not null) throw new InvalidOperationException("An edit outside the history cannot be applied inside a group.");
+        var after = Edit.Apply(Bytes, edit.Splices);
+        _history.CarryOver(after, edit.Splices);
+        Replace(after);
+    }
+
+    /// <summary>
     /// Applies the edits <paramref name="edits"/> makes as one history entry, so that the changes of one gesture are
     /// one undo step: inside the group each edit is applied and the file read again as usual, and when it closes the
     /// file before it and after it are recorded as one edit, the smallest splice between them. A group that changes
