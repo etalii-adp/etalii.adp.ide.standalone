@@ -381,6 +381,12 @@ internal sealed class InsertSettings
     public string? Skeleton { get; init; }
 
     public string? When { get; init; }
+
+    /// <summary>
+    /// The keys and values every new entry is given as they are (FBL 0.8 §6.2), in the constant's member
+    /// order: a string, a <see cref="double"/>, a <see cref="bool"/> or null. Null when the insert has none.
+    /// </summary>
+    public IReadOnlyList<KeyValuePair<string, object?>>? Constant { get; init; }
 }
 
 /// <summary>How a missing container is created: where, with the key or selector <see cref="At"/> names, and its own text.</summary>

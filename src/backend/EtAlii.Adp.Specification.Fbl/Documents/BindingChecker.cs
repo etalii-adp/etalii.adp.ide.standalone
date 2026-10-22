@@ -62,6 +62,40 @@ internal static class BindingChecker
         CheckAttributes(rule, rules, context, scalars, at, problems);
         if (rule.Source is not null) CheckSlot(rule, rule.Source, context, at + "/source", problems);
         if (rule.Target is not null) CheckSlot(rule, rule.Target, context, at + "/target", problems);
+        if (rule.Insert?.Constant is { } constant) CheckConstant(rule, constant, scalars, at + "/insert/constant", problems);
+    }
+
+    /// <summary>
+    /// FBL 0.8 §14.1 step 6: an insert's constant is given only in the yaml and json families and never beside
+    /// <c>emit</c>, and none of its keys is one the same rule writes, by a writable attribute binding, <c>id.from</c>,
+    /// <c>source</c> or <c>target</c>, since a place has one writer (§3.3). A read-only binding may read its key.
+    /// </summary>
+    private static void CheckConstant(Rule rule, IReadOnlyList<KeyValuePair<string, object?>> constant, bool scalars, string pointer, List<LoadDiagnostic> problems)
+    {
+        if (!scalars) problems.Add(new LoadDiagnostic(pointer, LoadSeverity.Error, "An insert's constant is given only in the yaml and json families (FBL 0.8 6.2)."));
+        if (rule.Insert!.Emit is not null) problems.Add(new LoadDiagnostic(pointer, LoadSeverity.Error, "An insert has a constant or an emit, not both (FBL 0.8 6.2)."));
+        foreach ((string key, _) in constant)
+        {
+            if (Writer(rule, key) is { } writer)
+            {
+                problems.Add(new LoadDiagnostic(JsonPointer.Append(pointer, key), LoadSeverity.Error, $"The constant's key '{key}' is written by the rule's {writer} too, and a place has one writer (FBL 0.8 14.1)."));
+            }
+        }
+    }
+
+    /// <summary>What of <paramref name="rule"/> writes the key <paramref name="key"/> of its own entry, or null when nothing does.</summary>
+    private static string? Writer(Rule rule, string key)
+    {
+        var slot = new SlotKind.Key(key);
+        if (rule.Id?.From is { Child: null } from && from.Kind == slot) return "id.from";
+        if (rule.Source is { Child: null } source && source.Kind == slot) return "source";
+        if (rule.Target is { Child: null } target && target.Kind == slot) return "target";
+        if (rule.ReadOnly is not null) return null;
+        foreach ((string name, AttributeBinding attribute) in rule.Attributes)
+        {
+            if (attribute is { Child: null, ReadOnly: null } && attribute.Kind == slot) return $"attribute '{name}'";
+        }
+        return null;
     }
 
     /// <summary>The file rules, parent rules and cascaded rules a rule names exist.</summary>
