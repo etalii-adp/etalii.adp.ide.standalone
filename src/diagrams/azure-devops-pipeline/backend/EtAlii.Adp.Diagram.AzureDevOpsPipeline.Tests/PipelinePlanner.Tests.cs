@@ -37,6 +37,42 @@ public class PipelinePlannerTests
         Assert.Equal(body.Text.Replace(replaced, written, StringComparison.Ordinal), planned.After);
     }
 
+    /// <summary>
+    /// A value is plain wherever YAML's syntax allows it, whatever a schema would type it as, else double-quoted with
+    /// its escapes; a single-quoted value stays single-quoted unless it holds a line break. The syntax test and the
+    /// quoting are the FBL library's <c>YamlScalars</c> (spec 025 T302), and each value reads back as what was set.
+    /// </summary>
+    [Theory]
+    [InlineData("Spaced", "Spaced out", "true", "true")]
+    [InlineData("Spaced", "Spaced out", "1.0", "1.0")]
+    [InlineData("Spaced", "Spaced out", "null", "null")]
+    [InlineData("Spaced", "Spaced out", "Back\\slash", "Back\\slash")]
+    [InlineData("Spaced", "Spaced out", "a #b", "\"a #b\"")]
+    [InlineData("Spaced", "Spaced out", "Ends:", "\"Ends:\"")]
+    [InlineData("Spaced", "Spaced out", "- a", "\"- a\"")]
+    [InlineData("Spaced", "Spaced out", "&anchor", "\"&anchor\"")]
+    [InlineData("Spaced", "Spaced out", " lead", "\" lead\"")]
+    [InlineData("Spaced", "Spaced out", "\"quoted\"", "\"\\\"quoted\\\"\"")]
+    [InlineData("Spaced", "Spaced out", "Tab\there", "\"Tab\\there\"")]
+    [InlineData("Spaced", "Spaced out", "Line\nbreak", "\"Line\\nbreak\"")]
+    [InlineData("Spaced", "Spaced out", "Bell\u0007", "\"Bell\\u0007\"")]
+    [InlineData("Single", "'Built by quotes'", "a: 'b'", "'a: ''b'''")]
+    [InlineData("Single", "'Built by quotes'", "It's\nhere", "\"It's\\nhere\"")]
+    [InlineData("Double", "\"Built by \\\"quotes\\\"\"", "plain", "\"plain\"")]
+    public void AValue_IsWrittenPlainWhereYamlSyntaxAllows_ElseQuoted_AndReadsBackAsSet(string stage, string replaced, string value, string written)
+    {
+        // Arrange.
+        var body = Open("findings/value-styles.yml");
+
+        // Act.
+        var planned = Plan(body, new ModelChange.Set(IdOf(body, "Stage", stage), Values(("displayName", value))));
+        var reread = PipelineBody.Open(Encoding.UTF8.GetBytes(planned.After), PipelineReadContext.Unbound);
+
+        // Assert.
+        Assert.Equal([new Planned(SpliceOperation.ReplaceValue, replaced, written)], planned.Splices);
+        Assert.Equal(value, reread.Reading.Elements.Single(element => element.Type == "Stage" && Equals(element.Attributes.GetValueOrDefault("name"), stage)).Attributes["displayName"]);
+    }
+
     [Fact]
     public void ANewDisplayName_OfAFoldedValue_IsFoldedAgain()
     {
