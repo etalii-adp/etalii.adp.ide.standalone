@@ -87,7 +87,7 @@ describe("compileNotation", () => {
   it("compiles acyclic on an abstract relation type to one rule over the subtypes it draws", () => {
     const spec = specOf();
     spec.metamodel.relations = {
-      Owns: { abstract: true, acyclic: true },
+      Owns: { abstract: true, acyclic: true, source: "Card", target: "Card" },
       Holds: { extends: "Owns", source: "Card", target: "Card" },
       Grips: { extends: "Owns", source: "Card", target: "Card", acyclic: true },
       Link: { source: ["Card", "Box"], target: "Card" },

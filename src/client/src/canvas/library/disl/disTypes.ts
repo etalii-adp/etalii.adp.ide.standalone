@@ -67,7 +67,7 @@ export interface DislType extends Extensions {
 }
 
 /** A relation end: a type name, a list of them, or an end object naming its types and role (DISL §4.9). */
-export type DislRelationEnd = string | readonly string[] | { types: string | readonly string[]; role?: string };
+export type DislRelationEnd = string | readonly string[] | { types: string | readonly string[]; role?: string; min?: number; max?: number };
 
 export interface DislRelation extends Extensions {
   abstract?: boolean;

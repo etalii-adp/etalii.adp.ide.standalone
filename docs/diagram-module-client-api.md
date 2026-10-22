@@ -251,9 +251,9 @@ Source: [`src/diagrams/dependency-graph/client/dependencyGraphCompiledDefinition
 
 **Height resize.** `resize` is read only when `sizing` is `"user"`. **Omitted means `"width"`**: left and right handles, which is what every user-sizable type had before. `"both"` adds top and bottom handles, for an element whose height is its own content rather than a shared constant. The drag arrives as `ElementResized`, whose `side` - a `ResizedSide` - is then `"top"` or `"bottom"` as well as `"left"` or `"right"`, and whose `bounds` are the whole resized rectangle. A handler that assumed a horizontal edge has to read `side` once a type declares `"both"`.
 
-**The functional decomposition graph is the first module to declare them** (read at `04cc58df`). Three of its four named types are drawn as the three shapes, the fourth as a `"parallelogram"`:
+**The functional decomposition graph is the first module to declare them** (read at `04cc58df`). Three of its four named types are drawn as the three shapes, the fourth as a `"parallelogram"`. Its canvas is now compiled from its specification; the declarations below are from its former hand-written definition, kept as the oracle:
 
-Source: [`src/diagrams/functional-decomposition-graph/client/FdgCanvas.tsx`](../src/diagrams/functional-decomposition-graph/client/FdgCanvas.tsx)
+Source: [`src/diagrams/functional-decomposition-graph/client/handWrittenDefinition.ts`](../src/diagrams/functional-decomposition-graph/client/handWrittenDefinition.ts)
 
 ```ts
 const SHAPES: Readonly<Record<FdgElementType, ElementTypeDefinition["shape"]>> = {
@@ -267,7 +267,7 @@ const SHAPES: Readonly<Record<FdgElementType, ElementTypeDefinition["shape"]>> =
 
 Its Comment is the only type sized in both directions, and its one label wraps inside it - so it is also the first declarer of the multiline editor [below](#labels-and-bindings):
 
-Source: [`src/diagrams/functional-decomposition-graph/client/FdgCanvas.tsx`](../src/diagrams/functional-decomposition-graph/client/FdgCanvas.tsx)
+Source: [`src/diagrams/functional-decomposition-graph/client/handWrittenDefinition.ts`](../src/diagrams/functional-decomposition-graph/client/handWrittenDefinition.ts)
 
 ```ts
 const COMMENT_TYPE: ElementTypeDefinition = {

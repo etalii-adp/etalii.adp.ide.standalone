@@ -3,6 +3,7 @@ import type { Binding, Condition } from "../definition/binding";
 import type { CompartmentDeclaration } from "../definition/compartments";
 import type { CalendarStep, ChromeLegendDeclaration, ChromeTextDeclaration, RulerDeclaration, RulerRung, SwitchDeclaration } from "../definition/chrome";
 import type {
+  Cardinality,
   AnchorSet,
   BoundElementStyle,
   BuiltInShape,
@@ -1321,7 +1322,7 @@ class Compiler {
     const perPair = relation.derived === undefined && relation.allowParallel === false ? (relation.directed === false ? "unordered" : "ordered") : undefined;
     const held = this.heldOnce(relation);
     const limits = { ...endLimit(relation.source, "maxFromSource"), ...endLimit(relation.target, "maxIntoTarget") };
-    const cardinality = { ...(perPair !== undefined ? { perPair } : {}), ...held, ...limits };
+    const cardinality: Cardinality = { ...(perPair !== undefined ? { perPair } : {}), ...held, ...limits };
 
     return {
       id: this.typeId(name),
