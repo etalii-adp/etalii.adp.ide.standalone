@@ -86,8 +86,9 @@ internal sealed class BulletsFamily(BodyText text, FblBinding binding, FblOption
     public override SlotRead Read(Candidate candidate, Slot slot)
     {
         if (slot.Kind is not SlotKind.Continuation) return base.Read(candidate, slot);
-        if (candidate.Entry is not Bullet item) return SlotRead.ReadOnlyAbsent("A statement has no continuation.");
-        return new SlotRead(item.ContinuationText(Text), item.ContinuationSpan(Text), true, true) { Node = item };
+        return candidate.Entry is not Bullet item
+            ? SlotRead.ReadOnlyAbsent("A statement has no continuation.")
+            : new SlotRead(item.ContinuationText(Text), item.ContinuationSpan(Text), true, true) { Node = item };
     }
 
     public override void AfterRead(Func<Entry, string?> claimedBy)

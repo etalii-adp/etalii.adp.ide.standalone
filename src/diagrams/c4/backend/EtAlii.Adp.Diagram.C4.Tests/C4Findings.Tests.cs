@@ -653,7 +653,6 @@ public class C4FindingsTests
         var workspace = C4Parser.Parse(LineDocument.Parse(dsl));
 
         // Act.
-        C4ElementKind[] Shown(string key) => [.. C4Findings.MembersOf(workspace, workspace.FindView(key)!).Select(element => element.Kind).Distinct().Order()];
 
         // Assert.
         Assert.Equal([C4ElementKind.Person, C4ElementKind.SoftwareSystem], Shown("context"));
@@ -663,6 +662,9 @@ public class C4FindingsTests
         Assert.Contains(C4ElementKind.Component, Shown("components"));
         Assert.Contains(C4ElementKind.DeploymentNode, Shown("deployment"));
         Assert.DoesNotContain(C4ElementKind.Person, Shown("deployment"));
+        return;
+
+        C4ElementKind[] Shown(string key) => [.. C4Findings.MembersOf(workspace, workspace.FindView(key)!).Select(element => element.Kind).Distinct().Order()];
     }
 
     [Fact]

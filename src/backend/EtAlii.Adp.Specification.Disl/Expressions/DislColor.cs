@@ -25,8 +25,10 @@ internal sealed record DislColor(double Red, double Green, double Blue, double A
         {
             throw new CelException($"color() takes a hex colour, not '{text}'.");
         }
-        double Channel(int at) => int.Parse(hex.AsSpan(at, 2), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture) / 255.0;
+
         return new DislColor(Channel(0), Channel(2), Channel(4), hex.Length == 8 ? Channel(6) : 1.0);
+
+        double Channel(int at) => int.Parse(hex.AsSpan(at, 2), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture) / 255.0;
     }
 
     /// <summary>
@@ -46,8 +48,9 @@ internal sealed record DislColor(double Red, double Green, double Blue, double A
         if (f is < 0 or > 1 || double.IsNaN(f)) throw new CelException($"mix() takes a fraction from 0 to 1, not {f.ToString(CultureInfo.InvariantCulture)}.");
 
         var alpha = (first.Alpha * (1 - f)) + (second.Alpha * f);
-        double Channel(double one, double two) => alpha == 0 ? 0 : ((one * first.Alpha * (1 - f)) + (two * second.Alpha * f)) / alpha;
         return Hex(Channel(first.Red, second.Red), Channel(first.Green, second.Green), Channel(first.Blue, second.Blue), alpha);
+
+        double Channel(double one, double two) => alpha == 0 ? 0 : ((one * first.Alpha * (1 - f)) + (two * second.Alpha * f)) / alpha;
     }
 
     private static string Hex(params double[] channels) =>

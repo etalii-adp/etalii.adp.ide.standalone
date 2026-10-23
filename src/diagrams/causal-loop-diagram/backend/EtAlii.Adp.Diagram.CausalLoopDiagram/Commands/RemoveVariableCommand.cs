@@ -15,10 +15,10 @@ public sealed class RemoveVariableCommandHandler(ICausalLoopDocumentStore docume
         ArgumentNullException.ThrowIfNull(model);
         ArgumentNullException.ThrowIfNull(command);
 
-        if (!model.Declares(command.Id)) return EditOutcome.Refused(CausalLoopEdits.NoSuchVariable);
-
-        // The binding's removal cascades to the links and loops that name the variable: a link to a removed
-        // variable would dangle, and a loop through it would name a path the arrows no longer form.
-        return CausalLoopEdits.Remove(body, CausalLoopEdits.VariableId(command.Id));
+        return !model.Declares(command.Id)
+            ? EditOutcome.Refused(CausalLoopEdits.NoSuchVariable)
+            // The binding's removal cascades to the links and loops that name the variable: a link to a removed
+            // variable would dangle, and a loop through it would name a path the arrows no longer form.
+            : CausalLoopEdits.Remove(body, CausalLoopEdits.VariableId(command.Id));
     }
 }
