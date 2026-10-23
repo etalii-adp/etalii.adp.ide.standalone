@@ -27,7 +27,7 @@ public sealed class SparqlSession(
     ISparqlDocumentStore documents,
     SparqlElementMapper mapper,
     IHistoryStack? history = null)
-    : DocumentDiagramSession<string, SparqlQueryModel>(bodyPath, documents, history)
+    : DocumentDiagramSession<string, SparqlDocument>(bodyPath, documents, history)
 {
     private readonly SparqlElementMapper _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
 
@@ -40,7 +40,7 @@ public sealed class SparqlSession(
     /// command - the module's single mutating gesture, and one that leaves the query untouched
     /// (Requirement 5.1, 6.3).
     /// </summary>
-    protected override DiagramPlacement PlacementOf(SparqlQueryModel model, string elementId, double x, double y)
+    protected override DiagramPlacement PlacementOf(SparqlDocument model, string elementId, double x, double y)
     {
         if (registrationPath is not { Length: > 0 })
         {
@@ -81,9 +81,9 @@ public sealed class SparqlSession(
     }
 
     /// <inheritdoc />
-    protected override IReadOnlyList<DiagramElement> Render(SparqlQueryModel model, DiagramViewport viewport)
+    protected override IReadOnlyList<DiagramElement> Render(SparqlDocument model, DiagramViewport viewport)
     {
-        var projection = SparqlProjection.Project(model);
+        var projection = model.Drawing;
         var stored = registrationPath is { Length: > 0 }
             ? RegistrationLayout.Read(registrationPath)
             : new Dictionary<string, RegistrationPosition>(StringComparer.Ordinal);

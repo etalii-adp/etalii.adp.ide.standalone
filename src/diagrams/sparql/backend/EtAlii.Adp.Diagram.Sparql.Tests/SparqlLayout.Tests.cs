@@ -15,7 +15,7 @@ public class SparqlLayoutTests
         new Dictionary<string, RegistrationPosition>();
 
     private static SparqlProjectionResult ProjectText(string text) =>
-        SparqlProjection.Project(SparqlParser.Parse(text));
+        new SparqlDocument(SparqlParser.Parse(text), text).Drawing;
 
     private static SparqlProjectionResult ProjectFixture(string name) =>
         ProjectText(File.ReadAllText(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", name)));

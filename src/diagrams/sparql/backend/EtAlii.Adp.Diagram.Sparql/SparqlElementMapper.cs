@@ -56,8 +56,7 @@ public sealed class SparqlElementMapper
         AddNodes(elements, projection, layout);
         AddEdges(elements, projection);
         AddAnnotations(elements, projection);
-        AddHeader(elements, projection);
-        AddBanner(elements, projection);
+        elements.AddRange(SparqlChrome.Elements(projection));
         return elements;
     }
 
@@ -151,27 +150,6 @@ public sealed class SparqlElementMapper
         }
     }
 
-    /// <summary>The header band: the query form and its modifier rows, always present.</summary>
-    private static void AddHeader(List<DiagramElement> elements, SparqlProjectionResult projection) =>
-        elements.Add(Pack(HeaderId, default, HeaderType, new SparqlHeaderPayload
-        {
-            Form = projection.HeaderForm,
-            ModifierRows = { projection.HeaderRows },
-        }));
-
-    /// <summary>The truncation banner, only when the sanity bound cut.</summary>
-    private static void AddBanner(List<DiagramElement> elements, SparqlProjectionResult projection)
-    {
-        if (projection.Truncated)
-        {
-            elements.Add(Pack(TruncationId, default, TruncationType, new SparqlTruncationPayload
-            {
-                Shown = projection.Shown,
-                Total = projection.Total,
-            }));
-        }
-    }
-
     /// <summary>
     /// The elements a viewport admits: every region whose frame the rectangle touches, every
     /// node whose box it touches, and one hop outwards along the edges so a connector always
@@ -243,6 +221,7 @@ public sealed class SparqlElementMapper
             .Where(element => !positioned.Contains(element.Id) || delivered.Contains(element.Id))];
     }
 
-    private static DiagramElement Pack(string id, RegistrationPosition at, string type, IMessage payload) =>
+    /// <summary>One element of the wire: its id, its position, its type string and its payload, packed.</summary>
+    internal static DiagramElement Pack(string id, RegistrationPosition at, string type, IMessage payload) =>
         new(id, at.X, at.Y, type, $"type.googleapis.com/{payload.Descriptor.FullName}", payload.ToByteArray());
 }

@@ -42,6 +42,9 @@ namespace EtAlii.Adp.Diagram.Sparql.Tests.Parity;
 /// machine set to another one would differ. That is the one thing pinned, and it is recorded rather
 /// than hidden: the <c>cultures</c> section runs the projection over
 /// <c>scope-paths-by-culture.rq</c> under two more cultures and writes the node order each gives.
+/// It runs the hand-written projection, <see cref="HandWrittenSparql"/>, because it records what
+/// finding A11 found in that code; the derived order is the definition's, by code point, and is the
+/// same under every culture (<see cref="SparqlDerivedDrawingTests"/>).
 /// </para>
 /// <para>
 /// <b>Every query is read from a copy in a temporary folder</b>, so that a move writes into a
@@ -402,8 +405,8 @@ internal static class SparqlTranscript
     }
 
     /// <summary>
-    /// The variable nodes <c>scope-paths-by-culture.rq</c> projects, in order, under the invariant
-    /// culture and under each of <see cref="_cultures"/> (finding A11).
+    /// The variable nodes the hand-written projection gives <c>scope-paths-by-culture.rq</c>, in order,
+    /// under the invariant culture and under each of <see cref="_cultures"/> (finding A11).
     /// </summary>
     private static async Task WriteCulturesAsync(Utf8JsonWriter json, CancellationToken cancellationToken)
     {
@@ -416,7 +419,7 @@ internal static class SparqlTranscript
             {
                 CultureInfo.CurrentCulture = name.Length == 0 ? CultureInfo.InvariantCulture : CultureInfo.GetCultureInfo(name);
                 json.WritePropertyName(name.Length == 0 ? "invariant" : name);
-                json.WriteLines([.. SparqlProjection.Project(SparqlParser.Parse(text)).Nodes
+                json.WriteLines([.. HandWrittenSparql.Project(SparqlParser.Parse(text)).Nodes
                     .Where(node => node.Kind == SparqlNodeKind.Variable)
                     .Select(node => $"{node.Id} | {node.ScopePath}")]);
             }

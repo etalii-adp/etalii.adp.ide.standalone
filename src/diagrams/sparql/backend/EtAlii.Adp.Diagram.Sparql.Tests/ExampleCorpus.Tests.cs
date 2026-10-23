@@ -31,7 +31,7 @@ public class ExampleCorpusTests
 
         // Act.
         var model = SparqlParser.Parse(text);
-        var projection = SparqlProjection.Project(model);
+        var projection = new SparqlDocument(model, text).Drawing;
         var problems = SparqlValidator.Judge(model, text);
 
         // Assert.

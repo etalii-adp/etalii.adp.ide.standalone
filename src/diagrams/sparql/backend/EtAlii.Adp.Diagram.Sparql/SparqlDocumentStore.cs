@@ -32,17 +32,17 @@ namespace EtAlii.Adp.Diagram.Sparql;
 /// </remarks>
 public sealed class SparqlDocumentStore : ISparqlDocumentStore
 {
-    private readonly DocumentLifecycle<DocumentEntry<string, SparqlQueryModel>> _lifecycle = new(static (_, text) => Parse(text), Unavailable);
+    private readonly DocumentLifecycle<DocumentEntry<string, SparqlDocument>> _lifecycle = new(static (_, text) => Parse(text), Unavailable);
 
     /// <inheritdoc />
     public event EventHandler<DocumentChangedEventArgs>? Changed;
 
     /// <inheritdoc />
-    public ValueTask<DocumentEntry<string, SparqlQueryModel>> GetOrLoadAsync(string path, CancellationToken cancellationToken) =>
+    public ValueTask<DocumentEntry<string, SparqlDocument>> GetOrLoadAsync(string path, CancellationToken cancellationToken) =>
         _lifecycle.GetOrLoadAsync(path, cancellationToken);
 
     /// <inheritdoc />
-    public DocumentEntry<string, SparqlQueryModel>? Get(string path) => _lifecycle.Get(path);
+    public DocumentEntry<string, SparqlDocument>? Get(string path) => _lifecycle.Get(path);
 
     /// <inheritdoc />
     public void Forget(string path) => _lifecycle.Forget(path);
@@ -69,14 +69,17 @@ public sealed class SparqlDocumentStore : ISparqlDocumentStore
     /// A query that does not parse opens as unavailable naming the reason (Requirement 1.3), with the
     /// line it stopped at among the entry's problems.
     /// </summary>
-    private static DocumentEntry<string, SparqlQueryModel> Parse(string text) =>
-        new(text, SparqlParser.Outcome(text));
+    private static DocumentEntry<string, SparqlDocument> Parse(string text)
+    {
+        var outcome = SparqlParser.Outcome(text);
+        return new(text, new ParseOutcome<SparqlDocument>(new SparqlDocument(outcome.Model, text), outcome.Problems, outcome.Unreadable));
+    }
 
     /// <summary>
     /// A query that is missing or cannot be read opens as a state this module names rather than as an
     /// empty query (R2.2). The lifecycle logs the warning naming the path for an unreadable one.
     /// </summary>
-    private static DocumentEntry<string, SparqlQueryModel> Unavailable(string path, DocumentUnavailability unavailability, string reason)
+    private static DocumentEntry<string, SparqlDocument> Unavailable(string path, DocumentUnavailability unavailability, string reason)
     {
         var name = IoPath.GetFileName(path);
         var error = unavailability == DocumentUnavailability.Missing
@@ -84,6 +87,6 @@ public sealed class SparqlDocumentStore : ISparqlDocumentStore
             // missing body is a state to name, not one to repair.
             ? $"{name} does not exist. Queries are authored in a text editor; this diagram draws an existing .rq file."
             : $"{name} could not be read: {reason}";
-        return new DocumentEntry<string, SparqlQueryModel>("", SparqlQueryModel.Empty, error);
+        return new DocumentEntry<string, SparqlDocument>("", SparqlDocument.Empty, error);
     }
 }

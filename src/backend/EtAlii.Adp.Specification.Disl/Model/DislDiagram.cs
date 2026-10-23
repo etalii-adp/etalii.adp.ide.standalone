@@ -229,6 +229,18 @@ public sealed class DislDiagram : ICelObject
     public DislBudgetState? Budget(string id) => Budgets.FirstOrDefault(budget => budget.Id == id);
 
     /// <summary>
+    /// The candidates of the budget <paramref name="id"/> that are drawn (§3.2.1), in the budget's <c>order</c> with ties
+    /// in persistence order, whether or not it cuts: what a host draws under it, in the order it keeps them. Empty when
+    /// the specification declares no <c>count</c> budget by that id.
+    /// </summary>
+    /// <exception cref="CelException">The budget's order is read while the budgets are computed.</exception>
+    public IReadOnlyList<DislElement> InBudgetOrder(string id)
+    {
+        ArgumentNullException.ThrowIfNull(id);
+        return DislBudgets.Ordered(this, id);
+    }
+
+    /// <summary>
     /// Whether <paramref name="element"/> is drawn under the budgets (§3.2.1): no truncating budget cuts it, and for a
     /// relation, both its ends are drawn.
     /// </summary>

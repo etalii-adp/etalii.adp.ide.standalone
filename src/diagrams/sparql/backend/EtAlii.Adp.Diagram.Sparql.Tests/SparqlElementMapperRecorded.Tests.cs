@@ -45,7 +45,8 @@ public sealed class SparqlElementMapperRecordedTests
     public void AQuery_IsDrawnAsRecorded(string name, string digest)
     {
         // Arrange.
-        var projection = SparqlProjection.Project(SparqlParser.Parse(Text(name)));
+        var text = Text(name);
+        var projection = new SparqlDocument(SparqlParser.Parse(text), text).Drawing;
         var layout = SparqlLayout.Compute(projection, new Dictionary<string, RegistrationPosition>(StringComparer.Ordinal));
 
         // Act.
