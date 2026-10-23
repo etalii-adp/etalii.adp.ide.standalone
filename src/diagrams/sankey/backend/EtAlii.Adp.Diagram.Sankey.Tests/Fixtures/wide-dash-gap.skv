@@ -1,0 +1,11 @@
+sankey: 1
+# B16: a first key after a wide dash gap.
+nodes:
+  -   name: A
+      id: a
+  -   name: B
+      id: b
+flows:
+  -   from: a
+      to: b
+      value: 1

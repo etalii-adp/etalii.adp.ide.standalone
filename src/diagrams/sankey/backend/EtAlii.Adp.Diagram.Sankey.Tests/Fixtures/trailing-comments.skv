@@ -1,0 +1,26 @@
+sankey: 1
+# B11 and B14: what a changed value writes, and where a comment above an entry goes.
+nodes:
+  # The first node, with a comment above it.
+  - id: a
+    name: 'Single quoted'   # a trailing comment on the name
+    color: blue   # a trailing comment on the colour
+    note: "on"
+  - id: b
+    name: B
+    column: 2   # a trailing comment on the column
+  # A comment above the third node.
+  - id: c
+    name: C
+  # A comment above a node with no flows, which the first column draws below the first node.
+  - id: d
+    name: D
+flows:
+  # A comment above the first flow.
+  - from: a
+    to: b
+    value: 3   # a trailing comment on the value
+    description: "Quoted: it holds a colon"
+  - from: b
+    to: c
+    value: 2

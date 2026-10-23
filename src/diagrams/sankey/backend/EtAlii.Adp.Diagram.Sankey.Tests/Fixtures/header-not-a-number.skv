@@ -1,0 +1,6 @@
+sankey: one
+# B10: a version that is not a number.
+nodes:
+  - id: a
+    name: A
+flows: []

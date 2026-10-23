@@ -1,0 +1,16 @@
+sankey: 1
+# B4: unknown keys are reported one by one, on their own lines, and kept.
+title: Unknown keys
+nodes:
+  - id: a
+    name: A
+    colour: blue
+    weight: 3
+  - id: b
+    name: B
+flows:
+  - from: a
+    to: b
+    value: 2
+    label: two
+    colour: red

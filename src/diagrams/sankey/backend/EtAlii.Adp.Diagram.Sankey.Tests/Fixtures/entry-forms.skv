@@ -1,0 +1,9 @@
+sankey: 1
+# B13: a new entry copies the first entry's indentation and dash gap; a missing list is created at the end.
+nodes:
+    -  id: a
+       name: A
+    - id: b
+      name: B
+    -   id: c
+        name: C

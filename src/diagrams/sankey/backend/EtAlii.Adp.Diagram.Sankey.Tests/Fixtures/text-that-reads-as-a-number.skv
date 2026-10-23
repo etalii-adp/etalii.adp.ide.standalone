@@ -1,0 +1,22 @@
+sankey: 1
+# B1: a text value is the text it was written with, however YAML's core schema would type it.
+nodes:
+  - id: 1
+    name: 2050
+    note: yes
+    format: 1.0
+    description: null
+  - id: 007
+    name: ~
+    color: blue
+  - id: true
+    name: on
+flows:
+  - from: 1
+    to: 007
+    value: 3
+  - id: 0x1F
+    from: 007
+    to: true
+    value: 2
+    description: 2026-10-23
