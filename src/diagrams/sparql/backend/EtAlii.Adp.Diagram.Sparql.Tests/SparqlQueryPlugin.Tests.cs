@@ -88,13 +88,13 @@ public class SparqlQueryPluginTests
     public void ASpan_CountsTheBytesOfTheCharactersWrittenBeforeIt_NotTheCharacters()
     {
         // Arrange: a literal of a two-byte character, before a pattern and a filter on the line after it.
-        const string Query = "PREFIX ex: <http://example.org/>\r\n"
+        const string query = "PREFIX ex: <http://example.org/>\r\n"
             + "SELECT ?s WHERE {\r\n"
             + "  ?s ex:name \"café\" .\r\n"
             + "  ?s ex:p ?o .\r\n"
             + "  FILTER(?o != \"ø\")\r\n"
             + "}\r\n";
-        var bytes = Encoding.UTF8.GetBytes(Query);
+        var bytes = Encoding.UTF8.GetBytes(query);
 
         // Act.
         var records = Read(bytes).Elements;
