@@ -41,7 +41,7 @@ public sealed partial class MindmapTranscript() : TranscriptAdapter("mindmap", "
 
     public override string Origin => Diagram.Mindmap.Origin.Key;
 
-    public override IReadOnlyList<ToolboxItemDefinition> Toolbox => MindmapDefinition.Definition.Toolbox;
+    protected override IReadOnlyList<ToolboxItemDefinition> Toolbox => MindmapDefinition.Definition.Toolbox;
 
     /// <summary>The documents on disk, as paths relative to <c>src/</c> with forward slashes, then the inline documents, in the order they are recorded.</summary>
     public override IReadOnlyList<TranscriptDocument> Corpus()

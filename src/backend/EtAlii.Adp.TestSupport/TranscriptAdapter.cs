@@ -11,9 +11,17 @@ namespace EtAlii.Adp.TestSupport;
 /// ending - is the harness's, the same for every module.
 /// </summary>
 /// <remarks>
+/// <para>
 /// <b>The adapter is named for its file.</b> The transcript's <c>generator</c> field names
 /// <c>Parity/&lt;adapter type&gt;.cs</c>, so a module's adapter keeps the name its generator always
 /// had and the field stays as recorded.
+/// </para>
+/// <para>
+/// <b>The virtual members are the frame's few variations</b>, each defaulting to what most modules
+/// write: what is recorded once around the toolbox, what follows the documents, the names of the
+/// array and of its entries, and what identifies a document and makes a later one <c>sameAs</c> it.
+/// A module whose transcript was frozen with one of them overrides it, so the file stays as recorded.
+/// </para>
 /// </remarks>
 public abstract class TranscriptAdapter
 {
@@ -47,12 +55,72 @@ public abstract class TranscriptAdapter
     public abstract string Origin { get; }
 
     /// <summary>
-    /// The toolbox, written once: it does not read the document.
+    /// The toolbox, written once: it does not read the document. <see langword="null"/> for a
+    /// transcript that has no <c>toolbox</c> field at all.
     /// </summary>
-    public abstract IReadOnlyList<ToolboxItemDefinition> Toolbox { get; }
+    protected abstract IReadOnlyList<ToolboxItemDefinition>? Toolbox { get; }
+
+    /// <summary>The name of the transcript's array of documents.</summary>
+    public virtual string DocumentsName => "documents";
+
+    /// <summary>The name of the field that opens each entry of that array with the document's name.</summary>
+    public virtual string DocumentName => "document";
 
     /// <summary>The corpus, in the order it is recorded.</summary>
     public abstract IReadOnlyList<TranscriptDocument> Corpus();
+
+    /// <summary>
+    /// Writes what is recorded once, after the header and before the documents: the toolbox, unless
+    /// it is <see langword="null"/>. A module that records more around it overrides this and writes
+    /// the toolbox where its transcript has it by calling this one.
+    /// </summary>
+    /// <param name="json">The transcript, inside its root object.</param>
+    /// <param name="cancellationToken">The test's token.</param>
+    public virtual Task WriteBeforeDocumentsAsync(Utf8JsonWriter json, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(json);
+        cancellationToken.ThrowIfCancellationRequested();
+        if (Toolbox is { } toolbox)
+        {
+            json.WriteStartArray("toolbox");
+            foreach (var item in toolbox)
+            {
+                json.WriteStringValue($"{item.Id} | {item.Label} | {item.Icon} | drops {item.DropActionId} | {item.Description}");
+            }
+
+            json.WriteEndArray();
+        }
+
+        return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Writes what identifies a document, after its name, and answers what a later document must
+    /// equal to be written as <c>sameAs</c> it: by default the <c>sha256</c> of its bytes, which is
+    /// also the answer. A module for which equal bytes are not yet the same reading answers more;
+    /// <see langword="null"/> means this document is recorded in full and no later one is the same.
+    /// </summary>
+    /// <param name="json">The transcript, inside the document's object.</param>
+    /// <param name="document">The document.</param>
+    /// <param name="bytes">Its bytes.</param>
+    /// <param name="cancellationToken">The test's token.</param>
+    public virtual Task<string?> WriteIdentityAsync(Utf8JsonWriter json, TranscriptDocument document, byte[] bytes, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(json);
+        cancellationToken.ThrowIfCancellationRequested();
+        var sha = TranscriptText.Sha256(bytes);
+        json.WriteString("sha256", sha);
+        return Task.FromResult<string?>(sha);
+    }
+
+    /// <summary>Writes what is recorded once after the documents; by default nothing.</summary>
+    /// <param name="json">The transcript, inside its root object.</param>
+    /// <param name="cancellationToken">The test's token.</param>
+    public virtual Task WriteAfterDocumentsAsync(Utf8JsonWriter json, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.CompletedTask;
+    }
 
     /// <summary>
     /// Records one document the corpus has not recorded before: whatever the module's code answers

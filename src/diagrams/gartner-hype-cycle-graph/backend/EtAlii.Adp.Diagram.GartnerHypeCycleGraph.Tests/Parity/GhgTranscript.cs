@@ -57,7 +57,7 @@ public sealed class GhgTranscript() : TranscriptAdapter("gartner-hype-cycle-grap
 
     public override string Origin => Diagram.HypeCycleGraph.Origin.Key;
 
-    public override IReadOnlyList<ToolboxItemDefinition> Toolbox => GhgDefinition.Definition.Toolbox;
+    protected override IReadOnlyList<ToolboxItemDefinition> Toolbox => GhgDefinition.Definition.Toolbox;
 
     /// <summary>The corpus, in the order it is recorded.</summary>
     public override IReadOnlyList<TranscriptDocument> Corpus() => [.. Files().Select(OnDisk)];
