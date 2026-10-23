@@ -33,111 +33,40 @@ namespace EtAlii.Adp.Diagram.Mindmap.Tests.Parity;
 /// order it first appears, everywhere it appears, and the hashes are of the masked text.
 /// </para>
 /// </remarks>
-internal static partial class MindmapTranscript
+public sealed partial class MindmapTranscript() : TranscriptAdapter("mindmap", "EtAlii.Adp.Diagram.Mindmap.Tests", "mindmap.transcript.json")
 {
-    /// <summary>The checked-in file's name, in this project's <c>Parity</c> folder.</summary>
-    private const string FileName = "mindmap.transcript.json";
-
-    private const string TestProject = "EtAlii.Adp.Diagram.Mindmap.Tests";
     private const string Unknown = "parity:unknown";
 
     private static readonly TypeRegistry _payloadTypes = TypeRegistry.FromFiles(MindmapReflection.Descriptor);
 
-    /// <summary>The module's folder, <c>src/diagrams/mindmap</c>.</summary>
-    private static string ModuleFolder { get; } = RepositoryPaths.Under("src", "diagrams", "mindmap");
+    public override string Origin => Diagram.Mindmap.Origin.Key;
 
-    /// <summary>The checked-in transcript.</summary>
-    public static string CheckedInPath => Path.Combine(ModuleFolder, "backend", TestProject, "Parity", FileName);
+    public override IReadOnlyList<ToolboxItemDefinition> Toolbox => MindmapDefinition.Definition.Toolbox;
 
-    private static string SourceFolder => Path.GetFullPath(Path.Combine(ModuleFolder, "..", ".."));
-
-    /// <summary>The documents on disk, as paths relative to <c>src/</c> with forward slashes, in the order they are recorded.</summary>
-    private static IReadOnlyList<string> Files()
+    /// <summary>The documents on disk, as paths relative to <c>src/</c> with forward slashes, then the inline documents, in the order they are recorded.</summary>
+    public override IReadOnlyList<TranscriptDocument> Corpus()
     {
         var fixtures = Directory.GetFiles(Path.Combine(ModuleFolder, "backend", TestProject, "Fixtures"), "*.mm");
         var examples = Directory.GetDirectories(Path.Combine(ModuleFolder, "examples")).SelectMany(folder => Directory.GetFiles(folder, "*.mm"));
         var shipped = Directory.GetDirectories(Path.Combine(SourceFolder, "examples", "diagrams", "mindmap")).SelectMany(folder => Directory.GetFiles(folder, "*.mm"));
-        return [.. Sorted(fixtures), .. Sorted(examples), .. Sorted(shipped)];
-
-        static IEnumerable<string> Sorted(IEnumerable<string> paths) => paths.Select(path => Path.GetRelativePath(SourceFolder, path).Replace('\\', '/')).Order(StringComparer.Ordinal);
+        return
+        [
+            .. Relative(fixtures).Concat(Relative(examples)).Concat(Relative(shipped)).Select(OnDisk),
+            .. MindmapCorpus.Inline.Select(document => new TranscriptDocument(document.Name, _ => Task.FromResult(TranscriptText.Encode(document.Text)))),
+        ];
     }
 
-    /// <summary>The whole transcript, as the bytes the checked-in file must hold.</summary>
-    public static async Task<byte[]> GenerateAsync(CancellationToken cancellationToken)
+    public override async Task WriteDocumentAsync(Utf8JsonWriter json, TranscriptDocument document, byte[] bytes, string folder, CancellationToken cancellationToken)
     {
-        using var stream = new MemoryStream();
-        await using (var json = new Utf8JsonWriter(stream, TranscriptText.WriterOptions))
-        {
-            json.WriteStartObject();
-            json.WriteString("module", Diagram.Mindmap.Origin.Key);
-            json.WriteString("generator", $"src/diagrams/mindmap/backend/{TestProject}/Parity/MindmapTranscript.cs");
-            json.WriteString("regenerate", "ADP_WRITE_PARITY_TRANSCRIPTS=1 dotnet test --project <this test project> (then review the diff)");
+        var name = document.Name;
+        var body = Path.Combine(folder, name[(name.LastIndexOf('/') + 1)..]);
+        await File.WriteAllBytesAsync(body, bytes, cancellationToken);
 
-            // The toolbox is static: it does not read the document, so it is written once.
-            json.WriteStartArray("toolbox");
-            foreach (var item in MindmapDefinition.Definition.Toolbox)
-            {
-                json.WriteStringValue($"{item.Id} | {item.Label} | {item.Icon} | drops {item.DropActionId} | {item.Description}");
-            }
+        using var session = new Session(folder, body, TranscriptText.Decode(bytes));
 
-            json.WriteEndArray();
-
-            json.WriteStartArray("documents");
-            var recorded = new Dictionary<string, string>(StringComparer.Ordinal);
-            foreach (var relative in Files())
-            {
-                await WriteDocumentAsync(json, relative, await File.ReadAllBytesAsync(Path.Combine(SourceFolder, relative), cancellationToken), recorded, cancellationToken);
-            }
-
-            foreach ((string name, string text) in MindmapCorpus.Inline)
-            {
-                await WriteDocumentAsync(json, name, TranscriptText.Encode(text), recorded, cancellationToken);
-            }
-
-            json.WriteEndArray();
-            json.WriteEndObject();
-            await json.FlushAsync(cancellationToken);
-        }
-
-        stream.Write("\r\n"u8);
-        return stream.ToArray();
-    }
-
-    private static async Task WriteDocumentAsync(Utf8JsonWriter json, string name, byte[] bytes, Dictionary<string, string> recorded, CancellationToken cancellationToken)
-    {
-        var sha = TranscriptText.Sha256(bytes);
-
-        json.WriteStartObject();
-        json.WriteString("document", name);
-        json.WriteString("sha256", sha);
-        if (recorded.TryGetValue(sha, out var first))
-        {
-            json.WriteString("sameAs", first);
-            json.WriteEndObject();
-            return;
-        }
-
-        recorded[sha] = name;
-
-        var folder = Path.Combine(Path.GetTempPath(), "EtAlii.Adp.MindmapTranscript", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(folder);
-        try
-        {
-            var body = Path.Combine(folder, name[(name.LastIndexOf('/') + 1)..]);
-            await File.WriteAllBytesAsync(body, bytes, cancellationToken);
-
-            using var session = new Session(folder, body, TranscriptText.Decode(bytes));
-
-            await session.ReadAsync(cancellationToken);
-            await WriteReadingsAsync(json, session, cancellationToken);
-            await WriteEditsAsync(json, session, cancellationToken);
-        }
-        finally
-        {
-            TestFolder.TryDelete(folder);
-        }
-
-        json.WriteEndObject();
+        await session.ReadAsync(cancellationToken);
+        await WriteReadingsAsync(json, session, cancellationToken);
+        await WriteEditsAsync(json, session, cancellationToken);
     }
 
     private static async Task WriteReadingsAsync(Utf8JsonWriter json, Session session, CancellationToken cancellationToken)
