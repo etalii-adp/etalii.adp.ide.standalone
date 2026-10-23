@@ -316,7 +316,7 @@ public sealed class TableStreamFlowTests : IClassFixture<TableStreamFlowTests.Ho
     }
 
     /// <summary>A two-row table that answers each call with one change, at once.</summary>
-    internal sealed class FakeSession(ShortGuid watchId, string rootPath, string? registrationPath, string bodyPath) : IDesignerSession
+    internal sealed class FakeSession(ShortGuid watchId, string rootPath, string? registrationPath, string bodyPath) : ITableDesignerSession
     {
         private static readonly TableColumn[] Columns =
         [
