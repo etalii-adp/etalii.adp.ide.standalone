@@ -119,7 +119,7 @@ public class NoWriterSurfaceTests
                 }
 
                 offenders.AddRange(method.GetParameters().Where(parameter => IsWriter(parameter.ParameterType)).Select(parameter => $"{at} takes a {parameter.ParameterType.Name}"));
-                offenders.AddRange(Called(method).Select(called => Offence(called)).OfType<string>().Select(offence => $"{at} {offence}"));
+                offenders.AddRange(Called(method).Select(Offence).OfType<string>().Select(offence => $"{at} {offence}"));
             }
         }
 

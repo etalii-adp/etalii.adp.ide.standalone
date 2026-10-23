@@ -162,7 +162,7 @@ public class SparqlQueryPluginTests
     public void EveryKindOfChange_IsRefused_WithTheBindingsReadOnlySentence(ModelChange change)
     {
         // Arrange.
-        var files = new[] { new PluginFile("query.rq", Encoding.UTF8.GetBytes("SELECT ?s WHERE { ?s ?p ?o }")) };
+        var files = new[] { new PluginFile("query.rq", "SELECT ?s WHERE { ?s ?p ?o }"u8.ToArray()) };
 
         // Act.
         var plan = _plugin.Plan(new PluginPlanRequest(files, _plugin.Read(new PluginReadRequest(files)), change));
