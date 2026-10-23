@@ -6,11 +6,12 @@ namespace EtAlii.Adp.Diagram.Mindmap.Tests;
 /// <summary>The three forms of a link and the conversions between them (Requirement 12.3), and the rewrite when a map moves (12.14).</summary>
 public class MindmapLinksTests : IDisposable
 {
+    private readonly TestFolder _testFolder = TestFolder.Create("mindmap-links");
     private readonly string _root;
 
     public MindmapLinksTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
+        _root = _testFolder.Path;
         Directory.CreateDirectory(IoPath.Combine(_root, "docs"));
         Directory.CreateDirectory(IoPath.Combine(_root, "src", "backend"));
         File.WriteAllText(IoPath.Combine(_root, "src", "backend", "Service.cs"), "");
@@ -18,7 +19,7 @@ public class MindmapLinksTests : IDisposable
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     private string MapAt(string folder) => IoPath.Combine(_root, folder, "map.mm");

@@ -46,7 +46,8 @@ public class C4SessionUpdateViewOnTheRealCorpusTests : IDisposable
     /// </summary>
     private static readonly TimeSpan Patience = TimeSpan.FromSeconds(30);
 
-    private readonly string _root = IoPath.Combine(IoPath.GetTempPath(), "adp-c4-wedge-" + Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-c4-wedge");
+    private readonly string _root;
     private readonly C4DocumentStore _documents = new(new FileWriter());
     private readonly C4ElementMapper _mapper = new(C4Metrics.Default, new C4LayoutSidecar(new FileWriter()));
     private readonly IHistoryStackStore _historyStacks = new ServiceCollection()
@@ -56,11 +57,11 @@ public class C4SessionUpdateViewOnTheRealCorpusTests : IDisposable
         .BuildServiceProvider()
         .GetRequiredService<IHistoryStackStore>();
 
-    public C4SessionUpdateViewOnTheRealCorpusTests() => Directory.CreateDirectory(_root);
+    public C4SessionUpdateViewOnTheRealCorpusTests() => _root = _testFolder.Path;
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
         GC.SuppressFinalize(this);
     }
 

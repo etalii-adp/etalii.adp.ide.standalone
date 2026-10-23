@@ -13,6 +13,7 @@ namespace EtAlii.Adp.Diagram.C4.Tests;
 /// </summary>
 public class AddC4ViewTests : IDisposable
 {
+    private readonly TestFolder _testFolder = TestFolder.Create("c4-add-view");
     private readonly string _root;
     private readonly string _bodyPath;
     private readonly ServiceProvider _services;
@@ -38,8 +39,7 @@ public class AddC4ViewTests : IDisposable
 
     public AddC4ViewTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Diagram.C4.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
         _bodyPath = IoPath.Combine(_root, "banking.dsl");
         File.WriteAllText(_bodyPath, Model);
 
@@ -51,7 +51,7 @@ public class AddC4ViewTests : IDisposable
     public void Dispose()
     {
         _services.Dispose();
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     private AddC4ViewCommand AddContainers(string key = "containers") => new(

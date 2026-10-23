@@ -40,15 +40,14 @@ namespace EtAlii.Adp.Diagram.Databricks.Tests;
 [Collection(LogCapture.Collection)]
 public class DatabricksDocumentStoreMissingBodyTests : IDisposable
 {
-    private readonly string _workspace = IoPath.Combine(
-        IoPath.GetTempPath(),
-        "adp-databricks-missing-" + Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-databricks-missing");
+    private readonly string _workspace;
 
-    public DatabricksDocumentStoreMissingBodyTests() => Directory.CreateDirectory(_workspace);
+    public DatabricksDocumentStoreMissingBodyTests() => _workspace = _testFolder.Path;
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_workspace);
+        _testFolder.Dispose();
 
         GC.SuppressFinalize(this);
     }

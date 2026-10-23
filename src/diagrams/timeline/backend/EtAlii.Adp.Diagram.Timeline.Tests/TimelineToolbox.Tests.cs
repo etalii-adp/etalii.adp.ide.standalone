@@ -14,9 +14,8 @@ namespace EtAlii.Adp.Diagram.Timeline.Tests;
 /// </summary>
 public class TimelineToolboxTests : IDisposable
 {
-    private readonly string _workspace = IoPath.Combine(
-        IoPath.GetTempPath(),
-        "adp-timeline-toolbox-" + Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-timeline-toolbox");
+    private readonly string _workspace;
 
     private readonly TimelineDocumentStore _store = new(new FileWriter());
     private readonly DislToolboxProvider _toolbox = new(Diagram.Timeline.Origin, TimelineDefinition.Definition);
@@ -24,13 +23,13 @@ public class TimelineToolboxTests : IDisposable
 
     public TimelineToolboxTests()
     {
-        Directory.CreateDirectory(_workspace);
+        _workspace = _testFolder.Path;
         _actions = new TimelineContextActionProvider(TestHistory.For(s => { s.AddTimeline(); s.AddSingleton<ITimelineDocumentStore>(_store); }), _store);
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_workspace);
+        _testFolder.Dispose();
 
         GC.SuppressFinalize(this);
     }

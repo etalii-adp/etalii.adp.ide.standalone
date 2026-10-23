@@ -21,9 +21,15 @@ namespace EtAlii.Adp.Diagram.DotNetDependencyGraph.Tests;
 /// </remarks>
 public sealed class DotNetNewDocumentTests : IDisposable
 {
-    private readonly string _root = Directory.CreateTempSubdirectory("ddg-new-document-").FullName;
+    private readonly TestFolder _testFolder = TestFolder.Create("ddg-new-document");
+    private readonly string _root;
 
     private readonly List<DependencyGraphStore> _stores = [];
+
+    public DotNetNewDocumentTests()
+    {
+        _root = _testFolder.Path;
+    }
 
     [Fact]
     public async Task ANewDocument_IsASlnx_MadeFromTheBindingsTemplate_AndOpenedByItsRegistration()
@@ -149,6 +155,6 @@ public sealed class DotNetNewDocumentTests : IDisposable
             store.Dispose();
         }
 
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 }

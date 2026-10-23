@@ -24,12 +24,18 @@ public sealed class DotNetRegistrationTests : IDisposable
 
     private const string Fullwidth = "project:Ａ/Ａ.csproj";
 
-    private readonly string _root = Directory.CreateTempSubdirectory("ddg-registration-").FullName;
+    private readonly TestFolder _testFolder = TestFolder.Create("ddg-registration");
+    private readonly string _root;
 
     private readonly List<DependencyGraphStore> _stores = [];
 
     private static string Fixtures { get; } = RepositoryPaths.Under(
         "src", "diagrams", "dotnet-dependency-graph", "backend", "EtAlii.Adp.Diagram.DotNetDependencyGraph.Tests", "Fixtures");
+
+    public DotNetRegistrationTests()
+    {
+        _root = _testFolder.Path;
+    }
 
     [Fact]
     public async Task AMove_WritesTheEntryWhereTheLibraryOrdersIt_AndItsUndoRestoresTheBytes()
@@ -157,6 +163,6 @@ public sealed class DotNetRegistrationTests : IDisposable
             store.Dispose();
         }
 
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 }

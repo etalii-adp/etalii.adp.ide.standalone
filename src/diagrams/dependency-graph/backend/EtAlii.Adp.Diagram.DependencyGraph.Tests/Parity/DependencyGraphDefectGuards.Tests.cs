@@ -18,17 +18,18 @@ namespace EtAlii.Adp.Diagram.DependencyGraph.Tests.Parity;
 /// </summary>
 public sealed class DependencyGraphDefectGuardsTests : IDisposable
 {
-    private readonly string _workspace = IoPath.Combine(IoPath.GetTempPath(), "adp-dgr-guards-" + Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-dgr-guards");
+    private readonly string _workspace;
     private readonly DependencyGraphDocumentStore _store = new(new FileWriter());
     private readonly IHistoryStackStore _historyStacks;
 
     public DependencyGraphDefectGuardsTests()
     {
-        Directory.CreateDirectory(_workspace);
+        _workspace = _testFolder.Path;
         _historyStacks = TestHistory.For(s => { s.AddDependencyGraph(); s.AddSingleton<IDependencyGraphDocumentStore>(_store); });
     }
 
-    public void Dispose() => TestFolder.TryDelete(_workspace);
+    public void Dispose() => _testFolder.Dispose();
 
     [Fact]
     public async Task B11_RemovingTheFirstHolderOfAnId_TakesOnlyTheDependenciesThatResolveToIt()

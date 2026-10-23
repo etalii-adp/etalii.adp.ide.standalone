@@ -17,13 +17,14 @@ namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline.Tests;
 /// </summary>
 public class PipelineYamlPluginTests : IDisposable
 {
-    private readonly string _workspace = IoPath.Combine(IoPath.GetTempPath(), "adp-pipeline-plugin-" + Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-pipeline-plugin");
+    private readonly string _workspace;
 
-    public PipelineYamlPluginTests() => Directory.CreateDirectory(_workspace);
+    public PipelineYamlPluginTests() => _workspace = _testFolder.Path;
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_workspace);
+        _testFolder.Dispose();
         GC.SuppressFinalize(this);
     }
 
@@ -176,27 +177,21 @@ public class PipelineYamlPluginTests : IDisposable
     public void ATemplateOutsideTheWorkspace_IsNeverRead()
     {
         // Arrange: a template that exists, beside the workspace rather than in it.
-        var outside = _workspace + "-outside";
-        Directory.CreateDirectory(outside);
-        try
-        {
-            File.WriteAllText(IoPath.Combine(outside, "jobs.yml"), "jobs:\n  - job: Escaped\n    steps:\n      - script: x\n");
-            var path = Write("azure-pipelines.yml", $"stages:\n  - stage: Build\n    jobs:\n      - template: ../{IoPath.GetFileName(outside)}/jobs.yml\n");
-            var templates = new PipelineTemplates(ProjectRoot.From(_workspace));
+        // Beside the workspace: TestFolder makes both under the same parent.
+        using var outsideFolder = TestFolder.Create("adp-pipeline-plugin-outside");
+        var outside = outsideFolder.Path;
+        File.WriteAllText(IoPath.Combine(outside, "jobs.yml"), "jobs:\n  - job: Escaped\n    steps:\n      - script: x\n");
+        var path = Write("azure-pipelines.yml", $"stages:\n  - stage: Build\n    jobs:\n      - template: ../{IoPath.GetFileName(outside)}/jobs.yml\n");
+        var templates = new PipelineTemplates(ProjectRoot.From(_workspace));
 
-            // Act.
-            var body = PipelineBody.Open(File.ReadAllBytes(path), new PipelineReadContext(path, templates));
+        // Act.
+        var body = PipelineBody.Open(File.ReadAllBytes(path), new PipelineReadContext(path, templates));
 
-            // Assert.
-            Assert.Equal(0, templates.FilesRead);
-            Assert.DoesNotContain(body.Model.Jobs, job => job.Name == "Escaped");
-            var reference = Assert.Single(body.Reading.Elements, element => element.Type == "TemplateReference");
-            Assert.Equal("outsideWorkspace", reference.Attributes["reason"]);
-        }
-        finally
-        {
-            TestFolder.TryDelete(outside);
-        }
+        // Assert.
+        Assert.Equal(0, templates.FilesRead);
+        Assert.DoesNotContain(body.Model.Jobs, job => job.Name == "Escaped");
+        var reference = Assert.Single(body.Reading.Elements, element => element.Type == "TemplateReference");
+        Assert.Equal("outsideWorkspace", reference.Attributes["reason"]);
     }
 
     [Fact]

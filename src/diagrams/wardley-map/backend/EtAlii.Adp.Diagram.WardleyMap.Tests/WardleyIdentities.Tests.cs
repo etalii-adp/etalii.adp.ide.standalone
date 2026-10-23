@@ -6,14 +6,15 @@ namespace EtAlii.Adp.Diagram.WardleyMap.Tests;
 
 public sealed class WardleyIdentitiesTests : IDisposable
 {
-    private readonly string _folder = IoPath.Combine(IoPath.GetTempPath(), $"wardley-ids-{Guid.NewGuid():N}");
+    private readonly TestFolder _testFolder = TestFolder.Create("wardley-ids");
+    private readonly string _folder;
     private readonly WardleyIdentities _identities = new(new FileWriter());
 
-    public WardleyIdentitiesTests() => Directory.CreateDirectory(_folder);
+    public WardleyIdentitiesTests() => _folder = _testFolder.Path;
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_folder);
+        _testFolder.Dispose();
     }
 
     private string BodyPath => IoPath.Combine(_folder, "map.owm");

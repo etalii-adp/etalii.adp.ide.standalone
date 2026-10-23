@@ -12,9 +12,15 @@ namespace EtAlii.Adp.Designer.Knowledge.Tests;
 /// </summary>
 public sealed class KnowledgeCalculationsTests : IDisposable
 {
-    private readonly string _root = Directory.CreateTempSubdirectory("adp-knowledge-calculations-").FullName;
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-knowledge-calculations");
+    private readonly string _root;
 
-    public void Dispose() => Directory.Delete(_root, recursive: true);
+    public KnowledgeCalculationsTests()
+    {
+        _root = _testFolder.Path;
+    }
+
+    public void Dispose() => _testFolder.Dispose();
 
     /// <summary>The example in its second view, which shows every row.</summary>
     private EditingTable Open(string extension) => new(KnowledgeFiles.CopyPlain("cities" + extension, _root));

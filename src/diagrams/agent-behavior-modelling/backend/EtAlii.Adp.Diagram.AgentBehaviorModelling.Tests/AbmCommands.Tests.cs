@@ -11,31 +11,23 @@ namespace EtAlii.Adp.Diagram.AgentBehaviorModelling.Tests;
 /// </summary>
 public sealed class AbmCommandsTests : IDisposable
 {
-    private readonly string _folder = Path.Combine(Path.GetTempPath(), "EtAlii.Adp.AbmCommandsTests", Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _folder = TestFolder.Create("EtAlii.Adp.AbmCommandsTests");
     private readonly AbmDocumentStore _store = new(new FileWriter());
     private readonly ICommandDispatcher _dispatcher;
     private readonly byte[] _original;
 
     public AbmCommandsTests()
     {
-        Directory.CreateDirectory(_folder);
         File.Copy(AbmExamples.BodyOf("pull-request-reviewer"), Body);
         _original = File.ReadAllBytes(Body);
         _dispatcher = TestHistory.Dispatcher(s => { s.AddAgentBehaviorModelling(); s.AddSingleton<IAbmDocumentStore>(_store); });
     }
 
-    private string Body => Path.Combine(_folder, "reviewer.md");
+    private string Body => _folder.Combine("reviewer.md");
 
     public void Dispose()
     {
-        try
-        {
-            Directory.Delete(_folder, recursive: true);
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            // A temp folder left behind is not a test failure.
-        }
+        _folder.Dispose();
     }
 
     public static TheoryData<string> EveryEdit =>

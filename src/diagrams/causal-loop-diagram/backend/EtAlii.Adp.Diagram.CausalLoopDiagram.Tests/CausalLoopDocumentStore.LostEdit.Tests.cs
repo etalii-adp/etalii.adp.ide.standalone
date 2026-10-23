@@ -35,15 +35,14 @@ public class CausalLoopDocumentStoreLostEditTests : IDisposable
         + "variable b \"Beta\"\r\n"
         + "link a -> b +\r\n";
 
-    private readonly string _workspace = IoPath.Combine(
-        IoPath.GetTempPath(),
-        "adp-causal-loop-lost-edit-" + Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-causal-loop-lost-edit");
+    private readonly string _workspace;
 
-    public CausalLoopDocumentStoreLostEditTests() => Directory.CreateDirectory(_workspace);
+    public CausalLoopDocumentStoreLostEditTests() => _workspace = _testFolder.Path;
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_workspace);
+        _testFolder.Dispose();
 
         GC.SuppressFinalize(this);
     }

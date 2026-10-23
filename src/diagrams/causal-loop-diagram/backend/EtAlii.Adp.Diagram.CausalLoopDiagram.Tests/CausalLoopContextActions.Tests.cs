@@ -26,6 +26,7 @@ public class CausalLoopContextActionsTests : IDisposable
         + "link births -> population +\r\n"
         + "loop R1 \"Births beget births\" population births\r\n";
 
+    private readonly TestFolder _testFolder = TestFolder.Create("causal-loop-context-actions");
     private readonly string _root;
     private readonly string _path;
     private readonly ServiceProvider _provider;
@@ -35,8 +36,7 @@ public class CausalLoopContextActionsTests : IDisposable
 
     public CausalLoopContextActionsTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
         _path = IoPath.Combine(_root, "feedback.cld");
         File.WriteAllText(_path, Corpus);
 
@@ -54,7 +54,7 @@ public class CausalLoopContextActionsTests : IDisposable
     public void Dispose()
     {
         _provider.Dispose();
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
         GC.SuppressFinalize(this);
     }
 

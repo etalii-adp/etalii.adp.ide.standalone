@@ -15,6 +15,7 @@ namespace EtAlii.Adp.Diagram.C4.Tests;
 /// </summary>
 public class C4SharedReadTests : IDisposable
 {
+    private readonly TestFolder _testFolder = TestFolder.Create("c4-shared-read");
     private readonly string _root;
     private readonly C4DocumentStore _documents = new(new FileWriter());
     private readonly C4ElementMapper _mapper = new(C4Metrics.Default, new C4LayoutSidecar(new FileWriter()));
@@ -22,13 +23,12 @@ public class C4SharedReadTests : IDisposable
 
     public C4SharedReadTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Diagram.C4.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     private const string Model = """

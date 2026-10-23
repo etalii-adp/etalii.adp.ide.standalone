@@ -29,9 +29,10 @@ internal sealed class DatabricksParityCorpus : IDisposable
         ServiceCollectionAddDatabricksExtension.PipelineOrigin,
     ];
 
-    private readonly string _folder = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.DatabricksParity", Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("EtAlii.Adp.DatabricksParity");
+    private readonly string _folder;
 
-    public DatabricksParityCorpus() => Directory.CreateDirectory(_folder);
+    public DatabricksParityCorpus() => _folder = _testFolder.Path;
 
     /// <summary>The three tool types.</summary>
     public static IReadOnlyList<ToolOrigin> Origins => _origins;
@@ -123,7 +124,7 @@ internal sealed class DatabricksParityCorpus : IDisposable
     public static ContextTarget Target(string elementId, ToolOrigin origin, string? registration) =>
         ContextTarget.ForElement(IoPath.Combine(IoPath.GetTempPath(), "parity.yml"), elementId, origin: origin) with { RegistrationPath = registration };
 
-    public void Dispose() => TestFolder.TryDelete(_folder);
+    public void Dispose() => _testFolder.Dispose();
 
     private static IEnumerable<(string Name, string Path)> Paths()
     {

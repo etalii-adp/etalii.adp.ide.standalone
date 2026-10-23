@@ -12,7 +12,7 @@ namespace EtAlii.Adp.Diagram.Mindmap.Tests;
 /// </summary>
 public class MindmapSessionTests : IDisposable
 {
-    private readonly string _root;
+    private readonly TestFolder _testFolder = TestFolder.Create("mindmap-session");
     private readonly string _bodyPath;
     private readonly ServiceProvider _services;
     private readonly IMindmapDocumentStore _documents;
@@ -23,9 +23,8 @@ public class MindmapSessionTests : IDisposable
 
     public MindmapSessionTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
-        _bodyPath = IoPath.Combine(_root, "architecture.mm");
+        var root = _testFolder.Path;
+        _bodyPath = IoPath.Combine(root, "architecture.mm");
         File.Copy("Fixtures/architecture.mm", _bodyPath);
 
         // The same wiring the host uses, so a drag-move dispatched by the session runs the
@@ -37,13 +36,13 @@ public class MindmapSessionTests : IDisposable
             .BuildServiceProvider();
         _documents = _services.GetRequiredService<IMindmapDocumentStore>();
         _views = _services.GetRequiredService<MindmapViewState>();
-        _history = _services.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(_root));
+        _history = _services.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(root));
     }
 
     public void Dispose()
     {
         _services.Dispose();
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     private MindmapSession Open() => new(_watchId, _bodyPath, _documents, _views, _mapper, _history);

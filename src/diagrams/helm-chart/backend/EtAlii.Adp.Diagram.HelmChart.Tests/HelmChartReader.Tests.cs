@@ -191,22 +191,16 @@ public class HelmChartReaderTests
     public void AFolderWithNoChartYaml_IsNotAChart()
     {
         // Arrange.
-        var scratch = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(scratch);
+        using var scratchFolder = TestFolder.Create("helm-not-a-chart");
+        var scratch = scratchFolder.Path;
         File.WriteAllText(IoPath.Combine(scratch, "unrelated.txt"), "not a chart");
-        try
-        {
-            // Act.
-            var reading = HelmFolder.Reading(scratch);
 
-            // Assert.
-            Assert.False(reading.IsChart);
-            Assert.Empty(reading.Disl.Diagram.Nodes);
-        }
-        finally
-        {
-            TestFolder.TryDelete(scratch);
-        }
+        // Act.
+        var reading = HelmFolder.Reading(scratch);
+
+        // Assert.
+        Assert.False(reading.IsChart);
+        Assert.Empty(reading.Disl.Diagram.Nodes);
     }
 
     [Fact]

@@ -32,6 +32,7 @@ public class CausalLoopContextPropertiesTests : IDisposable
         + "loop R1 \"Births beget births\" population births\r\n"
         + "loop B2 \"Crowding checks growth\" population crowding\r\n";
 
+    private readonly TestFolder _testFolder = TestFolder.Create("causal-loop-context-properties");
     private readonly string _root;
     private readonly string _path;
     private readonly ServiceProvider _provider;
@@ -40,8 +41,7 @@ public class CausalLoopContextPropertiesTests : IDisposable
 
     public CausalLoopContextPropertiesTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
         _path = IoPath.Combine(_root, "feedback.cld");
         File.WriteAllText(_path, Corpus);
 
@@ -57,7 +57,7 @@ public class CausalLoopContextPropertiesTests : IDisposable
     public void Dispose()
     {
         _provider.Dispose();
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
         GC.SuppressFinalize(this);
     }
 

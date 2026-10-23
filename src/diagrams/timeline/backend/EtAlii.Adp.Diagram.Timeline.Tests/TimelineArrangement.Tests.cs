@@ -9,19 +9,20 @@ namespace EtAlii.Adp.Diagram.Timeline.Tests;
 /// <summary>"Arrange diagram" on a timeline: only rows change, nothing overlaps, and one undo puts it back.</summary>
 public class TimelineArrangementTests : IDisposable
 {
-    private readonly string _workspace = IoPath.Combine(IoPath.GetTempPath(), "adp-timeline-arrange-" + Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-timeline-arrange");
+    private readonly string _workspace;
     private readonly TimelineDocumentStore _store = new(new FileWriter());
     private readonly IHistoryStackStore _historyStacks;
 
     public TimelineArrangementTests()
     {
-        Directory.CreateDirectory(_workspace);
+        _workspace = _testFolder.Path;
         _historyStacks = TestHistory.For(s => { s.AddTimeline(); s.AddSingleton<ITimelineDocumentStore>(_store); });
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_workspace);
+        _testFolder.Dispose();
         GC.SuppressFinalize(this);
     }
 

@@ -10,17 +10,17 @@ namespace EtAlii.Adp.Editor.Plain.Tests;
 /// </summary>
 public class PlainEditorSessionFactoryTests : IDisposable
 {
+    private readonly TestFolder _testFolder = TestFolder.Create("plain-editor-session-factory");
     private readonly string _root;
 
     public PlainEditorSessionFactoryTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     private static TextEditorSession Open(string path) =>

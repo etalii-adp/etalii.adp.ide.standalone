@@ -14,9 +14,8 @@ namespace EtAlii.Adp.Diagram.DependencyGraph.Tests;
 /// </summary>
 public class DependencyGraphToolboxTests : IDisposable
 {
-    private readonly string _workspace = IoPath.Combine(
-        IoPath.GetTempPath(),
-        "adp-dgr-toolbox-" + Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-dgr-toolbox");
+    private readonly string _workspace;
 
     private readonly DependencyGraphDocumentStore _store = new(new FileWriter());
     private readonly DislToolboxProvider _toolbox = new(Diagram.DependencyGraph.Origin, DependencyGraphDefinition.Definition);
@@ -24,14 +23,14 @@ public class DependencyGraphToolboxTests : IDisposable
 
     public DependencyGraphToolboxTests()
     {
-        Directory.CreateDirectory(_workspace);
+        _workspace = _testFolder.Path;
         _actions = new DependencyGraphContextActionProvider(
             TestHistory.For(s => { s.AddDependencyGraph(); s.AddSingleton<IDependencyGraphDocumentStore>(_store); }), _store);
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_workspace);
+        _testFolder.Dispose();
 
         GC.SuppressFinalize(this);
     }

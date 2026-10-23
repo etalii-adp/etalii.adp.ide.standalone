@@ -23,18 +23,17 @@ public sealed class KnowledgeSessionTests : IDisposable
 {
     private static readonly TimeSpan Patience = TimeSpan.FromSeconds(10);
 
-    private readonly string _root = Directory.CreateTempSubdirectory("adp-knowledge-session-").FullName;
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-knowledge-session");
+    private readonly string _root;
+
+    public KnowledgeSessionTests()
+    {
+        _root = _testFolder.Path;
+    }
 
     public void Dispose()
     {
-        try
-        {
-            Directory.Delete(_root, recursive: true);
-        }
-        catch (IOException)
-        {
-            // A watcher may still be letting go; the temp folder is the system's to clear.
-        }
+        _testFolder.Dispose();
     }
 
     // ---- the table model ------------------------------------------------------------------

@@ -150,24 +150,18 @@ public class ProjectReaderTests
         // repository is reported as an error by every IDE that opens the solution.
 
         // Arrange.
-        var folder = Directory.CreateTempSubdirectory("ddg-broken-").FullName;
+        using var broken = TestFolder.Create("ddg-broken");
+        var folder = broken.Path;
         var path = Path.Combine(folder, "Broken.csproj");
         File.WriteAllText(path, "<Project><broken");
         var reader = new ProjectReader();
 
-        try
-        {
-            // Act.
-            var reading = reader.Read(path);
+        // Act.
+        var reading = reader.Read(path);
 
-            // Assert.
-            Assert.Single(reading.Failures);
-            Assert.Empty(reading.PackageReferences);
-            Assert.Empty(reading.ProjectReferences);
-        }
-        finally
-        {
-            Directory.Delete(folder, recursive: true);
-        }
+        // Assert.
+        Assert.Single(reading.Failures);
+        Assert.Empty(reading.PackageReferences);
+        Assert.Empty(reading.ProjectReferences);
     }
 }
