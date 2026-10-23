@@ -1,6 +1,6 @@
 using EtAlii.Adp.Documents;
 
-namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
+namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests.Parity;
 
 /// <summary>One connection entry, and the lines that declare it.</summary>
 /// <param name="Id">Its id. Empty when the entry states none, which the rules report.</param>

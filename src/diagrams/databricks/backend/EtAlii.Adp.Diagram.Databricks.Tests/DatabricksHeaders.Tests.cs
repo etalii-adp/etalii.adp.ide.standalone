@@ -5,8 +5,8 @@ namespace EtAlii.Adp.Diagram.Databricks.Tests;
 
 /// <summary>
 /// The <c>resource:</c> header scan: what it reads, where it stops, and that it reads through
-/// the shared reader - the guard shape <c>RdfRegistrationHeaders</c> carries, kept identical
-/// because the two helpers are the same helper under different names.
+/// the shared reader - the guard shape the rdf family's header reader carried until it went,
+/// unused (code-structure T295), kept identical because the two were the same helper.
 /// </summary>
 public class DatabricksHeadersTests : IDisposable
 {

@@ -417,6 +417,9 @@ internal sealed class RegistrationSettings
 
     public bool CreateOnFirstPlacement { get; init; }
 
+    /// <summary>The blocks the binding declares (FBL 0.7 §8.1), in the order it declares them, which is the order they are written in (§8.4).</summary>
+    public IReadOnlyList<RegistrationBlockDeclaration> Blocks { get; init; } = [];
+
     public string? ResourceCapture { get; init; }
 
     public string? LegacyLayout { get; init; }

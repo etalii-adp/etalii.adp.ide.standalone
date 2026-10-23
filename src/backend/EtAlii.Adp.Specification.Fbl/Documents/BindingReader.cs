@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using EtAlii.Adp.Specification.Json;
 
 namespace EtAlii.Adp.Specification.Fbl.Documents;
@@ -7,7 +8,7 @@ namespace EtAlii.Adp.Specification.Fbl.Documents;
 /// Maps a binding's JSON onto the typed records, reporting what it cannot map. Input the schema
 /// refuses is reported at its pointer and read as absent, never thrown (FBL §14.1).
 /// </summary>
-internal static class BindingReader
+internal static partial class BindingReader
 {
     public static FblBinding? Read(string name, JsonElement json, string pointer, List<LoadDiagnostic> problems)
     {
@@ -358,8 +359,9 @@ internal static class BindingReader
     {
         var place = json.TryGetProperty("place", out var p) ? p : default;
         if (JsonProperties.String(json, "at") == "end") return new CreateChild("", ChildPlace.Last, null, true);
-        if (place.ValueKind == JsonValueKind.Object) return new CreateChild(JsonProperties.String(json, "emit") ?? "", ChildPlace.Before, JsonProperties.String(place, "before"));
-        return new CreateChild(JsonProperties.String(json, "emit") ?? "", Setting<ChildPlace>(json, "place", pointer, "A child's place", problems) ?? ChildPlace.Last, null);
+        return place.ValueKind == JsonValueKind.Object
+            ? new CreateChild(JsonProperties.String(json, "emit") ?? "", ChildPlace.Before, JsonProperties.String(place, "before"))
+            : new CreateChild(JsonProperties.String(json, "emit") ?? "", Setting<ChildPlace>(json, "place", pointer, "A child's place", problems) ?? ChildPlace.Last, null);
     }
 
     /// <summary>
@@ -394,9 +396,42 @@ internal static class BindingReader
         {
             Headers = r.TryGetProperty("headers", out var h) && h.ValueKind == JsonValueKind.Object ? h.EnumerateObject().Select(p => p.Name).ToList() : [],
             CreateOnFirstPlacement = JsonProperties.Bool(r, "createOnFirstPlacement"),
+            Blocks = ReadBlocks(r, pointer + "/registration", problems),
             ResourceCapture = Object(r, "resource", pointer + "/registration", "A registration's resource", problems) is { } res ? JsonProperties.String(res, "capture") : null,
             LegacyLayout = JsonProperties.String(r, "legacyLayout"),
         };
+    }
+
+    /// <summary>A Name (FBL §2.2).</summary>
+    [GeneratedRegex("^[A-Za-z_][A-Za-z0-9_.-]*$", RegexOptions.CultureInvariant)]
+    private static partial Regex BlockName();
+
+    /// <summary>A registration's declared blocks (FBL 0.7 §8.1): each a Name, with its order, its keys and whether it is in the history.</summary>
+    private static List<RegistrationBlockDeclaration> ReadBlocks(JsonElement registration, string pointer, List<LoadDiagnostic> problems)
+    {
+        var blocks = new List<RegistrationBlockDeclaration>();
+        if (Object(registration, "blocks", pointer, "A registration's blocks", problems) is not { } declared) return blocks;
+        foreach (var block in declared.EnumerateObject())
+        {
+            var at = JsonPointer.Append(pointer + "/blocks", block.Name);
+            if (block.Value.ValueKind != JsonValueKind.Object)
+            {
+                problems.Add(new LoadDiagnostic(at, LoadSeverity.Error, "A declared block is an object."));
+                continue;
+            }
+            if (!BlockName().IsMatch(block.Name) || block.Name is "layout" or "identities")
+            {
+                problems.Add(new LoadDiagnostic(at, LoadSeverity.Error, $"'{block.Name}' cannot name a declared block: it is a Name, and neither layout nor identities (FBL 8.1)."));
+                continue;
+            }
+            var order = JsonProperties.String(block.Value, "order") ?? "ordinal";
+            if (order is not ("ordinal" or "kept")) problems.Add(new LoadDiagnostic(at + "/order", LoadSeverity.Error, "A block's order is \"ordinal\" or \"kept\"."));
+            var keys = JsonProperties.String(block.Value, "keys") ?? "names";
+            if (keys is not ("names" or "ids")) problems.Add(new LoadDiagnostic(at + "/keys", LoadSeverity.Error, "A block's keys are \"names\" or \"ids\"."));
+            var history = !block.Value.TryGetProperty("history", out var h) || h.ValueKind != JsonValueKind.False;
+            blocks.Add(new RegistrationBlockDeclaration(block.Name, order == "kept", keys == "ids", history));
+        }
+        return blocks;
     }
 
     internal static string ScalarText(JsonElement value) => value.ValueKind switch

@@ -1,7 +1,9 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.History;
 using EtAlii.Adp.Specification.Disl;
+using EtAlii.Adp.Specification.Fbl.Planning;
 
 namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
 
@@ -99,6 +101,64 @@ internal static class FdgDefinition
         return GestureConstraintEvaluator.Connect(Specification, diagram, relationType, from, to, env: Env)?.Message;
     }
 
+    /// <summary>
+    /// Writes the changes of <paramref name="transaction"/> into <paramref name="body"/>, in order, each through the
+    /// binding (<see cref="DislWrite.ToFbl"/>, <see cref="FdgBody.Change"/>); the first refusal, the transaction's own or
+    /// the binding's, stops it. A transaction of removals is written as one edit that keeps the comments above the
+    /// entries it removes (<see cref="FdgCommentKeeper"/>).
+    /// </summary>
+    public static EditOutcome Apply(FdgBody body, DislTransaction transaction)
+    {
+        ArgumentNullException.ThrowIfNull(body);
+        ArgumentNullException.ThrowIfNull(transaction);
+        if (!transaction.WasApplied) return EditOutcome.Refused(transaction.Refusal!);
+
+        var changes = transaction.Changes.Select(change => body.ForBinding(DislWrite.ToFbl(Specification, change))).ToList();
+        if (changes.Count > 0 && changes.All(change => change is ModelChange.Remove))
+        {
+            return FdgCommentKeeper.Remove(body, [.. changes.Cast<ModelChange.Remove>()]);
+        }
+
+        foreach (var change in changes)
+        {
+            var edit = body.Change(change);
+            if (!edit.WasApplied) return EditOutcome.Refused(FdgReaderSentences.RefusalOf(edit.Refusal!));
+        }
+
+        return EditOutcome.Applied;
+    }
+
+    /// <summary>
+    /// Sets <paramref name="values"/> on <paramref name="element"/> of <paramref name="body"/>, those of them that differ
+    /// from what it holds, so that a value that did not change is not written.
+    /// </summary>
+    public static EditOutcome Set(FdgBody body, DislElement element, IReadOnlyDictionary<string, object?> values)
+    {
+        ArgumentNullException.ThrowIfNull(body);
+        ArgumentNullException.ThrowIfNull(element);
+        ArgumentNullException.ThrowIfNull(values);
+
+        var changed = values
+            .Where(value => !Equals(element.Attributes.GetValueOrDefault(value.Key), value.Value))
+            .ToDictionary(value => value.Key, value => value.Value, StringComparer.Ordinal);
+        return changed.Count == 0
+            ? EditOutcome.Applied
+            : Apply(body, new DislTransaction([new DislChange.Set(element.Id, element.Type.Name, changed)], [], null));
+    }
+
+    /// <summary>The toolbox tool that drops an element of the document's type <paramref name="documentType"/>; null for a type the notation does not have.</summary>
+    public static string? ToolOf(string documentType) =>
+        FdgReading.ElementTypeOf(documentType) is { } type
+            ? ToolboxDerivation.Derive(Specification, Definition.Ids).FirstOrDefault(tool => tool.Creates == type)?.Name
+            : null;
+
+    /// <summary>Whether an element or a connection of <paramref name="diagram"/> is written with <paramref name="id"/>.</summary>
+    public static bool IsTaken(DislDiagram diagram, string id)
+    {
+        ArgumentNullException.ThrowIfNull(diagram);
+        return diagram.Elements.Any(element => WrittenId(element) == id);
+    }
+
     /// <summary>The element <paramref name="id"/> names, never a connection, as a connect finds its ends; null for none.</summary>
     public static DislElement? EndOf(DislDiagram diagram, string id)
     {
@@ -119,6 +179,13 @@ internal static class FdgDefinition
         ArgumentNullException.ThrowIfNull(element);
         return element.Type.Name == "Comment";
     }
+
+    /// <summary>The height the four named types share: the definition's <c>fixed</c> height of a named element (DISL 4.3).</summary>
+    public static double SharedHeight { get; } =
+        Specification.Metamodel.TypeOf("NamedElement") is { } named && named.Attributes.TryGetValue("height", out var height)
+        && height.Json.TryGetProperty("fixed", out var value) && value.ValueKind == System.Text.Json.JsonValueKind.Number
+            ? value.GetDouble()
+            : throw new InvalidOperationException("The definition gives a named element no fixed height.");
 
     /// <summary>The text <paramref name="attribute"/> of <paramref name="element"/> holds; empty for none.</summary>
     public static string TextOf(DislElement element, string attribute)

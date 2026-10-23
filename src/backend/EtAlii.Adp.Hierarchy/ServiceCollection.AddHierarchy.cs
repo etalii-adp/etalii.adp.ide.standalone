@@ -110,6 +110,7 @@ public static class ServiceCollectionAddHierarchyExtension
         services.AddSingleton<ICommandHandler<PlaceInRegistrationCommand>, PlaceInRegistrationCommandHandler>();
         services.AddSingleton<ICommandHandler<RestoreRegistrationCommand>, RestoreRegistrationCommandHandler>();
         services.AddSingleton<ICommandHandler<CreateDiagramFileCommand>, CreateDiagramFileCommandHandler>();
+        services.AddSingleton<ICommandHandler<CreateDocumentBodyCommand>, CreateDocumentBodyCommandHandler>();
         services.AddSingleton<ICommandHandler<SaveTextFileCommand>, SaveTextFileCommandHandler>();
 
         return services;

@@ -189,11 +189,14 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
 
         // One strategy per case (code-structure FR-071): registering a file that is there, a
         // designer's new document, or a diagram's - a new document or the folder itself.
+        if (target.IsContainer && _designers?.Resolve(value) is { } designer)
+        {
+            return await CommitDesignerDocumentAsync(target, designer.Definition, designer.Format, text, cancellationToken);
+        }
+
         (CreateDiagramFileCommand? command, string error) = !target.IsContainer
             ? _diagrams.PlanRegistration(target, value)
-            : _designers?.Resolve(value) is { } designer
-                ? PlanDesignerDocument(target, designer.Definition, designer.Format, text)
-                : _diagrams.PlanInFolder(target, value, text);
+            : _diagrams.PlanInFolder(target, value, text);
         if (command is null)
         {
             return ContextCommitResult.Failed(error);
@@ -212,26 +215,33 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
     }
 
     /// <summary>
-    /// A designer's document in the chosen format: its body and the registration beside it,
-    /// through the same command a diagram with a body file is created by, so the two files
-    /// appear or neither does and one undo removes both.
+    /// A designer's document in the chosen format, as <see cref="DesignerAddOptions.Plan"/> decides it: written through
+    /// the history, so one undo removes what was written, or a document that is already there opened as it is.
     /// </summary>
-    private (CreateDiagramFileCommand? Command, string Error) PlanDesignerDocument(
-        ContextTarget target, DesignerDefinition definition, DesignerFormat format, string text)
+    private async ValueTask<ContextCommitResult> CommitDesignerDocumentAsync(
+        ContextTarget target, DesignerDefinition definition, DesignerFormat format, string text, CancellationToken cancellationToken)
     {
         var validation = DiagramAddOptions.ValidateName(target, text);
         if (!validation.Valid)
         {
             _logger.Debug("Rejecting the name {Name} for a new {Origin}: {Reason}", text, definition.Origin, validation.Reason);
-            return (null, validation.Reason);
+            return ContextCommitResult.Failed(validation.Reason);
         }
 
-        (CreateDiagramFileCommand? command, string error) = _designers!.Plan(definition, format, target.ResolvedFullPath, DiagramFileName.StripExtension(text));
-        if (command is not null)
+        var plan = _designers!.Plan(definition, format, target.ResolvedFullPath, DiagramFileName.StripExtension(text));
+        if (plan.OpensExisting)
         {
-            _logger.Debug("Creating a {Origin} document named {FileName} in {Folder}", definition.Origin, command.SiblingFileName, target.ResolvedFullPath);
+            _logger.Debug("Opening the {Origin} document {Path} that is already there", definition.Origin, plan.Destination);
+            return ContextCommitResult.Created(plan.Destination);
         }
 
-        return (command, error);
+        if (plan.Command is null)
+        {
+            return ContextCommitResult.Failed(plan.Error);
+        }
+
+        _logger.Debug("Creating a {Origin} document at {Path}", definition.Origin, plan.Destination);
+        var result = await _historyStacks.Get(target.Root).ExecuteAsync(plan.Command, cancellationToken);
+        return result.IsSuccess ? ContextCommitResult.Created(plan.Destination) : ContextCommitResult.Failed(result.Error);
     }
 }

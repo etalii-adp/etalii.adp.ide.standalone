@@ -1,5 +1,5 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Specification.Disl;
 
 namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
 
@@ -7,8 +7,14 @@ namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
 public sealed class RenameFdgConnectionCommandHandler(IFdgDocumentStore documents) : FdgEditHandler<RenameFdgConnectionCommand>(documents)
 {
     /// <inheritdoc />
-    protected override EditOutcome Apply(LineDocument document, FdgModel model, RenameFdgConnectionCommand command) =>
-        model.ConnectionOf(command.ConnectionId) is { } connection
-            ? FdgWriter.SetConnectionName(document, connection, command.Name)
+    protected override EditOutcome Apply(FdgBody body, DislModel model, RenameFdgConnectionCommand command)
+    {
+        ArgumentNullException.ThrowIfNull(body);
+        ArgumentNullException.ThrowIfNull(model);
+        ArgumentNullException.ThrowIfNull(command);
+
+        return FdgDefinition.ConnectionOf(model.Diagram, command.ConnectionId) is { } connection
+            ? FdgDefinition.Set(body, connection, new Dictionary<string, object?>(StringComparer.Ordinal) { ["name"] = command.Name })
             : EditOutcome.Refused("That connection is no longer in this graph.");
+    }
 }

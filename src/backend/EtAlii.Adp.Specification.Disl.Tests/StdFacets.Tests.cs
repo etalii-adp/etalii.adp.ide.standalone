@@ -49,8 +49,8 @@ public class StdFacetsTests
     {
         var specification = Specifications.Loaded(Specifications.With(Metamodel + Configured));
         var diagram = new DislDiagram(specification);
-        Node(diagram, "Box", "a", 1, new() { ["width"] = 12.5, ["count"] = 11L });
-        Node(diagram, "Box", "b", 2, new() { ["width"] = 80.0, ["count"] = 10L });
+        Node(diagram, "Box", "a", 1, new Dictionary<string, object?> { ["width"] = 12.5, ["count"] = 11L });
+        Node(diagram, "Box", "b", 2, new Dictionary<string, object?> { ["width"] = 80.0, ["count"] = 10L });
 
         Assert.Equal(["1 | box.min | warning | a width min 80 | a", "1 | box.max | warning | a count max 10 | a"], Facets(specification, diagram));
     }
@@ -60,7 +60,7 @@ public class StdFacetsTests
     {
         var specification = Specifications.Loaded(Specifications.With(Metamodel + Configured));
         var diagram = new DislDiagram(specification);
-        Node(diagram, "Note", "n", 3, new() { ["width"] = 10.0, ["height"] = 30.0 });
+        Node(diagram, "Note", "n", 3, new Dictionary<string, object?> { ["width"] = 10.0, ["height"] = 30.0 });
 
         Assert.Equal(["3 | box.min | warning | n width min 80 | n", "3 | box.min | warning | n height min 48 | n"], Facets(specification, diagram));
     }
@@ -70,7 +70,7 @@ public class StdFacetsTests
     {
         var specification = Specifications.Loaded(Specifications.With(Metamodel + Configured));
         var diagram = new DislDiagram(specification);
-        Node(diagram, "Box", "a", 1, new() { ["label"] = "x" });
+        Node(diagram, "Box", "a", 1, new Dictionary<string, object?> { ["label"] = "x" });
 
         Assert.Empty(Facets(specification, diagram));
     }
@@ -80,7 +80,7 @@ public class StdFacetsTests
     {
         var specification = Specifications.Loaded(Specifications.With(Metamodel));
         var diagram = new DislDiagram(specification);
-        Node(diagram, "Box", "a", 1, new() { ["width"] = 12.5 });
+        Node(diagram, "Box", "a", 1, new Dictionary<string, object?> { ["width"] = 12.5 });
 
         Assert.Equal(["1 | std.facets | error | 'a' has width 12.5; the minimum is 80. | a"], Facets(specification, diagram));
     }

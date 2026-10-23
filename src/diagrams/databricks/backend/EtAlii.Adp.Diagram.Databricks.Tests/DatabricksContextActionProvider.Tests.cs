@@ -237,6 +237,24 @@ public class DatabricksContextActionProviderTests : IDisposable
         Assert.Contains("task_key: notebook_1", await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken), StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task ADropOnAFileWithNoJob_IsRefused_AndWritesNothing()
+    {
+        // Arrange.
+        // A pipeline declares no job, so a task dropped on its canvas has nowhere to go.
+        var body = CopyFixture("pipeline.json");
+        var before = await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken);
+        var placement = Target(body, DatabricksNewPlacement.IdFor(400, 200));
+
+        // Act.
+        var execution = await _actions.ExecuteAsync(
+            placement, $"{DatabricksContextActionProvider.AddTaskActionPrefix}notebook", TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.Equal("This file declares no job to add a task to.", Assert.IsType<ContextExecutionFailed>(execution).Message);
+        Assert.Equal(before, await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken));
+    }
+
     [Theory]
     [InlineData("bundle", "databricks.add-resource:jobs")]
     [InlineData("bundle", "databricks.add-resource:pipelines")]

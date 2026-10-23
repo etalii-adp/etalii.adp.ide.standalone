@@ -307,7 +307,7 @@ public sealed class TableStreamFlowTests : IClassFixture<TableStreamFlowTests.Ho
 
         public string Origin => Sheet.Origin;
 
-        public IDesignerSession Open(ShortGuid watchId, ProjectRoot root, string registrationPath, string bodyPath)
+        public IDesignerSession Open(ShortGuid watchId, ProjectRoot root, string? registrationPath, string bodyPath)
         {
             var session = new FakeSession(watchId, root.FullPath, registrationPath, bodyPath);
             Opened.Add(session);
@@ -316,7 +316,7 @@ public sealed class TableStreamFlowTests : IClassFixture<TableStreamFlowTests.Ho
     }
 
     /// <summary>A two-row table that answers each call with one change, at once.</summary>
-    internal sealed class FakeSession(ShortGuid watchId, string rootPath, string registrationPath, string bodyPath) : IDesignerSession
+    internal sealed class FakeSession(ShortGuid watchId, string rootPath, string? registrationPath, string bodyPath) : IDesignerSession
     {
         private static readonly TableColumn[] Columns =
         [
@@ -337,7 +337,7 @@ public sealed class TableStreamFlowTests : IClassFixture<TableStreamFlowTests.Ho
 
         public string RootPath { get; } = rootPath;
 
-        public string RegistrationPath { get; } = registrationPath;
+        public string? RegistrationPath { get; } = registrationPath;
 
         public string BodyPath { get; } = bodyPath;
 
