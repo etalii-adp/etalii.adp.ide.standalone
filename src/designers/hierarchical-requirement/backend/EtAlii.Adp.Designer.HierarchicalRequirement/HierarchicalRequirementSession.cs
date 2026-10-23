@@ -60,11 +60,11 @@ internal sealed class HierarchicalRequirementSession : IHierarchySurfaceSession
         Registration = new WatchedFile(_registrationPath, OnExternalChangeAsync, time ?? TimeProvider.System, events);
     }
 
-    /// <summary>The watched Markdown file; for the guards, which reach its watcher.</summary>
-    internal WatchedFile Body { get; }
+    /// <summary>The watched Markdown file.</summary>
+    private WatchedFile Body { get; }
 
     /// <summary>The watched registration, which may not exist yet.</summary>
-    internal WatchedFile Registration { get; }
+    private WatchedFile Registration { get; }
 
     /// <summary>The writes still running; for the guards, which wait for them.</summary>
     internal Task Writes
@@ -162,8 +162,8 @@ internal sealed class HierarchicalRequirementSession : IHierarchySurfaceSession
         return new HierarchySurfaceEditOutcome(editId, true);
     }
 
-    /// <summary>Internal for the guards, which call it as a watcher would.</summary>
-    internal async Task OnExternalChangeAsync()
+    /// <summary>Reads both files again when either changed outside the session.</summary>
+    private async Task OnExternalChangeAsync()
     {
         await _rereads.WaitAsync().ConfigureAwait(false);
         try

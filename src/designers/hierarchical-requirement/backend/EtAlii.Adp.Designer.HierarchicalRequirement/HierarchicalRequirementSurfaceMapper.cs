@@ -15,7 +15,7 @@ internal static partial class HierarchicalRequirementSurfaceMapper
     private const string AssessmentType = "Assessment";
 
     /// <summary>The id of a node without a usable number: the line of its bullet, valid for one model.</summary>
-    public static string LineId(int line) => string.Create(CultureInfo.InvariantCulture, $"line/{line}");
+    private static string LineId(int line) => string.Create(CultureInfo.InvariantCulture, $"line/{line}");
 
     /// <param name="document">What reading the file gave.</param>
     /// <param name="title">The document's title, for the trail.</param>

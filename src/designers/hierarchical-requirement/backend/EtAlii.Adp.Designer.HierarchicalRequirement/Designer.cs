@@ -1,4 +1,5 @@
 using EtAlii.Adp.Specification.Fbl.Routing;
+using JetBrains.Annotations;
 
 namespace EtAlii.Adp.Designer.HierarchicalRequirement;
 
@@ -11,6 +12,7 @@ namespace EtAlii.Adp.Designer.HierarchicalRequirement;
 /// A requirement document is recognised by the envelope on its first line, with or without a registration (spec 029 R3,
 /// R4): the claim is the binding's own marker, answered by the FBL library's routing.
 /// </remarks>
+[UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
 public static class Designer
 {
     /// <summary>The designer type's origin, which its envelope names.</summary>

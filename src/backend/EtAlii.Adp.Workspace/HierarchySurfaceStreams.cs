@@ -21,7 +21,4 @@ public sealed class HierarchySurfaceStreams
 
     public void Remove(ShortGuid watchId, ShortGuid streamId, IHierarchySurfaceSession session) =>
         _sessions.TryRemove(new KeyValuePair<(ShortGuid, ShortGuid), IHierarchySurfaceSession>((watchId, streamId), session));
-
-    /// <summary>How many hierarchy surface streams are running, across all connections.</summary>
-    public int Count => _sessions.Count;
 }

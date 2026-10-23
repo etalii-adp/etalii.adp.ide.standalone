@@ -7,4 +7,5 @@ namespace EtAlii.Adp.Designer;
 /// <param name="Operation">The operation's name in the specification, <c>toggleCollapsed</c> say.</param>
 /// <param name="TargetId">The id of what it is for, from the model it was made in; empty for one that is for the document.</param>
 /// <param name="Params">Its params by their names in the specification, in their written form.</param>
+// ReSharper disable once NotAccessedPositionalProperty.Global - Reason: Params is read by the operations that take params, which spec 029 builds in its later pull requests; toggleCollapsed takes none.
 public sealed record HierarchySurfaceGesture(string Operation, string TargetId, IReadOnlyDictionary<string, string> Params);

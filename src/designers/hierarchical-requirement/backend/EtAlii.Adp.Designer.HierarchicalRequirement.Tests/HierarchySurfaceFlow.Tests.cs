@@ -1,5 +1,4 @@
 using EtAlii.Adp.Diagram.Wire;
-using EtAlii.Adp.Editor;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using EtAlii.Adp.TestSupport.Host;
@@ -139,7 +138,7 @@ public sealed class HierarchySurfaceFlowTests(HostFixture host) : IClassFixture<
 
         // Act and assert: closed, and the connection stays.
         await designer.CloseHierarchySurfaceAsync(new Proto.CloseHierarchySurfaceRequest { WatchId = flow.WatchId, StreamId = streamId }, flow.Headers, cancellationToken: TestContext.Current.CancellationToken);
-        Assert.NotNull(host.Services.GetRequiredService<Workspace.WorkspaceConnections>().Find((ShortGuid)flow.WatchId, flow.UserId));
+        Assert.NotNull(host.Services.GetRequiredService<Workspace.WorkspaceConnections>().Find(flow.WatchId, flow.UserId));
     }
 
     [Fact]

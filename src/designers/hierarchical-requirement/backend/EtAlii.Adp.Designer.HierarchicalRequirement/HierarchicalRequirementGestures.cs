@@ -10,10 +10,10 @@ namespace EtAlii.Adp.Designer.HierarchicalRequirement;
 internal static class HierarchicalRequirementGestures
 {
     /// <summary>What a gesture planned against a file that changed since its model was sent is refused with (spec 029 R10).</summary>
-    public const string Drifted = "The file changed while you were editing, so this change was not written. The page now shows the file as it is.";
+    private const string Drifted = "The file changed while you were editing, so this change was not written. The page now shows the file as it is.";
 
     /// <summary>The block of the registration that keeps what is collapsed, outside the history (hierarchical-requirement.fbl).</summary>
-    public const string CollapsedBlock = "collapsed";
+    private const string CollapsedBlock = "collapsed";
 
     private const string ToggleCollapsedOperation = "toggleCollapsed";
 
@@ -40,7 +40,7 @@ internal static class HierarchicalRequirementGestures
     /// </summary>
     private static (ModelChange.Setting?, string) ToggleCollapsed(HierarchySurfaceModel model, string targetId)
     {
-        if (model.Nodes.FirstOrDefault(node => node.Id == targetId) is not { } node) return (null, Drifted);
+        if (model.Nodes.FirstOrDefault(candidate => candidate.Id == targetId) is not { } node) return (null, Drifted);
         if (node.Id != node.Number) return (null, $"{node.Number} has no number of its own yet, so it is collapsed on this page only.");
         return node.Collapsed
             ? (new ModelChange.Setting(CollapsedBlock, node.Id, RemoveEntry: true), "")

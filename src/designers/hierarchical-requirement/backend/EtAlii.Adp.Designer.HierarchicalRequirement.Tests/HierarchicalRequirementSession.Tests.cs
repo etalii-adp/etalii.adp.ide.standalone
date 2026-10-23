@@ -56,8 +56,8 @@ public sealed class HierarchicalRequirementSessionTests : IDisposable
         // Assert: the numbered ones by their number, the new one by the line of its bullet.
         Assert.Equal("", model.ReadOnlyReason);
         Assert.Equal("Web shop", model.Title);
-        Assert.Contains(model.Nodes, node => node.Id == "ITEM-0001" && node.Number == "ITEM-0001" && node.Role == HierarchySurfaceRoles.Level);
-        Assert.Contains(model.Nodes, node => node.Id == "REQ-0001" && node.ParentId == "ITEM-0001" && node.Role == HierarchySurfaceRoles.Entry);
+        Assert.Contains(model.Nodes, node => node is { Id: "ITEM-0001", Number: "ITEM-0001", Role: HierarchySurfaceRoles.Level });
+        Assert.Contains(model.Nodes, node => node is { Id: "REQ-0001", ParentId: "ITEM-0001", Role: HierarchySurfaceRoles.Entry });
         var added = Assert.Single(model.Nodes, node => node.Title == "A customer keeps a wish list.");
         Assert.Equal($"line/{line}", added.Id);
         Assert.Equal("ITEM-0001", added.ParentId);
