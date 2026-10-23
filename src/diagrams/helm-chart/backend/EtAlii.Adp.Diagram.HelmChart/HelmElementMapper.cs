@@ -3,6 +3,7 @@ using EtAlii.Adp.Layout;
 using EtAlii.Adp.Specification.Cel;
 using EtAlii.Adp.Specification.Disl;
 using Google.Protobuf;
+using JetBrains.Annotations;
 
 namespace EtAlii.Adp.Diagram.HelmChart;
 
@@ -46,10 +47,13 @@ public sealed class HelmElementMapper
     public const string TemplateType = "helm/chart+template";
     public const string PartialType = "helm/chart+partial";
     public const string CrdsType = "helm/chart+crds";
+    [Relation]
     public const string DependencyType = "helm/chart+dependency";
     public const string SubchartType = "helm/chart+subchart";
+    [UsedImplicitly] // Read only by reflection, into the cross-tier element-types fixture.
     public const string ArchiveType = "helm/chart+archive";
     public const string LockType = "helm/chart+lock";
+    [Relation]
     public const string EdgeType = "helm/chart+edge";
 
     private static readonly string PayloadTypeUrl =

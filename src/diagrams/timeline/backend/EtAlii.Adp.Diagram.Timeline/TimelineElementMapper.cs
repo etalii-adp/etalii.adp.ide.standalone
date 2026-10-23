@@ -31,6 +31,7 @@ public sealed class TimelineElementMapper
     public const string MomentType = "generic/timeline+moment";
 
     /// <summary>The mime-style kind of a connection.</summary>
+    [Relation]
     public const string ConnectionType = "generic/timeline+connection";
 
     /// <summary>
