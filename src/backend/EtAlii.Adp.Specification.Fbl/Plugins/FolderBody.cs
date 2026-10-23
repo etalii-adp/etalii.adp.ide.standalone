@@ -172,8 +172,7 @@ public sealed class FolderBody : IDisposable
         relative = relative.Replace(Path.DirectorySeparatorChar, '/');
         if (_files.Any(file => Paths.Equals(file.RelativePath, relative) || file.RelativePath.StartsWith(relative + "/", PathComparison))) return true;
         var caseless = Glob.PlatformIgnoresCase;
-        if (Binding.Body.Ignore.Any(glob => Glob.IsMatch(glob, relative, caseless))) return false;
-        return Globs().Any(glob => Glob.IsMatch(glob, relative, caseless) || CouldHold(glob, relative, caseless));
+        return !Binding.Body.Ignore.Any(glob => Glob.IsMatch(glob, relative, caseless)) && Globs().Any(glob => Glob.IsMatch(glob, relative, caseless) || CouldHold(glob, relative, caseless));
     }
 
     /// <summary>The globs whose matches change the reading: the file rules' and <c>recognise</c>'s.</summary>

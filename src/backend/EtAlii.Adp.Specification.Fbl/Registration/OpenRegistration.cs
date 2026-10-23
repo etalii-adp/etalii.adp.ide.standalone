@@ -68,7 +68,7 @@ public sealed class OpenRegistration : SplicedFile
     public static OpenRegistration Open(byte[] bytes, FblBinding binding)
     {
         ArgumentNullException.ThrowIfNull(binding);
-        return new(bytes ?? throw new ArgumentNullException(nameof(bytes)), binding.Registration);
+        return new OpenRegistration(bytes ?? throw new ArgumentNullException(nameof(bytes)), binding.Registration);
     }
 
     /// <summary>

@@ -48,7 +48,18 @@ public sealed class SparqlElementMapper
         ArgumentNullException.ThrowIfNull(layout);
 
         var elements = new List<DiagramElement>();
+        AddRegions(elements, projection, layout);
+        AddNodes(elements, projection, layout);
+        AddEdges(elements, projection);
+        AddAnnotations(elements, projection);
+        AddHeader(elements, projection);
+        AddBanner(elements, projection);
+        return elements;
+    }
 
+    /// <summary>Every region, as a frame at its computed bounds.</summary>
+    private static void AddRegions(List<DiagramElement> elements, SparqlProjectionResult projection, SparqlLayoutResult layout)
+    {
         foreach (var region in projection.Regions)
         {
             var frame = layout.RegionBounds.TryGetValue(region.Id, out var bounds) ? bounds : default;
@@ -61,7 +72,11 @@ public sealed class SparqlElementMapper
                 Height = frame.Height,
             }));
         }
+    }
 
+    /// <summary>Every node at its position: a variable, a collapsed subquery or a concrete term.</summary>
+    private static void AddNodes(List<DiagramElement> elements, SparqlProjectionResult projection, SparqlLayoutResult layout)
+    {
         foreach (var node in projection.Nodes)
         {
             var at = layout.NodePositions.TryGetValue(node.Id, out var position) ? position : default;
@@ -101,7 +116,11 @@ public sealed class SparqlElementMapper
                     break;
             }
         }
+    }
 
+    /// <summary>Every edge, positioned by its ends rather than by a place of its own.</summary>
+    private static void AddEdges(List<DiagramElement> elements, SparqlProjectionResult projection)
+    {
         foreach (var edge in projection.Edges)
         {
             elements.Add(Pack(edge.Id, default, EdgeType, new SparqlEdgePayload
@@ -112,7 +131,11 @@ public sealed class SparqlElementMapper
                 IsPath = edge.IsPath,
             }));
         }
+    }
 
+    /// <summary>Every annotation, drawn beside what it is attached to.</summary>
+    private static void AddAnnotations(List<DiagramElement> elements, SparqlProjectionResult projection)
+    {
         foreach (var annotation in projection.Annotations)
         {
             elements.Add(Pack(annotation.Id, default, AnnotationType, new SparqlAnnotationPayload
@@ -122,13 +145,19 @@ public sealed class SparqlElementMapper
                 AttachedTo = annotation.AttachedToId,
             }));
         }
+    }
 
+    /// <summary>The header band: the query form and its modifier rows, always present.</summary>
+    private static void AddHeader(List<DiagramElement> elements, SparqlProjectionResult projection) =>
         elements.Add(Pack(HeaderId, default, HeaderType, new SparqlHeaderPayload
         {
             Form = projection.HeaderForm,
             ModifierRows = { projection.HeaderRows },
         }));
 
+    /// <summary>The truncation banner, only when the sanity bound cut.</summary>
+    private static void AddBanner(List<DiagramElement> elements, SparqlProjectionResult projection)
+    {
         if (projection.Truncated)
         {
             elements.Add(Pack(TruncationId, default, TruncationType, new SparqlTruncationPayload
@@ -137,8 +166,6 @@ public sealed class SparqlElementMapper
                 Total = projection.Total,
             }));
         }
-
-        return elements;
     }
 
     /// <summary>
