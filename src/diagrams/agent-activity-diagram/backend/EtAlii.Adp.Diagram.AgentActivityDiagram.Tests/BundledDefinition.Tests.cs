@@ -1,6 +1,5 @@
 using System.Reflection;
 using System.Security.Cryptography;
-using System.Text.RegularExpressions;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.AgentActivityDiagram.Tests;
@@ -9,53 +8,29 @@ namespace EtAlii.Adp.Diagram.AgentActivityDiagram.Tests;
 /// The definition this module derives from is the one etalii.adp published, byte for byte, and
 /// this host can read it (agent-activity-diagram Requirement 10.2).
 /// </summary>
-public sealed partial class BundledDefinitionTests
+public sealed class BundledDefinitionTests : BundledDefinitionContract<BundledDefinitionTests>, IBundledDefinitions
 {
-    private static readonly Assembly _module = typeof(Diagram).Assembly;
+    public static Assembly Module => typeof(Diagram).Assembly;
 
-    [GeneratedRegex("^[0-9a-f]{40}$")]
-    private static partial Regex FullRevision();
+    public static string ModuleFolder => "agent-activity-diagram";
 
-    [Fact]
-    public void TheBundledDefinition_HashesToItsProvenance()
-    {
-        // Seen to fail against one byte changed in the bundled `.dis`.
-        var provenance = _module.ResourceJson("agent-activity-diagram.provenance.json");
+    public static IReadOnlyList<BundledDefinitionExpectation> Definitions { get; } =
+    [
+        new("agent-activity-diagram", Diagram.AgentActivity.Origin.Key, "net.etalii.adp.etalii.agent-activity-diagram") { Extension = Diagram.DocumentExtension },
+    ];
 
-        var actual = Convert.ToHexStringLower(SHA256.HashData(_module.ResourceBytes("agent-activity-diagram.dis")));
-
-        Assert.Equal(provenance.GetProperty("sha256").GetString(), actual);
-    }
+    /// <summary>The definition is DISL 0.4, of which this runtime warns; it had no load case before the contract, and a warning is allowed.</summary>
+    protected override bool AWarningIsAllowed => true;
 
     [Fact]
     public void TheBundledBinding_HashesToItsProvenance()
     {
-        var provenance = _module.ResourceJson("agent-activity-diagram.provenance.json");
+        var provenance = Module.ResourceJson("agent-activity-diagram.provenance.json");
 
-        var actual = Convert.ToHexStringLower(SHA256.HashData(_module.ResourceBytes("agent-activity-diagram.fbl")));
+        var actual = Convert.ToHexStringLower(SHA256.HashData(Module.ResourceBytes("agent-activity-diagram.fbl")));
 
         Assert.Equal("definitions/diagrams/agent-activity-diagram.fbl", provenance.GetProperty("binding").GetString());
         Assert.Equal(provenance.GetProperty("bindingSha256").GetString(), actual);
-    }
-
-    [Fact]
-    public void TheProvenance_NamesAFullRevisionOfTheUpstreamFile()
-    {
-        var provenance = _module.ResourceJson("agent-activity-diagram.provenance.json");
-
-        Assert.Equal("etalii-adp/etalii.adp", provenance.GetProperty("repository").GetString());
-        Assert.Equal("definitions/diagrams/agent-activity-diagram.dis", provenance.GetProperty("path").GetString());
-        Assert.Matches(FullRevision(), provenance.GetProperty("revision").GetString()!);
-    }
-
-    [Fact]
-    public void TheBundledDefinition_IsThisModulesLanguage()
-    {
-        var language = _module.ResourceJson("agent-activity-diagram.dis").GetProperty("language");
-
-        Assert.Equal("net.etalii.adp.etalii.agent-activity-diagram", language.GetProperty("id").GetString());
-        Assert.Equal(Diagram.AgentActivity.Origin.Key, language.GetProperty("origin").GetString());
-        Assert.Equal(Diagram.DocumentExtension, "." + language.GetProperty("fileExtension").GetString());
     }
 
     [Fact]

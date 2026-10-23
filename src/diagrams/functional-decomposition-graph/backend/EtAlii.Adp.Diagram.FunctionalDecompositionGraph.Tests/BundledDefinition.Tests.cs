@@ -1,9 +1,4 @@
 using System.Reflection;
-using System.Security.Cryptography;
-using System.Text.RegularExpressions;
-using EtAlii.Adp.Specification.Disl;
-using EtAlii.Adp.Specification.Json;
-using Xunit;
 
 namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests;
 
@@ -12,74 +7,15 @@ namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests;
 /// the bytes in <c>definition/</c>, and it loads with no diagnostic of severity error
 /// (functional-decomposition-graph-disl-fbl Requirements 2.5 and 2.6).
 /// </summary>
-/// <remarks>
-/// Nothing derives from the definition yet. Re-bundle with
-/// <c>src/diagrams/tools/bundle-disl.sh functional-decomposition-graph &lt;etalii.adp checkout&gt;</c>, never by hand.
-/// </remarks>
-public sealed partial class BundledDefinitionTests
+public sealed class BundledDefinitionTests : BundledDefinitionContract<BundledDefinitionTests>, IBundledDefinitions
 {
-    private const string Name = "functional-decomposition-graph";
+    public static Assembly Module => typeof(Diagram).Assembly;
 
-    private static readonly Assembly _module = typeof(Diagram).Assembly;
+    public static string ModuleFolder => "functional-decomposition-graph";
 
-    [GeneratedRegex("^[0-9a-f]{40}$")]
-    private static partial Regex FullRevision();
+    public static IReadOnlyList<BundledDefinitionExpectation> Definitions { get; } =
+        [new("functional-decomposition-graph", Diagram.FunctionalDecompositionGraph.Origin.Key, "net.etalii.adp.etalii.functional-decomposition-graph")];
 
-    /// <summary>The sha256 in provenance.json is the sha256 of the embedded <c>.dis</c> bytes.</summary>
-    [Fact]
-    public void TheBundledDefinition_HashesToItsProvenance()
-    {
-        var provenance = _module.ResourceJson(Name + ".provenance.json");
-
-        var actual = Convert.ToHexStringLower(SHA256.HashData(_module.ResourceBytes(Name + ".dis")));
-
-        Assert.Equal(provenance.GetProperty("sha256").GetString(), actual);
-    }
-
-    /// <summary>The embedded bytes are the bytes of the file in <c>definition/</c>, so a stale build cannot pass.</summary>
-    [Fact]
-    public async Task TheEmbeddedDefinition_IsTheBundledFile()
-    {
-        var file = Path.Combine(RepositoryPaths.Under("src", "diagrams", Name), "definition", Name + ".dis");
-
-        var onDisk = await File.ReadAllBytesAsync(file, TestContext.Current.CancellationToken);
-
-        Assert.Equal(onDisk, _module.ResourceBytes(Name + ".dis"));
-    }
-
-    /// <summary>The embedded provenance is the provenance.json in <c>definition/</c>.</summary>
-    [Fact]
-    public async Task TheEmbeddedProvenance_IsTheBundledFile()
-    {
-        var file = Path.Combine(RepositoryPaths.Under("src", "diagrams", Name), "definition", "provenance.json");
-
-        var onDisk = await File.ReadAllBytesAsync(file, TestContext.Current.CancellationToken);
-
-        Assert.Equal(onDisk, _module.ResourceBytes(Name + ".provenance.json"));
-    }
-
-    /// <summary>The provenance names the upstream file and a full 40-hex revision, never a short or symbolic one.</summary>
-    [Fact]
-    public void TheProvenance_NamesAFullRevisionOfTheUpstreamFile()
-    {
-        var provenance = _module.ResourceJson(Name + ".provenance.json");
-
-        Assert.Equal("etalii-adp/etalii.adp", provenance.GetProperty("repository").GetString());
-        Assert.Equal("definitions/diagrams/" + Name + ".dis", provenance.GetProperty("path").GetString());
-        Assert.Matches(FullRevision(), provenance.GetProperty("revision").GetString()!);
-    }
-
-    /// <summary>The bundled definition is this module's: its origin equals the catalog origin.</summary>
-    [Fact]
-    public void TheBundledDefinition_IsThisModulesLanguage()
-    {
-        var language = _module.ResourceJson(Name + ".dis").GetProperty("language");
-
-        Assert.Equal(Diagram.FunctionalDecompositionGraph.Origin.Key, language.GetProperty("origin").GetString());
-    }
-
-    /// <summary>The definition loads, and the runtime reports no diagnostic of severity error about it.</summary>
-    [Fact]
-    public void TheBundledDefinition_LoadsWithoutErrors() =>
-        Assert.DoesNotContain(BundledDefinition.Load(_module, Name + ".dis").Diagnostics, diagnostic => diagnostic.Severity == LoadSeverity.Error);
+    /// <summary>Requirement 2.6 asks for no diagnostic of severity error; a warning is allowed.</summary>
+    protected override bool AWarningIsAllowed => true;
 }
