@@ -28,11 +28,14 @@ public sealed class DislElement : ICelObject
     private readonly Dictionary<string, object?> _attributes;
     private readonly List<DislElement> _children = [];
 
+    /// <summary>The element's id; set through <see cref="Id"/> once the element is made, so the diagram's index by id follows.</summary>
+    private string _id;
+
     internal DislElement(DislDiagram diagram, DislType type, string id, IReadOnlyDictionary<string, object?>? attributes)
     {
         Diagram = diagram;
         Type = type;
-        Id = id;
+        _id = id;
         _attributes = new Dictionary<string, object?>(StringComparer.Ordinal);
         foreach ((string name, object? value) in attributes ?? new Dictionary<string, object?>())
         {
@@ -49,7 +52,15 @@ public sealed class DislElement : ICelObject
     public DislType Type { get; private set; }
 
     /// <summary>The element's id: stored, or computed from the id rule once the model is complete (§11.5).</summary>
-    public string Id { get; internal set; }
+    public string Id
+    {
+        get => _id;
+        internal set
+        {
+            _id = value;
+            Diagram.IdsChanged();
+        }
+    }
 
     /// <summary><c>node</c> or <c>relation</c>.</summary>
     public string Kind => Type.IsRelation ? "relation" : "node";
@@ -212,6 +223,7 @@ public sealed class DislElement : ICelObject
     {
         foreach (var name in _attributes.Keys.Where(name => !type.Attributes.ContainsKey(name)).ToList()) _attributes.Remove(name);
         Type = type;
+        Diagram.IndexChanged();
         foreach ((string name, object? value) in mapped)
         {
             if (value is null) _attributes.Remove(name);
