@@ -93,7 +93,7 @@ public class HierarchicalRequirementFixturesTests
     public void SavingWithoutAnEdit_WritesTheBytesThatWereRead(string name)
     {
         // Arrange.
-        (_, string folder, string inputName, FblBinding binding) = Open(name);
+        (string folder, string inputName, FblBinding binding) = Open(name);
         var document = HierarchicalRequirementDocument.Open(folder, inputName, binding);
         var before = document.Bytes;
 
@@ -111,7 +111,7 @@ public class HierarchicalRequirementFixturesTests
     public void EveryByteOfAReadableInputBelongsToTheReading(string name)
     {
         // Arrange.
-        (_, string folder, string inputName, FblBinding binding) = Open(name);
+        (string folder, string inputName, FblBinding binding) = Open(name);
         if (inputName.EndsWith(".adp", StringComparison.OrdinalIgnoreCase)) return;
         var input = File.ReadAllBytes(Path.Combine(folder, inputName));
 
@@ -123,7 +123,7 @@ public class HierarchicalRequirementFixturesTests
         Assert.Empty(reading.Family.Unaccounted());
     }
 
-    private static (JsonElement Fixture, string Folder, string InputName, FblBinding Binding) Open(string name)
+    private static (string Folder, string InputName, FblBinding Binding) Open(string name)
     {
         var folder = Path.Combine(FixturesRoot, name);
         var fixturePath = Path.Combine(folder, "fixture.json");
@@ -131,7 +131,7 @@ public class HierarchicalRequirementFixturesTests
         var fixture = document.RootElement.Clone();
         var binding = FblDocumentLoader.ResolveReference(fixture.GetProperty("binding").GetString()!, fixturePath, out var problems);
         Assert.DoesNotContain(problems, problem => problem.Severity == LoadSeverity.Error);
-        return (fixture, folder, fixture.GetProperty("input").GetString()!, binding);
+        return (folder, fixture.GetProperty("input").GetString()!, binding);
     }
 
     /// <summary>Runs a fixture's reading and steps; its binding and input are found from <paramref name="folder"/>.</summary>

@@ -159,7 +159,6 @@ internal sealed partial class HierarchicalRequirementBody
                 .OrderBy(finding => finding.Line);
             var required = entries.Where(entry => entry.Title.Length == 0)
                 .Select(entry => new HierarchicalRequirementFinding("std.required", $"{entry.Id} has no title.", entry.Line));
-            var types = entries.ToDictionary(entry => entry.Line, entry => entry);
             var byId = entries.GroupBy(entry => entry.Id, StringComparer.Ordinal).ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
             var containment = entries
                 .Where(entry => (entry is Requirement && entry.ParentId is null) || (entry.ParentId is { } parent && byId.GetValueOrDefault(parent) is Requirement))
@@ -211,7 +210,7 @@ internal sealed partial class HierarchicalRequirementBody
                 };
                 foreach (var name in names)
                 {
-                    if (!members.Any(member => LowerAscii(member.Key) == LowerAscii(name))) members.Add(new KeyValuePair<string, string>(name, "default"));
+                    if (members.All(member => LowerAscii(member.Key) != LowerAscii(name))) members.Add(new KeyValuePair<string, string>(name, "default"));
                 }
             }
             return members;

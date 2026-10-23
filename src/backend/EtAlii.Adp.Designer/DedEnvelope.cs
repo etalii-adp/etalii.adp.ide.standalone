@@ -15,7 +15,7 @@ namespace EtAlii.Adp.Designer;
 public sealed partial record DedEnvelope(string Version, string Designer)
 {
     /// <summary>The versions of DED this application reads; the last is the one it writes.</summary>
-    public static IReadOnlyList<string> KnownVersions { get; } = ["0.1", "0.2"];
+    private static IReadOnlyList<string> KnownVersions { get; } = ["0.1", "0.2"];
 
     /// <summary>The envelope on line 1 of <paramref name="bytes"/>, after a byte-order mark only, or null when line 1 is none.</summary>
     public static DedEnvelope? Read(byte[] bytes)

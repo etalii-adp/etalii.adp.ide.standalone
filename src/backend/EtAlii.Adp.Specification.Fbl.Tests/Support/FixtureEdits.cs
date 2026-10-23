@@ -6,7 +6,7 @@ namespace EtAlii.Adp.Specification.Fbl.Tests.Support;
 /// <summary>The parts of a round-trip fixture's steps that every runner reads alike (FBL 0.7 §15.3): splices, settings and values.</summary>
 internal static class FixtureEdits
 {
-    public static Splice Splice(JsonElement splice) => new(
+    private static Splice Splice(JsonElement splice) => new(
         Fbl.Splice.Parse(splice.GetProperty("operation").GetString()!),
         splice.GetProperty("start").GetInt32(),
         splice.GetProperty("end").GetInt32(),
@@ -44,7 +44,7 @@ internal static class FixtureEdits
     public static Dictionary<string, object?> Attributes(JsonElement attributes) =>
         attributes.EnumerateObject().ToDictionary(p => p.Name, p => Value(p.Value), StringComparer.Ordinal);
 
-    public static object? Value(JsonElement value) => value.ValueKind switch
+    private static object? Value(JsonElement value) => value.ValueKind switch
     {
         JsonValueKind.String => value.GetString(),
         JsonValueKind.Number => value.TryGetInt64(out var l) ? l : value.GetDouble(),

@@ -14,7 +14,7 @@ public class DedEnvelopeTests
     public void Read_TheLineAsWritten_GivesTheVersionAndTheOrigin()
     {
         // Act.
-        var envelope = DedEnvelope.Read(Encoding.UTF8.GetBytes("<!-- ded: 0.2 designer: etalii/hierarchical-requirement -->\r\n# Title\r\n"));
+        var envelope = DedEnvelope.Read("<!-- ded: 0.2 designer: etalii/hierarchical-requirement -->\r\n# Title\r\n"u8.ToArray());
 
         // Assert.
         Assert.NotNull(envelope);
@@ -27,7 +27,7 @@ public class DedEnvelopeTests
     public void Read_TabsSpacesAndAByteOrderMark_AreRead()
     {
         // Act.
-        var envelope = DedEnvelope.Read([0xEF, 0xBB, 0xBF, .. Encoding.UTF8.GetBytes("<!--\tded:  0.1\tdesigner: etalii/hierarchical-requirement   -->  \n")]);
+        var envelope = DedEnvelope.Read([0xEF, 0xBB, 0xBF, .. "<!--\tded:  0.1\tdesigner: etalii/hierarchical-requirement   -->  \n"u8]);
 
         // Assert.
         Assert.Equal(new DedEnvelope("0.1", "etalii/hierarchical-requirement"), envelope);

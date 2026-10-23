@@ -406,8 +406,10 @@ internal class LinesFamily(BodyText text, FblBinding binding, FblOptions options
             .Where(attribute => attribute.Value is { Map: not null, Word: null } && changes.All(change => change.Attribute != attribute.Key)
                 && element.Slots.TryGetValue(attribute.Key, out var read) && read is { Present: true, Span: not null })
             .ToDictionary(attribute => attribute.Key, attribute => Text.Text(element.Slots[attribute.Key].Span!.Value), StringComparer.Ordinal);
-        var line = NewText.Render(emit, name => kept.TryGetValue(name, out var written) ? written : Quoted(element.Rule, emit, name, values.GetValueOrDefault(name), Placeholder(element.Rule, name, values, element.IdRead?.Value as string ?? element.Id,
-            element.SourceRead?.Value as string, element.TargetRead?.Value as string)));
+        var line = NewText.Render(emit, name => kept.TryGetValue(name, out var written)
+            ? written
+            : Quoted(element.Rule, emit, name, values.GetValueOrDefault(name), Placeholder(element.Rule, name, values, element.IdRead?.Value as string ?? element.Id,
+                element.SourceRead?.Value as string, element.TargetRead?.Value as string)));
         plan.Add(SpliceOperation.ReEmitLine, ReEmitSpan(statement), line);
     }
 

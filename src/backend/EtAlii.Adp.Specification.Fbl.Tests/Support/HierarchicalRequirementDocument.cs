@@ -6,7 +6,6 @@ using EtAlii.Adp.Specification.Fbl.Documents;
 using EtAlii.Adp.Specification.Fbl.History;
 using EtAlii.Adp.Specification.Fbl.Planning;
 using EtAlii.Adp.Specification.Fbl.Registration;
-using EtAlii.Adp.TestSupport;
 
 namespace EtAlii.Adp.Specification.Fbl.Tests.Support;
 
@@ -97,7 +96,7 @@ internal sealed partial class HierarchicalRequirementDocument
             var parent = element.ParentId is { } libraryParent && ids.TryGetValue(libraryParent, out var mapped) ? mapped : element.ParentId;
             elements.Add(new DesignerElement(entry.Id, element.Type, parent, attributes));
         }
-        foreach (var (block, type) in new[] { ("tags", "Tag"), ("categories", "Category"), ("states", "State") })
+        foreach ((string block, string type) in new[] { ("tags", "Tag"), ("categories", "Category"), ("states", "State") })
         {
             foreach ((string name, string colour) in Members(block))
             {
@@ -247,8 +246,7 @@ internal sealed partial class HierarchicalRequirementDocument
             if (element.Type is Item or Requirement)
             {
                 var id = written.First(w => w.Element == element).Id!;
-                if (id == Prefix(element.Type) + "NEW") entries.Add(new Entry(element, Counter(element.Type, ++next[element.Type]), true));
-                else entries.Add(new Entry(element, id, false));
+                entries.Add(id == Prefix(element.Type) + "NEW" ? new Entry(element, Counter(element.Type, ++next[element.Type]), true) : new Entry(element, id, false));
             }
             else if (element.Type == "Assessment")
             {
@@ -270,7 +268,7 @@ internal sealed partial class HierarchicalRequirementDocument
             var value = element.Attributes.GetValueOrDefault(attribute);
             foreach (var name in value is List<object?> many ? many.OfType<string>() : value is string one ? [one] : [])
             {
-                if (!members.Any(member => Lower(member.Key) == Lower(name))) members.Add(new KeyValuePair<string, string>(name, "default"));
+                if (members.All(member => Lower(member.Key) != Lower(name))) members.Add(new KeyValuePair<string, string>(name, "default"));
             }
         }
         return members;

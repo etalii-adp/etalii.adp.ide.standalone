@@ -38,16 +38,16 @@ internal static class HierarchicalRequirementDefinition
     };
 
     /// <summary>The type the specification gives an attribute of an element type, or null where it gives none.</summary>
-    public static string? AttributeType(string type, string attribute) => _specification.Value.Types.GetValueOrDefault((type, attribute));
+    private static string? AttributeType(string type, string attribute) => _specification.Value.Types.GetValueOrDefault((type, attribute));
 
     /// <summary>Whether an attribute holds many values (DESL 0.2 section 4.2), as an item's and a requirement's tags do.</summary>
     public static bool IsMany(string type, string attribute) => _specification.Value.Many.Contains((type, attribute));
 
     /// <summary>The expression of the mentions an attribute's text holds (DESL 0.2 section 4.3), or null for one that holds none.</summary>
-    public static Regex? Mentions(string type, string attribute) => _specification.Value.Mentions.GetValueOrDefault((type, attribute));
+    public static Regex? Mentions(string type, string attribute) => _specification.Value.MentionPatterns.GetValueOrDefault((type, attribute));
 
     /// <summary>The initial members of the list <paramref name="setting"/> keeps, as name and colour, in their order.</summary>
-    public static IReadOnlyList<KeyValuePair<string, string>> Initial(string setting) => _specification.Value.Initial.GetValueOrDefault(setting) ?? [];
+    public static IReadOnlyList<KeyValuePair<string, string>> Initial(string setting) => _specification.Value.InitialMembers.GetValueOrDefault(setting) ?? [];
 
     /// <summary>How many attribute types the specification gives: none would mean it was not read.</summary>
     public static int TypedAttributeCount => _specification.Value.Types.Count;
@@ -80,7 +80,7 @@ internal static class HierarchicalRequirementDefinition
                 if (attribute.Value.TryGetProperty("many", out var many) && many.GetBoolean()) specification.Many.Add(key);
                 if (attribute.Value.TryGetProperty("mentions", out var mentions))
                 {
-                    specification.Mentions[key] = new Regex(mentions.GetProperty("pattern").GetString()!, RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(250));
+                    specification.MentionPatterns[key] = new Regex(mentions.GetProperty("pattern").GetString()!, RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(250));
                 }
             }
         }
@@ -94,7 +94,7 @@ internal static class HierarchicalRequirementDefinition
             if (!setting.Value.TryGetProperty("initial", out var initial)) continue;
             var name = setting.Value.GetProperty("key").GetString()!;
             var value = setting.Value.GetProperty("value").GetString()!;
-            specification.Initial[setting.Name] = [.. initial.EnumerateArray().Select(member => new KeyValuePair<string, string>(member.GetProperty(name).GetString()!, member.GetProperty(value).GetString()!))];
+            specification.InitialMembers[setting.Name] = [.. initial.EnumerateArray().Select(member => new KeyValuePair<string, string>(member.GetProperty(name).GetString()!, member.GetProperty(value).GetString()!))];
         }
         return specification;
     }
@@ -106,10 +106,10 @@ internal static class HierarchicalRequirementDefinition
 
         public HashSet<(string Type, string Attribute)> Many { get; } = [];
 
-        public Dictionary<(string Type, string Attribute), Regex> Mentions { get; } = [];
+        public Dictionary<(string Type, string Attribute), Regex> MentionPatterns { get; } = [];
 
         public HashSet<string> Unreadable { get; } = new(StringComparer.Ordinal);
 
-        public Dictionary<string, List<KeyValuePair<string, string>>> Initial { get; } = new(StringComparer.Ordinal);
+        public Dictionary<string, List<KeyValuePair<string, string>>> InitialMembers { get; } = new(StringComparer.Ordinal);
     }
 }

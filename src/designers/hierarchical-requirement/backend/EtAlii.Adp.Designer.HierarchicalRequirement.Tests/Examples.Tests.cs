@@ -28,6 +28,9 @@ public sealed partial class ExamplesTests
         Assert.Equal(9, document.Tags.Count);
         Assert.Equal(2, document.Entries.Count(entry => entry.Collapsed));
         Assert.Equal(["Open security", "Backend"], document.Filters.Select(filter => filter.Name));
+        Assert.Equal(["#security state:proposed sort:state", "item:back* sort:number"], document.Filters.Select(filter => filter.Query));
+        Assert.Equal(["blue", "purple", "brown"], document.Categories.Select(category => category.Colour));
+        Assert.Equal(["gray", "green", "red", "blue"], document.States.Select(state => state.Colour));
     }
 
     [Fact]
@@ -54,6 +57,7 @@ public sealed partial class ExamplesTests
 
         // Assert: nothing wrong but the placeholder, and both headings written at level two as the binding names them.
         Assert.Equal(["std.missingId"], document.Findings.Select(finding => finding.Code));
+        Assert.Contains("REQ-NEW", Assert.Single(document.Findings).Message, StringComparison.Ordinal);
         Assert.Equal(2, Headings().Matches(text).Count);
     }
 
