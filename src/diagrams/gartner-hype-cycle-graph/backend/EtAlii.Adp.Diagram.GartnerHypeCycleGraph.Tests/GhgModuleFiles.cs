@@ -20,22 +20,7 @@ internal static class GhgModuleFiles
     /// <summary>The scale fixture the backend and the client both assert against.</summary>
     public static string ScaleFixture => Existing(Path.Combine(ModuleFolder, "scale-fixture.json"));
 
-    private static string ModuleFolder
-    {
-        get
-        {
-            for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-            {
-                if (directory.Name == "gartner-hype-cycle-graph")
-                {
-                    return directory.FullName;
-                }
-            }
-
-            throw new InvalidOperationException(
-                $"No gartner-hypecycle-graph folder above {AppContext.BaseDirectory}. That is a failure, not a skip.");
-        }
-    }
+    private static string ModuleFolder => RepositoryPaths.Under("src", "diagrams", "gartner-hype-cycle-graph");
 
     private static string Existing(string path) =>
         File.Exists(path) ? path : throw new InvalidOperationException($"A module file is missing: {path}");

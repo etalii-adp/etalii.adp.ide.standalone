@@ -9,21 +9,7 @@ namespace EtAlii.Adp.Diagram.AgentActivityDiagram.Tests;
 /// </summary>
 public sealed class AadExamplesTests
 {
-    private static string ModuleFolder
-    {
-        get
-        {
-            for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-            {
-                if (directory.Name == "agent-activity-diagram")
-                {
-                    return directory.FullName;
-                }
-            }
-
-            throw new InvalidOperationException($"No agent-activity-diagram folder above {AppContext.BaseDirectory}. That is a failure, not a skip.");
-        }
-    }
+    private static string ModuleFolder => RepositoryPaths.Under("src", "diagrams", "agent-activity-diagram");
 
     private static string[] Examples => Directory.GetFiles(Path.Combine(ModuleFolder, "examples"), "*.aad", SearchOption.AllDirectories);
 

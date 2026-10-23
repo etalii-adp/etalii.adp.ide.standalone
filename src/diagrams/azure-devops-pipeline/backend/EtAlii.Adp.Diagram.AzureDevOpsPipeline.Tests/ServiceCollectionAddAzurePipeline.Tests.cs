@@ -242,43 +242,10 @@ public class ServiceCollectionAddAzurePipelineTests
         Assert.Empty(leaked);
     }
 
-    /// <summary>
-    /// The host's <c>Program.cs</c>, found from the test binary rather than hard-coded.
-    /// </summary>
-    /// <remarks>
-    /// Walks up to the <c>src</c> folder, so the path holds wherever the repository is checked out
-    /// and whichever worktree this is running in.
-    /// </remarks>
-    private static string HostProgramPath()
-    {
-        var directory = new DirectoryInfo(AppContext.BaseDirectory);
-        while (directory is not null && !string.Equals(directory.Name, "src", StringComparison.OrdinalIgnoreCase))
-        {
-            directory = directory.Parent;
-        }
+    /// <summary>The host's <c>Program.cs</c>.</summary>
+    private static string HostProgramPath() => RepositoryPaths.Under("src", "backend", "EtAlii.Adp.Backend.Service", "Program.cs");
 
-        Assert.NotNull(directory);
-        var program = IoPath.Combine(directory.FullName, "backend", "EtAlii.Adp.Backend.Service", "Program.cs");
-        Assert.True(File.Exists(program), $"The host's Program.cs was not found at {program}.");
-        return program;
-    }
-
-    /// <summary>
-    /// This module's own <c>Diagram.cs</c>, found from the test binary rather than hard-coded -
-    /// see the remarks on <see cref="HostProgramPath"/>.
-    /// </summary>
-    private static string ModuleDiagramPath()
-    {
-        var directory = new DirectoryInfo(AppContext.BaseDirectory);
-        while (directory is not null && !string.Equals(directory.Name, "src", StringComparison.OrdinalIgnoreCase))
-        {
-            directory = directory.Parent;
-        }
-
-        Assert.NotNull(directory);
-        var diagram = IoPath.Combine(
-            directory.FullName, "diagrams", "azure-devops-pipeline", "backend", "EtAlii.Adp.Diagram.AzureDevOpsPipeline", "Diagram.cs");
-        Assert.True(File.Exists(diagram), $"The module's Diagram.cs was not found at {diagram}.");
-        return diagram;
-    }
+    /// <summary>This module's own <c>Diagram.cs</c>.</summary>
+    private static string ModuleDiagramPath() =>
+        RepositoryPaths.Under("src", "diagrams", "azure-devops-pipeline", "backend", "EtAlii.Adp.Diagram.AzureDevOpsPipeline", "Diagram.cs");
 }

@@ -131,17 +131,5 @@ public sealed partial class BundledDefinitionTests
         Assert.Matches(EmptyCanvasOfTheDefinition(), canvas);
     }
 
-    private static string DefinitionFolder()
-    {
-        for (var folder = new DirectoryInfo(AppContext.BaseDirectory); folder != null; folder = folder.Parent)
-        {
-            var candidate = Path.Combine(folder.FullName, "src", "diagrams", "ansible-structure", "definition");
-            if (Directory.Exists(candidate))
-            {
-                return candidate;
-            }
-        }
-
-        throw new DirectoryNotFoundException("src/diagrams/ansible-structure/definition was not found above the test binary.");
-    }
+    private static string DefinitionFolder() => RepositoryPaths.Under("src", "diagrams", "ansible-structure", "definition");
 }

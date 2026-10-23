@@ -76,17 +76,5 @@ public sealed partial class BundledDefinitionTests
         Assert.DoesNotContain(loaded.Diagnostics, d => d.Severity == LoadSeverity.Error);
     }
 
-    private static string DefinitionFolder()
-    {
-        for (var folder = new DirectoryInfo(AppContext.BaseDirectory); folder != null; folder = folder.Parent)
-        {
-            var candidate = Path.Combine(folder.FullName, "src", "diagrams", "helm-chart", "definition");
-            if (Directory.Exists(candidate))
-            {
-                return candidate;
-            }
-        }
-
-        throw new DirectoryNotFoundException("src/diagrams/helm-chart/definition was not found above the test binary.");
-    }
+    private static string DefinitionFolder() => RepositoryPaths.Under("src", "diagrams", "helm-chart", "definition");
 }

@@ -49,25 +49,11 @@ public static class ClientTestRun
     /// <summary>The shared run. The first caller pays for it; everybody else reads it.</summary>
     public static ClientRunResult Result => Lazy.Value;
 
-    /// <summary>The client folder, found by walking up from the test binary.</summary>
-    public static string ClientRoot()
-    {
-        var directory = new DirectoryInfo(AppContext.BaseDirectory);
-        while (directory is not null)
-        {
-            var candidate = IoPath.Combine(directory.FullName, "src", "client");
-            if (File.Exists(IoPath.Combine(candidate, "package.json")))
-            {
-                return candidate;
-            }
-            directory = directory.Parent;
-        }
-
-        throw new DirectoryNotFoundException($"No src/client/package.json above {AppContext.BaseDirectory}.");
-    }
+    /// <summary>The client folder, <c>src/client</c>.</summary>
+    public static string ClientRoot() => RepositoryPaths.Under("src", "client");
 
     /// <summary>The repository root - the folder src/ sits in.</summary>
-    public static string RepositoryRoot() => IoPath.GetFullPath(IoPath.Combine(ClientRoot(), "..", ".."));
+    public static string RepositoryRoot() => RepositoryPaths.Root;
 
     /// <summary>
     /// Every <c>*.test.ts</c> and <c>*.test.tsx</c> in the client and in every diagram module's client,

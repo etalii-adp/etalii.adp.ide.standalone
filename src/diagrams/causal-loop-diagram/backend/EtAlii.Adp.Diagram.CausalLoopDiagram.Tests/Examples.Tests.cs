@@ -26,21 +26,7 @@ namespace EtAlii.Adp.Diagram.CausalLoopDiagram.Tests;
 /// </remarks>
 public class ExamplesTests
 {
-    internal static string ExamplesRoot
-    {
-        get
-        {
-            // Up out of bin/Debug/net10.0 and across to the module's examples folder.
-            var directory = new DirectoryInfo(AppContext.BaseDirectory);
-            while (directory is not null && !Directory.Exists(IoPath.Combine(directory.FullName, "examples")))
-            {
-                directory = directory.Parent;
-            }
-
-            Assert.SkipWhen(directory is null, "The module's examples folder was not found from the test output.");
-            return IoPath.Combine(directory.FullName, "examples");
-        }
-    }
+    internal static string ExamplesRoot => RepositoryPaths.Under("src", "diagrams", "causal-loop-diagram", "examples");
 
     private static CausalLoopModel Load(string name)
     {

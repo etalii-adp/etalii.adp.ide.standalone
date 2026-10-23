@@ -313,19 +313,6 @@ public static class DrawnConnections
         return found;
     }
 
-    /// <summary>The repository's src/examples folder, found by walking up from the test binary.</summary>
-    public static string ExamplesRoot()
-    {
-        var directory = new DirectoryInfo(AppContext.BaseDirectory);
-        while (directory is not null)
-        {
-            var candidate = IoPath.Combine(directory.FullName, "src", "examples");
-            if (Directory.Exists(IoPath.Combine(candidate, "diagrams")))
-            {
-                return candidate;
-            }
-            directory = directory.Parent;
-        }
-        throw new DirectoryNotFoundException($"No src/examples/diagrams folder above {AppContext.BaseDirectory}.");
-    }
+    /// <summary>The repository's src/examples folder.</summary>
+    public static string ExamplesRoot() => RepositoryPaths.Under("src", "examples");
 }
