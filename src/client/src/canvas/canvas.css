@@ -270,6 +270,13 @@
   stroke: none;
 }
 
+/* The press target of a selectable element of shape `none`, whose labels and decorations take
+ * no pointer events: there to be pressed, never seen. */
+.library-bodyless-hit {
+  fill: transparent;
+  stroke: none;
+}
+
 .library-link-glyph {
   fill: none;
   stroke: var(--color-text-muted, #5a6376);

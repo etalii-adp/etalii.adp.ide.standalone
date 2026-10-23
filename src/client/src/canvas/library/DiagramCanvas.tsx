@@ -42,7 +42,7 @@ import { BEFORE_GAP, labelKey, layoutLabels, wrappedLabelRegion, type LaidOutLab
 import { wavyUnderlinePath } from "./definition/wavyUnderline";
 import { resolveDecorations, type ResolvedDecoration } from "./definition/decorations";
 import { resolveBackground } from "./definition/background";
-import { resolveChromeText, resolveLegend } from "./definition/chrome";
+import { resolveChromeBand, resolveChromeText, resolveLegend } from "./definition/chrome";
 import { actionForGesture, actionForKey, flagOf, type ElementGesture } from "./definition/actions";
 import { isCustomShape } from "./definition/diagramDefinition";
 import { outlineEdgePoint, outlineOf } from "./shapes/outline";
@@ -2202,6 +2202,13 @@ export function DiagramCanvasCore({
   const title = resolveChromeText(definition.chrome?.title, chromeSource);
   const legend = definition.chrome?.legend;
   const legendEntries = resolveLegend(legend, chromeSource);
+  // THE HEADER BAND AND THE NOTICES (DISL §6.13): the band between the title and the surface, the
+  // notices below everything else, each a status region a reader's assistive technology announces.
+  const header = resolveChromeBand(definition.chrome?.header, chromeSource);
+  const notices = (definition.chrome?.notices ?? []).flatMap((notice) => {
+    const resolved = resolveChromeText(notice, chromeSource);
+    return resolved === null ? [] : [{ notice, resolved }];
+  });
 
   return (
     <>
@@ -2209,6 +2216,15 @@ export function DiagramCanvasCore({
       <div className={title.className} {...dataAttributesOf(definition.chrome?.title?.data)}>
         {title.text}
       </div>
+    )}
+    {header !== null && (
+      <header className={header.className} {...dataAttributesOf(definition.chrome?.header?.data)}>
+        {header.rows.map((row, index) => (
+          <span key={index} className={row.className}>
+            {row.text}
+          </span>
+        ))}
+      </header>
     )}
     <div
       ref={rootRef}
@@ -2468,6 +2484,11 @@ export function DiagramCanvasCore({
         ))}
       </div>
     )}
+    {notices.map(({ notice, resolved }) => (
+      <p key={notice.id} className={resolved.className} role="status" data-notice-position={notice.position} data-notice-severity={notice.severity} {...dataAttributesOf(notice.data)}>
+        {resolved.text}
+      </p>
+    ))}
     </>
   );
 }
@@ -3731,7 +3752,12 @@ function renderShapeBody(
   switch (shape) {
     case "none":
       // No body at all: this element is its labels and its decorations. Rows 2, 8, 14 and 25.
-      return null;
+      // Both of those take no pointer events, so a selectable one gets a transparent press
+      // target over its bounds; without it the element could never be pressed, selected, or
+      // shown its move refusal. An unselectable one stays inert. The target states its own
+      // `pointer-events` inline, because the property inherits and a module class on the group
+      // (`canvas-hint` is one) would otherwise switch the target off as well.
+      return type.selectable === false ? null : <rect className="library-bodyless-hit" x={bounds.x} y={bounds.y} width={bounds.width} height={bounds.height} style={{ pointerEvents: "all" }} />;
     case "moment": {
       // A DIAMOND rather than a circle, because that is what the notation that justified this
       // shape draws: `SpanElement` renders a moment as `M x-r y L x y-r L x+r y L x y+r Z`, and

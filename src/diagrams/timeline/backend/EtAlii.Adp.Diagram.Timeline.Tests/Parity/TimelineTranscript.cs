@@ -55,7 +55,7 @@ public sealed class TimelineTranscript() : TranscriptAdapter("timeline", "EtAlii
 
     public override string Origin => Diagram.Timeline.Origin.Key;
 
-    public override IReadOnlyList<ToolboxItemDefinition> Toolbox => TimelineDefinition.Definition.Toolbox;
+    protected override IReadOnlyList<ToolboxItemDefinition> Toolbox => TimelineDefinition.Definition.Toolbox;
 
     /// <summary>The corpus, in the order it is recorded.</summary>
     public override IReadOnlyList<TranscriptDocument> Corpus() => [.. Files().Select(OnDisk)];

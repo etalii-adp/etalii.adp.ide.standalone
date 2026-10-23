@@ -28,14 +28,14 @@ public class CausalLoopDerivedOperationsTests
     private const string Path = "derived.cld";
     private const string Nobody = "nobody";
 
-    public static TheoryData<string> Documents() => [.. CausalLoopTranscript.Corpus()];
+    public static TheoryData<string> Documents() => [.. CausalLoopCorpus.Paths()];
 
     [Theory]
     [MemberData(nameof(Documents))]
     public async Task EveryEntry_WritesWhatTheHandWrittenCommandWrote(string relative)
     {
         // Arrange.
-        var text = await File.ReadAllTextAsync(System.IO.Path.Combine(CausalLoopTranscript.SourceFolder, relative), TestContext.Current.CancellationToken);
+        var text = await File.ReadAllTextAsync(System.IO.Path.Combine(CausalLoopCorpus.SourceFolder, relative), TestContext.Current.CancellationToken);
         var model = CausalLoopBody.Parse(text).Read();
         var compared = 0;
         var differences = new List<string>();

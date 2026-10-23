@@ -23,7 +23,7 @@ export type Extensions = { [key: `x-${string}`]: unknown };
 
 export interface DislDocument extends Extensions {
   disl: string;
-  language: { id: string; version: string; label?: string };
+  language: { id: string; version: string; label?: string; limits?: DislLimits };
   metamodel: DislMetamodel;
   coordinates?: DislCoordinates;
   notation: DislNotation;
@@ -247,6 +247,8 @@ export interface DislBadge extends Extensions {
   pack?: boolean;
   /** The text it shows. */
   text?: Bindable<string>;
+  /** How far it sits from its corner, `[dx, dy]` (DISL §6.9). */
+  offset?: readonly [number, number];
   style?: string | Readonly<Record<string, unknown>>;
 }
 
@@ -407,6 +409,10 @@ export interface DislCanvas {
   /** What the canvas says once its document is read and holds nothing to draw (DISL §6.13). */
   empty?: { text: string; when?: string };
   filters?: Readonly<Record<string, DislFilter>>;
+  /** The band of rows between the title and the drawing surface (DISL §6.13 `canvas.header`). */
+  header?: { rows: readonly DislLabel[]; style?: unknown; visible?: unknown };
+  /** Status notices outside the drawing (DISL §6.13); one with a budget's id replaces that budget's own. */
+  notices?: readonly (DislNoticeText & { id: string })[];
   /** The title drawn above the drawing surface (DISL §6.13 `canvas.title`). */
   title?: { id?: string; text: Bindable<string>; style?: string | Readonly<Record<string, unknown>>; editable?: boolean };
   /**
@@ -421,6 +427,26 @@ export interface DislCanvas {
     entries?: readonly string[];
     computed?: { key?: unknown; label: unknown; swatch?: { shape?: unknown; fill?: unknown } };
   };
+}
+
+/** The language's limits (DISL §3.2): what the canvas reads of them is each budget's notice (§3.2.1). */
+export interface DislLimits {
+  budgets?: Readonly<Record<string, DislBudget>>;
+}
+
+/** A budget (DISL §3.2.1), as far as the canvas draws it: whether it cuts what is drawn, and its notice. */
+export interface DislBudget {
+  truncate?: boolean;
+  measure?: unknown;
+  notice?: boolean | DislNoticeText;
+}
+
+/** A notice's text and where it shows (DISL §6.13 `$defs/Notice`). */
+export interface DislNoticeText {
+  text?: Bindable<string>;
+  severity?: "info" | "warning" | "error";
+  position?: "top" | "bottom" | "top-left" | "top-right" | "bottom-left" | "bottom-right";
+  visible?: unknown;
 }
 
 export interface DislViewpoint {

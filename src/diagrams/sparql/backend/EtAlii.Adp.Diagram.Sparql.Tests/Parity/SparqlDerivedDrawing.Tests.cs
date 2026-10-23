@@ -26,7 +26,7 @@ public class SparqlDerivedDrawingTests
         var query = SparqlParser.Outcome(text).Model;
 
         // Act.
-        var derived = new SparqlDocument(query, text).Drawing;
+        var derived = new SparqlDocument(SparqlBody.Parse(text)).Drawing;
 
         // Assert.
         Assert.Equal(SparqlDrawingLines.Of(HandWrittenSparql.Project(query)), SparqlDrawingLines.Of(derived));
@@ -38,7 +38,7 @@ public class SparqlDerivedDrawingTests
         // Arrange and act.
         var findings = SparqlCorpus.Documents()
             .Select(document => (Document: document, Text: File.ReadAllText(SparqlCorpus.Full(document))))
-            .SelectMany(document => SparqlDefinition.Model(SparqlParser.Outcome(document.Text).Model, document.Text).Findings
+            .SelectMany(document => SparqlBody.Parse(document.Text).Disl.Findings
                 .Select(finding => $"{document.Document}: {finding}"))
             .ToList();
 
@@ -53,7 +53,7 @@ public class SparqlDerivedDrawingTests
         var text = File.ReadAllText(SparqlCorpus.Full(SparqlCorpus.Documents().Single(document => document.EndsWith("/over-the-bound.rq", StringComparison.Ordinal))));
 
         // Act.
-        var derived = new SparqlDocument(SparqlParser.Parse(text), text).Drawing;
+        var derived = new SparqlDocument(SparqlBody.Parse(text)).Drawing;
 
         // Assert.
         Assert.True(derived.Truncated);
@@ -79,7 +79,7 @@ public class SparqlDerivedDrawingTests
 
             // Act.
             CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo(culture);
-            derived = SparqlDrawingLines.Of(new SparqlDocument(SparqlParser.Parse(text), text).Drawing);
+            derived = SparqlDrawingLines.Of(new SparqlDocument(SparqlBody.Parse(text)).Drawing);
         }
         finally
         {

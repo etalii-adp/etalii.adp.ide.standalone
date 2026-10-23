@@ -20,7 +20,7 @@ public class SparqlDerivedRefusalsTests
         // Arrange.
         var text = File.ReadAllText(SparqlCorpus.Full(document));
         var outcome = SparqlParser.Outcome(text);
-        var derived = new SparqlDocument(outcome.Model, text);
+        var derived = new SparqlDocument(SparqlBody.Parse(text));
         var ids = SparqlDerived.Targets(HandWrittenSparql.Project(outcome.Model))
             .Concat(derived.Disl.Diagram.Elements.Select(element => element.Id).Where(SparqlDerived.IsWireId))
             .Distinct(StringComparer.Ordinal)
@@ -55,7 +55,7 @@ public class SparqlDerivedRefusalsTests
     {
         // Arrange.
         var text = File.ReadAllText(SparqlCorpus.Full(document));
-        var diagram = new SparqlDocument(SparqlParser.Outcome(text).Model, text).Disl.Diagram;
+        var diagram = new SparqlDocument(SparqlBody.Parse(text)).Disl.Diagram;
 
         // Act.
         var offered = diagram.Elements

@@ -49,7 +49,7 @@ public sealed partial class DependencyGraphTranscript() : TranscriptAdapter("dep
 
     public override string Origin => Diagram.DependencyGraph.Origin.Key;
 
-    public override IReadOnlyList<ToolboxItemDefinition> Toolbox => DependencyGraphDefinition.Definition.Toolbox;
+    protected override IReadOnlyList<ToolboxItemDefinition> Toolbox => DependencyGraphDefinition.Definition.Toolbox;
 
     /// <summary>The corpus, as paths relative to <c>src/</c> with forward slashes, then the inline documents, in the order they are recorded.</summary>
     public override IReadOnlyList<TranscriptDocument> Corpus()

@@ -45,7 +45,7 @@ public sealed class AbmTranscript() : TranscriptAdapter("agent-behavior-modellin
 
     public override string Origin => Diagram.AgentBehaviorModelling.Origin.Key;
 
-    public override IReadOnlyList<ToolboxItemDefinition> Toolbox => AbmDefinition.Definition.Toolbox;
+    protected override IReadOnlyList<ToolboxItemDefinition> Toolbox => AbmDefinition.Definition.Toolbox;
 
     /// <summary>The corpus, in the order it is recorded: the documents on disk, then the inline ones.</summary>
     public override IReadOnlyList<TranscriptDocument> Corpus() =>

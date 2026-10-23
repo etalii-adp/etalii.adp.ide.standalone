@@ -14,7 +14,9 @@ namespace EtAlii.Adp.TestSupport;
 /// </para>
 /// <para>
 /// <b>A document whose bytes equal one recorded earlier</b> is written as <c>sameAs</c> that one, so a
-/// shipped copy costs a line while it stays identical and shows in full the moment it drifts.
+/// shipped copy costs a line while it stays identical and shows in full the moment it drifts. What
+/// counts as equal is the adapter's <see cref="TranscriptAdapter.WriteIdentityAsync"/>: the bytes,
+/// unless the module says more makes the same reading.
 /// </para>
 /// </remarks>
 public static class TranscriptHarness
@@ -35,16 +37,10 @@ public static class TranscriptHarness
             json.WriteString("generator", adapter.Generator);
             json.WriteString("regenerate", $"{RegenerateVariable}=1 dotnet test --project <this test project> (then review the diff)");
 
-            // The toolbox is static: it does not read the document, so it is written once.
-            json.WriteStartArray("toolbox");
-            foreach (var item in adapter.Toolbox)
-            {
-                json.WriteStringValue($"{item.Id} | {item.Label} | {item.Icon} | drops {item.DropActionId} | {item.Description}");
-            }
+            // What does not read a document, the toolbox above all, is written once.
+            await adapter.WriteBeforeDocumentsAsync(json, cancellationToken);
 
-            json.WriteEndArray();
-
-            json.WriteStartArray("documents");
+            json.WriteStartArray(adapter.DocumentsName);
             var recorded = new Dictionary<string, string>(StringComparer.Ordinal);
             foreach (var document in adapter.Corpus())
             {
@@ -52,6 +48,7 @@ public static class TranscriptHarness
             }
 
             json.WriteEndArray();
+            await adapter.WriteAfterDocumentsAsync(json, cancellationToken);
             json.WriteEndObject();
             await json.FlushAsync(cancellationToken);
         }
@@ -68,19 +65,21 @@ public static class TranscriptHarness
         CancellationToken cancellationToken)
     {
         var bytes = await document.Read(cancellationToken);
-        var sha = TranscriptText.Sha256(bytes);
 
         json.WriteStartObject();
-        json.WriteString("document", document.Name);
-        json.WriteString("sha256", sha);
-        if (recorded.TryGetValue(sha, out var first))
+        json.WriteString(adapter.DocumentName, document.Name);
+        var key = await adapter.WriteIdentityAsync(json, document, bytes, cancellationToken);
+        if (key is not null)
         {
-            json.WriteString("sameAs", first);
-            json.WriteEndObject();
-            return;
-        }
+            if (recorded.TryGetValue(key, out var first))
+            {
+                json.WriteString("sameAs", first);
+                json.WriteEndObject();
+                return;
+            }
 
-        recorded[sha] = document.Name;
+            recorded[key] = document.Name;
+        }
 
         using (var folder = TestFolder.Create(adapter.GetType().Name))
         {

@@ -33,59 +33,44 @@ namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline.Tests.Parity;
 /// never minted.
 /// </para>
 /// </remarks>
-internal static class PipelineTranscript
+public sealed class PipelineTranscript() : TranscriptAdapter("azure-devops-pipeline", PipelineCorpus.TestProject, "azure-pipeline.transcript.json")
 {
-    /// <summary>The checked-in file's name, in this project's <c>Parity</c> folder.</summary>
-    private const string FileName = "azure-pipeline.transcript.json";
-
     private const string Unknown = "parity:unknown";
 
     private static readonly TypeRegistry _payloadTypes = TypeRegistry.FromFiles(AzurePipelineReflection.Descriptor);
 
-    /// <summary>The checked-in transcript.</summary>
-    public static string CheckedInPath => Path.Combine(PipelineCorpus.ModuleFolder, "backend", PipelineCorpus.TestProject, "Parity", FileName);
+    public override string Origin => Diagram.Pipeline.Origin.Key;
 
-    /// <summary>The whole transcript, as the bytes the checked-in file must hold.</summary>
-    public static async Task<byte[]> GenerateAsync(CancellationToken cancellationToken)
+    protected override IReadOnlyList<ToolboxItemDefinition> Toolbox => PipelineDefinition.Toolbox;
+
+    public override IReadOnlyList<TranscriptDocument> Corpus() => [.. PipelineCorpus.Documents().Select(document => new InFolder(document))];
+
+    public override async Task WriteBeforeDocumentsAsync(Utf8JsonWriter json, CancellationToken cancellationToken)
     {
-        using var stream = new MemoryStream();
-        await using (var json = new Utf8JsonWriter(stream, TranscriptText.WriterOptions))
-        {
-            json.WriteStartObject();
-            json.WriteString("module", Diagram.Pipeline.Origin.Key);
-            json.WriteString("generator", $"src/diagrams/azure-devops-pipeline/backend/{PipelineCorpus.TestProject}/Parity/PipelineTranscript.cs");
-            json.WriteString("regenerate", "ADP_WRITE_PARITY_TRANSCRIPTS=1 dotnet test --project <this test project> (then review the diff)");
+        await base.WriteBeforeDocumentsAsync(json, cancellationToken);
 
-            // The toolbox is static: it does not read the document, so it is written once.
-            json.WriteStartArray("toolbox");
-            foreach (var item in PipelineDefinition.Toolbox)
-            {
-                json.WriteStringValue($"{item.Id} | {item.Label} | {item.Icon} | drops {item.DropActionId} | {item.Description}");
-            }
+        // What a new pipeline is created with (finding B17): the binding's template must be these bytes.
+        await using var services = Services();
+        var factory = services.GetServices<IDiagramDocumentFactory>().Single(candidate => candidate.Origin == Diagram.Pipeline.Origin);
+        json.WriteString("emptyDocument", factory.CreateEmptyDocument("parity"));
+    }
 
-            json.WriteEndArray();
+    /// <summary>A copy is the same reading only where the templates around it are the same too.</summary>
+    public override async Task<string?> WriteIdentityAsync(Utf8JsonWriter json, TranscriptDocument document, byte[] bytes, CancellationToken cancellationToken)
+    {
+        var sha = await base.WriteIdentityAsync(json, document, bytes, cancellationToken);
+        var source = ((InFolder)document).Source;
+        return $"{sha} {await PipelineCorpus.FolderShaAsync(source, cancellationToken)} {source.InFolder}";
+    }
 
-            // What a new pipeline is created with (finding B17): the binding's template must be these bytes.
-            await using (var services = Services())
-            {
-                var factory = services.GetServices<IDiagramDocumentFactory>().Single(candidate => candidate.Origin == Diagram.Pipeline.Origin);
-                json.WriteString("emptyDocument", factory.CreateEmptyDocument("parity"));
-            }
-
-            json.WriteStartArray("documents");
-            var recorded = new Dictionary<string, string>(StringComparer.Ordinal);
-            foreach (var document in PipelineCorpus.Documents())
-            {
-                await WriteDocumentAsync(json, document, recorded, cancellationToken);
-            }
-
-            json.WriteEndArray();
-            json.WriteEndObject();
-            await json.FlushAsync(cancellationToken);
-        }
-
-        stream.Write("\r\n"u8);
-        return stream.ToArray();
+    public override async Task WriteDocumentAsync(Utf8JsonWriter json, TranscriptDocument document, byte[] bytes, string folder, CancellationToken cancellationToken)
+    {
+        var source = ((InFolder)document).Source;
+        PipelineCorpus.CopyFolder(Path.Combine(PipelineCorpus.SourceFolder, source.Root), folder);
+        using var session = new Session(folder, Path.Combine(folder, source.InFolder));
+        await session.ReadAsync(cancellationToken);
+        await WriteReadingsAsync(json, session, bytes, cancellationToken);
+        await WriteEditsAsync(json, session, cancellationToken);
     }
 
     /// <summary>The module's services, with the one core service its document factory needs nothing beyond.</summary>
@@ -95,45 +80,6 @@ internal static class PipelineTranscript
         services.AddSingleton(TestHistory.For(s => s.AddAzurePipeline()));
         services.AddAzurePipeline();
         return services.BuildServiceProvider();
-    }
-
-    private static async Task WriteDocumentAsync(Utf8JsonWriter json, PipelineCorpus.Document document, Dictionary<string, string> recorded, CancellationToken cancellationToken)
-    {
-        var source = Path.Combine(PipelineCorpus.SourceFolder, document.Relative);
-        var bytes = await File.ReadAllBytesAsync(source, cancellationToken);
-        var sha = TranscriptText.Sha256(bytes);
-
-        json.WriteStartObject();
-        json.WriteString("document", document.Relative);
-        json.WriteString("sha256", sha);
-
-        // A copy is the same reading only where the templates around it are the same too.
-        var key = $"{sha} {await PipelineCorpus.FolderShaAsync(document, cancellationToken)} {document.InFolder}";
-        if (recorded.TryGetValue(key, out var first))
-        {
-            json.WriteString("sameAs", first);
-            json.WriteEndObject();
-            return;
-        }
-
-        recorded[key] = document.Relative;
-
-        var folder = Path.Combine(Path.GetTempPath(), "EtAlii.Adp.PipelineTranscript", Guid.NewGuid().ToString("N"));
-        try
-        {
-            PipelineCorpus.CopyFolder(Path.Combine(PipelineCorpus.SourceFolder, document.Root), folder);
-            var body = Path.Combine(folder, document.InFolder);
-            using var session = new Session(folder, body);
-            await session.ReadAsync(cancellationToken);
-            await WriteReadingsAsync(json, session, bytes, cancellationToken);
-            await WriteEditsAsync(json, session, cancellationToken);
-        }
-        finally
-        {
-            TestFolder.TryDelete(folder);
-        }
-
-        json.WriteEndObject();
     }
 
     private static async Task WriteReadingsAsync(Utf8JsonWriter json, Session session, byte[] bytes, CancellationToken cancellationToken)
@@ -379,6 +325,10 @@ internal static class PipelineTranscript
     /// <summary>Every id a stage holds: the stage, its jobs and their steps.</summary>
     private static IEnumerable<string> Elements(PipelineStage stage) =>
         [stage.Id, .. stage.Jobs.SelectMany(job => job.Steps.Select(step => step.Id).Prepend(job.Id))];
+
+    /// <summary>A document of the corpus, with the folder it is read in.</summary>
+    private sealed record InFolder(PipelineCorpus.Document Source)
+        : TranscriptDocument(Source.Relative, cancellationToken => File.ReadAllBytesAsync(Path.Combine(PipelineCorpus.SourceFolder, Source.Relative), cancellationToken));
 
     /// <summary>One document's store, history, view state and providers.</summary>
     private sealed class Session : IDisposable

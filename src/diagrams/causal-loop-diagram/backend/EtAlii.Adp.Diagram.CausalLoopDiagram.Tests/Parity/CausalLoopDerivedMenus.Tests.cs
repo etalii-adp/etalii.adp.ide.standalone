@@ -12,7 +12,7 @@ namespace EtAlii.Adp.Diagram.CausalLoopDiagram.Tests.Parity;
 /// </summary>
 public class CausalLoopDerivedMenusTests
 {
-    public static TheoryData<string> Documents() => [.. CausalLoopTranscript.Corpus()];
+    public static TheoryData<string> Documents() => [.. CausalLoopCorpus.Paths()];
 
     [Fact]
     public void ThePalette_IsTheHandWrittenOne() => Assert.Equal(HandWrittenCausalLoop.Toolbox, CausalLoopDefinition.Definition.Toolbox);
@@ -58,7 +58,7 @@ internal static class CausalLoopEntries
     /// <remarks>The model is the hand-written parser's, the one the hand-written oracle read; the derived side reads the body.</remarks>
     public static async Task<DocumentEntry<CausalLoopBody, CausalLoopModel>> ReadAsync(string relative, CancellationToken cancellationToken)
     {
-        var text = await File.ReadAllTextAsync(Path.Combine(CausalLoopTranscript.SourceFolder, relative), cancellationToken);
+        var text = await File.ReadAllTextAsync(Path.Combine(CausalLoopCorpus.SourceFolder, relative), cancellationToken);
         return new DocumentEntry<CausalLoopBody, CausalLoopModel>(CausalLoopBody.Parse(text), CausalLoopParser.Parse(CausalLoopDocument.Parse(text)).Model);
     }
 

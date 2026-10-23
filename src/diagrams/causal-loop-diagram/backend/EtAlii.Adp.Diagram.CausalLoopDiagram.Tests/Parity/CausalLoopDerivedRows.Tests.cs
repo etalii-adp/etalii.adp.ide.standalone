@@ -15,7 +15,7 @@ namespace EtAlii.Adp.Diagram.CausalLoopDiagram.Tests.Parity;
 /// </remarks>
 public class CausalLoopDerivedRowsTests
 {
-    public static TheoryData<string> Documents() => [.. CausalLoopTranscript.Corpus()];
+    public static TheoryData<string> Documents() => [.. CausalLoopCorpus.Paths()];
 
     [Theory]
     [MemberData(nameof(Documents))]
@@ -55,7 +55,7 @@ public class CausalLoopDerivedRowsTests
     {
         // Arrange.
         var entry = await CausalLoopEntries.ReadAsync(
-            CausalLoopTranscript.Corpus().Single(path => path.EndsWith("/duplicate-variable.cld", StringComparison.Ordinal)),
+            CausalLoopCorpus.Paths().Single(path => path.EndsWith("/duplicate-variable.cld", StringComparison.Ordinal)),
             TestContext.Current.CancellationToken);
 
         // Act.
