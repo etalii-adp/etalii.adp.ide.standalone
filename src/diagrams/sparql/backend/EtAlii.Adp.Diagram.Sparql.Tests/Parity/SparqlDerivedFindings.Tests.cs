@@ -1,5 +1,3 @@
-using EtAlii.Adp.Documents.Wire;
-using EtAlii.Adp.Hierarchy;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.Sparql.Tests.Parity;

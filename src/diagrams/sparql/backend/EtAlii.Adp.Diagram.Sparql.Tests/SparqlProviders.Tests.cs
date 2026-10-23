@@ -1,6 +1,6 @@
 using EtAlii.Adp.Context;
-using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Diagram.Sparql.Tests.Parity;
+using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
 using Xunit;
 using IoPath = System.IO.Path;
