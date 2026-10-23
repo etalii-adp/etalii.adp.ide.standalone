@@ -33,7 +33,11 @@ internal static partial class HierarchicalRequirementSurfaceMapper
         }
 
         var nodes = document.Entries.Select(entry => Node(entry, ids[entry], byNumber)).ToList();
-        var nodeAt = nodes.Zip(document.Entries).GroupBy(pair => pair.Second.Line).ToDictionary(group => group.Key, group => group.First().First.Id);
+        // A finding stands at the entry whose bullet or description holds its line, so selecting it shows that box (FR-021).
+        var nodeAt = nodes.Zip(document.Entries)
+            .SelectMany(pair => Enumerable.Range(pair.Second.Line, 1 + DescriptionLines(pair.Second)).Select(line => (Line: line, pair.First.Id)))
+            .GroupBy(at => at.Line)
+            .ToDictionary(group => group.Key, group => group.First().Id);
         return new HierarchySurfaceModel(
             title,
             document.ReadOnlyReason,
@@ -53,6 +57,9 @@ internal static partial class HierarchicalRequirementSurfaceMapper
                 finding.InRegistration ? "" : nodeAt.GetValueOrDefault(finding.Line, ""),
                 finding.Line))]);
     }
+
+    /// <summary>The lines below an entry's bullet that its description takes.</summary>
+    private static int DescriptionLines(RequirementEntry entry) => entry.Description.Length == 0 ? 0 : entry.Description.Split('\n').Length;
 
     /// <summary>
     /// The id of each entry: its number when that is usable, else the line of its bullet. A placeholder's number is
