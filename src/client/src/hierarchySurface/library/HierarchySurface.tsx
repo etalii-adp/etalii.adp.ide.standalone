@@ -60,7 +60,8 @@ const isLineId = (id: string) => id.startsWith("line/");
  * it (FR-013), and deleted with Delete, asking first when anything concerns it (FR-014). The icon at a box's top right
  * opens the list of its notes, one box's at a time, where they are added, changed, resolved and removed (FR-015, FR-016).
  * `#` in a description refers to another node, which stands there as a box; selecting the box shows its target, changing
- * focus and expanding what hides it, and writes nothing but the collapse the registration keeps (FR-017, FR-018).
+ * focus and expanding what hides it, and writes nothing but the collapse the registration keeps (FR-017, FR-018). A
+ * label's values are picked, created and taken off in a field below the title, and its list is edited from there (FR-011).
  *
  * It knows no designer type: which type is a level, which an entry, which labels they carry, which icon a note shows
  * and which operation each gesture sends are the definition's.
@@ -437,6 +438,8 @@ function NodeView(props: NodeViewProps) {
       dropHint={drag?.hint?.nodeId === node.id ? drag.hint.kind : undefined}
       nodeOf={(id) => index.byId.get(id)}
       onReveal={onReveal}
+      nodes={model.nodes}
+      onLabelGesture={readOnly ? undefined : onGesture}
     />
   );
 

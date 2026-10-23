@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 import type { PointerPressWiring } from "@client/canvas/gesture/usePointerGesture";
 import { OptionTag } from "@client/table/library/cells/OptionTag";
 import type { HierarchySurfaceNode, HierarchySurfaceOptionList } from "./api/hierarchySurfaceModel";
@@ -6,6 +6,7 @@ import { CollapseToggle } from "./CollapseToggle";
 import { FOCUS_ICON, HIDDEN_LEVELS_ICON, type HierarchySurfaceDefinition } from "./definition/hierarchySurfaceDefinition";
 import type { EntryEditing } from "./editing/entryEditing";
 import { EntryTextField } from "./editing/EntryTextField";
+import { TagField, valuesOf } from "./labels/TagField";
 import { NoteIcon } from "./notes/NoteIcon";
 import type { NoteMark } from "./notes/noteMark";
 import { ReferenceText } from "./references/ReferenceBox";
@@ -38,6 +39,10 @@ export interface HierarchySurfaceBoxProps {
   onReveal: (id: string) => void;
   /** Where a node dragged over this box would go, or absent. */
   dropHint?: "into" | "after" | "before";
+  /** Every node of the page, which a label's list counts the carriers of a member among. */
+  nodes: readonly HierarchySurfaceNode[];
+  /** Sends a gesture of a label's field or list; absent when the document cannot be changed. */
+  onLabelGesture?: (operation: string, targetId: string, params: Readonly<Record<string, string>>) => unknown;
 }
 
 /** The colour the option list of `label` gives `value`, matched by name as a person types it. */
@@ -50,19 +55,25 @@ function colourOf(optionLists: readonly HierarchySurfaceOptionList[], label: str
 /**
  * One node's own box: the collapse control, the number beside the title, the tags below the title and the description
  * under them (FR-009, FR-010), and at its top right the icon of its notes, which opens their list (FR-015, FR-016). A
- * level's box also offers focus, and the mark of the levels the page does not show (FR-008, R10). What stands to its
- * right is the page's.
+ * label the definition lets the page change is a field there, opened from its values or the control in the header
+ * (FR-011). A level's box also offers focus, and the mark of the levels the page does not show (FR-008, R10). What
+ * stands to its right is the page's.
  */
 export function HierarchySurfaceBox(props: HierarchySurfaceBoxProps) {
-  const { node, definition, optionLists, collapsed, selected, notes, notesOpen, onToggleNotes, noteList, hiddenLevels, onToggle, onSelect, onFocus, editing, grip, dropHint, nodeOf, onReveal } = props;
-  const labels = definition.labels.filter((label) => label.on.includes(node.type));
-  const field = editing?.field ?? null;
+  const { node, definition, optionLists, collapsed, selected, notes, notesOpen, onToggleNotes, noteList, hiddenLevels, onToggle, onSelect, onFocus, editing, grip, dropHint, nodeOf, onReveal, nodes, onLabelGesture } = props;
+  const [fieldOpen, setFieldOpen] = useState(false);
+  const allLabels = definition.labels.filter((label) => label.on.includes(node.type));
+  // The label of many values the page changes is its field; the others are drawn after it, as they are.
+  const field = allLabels.find((label) => label.many && label.edit !== undefined);
+  const fieldEdit = field?.edit;
+  const labels = allLabels.filter((label) => label !== field);
+  const text = editing?.field ?? null;
   const fieldOf = (attribute: "title" | "description") =>
-    editing !== undefined && field !== null && field.attribute === attribute ? (
+    editing !== undefined && text !== null && text.attribute === attribute ? (
       <EntryTextField
-        text={field.text}
+        text={text.text}
         multiline={attribute === "description"}
-        label={field.label}
+        label={text.label}
         onChange={editing.change}
         onCommit={editing.commit}
         onCancel={editing.cancel}
@@ -91,6 +102,20 @@ export function HierarchySurfaceBox(props: HierarchySurfaceBoxProps) {
             {node.title}
           </span>
         )}
+        {field !== undefined && fieldEdit !== undefined && onLabelGesture !== undefined && (
+          // Shown under the pointer or on the selected box, and kept in its place otherwise: it moves nothing a click aims at.
+          <button
+            type="button"
+            className="mdi mdi-tag-plus-outline hs-tag-add"
+            aria-label={`${fieldEdit.words.add} to ${node.number}`}
+            title={fieldEdit.words.add}
+            onClick={(event) => {
+              event.stopPropagation();
+              onSelect();
+              setFieldOpen(true);
+            }}
+          />
+        )}
         {onFocus !== undefined && (
           <button
             type="button"
@@ -106,8 +131,22 @@ export function HierarchySurfaceBox(props: HierarchySurfaceBoxProps) {
           </button>
         )}
       </div>
-      {tags.length > 0 && (
+      {(tags.length > 0 || (field !== undefined && (valuesOf(node, field.label).length > 0 || fieldOpen))) && (
         <div className="hs-tags">
+          {field !== undefined && fieldEdit !== undefined && (
+            <TagField
+              label={field.label}
+              edit={fieldEdit}
+              node={node}
+              options={optionLists.find((list) => list.label === field.label)?.options ?? []}
+              nodes={nodes}
+              open={fieldOpen && onLabelGesture !== undefined}
+              onOpen={() => setFieldOpen(true)}
+              onClose={() => setFieldOpen(false)}
+              canEdit={onLabelGesture !== undefined}
+              onGesture={onLabelGesture ?? (() => "")}
+            />
+          )}
           {tags.map((tag) => (
             <OptionTag key={`${tag.label}:${tag.value}`} label={tag.value} color={colourOf(optionLists, tag.label, tag.value)} />
           ))}
