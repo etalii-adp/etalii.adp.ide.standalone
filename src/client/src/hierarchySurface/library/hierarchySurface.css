@@ -279,8 +279,17 @@
   color: var(--color-text);
 }
 
-/* What a node is dragged by, with everything in it (FR-013). */
+/* What a node is dragged by, with everything in it (FR-013): in the box's left margin, so the title keeps its width. */
+.hs-box.hs-draggable {
+  padding-left: 16px;
+}
+
 .hs-grip {
+  position: absolute;
+  top: 8px;
+  left: 1px;
+  font-size: 14px;
+  line-height: 1;
   color: var(--color-text-muted);
   cursor: grab;
   touch-action: none;

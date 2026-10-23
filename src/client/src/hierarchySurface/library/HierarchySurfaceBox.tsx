@@ -61,7 +61,7 @@ export function HierarchySurfaceBox(props: HierarchySurfaceBoxProps) {
 
   return (
     <div
-      className={`hs-box${selected ? " hs-selected" : ""}${collapsed ? " hs-collapsed" : ""}${dropHint === undefined ? "" : ` hs-drop-${dropHint}`}`}
+      className={`hs-box${grip === undefined ? "" : " hs-draggable"}${selected ? " hs-selected" : ""}${collapsed ? " hs-collapsed" : ""}${dropHint === undefined ? "" : ` hs-drop-${dropHint}`}`}
       data-node-id={node.id}
       aria-selected={selected}
       role="treeitem"
