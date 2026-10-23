@@ -15,6 +15,7 @@ import { HierarchySurfaceTrail } from "./HierarchySurfaceTrail";
 import { ancestorsOf, descendantsOf, type HierarchyIndex, indexOf, levelsBelow, levelsThatFit } from "./layout";
 import { NoteList } from "./notes/NoteList";
 import { noteMarkOf } from "./notes/noteMark";
+import { revealOf } from "./references/reveal";
 
 /** A key with the modifiers held, as the backend matches it against an action's shortcut. */
 export interface HierarchySurfaceChord {
@@ -58,6 +59,8 @@ const isLineId = (id: string) => id.startsWith("line/");
  * dialog: the page opens the new node's title for typing (FR-012). A node is dragged by its grip, with everything in
  * it (FR-013), and deleted with Delete, asking first when anything concerns it (FR-014). The icon at a box's top right
  * opens the list of its notes, one box's at a time, where they are added, changed, resolved and removed (FR-015, FR-016).
+ * `#` in a description refers to another node, which stands there as a box; selecting the box shows its target, changing
+ * focus and expanding what hides it, and writes nothing but the collapse the registration keeps (FR-017, FR-018).
  *
  * It knows no designer type: which type is a level, which an entry, which labels they carry, which icon a note shows
  * and which operation each gesture sends are the definition's.
@@ -81,6 +84,10 @@ export function HierarchySurface({ model, definition, onGesture, onShortcut, sel
   const awaitingAdd = useRef<readonly HierarchySurfaceNode[] | null>(null);
   const pendingRef = useRef(pendingEdits);
   pendingRef.current = pendingEdits;
+  // The node a reference box asked to show, until its box is on the page to scroll to.
+  const revealing = useRef<string | null>(null);
+  // What a reference can name: a node without a number of its own cannot be written as one.
+  const candidates = useMemo(() => model.nodes.filter((node) => !isLineId(node.id)), [model.nodes]);
 
   useEffect(() => setSelected(selectedNode ?? ""), [selectedNode]);
 
@@ -142,8 +149,9 @@ export function HierarchySurface({ model, definition, onGesture, onShortcut, sel
             change: (text: string) => setField((current) => (current === null ? null : { ...current, text })),
             commit: commitField,
             cancel: closeField,
+            references: candidates,
           },
-    [readOnly, field, commitField, closeField],
+    [readOnly, field, commitField, closeField, candidates],
   );
 
   const isCollapsed = useCallback(
@@ -177,6 +185,33 @@ export function HierarchySurface({ model, definition, onGesture, onShortcut, sel
     },
     [onSelectNode],
   );
+
+  /** Shows the node a reference box names: the focus that keeps it in sight, every level above it expanded, selected. */
+  const reveal = useCallback(
+    (targetId: string) => {
+      const plan = revealOf(index, targetId, focused, fit, isCollapsed);
+      if (plan === null) {
+        return;
+      }
+      setFocus(plan.focus);
+      for (const level of plan.expand) {
+        toggle(level);
+      }
+      select(targetId);
+      revealing.current = targetId;
+    },
+    [index, focused, fit, isCollapsed, toggle, select],
+  );
+
+  // Once the revealed node's box is on the page, which can take the model an expand brings, it is scrolled to.
+  useEffect(() => {
+    const id = revealing.current;
+    const box = id === null ? null : pageRef.current?.querySelector(`.hs-box[data-node-id="${id}"]`);
+    if (box !== null && box !== undefined) {
+      revealing.current = null;
+      box.scrollIntoView?.({ block: "nearest" });
+    }
+  });
 
   // The node an add asked for has arrived: it is selected and its title is open for typing.
   useEffect(() => {
@@ -275,6 +310,7 @@ export function HierarchySurface({ model, definition, onGesture, onShortcut, sel
             onChange={(text) => setField((current) => (current === null ? null : { ...current, text }))}
             onCommit={commitField}
             onCancel={closeField}
+            references={field.attribute === "description" ? candidates : undefined}
           />
         </div>
       )}
@@ -306,6 +342,7 @@ export function HierarchySurface({ model, definition, onGesture, onShortcut, sel
             onToggleNotes={(id) => setOpenNotes((current) => (current === id ? "" : id))}
             onGesture={onGesture}
             readOnly={readOnly}
+            onReveal={reveal}
           />
         ))}
         {!readOnly && focused === "" && <AddControl adds={[definition.operations.addTopLevel]} within="" onAdd={(what) => addTo("", what)} />}
@@ -347,10 +384,11 @@ interface NodeViewProps {
   onToggleNotes: (id: string) => void;
   onGesture: HierarchySurfaceProps["onGesture"];
   readOnly: boolean;
+  onReveal: (id: string) => void;
 }
 
 function NodeView(props: NodeViewProps) {
-  const { node, depth, fit, index, model, definition, selected, isCollapsed, onToggle, onSelect, onFocus, editingOf, onAdd, drag, openNotes, onToggleNotes, onGesture, readOnly } = props;
+  const { node, depth, fit, index, model, definition, selected, isCollapsed, onToggle, onSelect, onFocus, editingOf, onAdd, drag, openNotes, onToggleNotes, onGesture, readOnly, onReveal } = props;
   const collapsed = isCollapsed(node);
   const level = node.role === "level";
   // A collapsed level's mark counts every note inside it, since nothing inside it shows.
@@ -397,6 +435,8 @@ function NodeView(props: NodeViewProps) {
       editing={editingOf(node)}
       grip={drag?.grip(node)}
       dropHint={drag?.hint?.nodeId === node.id ? drag.hint.kind : undefined}
+      nodeOf={(id) => index.byId.get(id)}
+      onReveal={onReveal}
     />
   );
 

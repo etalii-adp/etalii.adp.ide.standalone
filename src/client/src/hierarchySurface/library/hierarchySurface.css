@@ -437,3 +437,43 @@
   flex: 1;
   min-width: 0;
 }
+
+/* A reference in a description (FR-018): a box with its target's number and title, inline in the text. */
+.hs-reference {
+  display: inline;
+  padding: 0 4px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  font: inherit;
+  cursor: pointer;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+.hs-reference:hover {
+  border-color: var(--color-primary);
+}
+
+/* One that names nothing keeps its text as written, marked by a dashed border in the colour of an error. */
+.hs-reference-broken {
+  border-style: dashed;
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+  cursor: default;
+}
+
+.hs-reference-broken .mdi {
+  margin-inline-end: 2px;
+}
+
+/* The lookup `#` opens, under the field it was typed in and above the boxes beside it (FR-017). */
+.hs-reference-lookup {
+  position: absolute;
+  z-index: 10;
+  left: 22px;
+  width: 300px;
+  max-width: calc(100% - 28px);
+  box-shadow: var(--shadow);
+}
