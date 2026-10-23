@@ -24,21 +24,20 @@ public class ShaclCommandsTests : IDisposable
 
     private const string Ex = "http://example.org/";
 
-    private readonly string _root;
+    private readonly TestFolder _testFolder = TestFolder.Create("rdf-shacl-commands");
     private readonly RdfDocumentStore _store = new(new FileWriter());
     private readonly string _path;
 
     public ShaclCommandsTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
-        _path = IoPath.Combine(_root, "shapes.ttl");
+        var root = _testFolder.Path;
+        _path = IoPath.Combine(root, "shapes.ttl");
         File.WriteAllText(_path, Corpus);
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
         GC.SuppressFinalize(this);
     }
 

@@ -40,18 +40,18 @@ public class PipelineDocumentStoreLostEditTests : IDisposable
 {
     // The only two-argument store: its root travels with every call, so the guard has to
     // carry it too rather than borrow timeline's single-path shape.
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-lost-edit");
     private readonly string _root;
     private readonly PipelineDocumentStore _store = new(new FileWriter());
 
     public PipelineDocumentStoreLostEditTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "adp-lost-edit-" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
 
         GC.SuppressFinalize(this);
     }

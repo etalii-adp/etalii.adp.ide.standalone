@@ -1,6 +1,7 @@
 using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Layout;
 using Google.Protobuf;
+using JetBrains.Annotations;
 
 namespace EtAlii.Adp.Diagram.Sparql;
 
@@ -15,9 +16,11 @@ public sealed class SparqlElementMapper
     public const string VariableType = "w3c/sparql+variable";
 
     /// <inheritdoc cref="VariableType" />
+    [UsedImplicitly] // Read only by reflection, into the cross-tier element-types fixture.
     public const string TermType = "w3c/sparql+term";
 
     /// <inheritdoc cref="VariableType" />
+    [Relation]
     public const string EdgeType = "w3c/sparql+edge";
 
     /// <inheritdoc cref="VariableType" />
@@ -30,6 +33,7 @@ public sealed class SparqlElementMapper
     public const string HeaderType = "w3c/sparql+header";
 
     /// <inheritdoc cref="VariableType" />
+    [UsedImplicitly] // Read only by reflection, into the cross-tier element-types fixture.
     public const string TruncationType = "w3c/sparql+truncation";
 
     /// <summary>The header band's element id - one per diagram, always present.</summary>

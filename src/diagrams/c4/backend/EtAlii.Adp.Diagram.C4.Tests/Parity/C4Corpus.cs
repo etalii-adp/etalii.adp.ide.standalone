@@ -115,29 +115,22 @@ internal static class C4Corpus
         var mapper = services.GetRequiredService<C4ElementMapper>();
         foreach (var document in await DocumentsAsync(cancellationToken))
         {
-            var folder = Path.Combine(Path.GetTempPath(), "EtAlii.Adp.C4Corpus", Guid.NewGuid().ToString("N"));
-            Directory.CreateDirectory(folder);
-            try
+            using var scratch = TestFolder.Create("EtAlii.Adp.C4Corpus");
+            var folder = scratch.Path;
+            var body = Path.Combine(folder, Path.GetFileName(document.Relative));
+            await File.WriteAllBytesAsync(body, document.Bytes, cancellationToken);
+            foreach ((string name, byte[] bytes) in document.Companions)
             {
-                var body = Path.Combine(folder, Path.GetFileName(document.Relative));
-                await File.WriteAllBytesAsync(body, document.Bytes, cancellationToken);
-                foreach ((string name, byte[] bytes) in document.Companions)
-                {
-                    await File.WriteAllBytesAsync(Path.Combine(folder, name), bytes, cancellationToken);
-                }
+                await File.WriteAllBytesAsync(Path.Combine(folder, name), bytes, cancellationToken);
+            }
 
-                var workspace = (await store.GetOrLoadAsync(body, cancellationToken)).Model;
-                List<(C4View, IReadOnlyList<string>)> views =
-                [
-                    .. workspace.Views.Select(view => (view, (IReadOnlyList<string>)[.. mapper.Visible(workspace, view, DiagramViewport.Unbounded, body).Select(element => element.Id)])),
-                ];
-                readings.Add(new Reading(document.Relative, Path.GetFileName(body), workspace, views));
-                store.Forget(body);
-            }
-            finally
-            {
-                TestFolder.TryDelete(folder);
-            }
+            var workspace = (await store.GetOrLoadAsync(body, cancellationToken)).Model;
+            List<(C4View, IReadOnlyList<string>)> views =
+            [
+                .. workspace.Views.Select(view => (view, (IReadOnlyList<string>)[.. mapper.Visible(workspace, view, DiagramViewport.Unbounded, body).Select(element => element.Id)])),
+            ];
+            readings.Add(new Reading(document.Relative, Path.GetFileName(body), workspace, views));
+            store.Forget(body);
         }
 
         return readings;

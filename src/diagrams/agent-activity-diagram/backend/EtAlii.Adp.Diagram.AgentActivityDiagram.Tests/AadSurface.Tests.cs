@@ -15,8 +15,14 @@ namespace EtAlii.Adp.Diagram.AgentActivityDiagram.Tests;
 /// </summary>
 public sealed class AadSurfaceTests : IDisposable
 {
-    private readonly string _root = Directory.CreateTempSubdirectory("aad-surface-").FullName;
+    private readonly TestFolder _testFolder = TestFolder.Create("aad-surface");
+    private readonly string _root;
     private readonly ServiceProvider _services = Services();
+
+    public AadSurfaceTests()
+    {
+        _root = _testFolder.Path;
+    }
 
     private string Body => System.IO.Path.Combine(_root, "work.aad");
 
@@ -30,7 +36,7 @@ public sealed class AadSurfaceTests : IDisposable
     public void Dispose()
     {
         _services.Dispose();
-        Directory.Delete(_root, recursive: true);
+        _testFolder.Dispose();
     }
 
     private Task GivenOneDayAsync() => File.WriteAllTextAsync(Body, AadDocumentTests.Fixture("one-day.aad"), TestContext.Current.CancellationToken);

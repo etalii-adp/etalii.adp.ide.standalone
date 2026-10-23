@@ -32,32 +32,25 @@ public class CausalLoopQuotedTextTests
     public async Task AQuoteInsideQuotedText_IsRefused_AndTheDocumentIsLeftAlone(string write)
     {
         // Arrange.
-        var folder = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(folder);
-        try
-        {
-            var path = IoPath.Combine(folder, "quoted.cld");
-            await File.WriteAllTextAsync(path, Text, TestContext.Current.CancellationToken);
-            var store = new CausalLoopDocumentStore(new FileWriter());
-            var cancellationToken = TestContext.Current.CancellationToken;
+        using var scratch = TestFolder.Create("causal-loop-quoted-text");
+        var folder = scratch.Path;
+        var path = IoPath.Combine(folder, "quoted.cld");
+        await File.WriteAllTextAsync(path, Text, TestContext.Current.CancellationToken);
+        var store = new CausalLoopDocumentStore(new FileWriter());
+        var cancellationToken = TestContext.Current.CancellationToken;
 
-            // Act.
-            var result = write switch
-            {
-                "add variable" => await new AddVariableCommandHandler(store).ExecuteAsync(new AddVariableCommand(path, "deaths", Quoted), cancellationToken),
-                "variable label" => await new SetVariableLabelCommandHandler(store).ExecuteAsync(new SetVariableLabelCommand(path, "births", Quoted), cancellationToken),
-                "link label" => await new SetLinkLabelCommandHandler(store).ExecuteAsync(new SetLinkLabelCommand(path, "population", "births", Quoted), cancellationToken),
-                "loop name" => await new SetLoopNameCommandHandler(store).ExecuteAsync(new SetLoopNameCommand(path, "R1", Quoted), cancellationToken),
-                _ => throw new ArgumentOutOfRangeException(nameof(write)),
-            };
-
-            // Assert.
-            Assert.Equal(CausalLoopEdits.UnusableText, result.Error);
-            Assert.Equal(Text, await File.ReadAllTextAsync(path, cancellationToken));
-        }
-        finally
+        // Act.
+        var result = write switch
         {
-            TestFolder.TryDelete(folder);
-        }
+            "add variable" => await new AddVariableCommandHandler(store).ExecuteAsync(new AddVariableCommand(path, "deaths", Quoted), cancellationToken),
+            "variable label" => await new SetVariableLabelCommandHandler(store).ExecuteAsync(new SetVariableLabelCommand(path, "births", Quoted), cancellationToken),
+            "link label" => await new SetLinkLabelCommandHandler(store).ExecuteAsync(new SetLinkLabelCommand(path, "population", "births", Quoted), cancellationToken),
+            "loop name" => await new SetLoopNameCommandHandler(store).ExecuteAsync(new SetLoopNameCommand(path, "R1", Quoted), cancellationToken),
+            _ => throw new ArgumentOutOfRangeException(nameof(write)),
+        };
+
+        // Assert.
+        Assert.Equal(CausalLoopEdits.UnusableText, result.Error);
+        Assert.Equal(Text, await File.ReadAllTextAsync(path, cancellationToken));
     }
 }

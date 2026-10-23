@@ -14,6 +14,10 @@ internal sealed record DislForms(IReadOnlyList<DislForm> All, string? NotAnObjec
     public DislForm? For(DislElement self, string usage) =>
         All.FirstOrDefault(form => (form.Usage.Count > 0 ? form.Usage.Contains(usage) : usage == "inspector") && form.For.Any(self.IsA));
 
+    /// <summary>The first form <c>for</c> <c>"diagram"</c> (§7.5) whose <c>usage</c> includes <paramref name="usage"/>, the default being <c>inspector</c>; null when none is.</summary>
+    public DislForm? ForDiagram(string usage) =>
+        All.FirstOrDefault(form => (form.Usage.Count > 0 ? form.Usage.Contains(usage) : usage == "inspector") && form.For.Contains("diagram"));
+
     /// <summary>The form named <paramref name="name"/>, or null when there is none.</summary>
     public DislForm? Named(string name) =>
         NotAnObject is not null ? throw new InvalidOperationException(NotAnObject) : All.FirstOrDefault(form => form.Name == name);

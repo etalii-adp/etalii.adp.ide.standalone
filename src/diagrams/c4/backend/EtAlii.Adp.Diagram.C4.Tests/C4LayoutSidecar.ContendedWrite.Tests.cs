@@ -14,20 +14,19 @@ namespace EtAlii.Adp.Diagram.C4.Tests;
 /// </summary>
 public class C4LayoutSidecarContendedWriteTests : IDisposable
 {
-    private readonly string _root;
+    private readonly TestFolder _testFolder = TestFolder.Create("c4-layout-sidecar-contended-write");
     private readonly string _bodyPath;
     private readonly C4LayoutSidecar _sidecar = new(new FileWriter());
 
     public C4LayoutSidecarContendedWriteTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Diagram.C4.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
-        _bodyPath = IoPath.Combine(_root, "model.dsl");
+        var root = _testFolder.Path;
+        _bodyPath = IoPath.Combine(root, "model.dsl");
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     [Fact]

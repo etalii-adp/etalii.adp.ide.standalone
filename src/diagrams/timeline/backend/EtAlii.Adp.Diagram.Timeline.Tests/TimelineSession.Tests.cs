@@ -12,9 +12,8 @@ namespace EtAlii.Adp.Diagram.Timeline.Tests;
 /// </summary>
 public class TimelineSessionTests : IDisposable
 {
-    private readonly string _workspace = IoPath.Combine(
-        IoPath.GetTempPath(),
-        "adp-timeline-session-" + Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-timeline-session");
+    private readonly string _workspace;
 
     private readonly TimelineDocumentStore _store = new(new FileWriter());
     private readonly TimelineElementMapper _mapper = new();
@@ -22,13 +21,13 @@ public class TimelineSessionTests : IDisposable
 
     public TimelineSessionTests()
     {
-        Directory.CreateDirectory(_workspace);
+        _workspace = _testFolder.Path;
         _historyStacks = TestHistory.For(s => { s.AddTimeline(); s.AddSingleton<ITimelineDocumentStore>(_store); });
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_workspace);
+        _testFolder.Dispose();
 
         GC.SuppressFinalize(this);
     }

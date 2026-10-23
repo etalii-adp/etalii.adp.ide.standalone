@@ -11,12 +11,13 @@ namespace EtAlii.Adp.Diagram.AgentBehaviorModelling.Tests;
 /// </summary>
 public sealed class AbmArrangementTests : IDisposable
 {
-    private readonly string _folder = Path.Combine(Path.GetTempPath(), "EtAlii.Adp.AbmArrangementTests", Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("EtAlii.Adp.AbmArrangementTests");
+    private readonly string _folder;
     private readonly ICommandDispatcher _dispatcher = TestHistory.Dispatcher(s => s.AddAgentBehaviorModelling());
 
     public AbmArrangementTests()
     {
-        Directory.CreateDirectory(_folder);
+        _folder = _testFolder.Path;
         File.Copy(AbmExamples.BodyOf("bug-fixer"), Body);
         File.Copy(Path.ChangeExtension(AbmExamples.BodyOf("bug-fixer"), ".adp"), Registration);
     }
@@ -27,14 +28,7 @@ public sealed class AbmArrangementTests : IDisposable
 
     public void Dispose()
     {
-        try
-        {
-            Directory.Delete(_folder, recursive: true);
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            // A temp folder left behind is not a test failure.
-        }
+        _testFolder.Dispose();
     }
 
     [Fact]

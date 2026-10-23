@@ -22,7 +22,7 @@ namespace EtAlii.Adp.Workspace;
 /// streaming call of this service's own would be the second stream the workspace contract
 /// forbids.
 /// </remarks>
-public sealed class DesignerService : Proto.DesignerService.DesignerServiceBase
+public sealed partial class DesignerService : Proto.DesignerService.DesignerServiceBase
 {
     private static readonly ILogger _logger = Log.ForContext<DesignerService>();
 
@@ -31,21 +31,29 @@ public sealed class DesignerService : Proto.DesignerService.DesignerServiceBase
     private readonly DesignerSessionFactories _factories;
     private readonly WorkspaceConnections _connections;
     private readonly TableStreams _streams;
-    private readonly StreamMap<IDesignerSession> _tableStream;
+    private readonly StreamMap<ITableDesignerSession> _tableStream;
 
     public DesignerService(
         IProjectStore projectStore,
         DesignerFileRouter router,
         DesignerSessionFactories factories,
         WorkspaceConnections connections,
-        TableStreams streams)
+        TableStreams streams,
+        HierarchySurfaceStreams surfaces)
     {
         _projectStore = projectStore;
         _router = router;
         _factories = factories;
         _connections = connections;
         _streams = streams;
-        _tableStream = new StreamMap<IDesignerSession>
+        _surfaces = surfaces;
+        _surfaceStream = new StreamMap<IHierarchySurfaceSession>
+        {
+            Kind = "HierarchySurface",
+            RunAsync = RunSurfaceAsync,
+            Ended = streamId => new WorkspaceMessage { HierarchySurface = new Proto.HierarchySurfaceStreamMessage { StreamId = streamId, Ended = new Proto.HierarchySurfaceStreamEnded() } },
+        };
+        _tableStream = new StreamMap<ITableDesignerSession>
         {
             Kind = "Table",
             RunAsync = RunAsync,
@@ -58,7 +66,7 @@ public sealed class DesignerService : Proto.DesignerService.DesignerServiceBase
         var userId = SessionContext.GetUserId(context);
         var connection = _connections.Require((ShortGuid)request.WatchId, userId);
 
-        var session = OpenSession(userId, connection.WatchId, request);
+        var session = await OpenSessionAsync<ITableDesignerSession>(userId, connection.WatchId, request.ProjectId, request.Path, "table");
 
         await connection.OpenStreamAsync((ShortGuid)request.StreamId, session, _tableStream);
         return new Proto.OpenTableResponse();
@@ -104,7 +112,7 @@ public sealed class DesignerService : Proto.DesignerService.DesignerServiceBase
     /// The session of a running table stream of the calling user, or a transient refusal: a call
     /// for a stream that is gone is a reconnect racing a close, and the client re-opens.
     /// </summary>
-    private IDesignerSession SessionOf(ServerCallContext context, Documents.Wire.ShortGuid wireWatchId, Documents.Wire.ShortGuid wireStreamId)
+    private ITableDesignerSession SessionOf(ServerCallContext context, Documents.Wire.ShortGuid wireWatchId, Documents.Wire.ShortGuid wireStreamId)
     {
         var watchId = (ShortGuid)wireWatchId;
         if (_connections.Find(watchId, SessionContext.GetUserId(context)) is not null && _streams.Find(watchId, (ShortGuid)wireStreamId) is { } session)
@@ -117,18 +125,21 @@ public sealed class DesignerService : Proto.DesignerService.DesignerServiceBase
 
     /// <summary>
     /// Resolves what the request names to a designer's document and opens its session, or
-    /// refuses with a <see cref="PermanentRefusal"/> code.
+    /// refuses with a <see cref="PermanentRefusal"/> code - also when the document's surface is
+    /// not the one asked for, a hierarchy surface opened as a table say.
     /// </summary>
-    private IDesignerSession OpenSession(ShortGuid userId, ShortGuid watchId, Proto.OpenTableRequest request)
+    private async Task<TSession> OpenSessionAsync<TSession>(ShortGuid userId, ShortGuid watchId, Documents.Wire.ShortGuid projectId, Documents.Wire.Path? path, string surface)
+        where TSession : class, IDesignerSession
     {
-        var asked = string.Join('/', request.Path?.Segments ?? []);
-        if (request.Path is null ||
-            !ProjectTextFile.TryResolve(_projectStore, request.ProjectId, request.Path, userId, out var file) ||
-            _router.Route(file.FullPath, file.Root.FullPath) is not DesignerRouted { BodyPath: { } bodyPath } routed ||
+        var asked = string.Join('/', path?.Segments ?? []);
+        if (path is null ||
+            !ProjectTextFile.TryResolve(_projectStore, projectId, path, userId, out var file) ||
+            // A body is its type's by its envelope first, with or without a registration (spec 029 R3, R4), as ToolRouter routes it.
+            (_router.RouteByEnvelope(file.FullPath) ?? _router.Route(file.FullPath, file.Root.FullPath)) is not DesignerRouted { BodyPath: { } bodyPath } routed ||
             !File.Exists(bodyPath))
         {
             // The client is told only that it failed; the log keeps what it asked for.
-            _logger.Warning("Refusing to open {Path} as a table on watch {WatchId}: it is not a designer's document with a body", asked, watchId);
+            _logger.Warning("Refusing to open {Path} as a {Surface} on watch {WatchId}: it is not a designer's document with a body", asked, surface, watchId);
             throw new RpcException(new Status(PermanentRefusal.CannotOpen, "The document cannot be opened."));
         }
 
@@ -140,7 +151,15 @@ public sealed class DesignerService : Proto.DesignerService.DesignerServiceBase
         }
 
         _logger.Debug("Routed {Path} to {Origin}, body {BodyPath}, on watch {WatchId}", asked, routed.Definition.Origin, bodyPath, watchId);
-        return factory.Open(watchId, file.Root, routed.RegistrationPath, bodyPath);
+        var opened = factory.Open(watchId, file.Root, routed.RegistrationPath, bodyPath);
+        if (opened is TSession session)
+        {
+            return session;
+        }
+
+        await opened.DisposeAsync();
+        _logger.Warning("Refusing to open {Path} as a {Surface} on watch {WatchId}: {Origin} documents are drawn by another surface", asked, surface, watchId, routed.Definition.Origin);
+        throw new RpcException(new Status(PermanentRefusal.CannotOpen, $"'{routed.Definition.Origin}' documents are not a {surface}."));
     }
 
     /// <summary>
@@ -148,7 +167,7 @@ public sealed class DesignerService : Proto.DesignerService.DesignerServiceBase
     /// under <paramref name="streamId"/>, until the stream is closed or the connection ends.
     /// Disposes the session when it returns.
     /// </summary>
-    private async Task RunAsync(IDesignerSession opened, WorkspaceConnection connection, Documents.Wire.ShortGuid streamId, CancellationToken cancellationToken)
+    private async Task RunAsync(ITableDesignerSession opened, WorkspaceConnection connection, Documents.Wire.ShortGuid streamId, CancellationToken cancellationToken)
     {
         // Before the first wait, so a call that follows the open finds the session.
         var id = (ShortGuid)streamId;

@@ -322,20 +322,13 @@ public class DependencyGraphDraftedBindingTests
     /// <summary>The text after the module's own command ran on <paramref name="name"/>, as a file, through the module's handler.</summary>
     private static async Task<string> ModuleAfter(string name, Func<string, ICommand> command)
     {
-        var folder = IoPath.Combine(IoPath.GetTempPath(), "adp-dgr-drafted-" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(folder);
-        try
-        {
-            var path = IoPath.Combine(folder, "body.dgr");
-            await File.WriteAllTextAsync(path, Text(name), TestContext.Current.CancellationToken);
-            var result = await TestHistory.Dispatcher(s => s.AddDependencyGraph()).DispatchAsync(command(path), TestContext.Current.CancellationToken);
-            Assert.True(result.IsSuccess, result.Error);
-            return await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
-        }
-        finally
-        {
-            TestFolder.TryDelete(folder);
-        }
+        using var scratch = TestFolder.Create("adp-dgr-drafted");
+        var folder = scratch.Path;
+        var path = IoPath.Combine(folder, "body.dgr");
+        await File.WriteAllTextAsync(path, Text(name), TestContext.Current.CancellationToken);
+        var result = await TestHistory.Dispatcher(s => s.AddDependencyGraph()).DispatchAsync(command(path), TestContext.Current.CancellationToken);
+        Assert.True(result.IsSuccess, result.Error);
+        return await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
     }
 
     private static OpenBody Fbl(string name) => OpenBody.Open(Encoding.UTF8.GetBytes(Text(name)), DependencyGraphBody.Binding);

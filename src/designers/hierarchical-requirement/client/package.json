@@ -1,0 +1,10 @@
+{
+  "name": "@adp/designer-hierarchical-requirement-client",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Hierarchical Requirement Designer client: the hierarchy surface's declarations and the registration the shell discovers. It renders nothing itself; the hierarchy surface library does.",
+  "dependencies": {
+    "react": "^18.3.1"
+  }
+}

@@ -11,8 +11,14 @@ namespace EtAlii.Adp.Diagram.AgentActivityDiagram.Tests;
 /// </summary>
 public sealed class AadCommandsTests : IDisposable
 {
-    private readonly string _root = Directory.CreateTempSubdirectory("aad-commands-").FullName;
+    private readonly TestFolder _testFolder = TestFolder.Create("aad-commands");
+    private readonly string _root;
     private readonly ServiceProvider _services = Services();
+
+    public AadCommandsTests()
+    {
+        _root = _testFolder.Path;
+    }
 
     private string Body => Path.Combine(_root, "work.aad");
 
@@ -30,7 +36,7 @@ public sealed class AadCommandsTests : IDisposable
     public void Dispose()
     {
         _services.Dispose();
-        Directory.Delete(_root, recursive: true);
+        _testFolder.Dispose();
     }
 
     private async Task<string> GivenAsync(string text)

@@ -37,6 +37,7 @@ namespace EtAlii.Adp.Diagram.AnsibleStructure.Tests;
 /// </remarks>
 public class ZeroWritesTests : IDisposable
 {
+    private readonly TestFolder _testFolder = TestFolder.Create("ansible-structure-zero-writes");
     private readonly string _root;
     private readonly AnsibleFolders _folders = new();
     private readonly ServiceProvider _provider;
@@ -46,7 +47,7 @@ public class ZeroWritesTests : IDisposable
     {
         _provider = new ServiceCollection().AddCommands().AddHierarchyCommandHandlers().AddAnsibleStructure().BuildServiceProvider();
         _historyStacks = _provider.GetRequiredService<IHistoryStackStore>();
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
+        _root = _testFolder.Path;
         TestFolder.CopyTree(IoPath.Combine("Fixtures", "infrastructure"), _root);
         File.WriteAllText(IoPath.Combine(_root, "infrastructure.adp"), "ansible/structure\n");
     }
@@ -55,7 +56,7 @@ public class ZeroWritesTests : IDisposable
     {
         _provider.Dispose();
         _folders.Dispose();
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     [Fact]

@@ -42,23 +42,14 @@ public sealed class FdgFirstEntryTests : IDisposable
         "    width: 140\r\n" +
         "connections: [] # none yet\r\n";
 
-    private readonly string _folder = Path.Combine(Path.GetTempPath(), "EtAlii.Adp.FdgFirstEntryTests", Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _folder = TestFolder.Create("EtAlii.Adp.FdgFirstEntryTests");
     private readonly FdgDocumentStore _store = new(new FileWriter());
 
-    public FdgFirstEntryTests() => Directory.CreateDirectory(_folder);
-
-    private string Body => Path.Combine(_folder, "first-entry.fdg");
+    private string Body => _folder.Combine("first-entry.fdg");
 
     public void Dispose()
     {
-        try
-        {
-            Directory.Delete(_folder, recursive: true);
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            // A temp folder left behind is not a test failure.
-        }
+        _folder.Dispose();
     }
 
     private static string Fixture(string name) => File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", name));

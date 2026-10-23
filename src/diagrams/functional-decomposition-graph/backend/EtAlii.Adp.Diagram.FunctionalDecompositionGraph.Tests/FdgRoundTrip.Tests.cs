@@ -143,9 +143,10 @@ public sealed class FdgRoundTripTests
     /// <summary>A temporary folder holding copies of corpus documents, removed afterwards.</summary>
     private sealed class Folder : IDisposable
     {
-        private readonly string _path = Path.Combine(Path.GetTempPath(), "EtAlii.Adp.FdgRoundTripTests", Guid.NewGuid().ToString("N"));
+        private readonly TestFolder _testFolder = TestFolder.Create("EtAlii.Adp.FdgRoundTripTests");
+        private readonly string _path;
 
-        public Folder() => Directory.CreateDirectory(_path);
+        public Folder() => _path = _testFolder.Path;
 
         /// <summary>Copies the corpus document at <paramref name="relative"/> into the folder, byte for byte, and gives its path.</summary>
         public string Copy(string relative)
@@ -157,14 +158,7 @@ public sealed class FdgRoundTripTests
 
         public void Dispose()
         {
-            try
-            {
-                Directory.Delete(_path, recursive: true);
-            }
-            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-            {
-                // A temp folder left behind is not a test failure.
-            }
+            _testFolder.Dispose();
         }
     }
 }

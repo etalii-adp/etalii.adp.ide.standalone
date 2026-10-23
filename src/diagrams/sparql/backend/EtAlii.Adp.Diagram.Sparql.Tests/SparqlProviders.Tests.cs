@@ -12,18 +12,18 @@ namespace EtAlii.Adp.Diagram.Sparql.Tests;
 /// </summary>
 public class SparqlProvidersTests : IDisposable
 {
+    private readonly TestFolder _testFolder = TestFolder.Create("sparql-providers");
     private readonly string _root;
     private readonly SparqlDocumentStore _documents = new();
 
     public SparqlProvidersTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     private string CopyFixture(string name)

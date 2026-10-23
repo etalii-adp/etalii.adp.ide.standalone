@@ -17,18 +17,17 @@ namespace EtAlii.Adp.Designer.Knowledge.Tests;
 /// </remarks>
 public sealed class KnowledgeTypeChangeTests : IDisposable
 {
-    private readonly string _root = Directory.CreateTempSubdirectory("adp-knowledge-types-").FullName;
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-knowledge-types");
+    private readonly string _root;
+
+    public KnowledgeTypeChangeTests()
+    {
+        _root = _testFolder.Path;
+    }
 
     public void Dispose()
     {
-        try
-        {
-            Directory.Delete(_root, recursive: true);
-        }
-        catch (IOException)
-        {
-            // A watcher may still be letting go; the temp folder is the system's to clear.
-        }
+        _testFolder.Dispose();
     }
 
     /// <summary>A cell as text: the key it is held under and what it holds. A record holding a list is equal only to itself.</summary>

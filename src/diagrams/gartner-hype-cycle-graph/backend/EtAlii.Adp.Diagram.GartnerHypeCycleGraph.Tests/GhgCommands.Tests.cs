@@ -22,14 +22,15 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph.Tests;
 /// </remarks>
 public sealed class GhgCommandsTests : IDisposable
 {
-    private readonly string _folder = Path.Combine(Path.GetTempPath(), "EtAlii.Adp.GhgCommandsTests", Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("EtAlii.Adp.GhgCommandsTests");
+    private readonly string _folder;
     private readonly GhgDocumentStore _store = new(new FileWriter());
     private readonly ICommandDispatcher _dispatcher;
     private readonly byte[] _original;
 
     public GhgCommandsTests()
     {
-        Directory.CreateDirectory(_folder);
+        _folder = _testFolder.Path;
         File.Copy(GhgModuleFiles.Example, Body);
         _original = File.ReadAllBytes(Body);
         _dispatcher = TestHistory.Dispatcher(s => { s.AddGartnerHypeCycleGraph(); s.AddSingleton<IGhgDocumentStore>(_store); });
@@ -39,14 +40,7 @@ public sealed class GhgCommandsTests : IDisposable
 
     public void Dispose()
     {
-        try
-        {
-            Directory.Delete(_folder, recursive: true);
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            // A temp folder left behind is not a test failure.
-        }
+        _testFolder.Dispose();
     }
 
     private static int M(int year, int month = 1) => GhgScale.MonthIndex(year, month);

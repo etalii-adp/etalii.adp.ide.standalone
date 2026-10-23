@@ -14,28 +14,20 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph.Tests;
 /// </remarks>
 public sealed class GhgSessionTests : IDisposable
 {
-    private readonly string _folder = Path.Combine(Path.GetTempPath(), "EtAlii.Adp.GhgSessionTests", Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _folder = TestFolder.Create("EtAlii.Adp.GhgSessionTests");
     private readonly GhgDocumentStore _store = new(new FileWriter());
     private readonly List<DiagramDeltasEventArgs> _raised = [];
 
     public GhgSessionTests()
     {
-        Directory.CreateDirectory(_folder);
         File.Copy(GhgModuleFiles.Example, Body);
     }
 
-    private string Body => Path.Combine(_folder, "technology-trends.ghg");
+    private string Body => _folder.Combine("technology-trends.ghg");
 
     public void Dispose()
     {
-        try
-        {
-            Directory.Delete(_folder, recursive: true);
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            // A temp folder left behind is not a test failure.
-        }
+        _folder.Dispose();
     }
 
     /// <summary>The guard: every trend arrives, with the boundaries <see cref="GhgPhases"/> computed for it.</summary>

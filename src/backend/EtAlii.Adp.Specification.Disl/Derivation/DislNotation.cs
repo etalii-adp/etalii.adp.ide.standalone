@@ -9,6 +9,7 @@ namespace EtAlii.Adp.Specification.Disl;
 /// <param name="Edges">The edge notations by name, in declaration order; null when <c>edges</c> is absent.</param>
 /// <param name="EdgesMalformed">The message System.Text.Json threw looking a name up in <c>edges</c> that is not an object, null otherwise.</param>
 /// <param name="Canvas">The <c>canvas</c>, or null when it is absent or the notation or it is not an object.</param>
+/// <param name="Refusals">Per node notation, then per edge notation, in declaration order: its <c>refusals</c> (§6.9, §6.10) by gesture.</param>
 /// <param name="NotAnObject">
 /// The message System.Text.Json threw when the runtime read a member of a notation that is not an object, null for one
 /// that is; such a notation still throws it where its <c>edges</c> were read.
@@ -19,9 +20,27 @@ internal sealed record DislNotation(
     IReadOnlyList<(string Type, DislEdgeNotation Edge)>? Edges,
     string? EdgesMalformed,
     DislCanvas? Canvas,
-    string? NotAnObject)
+    string? NotAnObject,
+    IReadOnlyList<(string Type, bool IsEdge, IReadOnlyDictionary<string, IReadOnlyList<DislReason>> Gestures)> Refusals)
 {
-    public static DislNotation None { get; } = new(DislNotationNames.None, [], null, null, null, null);
+    public static DislNotation None { get; } = new(DislNotationNames.None, [], null, null, null, null, []);
+
+    /// <summary>
+    /// The refusals the notation of <paramref name="self"/>'s kind states for <paramref name="gesture"/> (§6.9, §6.10): those
+    /// of the node notation, for a node, or the edge notation, for a relation, of the nearest type in its linearisation that
+    /// has one (§4.7), the most specific declaration winning whole. Empty when that notation states none for the gesture.
+    /// </summary>
+    public IReadOnlyList<DislReason> RefusalsOf(DislElement self, string gesture)
+    {
+        foreach (var type in self.Type.Linearisation)
+        {
+            foreach ((string declared, bool isEdge, IReadOnlyDictionary<string, IReadOnlyList<DislReason>> gestures) in Refusals)
+            {
+                if (declared == type && isEdge == self.Type.IsRelation) return gestures.GetValueOrDefault(gesture) ?? [];
+            }
+        }
+        return [];
+    }
 
     /// <summary>The tool <c>connect.tool</c> of the edge notation of <paramref name="relationType"/> names (§6.10), or null when it names none.</summary>
     public string? ConnectToolOf(string relationType)

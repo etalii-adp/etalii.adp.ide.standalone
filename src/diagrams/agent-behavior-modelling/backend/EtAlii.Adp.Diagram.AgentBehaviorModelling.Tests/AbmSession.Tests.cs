@@ -8,12 +8,13 @@ namespace EtAlii.Adp.Diagram.AgentBehaviorModelling.Tests;
 /// <summary>A session follows both files: the Markdown through the store, the registration's positions through the history.</summary>
 public sealed class AbmSessionTests : IDisposable
 {
-    private readonly string _folder = Path.Combine(Path.GetTempPath(), "EtAlii.Adp.AbmSessionTests", Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("EtAlii.Adp.AbmSessionTests");
+    private readonly string _folder;
     private readonly AbmDocumentStore _store = new(new FileWriter());
 
     public AbmSessionTests()
     {
-        Directory.CreateDirectory(_folder);
+        _folder = _testFolder.Path;
         File.Copy(AbmExamples.BodyOf("bug-fixer"), Body);
         File.WriteAllText(Registration, "etalii/agent-behavior-modelling\r\n");
     }
@@ -27,14 +28,7 @@ public sealed class AbmSessionTests : IDisposable
 
     public void Dispose()
     {
-        try
-        {
-            Directory.Delete(_folder, recursive: true);
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            // A temp folder left behind is not a test failure.
-        }
+        _testFolder.Dispose();
     }
 
     private async Task<AbmModel> ModelAsync() => (await _store.GetOrLoadAsync(Body, TestContext.Current.CancellationToken)).Model;

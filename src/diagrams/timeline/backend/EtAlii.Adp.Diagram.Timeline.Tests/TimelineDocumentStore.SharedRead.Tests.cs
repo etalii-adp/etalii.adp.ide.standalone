@@ -12,15 +12,14 @@ namespace EtAlii.Adp.Diagram.Timeline.Tests;
 /// </summary>
 public class TimelineDocumentStoreSharedReadTests : IDisposable
 {
-    private readonly string _workspace = IoPath.Combine(
-        IoPath.GetTempPath(),
-        "adp-timeline-store-" + Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-timeline-store");
+    private readonly string _workspace;
 
-    public TimelineDocumentStoreSharedReadTests() => Directory.CreateDirectory(_workspace);
+    public TimelineDocumentStoreSharedReadTests() => _workspace = _testFolder.Path;
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_workspace);
+        _testFolder.Dispose();
 
         GC.SuppressFinalize(this);
     }

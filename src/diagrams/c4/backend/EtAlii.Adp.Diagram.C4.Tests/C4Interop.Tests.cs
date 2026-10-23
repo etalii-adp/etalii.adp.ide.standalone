@@ -61,18 +61,18 @@ namespace EtAlii.Adp.Diagram.C4.Tests;
 /// </remarks>
 public class C4InteropTests : IDisposable
 {
+    private readonly TestFolder _testFolder = TestFolder.Create("c4-interop");
     private readonly string _root;
 
     public C4InteropTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Diagram.C4.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
     }
 
     public void Dispose()
     {
         GC.SuppressFinalize(this);
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     private static string? CliLibrary => Environment.GetEnvironmentVariable("ADP_STRUCTURIZR_CLI");

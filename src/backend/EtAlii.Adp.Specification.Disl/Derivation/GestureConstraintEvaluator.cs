@@ -18,6 +18,13 @@ namespace EtAlii.Adp.Specification.Disl;
 /// <b>A rule that fails to evaluate refuses</b>: a gesture is let through only when its rule is seen
 /// to hold. A <c>when</c> that fails does not apply the rule.
 /// </para>
+/// <para>
+/// <b>Before every other check</b> (§8.4, step 1): the notation's <c>refusals</c> for the gesture on the element's kind
+/// (§6.9, §6.10) - <c>move</c>, <c>resize</c> or <c>reparent</c> for a placement, <c>delete</c>, <c>reconnect</c> of the
+/// relation reconnected and <c>connect</c> of either end - and then, for a placement, the refusal of an element whose id
+/// is ephemeral (§11.5.3), since a placement stores view data or a parent by that id. A notation states a refusal for a
+/// gesture it switches off, so a refusal it states is shown, the first of its Reasons that applies.
+/// </para>
 /// </remarks>
 public static class GestureConstraintEvaluator
 {
@@ -27,7 +34,7 @@ public static class GestureConstraintEvaluator
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <b>The first refusal only</b>, in the order of §8.4: the built-ins <c>std.endpoints</c>, <c>std.multiplicity</c> and
+    /// <b>The first refusal only</b>, in the order of §8.4: the notation's <c>reconnect</c> of <paramref name="self"/> and <c>connect</c> of each end, then the built-ins <c>std.endpoints</c>, <c>std.multiplicity</c> and
     /// <c>std.acyclic</c>, then the declared <c>connect</c> constraints in the order of <c>rules</c>. A built-in that
     /// <c>constraints.builtIn</c> switches off refuses nothing. Each is judged against the diagram as it is, with
     /// <paramref name="self"/>, when it is given, left out of it.
@@ -73,6 +80,10 @@ public static class GestureConstraintEvaluator
             ["sourcePort"] = null,
             ["targetPort"] = null,
         };
+        var switchedOff = (self is null ? null : SwitchedOff(specification, self, "reconnect", env))
+            ?? SwitchedOff(specification, source, "connect", env)
+            ?? SwitchedOff(specification, target, "connect", env);
+        if (switchedOff is not null) return switchedOff;
         if (DislBudgets.Refusal(diagram, viewData: false, self) is { } withheld) return withheld;
         var connect = new ConnectGesture(specification, diagram, type, source, target, self, gesture, (env ?? new DislEnv()).ToCel());
         return connect.Endpoints() ?? connect.Multiplicity() ?? connect.Acyclic()
@@ -151,6 +162,9 @@ public static class GestureConstraintEvaluator
         ArgumentNullException.ThrowIfNull(kind);
         ArgumentNullException.ThrowIfNull(gesture);
 
+        // The notation's refusal and an ephemeral id's come first (§8.4, step 1).
+        if (self is not null && FirstStep(specification, kind, self, gesture, env) is { } first) return [first];
+
         // A withheld edit is refused before every constraint (§3.2.1); a move or a resize writes view data only.
         var viewData = kind == "placement" && gesture.GetValueOrDefault("gesture") is "move" or "resize";
         if ((diagram ?? self?.Diagram) is { } judged && DislBudgets.Refusal(judged, viewData, self) is { } withheld) return [withheld];
@@ -179,6 +193,51 @@ public static class GestureConstraintEvaluator
             refusals.Add(new DislFinding(rule.Code, rule.Id, rule.SeverityText ?? "error", message, About(self, gesture), self?.Line));
         }
         return refusals;
+    }
+
+    /// <summary>The code of a gesture the notation switches off for the element's kind (§6.9, §6.10).</summary>
+    private const string SwitchedOffCode = "std.switchedOff";
+
+    /// <summary>The code of a gesture that would store an ephemeral id (§11.5.3).</summary>
+    private const string EphemeralCode = "std.ephemeralId";
+
+    /// <summary>The runtime's sentence for an ephemeral element whose id rule states no <c>reason</c> (§11.5.3).</summary>
+    private const string EphemeralSentence = "This element's identity does not survive reading the file again, so nothing can be stored for it.";
+
+    /// <summary>
+    /// The first refusal of step 1 of §8.4 for a gesture of <paramref name="kind"/> on <paramref name="self"/>: the
+    /// notation's for a placement's gesture or a deletion, then, for a placement, that of an ephemeral element; null when neither refuses.
+    /// </summary>
+    private static DislFinding? FirstStep(DislSpecification specification, string kind, DislElement self, IReadOnlyDictionary<string, object?> gesture, DislEnv? env)
+    {
+        var name = kind switch
+        {
+            "placement" => gesture.GetValueOrDefault("gesture") as string,
+            "delete" => "delete",
+            _ => null,
+        };
+        if (name is not null && SwitchedOff(specification, self, name, env) is { } switchedOff) return switchedOff;
+        if (kind != "placement" || !specification.IsEphemeral(self)) return null;
+        return new DislFinding(EphemeralCode, "ids", "error", specification.EphemeralReason(self) ?? EphemeralSentence, [self.Id], self.Line);
+    }
+
+    /// <summary>
+    /// The refusal the notation of <paramref name="element"/>'s kind states for <paramref name="gesture"/> (§6.9, §6.10): the
+    /// first of its Reasons that applies, evaluated in the element context; null when it states none or none applies.
+    /// </summary>
+    private static DislFinding? SwitchedOff(DislSpecification specification, DislElement element, string gesture, DislEnv? env)
+    {
+        var reasons = specification.Notation.RefusalsOf(element, gesture);
+        if (reasons.Count == 0) return null;
+        var variables = new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["self"] = element,
+            ["diagram"] = element.Diagram,
+            ["env"] = (env ?? element.Diagram.Env).ToCel(),
+        };
+        return DislReason.First(reasons, specification, variables) is { } text
+            ? new DislFinding(SwitchedOffCode, "notation", "error", text, [element.Id], element.Line)
+            : null;
     }
 
     /// <summary>Whether <paramref name="scope"/> takes <paramref name="self"/>, or for a connect gesture the relation type <paramref name="scoped"/>.</summary>
