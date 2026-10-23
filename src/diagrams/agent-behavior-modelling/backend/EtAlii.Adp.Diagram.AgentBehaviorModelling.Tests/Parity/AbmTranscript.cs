@@ -37,136 +37,52 @@ namespace EtAlii.Adp.Diagram.AgentBehaviorModelling.Tests.Parity;
 /// known before it exists and nothing needs masking.
 /// </para>
 /// </remarks>
-internal static class AbmTranscript
+public sealed class AbmTranscript() : TranscriptAdapter("agent-behavior-modelling", "EtAlii.Adp.Diagram.AgentBehaviorModelling.Tests", "abm.transcript.json")
 {
-    /// <summary>The checked-in file's name, in this project's <c>Parity</c> folder.</summary>
-    private const string FileName = "abm.transcript.json";
-
-    private const string TestProject = "EtAlii.Adp.Diagram.AgentBehaviorModelling.Tests";
     private const string Unknown = "parity:unknown";
 
     private static readonly TypeRegistry _payloadTypes = TypeRegistry.FromFiles(AgentBehaviorModellingReflection.Descriptor);
 
-    /// <summary>The module's folder, <c>src/diagrams/agent-behavior-modelling</c>.</summary>
-    private static string ModuleFolder { get; } = RepositoryPaths.Under("src", "diagrams", "agent-behavior-modelling");
+    public override string Origin => Diagram.AgentBehaviorModelling.Origin.Key;
 
-    /// <summary>The checked-in transcript.</summary>
-    public static string CheckedInPath => Path.Combine(ModuleFolder, "backend", TestProject, "Parity", FileName);
+    public override IReadOnlyList<ToolboxItemDefinition> Toolbox => AbmDefinition.Definition.Toolbox;
 
-    private static string SourceFolder => Path.GetFullPath(Path.Combine(ModuleFolder, "..", ".."));
+    /// <summary>The corpus, in the order it is recorded: the documents on disk, then the inline ones.</summary>
+    public override IReadOnlyList<TranscriptDocument> Corpus() =>
+    [
+        .. Files().Select(OnDisk),
+        .. AbmCorpus.Inline.Select(inline => new TranscriptDocument(inline.Name, _ => Task.FromResult(TranscriptText.Encode(inline.Text)))),
+    ];
 
     /// <summary>The documents on disk, as paths relative to <c>src/</c> with forward slashes, in the order they are recorded.</summary>
-    private static IReadOnlyList<string> Files()
+    private IReadOnlyList<string> Files()
     {
         var examples = AbmExamples.Names.Select(AbmExamples.BodyOf);
         var shipped = Directory.GetDirectories(Path.Combine(SourceFolder, "examples", "diagrams", "agent-behavior-modelling")).SelectMany(folder => Directory.GetFiles(folder, "*.md"));
-        return [.. Sorted(examples), .. Sorted(shipped)];
-
-        static IEnumerable<string> Sorted(IEnumerable<string> paths) => paths.Select(path => Path.GetRelativePath(SourceFolder, path).Replace('\\', '/')).Order(StringComparer.Ordinal);
+        return [.. Relative(examples), .. Relative(shipped)];
     }
 
-    /// <summary>The whole transcript, as the bytes the checked-in file must hold.</summary>
-    public static async Task<byte[]> GenerateAsync(CancellationToken cancellationToken)
+    /// <remarks>
+    /// The body is written under its own file name, <c>.md</c> added to an inline document's; a
+    /// document on disk with a registration beside it gets a copy of that registration beside it here.
+    /// </remarks>
+    public override async Task WriteDocumentAsync(Utf8JsonWriter json, TranscriptDocument document, byte[] bytes, string folder, CancellationToken cancellationToken)
     {
-        using var stream = new MemoryStream();
-        await using (var json = new Utf8JsonWriter(stream, TranscriptText.WriterOptions))
+        var file = document.Name[(document.Name.LastIndexOf('/') + 1)..];
+        var body = Path.Combine(folder, file.EndsWith(".md", StringComparison.Ordinal) ? file : file + ".md");
+        await File.WriteAllBytesAsync(body, bytes, cancellationToken);
+
+        var source = Path.Combine(SourceFolder, document.Name);
+        var registration = Path.ChangeExtension(source, DiagramFileName.Extension);
+        if (File.Exists(source) && File.Exists(registration))
         {
-            json.WriteStartObject();
-            json.WriteString("module", Diagram.AgentBehaviorModelling.Origin.Key);
-            json.WriteString("generator", $"src/diagrams/agent-behavior-modelling/backend/{TestProject}/Parity/AbmTranscript.cs");
-            json.WriteString("regenerate", "ADP_WRITE_PARITY_TRANSCRIPTS=1 dotnet test --project <this test project> (then review the diff)");
-
-            // The toolbox is static: it does not read the document, so it is written once.
-            json.WriteStartArray("toolbox");
-            foreach (var item in AbmDefinition.Definition.Toolbox)
-            {
-                json.WriteStringValue($"{item.Id} | {item.Label} | {item.Icon} | drops {item.DropActionId} | {item.Description}");
-            }
-
-            json.WriteEndArray();
-
-            json.WriteStartArray("documents");
-            var recorded = new Dictionary<string, string>(StringComparer.Ordinal);
-            foreach (var relative in Files())
-            {
-                var path = Path.Combine(SourceFolder, relative);
-                var registration = Path.ChangeExtension(path, DiagramFileName.Extension);
-                await WriteDocumentAsync(
-                    json,
-                    relative,
-                    await File.ReadAllBytesAsync(path, cancellationToken),
-                    File.Exists(registration) ? await File.ReadAllBytesAsync(registration, cancellationToken) : null,
-                    recorded,
-                    cancellationToken);
-            }
-
-            foreach ((string name, string text) in AbmCorpus.Inline)
-            {
-                await WriteDocumentAsync(json, name, TranscriptText.Encode(text), null, recorded, cancellationToken);
-            }
-
-            json.WriteEndArray();
-            json.WriteEndObject();
-            await json.FlushAsync(cancellationToken);
+            await File.WriteAllBytesAsync(Path.ChangeExtension(body, DiagramFileName.Extension), await File.ReadAllBytesAsync(registration, cancellationToken), cancellationToken);
         }
 
-        stream.Write("\r\n"u8);
-        return stream.ToArray();
-    }
-
-    private static async Task WriteDocumentAsync(
-        Utf8JsonWriter json,
-        string name,
-        byte[] bytes,
-        byte[]? registration,
-        Dictionary<string, string> recorded,
-        CancellationToken cancellationToken)
-    {
-        var sha = TranscriptText.Sha256(bytes);
-
-        json.WriteStartObject();
-        json.WriteString("document", name);
-        json.WriteString("sha256", sha);
-        if (recorded.TryGetValue(sha, out var first))
-        {
-            json.WriteString("sameAs", first);
-            json.WriteEndObject();
-            return;
-        }
-
-        recorded[sha] = name;
-
-        var folder = Path.Combine(Path.GetTempPath(), "EtAlii.Adp.AbmTranscript", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(folder);
-        try
-        {
-            var file = name[(name.LastIndexOf('/') + 1)..];
-            var body = Path.Combine(folder, file.EndsWith(".md", StringComparison.Ordinal) ? file : file + ".md");
-            await File.WriteAllBytesAsync(body, bytes, cancellationToken);
-            if (registration is not null)
-            {
-                await File.WriteAllBytesAsync(Path.ChangeExtension(body, DiagramFileName.Extension), registration, cancellationToken);
-            }
-
-            using var session = new Session(folder, body);
-
-            await session.ReadAsync(cancellationToken);
-            await WriteReadingsAsync(json, session, bytes, cancellationToken);
-            await WriteEditsAsync(json, session, cancellationToken);
-        }
-        finally
-        {
-            try
-            {
-                Directory.Delete(folder, recursive: true);
-            }
-            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-            {
-                // A temp folder left behind changes nothing recorded.
-            }
-        }
-
-        json.WriteEndObject();
+        using var session = new Session(folder, body);
+        await session.ReadAsync(cancellationToken);
+        await WriteReadingsAsync(json, session, bytes, cancellationToken);
+        await WriteEditsAsync(json, session, cancellationToken);
     }
 
     private static async Task WriteReadingsAsync(Utf8JsonWriter json, Session session, byte[] bytes, CancellationToken cancellationToken)
