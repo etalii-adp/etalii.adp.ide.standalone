@@ -1,7 +1,7 @@
 import type { ActionDeclaration, ActionInvocation } from "../definition/actions";
 import type { Binding, Condition } from "../definition/binding";
 import type { CompartmentDeclaration } from "../definition/compartments";
-import type { CalendarStep, ChromeLegendDeclaration, ChromeTextDeclaration, RulerDeclaration, RulerRung, SwitchDeclaration } from "../definition/chrome";
+import type { CalendarStep, ChromeBandDeclaration, ChromeLegendDeclaration, ChromeNoticeDeclaration, ChromeTextDeclaration, RulerDeclaration, RulerRung, SwitchDeclaration } from "../definition/chrome";
 import type {
   Cardinality,
   AnchorSet,
@@ -229,6 +229,14 @@ export interface NotationBindings {
    */
   canvasChrome?: {
     title?: { className?: string; data?: Readonly<Record<string, string>> };
+    /** The header band's class, and each row's by its id (DISL §6.13 `canvas.header`). */
+    header?: { className?: string; rowClassName?: (row: string) => string | undefined; data?: Readonly<Record<string, string>> };
+    /**
+     * Per notice id (`budget:<id>` for a budget's), its class and when it shows. A budget's notice shows
+     * while the budget cuts what is drawn, which only the module's backend knows: the condition over the
+     * model's background that says so is the module's to state.
+     */
+    notices?: Readonly<Record<string, { className?: string; when?: Condition; data?: Readonly<Record<string, string>> }>>;
     legend?: { entries: string; className?: string; titleClassName?: string; entryClassName?: string; swatchClassName?: string; data?: Readonly<Record<string, string>> };
   };
 }
@@ -538,12 +546,16 @@ class Compiler {
     const switches = this.switches();
     const empty = this.emptyCanvas();
     const title = this.canvasTitle();
+    const header = this.canvasHeader();
+    const notices = this.notices();
     const legend = this.computedLegend();
     const chrome = {
       ...(rulers.length > 0 ? { rulers } : {}),
       ...(switches.length > 0 ? { switches } : {}),
       ...(empty !== undefined ? { empty } : {}),
       ...(title !== undefined ? { title } : {}),
+      ...(header !== undefined ? { header } : {}),
+      ...(notices.length > 0 ? { notices } : {}),
       ...(legend !== undefined ? { legend } : {}),
     };
     const backgroundMenu = this.backgroundMenu(this.defaultViewpoint?.[0]);
@@ -642,6 +654,86 @@ class Compiler {
       ...(stated?.className !== undefined ? { className: stated.className } : {}),
       ...(stated?.data !== undefined ? { data: stated.data } : {}),
     };
+  }
+
+  /**
+   * The canvas's header band (DISL §6.13 `canvas.header`): its rows, each a label bound against the
+   * model's background, which carries the diagram's attributes, and drawn while its `visible` holds. The
+   * library draws a band and edits none, so an editable row is refused.
+   */
+  private canvasHeader(): ChromeBandDeclaration | undefined {
+    const header = this.spec.notation.canvas?.header;
+    if (header === undefined) {
+      return undefined;
+    }
+
+    const stated = this.bindings.canvasChrome?.header;
+    const rows = header.rows.map((row, index): ChromeTextDeclaration => {
+      const where = `the canvas's header row "${row.id ?? index}"`;
+      if (row.editable === true || row.editable === "inline" || row.editable === "multiline") {
+        fail(`${where} is editable; the library draws a header and edits none.`);
+      }
+      const when = this.labelVisibility(row.visible, where);
+      const className = row.id === undefined ? undefined : stated?.rowClassName?.(row.id);
+      return {
+        text: typeof row.text === "string" ? this.literal(row.text, where) : this.binding(row.text, where),
+        ...(when !== undefined ? { when } : {}),
+        ...(className !== undefined ? { className } : {}),
+      };
+    });
+    const when = header.visible === undefined || header.visible === true ? undefined : this.labelVisibility(header.visible as DislLabel["visible"], "the canvas's header");
+    return {
+      rows,
+      ...(when !== undefined ? { when } : {}),
+      ...(stated?.className !== undefined ? { className: stated.className } : {}),
+      ...(stated?.data !== undefined ? { data: stated.data } : {}),
+    };
+  }
+
+  /**
+   * The canvas's notices (DISL §6.13): each budget's that cuts what is drawn (§3.2.1) and has a notice,
+   * replaced by a declared notice of the id `budget:<id>`. When a budget's notice shows is the module's
+   * condition ({@link NotationBindings.canvasChrome}), since only its backend knows that the budget cut.
+   * A declared notice of any other id is refused: the library draws a budget's notice and no other.
+   */
+  private notices(): ChromeNoticeDeclaration[] {
+    const declared = new Map((this.spec.notation.canvas?.notices ?? []).map((notice) => [notice.id, notice]));
+    for (const id of declared.keys()) {
+      if (!id.startsWith("budget:")) {
+        fail(`the canvas's notice "${id}" is no budget's; the library draws a budget's notice and no other.`);
+      }
+    }
+
+    return Object.entries(this.spec.language.limits?.budgets ?? {}).flatMap(([name, budget]): ChromeNoticeDeclaration[] => {
+      const id = `budget:${name}`;
+      // A budget truncates unless it says otherwise, or it measures with CEL (DISL §3.2.1).
+      const truncates = budget.truncate ?? !(isObject(budget.measure) && typeof budget.measure.cel === "string");
+      const notice = declared.get(id) ?? (budget.notice === false ? undefined : budget.notice === true || budget.notice === undefined ? {} : budget.notice);
+      if (!truncates || notice === undefined) {
+        return [];
+      }
+
+      const where = `the canvas's notice "${id}"`;
+      if (notice.text === undefined) {
+        fail(`${where} states no text; the library has no sentence of its own for a budget.`);
+      }
+      if (notice.visible !== undefined) {
+        fail(`${where} narrows when it shows; the library shows a budget's notice on the module's condition alone.`);
+      }
+      const stated = this.bindings.canvasChrome?.notices?.[id];
+      if (stated?.when === undefined) {
+        fail(`${where} shows while the budget cuts what is drawn; the library needs the module's condition for that in canvasChrome.notices.`);
+      }
+      return [{
+        id,
+        text: typeof notice.text === "string" ? this.literal(notice.text, where) : this.binding(notice.text, where),
+        severity: notice.severity ?? "info",
+        position: notice.position ?? "top",
+        when: stated.when,
+        ...(stated.className !== undefined ? { className: stated.className } : {}),
+        ...(stated.data !== undefined ? { data: stated.data } : {}),
+      }];
+    });
   }
 
   /**
@@ -1010,7 +1102,8 @@ class Compiler {
 
   private label(type: string, label: DislLabel, bodyless = false): LabelDeclaration {
     const where = `node "${type}" label "${label.id}"`;
-    const declaration: Record<string, unknown> = { text: this.binding(label.text, where) };
+    // A label's text is a Bindable: a literal string is shown as it is written (DISL §2.5b).
+    const declaration: Record<string, unknown> = { text: typeof label.text === "string" ? this.literal(label.text, where) : this.binding(label.text, where) };
 
     const position = label.position;
     if (bodyless && position === "bottom") {
@@ -1741,6 +1834,22 @@ class Compiler {
       const when = visible === undefined ? undefined : this.bindings.celConditions?.[visible] ?? fail(`${where} shows when "${visible}", which has no condition in the module's celConditions.`);
       const className = this.bindings.badgeClassName?.(name, badge);
       const tooltip = badge.tooltip === undefined ? undefined : typeof badge.tooltip === "string" ? { template: badge.tooltip } : this.binding(badge.tooltip, `${where} tooltip`);
+      if (badge.text !== undefined) {
+        // A mark with text is that text, at its corner moved by its offset (DISL §6.9), on the corner's side.
+        const [dx, dy] = badge.offset ?? [0, 0];
+        decorations.push({
+          glyph: "marker",
+          anchor: "canvas",
+          from: { x: { path: right ? "bounds.right" : "bounds.left", number: { plus: dx } }, y: { path: "bounds.top", number: { plus: dy } } },
+          text: typeof badge.text === "string" ? this.literal(badge.text, `${where} text`) : this.binding(badge.text, `${where} text`),
+          textAnchor: right ? "end" : "start",
+          ...(className !== undefined ? { className } : {}),
+          ...(tooltip !== undefined ? { tooltip, accessibility: { role: "img", label: tooltip } } : {}),
+          ...(when !== undefined ? { when } : {}),
+        });
+        continue;
+      }
+
       const said = typeof badge.tooltip === "string" ? badge.tooltip.split(".")[0]! : badge.id;
       decorations.push({
         glyph: "circle",
