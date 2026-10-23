@@ -1647,7 +1647,7 @@
               "kind": "computed",
               "id": "projected",
               "label": "Projected",
-              "value": "'No'",
+              "value": "No",
               "readOnlyReasons": [
                 "This diagram reads the query; edit the .rq file in a text editor and the diagram follows."
               ]
@@ -1662,7 +1662,7 @@
               "kind": "computed",
               "id": "joins",
               "label": "Joins",
-              "value": "'0'",
+              "value": "0",
               "readOnlyReasons": [
                 "This diagram reads the query; edit the .rq file in a text editor and the diagram follows."
               ]
@@ -1671,7 +1671,7 @@
               "kind": "computed",
               "id": "definition",
               "label": "Defined by",
-              "value": "''",
+              "value": "",
               "readOnlyReasons": [
                 "This diagram reads the query; edit the .rq file in a text editor and the diagram follows."
               ]
@@ -1714,7 +1714,7 @@
               "kind": "computed",
               "id": "annotation",
               "label": "Type",
-              "value": "''",
+              "value": "",
               "readOnlyReasons": [
                 "This diagram reads the query; edit the .rq file in a text editor and the diagram follows."
               ]

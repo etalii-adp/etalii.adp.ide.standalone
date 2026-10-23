@@ -216,17 +216,20 @@ public class SparqlSessionTests : IDisposable
         Assert.Equal(original, await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken));
     }
 
+    // Each surface is one the query holds: the refusal of an element is derived from its type, so an id the model does not
+    // hold is refused by nothing (sparql-disl-fbl, task 8). groups.rq writes no blank node, so the anonymous variable is
+    // taken from constructs.rq, which writes four.
     [Theory]
-    [InlineData("anon:0", "anonymous variable")]
-    [InlineData("edge:var:s|ex:p|var:x|0", "endpoints")]
-    [InlineData("note:where/filter.0", "annotation stays")]
-    [InlineData(SparqlElementMapper.HeaderId, "header band")]
-    [InlineData(SparqlElementMapper.TruncationId, "banner")]
-    public async Task EachUnmovableSurface_RefusesWithItsOwnReason(string elementId, string expected)
+    [InlineData("constructs.rq", "anon:0", "anonymous variable")]
+    [InlineData("groups.rq", "edge:var:s|ex:p|var:x|0", "endpoints")]
+    [InlineData("groups.rq", "note:where/filter.0", "annotation stays")]
+    [InlineData("groups.rq", SparqlElementMapper.HeaderId, "header band")]
+    [InlineData("groups.rq", SparqlElementMapper.TruncationId, "banner")]
+    public async Task EachUnmovableSurface_RefusesWithItsOwnReason(string fixture, string elementId, string expected)
     {
         // Arrange.
-        var body = CopyFixture("groups.rq");
-        await using var session = Open(body, WriteRegistration("groups.rq"));
+        var body = CopyFixture(fixture);
+        await using var session = Open(body, WriteRegistration(fixture));
 
         // Act.
         var refusal = await session.MoveElementToAsync(elementId, 10, 10, CancellationToken.None);
