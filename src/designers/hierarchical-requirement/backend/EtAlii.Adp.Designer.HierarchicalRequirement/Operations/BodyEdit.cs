@@ -97,8 +97,16 @@ internal sealed partial class BodyEdit
         }
 
         if (update.Count == 0) return;
-        if (marks is null) _changes.Insert(0, new ModelChange.Add(MarksType, null, update));
-        else foreach ((string mark, object? value) in update) SetsOf(marks.Id)[mark] = value;
+        if (marks is null)
+        {
+            _changes.Insert(0, new ModelChange.Add(MarksType, null, update));
+            return;
+        }
+
+        foreach ((string mark, object? value) in update)
+        {
+            SetsOf(marks.Id)[mark] = value;
+        }
     }
 
     private static string Counter(string type, int number) => (type == ItemType ? "ITEM-" : "REQ-") + number.ToString("D4", CultureInfo.InvariantCulture);
