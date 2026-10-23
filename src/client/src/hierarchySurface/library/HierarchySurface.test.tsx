@@ -13,7 +13,7 @@ const definition: HierarchySurfaceDefinition = {
   ],
   noteIcons: { Doubt: "mdi-help-circle-outline", Aside: "mdi-comment-text-outline" },
   severalNotesIcon: "mdi-comment-multiple-outline",
-  operations: { toggleCollapsed: "fold" },
+  operations: { toggleCollapsed: "fold", setTitle: "retitle", setDescription: "redescribe" },
 };
 
 function level(id: string, parentId: string, title: string, extra: Partial<HierarchySurfaceNode> = {}): HierarchySurfaceNode {

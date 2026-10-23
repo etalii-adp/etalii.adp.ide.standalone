@@ -20,6 +20,10 @@ export interface HierarchySurfaceLabelDefinition {
 export interface HierarchySurfaceOperations {
   /** The control to the left of a title. */
   toggleCollapsed: string;
+  /** Committing a title typed in place; its param is `title`. */
+  setTitle: string;
+  /** Committing a description typed in place; its param is `description`. */
+  setDescription: string;
 }
 
 export interface HierarchySurfaceDefinition {

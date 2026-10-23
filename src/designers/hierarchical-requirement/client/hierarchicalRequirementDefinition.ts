@@ -23,5 +23,7 @@ export const hierarchicalRequirementSurface: HierarchySurfaceDefinition = {
   severalNotesIcon: "mdi-comment-multiple-outline",
   operations: {
     toggleCollapsed: "toggleCollapsed",
+    setTitle: "setTitle",
+    setDescription: "setDescription",
   },
 };

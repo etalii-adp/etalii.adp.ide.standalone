@@ -58,7 +58,7 @@ internal static partial class HierarchicalRequirementSurfaceMapper
     /// The id of each entry: its number when that is usable, else the line of its bullet. A placeholder's number is
     /// given in memory only, and a later duplicate's is the earlier entry's, so neither can be named by it.
     /// </summary>
-    private static Dictionary<RequirementEntry, string> NodeIds(IReadOnlyList<RequirementEntry> entries)
+    internal static Dictionary<RequirementEntry, string> NodeIds(IReadOnlyList<RequirementEntry> entries)
     {
         var seen = new HashSet<string>(StringComparer.Ordinal);
         var ids = new Dictionary<RequirementEntry, string>(ReferenceEqualityComparer.Instance);

@@ -131,6 +131,16 @@ internal sealed class HierarchyTree
             return null; // never known on this connection
         }
 
+        // Another program saved a file this connection knows by writing a copy beside it and moving that over it, as
+        // many editors and agents do: the file stays the entry it was, so what is open or selected on it stays, and the
+        // copy's entry goes.
+        if (_index.TryGetId(newPath, out var replaced) && replaced != id)
+        {
+            RemoveSubtree(id);
+            _queue(new HierarchyEntryRemoved(id));
+            return IoPath.GetDirectoryName(newPath) is { } folder ? RefreshOf(folder) : null;
+        }
+
         var newName = IoPath.GetFileName(newPath);
         _index.Move(id, newPath);
         _index.Set(_index[id] with { Name = newName });

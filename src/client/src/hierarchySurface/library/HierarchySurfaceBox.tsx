@@ -2,6 +2,8 @@ import { OptionTag } from "@client/table/library/cells/OptionTag";
 import type { HierarchySurfaceNode, HierarchySurfaceOptionList } from "./api/hierarchySurfaceModel";
 import { CollapseToggle } from "./CollapseToggle";
 import { FOCUS_ICON, HIDDEN_LEVELS_ICON, type HierarchySurfaceDefinition } from "./definition/hierarchySurfaceDefinition";
+import type { EntryEditing } from "./editing/entryEditing";
+import { EntryTextField } from "./editing/EntryTextField";
 import type { NoteMark } from "./notes";
 
 export interface HierarchySurfaceBoxProps {
@@ -17,6 +19,8 @@ export interface HierarchySurfaceBoxProps {
   onSelect: () => void;
   /** Makes this node the left edge of the page; absent for an entry. */
   onFocus?: () => void;
+  /** Its title and description typed in place; absent when the document cannot be changed. */
+  editing?: EntryEditing;
 }
 
 /** The colour the option list of `label` gives `value`, matched by name as a person types it. */
@@ -31,8 +35,20 @@ function colourOf(optionLists: readonly HierarchySurfaceOptionList[], label: str
  * and the description under them (FR-009, FR-010). A level's box also offers focus, and the mark of the levels the
  * page does not show (FR-008, R10). What stands to its right is the page's.
  */
-export function HierarchySurfaceBox({ node, definition, optionLists, collapsed, selected, notes, hiddenLevels, onToggle, onSelect, onFocus }: HierarchySurfaceBoxProps) {
+export function HierarchySurfaceBox({ node, definition, optionLists, collapsed, selected, notes, hiddenLevels, onToggle, onSelect, onFocus, editing }: HierarchySurfaceBoxProps) {
   const labels = definition.labels.filter((label) => label.on.includes(node.type));
+  const field = editing?.field ?? null;
+  const fieldOf = (attribute: "title" | "description") =>
+    editing !== undefined && field !== null && field.attribute === attribute ? (
+      <EntryTextField
+        text={field.text}
+        multiline={attribute === "description"}
+        label={field.label}
+        onChange={editing.change}
+        onCommit={editing.commit}
+        onCancel={editing.cancel}
+      />
+    ) : null;
   const tags = labels.flatMap((label) =>
     (node.labels.find((values) => values.label === label.label)?.values ?? []).map((value) => ({ label: label.label, value })),
   );
@@ -49,7 +65,11 @@ export function HierarchySurfaceBox({ node, definition, optionLists, collapsed, 
       <div className="hs-box-header">
         <CollapseToggle collapsed={collapsed} title={`${node.number} ${node.title}`} onToggle={onToggle} />
         <span className="hs-number">{node.number}</span>
-        <span className="hs-title">{node.title}</span>
+        {fieldOf("title") ?? (
+          <span className="hs-title" onDoubleClick={editing === undefined ? undefined : () => editing.open("title")}>
+            {node.title}
+          </span>
+        )}
         {notes !== null && (
           <span className={`mdi ${notes.icon} hs-note-mark`} role="img" aria-label={notes.label} title={notes.label}>
             {notes.count > 1 && <span className="hs-note-count">{notes.count}</span>}
@@ -77,7 +97,29 @@ export function HierarchySurfaceBox({ node, definition, optionLists, collapsed, 
           ))}
         </div>
       )}
-      {!collapsed && node.description !== "" && <p className="hs-description">{node.description}</p>}
+      {!collapsed &&
+        (fieldOf("description") ??
+          (node.description !== "" ? (
+            <p className="hs-description" onDoubleClick={editing === undefined ? undefined : () => editing.open("description")}>
+              {node.description}
+            </p>
+          ) : (
+            selected &&
+            editing !== undefined && (
+              // In the box's right margin, over nothing: shown on selecting, it must not move what a second click of a
+              // double-click lands on.
+              <button
+                type="button"
+                className="mdi mdi-text-box-plus-outline hs-add-description"
+                aria-label="Add a description"
+                title="Add a description"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  editing.open("description");
+                }}
+              />
+            )
+          )))}
       {hiddenLevels > 0 && onFocus !== undefined && (
         <button
           type="button"
