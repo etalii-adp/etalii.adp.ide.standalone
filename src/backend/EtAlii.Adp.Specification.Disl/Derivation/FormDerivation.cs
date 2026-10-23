@@ -61,10 +61,42 @@ public static class FormDerivation
         var rows = new List<DerivedRow>();
         if (specification.Forms.For(self, usage) is not { } form) return rows;
 
-        var walk = new Walk(specification, self, env, ids, rows);
-        walk.Items(form.Items, "");
+        var subject = new Subject(self, self.Diagram, self.Type.Attributes, self.Attributes, self.ValueOf, self.Type.Name);
+        new Walk(specification, subject, env, ids, rows).Items(form.Items, "");
         return rows;
     }
+
+    /// <summary>
+    /// The property rows of the diagram itself (§7.5): the items of the first form <c>for</c> <c>"diagram"</c> whose
+    /// <c>usage</c> includes <paramref name="usage"/>, read as an element's are, with <c>self</c> the diagram and its
+    /// attributes those of <c>metamodel.diagram</c>. Empty when no form is for the diagram.
+    /// </summary>
+    public static IReadOnlyList<DerivedRow> Derive(DislSpecification specification, DislDiagram diagram, DislEnv env, WireIdMap ids, string usage = "inspector")
+    {
+        ArgumentNullException.ThrowIfNull(specification);
+        ArgumentNullException.ThrowIfNull(diagram);
+        ArgumentNullException.ThrowIfNull(env);
+        ArgumentNullException.ThrowIfNull(ids);
+
+        var rows = new List<DerivedRow>();
+        if (specification.Forms.ForDiagram(usage) is not { } form) return rows;
+
+        var subject = new Subject(diagram, diagram, specification.Metamodel.DiagramAttributes, diagram.Attributes, diagram.ValueOf, "diagram");
+        new Walk(specification, subject, env, ids, rows).Items(form.Items, "");
+        return rows;
+    }
+
+    /// <summary>
+    /// What a form is read for: an element or the diagram, as <c>self</c>; the diagram it is in; the attributes it
+    /// declares and those it stores; the value CEL reads for one; and the name a type item gives it.
+    /// </summary>
+    private sealed record Subject(
+        object Self,
+        DislDiagram Diagram,
+        IReadOnlyDictionary<string, DislAttribute> Declared,
+        IReadOnlyDictionary<string, object?> Stored,
+        Func<string, object?> ValueOf,
+        string TypeName);
 
     /// <summary>
     /// Why the row of <paramref name="item"/> cannot be edited, in the order of §4.3: the first of the item's
@@ -85,7 +117,7 @@ public static class FormDerivation
     /// <summary>The runtime's sentence for a <c>fixed</c> attribute (§4.3) whose field and declaration give no reason.</summary>
     private const string FixedReason = "This value is fixed by the diagram type.";
 
-    private sealed class Walk(DislSpecification specification, DislElement self, DislEnv env, WireIdMap ids, List<DerivedRow> rows)
+    private sealed class Walk(DislSpecification specification, Subject self, DislEnv env, WireIdMap ids, List<DerivedRow> rows)
     {
         private readonly CelMap _env = env.ToCel();
 
@@ -98,7 +130,7 @@ public static class FormDerivation
         {
             if (item.NotAnObject is { } malformed) throw new InvalidOperationException(malformed);
             var attribute = item.Attribute;
-            var variables = Variables(attribute is not null && self.Type.Attributes.ContainsKey(attribute) ? self.ValueOf(attribute) : null);
+            var variables = Variables(attribute is not null && self.Declared.ContainsKey(attribute) ? self.ValueOf(attribute) : null);
             if (item.Visible is { } visible && !visible.Holds(variables)) return;
 
             switch (item.Kind)
@@ -126,7 +158,7 @@ public static class FormDerivation
         private DerivedRow Row(DislFormItem item, string group, Dictionary<string, object?> variables)
         {
             var attribute = item.Attribute;
-            var declared = attribute is null ? null : self.Type.Attributes.GetValueOrDefault(attribute);
+            var declared = attribute is null ? null : self.Declared.GetValueOrDefault(attribute);
             var defaultLabel = declared is null ? attribute ?? "" : declared.Label ?? declared.Name;
             var label = item.Label?.Text(variables, defaultLabel) ?? defaultLabel;
 
@@ -137,7 +169,7 @@ public static class FormDerivation
             }
             else if (item.Kind == "type")
             {
-                value = OptionLabel(item, variables, self.Type.Name);
+                value = OptionLabel(item, variables, self.TypeName);
             }
             else if (item.Kind == "computed")
             {
@@ -196,7 +228,7 @@ public static class FormDerivation
         /// <summary>An attribute's text: derived or fixed, else stored, else its default when it declares one, else empty.</summary>
         private string AttributeText(DislAttribute attribute)
         {
-            if (!self.Attributes.ContainsKey(attribute.Name) && attribute is { Default: null, IsDerived: false, IsFixed: false }) return "";
+            if (!self.Stored.ContainsKey(attribute.Name) && attribute is { Default: null, IsDerived: false, IsFixed: false }) return "";
             return Format(self.ValueOf(attribute.Name), attribute.Type);
         }
 
@@ -215,6 +247,6 @@ public static class FormDerivation
         };
 
         private Dictionary<string, object?> Variables(object? value) =>
-            new(StringComparer.Ordinal) { ["self"] = self, ["value"] = value, ["diagram"] = self.Diagram, ["env"] = _env };
+            new(StringComparer.Ordinal) { ["self"] = self.Self, ["value"] = value, ["diagram"] = self.Diagram, ["env"] = _env };
     }
 }
