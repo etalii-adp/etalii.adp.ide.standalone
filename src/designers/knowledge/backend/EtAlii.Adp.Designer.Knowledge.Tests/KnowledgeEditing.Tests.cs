@@ -17,18 +17,17 @@ namespace EtAlii.Adp.Designer.Knowledge.Tests;
 /// </remarks>
 public sealed class KnowledgeEditingTests : IDisposable
 {
-    private readonly string _root = Directory.CreateTempSubdirectory("adp-knowledge-editing-").FullName;
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-knowledge-editing");
+    private readonly string _root;
+
+    public KnowledgeEditingTests()
+    {
+        _root = _testFolder.Path;
+    }
 
     public void Dispose()
     {
-        try
-        {
-            Directory.Delete(_root, recursive: true);
-        }
-        catch (IOException)
-        {
-            // A watcher may still be letting go; the temp folder is the system's to clear.
-        }
+        _testFolder.Dispose();
     }
 
     /// <summary>The example, left in its plain view: every row, in the file's order. A test that is about a view names the view.</summary>

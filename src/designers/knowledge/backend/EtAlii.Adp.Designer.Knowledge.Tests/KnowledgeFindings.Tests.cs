@@ -11,18 +11,17 @@ namespace EtAlii.Adp.Designer.Knowledge.Tests;
 /// </summary>
 public sealed class KnowledgeFindingsTests : IDisposable
 {
-    private readonly string _root = Directory.CreateTempSubdirectory("adp-knowledge-findings-").FullName;
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-knowledge-findings");
+    private readonly string _root;
+
+    public KnowledgeFindingsTests()
+    {
+        _root = _testFolder.Path;
+    }
 
     public void Dispose()
     {
-        try
-        {
-            Directory.Delete(_root, recursive: true);
-        }
-        catch (IOException)
-        {
-            // A watcher may still be letting go; the temp folder is the system's to clear.
-        }
+        _testFolder.Dispose();
     }
 
     /// <summary>A small table with nothing wrong in it: a title, a number, a selection, one view, two rows.</summary>
