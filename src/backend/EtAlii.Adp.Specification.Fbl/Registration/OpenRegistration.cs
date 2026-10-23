@@ -44,6 +44,21 @@ public sealed class OpenRegistration : SplicedFile
     /// <summary>Whether DISL marks an id ephemeral: such an element's position is never stored (FBL §8.5).</summary>
     public Func<string, bool>? IsEphemeral { get; set; }
 
+    /// <summary>
+    /// The members a declared block stands for while it is absent, by its name, in their order: the initial and the
+    /// implicit members of its list, which the specification gives and the body implies (DESL 0.2 §5.5, §7.7.2). The
+    /// first change to such a block writes them all, with the change applied (FBL 0.7 §8.4); null, or a block it
+    /// gives nothing for, writes the changed entry alone.
+    /// </summary>
+    public Func<string, IReadOnlyList<KeyValuePair<string, string>>?>? AbsentMembers { get; set; }
+
+    /// <summary>
+    /// The entries of the declared block <paramref name="block"/> (FBL 0.7 §8.1), by key and value in their order, or null
+    /// when the registration does not hold it.
+    /// </summary>
+    public IReadOnlyList<KeyValuePair<string, string>>? BlockEntries(string block) =>
+        Document.Block(block)?.Entries.Select(entry => new KeyValuePair<string, string>(entry.Key, entry.Value)).ToList();
+
     /// <summary>The natural keys the reading has, when known: an <c>identities</c> entry for any other key is stale (FBL §8.6).</summary>
     public IReadOnlySet<string>? KnownKeys { get; set; }
 
@@ -53,7 +68,7 @@ public sealed class OpenRegistration : SplicedFile
     public static OpenRegistration Open(byte[] bytes, FblBinding binding)
     {
         ArgumentNullException.ThrowIfNull(binding);
-        return new(bytes ?? throw new ArgumentNullException(nameof(bytes)), binding.Registration);
+        return new OpenRegistration(bytes ?? throw new ArgumentNullException(nameof(bytes)), binding.Registration);
     }
 
     /// <summary>
@@ -90,7 +105,7 @@ public sealed class OpenRegistration : SplicedFile
                 }
                 try
                 {
-                    return new PlanResult.Planned(new Edit(DeclaredBlockWriter.Plan(Document, _declarations, declaration, setting, KnownIds)));
+                    return new PlanResult.Planned(new Edit(DeclaredBlockWriter.Plan(Document, _declarations, declaration, setting, KnownIds, AbsentMembers?.Invoke(setting.Block))));
                 }
                 catch (RefusedException refused)
                 {

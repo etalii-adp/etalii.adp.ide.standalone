@@ -13,6 +13,7 @@ public class ValidateContextActionProviderTests : IDisposable
     private static readonly ToolOrigin Mindmap = new("freeplane", "mindmap");
     private static readonly DiagramDefinition MindmapDefinition = new(Mindmap, "Mind map", Extension: ".mm");
 
+    private readonly TestFolder _testFolder = TestFolder.Create("validate-actions");
     private readonly string _root;
     private readonly ProblemStore _store;
     private readonly ValidateContextActionProvider _provider;
@@ -20,7 +21,7 @@ public class ValidateContextActionProviderTests : IDisposable
 
     public ValidateContextActionProviderTests()
     {
-        var scratch = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
+        var scratch = _testFolder.Path;
         _root = IoPath.Combine(scratch, "project");
         Directory.CreateDirectory(_root);
         var router = new DiagramFileRouter(new TestDiagramDefinitionCatalog(MindmapDefinition));
@@ -34,8 +35,7 @@ public class ValidateContextActionProviderTests : IDisposable
     public void Dispose()
     {
         _store.Dispose();
-        var scratch = IoPath.GetDirectoryName(_root)!;
-        TestFolder.TryDelete(scratch);
+        _testFolder.Dispose();
     }
 
     // ---- what is offered where ---------------------------------------------------------

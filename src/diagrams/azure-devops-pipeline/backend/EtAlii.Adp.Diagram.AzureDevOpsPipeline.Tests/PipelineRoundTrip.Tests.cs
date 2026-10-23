@@ -3,6 +3,7 @@ using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Specification.Disl;
 using EtAlii.Adp.Specification.Fbl.History;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -108,7 +109,7 @@ public class PipelineRoundTripTests
         {
             var cancellationToken = TestContext.Current.CancellationToken;
             await File.WriteAllBytesAsync(body, original, cancellationToken);
-            var dispatcher = new PipelineTestDispatcher(new PipelineDocumentStore(new FileWriter()));
+            var dispatcher = TestHistory.Dispatcher(s => s.AddAzurePipeline());
             var done = await dispatcher.DispatchAsync(command, cancellationToken);
             if (done is not { IsSuccess: true, Inverse: not null }) return;
 
@@ -135,7 +136,7 @@ public class PipelineRoundTripTests
         // Arrange.
         using var folder = Copy("diagrams/azure-devops-pipeline/backend/EtAlii.Adp.Diagram.AzureDevOpsPipeline.Tests/Fixtures/multi-stage.yml", out var body);
         var store = new PipelineDocumentStore(new FileWriter());
-        var dispatcher = new PipelineTestDispatcher(store);
+        var dispatcher = TestHistory.Dispatcher(s => { s.AddAzurePipeline(); s.AddSingleton<IPipelineDocumentStore>(store); });
         var removed = await dispatcher.DispatchAsync(new RemovePipelineElementCommand(ProjectRoot.From(folder.Path), body, "Build/Compile/step-1"), TestContext.Current.CancellationToken);
         Assert.True(removed.IsSuccess, removed.Error);
         await File.AppendAllTextAsync(body, "# changed by someone else\r\n", TestContext.Current.CancellationToken);

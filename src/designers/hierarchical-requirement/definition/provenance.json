@@ -1,0 +1,9 @@
+{
+  "repository": "etalii-adp/etalii.adp",
+  "revision": "bee6f1f0c765964b5394b898442584ac30682f60",
+  "files": [
+    { "path": "definitions/designers/hierarchical-requirement.des", "sha256": "c3d070c77753880fdb26101288ca109e4c2868a50918f95687d2762b1ccc07e3" },
+    { "path": "definitions/designers/hierarchical-requirement.fbl", "sha256": "68ebd34cf6513662cc40b5909a6354a243b1c21307bcb79cc33851933201e447" },
+    { "path": "definitions/designers/hierarchical-requirement.md", "sha256": "f2b033ef9823b53bee62dc0bfd8061b7767c6a2ce38d96c3bbcf3b863c4ec498" }
+  ]
+}

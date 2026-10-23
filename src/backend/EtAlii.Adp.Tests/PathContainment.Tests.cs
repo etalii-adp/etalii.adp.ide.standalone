@@ -12,11 +12,11 @@ namespace EtAlii.Adp.Tests;
 /// </summary>
 public sealed class PathContainmentTests : IDisposable
 {
-    private readonly DirectoryInfo _scratch = Directory.CreateTempSubdirectory("path-containment-");
+    private readonly TestFolder _scratch = TestFolder.Create("path-containment");
 
-    private string Root => IoPath.Combine(_scratch.FullName, "project");
+    private string Root => IoPath.Combine(_scratch.Path, "project");
 
-    private string Outside => IoPath.Combine(_scratch.FullName, "elsewhere");
+    private string Outside => IoPath.Combine(_scratch.Path, "elsewhere");
 
     public PathContainmentTests()
     {
@@ -30,7 +30,7 @@ public sealed class PathContainmentTests : IDisposable
 
     [Fact]
     public void ASiblingThatStartsWithTheRootsName_IsNotInside() =>
-        Assert.False(PathContainment.IsInside(Root, IoPath.Combine(_scratch.FullName, "project-other", "a.txt")));
+        Assert.False(PathContainment.IsInside(Root, IoPath.Combine(_scratch.Path, "project-other", "a.txt")));
 
     [Fact]
     public void APathThatClimbsOutWithDots_IsNotInside() =>
@@ -40,7 +40,7 @@ public sealed class PathContainmentTests : IDisposable
     public void ARootDifferingOnlyInCase_IsInsideOnlyWhereTheFileSystemIgnoresCase()
     {
         // Arrange: the same folder name in upper case, which on Linux is another folder.
-        var variant = IoPath.Combine(_scratch.FullName, "PROJECT", "a.txt");
+        var variant = IoPath.Combine(_scratch.Path, "PROJECT", "a.txt");
 
         // Act.
         var inside = PathContainment.IsInside(Root, variant);
@@ -79,7 +79,7 @@ public sealed class PathContainmentTests : IDisposable
         Assert.True(inside);
     }
 
-    public void Dispose() => _scratch.Delete(recursive: true);
+    public void Dispose() => _scratch.Dispose();
 
     // Windows lets only an elevated process or one in developer mode create a symbolic link.
     private static void CreateLinkOrSkip(string link, string target)

@@ -8,20 +8,14 @@ namespace EtAlii.Adp.History.Tests;
 /// <summary>The shared put-the-removed-lines-back edit (code-structure FR-033).</summary>
 public sealed class RestoreLinesCommandTests : IDisposable
 {
-    private readonly string _folder = IoPath.Combine(IoPath.GetTempPath(), "adp-restore-lines-" + Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-restore-lines");
+    private readonly string _folder;
 
-    public RestoreLinesCommandTests() => Directory.CreateDirectory(_folder);
+    public RestoreLinesCommandTests() => _folder = _testFolder.Path;
 
     public void Dispose()
     {
-        try
-        {
-            Directory.Delete(_folder, recursive: true);
-        }
-        catch (IOException)
-        {
-            // A temp folder a virus scanner still holds is not a test failure.
-        }
+        _testFolder.Dispose();
     }
 
     [Fact]

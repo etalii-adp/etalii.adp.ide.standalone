@@ -38,6 +38,12 @@ internal sealed record Candidate(Rule? Rule, BlockRule? Block, Entry Entry, IRea
 /// <summary>A word of a lines or blocks group (FBL §4.6), with its span (quotes included) and its text (quotes excluded).</summary>
 internal sealed record Word(string Text, Span Span, bool Quoted);
 
+/// <summary>
+/// One item of a word slot of an attribute with <c>many</c> (FBL 0.7 §4.6): its value, the span the value is written
+/// in (the word's group <c>value</c>, or the whole word), and the word it is in.
+/// </summary>
+internal sealed record WordItem(string Value, Span ValueSpan, Word Word);
+
 /// <summary>What reading one slot of one entry gave.</summary>
 internal sealed record SlotRead(object? Value, Span? Span, bool Present, bool Writable, string? Reason = null)
 {
@@ -50,6 +56,9 @@ internal sealed record SlotRead(object? Value, Span? Span, bool Present, bool Wr
 
     /// <summary>For a group read as words: every word of the group, so references inside it can be rewritten one by one.</summary>
     public IReadOnlyList<Word>? Words { get; init; }
+
+    /// <summary>For a word slot of an attribute with <c>many</c> (FBL 0.7 §4.6): every word of the group it holds, in order; null for any other slot.</summary>
+    public IReadOnlyList<WordItem>? Items { get; init; }
 
     /// <summary>The quote the value is written in on the wire, when the span includes one.</summary>
     public string? Quote { get; init; }
@@ -223,6 +232,12 @@ internal abstract class FamilyReader(BodyText text, FblBinding binding, FblOptio
 
     /// <summary>Reads a slot that is the family's own: a key, an attribute, text, a group, a capture.</summary>
     public abstract SlotRead Read(Candidate candidate, Slot slot);
+
+    /// <summary>
+    /// Reads a word slot of an attribute the tool type's specification gives <c>many</c> (FBL 0.7 §4.6): every word of
+    /// the group that matches, each an item. A family without words reads it as any other slot.
+    /// </summary>
+    public virtual SlotRead ReadMany(Candidate candidate, Slot slot) => Read(candidate, slot);
 
     /// <summary>Reads the slot named <paramref name="name"/> of an enclosing entry, for a <c>parent</c> slot naming no attribute.</summary>
     public abstract SlotRead ReadRaw(Entry entry, string name);

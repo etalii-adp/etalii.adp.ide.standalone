@@ -4,7 +4,6 @@ using EtAlii.Adp.TestSupport.Host;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Xunit;
-using IoPath = System.IO.Path;
 using Path = EtAlii.Adp.Documents.Wire.Path;
 
 namespace EtAlii.Adp.Diagram.DotNetDependencyGraph.Tests;
@@ -39,20 +38,8 @@ public class DotNetDependencyGraphPropertiesFlowTests(HostFixture host) : IClass
     /// The shipped showcase, read only: nothing here writes, because a .NET dependency graph changes
     /// nothing in the solution it shows.
     /// </summary>
-    private static string ShowcaseFolder()
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-        {
-            var candidate = IoPath.Combine(
-                directory.FullName, "src", "examples", "diagrams", "dotnet-dependency-graph", "pipeline-toolkit");
-            if (Directory.Exists(candidate))
-            {
-                return candidate;
-            }
-        }
-
-        throw new DirectoryNotFoundException("the showcase folder was not found");
-    }
+    private static string ShowcaseFolder() =>
+        RepositoryPaths.Under("src", "examples", "diagrams", "dotnet-dependency-graph", "pipeline-toolkit");
 
     [Theory]
     [InlineData("PipelineToolkit.slnx")]

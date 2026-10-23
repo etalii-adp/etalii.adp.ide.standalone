@@ -1,4 +1,5 @@
 using System.Globalization;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.Specification.Disl;
 using EtAlii.Adp.Specification.Fbl;
 
@@ -153,7 +154,7 @@ internal static class FdgReaderSentences
             return;
         }
 
-        var line = body.KeyLine(new(0, body.Lines.Count - 1), HeaderKey);
+        var line = body.KeyLine(new LineRange(0, body.Lines.Count - 1), HeaderKey);
         if (!int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var version))
         {
             sentences.Add(new FdgReaderSentence(line, $"The version `{text}` is not a number."));

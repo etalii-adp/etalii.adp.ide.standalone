@@ -12,7 +12,8 @@ internal static class EditPlanner
 {
     public static PlanResult Plan(BodyReading reading, ModelChange change)
     {
-        if (reading.Unreadable is not null) return new PlanResult.Refused("The file could not be read, so it is never written.");
+        // A save writes the bytes that were read, which an unreadable body keeps (FBL §6.6, §7.5): nothing to splice.
+        if (reading.Unreadable is not null) return change is ModelChange.Save ? new PlanResult.Planned(Edit.Empty) : new PlanResult.Refused("The file could not be read, so it is never written.");
         if (reading.Binding.ReadOnly is { } reason) return new PlanResult.Refused(reason.Length > 0 ? reason : "This file is read-only.");
         var plan = new Plan(reading);
         try
@@ -104,7 +105,13 @@ internal static class EditPlanner
             else
             {
                 (rule, binding) = Binding(reading, element, attribute);
-                read = binding is null ? SlotRead.Absent : rule == element.Rule && element.Slots.TryGetValue(attribute, out var known) ? known : reading.ReadSlot(element.Candidate with { Rule = rule }, binding, element);
+                if (binding is null && attribute == "id" && element.Rule.Id?.From is { } from)
+                {
+                    // An id read from the entry (FBL §3.3) is rewritten where it was read.
+                    binding = new AttributeBinding { Kind = from.Kind, Child = from.Child };
+                    read = element.IdRead ?? SlotRead.Absent;
+                }
+                else read = binding is null ? SlotRead.Absent : rule == element.Rule && element.Slots.TryGetValue(attribute, out var known) ? known : reading.ReadSlot(element.Candidate with { Rule = rule }, binding, element);
             }
             if (binding is null)
             {

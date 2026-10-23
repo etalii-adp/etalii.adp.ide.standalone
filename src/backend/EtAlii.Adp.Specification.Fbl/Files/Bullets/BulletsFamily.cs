@@ -86,8 +86,9 @@ internal sealed class BulletsFamily(BodyText text, FblBinding binding, FblOption
     public override SlotRead Read(Candidate candidate, Slot slot)
     {
         if (slot.Kind is not SlotKind.Continuation) return base.Read(candidate, slot);
-        if (candidate.Entry is not Bullet item) return SlotRead.ReadOnlyAbsent("A statement has no continuation.");
-        return new SlotRead(item.ContinuationText(Text), item.ContinuationSpan(Text), true, true) { Node = item };
+        return candidate.Entry is not Bullet item
+            ? SlotRead.ReadOnlyAbsent("A statement has no continuation.")
+            : new SlotRead(item.ContinuationText(Text), item.ContinuationSpan(Text), true, true) { Node = item };
     }
 
     public override void AfterRead(Func<Entry, string?> claimedBy)
@@ -139,6 +140,13 @@ internal sealed class BulletsFamily(BodyText text, FblBinding binding, FblOption
         if (rule.Insert?.Emit is not { } emit)
         {
             Plan.Refuse($"The binding gives no form to write a new {rule.Type} in.");
+            return;
+        }
+        if (rule.Insert.Place == InsertPlace.AfterHeader && rule.Within is null)
+        {
+            // A statement written right after the line the header matched, as a line of its own (FBL 0.7 §6.2).
+            var afterHeader = Text.Lines[0].End;
+            plan.Add(SpliceOperation.InsertEntry, afterHeader, afterHeader, AsLines(Render(emit, rule, request.Values, request.Id, null, null), afterHeader, false, NewlineAt(afterHeader)));
             return;
         }
         if (rule.Insert.Place is not (InsertPlace.AfterLast or InsertPlace.End or InsertPlace.LastChild or InsertPlace.Start))

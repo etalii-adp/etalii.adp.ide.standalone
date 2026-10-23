@@ -13,21 +13,21 @@ namespace EtAlii.Adp.History.Tests;
 /// </summary>
 public class HistoryContextActionProviderTests : IDisposable
 {
+    private readonly TestFolder _testFolder = TestFolder.Create("history-actions");
     private readonly string _root;
     private readonly IHistoryStack _history;
     private readonly HistoryContextActionProvider _provider;
 
     public HistoryContextActionProviderTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
         _history = TestHistory.Create(_root, out var historyStacks);
         _provider = new HistoryContextActionProvider(historyStacks);
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     private ContextTarget ProjectTarget() =>

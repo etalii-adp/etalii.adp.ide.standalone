@@ -17,10 +17,13 @@ public sealed class WatchedFileTests : IDisposable
 {
     private static readonly TimeSpan Patience = TimeSpan.FromSeconds(10);
 
-    private readonly string _root = Directory.CreateTempSubdirectory("adp-watched-file-").FullName;
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-watched-file");
+    private readonly string _root;
     private readonly FakeTimeProvider _clock = new();
 
-    public void Dispose() => TestFolder.TryDelete(_root);
+    public WatchedFileTests() => _root = _testFolder.Path;
+
+    public void Dispose() => _testFolder.Dispose();
 
     // ---- the read-retry --------------------------------------------------------------------------
 
@@ -119,15 +122,9 @@ public sealed class WatchedFileTests : IDisposable
     public async Task AReReadThatThrows_DoesNotStopTheNext()
     {
         var runs = 0;
-        using var file = new WatchedFile(Path("notes.txt"), () =>
-        {
-            if (Interlocked.Increment(ref runs) == 1)
-            {
-                throw new IOException("The first re-read fails.");
-            }
-
-            return Task.CompletedTask;
-        }, _clock);
+        using var file = new WatchedFile(Path("notes.txt"), () => Interlocked.Increment(ref runs) == 1
+            ? throw new IOException("The first re-read fails.")
+            : Task.CompletedTask, _clock);
 
         await file.Notify().WaitAsync(Patience, TestContext.Current.CancellationToken);
         await file.Notify().WaitAsync(Patience, TestContext.Current.CancellationToken);

@@ -26,4 +26,8 @@ public sealed record SparqlConstraint(
     SparqlConstraintKind Kind,
     string Text,
     string DefinedVariable,
-    IReadOnlyList<string> ReferencedVariables);
+    IReadOnlyList<string> ReferencedVariables)
+{
+    /// <summary>Where the constraint is written: exactly the characters of <see cref="Text"/>.</summary>
+    public SparqlSpan Span { get; init; }
+}

@@ -1,7 +1,7 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Files;
-using EtAlii.Adp.History;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -30,7 +30,7 @@ public class PipelineToolboxTests : IDisposable
     public PipelineToolboxTests()
     {
         Directory.CreateDirectory(_workspace);
-        _actions = new PipelineContextActionProvider(new HistoryStackStore(new PipelineTestDispatcher(_store)), _store, _views);
+        _actions = new PipelineContextActionProvider(TestHistory.For(s => { s.AddAzurePipeline(); s.AddSingleton<IPipelineDocumentStore>(_store); }), _store, _views);
     }
 
     public void Dispose()
@@ -227,7 +227,7 @@ public class PipelineToolboxTests : IDisposable
         // no separate drop path that could have been forgotten.
         var path = Write();
         var before = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
-        var historyStacks = new HistoryStackStore(new PipelineTestDispatcher(_store));
+        var historyStacks = TestHistory.For(s => { s.AddAzurePipeline(); s.AddSingleton<IPipelineDocumentStore>(_store); });
         var actions = new PipelineContextActionProvider(historyStacks, _store, _views);
         var item = _toolbox.Items.Single(candidate => candidate.Id == "azure-pipeline.toolbox.job");
 

@@ -164,17 +164,15 @@ src/diagrams/*/definition/*.fbl -text
 *.des   -text
 src/designers/*/definition/*.fbl -text
 src/designers/*/examples/** -text
+# A designer's companion `.md` is vendored beside its specification and held by the same provenance hash; by
+# folder, because every other `.md` in the tree is ordinary text.
+src/designers/*/definition/*.md -text
 
 # `.yml` is deliberately NOT marked repo-wide, however byte-sensitive the Azure Pipelines module's
 # fixtures are: it is far too common an extension, and a blanket rule would catch every workflow,
 # compose file and configuration document in the tree. Scoped to the one folder where the bytes are
 # the subject rather than the content.
 src/diagrams/azure-devops-pipeline/backend/EtAlii.Adp.Diagram.AzureDevOpsPipeline.Tests/Fixtures/** -text
-
-# The shared gate's fixtures are real runner logs, and the CRLF dotnet writes is part of what the
-# gate's verdict is tested against: a log normalised to LF on commit would test a shape no real
-# run produces. The folder holds only such logs, so a folder rule is exact here.
-.github/tools/gate/fixtures/** -text
 
 # The databricks module's fixtures, scoped the same way and for the same reason - with one turn
 # tighter. What the by-extension rule above wants is for the guarantee to follow the format: a

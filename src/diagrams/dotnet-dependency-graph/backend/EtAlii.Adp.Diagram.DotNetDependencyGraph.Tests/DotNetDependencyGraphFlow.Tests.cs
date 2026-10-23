@@ -28,20 +28,8 @@ public class DotNetDependencyGraphFlowTests(HostFixture host) : IClassFixture<Ho
     // The shipped showcase itself, read in place: nothing here writes to it.
     private readonly string _projectFolder = ShowcaseFolder();
 
-    private static string ShowcaseFolder()
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-        {
-            var candidate = IoPath.Combine(
-                directory.FullName, "src", "examples", "diagrams", "dotnet-dependency-graph", "pipeline-toolkit");
-            if (Directory.Exists(candidate))
-            {
-                return candidate;
-            }
-        }
-
-        throw new DirectoryNotFoundException("the showcase folder was not found");
-    }
+    private static string ShowcaseFolder() =>
+        RepositoryPaths.Under("src", "examples", "diagrams", "dotnet-dependency-graph", "pipeline-toolkit");
 
     /// <summary>
     /// The same showcase, opened the way a USER opens it: the whole <c>src/examples</c> tree as

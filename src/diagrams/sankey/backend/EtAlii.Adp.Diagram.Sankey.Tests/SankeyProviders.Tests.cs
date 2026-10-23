@@ -2,6 +2,7 @@ using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.Sankey.Tests;
@@ -11,20 +12,20 @@ public sealed class SankeyProvidersTests : IDisposable
 {
     private readonly SankeyTestFolder _folder = new(Path.Combine(AppContext.BaseDirectory, "Fixtures", "lf-line-endings.skv"), "small.skv");
     private readonly SankeyDocumentStore _store = new(new FileWriter());
-    private readonly HistoryStackStore _historyStacks;
+    private readonly IHistoryStackStore _historyStacks;
     private readonly SankeyContextPropertyProvider _properties;
     private readonly SankeyContextActionProvider _actions;
 
     public SankeyProvidersTests()
     {
-        _historyStacks = new HistoryStackStore(new SankeyTestDispatcher(_store));
+        _historyStacks = TestHistory.For(s => { s.AddSankey(); s.AddSingleton<ISankeyDocumentStore>(_store); });
         _properties = new SankeyContextPropertyProvider(_historyStacks, _store);
         _actions = new SankeyContextActionProvider(_historyStacks, _store);
     }
 
     public void Dispose()
     {
-        _historyStacks.Dispose();
+        (_historyStacks as IDisposable)?.Dispose();
         _folder.Dispose();
     }
 

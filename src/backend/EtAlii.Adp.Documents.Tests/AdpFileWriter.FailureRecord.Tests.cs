@@ -33,13 +33,14 @@ public class AdpFileWriterFailureRecordTests : IDisposable
 {
     private readonly FileWriter _writer = new();
 
-    private readonly string _folder = IoPath.Combine(IoPath.GetTempPath(), "adp-failure-record-" + Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-failure-record");
+    private readonly string _folder;
 
-    public AdpFileWriterFailureRecordTests() => Directory.CreateDirectory(_folder);
+    public AdpFileWriterFailureRecordTests() => _folder = _testFolder.Path;
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_folder);
+        _testFolder.Dispose();
         GC.SuppressFinalize(this);
     }
 

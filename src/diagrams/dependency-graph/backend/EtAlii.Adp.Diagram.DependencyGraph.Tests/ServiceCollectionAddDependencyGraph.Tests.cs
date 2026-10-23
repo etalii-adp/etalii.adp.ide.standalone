@@ -42,8 +42,8 @@ public class ServiceCollectionAddDependencyGraphTests
 
         // The few core services this module's own registrations depend on. A production host
         // has far more; what matters here is that AddDependencyGraph asks for nothing else.
-        services.AddSingleton<ICommandDispatcher>(
-            new DependencyGraphTestDispatcher(new DependencyGraphDocumentStore(new FileWriter())));
+        services.AddSingleton(
+            TestHistory.Dispatcher(s => s.AddDependencyGraph()));
         services.AddSingleton<IHistoryStackStore>(provider =>
             new HistoryStackStore(provider.GetRequiredService<ICommandDispatcher>()));
         services.AddSingleton<IDiagramDefinitionCatalog, DependencyGraphOnlyCatalog>();

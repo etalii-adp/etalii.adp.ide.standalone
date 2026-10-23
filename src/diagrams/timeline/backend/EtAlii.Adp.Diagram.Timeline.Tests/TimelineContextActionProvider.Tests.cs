@@ -2,6 +2,7 @@ using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -19,12 +20,12 @@ public class TimelineContextActionProviderTests : IDisposable
 
     private readonly TimelineDocumentStore _store = new(new FileWriter());
     private readonly TimelineContextActionProvider _actions;
-    private readonly HistoryStackStore _historyStacks;
+    private readonly IHistoryStackStore _historyStacks;
 
     public TimelineContextActionProviderTests()
     {
         Directory.CreateDirectory(_workspace);
-        _historyStacks = new HistoryStackStore(new TimelineTestDispatcher(_store));
+        _historyStacks = TestHistory.For(s => { s.AddTimeline(); s.AddSingleton<ITimelineDocumentStore>(_store); });
         _actions = new TimelineContextActionProvider(_historyStacks, _store);
     }
 
@@ -350,7 +351,7 @@ public class TimelineActionRealityTests : IDisposable
     {
         Directory.CreateDirectory(_workspace);
         _actions = new TimelineContextActionProvider(
-            new HistoryStackStore(new TimelineTestDispatcher(_store)), _store);
+            TestHistory.For(s => { s.AddTimeline(); s.AddSingleton<ITimelineDocumentStore>(_store); }), _store);
     }
 
     public void Dispose()
@@ -447,13 +448,13 @@ public class TimelineRelationGestureTests : IDisposable
 
     private readonly TimelineDocumentStore _store = new(new FileWriter());
     private readonly TimelineContextActionProvider _actions;
-    private readonly HistoryStackStore _historyStacks;
+    private readonly IHistoryStackStore _historyStacks;
     private readonly ShortGuid _watchId = ShortGuid.NewShortGuid();
 
     public TimelineRelationGestureTests()
     {
         Directory.CreateDirectory(_workspace);
-        _historyStacks = new HistoryStackStore(new TimelineTestDispatcher(_store));
+        _historyStacks = TestHistory.For(s => { s.AddTimeline(); s.AddSingleton<ITimelineDocumentStore>(_store); });
         _actions = new TimelineContextActionProvider(_historyStacks, _store);
     }
 

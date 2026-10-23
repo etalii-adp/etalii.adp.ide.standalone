@@ -33,14 +33,15 @@ public class ProblemStoreFlushKeepsTheLastWriteTests : IDisposable
     private static readonly ToolOrigin Mindmap = new("freeplane", "mindmap");
     private static readonly DiagramDefinition MindmapDefinition = new(Mindmap, "Mind map", Extension: ".mm");
 
-    private readonly string _scratch = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("problem-store-flush");
     private readonly string _appData;
     private readonly string _root;
 
     public ProblemStoreFlushKeepsTheLastWriteTests()
     {
-        _appData = IoPath.Combine(_scratch, "appdata");
-        _root = IoPath.Combine(_scratch, "project");
+        var scratch = _testFolder.Path;
+        _appData = IoPath.Combine(scratch, "appdata");
+        _root = IoPath.Combine(scratch, "project");
         Directory.CreateDirectory(_appData);
         Directory.CreateDirectory(_root);
         File.WriteAllText(IoPath.Combine(_root, "services.adp"), "dotnet/dependency-graph\n");
@@ -49,7 +50,7 @@ public class ProblemStoreFlushKeepsTheLastWriteTests : IDisposable
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_scratch);
+        _testFolder.Dispose();
         GC.SuppressFinalize(this);
     }
 

@@ -1,5 +1,6 @@
 using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.AgentBehaviorModelling.Tests;
@@ -12,7 +13,7 @@ public sealed class AbmCommandsTests : IDisposable
 {
     private readonly string _folder = Path.Combine(Path.GetTempPath(), "EtAlii.Adp.AbmCommandsTests", Guid.NewGuid().ToString("N"));
     private readonly AbmDocumentStore _store = new(new FileWriter());
-    private readonly AbmTestDispatcher _dispatcher;
+    private readonly ICommandDispatcher _dispatcher;
     private readonly byte[] _original;
 
     public AbmCommandsTests()
@@ -20,7 +21,7 @@ public sealed class AbmCommandsTests : IDisposable
         Directory.CreateDirectory(_folder);
         File.Copy(AbmExamples.BodyOf("pull-request-reviewer"), Body);
         _original = File.ReadAllBytes(Body);
-        _dispatcher = new AbmTestDispatcher(_store);
+        _dispatcher = TestHistory.Dispatcher(s => { s.AddAgentBehaviorModelling(); s.AddSingleton<IAbmDocumentStore>(_store); });
     }
 
     private string Body => Path.Combine(_folder, "reviewer.md");

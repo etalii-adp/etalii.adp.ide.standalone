@@ -43,7 +43,7 @@ public class PublicSurfaceTests
     {
         // Arrange.
         Assembly[] libraries = [typeof(CelProgram).Assembly, typeof(FblModel).Assembly, typeof(DislSpecification).Assembly];
-        var source = Path.Combine(RepositoryRoot(), "src");
+        var source = RepositoryPaths.Under("src");
         var files = SourceFiles(source).ToList();
         var surface = libraries.SelectMany(library => library.GetExportedTypes()).ToHashSet();
 
@@ -115,13 +115,17 @@ public class PublicSurfaceTests
     /// <summary><paramref name="type"/> and every type it is built from: an element type, a generic argument.</summary>
     private static IEnumerable<Type> Parts(Type type)
     {
-        if (type.HasElementType) return Parts(type.GetElementType()!);
-        if (type is { IsGenericType: true, IsGenericTypeDefinition: false })
+        while (true)
         {
-            return Parts(type.GetGenericTypeDefinition()).Concat(type.GetGenericArguments().SelectMany(Parts));
-        }
+            if (!type.HasElementType)
+            {
+                return type is { IsGenericType: true, IsGenericTypeDefinition: false }
+                    ? Parts(type.GetGenericTypeDefinition()).Concat(type.GetGenericArguments().SelectMany(Parts))
+                    : [type];
+            }
 
-        return [type];
+            type = type.GetElementType()!;
+        }
     }
 
     private static string SimpleName(Type type) => type.Name.Split('`')[0];
@@ -149,15 +153,5 @@ public class PublicSurfaceTests
             if (SkippedFolders.Contains(Path.GetFileName(child))) continue;
             foreach (var file in SourceFiles(child)) yield return file;
         }
-    }
-
-    private static string RepositoryRoot()
-    {
-        for (var folder = new DirectoryInfo(AppContext.BaseDirectory); folder is not null; folder = folder.Parent)
-        {
-            if (File.Exists(Path.Combine(folder.FullName, "src", "backend", "EtAlii.Adp.slnx"))) return folder.FullName;
-        }
-
-        throw new InvalidOperationException("The repository root (the folder holding src/backend/EtAlii.Adp.slnx) was not found above the test assembly.");
     }
 }
