@@ -57,7 +57,7 @@ public class SparqlRecordsTests
         Assert.Equal(["", "STR(?o)"], (IEnumerable<string>)query.Attributes["projectionExpressions"]!);
         var scope = records.Single(record => record.Type == "Scope");
         Assert.Equal(("where/optional.0", "optional", null), ((string)scope.Attributes["path"]!, (string)scope.Attributes["scopeKind"]!, scope.ParentId));
-        var pattern = records.Single(record => record.Type == "Pattern" && record.Line == 5);
+        var pattern = records.Single(record => record is { Type: "Pattern", Line: 5 });
         Assert.Equal(("where/optional.0", "var:o", "ex:q", "lit"), ((string)pattern.Attributes["scope"]!, (string)pattern.Attributes["sKey"]!, (string)pattern.Attributes["predicate"]!, (string)pattern.Attributes["oKind"]!));
         var bind = records.Last();
         Assert.Equal(("bind", "n", 0L), ((string)bind.Attributes["constraintKind"]!, (string)bind.Attributes["definedVariable"]!, (long)bind.Attributes["ordinal"]!));

@@ -31,7 +31,7 @@ public sealed class SparqlDocument
     public SparqlQueryModel Query { get; }
 
     /// <summary>The text it was read from.</summary>
-    public string Text { get; }
+    private string Text { get; }
 
     /// <summary>The model the shared builder built from the records of <see cref="Query"/>.</summary>
     internal DislModel Disl => _disl.Value;

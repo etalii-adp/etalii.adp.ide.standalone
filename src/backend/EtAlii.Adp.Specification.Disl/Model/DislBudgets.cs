@@ -74,7 +74,7 @@ internal static class DislBudgets
     /// </summary>
     public static IReadOnlyList<DislElement> Ordered(DislDiagram diagram, string id)
     {
-        if (diagram.Specification.Budgets.FirstOrDefault(budget => budget.Id == id) is not { Measure: null } budget) return [];
+        if (diagram.Specification.Budgets.FirstOrDefault(declared => declared.Id == id) is not { Measure: null } budget) return [];
         var candidates = diagram.Elements.Where(element => budget.Types.Any(element.IsA)).ToList();
         return [.. Sorted(diagram, budget, candidates).Where(diagram.IsDrawn)];
     }

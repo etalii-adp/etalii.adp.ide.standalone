@@ -39,15 +39,8 @@ internal static class SparqlDefinition
     public static DislModel Model(SparqlQueryModel query, string text) => Model(query, text, Specification);
 
     /// <summary>The model of <paramref name="query"/>, read from <paramref name="text"/>, under <paramref name="specification"/>.</summary>
-    internal static DislModel Model(SparqlQueryModel query, string text, DislSpecification specification) =>
+    private static DislModel Model(SparqlQueryModel query, string text, DislSpecification specification) =>
         DislModelBuilder.From(SparqlRecords.From(query, text), specification, Env);
-
-    /// <summary>The element of <paramref name="model"/> a wire id names, or null.</summary>
-    public static DislElement? ElementOf(DislModel model, string wireId)
-    {
-        ArgumentNullException.ThrowIfNull(model);
-        return wireId is { Length: > 0 } ? model.Diagram.ElementById(wireId) : null;
-    }
 
     /// <summary>What <paramref name="document"/> draws: its model's drawn elements, in the budget's order, with its two numbers.</summary>
     public static SparqlProjectionResult Drawing(SparqlDocument document)
@@ -57,7 +50,7 @@ internal static class SparqlDefinition
     }
 
     /// <summary>What <paramref name="model"/> draws: its drawn elements, in the budget's order, with its two numbers.</summary>
-    internal static SparqlProjectionResult Drawing(DislModel model)
+    private static SparqlProjectionResult Drawing(DislModel model)
     {
         ArgumentNullException.ThrowIfNull(model);
         var diagram = model.Diagram;

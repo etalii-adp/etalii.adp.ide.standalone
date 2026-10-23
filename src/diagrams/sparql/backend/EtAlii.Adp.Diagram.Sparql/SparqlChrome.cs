@@ -15,12 +15,6 @@ internal static class SparqlChrome
 {
     private static readonly Lazy<(string HeaderId, string HeaderType, string TruncationId, string TruncationType)> Wire = new(Read);
 
-    /// <summary>The header band's element id.</summary>
-    public static string HeaderId => Wire.Value.HeaderId;
-
-    /// <summary>The truncation banner's element id.</summary>
-    public static string TruncationId => Wire.Value.TruncationId;
-
     /// <summary>The header band, always, and the truncation banner when the budget cut what <paramref name="drawing"/> draws.</summary>
     public static IReadOnlyList<DiagramElement> Elements(SparqlProjectionResult drawing)
     {
