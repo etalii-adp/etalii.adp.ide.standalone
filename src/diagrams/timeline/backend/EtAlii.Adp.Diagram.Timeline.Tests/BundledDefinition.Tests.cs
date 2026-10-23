@@ -1,7 +1,6 @@
 using System.Reflection;
-using System.Security.Cryptography;
-using System.Text.RegularExpressions;
 using EtAlii.Adp.Specification.Disl;
+using EtAlii.Adp.Specification.Json;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.Timeline.Tests;
@@ -10,53 +9,21 @@ namespace EtAlii.Adp.Diagram.Timeline.Tests;
 /// The DISL definition bundled from etalii-adp/etalii.adp is the bytes its provenance says it is,
 /// and it loads with the module's plugin functions.
 /// </summary>
-/// <remarks>
-/// <b>The hash is computed over the embedded resource</b>, the bytes the module will load, not over the
-/// file on disk - so a build that embedded a stale or rewritten copy fails here too. Re-bundle with
-/// <c>src/diagrams/tools/bundle-disl.sh timeline &lt;etalii.adp checkout&gt;</c>, never by hand.
-/// </remarks>
-public sealed partial class BundledDefinitionTests
+public sealed class BundledDefinitionTests : BundledDefinitionContract<BundledDefinitionTests>, IBundledDefinitions
 {
-    private static readonly Assembly _module = typeof(Diagram).Assembly;
+    public static Assembly Module => typeof(Diagram).Assembly;
 
-    [GeneratedRegex("^[0-9a-f]{40}$")]
-    private static partial Regex FullRevision();
+    public static string ModuleFolder => "timeline";
 
-    /// <summary>The sha256 in provenance.json is the sha256 of the embedded <c>.dis</c> bytes.</summary>
-    [Fact]
-    public void TheBundledDefinition_HashesToItsProvenance()
-    {
-        var provenance = _module.ResourceJson("timeline.provenance.json");
+    public static IReadOnlyList<BundledDefinitionExpectation> Definitions { get; } =
+        [new("timeline", Diagram.Timeline.Origin.Key, "net.etalii.adp.generic.timeline")];
 
-        var actual = Convert.ToHexStringLower(SHA256.HashData(_module.ResourceBytes("timeline.dis")));
+    /// <summary>The definition as the module holds it, loaded with its plugin functions.</summary>
+    protected override BundledDefinition Load(BundledDefinitionExpectation expected) =>
+        BundledDefinition.Load(Module, expected.Name + ".dis", TimelineTimes.Plugins());
 
-        Assert.Equal(provenance.GetProperty("sha256").GetString(), actual);
-    }
-
-    /// <summary>The provenance names the upstream file and a full 40-hex revision, never a short or symbolic one.</summary>
-    [Fact]
-    public void TheProvenance_NamesAFullRevisionOfTheUpstreamFile()
-    {
-        var provenance = _module.ResourceJson("timeline.provenance.json");
-
-        Assert.Equal("etalii-adp/etalii.adp", provenance.GetProperty("repository").GetString());
-        Assert.Equal("definitions/diagrams/timeline.dis", provenance.GetProperty("path").GetString());
-        Assert.Matches(FullRevision(), provenance.GetProperty("revision").GetString()!);
-    }
-
-    /// <summary>The bundled definition is this module's: its language id, and its origin equals the catalog origin.</summary>
-    [Fact]
-    public void TheBundledDefinition_IsThisModulesLanguage()
-    {
-        var language = _module.ResourceJson("timeline.dis").GetProperty("language");
-
-        Assert.Equal("net.etalii.adp.generic.timeline", language.GetProperty("id").GetString());
-        Assert.Equal(Diagram.Timeline.Origin.Key, language.GetProperty("origin").GetString());
-    }
-
-    /// <summary>The definition loads, and the runtime has nothing to say about it.</summary>
-    [Fact]
-    public void TheBundledDefinition_LoadsWithoutDiagnostics() => Assert.Empty(TimelineDefinition.Diagnostics);
+    /// <summary>What the runtime said as the module loaded its definition, which the module's providers derive from.</summary>
+    protected override IReadOnlyList<LoadDiagnostic> DiagnosticsOf(BundledDefinition loaded) => TimelineDefinition.Diagnostics;
 
     /// <summary>
     /// A time is read with the module's own plugin functions, not the definition's fallbacks: those
