@@ -4,7 +4,7 @@ namespace EtAlii.Adp.Diagram.Sparql;
 
 /// <summary>
 /// The element-id vocabulary, parsed in one place: what a selected id names, and how to describe
-/// it to a person. The ids themselves are minted by <see cref="SparqlProjection"/>; this is the
+/// it to a person. The ids themselves are the bundled definition's (<see cref="SparqlDefinition"/>); this is the
 /// only code that takes them apart.
 /// </summary>
 public static class SparqlSelection
@@ -14,10 +14,10 @@ public static class SparqlSelection
         path is { Length: > 0 } && path.EndsWith(".rq", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>The projection of a loaded entry, or null when the file does not parse.</summary>
-    public static SparqlProjectionResult? ProjectionOf(DocumentEntry<string, SparqlQueryModel> entry)
+    public static SparqlProjectionResult? ProjectionOf(DocumentEntry<string, SparqlDocument> entry)
     {
         ArgumentNullException.ThrowIfNull(entry);
-        return entry.IsUsable ? SparqlProjection.Project(entry.Model) : null;
+        return entry.IsUsable ? entry.Model.Drawing : null;
     }
 
     /// <summary>The node an id names, or null.</summary>
@@ -57,14 +57,14 @@ public static class SparqlSelection
     }
 
     /// <summary>How this element reads in a selection path, or null when the id is not in the file.</summary>
-    public static string? Describe(DocumentEntry<string, SparqlQueryModel> entry, string elementId)
+    public static string? Describe(DocumentEntry<string, SparqlDocument> entry, string elementId)
     {
         ArgumentNullException.ThrowIfNull(entry);
 
         if (elementId == SparqlElementMapper.HeaderId)
         {
             // The header is always there, even for a file that does not parse.
-            return entry.IsUsable ? $"{SparqlProjection.Project(entry.Model).HeaderForm} query" : "Query";
+            return entry.IsUsable ? $"{entry.Model.Drawing.HeaderForm} query" : "Query";
         }
 
         if (ProjectionOf(entry) is not { } projection)

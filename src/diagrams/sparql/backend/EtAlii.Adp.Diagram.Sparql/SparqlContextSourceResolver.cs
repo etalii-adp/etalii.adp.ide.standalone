@@ -13,7 +13,7 @@ namespace EtAlii.Adp.Diagram.Sparql;
 /// does not parse reads as a plain "Query": its empty model would otherwise call it a SELECT.
 /// </remarks>
 public sealed class SparqlContextSourceResolver(DiagramFileRouter router, ISparqlDocumentStore documents, SparqlElementMapper mapper)
-    : DiagramElementSourceResolver<string, SparqlQueryModel>(router, documents)
+    : DiagramElementSourceResolver<string, SparqlDocument>(router, documents)
 {
     private readonly SparqlElementMapper _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
 
@@ -33,15 +33,15 @@ public sealed class SparqlContextSourceResolver(DiagramFileRouter router, ISparq
         "New relation");
 
     /// <inheritdoc />
-    protected override (IReadOnlyList<string> Path, string Text)? Describe(DocumentEntry<string, SparqlQueryModel> entry, string elementId) =>
+    protected override (IReadOnlyList<string> Path, string Text)? Describe(DocumentEntry<string, SparqlDocument> entry, string elementId) =>
         SparqlSelection.Describe(entry, elementId) is { } text
             ? ([text], text)
             : null;
 
     /// <inheritdoc />
-    protected override DiagramElement? Drawn(SparqlQueryModel model, string elementId)
+    protected override DiagramElement? Drawn(SparqlDocument model, string elementId)
     {
-        var projection = SparqlProjection.Project(model);
+        var projection = model.Drawing;
         return _mapper.Visible(projection, SparqlLayout.Compute(projection, _computed), DiagramViewport.Unbounded)
             .FirstOrDefault(candidate => candidate.Id == elementId);
     }

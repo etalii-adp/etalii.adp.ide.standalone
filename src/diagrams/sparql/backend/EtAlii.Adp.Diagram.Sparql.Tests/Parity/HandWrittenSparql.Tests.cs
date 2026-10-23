@@ -2,21 +2,29 @@ using System.Text;
 using Xunit;
 using IoPath = System.IO.Path;
 
-namespace EtAlii.Adp.Diagram.Sparql.Tests;
+namespace EtAlii.Adp.Diagram.Sparql.Tests.Parity;
 
 /// <summary>
 /// The variable-as-node projection: one node per name through OPTIONAL, UNION and MINUS; the
 /// shallowest-scope placement rule with its union lift; subquery collapse; concrete-term merging
 /// by form; determinism; and the sanity cut.
 /// </summary>
-public class SparqlProjectionTests
+/// <remarks>
+/// The hand-written projection's own tests, kept with it as the oracle (<see cref="HandWrittenSparql"/>).
+/// Every query they project is also drawn from the bundled definition, and the two must be the same
+/// element for element, so each case here is a case of the derived drawing as well.
+/// </remarks>
+public class HandWrittenSparqlTests
 {
     private static SparqlProjectionResult ProjectFixture(string name) =>
-        SparqlProjection.Project(SparqlParser.Parse(
-            File.ReadAllText(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", name))));
+        Project(File.ReadAllText(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", name)));
 
-    private static SparqlProjectionResult Project(string text) =>
-        SparqlProjection.Project(SparqlParser.Parse(text));
+    private static SparqlProjectionResult Project(string text)
+    {
+        var expected = HandWrittenSparql.Project(SparqlParser.Parse(text));
+        Assert.Equal(SparqlDrawingLines.Of(expected), SparqlDrawingLines.Of(new SparqlDocument(SparqlParser.Parse(text), text).Drawing));
+        return expected;
+    }
 
     [Fact]
     public void OneVariable_OneNode_HoweverManyPatternsAndRegionsMentionIt()
@@ -204,8 +212,8 @@ public class SparqlProjectionTests
         var text = File.ReadAllText(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", "groups.rq"));
 
         // Act.
-        var first = SparqlProjection.Project(SparqlParser.Parse(text));
-        var second = SparqlProjection.Project(SparqlParser.Parse(text));
+        var first = Project(text);
+        var second = Project(text);
 
         // Assert: same elements, same ids, same order - determinism is the whole point.
         Assert.Equal(first.Nodes.Select(n => n.Id), second.Nodes.Select(n => n.Id));
@@ -269,7 +277,7 @@ public class SparqlProjectionTests
 
         // Assert.
         Assert.True(result.Truncated);
-        Assert.Equal(SparqlProjection.SanityBound, result.Shown);
+        Assert.Equal(HandWrittenSparql.SanityBound, result.Shown);
         Assert.Equal(1200, result.Total); // 800 variable nodes + 400 edges.
         // Every kept edge still has both endpoints - an honest first-N, never a dangling line.
         var keptIds = result.Nodes.Select(node => node.Id).ToHashSet();

@@ -57,11 +57,7 @@ internal static class DislBudgets
             return new DislBudgetState(budget.Id, candidates.Count, candidates.Count, over, false, over && withholds, new HashSet<DislElement>());
         }
 
-        var sorted = budget.Order is { } order
-            ? candidates.Select((candidate, index) => (Candidate: candidate, Key: order.Evaluate(Variables(diagram, candidate, index)), Index: index))
-                .OrderBy(entry => entry.Key, KeyOrder.Instance).ThenBy(entry => entry.Index).Select(entry => entry.Candidate).ToList()
-            : candidates;
-
+        var sorted = Sorted(diagram, budget, candidates);
         var kept = new HashSet<DislElement>(ReferenceEqualityComparer.Instance);
         foreach (var unit in Units(diagram, budget, sorted, candidates))
         {
@@ -71,6 +67,24 @@ internal static class DislBudgets
         var cut = new HashSet<DislElement>(candidates.Where(candidate => !kept.Contains(candidate)), ReferenceEqualityComparer.Instance);
         return new DislBudgetState(budget.Id, kept.Count, candidates.Count, true, true, withholds, cut);
     }
+
+    /// <summary>
+    /// The candidates of the budget <paramref name="id"/> that are drawn (§3.2.1), in its <c>order</c> with ties in
+    /// persistence order, whether or not it cuts; empty when the specification declares no <c>count</c> budget by that id.
+    /// </summary>
+    public static IReadOnlyList<DislElement> Ordered(DislDiagram diagram, string id)
+    {
+        if (diagram.Specification.Budgets.FirstOrDefault(budget => budget.Id == id) is not { Measure: null } budget) return [];
+        var candidates = diagram.Elements.Where(element => budget.Types.Any(element.IsA)).ToList();
+        return [.. Sorted(diagram, budget, candidates).Where(diagram.IsDrawn)];
+    }
+
+    /// <summary>The candidates sorted by the budget's <c>order</c>, ties in persistence order; as they are without one.</summary>
+    private static List<DislElement> Sorted(DislDiagram diagram, DislBudget budget, List<DislElement> candidates) =>
+        budget.Order is { } order
+            ? candidates.Select((candidate, index) => (Candidate: candidate, Key: order.Evaluate(Variables(diagram, candidate, index)), Index: index))
+                .OrderBy(entry => entry.Key, KeyOrder.Instance).ThenBy(entry => entry.Index).Select(entry => entry.Candidate).ToList()
+            : candidates;
 
     /// <summary>The units of the sorted candidates, in the order of each one's first candidate; each candidate its own without a <c>unit</c>.</summary>
     private static IEnumerable<List<DislElement>> Units(DislDiagram diagram, DislBudget budget, List<DislElement> sorted, List<DislElement> candidates)

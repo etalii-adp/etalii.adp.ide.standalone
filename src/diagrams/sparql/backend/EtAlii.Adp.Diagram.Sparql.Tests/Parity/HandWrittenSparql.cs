@@ -1,14 +1,19 @@
-namespace EtAlii.Adp.Diagram.Sparql;
+namespace EtAlii.Adp.Diagram.Sparql.Tests.Parity;
 
 /// <summary>
+/// The drawn query as the module projected it by hand before it was derived from the DISL definition
+/// (sparql-disl-fbl, task 7), kept verbatim as the oracle the derived drawing is compared with, document by
+/// document and element by element (<see cref="SparqlDerivedDrawingTests"/>).
+/// </summary>
+/// <remarks>
 /// Pure: model in, drawn elements out - the variable-as-node projection that is this module's
 /// center of gravity. One node per variable name however many patterns mention it, so a node's
 /// degree on the canvas is its join count in the query; one node per distinct concrete term
 /// form, which asserts "same term" and never a join; and one placement rule for all of them:
 /// <b>every node lives at the shallowest scope that references it, and region edges reach out to
 /// it</b> - the border crossing is the join being shown, not a rendering defect.
-/// </summary>
-public static class SparqlProjection
+/// </remarks>
+internal static class HandWrittenSparql
 {
     /// <summary>
     /// The local sanity bound on drawn elements - this module's own number, deliberately not the

@@ -15,9 +15,10 @@ namespace EtAlii.Adp.Diagram.Sparql;
 /// resolve.
 /// </para>
 /// <para>
-/// <b>An entry's body is the query's text and its model what the parser read.</b> A file that is not
+/// <b>An entry's body is the query's text and its model what the parser read</b>, with the DISL model of its records
+/// and what that draws (<see cref="SparqlDocument"/>). A file that is not
 /// there, cannot be read or does not parse opens with an empty model and says why, because this
 /// module never creates or repairs query files.
 /// </para>
 /// </remarks>
-public interface ISparqlDocumentStore : IReadableDiagramDocumentStore<string, SparqlQueryModel>;
+public interface ISparqlDocumentStore : IReadableDiagramDocumentStore<string, SparqlDocument>;

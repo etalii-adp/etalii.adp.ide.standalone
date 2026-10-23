@@ -76,6 +76,25 @@ public class BudgetsTests
     }
 
     [Fact]
+    public void TheDrawnCandidates_AreGivenInTheBudgetsOrder_WhetherOrNotItCuts()
+    {
+        // Arrange: one budget that is not exceeded and one that cuts, both ordered by rank.
+        var roomy = Diagram(Loaded("""{ "items": { "measure": { "count": ["Item"] }, "max": 10, "order": "self.rank" } }"""), ("a", 3, "x"), ("b", 1, "x"), ("c", 2, "x"));
+        var tight = Diagram(Loaded("""{ "items": { "measure": { "count": ["Item", "Link"] }, "max": 3, "order": "self.isA('Link') ? 9 : self.rank" } }"""), ("a", 3, "x"), ("b", 1, "x"), ("c", 2, "x"));
+        tight.AddRelation("Link", "ba", tight.Nodes[1], tight.Nodes[0]);
+        tight.AddRelation("Link", "bc", tight.Nodes[1], tight.Nodes[2]);
+
+        // Act.
+        var notCut = roomy.InBudgetOrder("items").Select(element => element.Id);
+        var cut = tight.InBudgetOrder("items").Select(element => element.Id);
+
+        // Assert: the cut keeps b, c and a, which fill the budget, and drops both links.
+        Assert.Equal(["b", "c", "a"], notCut);
+        Assert.Equal(["b", "c", "a"], cut);
+        Assert.Empty(roomy.InBudgetOrder("unknown"));
+    }
+
+    [Fact]
     public void AUnit_IsKeptWhole_AndTheFirstUnitThatDoesNotFitEndsTheCut()
     {
         // Arrange.

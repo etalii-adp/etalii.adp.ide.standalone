@@ -131,7 +131,7 @@ public class DiagramTests : IDisposable
         // And the starter query parses, draws, and reports nothing at all.
         var model = SparqlParser.Parse(text);
         Assert.Equal(SparqlQueryForm.Select, model.Form);
-        Assert.NotEmpty(SparqlProjection.Project(model).Nodes);
+        Assert.NotEmpty(new SparqlDocument(model, text).Drawing.Nodes);
         Assert.Empty(SparqlValidator.Judge(model, text));
         Assert.EndsWith("\r\n", text);
     }
