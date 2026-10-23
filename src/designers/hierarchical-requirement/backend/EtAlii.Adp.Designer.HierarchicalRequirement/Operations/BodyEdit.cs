@@ -19,6 +19,7 @@ internal sealed partial class BodyEdit
     private readonly HierarchicalRequirementBody _read;
     private readonly Dictionary<string, Dictionary<string, object?>> _sets = new(StringComparer.Ordinal);
     private readonly List<ModelChange> _changes = [];
+    private readonly List<string> _given = [];
 
     public BodyEdit(HierarchicalRequirementBody read)
     {
@@ -35,6 +36,15 @@ internal sealed partial class BodyEdit
 
     /// <summary>Sets <paramref name="attribute"/> of the library's element <paramref name="elementId"/> to <paramref name="value"/>.</summary>
     public void Set(string elementId, string attribute, object? value) => SetsOf(elementId)[attribute] = value;
+
+    /// <summary>A change of the body's structure, an add, a move or a remove, planned with the rest.</summary>
+    public void Change(ModelChange change) => _changes.Add(change);
+
+    /// <summary>
+    /// Gives the number <paramref name="id"/> in this edit besides the placeholders', <c>ITEM-0008</c> say, so that the
+    /// mark of its kind is set to it when it is the last (DESL 0.2 section 5.3.5).
+    /// </summary>
+    public void Give(string id) => _given.Add(id);
 
     /// <summary>
     /// The body's bytes after the edit, with every placeholder numbered and the marks set; or the sentence saying why
@@ -82,6 +92,12 @@ internal sealed partial class BodyEdit
             given[type] = Math.Max(given.GetValueOrDefault(type), Number(entry.Id));
         }
 
+        foreach (var id in _given)
+        {
+            var type = id.StartsWith("ITEM-", StringComparison.Ordinal) ? ItemType : "Requirement";
+            given[type] = Math.Max(given.GetValueOrDefault(type), Number(id));
+        }
+
         if (given.Count == 0) return;
 
         // Only the mark of a kind this edit gives a number to is set; the other is left as it is.
@@ -107,6 +123,17 @@ internal sealed partial class BodyEdit
         {
             SetsOf(marks.Id)[mark] = value;
         }
+    }
+
+    /// <summary>
+    /// The number the next entry of its kind is given (DESL 0.2 section 5.3.5): one more than the mark and than every
+    /// number <paramref name="document"/> holds, those reading gave its placeholders included.
+    /// </summary>
+    public static string Next(HierarchicalRequirementDocument document, bool item)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        var highest = document.Entries.Where(entry => entry is Item == item).Select(entry => Number(entry.Id)).DefaultIfEmpty(0).Max();
+        return Counter(item ? ItemType : "Requirement", Math.Max(highest, Number(item ? document.LastItem : document.LastRequirement)) + 1);
     }
 
     private static string Counter(string type, int number) => (type == ItemType ? "ITEM-" : "REQ-") + number.ToString("D4", CultureInfo.InvariantCulture);

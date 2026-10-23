@@ -2,10 +2,11 @@
 
   <ItemGroup>
     <!--
-      Core abstractions only, as the Knowledge module has them: the designer family's seams, and
-      the FBL library a requirement document is read and written through. The module has no parser
+      Core abstractions only, as the Knowledge module has them: the designer family's seams, the
+      context actions' seam, and the FBL library a requirement document is read and written through. The module has no parser
       or writer of its own, and the host builds, tests and runs with this folder deleted.
     -->
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Context\EtAlii.Adp.Context.csproj" />
     <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Designer\EtAlii.Adp.Designer.csproj" />
     <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Documents\EtAlii.Adp.Documents.csproj" />
     <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Specification.Fbl\EtAlii.Adp.Specification.Fbl.csproj" />

@@ -20,9 +20,9 @@ namespace EtAlii.Adp.Designer.HierarchicalRequirement;
 /// time, and nothing when the bytes are those it already holds - which is how its own writes are passed over.
 /// </para>
 /// <para>
-/// <b>An edit of the text goes through the project's history</b>, planned against the bytes this session's page was
-/// made from; a file that holds others by the time it runs is not written, and the page is read again (FR-024). Undo
-/// and redo are the application's, and a page hears of them through the module's store.
+/// <b>An edit of the body, of a text or of the hierarchy, goes through the project's history</b>, planned against the
+/// bytes this session's page was made from; a file that holds others by the time it runs is not written, and the page is
+/// read again (FR-024). Undo and redo are the application's, and a page hears of them through the module's store.
 /// </para>
 /// <para>
 /// <b>A file that stops being readable keeps the last page</b>, read-only and saying why, until it can be read again:
@@ -122,9 +122,9 @@ internal sealed class HierarchicalRequirementSession : IHierarchySurfaceSession
     public string Gesture(ShortGuid editId, HierarchySurfaceGesture gesture)
     {
         ArgumentNullException.ThrowIfNull(gesture);
-        if (TextOperations.Handles(gesture.Operation))
+        if (TextOperations.Handles(gesture.Operation) || StructureOperations.Handles(gesture.Operation))
         {
-            return TextGesture(editId, gesture);
+            return BodyGesture(editId, gesture);
         }
 
         lock (_gate)
@@ -145,23 +145,27 @@ internal sealed class HierarchicalRequirementSession : IHierarchySurfaceSession
     }
 
     /// <summary>
-    /// Takes a change of an entry's title or description: refused at once when the page cannot be changed, the entry is
-    /// gone or the value cannot be written; otherwise run through the history behind the writes before it, against the
-    /// bytes the page was made from.
+    /// Takes a change of the body, of an entry's text or of the hierarchy: refused at once when the page cannot be changed,
+    /// the entry is gone or a text cannot be written; otherwise run through the history behind the writes before it,
+    /// against the bytes the page was made from.
     /// </summary>
-    private string TextGesture(ShortGuid editId, HierarchySurfaceGesture gesture)
+    private string BodyGesture(ShortGuid editId, HierarchySurfaceGesture gesture)
     {
-        var attribute = TextOperations.AttributeOf(gesture.Operation);
         if (_execute is null) return "This document's text cannot be changed here.";
-        if (!gesture.Params.TryGetValue(attribute, out var value)) return $"'{gesture.Operation}' needs its {attribute}.";
-        if (TextOperations.Refusal(gesture.Operation, value) is { Length: > 0 } refusal) return refusal;
+        if (TextOperations.Handles(gesture.Operation))
+        {
+            var attribute = TextOperations.AttributeOf(gesture.Operation);
+            if (!gesture.Params.TryGetValue(attribute, out var value)) return $"'{gesture.Operation}' needs its {attribute}.";
+            if (TextOperations.Refusal(gesture.Operation, value) is { Length: > 0 } refusal) return refusal;
+        }
+
         lock (_gate)
         {
             if (_reading.Model.ReadOnlyReason.Length > 0) return _reading.Model.ReadOnlyReason;
             if (_reading.Files.Body is not { } expected) return HierarchicalRequirementGestures.Drifted;
-            if (_reading.Model.Nodes.All(node => node.Id != gesture.TargetId)) return HierarchicalRequirementGestures.Drifted;
+            if (gesture.Operation != StructureOperations.AddTopItem && _reading.Model.Nodes.All(node => node.Id != gesture.TargetId)) return HierarchicalRequirementGestures.Drifted;
 
-            var command = new HierarchicalRequirementEditCommand(_bodyPath, gesture.Operation, gesture.TargetId, value, expected);
+            var command = new HierarchicalRequirementEditCommand(_bodyPath, gesture.Operation, gesture.TargetId, gesture.Params, expected);
             _writing++;
             _writesStarted++;
             var previous = _writes;
