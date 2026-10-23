@@ -27,13 +27,14 @@ public class AdpFileWriterBytesOverloadTests : IDisposable
 
     private static readonly byte[] Bom = [0xEF, 0xBB, 0xBF];
 
-    private readonly string _folder = IoPath.Combine(IoPath.GetTempPath(), "adp-bytes-overload-" + Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-bytes-overload");
+    private readonly string _folder;
 
-    public AdpFileWriterBytesOverloadTests() => Directory.CreateDirectory(_folder);
+    public AdpFileWriterBytesOverloadTests() => _folder = _testFolder.Path;
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_folder);
+        _testFolder.Dispose();
         GC.SuppressFinalize(this);
     }
 

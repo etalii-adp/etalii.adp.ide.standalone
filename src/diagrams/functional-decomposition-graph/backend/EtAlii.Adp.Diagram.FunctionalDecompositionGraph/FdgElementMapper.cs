@@ -2,6 +2,7 @@ using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Layout;
 using EtAlii.Adp.Specification.Disl;
 using Google.Protobuf;
+using JetBrains.Annotations;
 
 namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
 
@@ -37,30 +38,38 @@ public sealed class FdgElementMapper
     public const string UiElementType = Prefix + "ui-element";
 
     /// <summary>The library type of a Data Element.</summary>
+    [UsedImplicitly] // Read only by reflection, into the cross-tier element-types fixture.
     public const string DataElementType = Prefix + "data-element";
 
     /// <summary>The library type of an Action.</summary>
+    [UsedImplicitly] // Read only by reflection, into the cross-tier element-types fixture.
     public const string ActionType = Prefix + "action";
 
     /// <summary>The library type of a Function.</summary>
+    [UsedImplicitly] // Read only by reflection, into the cross-tier element-types fixture.
     public const string FunctionType = Prefix + "function";
 
     /// <summary>The library type of a Comment.</summary>
     public const string CommentType = Prefix + "comment";
 
     /// <summary>The library type of a UI child connection.</summary>
+    [Relation]
     public const string UiChildType = Prefix + "ui-child";
 
     /// <summary>The library type of an Action connection.</summary>
+    [Relation]
     public const string OwnsActionType = Prefix + "owns-action";
 
     /// <summary>The library type of a Data connection.</summary>
+    [Relation]
     public const string OwnsDataType = Prefix + "owns-data";
 
     /// <summary>The library type of a Function connection.</summary>
+    [Relation]
     public const string OwnsFunctionType = Prefix + "owns-function";
 
     /// <summary>The library type of a Shows connection.</summary>
+    [Relation]
     public const string ShowsType = Prefix + "shows";
 
     /// <summary>

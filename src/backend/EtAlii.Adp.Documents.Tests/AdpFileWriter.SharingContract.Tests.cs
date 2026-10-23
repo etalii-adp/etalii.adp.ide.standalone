@@ -74,15 +74,14 @@ public class AdpFileWriterSharingContractTests : IDisposable
 {
     private readonly FileWriter _writer = new();
 
-    private readonly string _folder = IoPath.Combine(
-        IoPath.GetTempPath(),
-        "adp-sharing-" + Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-sharing");
+    private readonly string _folder;
 
-    public AdpFileWriterSharingContractTests() => Directory.CreateDirectory(_folder);
+    public AdpFileWriterSharingContractTests() => _folder = _testFolder.Path;
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_folder);
+        _testFolder.Dispose();
 
         GC.SuppressFinalize(this);
     }

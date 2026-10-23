@@ -22,18 +22,18 @@ public class HierarchyModelEventsOutsideTheLockTests : IDisposable
     // Far longer than an uncontended lock takes on a loaded runner, so a timeout is the lock.
     private static readonly TimeSpan Patience = TimeSpan.FromSeconds(2);
 
+    private readonly TestFolder _testFolder = TestFolder.Create("events-outside-lock");
     private readonly string _root;
     private readonly IDiagramDefinitionCatalog _catalog = new TestDiagramDefinitionCatalog(Mindmap, Structure);
 
     public HierarchyModelEventsOutsideTheLockTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     public static TheoryData<string> RaisingSites =>

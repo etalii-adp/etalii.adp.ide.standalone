@@ -25,6 +25,7 @@ public class ProblemMaintenanceTests : IDisposable
     private static readonly DiagramDefinition FolderDefinition =
         new(FolderType, "A folder-subject type", Subject: DiagramSubject.Folder);
 
+    private readonly TestFolder _testFolder = TestFolder.Create("problem-maintenance");
     private readonly string _root;
     private readonly ProblemMaintenanceRecordingStore _store = new();
     private readonly ProblemMaintenanceCountingValidator _validator = new(Mindmap);
@@ -36,8 +37,7 @@ public class ProblemMaintenanceTests : IDisposable
 
     public ProblemMaintenanceTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
         var router = new DiagramFileRouter(new TestDiagramDefinitionCatalog(MindmapDefinition, FolderDefinition));
         var projectValidator = new ProjectValidator(router, new DiagramValidators([_validator, _folderValidator]));
         _maintenance = new ProblemMaintenance(_store, projectValidator, router, _events, _clock, SettleDelay);
@@ -47,7 +47,7 @@ public class ProblemMaintenanceTests : IDisposable
     {
         _maintenance.Dispose();
         _events.Dispose();
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     [Fact]
@@ -264,34 +264,28 @@ public class ProblemMaintenanceTests : IDisposable
         // Arrange: a link inside the project that leads to a diagram outside it (D6). The
         // maintenance itself refuses it, rather than leaving the refusal to the validator and
         // then recording what the validator said about a file that is not the project's.
-        var elsewhere = Directory.CreateTempSubdirectory("problem-maintenance-elsewhere-").FullName;
+        using var elsewhereFolder = TestFolder.Create("problem-maintenance-elsewhere");
+        var elsewhere = elsewhereFolder.Path;
+        await File.WriteAllTextAsync(IoPath.Combine(elsewhere, "outside.adp"), "freeplane/mindmap\n", TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(IoPath.Combine(elsewhere, "outside.mm"), "the document", TestContext.Current.CancellationToken);
+        var link = IoPath.Combine(_root, "escape");
         try
         {
-            await File.WriteAllTextAsync(IoPath.Combine(elsewhere, "outside.adp"), "freeplane/mindmap\n", TestContext.Current.CancellationToken);
-            await File.WriteAllTextAsync(IoPath.Combine(elsewhere, "outside.mm"), "the document", TestContext.Current.CancellationToken);
-            var link = IoPath.Combine(_root, "escape");
-            try
-            {
-                Directory.CreateSymbolicLink(link, elsewhere);
-            }
-            catch (Exception exception) when (exception is UnauthorizedAccessException or IOException && OperatingSystem.IsWindows())
-            {
-                Assert.Skip($"This process may not create a symbolic link: {exception.Message}");
-            }
-
-            using var root = new TrackedProblemRoot(_root, _maintenance);
-
-            // Act.
-            await _maintenance.RevalidateAsync(root, [IoPath.Combine(link, "outside.adp")], TestContext.Current.CancellationToken);
-
-            // Assert.
-            Assert.Equal(0, _validator.Calls);
-            Assert.DoesNotContain(_store.Mutations, mutation => mutation.Kind == "ReplaceFor");
+            Directory.CreateSymbolicLink(link, elsewhere);
         }
-        finally
+        catch (Exception exception) when (exception is UnauthorizedAccessException or IOException && OperatingSystem.IsWindows())
         {
-            TestFolder.TryDelete(elsewhere);
+            Assert.Skip($"This process may not create a symbolic link: {exception.Message}");
         }
+
+        using var root = new TrackedProblemRoot(_root, _maintenance);
+
+        // Act.
+        await _maintenance.RevalidateAsync(root, [IoPath.Combine(link, "outside.adp")], TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.Equal(0, _validator.Calls);
+        Assert.DoesNotContain(_store.Mutations, mutation => mutation.Kind == "ReplaceFor");
     }
 
     private void CreatePair(string baseName)

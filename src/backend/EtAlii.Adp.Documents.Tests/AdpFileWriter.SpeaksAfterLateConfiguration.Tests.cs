@@ -47,10 +47,11 @@ public class AdpFileWriterSpeaksAfterLateConfigurationTests : IDisposable
 
     private static readonly TimeSpan Patience = TimeSpan.FromSeconds(10);
 
-    private readonly string _folder = IoPath.Combine(IoPath.GetTempPath(), "adp-late-config-" + Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-late-config");
+    private readonly string _folder;
     private readonly ILogger _original = Log.Logger;
 
-    public AdpFileWriterSpeaksAfterLateConfigurationTests() => Directory.CreateDirectory(_folder);
+    public AdpFileWriterSpeaksAfterLateConfigurationTests() => _folder = _testFolder.Path;
 
     public void Dispose()
     {
@@ -59,7 +60,7 @@ public class AdpFileWriterSpeaksAfterLateConfigurationTests : IDisposable
         Log.Logger = _original;
         FileHolders.Query = null;
         FileHolders.Budget = TimeSpan.FromSeconds(2);
-        TestFolder.TryDelete(_folder);
+        _testFolder.Dispose();
         GC.SuppressFinalize(this);
     }
 

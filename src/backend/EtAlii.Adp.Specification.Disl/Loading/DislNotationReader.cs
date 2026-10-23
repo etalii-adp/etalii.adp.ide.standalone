@@ -19,9 +19,15 @@ internal static class DislNotationReader
         if (!root.TryGetProperty("notation", out var notation)) return DislNotation.None;
 
         var labels = new List<(string Type, DislTypeLabels Labels)>();
+        var refusals = new List<(string Type, bool IsEdge, IReadOnlyDictionary<string, IReadOnlyList<DislReason>> Gestures)>();
         foreach (var kind in new[] { "nodes", "edges" })
         {
-            foreach (var type in DislJson.Members(notation, kind)) labels.Add((type.Name, Labels(specification, type.Value, JsonPointer.Append(JsonPointer.Append("/notation", kind), type.Name))));
+            foreach (var type in DislJson.Members(notation, kind))
+            {
+                var pointer = JsonPointer.Append(JsonPointer.Append("/notation", kind), type.Name);
+                labels.Add((type.Name, Labels(specification, type.Value, pointer)));
+                refusals.Add((type.Name, kind == "edges", Refusals(specification, type.Value, JsonPointer.Append(pointer, "refusals"))));
+            }
         }
 
         var malformed = DislFieldReader.NotAnObject(notation);
@@ -36,7 +42,22 @@ internal static class DislNotationReader
         var canvas = malformed is null && notation.TryGetProperty("canvas", out var declaredCanvas) && declaredCanvas.ValueKind == JsonValueKind.Object
             ? Canvas(specification, declaredCanvas, "/notation/canvas")
             : null;
-        return new DislNotation(Names(notation), labels, edges, edgesMalformed, canvas, malformed);
+        return new DislNotation(Names(notation), labels, edges, edgesMalformed, canvas, malformed, refusals);
+    }
+
+    /// <summary>A node or edge notation's <c>refusals</c> (§6.9): per gesture its Reason[]; one Reason that is not in a list is read as a list of it.</summary>
+    private static Dictionary<string, IReadOnlyList<DislReason>> Refusals(DislSpecification specification, JsonElement type, string pointer)
+    {
+        var gestures = new Dictionary<string, IReadOnlyList<DislReason>>(StringComparer.Ordinal);
+        if (type.ValueKind != JsonValueKind.Object || !type.TryGetProperty("refusals", out var refusals) || refusals.ValueKind != JsonValueKind.Object) return gestures;
+        foreach (var gesture in refusals.EnumerateObject())
+        {
+            var at = JsonPointer.Append(pointer, gesture.Name);
+            gestures[gesture.Name] = gesture.Value.ValueKind == JsonValueKind.Array
+                ? DislFieldReader.Reasons(specification, gesture.Value, at)
+                : [DislFieldReader.Reason(specification, gesture.Value, at)];
+        }
+        return gestures;
     }
 
     public static DislViewpoints Viewpoints(DislSpecification specification, JsonElement root)

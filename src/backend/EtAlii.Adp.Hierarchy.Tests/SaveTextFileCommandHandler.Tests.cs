@@ -11,18 +11,18 @@ namespace EtAlii.Adp.Hierarchy.Tests;
 /// </summary>
 public class SaveTextFileCommandHandlerTests : IDisposable
 {
+    private readonly TestFolder _testFolder = TestFolder.Create("save-text-file");
     private readonly string _root;
     private readonly SaveTextFileCommandHandler _handler = new(new FileWriter());
 
     public SaveTextFileCommandHandlerTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     [Fact]

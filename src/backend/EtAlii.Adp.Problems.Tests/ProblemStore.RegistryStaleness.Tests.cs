@@ -28,19 +28,20 @@ public class ProblemStoreRegistryStalenessTests : IDisposable
     private static readonly ToolOrigin DependencyGraph = new("dotnet", "dependency-graph");
     private static readonly DiagramDefinition DependencyGraphDefinition = new(DependencyGraph, "Dependency graph", Extension: ".dgr");
 
+    private readonly TestFolder _testFolder = TestFolder.Create("problem-store-registry");
     private readonly string _appData;
     private readonly string _root;
 
     public ProblemStoreRegistryStalenessTests()
     {
-        var scratch = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
+        var scratch = _testFolder.Path;
         _appData = IoPath.Combine(scratch, "appdata");
         _root = IoPath.Combine(scratch, "project");
         Directory.CreateDirectory(_appData);
         Directory.CreateDirectory(_root);
     }
 
-    public void Dispose() => TestFolder.TryDelete(IoPath.GetDirectoryName(_root)!);
+    public void Dispose() => _testFolder.Dispose();
 
     [Fact]
     public void AnUnknownTypeVerdict_GoesStale_OnceTheModuleProvidingThatTypeIsDiscovered()

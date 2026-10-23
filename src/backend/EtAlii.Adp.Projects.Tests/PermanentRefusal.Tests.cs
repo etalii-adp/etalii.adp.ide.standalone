@@ -43,6 +43,8 @@ public partial class PermanentRefusalTests
             "and the client retries. AlreadyExists: a stream id reused on one connection, a client defect rather than a refusal of what was asked.",
         ["src/backend/EtAlii.Adp.Workspace/DesignerService.cs"] =
             "Unavailable: a call for a table stream that is gone, which a reconnect racing a close produces and the client retries.",
+        ["src/backend/EtAlii.Adp.Workspace/DesignerService.HierarchySurface.cs"] =
+            "Unavailable: a gesture for a hierarchy surface stream that is gone, which a reconnect racing a close produces and the client retries.",
         ["src/backend/EtAlii.Adp.Projects/StreamBound.cs"] =
             "ResourceExhausted: a stream whose tab stopped reading and fell a bound behind, ended so the tab opens it again for a fresh baseline (B-28).",
     };

@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Layout;
 using Google.Protobuf;
+using JetBrains.Annotations;
 
 namespace EtAlii.Adp.Diagram.Databricks;
 
@@ -22,27 +23,34 @@ public sealed class DatabricksElementMapper
     public const string TaskType = "databricks/job+task";
 
     /// <inheritdoc cref="TaskType" />
+    [UsedImplicitly] // Read only by reflection, into the cross-tier element-types fixture.
     public const string ClusterType = "databricks/job+cluster";
 
     /// <inheritdoc cref="TaskType" />
+    [Relation]
     public const string EdgeType = "databricks/job+edge";
 
     /// <inheritdoc cref="TaskType" />
     public const string BundleType = "databricks/bundle+bundle";
 
     /// <inheritdoc cref="TaskType" />
+    [UsedImplicitly] // Read only by reflection, into the cross-tier element-types fixture.
     public const string ResourceType = "databricks/bundle+resource";
 
     /// <inheritdoc cref="TaskType" />
+    [UsedImplicitly] // Read only by reflection, into the cross-tier element-types fixture.
     public const string TargetType = "databricks/bundle+target";
 
     /// <inheritdoc cref="TaskType" />
+    [Relation]
     public const string OverrideEdgeType = "databricks/bundle+edge";
 
     /// <inheritdoc cref="TaskType" />
+    [UsedImplicitly] // Read only by reflection, into the cross-tier element-types fixture.
     public const string PipelineNodeType = "databricks/pipeline+node";
 
     /// <inheritdoc cref="TaskType" />
+    [Relation]
     public const string FlowEdgeType = "databricks/pipeline+edge";
 
     /// <summary>

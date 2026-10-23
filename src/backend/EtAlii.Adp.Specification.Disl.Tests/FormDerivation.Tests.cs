@@ -170,4 +170,57 @@ public class FormDerivationTests
         Assert.Equal(["One", "2", "3"], rows[0].Candidates);
         Assert.Equal(["Alpha", "b", "c"], rows[1].Candidates);
     }
+
+    /// <summary>The diagram's own form (§7.5, <c>for: "diagram"</c>): its rows read the attributes of <c>metamodel.diagram</c>, with <c>self</c> the diagram.</summary>
+    private static readonly DislSpecification DiagramForm = Specifications.Loaded(Specifications.With("""
+        "metamodel": {
+          "diagram": { "attributes": {
+            "title": { "type": "string" },
+            "count": { "type": "int", "default": 3 },
+            "heading": { "type": "string", "derived": "self.title + ' (' + string(self.nodes.size()) + ')'" } } },
+          "types": { "Box": { "attributes": { "title": { "type": "string" } } } } },
+        "forms": {
+          "box": { "for": "Box", "items": [ { "attribute": "title", "label": "Box title" } ] },
+          "header": { "for": "diagram", "items": [ { "kind": "section", "label": "Query", "items": [
+            { "attribute": "title", "label": "Title" },
+            { "attribute": "count", "label": "Count" },
+            { "attribute": "heading", "id": "head", "label": "Heading", "widget": "readonly", "readOnlyReasons": ["The heading is read from the title."] },
+            { "kind": "computed", "label": "Boxes", "value": { "cel": "string(diagram.nodes.size()) + ' of them'" } } ] } ] } }
+        """));
+
+    [Fact]
+    public void TheDiagramsOwnForm_GivesItsRows_FromTheDiagramsAttributes()
+    {
+        // Arrange.
+        var diagram = new DislDiagram(DiagramForm, new Dictionary<string, object?> { ["title"] = "Query" });
+        diagram.AddNode("Box", "b", new Dictionary<string, object?> { ["title"] = "Inner" });
+
+        // Act.
+        var rows = FormDerivation.Derive(DiagramForm, diagram, new DislEnv(), WireIdMap.None);
+
+        // Assert.
+        Assert.Equal(
+        [
+            "title | Title | Query | - | editable | group Query",
+            "count | Count | 3 | - | editable | group Query",
+            "head | Heading | Query (1) | readonly | read-only (The heading is read from the title.) | group Query",
+            "Boxes | Boxes | 1 of them | - | editable | group Query",
+        ], Lines(rows));
+    }
+
+    [Fact]
+    public void ADiagramWithoutAFormForIt_HasNoRows_AndAnElementsFormIsNotTheDiagrams()
+    {
+        // Arrange.
+        var specification = Specifications.Loaded(Specifications.With("""
+            "metamodel": { "diagram": { "attributes": { "title": { "type": "string" } } }, "types": { "Box": { "attributes": { "title": { "type": "string" } } } } },
+            "forms": { "box": { "for": "Box", "items": [ { "attribute": "title" } ] } }
+            """));
+        var diagram = new DislDiagram(specification, new Dictionary<string, object?> { ["title"] = "Query" });
+        var box = diagram.AddNode("Box", "b", new Dictionary<string, object?> { ["title"] = "Inner" });
+
+        // Act and assert.
+        Assert.Empty(FormDerivation.Derive(specification, diagram, new DislEnv(), WireIdMap.None));
+        Assert.Equal("Inner", Assert.Single(FormDerivation.Derive(specification, box, new DislEnv(), WireIdMap.None)).Value);
+    }
 }

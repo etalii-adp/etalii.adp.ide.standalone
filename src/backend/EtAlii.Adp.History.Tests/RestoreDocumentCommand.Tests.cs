@@ -11,20 +11,14 @@ namespace EtAlii.Adp.History.Tests;
 /// </summary>
 public sealed class RestoreDocumentCommandTests : IDisposable
 {
-    private readonly string _folder = IoPath.Combine(IoPath.GetTempPath(), "adp-restore-" + Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-restore");
+    private readonly string _folder;
 
-    public RestoreDocumentCommandTests() => Directory.CreateDirectory(_folder);
+    public RestoreDocumentCommandTests() => _folder = _testFolder.Path;
 
     public void Dispose()
     {
-        try
-        {
-            Directory.Delete(_folder, recursive: true);
-        }
-        catch (IOException)
-        {
-            // A temp folder a virus scanner still holds is not a test failure.
-        }
+        _testFolder.Dispose();
     }
 
     [Fact]

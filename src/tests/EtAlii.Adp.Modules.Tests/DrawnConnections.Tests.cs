@@ -1,23 +1,5 @@
-using EtAlii.Adp.Diagram.AgentActivityDiagram;
-using EtAlii.Adp.Diagram.AgentBehaviorModelling;
-using EtAlii.Adp.Diagram.AnsibleStructure;
+using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Diagram.AzureDevOpsPipeline;
-using EtAlii.Adp.Diagram.C4;
-using EtAlii.Adp.Diagram.CausalLoopDiagram;
-using EtAlii.Adp.Diagram.Databricks;
-using EtAlii.Adp.Diagram.DependencyGraph;
-using EtAlii.Adp.Diagram.DotNetDependencyGraph;
-using EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
-using EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
-using EtAlii.Adp.Diagram.HelmChart;
-using EtAlii.Adp.Diagram.Mindmap;
-using EtAlii.Adp.Diagram.Rdf;
-using EtAlii.Adp.Diagram.Rdf.Shacl;
-using EtAlii.Adp.Diagram.Sankey;
-using EtAlii.Adp.Diagram.Sparql;
-using EtAlii.Adp.Diagram.SupplyChain;
-using EtAlii.Adp.Diagram.Timeline;
-using EtAlii.Adp.Diagram.WardleyMap;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.Sessions;
 using EtAlii.Adp.TestSupport.Host;
@@ -40,9 +22,11 @@ namespace EtAlii.Adp.Modules.Tests;
 /// to a foreign id is exercised too, which a module's isolated provider cannot show.
 /// </para>
 /// <para>
-/// <b>The types are each mapper's own constants, never literals.</b> A type the examples never emit is
-/// not named: naming it would measure the corpus rather than the resolvers, and the union check still
-/// fails the day such an element appears, so someone must name it then.
+/// <b>Nothing is listed by hand but what no constant can say.</b> Every folder under
+/// <c>src/examples/diagrams</c> is checked, with the types <see cref="WireTypes"/> reads off the
+/// modules whose diagram types its examples open: a constant marked <see cref="RelationAttribute"/>
+/// is a connection, every other one an element. Only a module's view hook and a "no connections"
+/// statement are kept here, keyed by examples folder.
 /// </para>
 /// </remarks>
 public class DrawnConnectionsTests(HostFixture host) : IClassFixture<HostFixture>
@@ -72,117 +56,50 @@ public class DrawnConnectionsTests(HostFixture host) : IClassFixture<HostFixture
     }
 
     /// <summary>
-    /// Every module whose canvas the examples show, with the types its projection emits over them.
+    /// The modules whose canvas draws more after a view change than on open, by examples folder. The
+    /// pipeline's three levels nest: a stage's jobs and their arrows exist only while the stage is open,
+    /// and a job's steps only while the job is too. So every stage and every job now drawn is opened,
+    /// and the helper calls this again with what that revealed - without it the job graph's arrows and
+    /// every step would never be visited at all.
     /// </summary>
-    private static readonly DrawnModule[] Modules =
-    [
-        new("agent-behavior-modelling", new DrawnTypes(
-            [AbmElementMapper.ChildType],
-            [AbmElementMapper.SequenceType, AbmElementMapper.FallbackType, AbmElementMapper.ParallelType, AbmElementMapper.RetryType, AbmElementMapper.RepeatType, AbmElementMapper.GuardType, AbmElementMapper.ApprovalType, AbmElementMapper.CheckType, AbmElementMapper.ActionType, AbmElementMapper.AskType, AbmElementMapper.DelegateType])),
-        new("ansible-structure", new DrawnTypes(
-            [AnsibleElementMapper.EdgeType],
-            [AnsibleElementMapper.PlaybookType, AnsibleElementMapper.PlayType, AnsibleElementMapper.RoleType, AnsibleElementMapper.TaskFileType, AnsibleElementMapper.InventoryType, AnsibleElementMapper.VariableFolderType])),
-        // The three levels nest: a stage's jobs and their arrows exist only while the stage is open, and
-        // a job's steps only while the job is too. So every stage and every job now drawn is opened, and
-        // the helper calls this again with what that revealed - without it the job graph's arrows and
-        // every step would never be visited at all.
-        new("azure-devops-pipeline", new DrawnTypes(
-            [PipelineElementMapper.EdgeType],
-            [PipelineElementMapper.StageType, PipelineElementMapper.JobType, PipelineElementMapper.StepType, PipelineElementMapper.TemplateType]),
-            ExpandViews: ExpandPipelineViews),
-        new("c4", new DrawnTypes(
-            [C4ElementMapper.RelationshipType],
-            [C4ElementMapper.NodeType, C4ElementMapper.BoundaryType, C4ElementMapper.ViewType])),
-        new("causal-loop-diagram", new DrawnTypes(
-            [CausalLoopElementMapper.LinkType],
-            [CausalLoopElementMapper.VariableType, CausalLoopElementMapper.LoopType])),
-        new("databricks", new DrawnTypes(
-            [DatabricksElementMapper.EdgeType, DatabricksElementMapper.OverrideEdgeType, DatabricksElementMapper.FlowEdgeType],
-            [DatabricksElementMapper.TaskType, DatabricksElementMapper.ClusterType, DatabricksElementMapper.BundleType, DatabricksElementMapper.ResourceType, DatabricksElementMapper.TargetType, DatabricksElementMapper.PipelineNodeType])),
-        new("dependency-graph", new DrawnTypes(
-            [DependencyGraphElementMapper.RelationType],
-            [DependencyGraphElementMapper.NodeType])),
-        new("dotnet-dependency-graph", new DrawnTypes(
-            [DependencyElementMapper.EdgeType],
-            [DependencyElementMapper.ProjectType, DependencyElementMapper.PackageType])),
-        new("functional-decomposition-graph", new DrawnTypes(
-            [FdgElementMapper.UiChildType, FdgElementMapper.OwnsActionType, FdgElementMapper.OwnsDataType, FdgElementMapper.OwnsFunctionType, FdgElementMapper.ShowsType],
-            [FdgElementMapper.UiElementType, FdgElementMapper.DataElementType, FdgElementMapper.ActionType, FdgElementMapper.FunctionType, FdgElementMapper.CommentType])),
-        new("gartner-hype-cycle-graph", new DrawnTypes(
-            [GhgElementMapper.InfluenceType],
-            [GhgElementMapper.TrendType, GhgElementMapper.TriggerType, GhgElementMapper.NoteType])),
-        new("agent-activity-diagram", new DrawnTypes(
-            [AadElementMapper.RelationType],
-            [AadElementMapper.ProjectType, AadElementMapper.SpecificationType, AadElementMapper.AgentType, AadElementMapper.LocationType, AadElementMapper.EnvironmentType, AadElementMapper.ViewType])),
-        new("helm-chart", new DrawnTypes(
-            [HelmElementMapper.EdgeType, HelmElementMapper.DependencyType],
-            [HelmElementMapper.ChartType, HelmElementMapper.ValuesType, HelmElementMapper.SchemaType, HelmElementMapper.TemplateType, HelmElementMapper.PartialType, HelmElementMapper.SubchartType, HelmElementMapper.LockType])),
-        new("mindmap", new DrawnTypes(
-            [],
-            [MindmapElementMapper.NodeType],
-            NoConnectionsBecause: "a branch is drawn client-side from each node's parentId; the projection emits nodes only")),
-        new("owl", new DrawnTypes(
-            [OwlElementMapper.EdgeType],
-            [OwlElementMapper.NodeType, OwlElementMapper.ExpressionType])),
-        new("rdf", new DrawnTypes(
-            [RdfElementMapper.EdgeType],
-            [RdfElementMapper.ResourceType, RdfElementMapper.TruncationType])),
-        new("sankey", new DrawnTypes(
-            [SankeyElementMapper.FlowType],
-            [SankeyElementMapper.NodeType])),
-        new("shacl", new DrawnTypes(
-            [ShaclElementMapper.EdgeType],
-            [ShaclElementMapper.ShapeType])),
-        new("skos", new DrawnTypes(
-            [SkosElementMapper.EdgeType],
-            [SkosElementMapper.ConceptType, SkosElementMapper.SchemeType, SkosElementMapper.TruncationType])),
-        new("sparql", new DrawnTypes(
-            [SparqlElementMapper.EdgeType],
-            [SparqlElementMapper.VariableType, SparqlElementMapper.TermType, SparqlElementMapper.RegionType, SparqlElementMapper.AnnotationType, SparqlElementMapper.HeaderType])),
-        new("supply-chain", new DrawnTypes(
-            [SupplyChainElementMapper.FlowType],
-            [SupplyChainElementMapper.GroupType, SupplyChainElementMapper.SourceType, SupplyChainElementMapper.ProcessorType, SupplyChainElementMapper.ProducerType, SupplyChainElementMapper.IntegratorType, SupplyChainElementMapper.HubType, SupplyChainElementMapper.OutletType, SupplyChainElementMapper.ConsumerType])),
-        new("timeline", new DrawnTypes(
-            [TimelineElementMapper.ConnectionType],
-            [TimelineElementMapper.PeriodType, TimelineElementMapper.MomentType])),
-        new("wardley-map", new DrawnTypes(
-            [WardleyElementTypes.Link],
-            [WardleyElementTypes.Element, WardleyElementTypes.Note, WardleyElementTypes.Annotation, WardleyElementTypes.Accelerator, WardleyElementTypes.Attitude, WardleyElementTypes.EvolutionAxis])),
-    ];
+    private static readonly Dictionary<string, Action<IServiceProvider, DrawnView>> ViewExpansions = new(StringComparer.Ordinal)
+    {
+        ["azure-devops-pipeline"] = ExpandPipelineViews,
+    };
+
+    /// <summary>The modules that declare no relation, by examples folder, each with the reason in words.</summary>
+    private static readonly Dictionary<string, string> NoConnectionsBecause = new(StringComparer.Ordinal)
+    {
+        ["mindmap"] = "a branch is drawn client-side from each node's parentId; the projection emits nodes only",
+    };
 
     [Fact]
     public async Task EveryConnectionEveryCanvasDraws_ResolvesToASelection()
     {
         // Arrange.
+        var modules = Modules();
         var problems = new List<string>();
+        var emitted = new HashSet<string>(StringComparer.Ordinal);
 
         // Act.
-        foreach (var module in Modules)
+        foreach (var module in modules)
         {
-            problems.AddRange(await DrawnConnections.ProblemsAsync(host.Services, module));
+            problems.AddRange(await DrawnConnections.ProblemsAsync(host.Services, module, emitted));
         }
 
+        // Every relation a module declares is one some example draws, so every one was resolved above.
+        var undrawn = WireTypes.All.Where(type => type.IsRelation && !emitted.Contains(type.Value)).Select(type => type.Where).Order(StringComparer.Ordinal);
+        problems.AddRange(undrawn.Select(where => $"{where} is marked [Relation], but no shipped example draws it, so whether it resolves is never checked."));
+
         // Assert.
+        // Both canaries, so this cannot pass by walking nothing: a floor on the folders walked, and a
+        // member that must be among them. And every hook names a folder that is walked, so a renamed
+        // folder cannot silently drop its hook.
+        Assert.True(modules.Count >= 16, $"walked only {modules.Count} example folders: {string.Join(", ", modules.Select(module => module.ExamplesFolder))}");
+        Assert.Contains(modules, module => module.ExamplesFolder == "timeline");
+        var folders = modules.Select(module => module.ExamplesFolder).ToHashSet(StringComparer.Ordinal);
+        Assert.All(ViewExpansions.Keys.Concat(NoConnectionsBecause.Keys), folder => Assert.Contains(folder, folders));
         Assert.True(problems.Count == 0, string.Join(Environment.NewLine, problems));
-    }
-
-    [Fact]
-    public void EveryShippedExampleFolder_IsChecked()
-    {
-        // Arrange: discovered by artifact, not by a second list - a module that ships examples and is
-        // missing from Modules would otherwise never be checked. With both canaries: a floor on the
-        // folders walked, and a member that must be among them.
-        var folders = Directory.EnumerateDirectories(IoPath.Combine(DrawnConnections.ExamplesRoot(), "diagrams"))
-            .Select(IoPath.GetFileName)
-            .ToList();
-
-        // Act.
-        var unclaimed = folders.Where(folder => Modules.All(module => module.ExamplesFolder != folder)).ToList();
-
-        // Assert.
-        Assert.True(folders.Count >= 16, $"walked only {folders.Count} example folders: {string.Join(", ", folders)}");
-        Assert.Contains("timeline", folders);
-        Assert.True(unclaimed.Count == 0, "example folders no module entry checks: " + string.Join(", ", unclaimed));
     }
 
     [Fact]
@@ -196,16 +113,9 @@ public class DrawnConnectionsTests(HostFixture host) : IClassFixture<HostFixture
         // Act.
         var examined = new HashSet<string>(StringComparer.Ordinal);
         var router = services.GetRequiredService<DiagramFileRouter>();
-        foreach (var module in Modules)
+        foreach (var folder in ExampleFolders())
         {
-            var folder = IoPath.Combine(DrawnConnections.ExamplesRoot(), "diagrams", module.ExamplesFolder);
-            foreach (var file in Directory.EnumerateFiles(folder, "*", SearchOption.AllDirectories))
-            {
-                if (router.Route(file) is DiagramRouted routed)
-                {
-                    examined.Add(routed.Definition.Origin.MimeType);
-                }
-            }
+            examined.UnionWith(OriginsOpenedIn(router, folder).Select(origin => origin.MimeType));
         }
         var unexamined = opened.Where(type => !examined.Contains(type)).Order(StringComparer.Ordinal).ToList();
 
@@ -216,4 +126,48 @@ public class DrawnConnectionsTests(HostFixture host) : IClassFixture<HostFixture
         Assert.Contains(TimelineModule.Timeline.Origin.MimeType, opened);
         Assert.True(unexamined.Count == 0, "diagram types the host opens that no checked example opens: " + string.Join(", ", unexamined));
     }
+
+    /// <summary>
+    /// Every folder under <c>src/examples/diagrams</c>, with the types of the modules its examples open
+    /// and the hooks kept above.
+    /// </summary>
+    private List<DrawnModule> Modules()
+    {
+        var router = host.Services.GetRequiredService<DiagramFileRouter>();
+
+        // Which module declares each diagram type: the module whose assembly discovery finds it in.
+        var moduleOf = WireTypes.Assemblies()
+            .Select(assembly => (Module: WireTypes.ModuleOf(assembly), Assembly: assembly))
+            .Where(pair => pair.Module.Length > 0)
+            .SelectMany(pair => DiagramDefinitionDiscovery.Discover([pair.Assembly]).Select(definition => (definition.Origin, pair.Module)))
+            .ToDictionary(pair => pair.Origin, pair => pair.Module);
+
+        var modules = new List<DrawnModule>();
+        foreach (var folder in ExampleFolders())
+        {
+            var owners = OriginsOpenedIn(router, folder)
+                .Select(origin => moduleOf.GetValueOrDefault(origin, ""))
+                .ToHashSet(StringComparer.Ordinal);
+            var types = WireTypes.All.Where(type => owners.Contains(type.Module)).ToList();
+            var name = IoPath.GetFileName(folder);
+            modules.Add(new DrawnModule(
+                name,
+                new DrawnTypes(
+                    [.. types.Where(type => type.IsRelation).Select(type => type.Value).Distinct(StringComparer.Ordinal)],
+                    [.. types.Where(type => !type.IsRelation).Select(type => type.Value).Distinct(StringComparer.Ordinal)],
+                    NoConnectionsBecause.GetValueOrDefault(name)),
+                ViewExpansions.GetValueOrDefault(name)));
+        }
+        return modules;
+    }
+
+    private static IEnumerable<string> ExampleFolders() =>
+        Directory.EnumerateDirectories(IoPath.Combine(DrawnConnections.ExamplesRoot(), "diagrams")).Order(StringComparer.Ordinal);
+
+    private static IEnumerable<ToolOrigin> OriginsOpenedIn(DiagramFileRouter router, string folder) =>
+        Directory.EnumerateFiles(folder, "*", SearchOption.AllDirectories)
+            .Select(file => router.Route(file))
+            .OfType<DiagramRouted>()
+            .Select(routed => routed.Definition.Origin)
+            .Distinct();
 }

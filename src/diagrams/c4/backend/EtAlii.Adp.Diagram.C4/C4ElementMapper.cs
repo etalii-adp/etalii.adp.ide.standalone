@@ -14,6 +14,7 @@ public sealed class C4ElementMapper
 {
     /// <summary>The mime-style element kinds C4 puts on the wire.</summary>
     public const string NodeType = "c4/model+node";
+    [Relation]
     public const string RelationshipType = "c4/model+relationship";
     public const string BoundaryType = "c4/model+boundary";
     public const string ViewType = "c4/model+view";

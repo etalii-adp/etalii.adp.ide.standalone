@@ -45,15 +45,16 @@ public class FileHoldersAnswersLateTests : IDisposable
 {
     private static readonly TimeSpan Patience = TimeSpan.FromSeconds(10);
 
-    private readonly string _folder = IoPath.Combine(IoPath.GetTempPath(), "adp-holders-late-" + Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-holders-late");
+    private readonly string _folder;
 
-    public FileHoldersAnswersLateTests() => Directory.CreateDirectory(_folder);
+    public FileHoldersAnswersLateTests() => _folder = _testFolder.Path;
 
     public void Dispose()
     {
         FileHolders.Query = null;
         FileHolders.Budget = TimeSpan.FromSeconds(2);
-        TestFolder.TryDelete(_folder);
+        _testFolder.Dispose();
         GC.SuppressFinalize(this);
     }
 

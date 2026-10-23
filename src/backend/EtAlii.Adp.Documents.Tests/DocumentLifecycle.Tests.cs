@@ -16,13 +16,14 @@ namespace EtAlii.Adp.Documents.Tests;
 /// </remarks>
 public class DocumentLifecycleTests : IDisposable
 {
-    private readonly string _folder = IoPath.Combine(IoPath.GetTempPath(), "adp-lifecycle-" + Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-lifecycle");
+    private readonly string _folder;
 
-    public DocumentLifecycleTests() => Directory.CreateDirectory(_folder);
+    public DocumentLifecycleTests() => _folder = _testFolder.Path;
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_folder);
+        _testFolder.Dispose();
         GC.SuppressFinalize(this);
     }
 
