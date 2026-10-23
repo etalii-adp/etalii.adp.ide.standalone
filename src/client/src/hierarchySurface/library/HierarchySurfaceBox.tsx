@@ -8,6 +8,7 @@ import type { EntryEditing } from "./editing/entryEditing";
 import { EntryTextField } from "./editing/EntryTextField";
 import { NoteIcon } from "./notes/NoteIcon";
 import type { NoteMark } from "./notes/noteMark";
+import { ReferenceText } from "./references/ReferenceBox";
 
 export interface HierarchySurfaceBoxProps {
   node: HierarchySurfaceNode;
@@ -31,6 +32,10 @@ export interface HierarchySurfaceBoxProps {
   editing?: EntryEditing;
   /** The wiring of the grip it is dragged by; absent when the document cannot be changed. */
   grip?: PointerPressWiring;
+  /** The node of an id, for the boxes of the references in its description. */
+  nodeOf: (id: string) => HierarchySurfaceNode | undefined;
+  /** Shows the node a reference box names (FR-018). */
+  onReveal: (id: string) => void;
   /** Where a node dragged over this box would go, or absent. */
   dropHint?: "into" | "after" | "before";
 }
@@ -49,7 +54,7 @@ function colourOf(optionLists: readonly HierarchySurfaceOptionList[], label: str
  * right is the page's.
  */
 export function HierarchySurfaceBox(props: HierarchySurfaceBoxProps) {
-  const { node, definition, optionLists, collapsed, selected, notes, notesOpen, onToggleNotes, noteList, hiddenLevels, onToggle, onSelect, onFocus, editing, grip, dropHint } = props;
+  const { node, definition, optionLists, collapsed, selected, notes, notesOpen, onToggleNotes, noteList, hiddenLevels, onToggle, onSelect, onFocus, editing, grip, dropHint, nodeOf, onReveal } = props;
   const labels = definition.labels.filter((label) => label.on.includes(node.type));
   const field = editing?.field ?? null;
   const fieldOf = (attribute: "title" | "description") =>
@@ -61,6 +66,7 @@ export function HierarchySurfaceBox(props: HierarchySurfaceBoxProps) {
         onChange={editing.change}
         onCommit={editing.commit}
         onCancel={editing.cancel}
+        references={attribute === "description" ? editing.references : undefined}
       />
     ) : null;
   const tags = labels.flatMap((label) =>
@@ -111,7 +117,7 @@ export function HierarchySurfaceBox(props: HierarchySurfaceBoxProps) {
         (fieldOf("description") ??
           (node.description !== "" ? (
             <p className="hs-description" onDoubleClick={editing === undefined ? undefined : () => editing.open("description")}>
-              {node.description}
+              <ReferenceText text={node.description} references={node.references} nodeOf={nodeOf} onReveal={onReveal} />
             </p>
           ) : (
             selected &&

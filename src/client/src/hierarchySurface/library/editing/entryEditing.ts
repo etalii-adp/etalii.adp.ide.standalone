@@ -1,3 +1,5 @@
+import type { HierarchySurfaceNode } from "../api/hierarchySurfaceModel";
+
 /** Which text of a node a field is open on. */
 export type EntryTextAttribute = "title" | "description";
 
@@ -18,4 +20,6 @@ export interface EntryEditing {
   change: (text: string) => void;
   commit: () => void;
   cancel: () => void;
+  /** What a reference typed in a description can name: the document's nodes that have a number. */
+  references: readonly HierarchySurfaceNode[];
 }
