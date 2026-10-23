@@ -15,4 +15,8 @@ public sealed record SparqlSubSelect(
     string Text,
     IReadOnlyList<string> ProjectedNames,
     bool ProjectsAll,
-    int Ordinal);
+    int Ordinal)
+{
+    /// <summary>Where the subquery is written: exactly the characters of <see cref="Text"/>.</summary>
+    public SparqlSpan Span { get; init; }
+}

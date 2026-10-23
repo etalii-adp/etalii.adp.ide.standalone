@@ -122,15 +122,9 @@ public sealed class WatchedFileTests : IDisposable
     public async Task AReReadThatThrows_DoesNotStopTheNext()
     {
         var runs = 0;
-        using var file = new WatchedFile(Path("notes.txt"), () =>
-        {
-            if (Interlocked.Increment(ref runs) == 1)
-            {
-                throw new IOException("The first re-read fails.");
-            }
-
-            return Task.CompletedTask;
-        }, _clock);
+        using var file = new WatchedFile(Path("notes.txt"), () => Interlocked.Increment(ref runs) == 1
+            ? throw new IOException("The first re-read fails.")
+            : Task.CompletedTask, _clock);
 
         await file.Notify().WaitAsync(Patience, TestContext.Current.CancellationToken);
         await file.Notify().WaitAsync(Patience, TestContext.Current.CancellationToken);

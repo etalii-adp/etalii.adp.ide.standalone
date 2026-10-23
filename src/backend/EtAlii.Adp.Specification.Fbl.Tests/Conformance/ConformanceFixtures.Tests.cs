@@ -26,14 +26,15 @@ public class ConformanceFixturesTests
     /// <summary>
     /// Every fixture, at any depth (FBL 0.7 §15.3): those under <c>fixtures/</c> by their path there, and those in
     /// etalii.adp's layout by theirs from the corpus. The Knowledge designer's are run by
-    /// <see cref="KnowledgeFixturesTests"/>, with the attribute types and derived ids that tool type needs.
+    /// <see cref="KnowledgeFixturesTests"/>, with the attribute types and derived ids that tool type needs, and the Hierarchical
+    /// Requirement Designer's by <see cref="HierarchicalRequirementFixturesTests"/>, through what DESL adds for it.
     /// </summary>
     public static TheoryData<string> Fixtures()
     {
         var data = new TheoryData<string>();
         foreach (var name in Under("fixtures", "").Concat(Under(AdpFixtures, AdpFixtures + "/")).Order(StringComparer.Ordinal))
         {
-            if (!name.StartsWith(AdpFixtures + "/knowledge-", StringComparison.Ordinal)) data.Add(name);
+            if (!name.StartsWith(AdpFixtures + "/knowledge-", StringComparison.Ordinal) && !name.StartsWith(AdpFixtures + "/hierarchical-requirement-", StringComparison.Ordinal)) data.Add(name);
         }
         return data;
 
@@ -139,12 +140,7 @@ public class ConformanceFixturesTests
             index++;
             var label = $"{name} step {index}";
             var before = subject.Bytes;
-            // In body order, those at one offset kept as listed: FBL gives an order only to splices at
-            // the same offset (section 6.5), and a fixture written since 0.3 lists a cascaded removal
-            // bottom-up, as it is planned, where this library lists every edit in body order. The
-            // two say the same edit.
-            var expected = step.GetProperty("splices").EnumerateArray().Select(ReadSplice)
-                .Select((splice, at) => (splice, at)).OrderBy(listed => listed.splice.Start).ThenBy(listed => listed.at).Select(listed => listed.splice).ToList();
+            var expected = FixtureEdits.Splices(step);
             IReadOnlyList<Splice> actual;
             if (step.TryGetProperty("undo", out var undo) && undo.GetBoolean())
             {
@@ -293,12 +289,6 @@ public class ConformanceFixturesTests
         _ => $"the {value.GetType().Name} {Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture)}",
     };
 
-    private static Splice ReadSplice(JsonElement splice) => new(
-        Splice.Parse(splice.GetProperty("operation").GetString()!),
-        splice.GetProperty("start").GetInt32(),
-        splice.GetProperty("end").GetInt32(),
-        splice.GetProperty("text").GetString()!);
-
     /// <summary>
     /// A fixture's edit as a model change. A position (FBL 0.7 §11.2) is converted to the model change's index, which
     /// counts the siblings as they are before the change, the moved element included; an <c>after</c> or <c>before</c>
@@ -307,7 +297,7 @@ public class ConformanceFixturesTests
     private static ModelChange ReadChange(JsonElement edit, FblModel? model)
     {
         if (edit.ValueKind == JsonValueKind.Array) throw new NotSupportedException("A fixture edit that is a list of changes is not run yet.");
-        if (edit.TryGetProperty("setting", out var setting)) return Setting(setting);
+        if (edit.TryGetProperty("setting", out var setting)) return FixtureEdits.Setting(setting);
         if (edit.TryGetProperty("move", out var move))
         {
             var id = move.GetProperty("element").GetString()!;
@@ -318,15 +308,14 @@ public class ConformanceFixturesTests
         if (edit.TryGetProperty("save", out _)) return new ModelChange.Save();
         if (edit.TryGetProperty("set", out var set))
         {
-            if (set.TryGetProperty("occurrence", out _)) throw new NotSupportedException("A fixture edit naming an occurrence is not run yet.");
-            return new ModelChange.Set(set.GetProperty("element").GetString()!, Attributes(set.GetProperty("attributes")));
+            return set.TryGetProperty("occurrence", out _) ? throw new NotSupportedException("A fixture edit naming an occurrence is not run yet.") : new ModelChange.Set(set.GetProperty("element").GetString()!, FixtureEdits.Attributes(set.GetProperty("attributes")));
         }
         if (edit.TryGetProperty("add", out var add))
         {
             return new ModelChange.Add(
                 add.GetProperty("type").GetString()!,
                 add.TryGetProperty("id", out var id) ? id.GetString() : null,
-                add.TryGetProperty("attributes", out var attributes) ? Attributes(attributes) : new Dictionary<string, object?>(),
+                add.TryGetProperty("attributes", out var attributes) ? FixtureEdits.Attributes(attributes) : new Dictionary<string, object?>(),
                 add.TryGetProperty("parent", out var parent) ? parent.GetString() : null,
                 add.TryGetProperty("position", out var position) ? Index(position, model, add.TryGetProperty("parent", out var under) ? under.GetString() : null, add.GetProperty("type").GetString()) : null,
                 add.TryGetProperty("slot", out var slot) ? slot.GetString() : null);
@@ -337,51 +326,19 @@ public class ConformanceFixturesTests
             : throw new InvalidOperationException($"Unknown fixture edit: {edit}.");
     }
 
-    /// <summary>A fixture's change to an entry of a block the binding declares (FBL 0.7 §8.4, §15.3).</summary>
-    private static ModelChange.Setting Setting(JsonElement setting)
-    {
-        SettingPosition? position = null;
-        if (setting.TryGetProperty("position", out var at))
-        {
-            position = new SettingPosition(
-                at.TryGetProperty("index", out var index) ? index.GetInt32() : null,
-                at.TryGetProperty("after", out var after) ? after.GetString() : null,
-                at.TryGetProperty("before", out var before) ? before.GetString() : null);
-        }
-        return new ModelChange.Setting(
-            setting.GetProperty("block").GetString()!,
-            setting.GetProperty("key").GetString()!,
-            setting.TryGetProperty("value", out var value) ? value.GetString() : null,
-            position,
-            setting.TryGetProperty("rename", out var rename) ? rename.GetString() : null,
-            setting.TryGetProperty("remove", out var remove) && remove.GetBoolean());
-    }
-
     /// <summary>The model change's index for a fixture's position among <paramref name="parent"/>'s children of <paramref name="type"/>.</summary>
     private static int? Index(JsonElement position, FblModel? model, string? parent, string? type)
     {
         if (position.TryGetProperty("index", out var index)) return index.GetInt32();
         var siblings = model?.Elements.Where(element => element.ParentId == parent && element.Type == type).Select(element => element.Id).ToList() ?? [];
         if (position.TryGetProperty("after", out var after)) return Place(after.GetString()!) + 1;
-        if (position.TryGetProperty("before", out var before)) return Place(before.GetString()!);
-        throw new InvalidOperationException($"Unknown fixture position: {position}.");
+        return position.TryGetProperty("before", out var before)
+            ? Place(before.GetString()!)
+            : throw new InvalidOperationException($"Unknown fixture position: {position}.");
 
         int Place(string sibling) =>
             siblings.IndexOf(sibling) is var at and >= 0 ? at : throw new InvalidOperationException($"The position names '{sibling}', which is no sibling here.");
     }
-
-    private static Dictionary<string, object?> Attributes(JsonElement attributes) =>
-        attributes.EnumerateObject().ToDictionary(p => p.Name, p => Value(p.Value), StringComparer.Ordinal);
-
-    private static object? Value(JsonElement value) => value.ValueKind switch
-    {
-        JsonValueKind.String => value.GetString(),
-        JsonValueKind.Number => value.TryGetInt64(out var l) ? l : value.GetDouble(),
-        JsonValueKind.True => true,
-        JsonValueKind.False => false,
-        JsonValueKind.Array => value.EnumerateArray().Select(Value).ToList(),
-        _ => null,
-    };
 
     /// <summary>A fixture's subject: a body read through its binding, or a registration (an <c>.adp</c> input).</summary>
     private sealed class Subject

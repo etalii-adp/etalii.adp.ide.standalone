@@ -124,6 +124,7 @@ public static class SparqlParser
                 if (Current.IsKeyword("PREFIX"))
                 {
                     var line = _cursor.LineOf(Current);
+                    var declaration = _cursor.Index;
                     Advance();
                     var name = _cursor.Expect(SparqlTokenKind.PrefixedName, "a prefix name ending in ':'");
                     var colon = name.Value.IndexOf(':');
@@ -136,7 +137,7 @@ public static class SparqlParser
                     var prefix = name.Value[..colon];
                     var expanded = Unbracket(iri.Value);
                     _prefixMap[prefix] = expanded;
-                    _prefixes.Add(new SparqlPrefixDeclaration(prefix, expanded, line));
+                    _prefixes.Add(new SparqlPrefixDeclaration(prefix, expanded, line) { Span = _cursor.SpanOf(declaration, _cursor.Index - 1) });
                 }
                 else if (Current.IsKeyword("BASE"))
                 {
@@ -207,7 +208,7 @@ public static class SparqlParser
             if (template is null)
             {
                 // The short form, CONSTRUCT WHERE { ... }: the template is the pattern itself.
-                template = new GroupScope { Kind = GroupScopeKind.Template, Ordinal = 0 };
+                template = new GroupScope { Kind = GroupScopeKind.Template, Ordinal = 0, Span = where.Span };
                 template.Patterns.AddRange(where.Patterns);
             }
 
@@ -406,6 +407,7 @@ public static class SparqlParser
 
         private GroupScope ParseGroupGraphPattern(GroupScopeKind kind, int ordinal, string label = "")
         {
+            var open = _cursor.Index;
             _cursor.ExpectPunct("{");
             var scope = new GroupScope { Kind = kind, Ordinal = ordinal, Label = label };
 
@@ -419,6 +421,7 @@ public static class SparqlParser
 
                 if (token.IsPunct("}"))
                 {
+                    scope.Span = _cursor.SpanOf(open, _cursor.Index);
                     Advance();
                     return scope;
                 }
@@ -484,12 +487,16 @@ public static class SparqlParser
         /// <summary><c>OPTIONAL { ... }</c> or <c>MINUS { ... }</c>: the keyword, then the group it introduces.</summary>
         private void ParseKeywordGroup(GroupScope scope, GroupScopeKind kind)
         {
+            var keyword = _cursor.Index;
             Advance(); // OPTIONAL or MINUS
-            scope.Children.Add(ParseGroupGraphPattern(kind, NextOrdinal(scope, kind)));
+            var child = ParseGroupGraphPattern(kind, NextOrdinal(scope, kind));
+            child.Span = _cursor.SpanOf(keyword, _cursor.Index - 1);
+            scope.Children.Add(child);
         }
 
         private void ParseGraph(GroupScope scope)
         {
+            var keyword = _cursor.Index;
             Advance(); // GRAPH
             var term = Current;
             if (term.Kind is not (SparqlTokenKind.Variable or SparqlTokenKind.Iri or SparqlTokenKind.PrefixedName))
@@ -498,11 +505,14 @@ public static class SparqlParser
             }
 
             Advance();
-            scope.Children.Add(ParseGroupGraphPattern(GroupScopeKind.Graph, NextOrdinal(scope, GroupScopeKind.Graph), term.Value));
+            var child = ParseGroupGraphPattern(GroupScopeKind.Graph, NextOrdinal(scope, GroupScopeKind.Graph), term.Value);
+            child.Span = _cursor.SpanOf(keyword, _cursor.Index - 1);
+            scope.Children.Add(child);
         }
 
         private void ParseService(GroupScope scope)
         {
+            var keyword = _cursor.Index;
             Advance(); // SERVICE
             var silent = Current.IsKeyword("SILENT");
             if (silent)
@@ -518,7 +528,9 @@ public static class SparqlParser
 
             Advance();
             var serviceLabel = silent ? $"SILENT {term.Value}" : term.Value;
-            scope.Children.Add(ParseGroupGraphPattern(GroupScopeKind.Service, NextOrdinal(scope, GroupScopeKind.Service), serviceLabel));
+            var child = ParseGroupGraphPattern(GroupScopeKind.Service, NextOrdinal(scope, GroupScopeKind.Service), serviceLabel);
+            child.Span = _cursor.SpanOf(keyword, _cursor.Index - 1);
+            scope.Children.Add(child);
         }
 
         /// <summary>The ordinal a new child of <paramref name="kind"/> takes under <paramref name="parent"/>: its count among same-kind siblings so far.</summary>
@@ -528,6 +540,7 @@ public static class SparqlParser
         private void ParseGroupOrUnion(GroupScope parent)
         {
             var firstOrdinal = NextOrdinal(parent, GroupScopeKind.Group);
+            var open = _cursor.Index;
             var first = ParseGroupGraphPattern(GroupScopeKind.Group, firstOrdinal);
 
             if (!Current.IsKeyword("UNION"))
@@ -538,7 +551,7 @@ public static class SparqlParser
 
             // The branches join under one union scope; the first group parsed becomes branch 0.
             var union = new GroupScope { Kind = GroupScopeKind.Union, Ordinal = NextOrdinal(parent, GroupScopeKind.Union) };
-            var rebranded = new GroupScope { Kind = GroupScopeKind.Branch, Ordinal = 0, Label = first.Label };
+            var rebranded = new GroupScope { Kind = GroupScopeKind.Branch, Ordinal = 0, Label = first.Label, Span = first.Span };
             rebranded.Patterns.AddRange(first.Patterns);
             rebranded.Children.AddRange(first.Children);
             rebranded.Constraints.AddRange(first.Constraints);
@@ -551,6 +564,7 @@ public static class SparqlParser
                 union.Children.Add(ParseGroupGraphPattern(GroupScopeKind.Branch, union.Children.Count));
             }
 
+            union.Span = _cursor.SpanOf(open, _cursor.Index - 1);
             parent.Children.Add(union);
         }
 
@@ -578,7 +592,7 @@ public static class SparqlParser
 
             var projectionText = _cursor.SliceTokens(select, Math.Max(select, projectionEnd));
             var text = _cursor.SliceTokens(open, close);
-            parent.SubSelects.Add(new SparqlSubSelect(projectionText, text, projectedNames, projectsAll, parent.SubSelects.Count));
+            parent.SubSelects.Add(new SparqlSubSelect(projectionText, text, projectedNames, projectsAll, parent.SubSelects.Count) { Span = _cursor.SpanOf(open, close) });
             _cursor.Index = close + 1;
         }
 
@@ -667,7 +681,10 @@ public static class SparqlParser
                 SparqlConstraintKind.Filter,
                 _cursor.SliceTokens(start, end),
                 "",
-                _cursor.VariablesBetween(start, end));
+                _cursor.VariablesBetween(start, end))
+            {
+                Span = _cursor.SpanOf(start, end),
+            };
         }
 
         private SparqlConstraint ParseBind()
@@ -693,7 +710,10 @@ public static class SparqlParser
                 SparqlConstraintKind.Bind,
                 _cursor.SliceTokens(start, close),
                 defined,
-                _cursor.VariablesBetween(open + 1, asIndex - 1));
+                _cursor.VariablesBetween(open + 1, asIndex - 1))
+            {
+                Span = _cursor.SpanOf(start, close),
+            };
         }
 
         private SparqlConstraint ParseValues()
@@ -728,15 +748,19 @@ public static class SparqlParser
                 SparqlConstraintKind.Values,
                 _cursor.SliceTokens(start, _cursor.Index - 1),
                 "",
-                referenced);
+                referenced)
+            {
+                Span = _cursor.SpanOf(start, _cursor.Index - 1),
+            };
         }
 
         // -- Triple patterns -----------------------------------------------------------------
 
         private void ParseTriplesBlock(GroupScope scope)
         {
+            var subjectStart = _cursor.Index;
             var subject = ParseTermOrBlank(scope, subjectPosition: true);
-            ParsePropertyList(scope, subject);
+            ParsePropertyList(scope, subject, subjectStart);
 
             if (Current.IsPunct("."))
             {
@@ -744,12 +768,15 @@ public static class SparqlParser
             }
         }
 
-        private void ParsePropertyList(GroupScope scope, SparqlTerm subject)
+        /// <param name="scope">The group the patterns are read into.</param>
+        /// <param name="subject">The subject they share.</param>
+        /// <param name="subjectStart">The index of the subject's first token, where each pattern's span starts.</param>
+        private void ParsePropertyList(GroupScope scope, SparqlTerm subject, int subjectStart)
         {
             while (true)
             {
                 var predicate = ParseVerb();
-                ParseObjectList(scope, subject, predicate);
+                ParseObjectList(scope, subject, subjectStart, predicate);
 
                 if (Current.IsPunct(";"))
                 {
@@ -781,12 +808,12 @@ public static class SparqlParser
             || token.IsKeyword("a")
             || token.IsPunct("^") || token.IsPunct("!") || token.IsPunct("(");
 
-        private void ParseObjectList(GroupScope scope, SparqlTerm subject, SparqlTerm predicate)
+        private void ParseObjectList(GroupScope scope, SparqlTerm subject, int subjectStart, SparqlTerm predicate)
         {
             while (true)
             {
                 var @object = ParseTermOrBlank(scope, subjectPosition: false);
-                scope.Patterns.Add(new TriplePattern(subject, predicate, @object));
+                scope.Patterns.Add(new TriplePattern(subject, predicate, @object) { Span = _cursor.SpanOf(subjectStart, _cursor.Index - 1) });
 
                 if (Current.IsPunct(","))
                 {
@@ -962,6 +989,7 @@ public static class SparqlParser
         private AnonymousTerm ParseBlankNodePropertyList(GroupScope scope)
         {
             var anonymous = new AnonymousTerm(_anonymousOrdinal++, "");
+            var open = _cursor.Index;
             Advance(); // [
             if (Current.IsPunct("]"))
             {
@@ -969,13 +997,15 @@ public static class SparqlParser
                 return anonymous;
             }
 
-            ParsePropertyList(scope, anonymous);
+            ParsePropertyList(scope, anonymous, open);
             _cursor.ExpectPunct("]");
             return anonymous;
         }
 
         private SparqlTerm ParseCollection(GroupScope scope)
         {
+            // A cell's patterns start where the cell does: the '(' for the first, its item for the rest.
+            var cellStart = _cursor.Index;
             Advance(); // (
             if (Current.IsPunct(")"))
             {
@@ -993,17 +1023,18 @@ public static class SparqlParser
             while (true)
             {
                 var item = ParseTermOrBlank(scope, subjectPosition: false);
-                scope.Patterns.Add(new TriplePattern(current, first, item));
+                scope.Patterns.Add(new TriplePattern(current, first, item) { Span = _cursor.SpanOf(cellStart, _cursor.Index - 1) });
 
                 if (Current.IsPunct(")"))
                 {
                     Advance();
-                    scope.Patterns.Add(new TriplePattern(current, rest, new IriTerm(SparqlVocabulary.Nil, "rdf:nil")));
+                    scope.Patterns.Add(new TriplePattern(current, rest, new IriTerm(SparqlVocabulary.Nil, "rdf:nil")) { Span = _cursor.SpanOf(cellStart, _cursor.Index - 1) });
                     return head;
                 }
 
                 var next = new AnonymousTerm(_anonymousOrdinal++, "");
-                scope.Patterns.Add(new TriplePattern(current, rest, next));
+                scope.Patterns.Add(new TriplePattern(current, rest, next) { Span = _cursor.SpanOf(cellStart, _cursor.Index - 1) });
+                cellStart = _cursor.Index;
                 current = next;
             }
         }
@@ -1143,7 +1174,7 @@ public static class SparqlParser
             // An escape SPARQL does not know is refused at its own line (behaviour changes B-18).
             if (RdfEscapes.Refusal(token.Value) is var (offset, message))
             {
-                throw new SparqlParseException(message, _cursor.LineAt(token.Start + offset));
+                throw new SparqlParseException(message, _cursor.LineAt(token.Start + offset), _cursor.ColumnAt(token.Start + offset));
             }
 
             return RdfEscapes.String(token.Value);

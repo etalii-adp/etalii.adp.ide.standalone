@@ -61,12 +61,7 @@ public class FolderBodyEventsTests
     [Fact]
     public void APathTheFolderBodyRefuses_IsSwallowed_AndTheNextIsStillHandedOver()
     {
-        // Arrange: this runs on the watcher's thread, where an exception ends the process.
-        void Notify(string path)
-        {
-            if (path.EndsWith("old.yaml", StringComparison.Ordinal)) throw new ArgumentException("refused", nameof(path));
-            _notified.Add(path);
-        }
+        // Arrange: 'Notify' runs on the watcher's thread, where an exception ends the process.
 
         // Act.
         var exception = Record.Exception(() =>
@@ -75,6 +70,13 @@ public class FolderBodyEventsTests
         // Assert.
         Assert.Null(exception);
         Assert.Equal([Folder + "/new.yaml"], _notified);
+        return;
+
+        void Notify(string path)
+        {
+            if (path.EndsWith("old.yaml", StringComparison.Ordinal)) throw new ArgumentException("refused", nameof(path));
+            _notified.Add(path);
+        }
     }
 
     [Fact]

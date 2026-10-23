@@ -53,14 +53,14 @@ public sealed class DislDiagramDefinition
         ArgumentException.ThrowIfNullOrEmpty(logicalName);
         ArgumentException.ThrowIfNullOrEmpty(wireBlock);
 
-        _loaded = new(() => BundledDefinition.Load(assembly, logicalName, plugins?.Invoke() ?? DislPluginFunctions.None));
-        _ids = new(() => WireIdMap.Of(Specification, wireBlock));
-        _toolbox = new(() =>
+        _loaded = new Lazy<BundledDefinition>(() => BundledDefinition.Load(assembly, logicalName, plugins?.Invoke() ?? DislPluginFunctions.None));
+        _ids = new Lazy<WireIdMap>(() => WireIdMap.Of(Specification, wireBlock));
+        _toolbox = new Lazy<IReadOnlyList<ToolboxItemDefinition>>(() =>
         [
             .. ToolboxDerivation.Derive(Specification, Ids)
                 .Select(tool => new ToolboxItemDefinition(tool.Id, tool.Label, tool.Icon, tool.Description, tool.DropActionId ?? "")),
         ]);
-        _standingReasons = new(() => StandingReasonsOf(standingOperations ?? []));
+        _standingReasons = new Lazy<Dictionary<string, string>>(() => StandingReasonsOf(standingOperations ?? []));
     }
 
     /// <summary>The definition.</summary>

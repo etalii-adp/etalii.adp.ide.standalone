@@ -115,13 +115,17 @@ public class PublicSurfaceTests
     /// <summary><paramref name="type"/> and every type it is built from: an element type, a generic argument.</summary>
     private static IEnumerable<Type> Parts(Type type)
     {
-        if (type.HasElementType) return Parts(type.GetElementType()!);
-        if (type is { IsGenericType: true, IsGenericTypeDefinition: false })
+        while (true)
         {
-            return Parts(type.GetGenericTypeDefinition()).Concat(type.GetGenericArguments().SelectMany(Parts));
-        }
+            if (!type.HasElementType)
+            {
+                return type is { IsGenericType: true, IsGenericTypeDefinition: false }
+                    ? Parts(type.GetGenericTypeDefinition()).Concat(type.GetGenericArguments().SelectMany(Parts))
+                    : [type];
+            }
 
-        return [type];
+            type = type.GetElementType()!;
+        }
     }
 
     private static string SimpleName(Type type) => type.Name.Split('`')[0];

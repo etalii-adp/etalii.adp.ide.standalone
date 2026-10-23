@@ -23,21 +23,21 @@ flowchart LR
 
 ## The solution, with its counts
 
-`src/backend/EtAlii.Adp.slnx` holds **144** projects: the core projects at its root, the modules in one solution folder per kind (`/Diagrams/`, `/editors/`, `/designers/`) and the test project that spans modules in `/tests/`, so the whole thing opens and builds as one solution in Rider:
+`src/backend/EtAlii.Adp.slnx` holds **146** projects: the core projects at its root, the modules in one solution folder per kind (`/Diagrams/`, `/editors/`, `/designers/`) and the test project that spans modules in `/tests/`, so the whole thing opens and builds as one solution in Rider:
 
 | Split | Count |
 | --- | --- |
 | core | **45** |
 | diagram | **86** |
 | editor | **10** |
-| designer | **2** |
+| designer | **4** |
 | spanning modules | **1** |
-| production | **96** |
-| test | **48** |
+| production | **97** |
+| test | **49** |
 
-Those are **two different splits of the same 144**, and a figure appearing in both tables is a coincidence rather than a correspondence, which is exactly what makes a wrong classification look right.
+Those are **two different splits of the same 146**, and a figure appearing in both tables is a coincidence rather than a correspondence, which is exactly what makes a wrong classification look right.
 
-There are **167** tracked `.csproj` files under `src/`, which is **23** more than the solution holds. Every one of the 23 is fixture or example data of the dotnet-dependency-graph module — a module whose subject matter *is* reading `.csproj` files, so its test fixtures and its showcase project are themselves `.csproj`, in `src/diagrams/dotnet-dependency-graph` and in the showcase copy under `src/examples/`. **A page giving the tracked count as the number of projects would be wrong in the confident direction.**
+There are **169** tracked `.csproj` files under `src/`, which is **23** more than the solution holds. Every one of the 23 is fixture or example data of the dotnet-dependency-graph module — a module whose subject matter *is* reading `.csproj` files, so its test fixtures and its showcase project are themselves `.csproj`, in `src/diagrams/dotnet-dependency-graph` and in the showcase copy under `src/examples/`. **A page giving the tracked count as the number of projects would be wrong in the confident direction.**
 
 ## The relative-path trap
 
@@ -93,7 +93,7 @@ A diagram type is `src/diagrams/<type>/` with up to five parts:
 - `definition/` — its DISL definition (`<type>.dis`, its prose and `provenance.json`; one `<type>.dis` with its own `<type>.provenance.json` per type where several types read one body, as C4's six do), bundled from etalii-adp/etalii.adp by `src/diagrams/tools/bundle-disl.sh`, when the type is specified in DISL; the backend embeds it and the client compiles its notation
 - `examples/` — documents a reader can open
 
-Editors are the same shape under `src/editors/<type>/`, with `EtAlii.Adp.Editor.<Type>`. Designers are too, under `src/designers/<type>/`, with `EtAlii.Adp.Designer.<Type>`; the first is `src/designers/knowledge`. [creating-a-diagram-module.md](creating-a-diagram-module.md) walks one module end to end.
+Editors are the same shape under `src/editors/<type>/`, with `EtAlii.Adp.Editor.<Type>`. Designers are too, under `src/designers/<type>/`, with `EtAlii.Adp.Designer.<Type>`: `src/designers/knowledge` and `src/designers/hierarchical-requirement`. [creating-a-diagram-module.md](creating-a-diagram-module.md) walks one module end to end.
 
 ## Namespaces, and the folders that do not contribute
 
