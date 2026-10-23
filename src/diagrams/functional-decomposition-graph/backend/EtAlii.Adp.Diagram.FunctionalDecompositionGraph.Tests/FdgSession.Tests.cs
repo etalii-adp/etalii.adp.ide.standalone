@@ -23,28 +23,20 @@ namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests;
 /// </remarks>
 public sealed class FdgSessionTests : IDisposable
 {
-    private readonly string _folder = Path.Combine(Path.GetTempPath(), "EtAlii.Adp.FdgSessionTests", Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _folder = TestFolder.Create("EtAlii.Adp.FdgSessionTests");
     private readonly FdgDocumentStore _store = new(new FileWriter());
     private readonly List<DiagramDeltasEventArgs> _raised = [];
 
     public FdgSessionTests()
     {
-        Directory.CreateDirectory(_folder);
         File.Copy(FieldServiceExample.Path, Body);
     }
 
-    private string Body => Path.Combine(_folder, "field-service.fdg");
+    private string Body => _folder.Combine("field-service.fdg");
 
     public void Dispose()
     {
-        try
-        {
-            Directory.Delete(_folder, recursive: true);
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            // A temp folder left behind is not a test failure.
-        }
+        _folder.Dispose();
     }
 
     [Fact]

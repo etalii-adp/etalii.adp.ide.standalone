@@ -18,6 +18,7 @@ namespace EtAlii.Adp.Diagram.Rdf.Tests;
 /// </summary>
 public class ShaclPropertiesTests : IDisposable
 {
+    private readonly TestFolder _testFolder = TestFolder.Create("rdf-shacl-properties");
     private readonly string _root;
     private readonly ServiceProvider _provider;
     private readonly string _body;
@@ -46,8 +47,7 @@ public class ShaclPropertiesTests : IDisposable
 
     public ShaclPropertiesTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
         _body = IoPath.Combine(_root, "shapes.ttl");
         File.WriteAllText(_body, Shapes);
 
@@ -61,7 +61,7 @@ public class ShaclPropertiesTests : IDisposable
     public void Dispose()
     {
         _provider.Dispose();
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
         GC.SuppressFinalize(this);
     }
 

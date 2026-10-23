@@ -39,18 +39,18 @@ namespace EtAlii.Adp.Diagram.DependencyGraph.Tests;
 /// </remarks>
 public class DependencyGraphDocumentStoreLostEditTests : IDisposable
 {
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-lost-edit");
     private readonly string _root;
     private readonly DependencyGraphDocumentStore _store = new(new FileWriter());
 
     public DependencyGraphDocumentStoreLostEditTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "adp-lost-edit-" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
 
         GC.SuppressFinalize(this);
     }

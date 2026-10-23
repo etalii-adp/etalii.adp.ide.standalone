@@ -48,29 +48,22 @@ public class ExamplesTests
     {
         // Arrange: a temp copy, so the unchanged-save proof never writes into the source tree.
         var source = IoPath.Combine(ExamplesRoot, relativePath);
-        var temp = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"), IoPath.GetFileName(relativePath));
-        Directory.CreateDirectory(IoPath.GetDirectoryName(temp)!);
-        try
-        {
-            var original = await File.ReadAllBytesAsync(source, TestContext.Current.CancellationToken);
-            await File.WriteAllBytesAsync(temp, original, TestContext.Current.CancellationToken);
+        using var folder = TestFolder.Create("plain-example");
+        var temp = folder.Combine(IoPath.GetFileName(relativePath));
+        var original = await File.ReadAllBytesAsync(source, TestContext.Current.CancellationToken);
+        await File.WriteAllBytesAsync(temp, original, TestContext.Current.CancellationToken);
 
-            // Act: the module's own session opens it, and what it read is written back the way
-            // every editor's save writes - the shared save command's TextFileBuffer.
-            await using var session = new TextEditorSession(temp);
-            Assert.Equal("", session.Refusal);
-            var opened = TextFileBuffer.Open(temp);
-            Assert.NotNull(opened.Buffer);
-            var error = await opened.Buffer.SaveAsync(session.Content, new FileWriter(), TestContext.Current.CancellationToken);
+        // Act: the module's own session opens it, and what it read is written back the way
+        // every editor's save writes - the shared save command's TextFileBuffer.
+        await using var session = new TextEditorSession(temp);
+        Assert.Equal("", session.Refusal);
+        var opened = TextFileBuffer.Open(temp);
+        Assert.NotNull(opened.Buffer);
+        var error = await opened.Buffer.SaveAsync(session.Content, new FileWriter(), TestContext.Current.CancellationToken);
 
-            // Assert: the family's headline guarantee, held by the shipped material itself.
-            Assert.Equal("", error);
-            Assert.Equal(original, await File.ReadAllBytesAsync(temp, TestContext.Current.CancellationToken));
-        }
-        finally
-        {
-            TestFolder.TryDelete(IoPath.GetDirectoryName(temp)!);
-        }
+        // Assert: the family's headline guarantee, held by the shipped material itself.
+        Assert.Equal("", error);
+        Assert.Equal(original, await File.ReadAllBytesAsync(temp, TestContext.Current.CancellationToken));
     }
 
     [Fact]

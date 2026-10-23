@@ -34,13 +34,14 @@ public class C4DocumentStoreFailedReloadTests : IDisposable
         }
         """;
 
-    private readonly string _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Diagram.C4.FailedReload", Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("EtAlii.Adp.Diagram.C4.FailedReload");
+    private readonly string _root;
 
-    public C4DocumentStoreFailedReloadTests() => Directory.CreateDirectory(_root);
+    public C4DocumentStoreFailedReloadTests() => _root = _testFolder.Path;
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
         GC.SuppressFinalize(this);
     }
 

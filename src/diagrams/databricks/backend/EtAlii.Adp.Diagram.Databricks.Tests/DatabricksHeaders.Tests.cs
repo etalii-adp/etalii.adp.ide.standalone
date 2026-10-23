@@ -10,17 +10,17 @@ namespace EtAlii.Adp.Diagram.Databricks.Tests;
 /// </summary>
 public class DatabricksHeadersTests : IDisposable
 {
+    private readonly TestFolder _testFolder = TestFolder.Create("databricks-headers");
     private readonly string _root;
 
     public DatabricksHeadersTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
         GC.SuppressFinalize(this);
     }
 

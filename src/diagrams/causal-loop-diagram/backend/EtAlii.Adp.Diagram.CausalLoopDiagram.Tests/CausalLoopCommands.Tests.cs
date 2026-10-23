@@ -24,21 +24,21 @@ public class CausalLoopCommandsTests : IDisposable
         + "\r\n"
         + "loop R1 \"Births beget births\" population births\r\n";
 
+    private readonly TestFolder _testFolder = TestFolder.Create("causal-loop-commands");
     private readonly string _root;
     private readonly string _path;
     private readonly CausalLoopDocumentStore _store = new(new FileWriter());
 
     public CausalLoopCommandsTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
         _path = IoPath.Combine(_root, "feedback.cld");
         File.WriteAllText(_path, Corpus);
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
         GC.SuppressFinalize(this);
     }
 

@@ -15,7 +15,8 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph.Tests;
 /// </summary>
 public sealed class GhgProvidersTests : IDisposable
 {
-    private readonly string _folder = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.GhgProvidersTests", Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("EtAlii.Adp.GhgProvidersTests");
+    private readonly string _folder;
     private readonly GhgDocumentStore _store = new(new FileWriter());
     private readonly IHistoryStackStore _historyStacks;
     private readonly GhgContextPropertyProvider _properties;
@@ -24,7 +25,7 @@ public sealed class GhgProvidersTests : IDisposable
 
     public GhgProvidersTests()
     {
-        Directory.CreateDirectory(_folder);
+        _folder = _testFolder.Path;
         File.Copy(GhgModuleFiles.Example, Body);
         _original = File.ReadAllBytes(Body);
         _historyStacks = TestHistory.For(s => { s.AddGartnerHypeCycleGraph(); s.AddSingleton<IGhgDocumentStore>(_store); });
@@ -37,14 +38,7 @@ public sealed class GhgProvidersTests : IDisposable
     public void Dispose()
     {
         (_historyStacks as IDisposable)?.Dispose();
-        try
-        {
-            Directory.Delete(_folder, recursive: true);
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            // A temp folder left behind is not a test failure.
-        }
+        _testFolder.Dispose();
     }
 
     private static int M(int year, int month = 1) => GhgScale.MonthIndex(year, month);

@@ -26,27 +26,19 @@ namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests;
 /// </remarks>
 public sealed class FdgWrittenAsTypedTests : IDisposable
 {
-    private readonly string _folder = Path.Combine(Path.GetTempPath(), "EtAlii.Adp.FdgWrittenAsTypedTests", Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _folder = TestFolder.Create("EtAlii.Adp.FdgWrittenAsTypedTests");
     private readonly FdgDocumentStore _store = new(new FileWriter());
 
     public FdgWrittenAsTypedTests()
     {
-        Directory.CreateDirectory(_folder);
         File.Copy(Path.Combine(AppContext.BaseDirectory, "Fixtures", "comment-text-forms.fdg"), Body);
     }
 
-    private string Body => Path.Combine(_folder, "comment-text-forms.fdg");
+    private string Body => _folder.Combine("comment-text-forms.fdg");
 
     public void Dispose()
     {
-        try
-        {
-            Directory.Delete(_folder, recursive: true);
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            // A temp folder left behind is not a test failure.
-        }
+        _folder.Dispose();
     }
 
     /// <summary>

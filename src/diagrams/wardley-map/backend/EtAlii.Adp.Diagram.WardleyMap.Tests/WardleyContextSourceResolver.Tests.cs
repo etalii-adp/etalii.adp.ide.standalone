@@ -38,7 +38,8 @@ public sealed class WardleyContextSourceResolverTests : IDisposable
     /// </summary>
     private const char Key = WardleyIdentityKeys.Separator;
 
-    private readonly string _root = IoPath.Combine(IoPath.GetTempPath(), $"wardley-resolver-{Guid.NewGuid():N}");
+    private readonly TestFolder _testFolder = TestFolder.Create("wardley-resolver");
+    private readonly string _root;
     private readonly WardleyDocumentStore _documents = new(new FileWriter());
     private readonly WardleyContextSourceResolver _resolver;
     private readonly string _registration;
@@ -46,7 +47,7 @@ public sealed class WardleyContextSourceResolverTests : IDisposable
 
     public WardleyContextSourceResolverTests()
     {
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
         _registration = IoPath.Combine(_root, "tea.adp");
         _body = IoPath.Combine(_root, "tea.owm");
         File.WriteAllText(_registration, "wardley/map\n");
@@ -66,7 +67,7 @@ public sealed class WardleyContextSourceResolverTests : IDisposable
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     // ---- resolving ----------------------------------------------------------------------------

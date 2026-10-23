@@ -19,6 +19,7 @@ public class AnsibleSessionTests : IDisposable
     private static readonly TimeSpan WaitLimit = TimeSpan.FromSeconds(15);
     private static readonly TimeSpan Silence = TimeSpan.FromMilliseconds(400);
 
+    private readonly TestFolder _testFolder = TestFolder.Create("ansible-session");
     private readonly string _root;
     private readonly FakeTimeProvider _clock = new();
     private readonly AnsibleFolders _folders;
@@ -28,7 +29,7 @@ public class AnsibleSessionTests : IDisposable
     public AnsibleSessionTests()
     {
         _folders = new AnsibleFolders(_clock);
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
+        _root = _testFolder.Path;
         TestFolder.CopyTree(IoPath.Combine("Fixtures", "infrastructure"), _root);
         // The registration a real Add would have written. Nothing else is added to the folder.
         File.WriteAllText(IoPath.Combine(_root, "infrastructure.adp"), "ansible/structure\n");
@@ -41,7 +42,7 @@ public class AnsibleSessionTests : IDisposable
     {
         _provider.Dispose();
         _folders.Dispose();
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     private IDiagramSession Open() =>
@@ -436,47 +437,41 @@ public class AnsibleSessionTests : IDisposable
     {
         // Arrange.
         var cancellationToken = TestContext.Current.CancellationToken;
-        var root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
+        using var rootFolder = TestFolder.Create("ansible-session-stored-position");
+        var root = rootFolder.Path;
         TestFolder.CopyTree(RepositoryPaths.Under("src", "diagrams", "ansible-structure", "backend", "EtAlii.Adp.Diagram.AnsibleStructure.Tests", "Parity", "Folders", "b9-half-saved"), root);
         var registration = IoPath.Combine(root, ".adp");
         await File.WriteAllTextAsync(registration, "ansible/structure\nlayout:\n  playbook:half.yml: 100 200\n  playbook:other.yml: 300 400\n", cancellationToken);
-        try
+        await using var session = new AnsibleSession(
+            root, _folders, new AnsibleElementMapper(), registration, _provider.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(root)));
+        var drawn = Assert.IsType<DiagramAddDelta>(Assert.Single(await session.BaselineAsync(TestContext.Current.CancellationToken))).Elements;
+        Assert.DoesNotContain(drawn, element => element.Id == "playbook:half.yml");
+        var pushes = new List<IReadOnlyList<DiagramDelta>>();
+        session.Changed += (_, args) =>
         {
-            await using var session = new AnsibleSession(
-                root, _folders, new AnsibleElementMapper(), registration, _provider.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(root)));
-            var drawn = Assert.IsType<DiagramAddDelta>(Assert.Single(await session.BaselineAsync(TestContext.Current.CancellationToken))).Elements;
-            Assert.DoesNotContain(drawn, element => element.Id == "playbook:half.yml");
-            var pushes = new List<IReadOnlyList<DiagramDelta>>();
-            session.Changed += (_, args) =>
+            lock (pushes)
             {
-                lock (pushes)
-                {
-                    pushes.Add(args.Deltas);
-                }
-            };
+                pushes.Add(args.Deltas);
+            }
+        };
 
-            // Act: a drag of the other node writes the registration.
-            var answer = await session.MoveElementToAsync("playbook:other.yml", 500, 600, cancellationToken);
+        // Act: a drag of the other node writes the registration.
+        var answer = await session.MoveElementToAsync("playbook:other.yml", 500, 600, cancellationToken);
 
-            // Assert: the write kept the absent node's position.
-            Assert.Equal(string.Empty, answer);
-            var stored = RegistrationLayout.Read(registration);
-            Assert.Equal(new RegistrationPosition(500, 600), stored["playbook:other.yml"]);
-            Assert.True(stored.TryGetValue("playbook:half.yml", out var kept), "The write dropped the stored position of the absent playbook.");
-            Assert.Equal(new RegistrationPosition(100, 200), kept);
+        // Assert: the write kept the absent node's position.
+        Assert.Equal(string.Empty, answer);
+        var stored = RegistrationLayout.Read(registration);
+        Assert.Equal(new RegistrationPosition(500, 600), stored["playbook:other.yml"]);
+        Assert.True(stored.TryGetValue("playbook:half.yml", out var kept), "The write dropped the stored position of the absent playbook.");
+        Assert.Equal(new RegistrationPosition(100, 200), kept);
 
-            // Act: the playbook is saved whole.
-            await File.WriteAllTextAsync(IoPath.Combine(root, "half.yml"), "- name: saved whole\n  hosts: localhost\n  tasks: []\n", cancellationToken);
+        // Act: the playbook is saved whole.
+        await File.WriteAllTextAsync(IoPath.Combine(root, "half.yml"), "- name: saved whole\n  hosts: localhost\n  tasks: []\n", cancellationToken);
 
-            // Assert: it returns where it was stored.
-            var returned = await WaitForElement(pushes, "playbook:half.yml");
-            Assert.Equal(100, returned.X);
-            Assert.Equal(200, returned.Y);
-        }
-        finally
-        {
-            TestFolder.TryDelete(root);
-        }
+        // Assert: it returns where it was stored.
+        var returned = await WaitForElement(pushes, "playbook:half.yml");
+        Assert.Equal(100, returned.X);
+        Assert.Equal(200, returned.Y);
     }
 
     /// <summary>The element <paramref name="id"/> as the first push that adds it delivers it.</summary>

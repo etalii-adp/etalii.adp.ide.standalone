@@ -12,17 +12,18 @@ namespace EtAlii.Adp.Diagram.HelmChart.Tests;
 /// </summary>
 public class HelmValidatorTests : IDisposable
 {
+    private readonly TestFolder _testFolder = TestFolder.Create("helm-validator");
     private readonly string _root;
 
     public HelmValidatorTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
+        _root = _testFolder.Path;
         Directory.CreateDirectory(IoPath.Combine(_root, "deploy", "my-chart"));
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     private DiagramValidationRequest Request(string folder) => new(

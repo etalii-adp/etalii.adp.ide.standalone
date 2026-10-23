@@ -7,8 +7,14 @@ namespace EtAlii.Adp.Diagram.AgentActivityDiagram.Tests;
 /// <summary>What a drag on an activity file does: a drop locks the element where it was let go, and nothing has a parent to move it under.</summary>
 public sealed class AadSessionTests : IDisposable
 {
-    private readonly string _root = Directory.CreateTempSubdirectory("aad-session-").FullName;
+    private readonly TestFolder _testFolder = TestFolder.Create("aad-session");
+    private readonly string _root;
     private readonly ServiceProvider _services = Services();
+
+    public AadSessionTests()
+    {
+        _root = _testFolder.Path;
+    }
 
     private string Body => Path.Combine(_root, "work.aad");
 
@@ -22,7 +28,7 @@ public sealed class AadSessionTests : IDisposable
     public void Dispose()
     {
         _services.Dispose();
-        Directory.Delete(_root, recursive: true);
+        _testFolder.Dispose();
     }
 
     private AadSession Open() => new(
