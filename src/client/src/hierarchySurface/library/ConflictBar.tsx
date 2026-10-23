@@ -1,3 +1,8 @@
+import type { MouseEvent } from "react";
+
+/** The bar's class, by which the field knows the focus left for the bar rather than the page. */
+export const CONFLICT_BAR = "hs-conflict";
+
 export interface ConflictBarProps {
   /** Closes the open field and drops what was typed in it. */
   onShowFile: () => void;
@@ -11,13 +16,15 @@ export interface ConflictBarProps {
  * itself.
  */
 export function ConflictBar({ onShowFile, onKeepText }: ConflictBarProps) {
+  // A press keeps the focus in the field: leaving it commits the text, which is what the buttons decide on.
+  const keepFocus = (event: MouseEvent) => event.preventDefault();
   return (
-    <div className="hs-conflict" role="alert">
+    <div className={CONFLICT_BAR} role="alert">
       <span>This file was changed outside the designer.</span>
-      <button type="button" onClick={onShowFile}>
+      <button type="button" onMouseDown={keepFocus} onClick={onShowFile}>
         Show the file
       </button>
-      <button type="button" onClick={onKeepText}>
+      <button type="button" onMouseDown={keepFocus} onClick={onKeepText}>
         Keep my text
       </button>
     </div>

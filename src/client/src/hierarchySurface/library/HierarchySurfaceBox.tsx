@@ -106,16 +106,18 @@ export function HierarchySurfaceBox({ node, definition, optionLists, collapsed, 
           ) : (
             selected &&
             editing !== undefined && (
+              // In the box's right margin, over nothing: shown on selecting, it must not move what a second click of a
+              // double-click lands on.
               <button
                 type="button"
-                className="hs-add-description"
+                className="mdi mdi-text-box-plus-outline hs-add-description"
+                aria-label="Add a description"
+                title="Add a description"
                 onClick={(event) => {
                   event.stopPropagation();
                   editing.open("description");
                 }}
-              >
-                Add a description
-              </button>
+              />
             )
           )))}
       {hiddenLevels > 0 && onFocus !== undefined && (

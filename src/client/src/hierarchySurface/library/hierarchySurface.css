@@ -146,7 +146,8 @@
 
 .hs-toggle,
 .hs-focus,
-.hs-hidden-levels {
+.hs-hidden-levels,
+.hs-add-description {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -161,7 +162,8 @@
 
 .hs-toggle:hover,
 .hs-focus:hover,
-.hs-hidden-levels:hover {
+.hs-hidden-levels:hover,
+.hs-add-description:hover {
   color: var(--color-text);
 }
 
@@ -243,11 +245,9 @@
   resize: vertical;
 }
 
+/* In the box's right margin, out of the flow: shown on selecting, it moves nothing a double-click lands on. */
 .hs-add-description {
-  padding: 0;
-  border: none;
-  background: none;
-  color: var(--color-text-muted);
-  font: inherit;
-  cursor: pointer;
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
 }

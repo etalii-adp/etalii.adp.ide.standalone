@@ -386,6 +386,30 @@ public class HierarchyModelTests : IDisposable
     }
 
     [Fact]
+    public void OnWatcherEvent_RenamedOverAKnownFile_KeepsTheFile_AndRemovesTheCopy()
+    {
+        // Arrange: another program saves notes.md as many editors and agents do, by writing a copy beside it first.
+        var filePath = CreateFile("before", "notes.md");
+        var copyPath = CreateFile("after", "notes.md.tmp");
+        var model = new HierarchyModel(_root, TestToolRouters.For());
+        var listed = model.ListChildren(null);
+        var file = listed.Single(entry => entry.Name == "notes.md");
+        var copy = listed.Single(entry => entry.Name == "notes.md.tmp");
+        var changes = new List<HierarchyEntryChange>();
+        model.EntryChanged += changes.Add;
+
+        // Act: the copy is moved over the file.
+        File.Move(copyPath, filePath, overwrite: true);
+        model.OnWatcherEvent(WatcherChangeTypes.Renamed, copyPath, filePath);
+
+        // Assert: one notes.md, still the entry it was, so what is open or selected on it stays; the copy's entry is gone.
+        var after = model.ListChildren(null);
+        Assert.Equal(file.Id, Assert.Single(after).Id);
+        Assert.Equal("notes.md", after[0].Name);
+        Assert.Equal(copy.Id, Assert.IsType<HierarchyEntryRemoved>(Assert.Single(changes, change => change is not HierarchyEntryUpdated)).EntryId);
+    }
+
+    [Fact]
     public void OnWatcherEvent_RenamedFolder_PreservesIdsOfDescendants()
     {
         // Arrange.

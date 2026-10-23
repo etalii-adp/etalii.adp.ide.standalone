@@ -148,6 +148,28 @@ describe("a change from outside while a field is open", () => {
     expect(onGesture).not.toHaveBeenCalled();
   });
 
+  it("keeps the field's focus when a bar button is pressed, and commits nothing when the focus leaves for the bar", () => {
+    // Arrange.
+    const onGesture = vi.fn();
+    const { rerender } = render(<HierarchySurface model={page("open")} definition={definition} onGesture={onGesture} />);
+    const field = typeTitle("Cancel an order", "Cancel any order");
+    rerender(<HierarchySurface model={page("outside", "Take an order by phone")} definition={definition} onGesture={onGesture} />);
+    const show = screen.getByRole("button", { name: "Show the file" });
+    const keep = screen.getByRole("button", { name: "Keep my text" });
+
+    // Act and assert: a press does not move the focus, so no blur commits the text a button is about to decide on.
+    expect(fireEvent.mouseDown(show)).toBe(false);
+    expect(fireEvent.mouseDown(keep)).toBe(false);
+
+    // Act: the focus leaves for the bar all the same, as by Tab, and the file is chosen.
+    fireEvent.blur(field, { relatedTarget: show });
+    fireEvent.click(show);
+
+    // Assert.
+    expect(onGesture).not.toHaveBeenCalled();
+    expect(screen.queryByRole("textbox")).toBeNull();
+  });
+
   it("keeps the text for Keep my text, and commits it as an edit of the file as it now is", () => {
     // Arrange.
     const onGesture = vi.fn();

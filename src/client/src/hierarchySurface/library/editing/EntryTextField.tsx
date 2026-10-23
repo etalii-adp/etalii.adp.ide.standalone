@@ -1,4 +1,5 @@
-import { type KeyboardEvent, type MouseEvent, useEffect, useRef } from "react";
+import { type FocusEvent, type KeyboardEvent, type MouseEvent, useEffect, useRef } from "react";
+import { CONFLICT_BAR } from "../ConflictBar";
 
 export interface EntryTextFieldProps {
   /** The text being typed. */
@@ -35,8 +36,10 @@ export function EntryTextField({ text, multiline, label, onChange, onCommit, onC
     value: text,
     onClick: (event: MouseEvent) => event.stopPropagation(),
     onDoubleClick: (event: MouseEvent) => event.stopPropagation(),
-    onBlur: () => {
-      if (!cancelled.current) {
+    onBlur: (event: FocusEvent) => {
+      // The focus leaving for the bar of an outside change is no commit: the bar decides what becomes of the text.
+      const toBar = event.relatedTarget instanceof Element && event.relatedTarget.closest(`.${CONFLICT_BAR}`) !== null;
+      if (!cancelled.current && !toBar) {
         onCommit();
       }
     },
