@@ -35,6 +35,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The module's own FBL binding: the query is read through it, by SparqlQueryPlugin, and never written. -->
+    <EmbeddedResource Include="sparql.fbl" LogicalName="sparql.fbl" />
+  </ItemGroup>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="EtAlii.Adp.Diagram.Sparql.Tests" />
   </ItemGroup>
 

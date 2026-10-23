@@ -9,7 +9,9 @@ namespace EtAlii.Adp.Diagram.Sparql;
 /// question, not a serialization of a graph, so this module shares no engine with
 /// <c>w3c/rdf</c> - its own parser, its own model, its own projection. <c>.rq</c> means SPARQL
 /// everywhere, so a bare query file routes here on sight; no alternate extension and no shared
-/// stance, because nothing else claims it.
+/// stance, because nothing else claims it. The query is read through the module's binding,
+/// <c>sparql.fbl</c>, and never written: the binding is <c>readOnly</c> and its plugin,
+/// <see cref="SparqlQueryPlugin"/>, refuses every plan.
 /// </remarks>
 [UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
 public static class Diagram

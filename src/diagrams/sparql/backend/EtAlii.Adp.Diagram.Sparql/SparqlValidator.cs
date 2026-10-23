@@ -40,16 +40,15 @@ public sealed class SparqlValidator(ToolOrigin origin) : IDiagramValidator
     /// <summary>The definition's findings over <paramref name="text"/>, read as the store reads it.</summary>
     internal static IReadOnlyList<DislFinding> Findings(string text)
     {
-        var outcome = SparqlParser.Outcome(text);
-        var document = new SparqlDocument(outcome.Model, text);
-        if (outcome.IsUsable)
+        var document = new SparqlDocument(SparqlBody.Parse(text));
+        if (!document.Body.IsUnreadable)
         {
             return SparqlDefinition.Findings(document);
         }
 
         // One finding, not a list of consequences: running the rules over an empty model would bury
-        // the reason the file could not be read (Requirement 7.1).
-        var problem = outcome.Problems[0];
-        return SparqlDefinition.Findings(document, DislReaderFinding.NotParsed(problem.Message, problem.Line + 1));
+        // the reason the file could not be read (Requirement 7.1). It is the plugin's std.unparseable.
+        var finding = document.Body.Reading.Findings[0];
+        return SparqlDefinition.Findings(document, DislReaderFinding.NotParsed(finding.Message, finding.Location?.Line ?? 1));
     }
 }

@@ -26,7 +26,7 @@ public class SparqlDerivedRowsTests
             return;
         }
         var projection = HandWrittenSparql.Project(outcome.Model);
-        var derived = new SparqlDocument(outcome.Model, text);
+        var derived = new SparqlDocument(SparqlBody.Parse(text));
 
         // Act and assert.
         foreach (var id in SparqlDerived.Targets(projection))
@@ -43,7 +43,7 @@ public class SparqlDerivedRowsTests
         // Arrange: over the bound, the model holds elements the drawing does not.
         var text = File.ReadAllText(SparqlCorpus.Full(SparqlCorpus.Documents().Single(document => document.EndsWith("/over-the-bound.rq", StringComparison.Ordinal))));
         var query = SparqlParser.Parse(text);
-        var derived = new SparqlDocument(query, text);
+        var derived = new SparqlDocument(SparqlBody.Parse(text));
         var diagram = derived.Disl.Diagram;
         var cut = diagram.Elements.Where(element => !diagram.IsDrawn(element) && SparqlDerived.IsWireId(element.Id)).Select(element => element.Id).ToList();
 
