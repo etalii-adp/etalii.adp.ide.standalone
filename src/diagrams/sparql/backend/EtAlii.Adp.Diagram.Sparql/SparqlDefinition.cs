@@ -1,3 +1,4 @@
+using System.Collections.Frozen;
 using System.Text.Json;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents.Wire;
@@ -158,7 +159,8 @@ internal static class SparqlDefinition
         ArgumentNullException.ThrowIfNull(wireId);
         if (document.Disl.Diagram.ElementById(wireId) is not { } element) return null;
 
-        var bounds = new Dictionary<string, object?>();
+        // A move is refused by its kind or its id rule, never by where it goes, so no bounds are needed to ask.
+        var bounds = FrozenDictionary<string, object?>.Empty;
         return GestureConstraintEvaluator.Placement(Specification, element, "move", bounds, bounds, env: Env).FirstOrDefault()?.Message;
     }
 

@@ -4,7 +4,7 @@ namespace EtAlii.Adp.Diagram.Sparql.Tests.Parity;
 internal static class SparqlDerived
 {
     /// <summary>An id no document holds.</summary>
-    public const string Unknown = "parity:unknown";
+    private const string Unknown = "parity:unknown";
 
     /// <summary>The id prefixes of the elements the wire carries.</summary>
     private static readonly string[] _wirePrefixes = ["var:", "anon:", "iri:", "lit:", "sub:", "region:", "note:", "edge:"];
