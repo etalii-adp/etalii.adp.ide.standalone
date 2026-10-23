@@ -301,7 +301,7 @@ public sealed partial class TimelineFindingsTests
 
     // The transcript.
 
-    private static readonly Lazy<JsonDocument> _transcript = new(() => JsonDocument.Parse(File.ReadAllBytes(TimelineTranscript.CheckedInPath)));
+    private static readonly Lazy<JsonDocument> _transcript = new(() => JsonDocument.Parse(File.ReadAllBytes(new TimelineTranscript().CheckedInPath)));
 
     private static JsonElement Recorded(string fixture)
     {
@@ -498,7 +498,7 @@ public sealed partial class TimelineFindingsTests
     {
         private static readonly Lazy<IReadOnlyList<(string Finding, string Fixture, string Observed)>> _all = new(Load);
 
-        private static string FilePath => Path.Combine(Path.GetDirectoryName(TimelineTranscript.CheckedInPath)!, "timeline.findings.json");
+        private static string FilePath => Path.Combine(Path.GetDirectoryName(new TimelineTranscript().CheckedInPath)!, "timeline.findings.json");
 
         /// <summary>
         /// <paramref name="observed"/> is null when the binding gives what the transcript records,
