@@ -41,6 +41,7 @@ public sealed class AnsibleElementMapper
     public const string TaskFileType = "ansible/structure+taskfile";
     public const string InventoryType = "ansible/structure+inventory";
     public const string VariableFolderType = "ansible/structure+vars";
+    [Relation]
     public const string EdgeType = "ansible/structure+edge";
 
     private static readonly string PayloadTypeUrl =

@@ -9,11 +9,11 @@ using IoPath = System.IO.Path;
 namespace EtAlii.Adp.TestSupport;
 
 /// <summary>
-/// The element types one module's projection emits, named by reference to the constants the
-/// emitting mapper itself declares - never as string literals in a test.
+/// The element types one module declares, taken from the constants its mappers declare - never as
+/// string literals in a test.
 /// </summary>
 /// <param name="Connections">The types the canvas draws as lines: every element of these must resolve.</param>
-/// <param name="Elements">Every other type the projection emits over the module's shipped examples.</param>
+/// <param name="Elements">Every other type the module declares.</param>
 /// <param name="NoConnectionsBecause">
 /// Required exactly when <paramref name="Connections"/> is empty: the reason in words, so "this module
 /// draws no connection elements" is a statement someone made rather than an empty set nobody noticed.
@@ -31,7 +31,7 @@ public sealed record DrawnView(ShortGuid WatchId, string BodyPath, IReadOnlyList
 
 /// <summary>One module, as <see cref="DrawnConnections"/> checks it.</summary>
 /// <param name="ExamplesFolder">The module's folder under <c>src/examples/diagrams</c>.</param>
-/// <param name="Types">Its emitted types, by reference to its mapper's constants.</param>
+/// <param name="Types">Its declared types, from its mappers' constants.</param>
 /// <param name="ExpandViews">
 /// For a module whose canvas draws more after a view change than on open - a pipeline's job-level arrows
 /// exist only inside an expanded stage, and its steps only inside an expanded job - the hook that opens
@@ -66,24 +66,25 @@ public sealed record DrawnModule(string ExamplesFolder, DrawnTypes Types, Action
 /// the body routes on its own, because a canvas selection nests under whichever the tab was opened at.
 /// </para>
 /// <para>
-/// <b>Four assertions, collected and reported together, each naming module, example and id</b>: (i) every
-/// emitted element has a type the test named - which keeps a new edge type from slipping past and a "no
-/// connections" statement honest; (ii) every named type is emitted somewhere in the examples, so a named
-/// type is one the corpus actually shows; (iii) every connection resolves; (iv) a module naming no
-/// connection types gives its reason. <b>No exemption list</b>: a connection resolves whether or not the
-/// client declares it selectable, so selectability stays a client declaration alone.
+/// <b>Three assertions, collected and reported together, each naming module, example and id</b>: (i) every
+/// emitted element has a type the module declares - which keeps a new edge type from slipping past and a
+/// "no connections" statement honest; (ii) every connection resolves; (iii) a module naming no connection
+/// types gives its reason. Whether every connection type is one the corpus shows spans modules, so the
+/// caller asks it of the types it is handed back. <b>No exemption list</b>: a connection resolves whether
+/// or not the client declares it selectable, so selectability stays a client declaration alone.
 /// </para>
 /// </remarks>
 public static class DrawnConnections
 {
     /// <summary>
     /// Opens every diagram in the module's examples through <paramref name="services"/> and returns every
-    /// problem found, each naming the module, the example and the id. Empty means all four hold.
+    /// problem found, each naming the module, the example and the id. Empty means all three hold.
     /// </summary>
     /// <param name="services">The real composed host's provider - every module registered - so a resolver
     /// answering "not mine" to a foreign id is exercised as well.</param>
     /// <param name="module">The module to check.</param>
-    public static async Task<IReadOnlyList<string>> ProblemsAsync(IServiceProvider services, DrawnModule module)
+    /// <param name="emitted">When given, receives the type of every element the examples drew.</param>
+    public static async Task<IReadOnlyList<string>> ProblemsAsync(IServiceProvider services, DrawnModule module, ISet<string>? emitted = null)
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(module);
@@ -93,11 +94,11 @@ public static class DrawnConnections
         var problems = new List<string>();
         if (types.Connections.Count == 0 && string.IsNullOrWhiteSpace(types.NoConnectionsBecause))
         {
-            problems.Add($"{name}: names no connection types and gives no reason - say why in NoConnectionsBecause, or name them.");
+            problems.Add($"{name}: declares no connection types and gives no reason - say why in NoConnectionsBecause, or mark its relation constants [Relation].");
         }
         if (types.Connections.Count > 0 && !string.IsNullOrWhiteSpace(types.NoConnectionsBecause))
         {
-            problems.Add($"{name}: names connection types and also says it has none.");
+            problems.Add($"{name}: declares connection types and also says it has none.");
         }
         foreach (var both in types.Connections.Intersect(types.Elements, StringComparer.Ordinal))
         {
@@ -118,7 +119,6 @@ public static class DrawnConnections
             var router = services.GetRequiredService<DiagramFileRouter>();
             var factories = services.GetServices<IDiagramSessionFactory>().ToList();
             var resolvers = services.GetServices<IContextSourceResolver>().ToList();
-            var seen = new HashSet<string>(StringComparer.Ordinal);
             var named = new HashSet<string>(types.Connections.Concat(types.Elements), StringComparer.Ordinal);
             var connections = new HashSet<string>(types.Connections, StringComparer.Ordinal);
 
@@ -166,10 +166,10 @@ public static class DrawnConnections
                 var parents = ParentsOf(routed, router, workspace);
                 foreach (var element in elements)
                 {
-                    seen.Add(element.Type);
+                    emitted?.Add(element.Type);
                     if (!named.Contains(element.Type))
                     {
-                        problems.Add($"{name}: {example} emits {element.Id} of type {element.Type}, which the test names as neither a connection nor an element type.");
+                        problems.Add($"{name}: {example} emits {element.Id} of type {element.Type}, which the module declares as neither a connection nor an element type.");
                         continue;
                     }
                     if (!connections.Contains(element.Type))
@@ -186,11 +186,6 @@ public static class DrawnConnections
                         }
                     }
                 }
-            }
-
-            foreach (var unseen in named.Where(type => !seen.Contains(type)).Order(StringComparer.Ordinal))
-            {
-                problems.Add($"{name}: names {unseen}, which no example emitted - name only what the examples show; the union check fails the day it appears.");
             }
         }
         finally

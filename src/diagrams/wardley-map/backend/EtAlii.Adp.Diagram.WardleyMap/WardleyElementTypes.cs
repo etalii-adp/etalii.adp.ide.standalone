@@ -15,6 +15,7 @@ public static class WardleyElementTypes
     public const string Element = "wardley/map+element";
 
     /// <summary>A link between two elements.</summary>
+    [Relation]
     public const string Link = "wardley/map+link";
 
     /// <summary>Free text at a position.</summary>

@@ -1,5 +1,6 @@
 using EtAlii.Adp.Diagram.Modules;
 using Google.Protobuf;
+using JetBrains.Annotations;
 
 namespace EtAlii.Adp.Diagram.SupplyChain;
 
@@ -31,27 +32,34 @@ public sealed class SupplyChainElementMapper
     public const string GroupType = Prefix + "group";
 
     /// <summary>The library type of a source.</summary>
+    [UsedImplicitly] // Read only by reflection, into the cross-tier element-types fixture.
     public const string SourceType = Prefix + SupplyChainNodeTypes.Source;
 
     /// <summary>The library type of a processor.</summary>
+    [UsedImplicitly] // Read only by reflection, into the cross-tier element-types fixture.
     public const string ProcessorType = Prefix + SupplyChainNodeTypes.Processor;
 
     /// <summary>The library type of a producer.</summary>
+    [UsedImplicitly] // Read only by reflection, into the cross-tier element-types fixture.
     public const string ProducerType = Prefix + SupplyChainNodeTypes.Producer;
 
     /// <summary>The library type of an integrator.</summary>
     public const string IntegratorType = Prefix + SupplyChainNodeTypes.Integrator;
 
     /// <summary>The library type of a hub.</summary>
+    [UsedImplicitly] // Read only by reflection, into the cross-tier element-types fixture.
     public const string HubType = Prefix + SupplyChainNodeTypes.Hub;
 
     /// <summary>The library type of an outlet.</summary>
+    [UsedImplicitly] // Read only by reflection, into the cross-tier element-types fixture.
     public const string OutletType = Prefix + SupplyChainNodeTypes.Outlet;
 
     /// <summary>The library type of a consumer.</summary>
+    [UsedImplicitly] // Read only by reflection, into the cross-tier element-types fixture.
     public const string ConsumerType = Prefix + SupplyChainNodeTypes.Consumer;
 
     /// <summary>The library type of a flow.</summary>
+    [Relation]
     public const string FlowType = Prefix + "flow";
 
     /// <summary>The library type a stage is drawn as.</summary>

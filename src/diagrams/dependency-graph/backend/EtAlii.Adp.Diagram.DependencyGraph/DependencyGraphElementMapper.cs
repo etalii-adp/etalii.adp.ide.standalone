@@ -38,6 +38,7 @@ public sealed class DependencyGraphElementMapper
     public const string NodeType = "generic/dependencies+node";
 
     /// <summary>The mime-style kind of a directed depends-on edge.</summary>
+    [Relation]
     public const string RelationType = "generic/dependencies+relation";
 
     /// <summary>
