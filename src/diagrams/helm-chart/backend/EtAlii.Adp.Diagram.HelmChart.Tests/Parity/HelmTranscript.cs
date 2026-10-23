@@ -64,12 +64,8 @@ namespace EtAlii.Adp.Diagram.HelmChart.Tests.Parity;
 /// the machine. YamlDotNet's sentences stay as they are, which is finding B9 on record.
 /// </para>
 /// </remarks>
-internal static class HelmTranscript
+public sealed class HelmTranscript() : TranscriptAdapter("helm-chart", HelmCorpus.TestProject, "helm-chart.transcript.json")
 {
-    /// <summary>The checked-in file's name, in this project's <c>Parity</c> folder.</summary>
-    private const string FileName = "helm-chart.transcript.json";
-
-    private const string TestProject = "EtAlii.Adp.Diagram.HelmChart.Tests";
     private const string Unknown = "parity:unknown";
 
     /// <summary>The registration a folder without one is given in its copy: the bare MIME line core writes.</summary>
@@ -88,116 +84,58 @@ internal static class HelmTranscript
         ["empty-directories"] = ["crds", "charts/hollow", "charts/holder/charts/empty"],
     };
 
-    /// <summary>The module's folder, <c>src/diagrams/helm-chart</c>.</summary>
-    private static string ModuleFolder { get; } = RepositoryPaths.Under("src", "diagrams", "helm-chart");
+    /// <summary>The charts recorded in full so far, by the hash of their chart files alone, for <c>sameChartAs</c>.</summary>
+    private readonly Dictionary<string, string> _charts = new(StringComparer.Ordinal);
 
-    /// <summary>The checked-in transcript.</summary>
-    public static string CheckedInPath => Path.Combine(ModuleFolder, "backend", TestProject, "Parity", FileName);
+    public override string Origin => Diagram.HelmCharts.Origin.Key;
 
-    internal static string SourceFolder => Path.GetFullPath(Path.Combine(ModuleFolder, "..", ".."));
+    /// <summary>None: a Helm chart diagram offers no toolbox, and its transcript has no field for one.</summary>
+    protected override IReadOnlyList<ToolboxItemDefinition>? Toolbox => null;
 
-    /// <summary>The corpus, as folder paths relative to <c>src/</c> with forward slashes, in the order they are recorded.</summary>
-    internal static IReadOnlyList<string> Corpus()
+    public override string DocumentsName => "charts";
+
+    public override string DocumentName => "chart";
+
+    /// <summary>Every chart folder, read as its manifest with the registrations: so a folder whose files equal one recorded earlier, path for path and byte for byte, is <c>sameAs</c> it.</summary>
+    public override IReadOnlyList<TranscriptDocument> Corpus() =>
+        [.. HelmCorpus.Charts().Select(relative => new TranscriptDocument(relative, cancellationToken => ManifestAsync(Path.Combine(SourceFolder, relative), registrations: true, cancellationToken)))];
+
+    public override async Task WriteDocumentAsync(Utf8JsonWriter json, TranscriptDocument document, byte[] bytes, string folder, CancellationToken cancellationToken)
     {
-        return
-        [
-            .. Folders(Path.Combine(ModuleFolder, "backend", TestProject, "Fixtures")),
-            .. Folders(Path.Combine(ModuleFolder, "examples")),
-            .. Folders(Path.Combine(SourceFolder, "examples", "diagrams", "helm-chart")),
-        ];
-
-        static IEnumerable<string> Folders(string folder) =>
-            Directory.GetDirectories(folder)
-                .Select(path => Path.GetRelativePath(SourceFolder, path).Replace('\\', '/'))
-                .Order(StringComparer.Ordinal);
-    }
-
-    /// <summary>The whole transcript, as the bytes the checked-in file must hold.</summary>
-    public static async Task<byte[]> GenerateAsync(CancellationToken cancellationToken)
-    {
-        await using var provider = new ServiceCollection().AddCommands().AddHierarchyCommandHandlers().AddHelmCharts().BuildServiceProvider();
-        using var stream = new MemoryStream();
-        await using (var json = new Utf8JsonWriter(stream, TranscriptText.WriterOptions))
-        {
-            json.WriteStartObject();
-            json.WriteString("module", Diagram.HelmCharts.Origin.Key);
-            json.WriteString("generator", $"src/diagrams/helm-chart/backend/{TestProject}/Parity/HelmTranscript.cs");
-            json.WriteString("regenerate", "ADP_WRITE_PARITY_TRANSCRIPTS=1 dotnet test --project <this test project> (then review the diff)");
-
-            json.WriteStartArray("charts");
-            var recorded = new Recorded();
-            foreach (var relative in Corpus())
-            {
-                await WriteChartAsync(json, relative, recorded, provider.GetRequiredService<IHistoryStackStore>(), cancellationToken);
-            }
-
-            json.WriteEndArray();
-            json.WriteEndObject();
-            await json.FlushAsync(cancellationToken);
-        }
-
-        stream.Write("\r\n"u8);
-        return stream.ToArray();
-    }
-
-    private static async Task WriteChartAsync(
-        Utf8JsonWriter json, string relative, Recorded recorded, IHistoryStackStore histories, CancellationToken cancellationToken)
-    {
-        var source = Path.Combine(SourceFolder, relative);
-        var sha = await FolderSha256Async(source, registrations: true, cancellationToken);
-        var chartSha = await FolderSha256Async(source, registrations: false, cancellationToken);
-
-        json.WriteStartObject();
-        json.WriteString("chart", relative);
-        json.WriteString("sha256", sha);
-        if (recorded.Folders.TryGetValue(sha, out var first))
-        {
-            json.WriteString("sameAs", first);
-            json.WriteEndObject();
-            return;
-        }
-
-        recorded.Folders[sha] = relative;
-        var sameChart = recorded.Charts.GetValueOrDefault(chartSha);
+        var source = Path.Combine(SourceFolder, document.Name);
+        var chartSha = TranscriptText.Sha256(await ManifestAsync(source, registrations: false, cancellationToken));
+        var sameChart = _charts.GetValueOrDefault(chartSha);
         if (sameChart is null)
         {
-            recorded.Charts[chartSha] = relative;
+            _charts[chartSha] = document.Name;
         }
         else
         {
             json.WriteString("sameChartAs", sameChart);
         }
 
-        var folder = Path.Combine(Path.GetTempPath(), "EtAlii.Adp.HelmTranscript", Guid.NewGuid().ToString("N"));
-        try
+        TestFolder.CopyTree(source, folder);
+        if (EmptyDirectories.TryGetValue(Path.GetFileName(source), out var empty))
         {
-            TestFolder.CopyTree(source, folder);
-            if (EmptyDirectories.TryGetValue(Path.GetFileName(source), out var empty))
+            json.WritePropertyName("emptyDirectoriesMade");
+            json.WriteLines(empty);
+            foreach (var directory in empty)
             {
-                json.WritePropertyName("emptyDirectoriesMade");
-                json.WriteLines(empty);
-                foreach (var directory in empty)
-                {
-                    Directory.CreateDirectory(Path.Combine(folder, directory));
-                }
+                Directory.CreateDirectory(Path.Combine(folder, directory));
             }
-
-            var registration = Directory.GetFiles(folder, "*.adp").Order(StringComparer.Ordinal).FirstOrDefault();
-            json.WriteString("registration", registration is null ? $"none; the copy is given {Quoted(BareRegistration)}" : Path.GetFileName(registration));
-            if (registration is null)
-            {
-                registration = Path.Combine(folder, "helm-chart.adp");
-                await File.WriteAllTextAsync(registration, BareRegistration, cancellationToken);
-            }
-
-            await WriteReadingAsync(json, folder, registration, histories, full: sameChart is null, cancellationToken);
-        }
-        finally
-        {
-            TestFolder.TryDelete(folder);
         }
 
-        json.WriteEndObject();
+        var registration = Directory.GetFiles(folder, "*.adp").Order(StringComparer.Ordinal).FirstOrDefault();
+        json.WriteString("registration", registration is null ? $"none; the copy is given {Quoted(BareRegistration)}" : Path.GetFileName(registration));
+        if (registration is null)
+        {
+            registration = Path.Combine(folder, "helm-chart.adp");
+            await File.WriteAllTextAsync(registration, BareRegistration, cancellationToken);
+        }
+
+        // Services of its own: a history is kept by the copy's folder, so no two charts ever shared one.
+        await using var provider = new ServiceCollection().AddCommands().AddHierarchyCommandHandlers().AddHelmCharts().BuildServiceProvider();
+        await WriteReadingAsync(json, folder, registration, provider.GetRequiredService<IHistoryStackStore>(), full: sameChart is null, cancellationToken);
     }
 
     private static async Task WriteReadingAsync(
@@ -327,11 +265,11 @@ internal static class HelmTranscript
     }
 
     /// <summary>
-    /// The hash of a folder's files, path for path and byte for byte, in ordinal order of their
-    /// relative paths, with or without the registrations beside <c>Chart.yaml</c>: what makes two
-    /// folders the same for <c>sameAs</c>, and the same chart for <c>sameChartAs</c>.
+    /// A folder's files, path for path and byte for byte, in ordinal order of their relative paths,
+    /// with or without the registrations beside <c>Chart.yaml</c>: whose hash makes two folders the
+    /// same for <c>sameAs</c>, and the same chart for <c>sameChartAs</c>.
     /// </summary>
-    private static async Task<string> FolderSha256Async(string folder, bool registrations, CancellationToken cancellationToken)
+    private static async Task<byte[]> ManifestAsync(string folder, bool registrations, CancellationToken cancellationToken)
     {
         var manifest = new StringBuilder();
         foreach ((string full, string relative) in Directory.GetFiles(folder, "*", SearchOption.AllDirectories)
@@ -342,14 +280,6 @@ internal static class HelmTranscript
             manifest.Append(relative).Append(' ').Append(TranscriptText.Sha256(await File.ReadAllBytesAsync(full, cancellationToken))).Append('\n');
         }
 
-        return TranscriptText.Sha256(TranscriptText.Encode(manifest.ToString()));
-    }
-
-    /// <summary>The folders recorded so far, by the hash of all their files and by the hash of their chart files alone.</summary>
-    private sealed class Recorded
-    {
-        public Dictionary<string, string> Folders { get; } = new(StringComparer.Ordinal);
-
-        public Dictionary<string, string> Charts { get; } = new(StringComparer.Ordinal);
+        return TranscriptText.Encode(manifest.ToString());
     }
 }
