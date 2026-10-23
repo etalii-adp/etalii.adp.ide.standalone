@@ -196,10 +196,10 @@ public static class GestureConstraintEvaluator
     }
 
     /// <summary>The code of a gesture the notation switches off for the element's kind (§6.9, §6.10).</summary>
-    public const string SwitchedOffCode = "std.switchedOff";
+    private const string SwitchedOffCode = "std.switchedOff";
 
     /// <summary>The code of a gesture that would store an ephemeral id (§11.5.3).</summary>
-    public const string EphemeralCode = "std.ephemeralId";
+    private const string EphemeralCode = "std.ephemeralId";
 
     /// <summary>The runtime's sentence for an ephemeral element whose id rule states no <c>reason</c> (§11.5.3).</summary>
     private const string EphemeralSentence = "This element's identity does not survive reading the file again, so nothing can be stored for it.";
