@@ -26,6 +26,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The FBL binding of the .skv body (sankey-disl-fbl). Until the body is read through it, only the module's tests read it. -->
+    <EmbeddedResource Include="sankey.fbl" LogicalName="sankey.fbl" />
+  </ItemGroup>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="EtAlii.Adp.Diagram.Sankey.Tests" />
   </ItemGroup>
 

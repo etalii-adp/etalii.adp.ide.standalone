@@ -518,6 +518,34 @@
       "file": "src/diagrams/databricks/backend/EtAlii.Adp.Diagram.Databricks.Tests/Fixtures/library-ids.json",
       "observed": "Library: the binding adds 2 (library@11, library@7)",
       "reason": "The fixture is one of the Databricks module's parity corpus (databricks-disl-fbl task 1), written to give two libraries one path and to hold two libraries of kind 'other' (finding B15). The pipeline parser reads them under the ids the module draws, library:shared/x and library: (two each, drawn as one), where the binding's natural ids for the second of each are taken, so FBL section 5.3 addresses them by their place (library@7, library@11). The parity transcript freezes what the module does with it today."
+    },
+    {
+      "property": "unreadable",
+      "binding": "sankey",
+      "file": "src/diagrams/sankey/backend/EtAlii.Adp.Diagram.Sankey.Tests/Fixtures/not-yaml.skv",
+      "observed": "offset 33: The body is not well-formed YAML: While parsing a flow sequence, did not find expected ',' or ']'.",
+      "reason": "The fixture is one of the Sankey module's round-trip corpus, written to be text that is not YAML. FBL section 7.5 opens such a body empty and read-only and reports std.unparseable, as the module's reader reports it under sankey.unreadable; the binding is not wrong here, the body is (sankey-disl-fbl, finding B8 and Q3)."
+    },
+    {
+      "property": "cross-check",
+      "binding": "sankey",
+      "file": "src/diagrams/sankey/backend/EtAlii.Adp.Diagram.Sankey.Tests/Fixtures/duplicate-key.skv",
+      "observed": "Flow: the binding adds 1 (a->b) | Node: the binding adds 2 (a, b)",
+      "reason": "The fixture is one of the Sankey module's parity corpus (sankey-disl-fbl task 1), written to hold a key written twice in one mapping (finding B9). YamlDotNet refuses the document, so the module reads nothing of it; FBL section 7.4 binds the first of the two and reports fbl.duplicate-key, so the binding reads every node and flow. Q4 keeps the module's answer for this conversion: a duplicated key still makes the document unreadable."
+    },
+    {
+      "property": "cross-check",
+      "binding": "sankey",
+      "file": "src/diagrams/sankey/backend/EtAlii.Adp.Diagram.Sankey.Tests/Fixtures/flow-mapping-entry.skv",
+      "observed": "Flow: the binding lacks 1 (a->b); the binding adds 1 (->) | Node: the binding lacks 2 (a, b)",
+      "reason": "The fixture is one of the Sankey module's parity corpus (sankey-disl-fbl task 1), written with its nodes and its flow as flow mappings (- {id: a, name: A}), the second shape of finding B16. YamlDotNet reads them as mappings like any other; FBL's YAML family hands the rules' when a flow mapping with no member to read, so the nodes have no id and the flow neither end. Recorded as found; whether FBL should read the members of a flow mapping is a candidate question for etalii.adp."
+    },
+    {
+      "property": "cross-check",
+      "binding": "sankey",
+      "file": "src/diagrams/sankey/backend/EtAlii.Adp.Diagram.Sankey.Tests/Fixtures/text-that-reads-as-a-number.skv",
+      "observed": "Flow: the binding lacks 1 (0x1F); the binding adds 1 (31) | Node: the binding lacks 1 (007); the binding adds 1 (7)",
+      "reason": "The fixture is one of the Sankey module's parity corpus (sankey-disl-fbl task 1), written to hold ids, names and ends that read as numbers and booleans (finding B1). The module reads every one as the text it was written with; this binding is the drafted one without its \"as\": \"text\" markers, so FBL's YAML family types each plain scalar by the core schema, and 007 and 0x1F become the numbers 7 and 31. It is the evidence for gap 1 of sankey-disl-fbl, which FBL 0.5's read: \"text\" answers and the binding takes up when the body is read through it (task 10)."
     }
   ]
 }
