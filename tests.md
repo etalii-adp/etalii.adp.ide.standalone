@@ -4071,3 +4071,27 @@ lays out no text, so a fill, a centred Comment and a drag that writes a size are
   - Step 8: the change was dropped and the list stayed open.
   - Step 9: six steps of Undo, one for each gesture of steps 2 to 6, after which the file was byte-identical to the example and Undo had nothing left.
   - **Not run in this pass:** the pane of the built-in browser.
+
+## References on the Hierarchical Requirement Designer's page (spec 029, task T094)
+
+**Why this is a browser pass and not a test:** the lookup opens under a field near the page's bottom edge and takes the focus from it, a reference box flows inside a description's text, and following one moves the focus and expands levels through the registration and the page's width. The module's suite covers the references against their fixture, and the client's cover the lookup, the boxes and the reveal in jsdom, which lays nothing out, measures no page and scrolls nothing.
+
+- **Preconditions**: a locally running developer build from the branch, and a scratch folder registered as a project, holding the module's example `web-shop.md` and `web-shop.adp` in a subfolder `requirements`, at a window 1400 pixels wide.
+- **Steps**:
+  1. Open `web-shop.md` and read *REQ-0004*'s description.
+  2. Select *REQ-0009*, press *Add a description*, type `Kept apart from #`. Read the lookup. Type `guest`; then search `0005`. Press Enter, type `, which must not see it.` and press Ctrl+Enter. Read the file and the description.
+  3. Focus on *ITEM-0006*. Press the *REQ-0005* box in *REQ-0009*'s description. Read the trail, *REQ-0005*'s box, the file and the registration.
+  4. Back on the whole page, open *ITEM-0001*'s description, type ` #` at its end and press Escape; press Escape again. Read the field and the file.
+  5. Show *REQ-0005* by its box again, select it and press Delete, then *Delete*. Read the file, *REQ-0009*'s description and the findings.
+  6. Press Undo until nothing is left to undo. Compare the files with the example.
+  7. Open the lookup in *REQ-0009*, the last box on the page, in light and dark.
+- **Expected**: a reference stands as a box with its target's number and current title, flowing with the text; `#` opens a lookup of the document's numbered items and requirements, with the focus in it, narrowed by number or title; the pick is written in place of the `#` as the bracketed number; a box shows its target, moving the focus only as far as needed and expanding what hides it, without writing the Markdown file; Escape in the lookup keeps the `#` and the field; a deleted target leaves its reference as written, shown broken, with a finding at its line; the lookup is in sight wherever it opens.
+- **Result 2026-10-23, the Spec 029 thread, `features/029-references` on `84b32acd2` and the changes below, backend 5080 and Vite 5174, headless Chromium through Playwright, light and dark (results read from the DOM, screenshots, the backend log and the files): steps 1 to 7 passed after two defects, found in steps 1 and 7 and fixed.**
+  - Step 1, first run, **found and fixed**: the boxes were buttons, which a browser lays out as one block, so in an entry's column *REQ-0003 A customer pays by card, iDEAL or PayPal.* stood on lines of its own and broke the sentence around it. A box is now an inline element with the role of a button, focusable, that Enter or Space follows (`References.test.tsx`, *shows its target from the keyboard too*, seen failing); the layout itself only a browser shows. Second run: *Sent when* [REQ-0003 A customer pays by card, iDEAL or PayPal.] *succeeds, through the service of* [ITEM-0005 Mail]*.*, the boxes wrapping with the text.
+  - Step 2: the lookup *Refer to* held the focus and listed the 16 numbered items and requirements; `guest` left *ITEM-0003 Guest checkout*, `0005` left *REQ-0005* and *ITEM-0005*. The field then read *Kept apart from [REQ-0005], which must not see it.*, and the file held that line under *REQ-0009*; the description showed the box *REQ-0005 A customer can order without an account.*
+  - Step 3: the page is 870 pixels wide, so two levels fit; *REQ-0005* stands in *ITEM-0003*, the third level, collapsed. The trail read *Web shop › ITEM-0001 Storefront › ITEM-0002 Checkout*, *REQ-0005*'s box was shown, selected and in view, the Markdown file was unchanged, and the registration's `collapsed` block no longer held *ITEM-0003*.
+  - Step 4: Escape closed the lookup and left *What a customer sees and does in the shop. #* in the field, with the focus; the second Escape dropped the field, and the file was unchanged.
+  - Step 5: the question counted the one reference; after *Delete* the file no longer held *REQ-0005*, the line *Kept apart from [REQ-0005], which must not see it.* was kept, *REQ-0009*'s description showed *[REQ-0005]* as a broken box, *[REQ-0005] names nothing in this document*, and the findings listed *REQ-0005 names no item or requirement of this document.* at line 53, the line of that description.
+  - Step 6: two steps of Undo, the delete and the description, after which `web-shop.md` was byte-identical to the example. The registration still had *ITEM-0003* expanded: collapsing is not an undo step (FR-010).
+  - Step 7, first run, **found and fixed**: the lookup under *REQ-0009* stood below the page's bottom edge, one row of it in sight. It now scrolls itself into view when it opens; its bottom then met the page's at 734 pixels in both themes.
+  - **Not run in this pass:** the pane of the built-in browser.
