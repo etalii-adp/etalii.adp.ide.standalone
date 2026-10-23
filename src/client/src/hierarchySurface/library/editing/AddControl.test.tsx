@@ -281,6 +281,6 @@ describe("deleting a node", () => {
 
     // Assert: the Enter committed the field, and nothing else was sent.
     expect(onShortcut).not.toHaveBeenCalled();
-    expect(onGesture.mock.calls.filter(([operation]) => operation !== "retitle")).toEqual([]);
+    expect(onGesture.mock.calls.filter((call: unknown[]) => call[0] !== "retitle")).toEqual([]);
   });
 });
