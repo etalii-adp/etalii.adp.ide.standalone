@@ -24,10 +24,10 @@ internal static class SparqlCorpus
     private const string TestProject = "EtAlii.Adp.Diagram.Sparql.Tests";
 
     /// <summary>The module's folder, <c>src/diagrams/sparql</c>.</summary>
-    public static string ModuleFolder { get; } = RepositoryPaths.Under("src", "diagrams", "sparql");
+    private static string ModuleFolder { get; } = RepositoryPaths.Under("src", "diagrams", "sparql");
 
     /// <summary>The <c>src/</c> folder, which the corpus's paths are relative to.</summary>
-    public static string SourceFolder { get; } = Path.GetFullPath(Path.Combine(ModuleFolder, "..", ".."));
+    private static string SourceFolder { get; } = Path.GetFullPath(Path.Combine(ModuleFolder, "..", ".."));
 
     /// <summary>The test project's folder.</summary>
     public static string TestFolderPath { get; } = Path.Combine(ModuleFolder, "backend", TestProject);
