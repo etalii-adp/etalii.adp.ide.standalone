@@ -1,0 +1,3 @@
+# B10: a document with no root mapping reports nothing at all.
+- sankey: 1
+- nodes: []

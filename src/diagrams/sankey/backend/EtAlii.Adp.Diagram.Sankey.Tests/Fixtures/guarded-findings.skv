@@ -1,0 +1,25 @@
+sankey: 1
+# A9: a self-flow and a dangling flow each silence the value and colour rules on their own entry.
+nodes:
+  - id: a
+    name: A
+  - id: b
+    name: B
+flows:
+  - from: a
+    to: a
+    value: -4
+    color: chartreuse
+  - from: a
+    to: ghost
+    color: chartreuse
+  - from: ghost
+    to: phantom
+    value: -1
+  - from: b
+  - to: b
+    value: 2
+  - from: ghost
+    to: ghost
+  - from: a
+    to: b

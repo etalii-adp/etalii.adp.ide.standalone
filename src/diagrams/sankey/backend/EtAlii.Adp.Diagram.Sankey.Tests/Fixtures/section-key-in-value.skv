@@ -1,0 +1,7 @@
+sankey: 1
+# B16: a line that starts with a section key inside another value.
+format: |
+  nodes: are listed below
+  flows: follow them
+nodes: []
+flows: []

@@ -1,0 +1,19 @@
+sankey: 1
+# B15: numbers written with four decimals, and thickness with two.
+thickness: 1.005
+nodes:
+  - id: a
+    name: A
+  - id: b
+    name: B
+  - id: c
+    name: C
+flows:
+  - from: a
+    to: b
+    value: 0.0001
+    step: 0.00015
+  - from: a
+    to: c
+    value: 12345678901234567890
+    step: 2.5

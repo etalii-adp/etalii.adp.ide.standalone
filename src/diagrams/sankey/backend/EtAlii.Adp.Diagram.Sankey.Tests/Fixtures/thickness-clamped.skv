@@ -1,0 +1,12 @@
+sankey: 1
+# A13: a thickness above the range is drawn at the range's end, and Thinner bands steps from there.
+thickness: 50
+nodes:
+  - id: a
+    name: A
+  - id: b
+    name: B
+flows:
+  - from: a
+    to: b
+    value: 1
