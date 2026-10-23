@@ -41,117 +41,37 @@ namespace EtAlii.Adp.Diagram.DependencyGraph.Tests.Parity;
 /// <see cref="ShortGuid"/>, which the transcript writes as <c>{minted-N}</c> in order of minting.
 /// </para>
 /// </remarks>
-internal static partial class DependencyGraphTranscript
+public sealed partial class DependencyGraphTranscript() : TranscriptAdapter("dependency-graph", "EtAlii.Adp.Diagram.DependencyGraph.Tests", "dependency-graph.transcript.json")
 {
-    /// <summary>The checked-in file's name, in this project's <c>Parity</c> folder.</summary>
-    private const string FileName = "dependency-graph.transcript.json";
-
-    private const string TestProject = "EtAlii.Adp.Diagram.DependencyGraph.Tests";
     private const string Unknown = "parity:unknown";
 
     private static readonly TypeRegistry _payloadTypes = TypeRegistry.FromFiles(DependencyGraphReflection.Descriptor);
 
-    /// <summary>The module's folder, <c>src/diagrams/dependency-graph</c>.</summary>
-    private static string ModuleFolder { get; } = RepositoryPaths.Under("src", "diagrams", "dependency-graph");
+    public override string Origin => Diagram.DependencyGraph.Origin.Key;
 
-    /// <summary>The checked-in transcript.</summary>
-    public static string CheckedInPath => Path.Combine(ModuleFolder, "backend", TestProject, "Parity", FileName);
-
-    private static string SourceFolder => Path.GetFullPath(Path.Combine(ModuleFolder, "..", ".."));
+    public override IReadOnlyList<ToolboxItemDefinition> Toolbox => DependencyGraphDefinition.Definition.Toolbox;
 
     /// <summary>The corpus, as paths relative to <c>src/</c> with forward slashes, then the inline documents, in the order they are recorded.</summary>
-    internal static IReadOnlyList<(string Name, Func<CancellationToken, Task<byte[]>> Read)> Corpus()
+    public override IReadOnlyList<TranscriptDocument> Corpus()
     {
         var fixtures = Directory.GetFiles(Path.Combine(ModuleFolder, "backend", TestProject, "Fixtures"), "*.dgr");
         var examples = Directory.GetDirectories(Path.Combine(ModuleFolder, "examples")).SelectMany(folder => Directory.GetFiles(folder, "*.dgr"));
         var shipped = Directory.GetDirectories(Path.Combine(SourceFolder, "examples", "diagrams", "dependency-graph")).SelectMany(folder => Directory.GetFiles(folder, "*.dgr"));
         return
         [
-            .. Sorted(fixtures).Concat(Sorted(examples)).Concat(Sorted(shipped))
-                .Select(relative => (relative, (Func<CancellationToken, Task<byte[]>>)(token => File.ReadAllBytesAsync(Path.Combine(SourceFolder, relative), token)))),
-            .. DependencyGraphCorpus.Inline
-                .Select(document => (document.Name, (Func<CancellationToken, Task<byte[]>>)(_ => Task.FromResult(Encoding.UTF8.GetBytes(document.Text))))),
+            .. Relative(fixtures).Concat(Relative(examples)).Concat(Relative(shipped)).Select(OnDisk),
+            .. DependencyGraphCorpus.Inline.Select(document => new TranscriptDocument(document.Name, _ => Task.FromResult(Encoding.UTF8.GetBytes(document.Text)))),
         ];
-
-        static IEnumerable<string> Sorted(IEnumerable<string> paths) => paths.Select(path => Path.GetRelativePath(SourceFolder, path).Replace('\\', '/')).Order(StringComparer.Ordinal);
     }
 
-    /// <summary>The whole transcript, as the bytes the checked-in file must hold.</summary>
-    public static async Task<byte[]> GenerateAsync(CancellationToken cancellationToken)
+    public override async Task WriteDocumentAsync(Utf8JsonWriter json, TranscriptDocument document, byte[] bytes, string folder, CancellationToken cancellationToken)
     {
-        using var stream = new MemoryStream();
-        await using (var json = new Utf8JsonWriter(stream, TranscriptText.WriterOptions))
-        {
-            json.WriteStartObject();
-            json.WriteString("module", Diagram.DependencyGraph.Origin.Key);
-            json.WriteString("generator", $"src/diagrams/dependency-graph/backend/{TestProject}/Parity/DependencyGraphTranscript.cs");
-            json.WriteString("regenerate", "ADP_WRITE_PARITY_TRANSCRIPTS=1 dotnet test --project <this test project> (then review the diff)");
-
-            // The toolbox is static: it does not read the document, so it is written once.
-            json.WriteStartArray("toolbox");
-            foreach (var item in DependencyGraphDefinition.Definition.Toolbox)
-            {
-                json.WriteStringValue($"{item.Id} | {item.Label} | {item.Icon} | drops {item.DropActionId} | {item.Description}");
-            }
-
-            json.WriteEndArray();
-
-            json.WriteStartArray("documents");
-            var recorded = new Dictionary<string, string>(StringComparer.Ordinal);
-            foreach ((string name, Func<CancellationToken, Task<byte[]>> read) in Corpus())
-            {
-                await WriteDocumentAsync(json, name, await read(cancellationToken), recorded, cancellationToken);
-            }
-
-            json.WriteEndArray();
-            json.WriteEndObject();
-            await json.FlushAsync(cancellationToken);
-        }
-
-        stream.Write("\r\n"u8);
-        return stream.ToArray();
-    }
-
-    private static async Task WriteDocumentAsync(Utf8JsonWriter json, string name, byte[] bytes, Dictionary<string, string> recorded, CancellationToken cancellationToken)
-    {
-        var sha = TranscriptText.Sha256(bytes);
-
-        json.WriteStartObject();
-        json.WriteString("document", name);
-        json.WriteString("sha256", sha);
-        if (recorded.TryGetValue(sha, out var first))
-        {
-            json.WriteString("sameAs", first);
-            json.WriteEndObject();
-            return;
-        }
-
-        recorded[sha] = name;
-
-        var folder = Path.Combine(Path.GetTempPath(), "EtAlii.Adp.DependencyGraphTranscript", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(folder);
-        try
-        {
-            var body = Path.Combine(folder, Path.GetFileNameWithoutExtension(name) + Diagram.DocumentExtension);
-            await File.WriteAllBytesAsync(body, bytes, cancellationToken);
-            using var session = new Session(folder, body);
-            await session.ReadAsync(cancellationToken);
-            await WriteReadingsAsync(json, session, bytes, cancellationToken);
-            await WriteEditsAsync(json, name, session, cancellationToken);
-        }
-        finally
-        {
-            try
-            {
-                Directory.Delete(folder, recursive: true);
-            }
-            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-            {
-                // A temp folder left behind changes nothing recorded.
-            }
-        }
-
-        json.WriteEndObject();
+        var body = Path.Combine(folder, Path.GetFileNameWithoutExtension(document.Name) + Diagram.DocumentExtension);
+        await File.WriteAllBytesAsync(body, bytes, cancellationToken);
+        using var session = new Session(folder, body);
+        await session.ReadAsync(cancellationToken);
+        await WriteReadingsAsync(json, session, bytes, cancellationToken);
+        await WriteEditsAsync(json, document.Name, session, cancellationToken);
     }
 
     private static async Task WriteReadingsAsync(Utf8JsonWriter json, Session session, byte[] bytes, CancellationToken cancellationToken)
