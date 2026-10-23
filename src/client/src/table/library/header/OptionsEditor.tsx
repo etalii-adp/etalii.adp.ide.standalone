@@ -19,6 +19,10 @@ export interface OptionsEditorProps {
   position: { x: number; y: number };
   raise: (gesture: TableGesture) => void;
   onClose: () => void;
+  /** Whether a new option can be added from the panel; true for a column, whose options are made here. */
+  addable?: boolean;
+  /** What deleting an option some rows have asks, for the option and how many have it; the table's words when absent. */
+  deleteQuestion?: (option: TableOption, uses: number) => string;
 }
 
 /**
@@ -29,7 +33,7 @@ export interface OptionsEditorProps {
  * <b>A name is committed when its field is left or Enter is pressed</b>, not on every key: a
  * rename is an edit of the file, and one per letter would be a write per letter.
  */
-export function OptionsEditor({ column, position, raise, onClose }: OptionsEditorProps) {
+export function OptionsEditor({ column, position, raise, onClose, addable = true, deleteQuestion = tableDeleteQuestion }: OptionsEditorProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const [adding, setAdding] = useState("");
   const listRef = useRef<HTMLUListElement>(null);
@@ -89,27 +93,29 @@ export function OptionsEditor({ column, position, raise, onClose }: OptionsEdito
     <div ref={panelRef} className="table-options-editor" role="dialog" aria-label={`Options of ${column.name}`} style={{ left: Math.max(PANEL_MARGIN, position.x), top: position.y }}>
       <ul className="table-options-list" ref={listRef}>
         {column.options.map((option, index) => (
-          <OptionLine key={option.id} column={column} option={option} index={index} count={column.options.length} raise={raise} handle={drag.press(option)} />
+          <OptionLine key={option.id} column={column} option={option} index={index} count={column.options.length} raise={raise} handle={drag.press(option)} deleteQuestion={deleteQuestion} />
         ))}
       </ul>
-      <div className="table-options-add">
-        <input
-          type="text"
-          aria-label="New option"
-          placeholder="Add an option…"
-          value={adding}
-          onChange={(event) => setAdding(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") {
-              event.preventDefault();
-              add();
-            }
-          }}
-        />
-        <button type="button" disabled={adding.trim() === ""} onClick={add}>
-          Add
-        </button>
-      </div>
+      {addable && (
+        <div className="table-options-add">
+          <input
+            type="text"
+            aria-label="New option"
+            placeholder="Add an option…"
+            value={adding}
+            onChange={(event) => setAdding(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                add();
+              }
+            }}
+          />
+          <button type="button" disabled={adding.trim() === ""} onClick={add}>
+            Add
+          </button>
+        </div>
+      )}
     </div>,
     document.body,
   );
@@ -123,9 +129,15 @@ interface OptionLineProps {
   index: number;
   count: number;
   raise: (gesture: TableGesture) => void;
+  deleteQuestion: (option: TableOption, uses: number) => string;
 }
 
-function OptionLine({ column, option, index, count, raise, handle }: OptionLineProps) {
+/** What deleting an option of a table's column asks. */
+function tableDeleteQuestion(_option: TableOption, uses: number): string {
+  return uses === 1 ? "1 row has this option. Deleting it clears that value." : `${uses} rows have this option. Deleting it clears those values.`;
+}
+
+function OptionLine({ column, option, index, count, raise, handle, deleteQuestion }: OptionLineProps) {
   const [name, setName] = useState(option.name);
 
   // The model's name is the truth: a rename that was refused, or made elsewhere, shows here.
@@ -190,7 +202,7 @@ function OptionLine({ column, option, index, count, raise, handle }: OptionLineP
       {asking && (
         // An option some rows have is not deleted on one press: its author is told how many first.
         <div className="table-options-ask" role="alertdialog" aria-label={`Delete ${option.name}?`}>
-          <span>{uses === 1 ? "1 row has this option. Deleting it clears that value." : `${uses} rows have this option. Deleting it clears those values.`}</span>
+          <span>{deleteQuestion(option, uses)}</span>
           <button type="button" onClick={remove}>
             Delete
           </button>

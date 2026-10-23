@@ -14,6 +14,36 @@ export interface HierarchySurfaceLabelDefinition {
   many: boolean;
   /** The types that carry it. */
   on: readonly string[];
+  /** How its values and its list are changed on the page (FR-011); absent for a label that is only shown. */
+  edit?: HierarchySurfaceLabelEdit;
+}
+
+/**
+ * How a label of many values is changed: a field below the title that searches the label's list, picks and creates, and
+ * the list's editor, where a member is renamed, recoloured, put in its place and deleted. Each gesture sends one
+ * operation of the specification; an add or a remove names the node, the others the member of the list.
+ */
+export interface HierarchySurfaceLabelEdit {
+  operations: {
+    /** A value the node carries from now on, picked or created by its name; its param is the name. */
+    add: string;
+    /** A value the node no longer carries; its param is the name. */
+    remove: string;
+    /** A member renamed, and every node that carries it with it; its param is the name. */
+    rename: string;
+    /** A member's colour; its param is the colour. */
+    recolour: string;
+    /** A member put after another, or first without one; its param is the member it goes after. */
+    move: string;
+    /** A member deleted, and taken from every node that carries it, asked first as `deletion` says. */
+    delete: string;
+  };
+  /** The names of the params: a value's name, a member's colour, and the member a moved one goes after. */
+  params: { name: string; colour: string; after: string };
+  /** What the field and the list say: the list's name, and the words of an add and a remove. */
+  words: { list: string; add: string; remove: string };
+  /** When deleting a member asks first, and in which words: the specification's `confirm` of its delete. */
+  deletion: { threshold: number; message: (name: string, count: number) => string };
 }
 
 /** A control that adds a node: the operation it sends, with no params, and what the control says. */
