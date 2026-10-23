@@ -21,10 +21,10 @@ public sealed class CausalLoopRoundTripTests : IDisposable
 
     public void Dispose() => _testFolder.Dispose();
 
-    public static TheoryData<string> Documents() => [.. CausalLoopTranscript.Corpus()];
+    public static TheoryData<string> Documents() => [.. CausalLoopCorpus.Paths()];
 
     private static Task<string> ReadAsync(string relative) =>
-        File.ReadAllTextAsync(Path.Combine(CausalLoopTranscript.SourceFolder, relative), TestContext.Current.CancellationToken);
+        File.ReadAllTextAsync(Path.Combine(CausalLoopCorpus.SourceFolder, relative), TestContext.Current.CancellationToken);
 
     [Theory]
     [MemberData(nameof(Documents))]

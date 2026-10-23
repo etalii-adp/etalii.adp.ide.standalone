@@ -46,80 +46,29 @@ namespace EtAlii.Adp.Diagram.CausalLoopDiagram.Tests.Parity;
 /// free ones, and the layouts are deterministic, so no answer depends on the clock or on chance.
 /// </para>
 /// </remarks>
-internal static class CausalLoopTranscript
+public sealed class CausalLoopTranscript() : TranscriptAdapter("causal-loop-diagram", CausalLoopCorpus.TestProject, "causal-loop.transcript.json")
 {
-    /// <summary>The checked-in file's name, in this project's <c>Parity</c> folder.</summary>
-    private const string FileName = "causal-loop.transcript.json";
-
-    private const string TestProject = "EtAlii.Adp.Diagram.CausalLoopDiagram.Tests";
     internal const string Unknown = "parity:unknown";
     private const string Nobody = "nobody";
 
     private static readonly TypeRegistry _payloadTypes = TypeRegistry.FromFiles(Wire.CausalLoopReflection.Descriptor);
 
-    /// <summary>The module's folder, <c>src/diagrams/causal-loop-diagram</c>.</summary>
-    private static string ModuleFolder { get; } = RepositoryPaths.Under("src", "diagrams", "causal-loop-diagram");
-
-    /// <summary>The checked-in transcript.</summary>
-    public static string CheckedInPath => Path.Combine(ModuleFolder, "backend", TestProject, "Parity", FileName);
-
-    internal static string SourceFolder => Path.GetFullPath(Path.Combine(ModuleFolder, "..", ".."));
-
     private static string Placement => GestureIds.Placement(240, 160);
 
-    /// <summary>The corpus, as paths relative to <c>src/</c> with forward slashes, in the order they are recorded.</summary>
-    internal static IReadOnlyList<string> Corpus()
+    public override string Origin => Diagram.CausalLoop.Origin.Key;
+
+    protected override IReadOnlyList<ToolboxItemDefinition> Toolbox => CausalLoopDefinition.Definition.Toolbox;
+
+    public override IReadOnlyList<TranscriptDocument> Corpus() => [.. CausalLoopCorpus.Paths().Select(OnDisk)];
+
+    public override async Task WriteBeforeDocumentsAsync(Utf8JsonWriter json, CancellationToken cancellationToken)
     {
-        var fixtures = Directory.GetFiles(Path.Combine(ModuleFolder, "backend", TestProject, "Fixtures"), "*.cld");
-        var examples = Directory.GetDirectories(Path.Combine(ModuleFolder, "examples")).SelectMany(folder => Directory.GetFiles(folder, "*.cld"));
-        var shipped = Directory.GetDirectories(Path.Combine(SourceFolder, "examples", "diagrams", "causal-loop-diagram")).SelectMany(folder => Directory.GetFiles(folder, "*.cld"));
-        return [.. Sorted(fixtures), .. Sorted(examples), .. Sorted(shipped)];
+        await base.WriteBeforeDocumentsAsync(json, cancellationToken);
 
-        static IEnumerable<string> Sorted(IEnumerable<string> paths) =>
-            paths.Select(path => Path.GetRelativePath(SourceFolder, path).Replace('\\', '/')).Order(StringComparer.Ordinal);
-    }
-
-    /// <summary>The whole transcript, as the bytes the checked-in file must hold.</summary>
-    public static async Task<byte[]> GenerateAsync(CancellationToken cancellationToken)
-    {
-        using var stream = new MemoryStream();
-        await using (var json = new Utf8JsonWriter(stream, TranscriptText.WriterOptions))
-        {
-            json.WriteStartObject();
-            json.WriteString("module", Diagram.CausalLoop.Origin.Key);
-            json.WriteString("generator", $"src/diagrams/causal-loop-diagram/backend/{TestProject}/Parity/CausalLoopTranscript.cs");
-            json.WriteString("regenerate", "ADP_WRITE_PARITY_TRANSCRIPTS=1 dotnet test --project <this test project> (then review the diff)");
-
-            // The toolbox is static: it does not read the document, so it is written once.
-            json.WriteStartArray("toolbox");
-            foreach (var item in CausalLoopDefinition.Definition.Toolbox)
-            {
-                json.WriteStringValue($"{item.Id} | {item.Label} | {item.Icon} | drops {item.DropActionId} | {item.Description}");
-            }
-
-            json.WriteEndArray();
-
-            // What a new .cld is created with: one of the two sources finding B9 says disagree.
-            await using (var services = Services(new DiagramViewportRegistry()))
-            {
-                var factory = services.GetServices<IDiagramDocumentFactory>().Single(candidate => candidate.Origin == Diagram.CausalLoop.Origin);
-                json.WriteString("emptyDocument", factory.CreateEmptyDocument("parity"));
-            }
-
-            json.WriteStartArray("documents");
-            var recorded = new Dictionary<string, string>(StringComparer.Ordinal);
-            foreach (var relative in Corpus())
-            {
-                await WriteDocumentAsync(json, relative, recorded, cancellationToken);
-            }
-
-            json.WriteEndArray();
-            json.WriteEndObject();
-            await json.FlushAsync(cancellationToken);
-        }
-
-        stream.Write("\r\n"u8);
-        return stream.ToArray();
+        // What a new .cld is created with: one of the two sources finding B9 says disagree.
+        await using var services = Services(new DiagramViewportRegistry());
+        var factory = services.GetServices<IDiagramDocumentFactory>().Single(candidate => candidate.Origin == Diagram.CausalLoop.Origin);
+        json.WriteString("emptyDocument", factory.CreateEmptyDocument("parity"));
     }
 
     /// <summary>The module's services as the existing tests build them, with the host's viewport registry supplied.</summary>
@@ -130,53 +79,27 @@ internal static class CausalLoopTranscript
             .AddCausalLoop()
             .BuildServiceProvider();
 
-    private static async Task WriteDocumentAsync(Utf8JsonWriter json, string relative, Dictionary<string, string> recorded, CancellationToken cancellationToken)
+    public override async Task WriteDocumentAsync(Utf8JsonWriter json, TranscriptDocument document, byte[] bytes, string folder, CancellationToken cancellationToken)
     {
-        var source = Path.Combine(SourceFolder, relative);
-        var bytes = await File.ReadAllBytesAsync(source, cancellationToken);
-        var sha = TranscriptText.Sha256(bytes);
+        var source = Path.Combine(SourceFolder, document.Name);
+        var body = Path.Combine(folder, Path.GetFileName(source));
+        await File.WriteAllBytesAsync(body, bytes, cancellationToken);
 
-        json.WriteStartObject();
-        json.WriteString("document", relative);
-        json.WriteString("sha256", sha);
-        if (recorded.TryGetValue(sha, out var first))
+        string? registration = null;
+        var besideIt = Path.ChangeExtension(source, ".adp");
+        if (File.Exists(besideIt))
         {
-            json.WriteString("sameAs", first);
-            json.WriteEndObject();
-            return;
+            registration = Path.ChangeExtension(body, ".adp");
+            await File.WriteAllBytesAsync(registration, await File.ReadAllBytesAsync(besideIt, cancellationToken), cancellationToken);
         }
 
-        recorded[sha] = relative;
+        json.WriteString("registration", registration is null ? "none" : $"{Path.GetFileName(registration)}, sha256 {TranscriptText.Sha256(await File.ReadAllBytesAsync(registration, cancellationToken))}");
 
-        var folder = Path.Combine(Path.GetTempPath(), "EtAlii.Adp.CausalLoopTranscript", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(folder);
-        try
-        {
-            var body = Path.Combine(folder, Path.GetFileName(source));
-            await File.WriteAllBytesAsync(body, bytes, cancellationToken);
+        await using var session = new Session(folder, body, registration);
 
-            string? registration = null;
-            var besideIt = Path.ChangeExtension(source, ".adp");
-            if (File.Exists(besideIt))
-            {
-                registration = Path.ChangeExtension(body, ".adp");
-                await File.WriteAllBytesAsync(registration, await File.ReadAllBytesAsync(besideIt, cancellationToken), cancellationToken);
-            }
-
-            json.WriteString("registration", registration is null ? "none" : $"{Path.GetFileName(registration)}, sha256 {TranscriptText.Sha256(await File.ReadAllBytesAsync(registration, cancellationToken))}");
-
-            await using var session = new Session(folder, body, registration);
-
-            await session.ReadAsync(cancellationToken);
-            await WriteReadingsAsync(json, session, bytes, cancellationToken);
-            await WriteEditsAsync(json, session, cancellationToken);
-        }
-        finally
-        {
-            TestFolder.TryDelete(folder);
-        }
-
-        json.WriteEndObject();
+        await session.ReadAsync(cancellationToken);
+        await WriteReadingsAsync(json, session, bytes, cancellationToken);
+        await WriteEditsAsync(json, session, cancellationToken);
     }
 
     private static async Task WriteReadingsAsync(Utf8JsonWriter json, Session session, byte[] bytes, CancellationToken cancellationToken)

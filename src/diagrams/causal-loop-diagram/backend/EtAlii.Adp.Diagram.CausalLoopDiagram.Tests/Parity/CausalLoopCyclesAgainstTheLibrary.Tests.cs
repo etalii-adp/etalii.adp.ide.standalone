@@ -30,14 +30,14 @@ public class CausalLoopCyclesAgainstTheLibraryTests
     /// <summary>The documents of the corpus on which the two orders differ.</summary>
     private static readonly string[] OrderDiffers = ["lenient-spellings.cld", "weight-forms.cld"];
 
-    public static TheoryData<string> Documents() => [.. CausalLoopTranscript.Corpus()];
+    public static TheoryData<string> Documents() => [.. CausalLoopCorpus.Paths()];
 
     [Theory]
     [MemberData(nameof(Documents))]
     public async Task TheLibrary_FindsTheToolsCycles_AndTheirOrderDiffersOnlyWhereNamed(string relative)
     {
         // Arrange.
-        var text = await File.ReadAllTextAsync(Path.Combine(CausalLoopTranscript.SourceFolder, relative), TestContext.Current.CancellationToken);
+        var text = await File.ReadAllTextAsync(Path.Combine(CausalLoopCorpus.SourceFolder, relative), TestContext.Current.CancellationToken);
         var diagram = CausalLoopBody.Parse(text).Disl.Diagram;
 
         // Act.
@@ -57,8 +57,8 @@ public class CausalLoopCyclesAgainstTheLibraryTests
     public async Task OnWeightForms_TheLibrarySortsWhereTheToolReportsAsItFinds()
     {
         // Arrange.
-        var relative = CausalLoopTranscript.Corpus().Single(path => path.EndsWith("/weight-forms.cld", StringComparison.Ordinal));
-        var text = await File.ReadAllTextAsync(Path.Combine(CausalLoopTranscript.SourceFolder, relative), TestContext.Current.CancellationToken);
+        var relative = CausalLoopCorpus.Paths().Single(path => path.EndsWith("/weight-forms.cld", StringComparison.Ordinal));
+        var text = await File.ReadAllTextAsync(Path.Combine(CausalLoopCorpus.SourceFolder, relative), TestContext.Current.CancellationToken);
         var diagram = CausalLoopBody.Parse(text).Disl.Diagram;
 
         // Act.

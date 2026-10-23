@@ -10,14 +10,14 @@ namespace EtAlii.Adp.Diagram.CausalLoopDiagram.Tests.Parity;
 /// </summary>
 public class CausalLoopDerivedPolarityTests
 {
-    public static TheoryData<string> Documents() => [.. CausalLoopTranscript.Corpus()];
+    public static TheoryData<string> Documents() => [.. CausalLoopCorpus.Paths()];
 
     [Theory]
     [MemberData(nameof(Documents))]
     public async Task EveryLoop_HasTheHandWrittenPolarity_AndDisagreement(string relative)
     {
         // Arrange.
-        var text = await File.ReadAllTextAsync(Path.Combine(CausalLoopTranscript.SourceFolder, relative), TestContext.Current.CancellationToken);
+        var text = await File.ReadAllTextAsync(Path.Combine(CausalLoopCorpus.SourceFolder, relative), TestContext.Current.CancellationToken);
 
         // Act.
         var model = CausalLoopBody.Parse(text).Read();
