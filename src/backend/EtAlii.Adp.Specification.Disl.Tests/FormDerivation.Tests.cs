@@ -223,4 +223,40 @@ public class FormDerivationTests
         Assert.Empty(FormDerivation.Derive(specification, diagram, new DislEnv(), WireIdMap.None));
         Assert.Equal("Inner", Assert.Single(FormDerivation.Derive(specification, box, new DislEnv(), WireIdMap.None)).Value);
     }
+
+    /// <summary>
+    /// A property row keyed by its form's type (<c>"&lt;Type&gt;/&lt;key&gt;"</c> in the <c>x-</c> block's <c>properties</c>):
+    /// two forms whose items share a key map to two wire ids, a subtype takes its ancestor's, the diagram's form is
+    /// keyed by <c>diagram</c>, and a key with no type-keyed entry keeps the plain one.
+    /// </summary>
+    private static readonly DislSpecification TypeKeyedRows = Specifications.Loaded(Specifications.With("""
+        "metamodel": {
+          "diagram": { "attributes": { "label": { "type": "string" } } },
+          "types": {
+            "Region": { "attributes": { "label": { "type": "string" } } },
+            "Frame": { "extends": "Region" },
+            "Note": { "attributes": { "label": { "type": "string" } } } } },
+        "forms": {
+          "region": { "for": ["Region"], "items": [ { "attribute": "label", "id": "label" } ] },
+          "note": { "for": ["Note"], "items": [ { "attribute": "label", "id": "label" } ] },
+          "diagram": { "for": "diagram", "items": [ { "attribute": "label", "id": "label" } ] } },
+        "x-test": { "properties": { "Region/label": "test.region.label", "diagram/label": "test.diagram.label", "label": "test.label" } }
+        """));
+
+    [Fact]
+    public void ARowsId_IsKeyedByItsFormsType_BeforeItsKeyAlone()
+    {
+        // Arrange.
+        var ids = WireIdMap.Of(TypeKeyedRows, "x-test");
+        var diagram = new DislDiagram(TypeKeyedRows, new Dictionary<string, object?> { ["label"] = "d" });
+        var region = diagram.AddNode("Region", "r", new Dictionary<string, object?> { ["label"] = "r" });
+        var frame = diagram.AddNode("Frame", "f", new Dictionary<string, object?> { ["label"] = "f" });
+        var note = diagram.AddNode("Note", "n", new Dictionary<string, object?> { ["label"] = "n" });
+
+        // Act and assert.
+        Assert.Equal("test.region.label", Assert.Single(FormDerivation.Derive(TypeKeyedRows, region, new DislEnv(), ids)).Id);
+        Assert.Equal("test.region.label", Assert.Single(FormDerivation.Derive(TypeKeyedRows, frame, new DislEnv(), ids)).Id);
+        Assert.Equal("test.label", Assert.Single(FormDerivation.Derive(TypeKeyedRows, note, new DislEnv(), ids)).Id);
+        Assert.Equal("test.diagram.label", Assert.Single(FormDerivation.Derive(TypeKeyedRows, diagram, new DislEnv(), ids)).Id);
+    }
 }
