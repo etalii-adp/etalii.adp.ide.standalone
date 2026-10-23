@@ -34,7 +34,7 @@ public sealed partial class BundledDefinitionTests : BundledDefinitionContract<B
     [GeneratedRegex("""<EmptyCanvas definition=\{ANSIBLE_DEFINITION\} className="ansible-canvas-message" />""")]
     private static partial Regex EmptyCanvasOfTheDefinition();
 
-    public static TheoryData<string> Folders() => [.. AnsibleTranscript.Corpus()];
+    public static TheoryData<string> Folders() => [.. AnsibleCorpus.Folders()];
 
     /// <summary>
     /// Every id the definition's <c>derived</c> expressions compute is the id the plugin delivers, element for
