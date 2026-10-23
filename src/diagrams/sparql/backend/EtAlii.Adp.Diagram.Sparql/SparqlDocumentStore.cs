@@ -75,10 +75,10 @@ public sealed class SparqlDocumentStore : ISparqlDocumentStore
     {
         var body = SparqlBody.Parse(text);
         var document = new SparqlDocument(body);
-        if (!body.IsUnreadable) return new(text, new ParseOutcome<SparqlDocument>(document, []));
+        if (!body.IsUnreadable) return new DocumentEntry<string, SparqlDocument>(text, new ParseOutcome<SparqlDocument>(document, []));
 
         var finding = body.Reading.Findings[0];
-        return new(text, new ParseOutcome<SparqlDocument>(document, [new ParseProblem((finding.Location?.Line ?? 1) - 1, finding.Message)], finding.Message));
+        return new DocumentEntry<string, SparqlDocument>(text, new ParseOutcome<SparqlDocument>(document, [new ParseProblem((finding.Location?.Line ?? 1) - 1, finding.Message)], finding.Message));
     }
 
     /// <summary>
