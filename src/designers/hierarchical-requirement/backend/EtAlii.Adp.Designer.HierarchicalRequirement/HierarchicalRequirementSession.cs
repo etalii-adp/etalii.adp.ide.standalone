@@ -122,7 +122,7 @@ internal sealed class HierarchicalRequirementSession : IHierarchySurfaceSession
     public string Gesture(ShortGuid editId, HierarchySurfaceGesture gesture)
     {
         ArgumentNullException.ThrowIfNull(gesture);
-        if (TextOperations.Handles(gesture.Operation) || StructureOperations.Handles(gesture.Operation))
+        if (TextOperations.Handles(gesture.Operation) || StructureOperations.Handles(gesture.Operation) || AssessmentOperations.Handles(gesture.Operation))
         {
             return BodyGesture(editId, gesture);
         }
@@ -145,7 +145,7 @@ internal sealed class HierarchicalRequirementSession : IHierarchySurfaceSession
     }
 
     /// <summary>
-    /// Takes a change of the body, of an entry's text or of the hierarchy: refused at once when the page cannot be changed,
+    /// Takes a change of the body, of an entry's text, of the hierarchy or of an assessment: refused at once when the page cannot be changed,
     /// the entry is gone or a text cannot be written; otherwise run through the history behind the writes before it,
     /// against the bytes the page was made from.
     /// </summary>
@@ -159,11 +159,16 @@ internal sealed class HierarchicalRequirementSession : IHierarchySurfaceSession
             if (TextOperations.Refusal(gesture.Operation, value) is { Length: > 0 } refusal) return refusal;
         }
 
+        if (AssessmentOperations.Refusal(gesture.Operation, gesture.Params) is { Length: > 0 } unwritable) return unwritable;
+
         lock (_gate)
         {
             if (_reading.Model.ReadOnlyReason.Length > 0) return _reading.Model.ReadOnlyReason;
             if (_reading.Files.Body is not { } expected) return HierarchicalRequirementGestures.Drifted;
-            if (gesture.Operation != StructureOperations.AddTopItem && _reading.Model.Nodes.All(node => node.Id != gesture.TargetId)) return HierarchicalRequirementGestures.Drifted;
+            var gone = AssessmentOperations.TargetsAnAssessment(gesture.Operation)
+                ? _reading.Model.Notes.All(note => note.Id != gesture.TargetId)
+                : gesture.Operation != StructureOperations.AddTopItem && _reading.Model.Nodes.All(node => node.Id != gesture.TargetId);
+            if (gone) return HierarchicalRequirementGestures.Drifted;
 
             var command = new HierarchicalRequirementEditCommand(_bodyPath, gesture.Operation, gesture.TargetId, gesture.Params, expected);
             _writing++;

@@ -37,6 +37,7 @@ internal sealed class HierarchicalRequirementEditCommandHandler(IHierarchicalReq
         {
             _ when TextOperations.Handles(command.Operation) => TextOperations.Apply(before, name, command.Operation, command.TargetId, command.Params.GetValueOrDefault(TextOperations.AttributeOf(command.Operation), "")),
             _ when StructureOperations.Handles(command.Operation) => StructureOperations.Apply(before, name, command.Operation, command.TargetId, command.Params),
+            _ when AssessmentOperations.Handles(command.Operation) => AssessmentOperations.Apply(before, name, command.Operation, command.TargetId, command.Params),
             _ => (null, $"'{command.Operation}' cannot be done here yet."),
         };
         if (after is null)
