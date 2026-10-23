@@ -244,7 +244,7 @@ public sealed class DotNetDependencyGraphSessionTests : IDisposable
         // Arrange.
         var cancellationToken = TestContext.Current.CancellationToken;
         var example = Path.Combine(_root, "pipeline-toolkit");
-        TestFolder.CopyTree(Path.Combine(Parity.DotNetTranscript.SourceFolder, "examples", "diagrams", "dotnet-dependency-graph", "pipeline-toolkit"), example);
+        TestFolder.CopyTree(Path.Combine(Parity.DotNetCorpus.SourceFolder, "examples", "diagrams", "dotnet-dependency-graph", "pipeline-toolkit"), example);
         var solution = Path.Combine(example, "PipelineToolkit.slnx");
         var registration = Path.Combine(example, "PipelineToolkit.adp");
         var session = SessionFor(solution, registration);
