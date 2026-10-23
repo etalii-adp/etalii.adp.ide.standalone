@@ -34,6 +34,9 @@ internal sealed partial class BodyEdit
         return _read.Body.Model.Elements.First(element => element.Line == entry.Line && element.Type is ItemType or "Requirement").Id;
     }
 
+    /// <summary>How many elements the operation itself sets attributes of so far; the numbering is not counted.</summary>
+    public int Sets => _sets.Count;
+
     /// <summary>Sets <paramref name="attribute"/> of the library's element <paramref name="elementId"/> to <paramref name="value"/>.</summary>
     public void Set(string elementId, string attribute, object? value) => SetsOf(elementId)[attribute] = value;
 
