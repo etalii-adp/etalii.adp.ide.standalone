@@ -147,7 +147,9 @@
 .hs-toggle,
 .hs-focus,
 .hs-hidden-levels,
-.hs-add-description {
+.hs-add-description,
+.hs-note-mark,
+.hs-note-add {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -163,7 +165,8 @@
 .hs-toggle:hover,
 .hs-focus:hover,
 .hs-hidden-levels:hover,
-.hs-add-description:hover {
+.hs-add-description:hover,
+.hs-note-add:hover {
   color: var(--color-text);
 }
 
@@ -179,9 +182,31 @@
   overflow-wrap: anywhere;
 }
 
-.hs-note-mark {
-  position: relative;
+/* The icon of a box's notes, at its top right (FR-015): its open notes' mark, or the way to add the first. */
+.hs-note-mark,
+.hs-note-add {
+  position: absolute;
+  top: 6px;
+  right: 4px;
+}
+
+.hs-note-mark,
+.hs-note-mark:hover {
+  width: auto;
+  min-width: 18px;
   color: var(--color-warning);
+}
+
+/* With nothing to show, the way to add is offered where a person is looking: the box under the pointer or selected. */
+.hs-note-add {
+  visibility: hidden;
+}
+
+.hs-box:hover > .hs-note-add,
+.hs-box.hs-selected > .hs-note-add,
+.hs-note-add[aria-expanded="true"],
+.hs-note-add:focus-visible {
+  visibility: visible;
 }
 
 .hs-note-count {
@@ -210,7 +235,7 @@
 /* The mark of the levels the page does not show, at the box's right edge (R10). */
 .hs-hidden-levels {
   position: absolute;
-  top: 6px;
+  top: 28px;
   right: 4px;
 }
 
@@ -308,4 +333,107 @@
 
 .hs-box.hs-drop-before {
   box-shadow: inset 0 3px 0 var(--color-primary);
+}
+
+/* The list of a box's notes, under its icon (FR-016): above the boxes to its right, as wide as a level's column allows. */
+.hs-note-list {
+  position: absolute;
+  top: 26px;
+  right: 4px;
+  z-index: 10;
+  box-sizing: border-box;
+  width: 300px;
+  max-width: calc(100vw - 32px);
+  padding: 6px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  box-shadow: var(--shadow);
+  cursor: default;
+}
+
+.hs-notes {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hs-note {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.hs-note-resolved .hs-note-head,
+.hs-note-resolved .hs-note-detail {
+  color: var(--color-text-muted);
+}
+
+.hs-note-resolved .hs-note-text {
+  text-decoration: line-through;
+}
+
+.hs-note-head {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.hs-note-head .mdi {
+  color: var(--color-warning);
+}
+
+.hs-note-text {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.hs-note-detail {
+  margin: 0 0 0 22px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.hs-note-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: 22px;
+}
+
+.hs-note-action {
+  padding: 0;
+  white-space: nowrap;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.hs-note-action:hover:not(:disabled) {
+  color: var(--color-text);
+}
+
+.hs-note-action:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.hs-note-new {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  padding-top: 6px;
+}
+
+.hs-note-kind {
+  width: auto;
+}
+
+.hs-note-new .hs-field:not(.hs-note-kind) {
+  flex: 1;
+  min-width: 0;
 }

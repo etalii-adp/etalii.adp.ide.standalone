@@ -21,6 +21,11 @@ const definition: HierarchySurfaceDefinition = {
     moveEntry: "slide",
     delete: "drop",
   },
+  notes: {
+    operations: { add: "remark", change: "reword", resolve: "settle", remove: "strike" },
+    params: { kind: "sort", text: "line", detail: "more" },
+    words: { list: "Notes", add: "New note", change: "Reword", resolve: "Settle", reopen: "Unsettle", remove: "Strike" },
+  },
   moveParams: { into: "section", after: "behind" },
   deletion: { threshold: 1, message: (number: string, count: number) => `Drop ${number}? ${count} things concern it.` },
   shortcutKeys: ["Enter"],

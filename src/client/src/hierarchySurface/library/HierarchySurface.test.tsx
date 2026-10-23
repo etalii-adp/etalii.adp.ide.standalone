@@ -24,6 +24,11 @@ const definition: HierarchySurfaceDefinition = {
     moveEntry: "slide",
     delete: "drop",
   },
+  notes: {
+    operations: { add: "remark", change: "reword", resolve: "settle", remove: "strike" },
+    params: { kind: "sort", text: "line", detail: "more" },
+    words: { list: "Notes", add: "New note", change: "Reword", resolve: "Settle", reopen: "Unsettle", remove: "Strike" },
+  },
   moveParams: { into: "section", after: "behind" },
   deletion: { threshold: 1, message: (number: string, count: number) => `Drop ${number}? ${count} things concern it.` },
   shortcutKeys: ["Enter"],
@@ -119,7 +124,8 @@ describe("the hierarchy surface", () => {
     // Assert.
     const box = boxOf("Take an order");
     const parts = Array.from(box.children).map((child) => child.className);
-    expect(parts).toEqual(["hs-box-header", "hs-tags", "hs-description"]);
+    // The note icon stands at the box's top right, out of the flow (FR-015).
+    expect(parts).toEqual(["hs-box-header", "hs-tags", "hs-description", "mdi mdi-comment-plus-outline hs-note-add"]);
     const header = box.querySelector(".hs-box-header") as HTMLElement;
     expect(within(header).getByText("[2]").nextElementSibling?.textContent).toBe("Take an order");
     const tags = Array.from(box.querySelectorAll(".hs-tags .table-option-tag")).map((tag) => `${tag.textContent} ${tag.className}`);
@@ -206,7 +212,7 @@ describe("the hierarchy surface", () => {
 
     // Assert.
     const box = boxOf("Take an order");
-    expect(Array.from(box.children).map((child) => child.className)).toEqual(["hs-box-header", "hs-tags"]);
+    expect(Array.from(box.children).map((child) => child.className)).toEqual(["hs-box-header", "hs-tags", "mdi mdi-help-circle-outline hs-note-mark"]);
     expect(within(box).getByText("[2]")).toBeDefined();
     expect(box.querySelector(".hs-note-mark.mdi-help-circle-outline")).not.toBeNull();
     expect(within(box).getByRole("button", { name: "Expand [2] Take an order" }).getAttribute("aria-expanded")).toBe("false");

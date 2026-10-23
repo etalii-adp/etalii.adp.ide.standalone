@@ -4,7 +4,7 @@ import type { HierarchySurfaceDefinition } from "@client/hierarchySurface/librar
  * What the Hierarchical Requirement Designer declares for the hierarchy surface (spec 029 R9): its levels are items and
  * its entries requirements, the labels its `.des` gives under `surface.labels`, the icon of each assessment kind from
  * its `AssessmentKind`, the icon R10 settles for several open assessments, and the operations its gestures send with
- * their labels and the words of a delete's question. `register.test.ts` holds each to the definition as it is checked
+ * their labels and the words of a delete's question and of the assessments' list. `register.test.ts` holds each to the definition as it is checked
  * in.
  */
 export const hierarchicalRequirementSurface: HierarchySurfaceDefinition = {
@@ -32,6 +32,12 @@ export const hierarchicalRequirementSurface: HierarchySurfaceDefinition = {
     moveLevel: "moveItem",
     moveEntry: "moveRequirement",
     delete: "deleteEntry",
+  },
+  // The assessment operations, their params and labels; Resolve and Reopen are the two sides of resolveAssessment's CEL.
+  notes: {
+    operations: { add: "addAssessment", change: "changeAssessment", resolve: "resolveAssessment", remove: "removeAssessment" },
+    params: { kind: "kind", text: "text", detail: "detail" },
+    words: { list: "Assessments", add: "New assessment", change: "Change", resolve: "Resolve", reopen: "Reopen", remove: "Remove" },
   },
   moveParams: { into: "item", after: "after" },
   // The `confirm` of deleteEntry, its CEL written out: the count is the page's, from the model's references.

@@ -1,5 +1,5 @@
-import type { HierarchySurfaceNote } from "./api/hierarchySurfaceModel";
-import type { HierarchySurfaceDefinition } from "./definition/hierarchySurfaceDefinition";
+import type { HierarchySurfaceNote } from "../api/hierarchySurfaceModel";
+import type { HierarchySurfaceDefinition } from "../definition/hierarchySurfaceDefinition";
 
 /** The icon a node shows for its open notes, and what its tooltip says; null when it has none. */
 export interface NoteMark {
@@ -21,5 +21,5 @@ export function noteMarkOf(notes: readonly HierarchySurfaceNote[], ids: Readonly
     const only = open[0]!;
     return { icon: definition.noteIcons[only.kind] ?? definition.severalNotesIcon, count: 1, label: `${only.kind}: ${only.text}` };
   }
-  return { icon: definition.severalNotesIcon, count: open.length, label: `${open.length} open notes` };
+  return { icon: definition.severalNotesIcon, count: open.length, label: `${open.length} open ${definition.notes.words.list.toLowerCase()}` };
 }

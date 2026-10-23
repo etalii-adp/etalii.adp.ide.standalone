@@ -48,6 +48,26 @@ export interface HierarchySurfaceMoveParams {
   after: string;
 }
 
+/**
+ * What the notes of a node are made, changed and taken away by: the operation each gesture of the list sends, the
+ * params they carry, and the words of the list. An add names the node, the others the note.
+ */
+export interface HierarchySurfaceNotes {
+  operations: {
+    /** A new open note about the node; its params are the kind and the text. */
+    add: string;
+    /** A note's kind, text and detail written anew. */
+    change: string;
+    /** A note resolved, or reopened when it is resolved. */
+    resolve: string;
+    remove: string;
+  };
+  /** The names of the params: the kind, as the model names it, the one-line text and the lines below it. */
+  params: { kind: string; text: string; detail: string };
+  /** What the list and its controls say. */
+  words: { list: string; add: string; change: string; resolve: string; reopen: string; remove: string };
+}
+
 /** When a delete asks first, and in which words: the specification's `confirm` of its delete. */
 export interface HierarchySurfaceDeletion {
   /** It asks when this many nodes, notes or texts concern the node, or more. */
@@ -67,6 +87,8 @@ export interface HierarchySurfaceDefinition {
   /** The icon that stands for several open notes. */
   severalNotesIcon: string;
   operations: HierarchySurfaceOperations;
+  /** The notes' list, opened from the icon at a box's top right (FR-015, FR-016). */
+  notes: HierarchySurfaceNotes;
   moveParams: HierarchySurfaceMoveParams;
   deletion: HierarchySurfaceDeletion;
   /**
@@ -78,6 +100,9 @@ export interface HierarchySurfaceDefinition {
 
 /** The icon of a level whose deeper levels do not fit the page (spec 029 R10). */
 export const HIDDEN_LEVELS_ICON = "mdi-chevron-double-right";
+
+/** The icon at a box's top right while no open note is about it: the way to add the first. */
+export const ADD_NOTE_ICON = "mdi-comment-plus-outline";
 
 /** The icon of the control that makes a level the left edge of the page. */
 export const FOCUS_ICON = "mdi-target";
