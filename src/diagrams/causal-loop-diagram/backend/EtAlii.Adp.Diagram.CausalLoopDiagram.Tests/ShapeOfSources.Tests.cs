@@ -44,20 +44,7 @@ namespace EtAlii.Adp.Diagram.CausalLoopDiagram.Tests;
 /// </remarks>
 public class ShapeOfSourcesTests
 {
-    private static string ModuleRoot
-    {
-        get
-        {
-            var directory = new DirectoryInfo(AppContext.BaseDirectory);
-            while (directory is not null && !Directory.Exists(IoPath.Combine(directory.FullName, "examples")))
-            {
-                directory = directory.Parent;
-            }
-
-            Assert.SkipWhen(directory is null, "The module root was not found from the test output.");
-            return directory.FullName;
-        }
-    }
+    private static string ModuleRoot => RepositoryPaths.Under("src", "diagrams", "causal-loop-diagram");
 
     private static IReadOnlyList<string> SourceFiles() =>
         [.. Directory.EnumerateFiles(ModuleRoot, "*.cs", SearchOption.AllDirectories)

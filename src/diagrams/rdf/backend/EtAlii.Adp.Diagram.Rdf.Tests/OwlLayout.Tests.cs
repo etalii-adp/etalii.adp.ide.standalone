@@ -1,6 +1,5 @@
 using EtAlii.Adp.Documents;
 using Xunit;
-using IoPath = System.IO.Path;
 
 namespace EtAlii.Adp.Diagram.Rdf.Tests;
 
@@ -211,17 +210,6 @@ public class OwlLayoutTests
     }
 
     /// <summary>The vendored OWL-Time ontology - the real corpus these two guards measure.</summary>
-    private static RdfModel VendoredOntology()
-    {
-        var directory = new DirectoryInfo(AppContext.BaseDirectory);
-        while (directory is not null
-            && !File.Exists(IoPath.Combine(directory.FullName, "src", "diagrams", "rdf", "examples", "owl-time", "owl-time.ttl")))
-        {
-            directory = directory.Parent;
-        }
-
-        Assert.NotNull(directory);
-        var path = IoPath.Combine(directory.FullName, "src", "diagrams", "rdf", "examples", "owl-time", "owl-time.ttl");
-        return RdfParser.Parse(LineDocument.Parse(File.ReadAllText(path)));
-    }
+    private static RdfModel VendoredOntology() =>
+        RdfParser.Parse(LineDocument.Parse(File.ReadAllText(RepositoryPaths.Under("src", "diagrams", "rdf", "examples", "owl-time", "owl-time.ttl"))));
 }

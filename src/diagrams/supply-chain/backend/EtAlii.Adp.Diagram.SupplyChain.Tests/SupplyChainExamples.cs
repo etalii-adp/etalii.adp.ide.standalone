@@ -13,18 +13,5 @@ internal static class SupplyChainExamples
     /// <summary>The GPU and memory example's body.</summary>
     public static string GpuMemory => Find("gpu-memory", "gpu-memory.supply");
 
-    private static string Find(string folder, string file)
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-        {
-            if (directory.Name == "supply-chain" && Directory.Exists(Path.Combine(directory.FullName, "backend")))
-            {
-                var path = Path.Combine(directory.FullName, "examples", folder, file);
-                return File.Exists(path) ? path : throw new InvalidOperationException($"The {folder} example is missing: {path}");
-            }
-        }
-
-        throw new InvalidOperationException(
-            $"No supply-chain folder above {AppContext.BaseDirectory}, so the examples cannot be found. That is a failure, not a skip.");
-    }
+    private static string Find(string folder, string file) => RepositoryPaths.Under("src", "diagrams", "supply-chain", "examples", folder, file);
 }

@@ -1,5 +1,4 @@
 using Xunit;
-using IoPath = System.IO.Path;
 
 namespace EtAlii.Adp.Diagram.CausalLoopDiagram.Tests;
 
@@ -22,20 +21,7 @@ namespace EtAlii.Adp.Diagram.CausalLoopDiagram.Tests;
 /// </remarks>
 public class CatalogTests
 {
-    private static string CatalogPath
-    {
-        get
-        {
-            var directory = new DirectoryInfo(AppContext.BaseDirectory);
-            while (directory is not null && !File.Exists(IoPath.Combine(directory.FullName, "docs", "tools.md")))
-            {
-                directory = directory.Parent;
-            }
-
-            Assert.SkipWhen(directory is null, "The repository's docs/tools.md was not found from the test output.");
-            return IoPath.Combine(directory.FullName, "docs", "tools.md");
-        }
-    }
+    private static string CatalogPath => RepositoryPaths.Under("docs", "tools.md");
 
     private static string Row()
     {

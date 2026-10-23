@@ -27,21 +27,7 @@ public class TimelineArrangementTests : IDisposable
     private IHistoryStack History => _historyStacks.Get(ProjectRoot.From(_workspace));
 
     /// <summary>The module's own roadmap: thirty elements scattered over seventeen rows.</summary>
-    private static string Roadmap
-    {
-        get
-        {
-            for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-            {
-                if (directory.Name == "timeline" && Directory.Exists(IoPath.Combine(directory.FullName, "examples")))
-                {
-                    return File.ReadAllText(IoPath.Combine(directory.FullName, "examples", "example-2", "roadmap.tml"));
-                }
-            }
-
-            throw new InvalidOperationException("No timeline folder above the test binary. That is a failure, not a skip.");
-        }
-    }
+    private static string Roadmap => File.ReadAllText(RepositoryPaths.Under("src", "diagrams", "timeline", "examples", "example-2", "roadmap.tml"));
 
     private string Write(string content)
     {
