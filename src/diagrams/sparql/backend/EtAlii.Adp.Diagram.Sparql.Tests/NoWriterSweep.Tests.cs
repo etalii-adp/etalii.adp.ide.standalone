@@ -3,6 +3,7 @@ using EtAlii.Adp.Context;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Sessions;
+using EtAlii.Adp.Specification.Fbl.Plugins;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -12,7 +13,7 @@ namespace EtAlii.Adp.Diagram.Sparql.Tests;
 /// <summary>
 /// The second layer of the no-writer proof, and the one that verifies the guarantee whole: a
 /// vendored query is byte-snapshotted, then every surface this module offers is exercised
-/// against it - a full render, every action the provider yields, a property set, a reposition,
+/// against it - the plugin's read, plans, template and watch, a full render, every action the provider yields, a property set, a reposition,
 /// its undo, and an external-edit reload - and the <c>.rq</c> is asserted byte-identical
 /// afterwards, with only the <c>.adp</c> changed.
 /// </summary>
@@ -70,6 +71,21 @@ public class NoWriterSweepTests : IDisposable
         var target = ContextTarget.ForElement(body, "var:x", ProjectRoot.From(_root), ShortGuid.NewShortGuid());
 
         // Act: everything the module can be asked to do, in one pass.
+        // 0. The plugin's four operations on the file's own bytes: a read, a plan of every kind of change, a
+        //    template and a watch. Each is handed a copy, so that nothing it did to its input could pass unseen.
+        var plugin = new SparqlQueryPlugin();
+        var files = new[] { new PluginFile("optional.rq", await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken)) };
+        var read = plugin.Read(new PluginReadRequest(files));
+        Assert.NotEmpty(read.Elements);
+        foreach (var change in SparqlQueryPluginTests.Changes().Select(row => row.Data))
+        {
+            Assert.IsType<PluginPlanResult.Refused>(plugin.Plan(new PluginPlanRequest(files, read, change)));
+        }
+
+        Assert.NotEmpty(plugin.Template(new PluginTemplateRequest("query", new Dictionary<string, string>())));
+        Assert.Empty(plugin.Watch(read));
+        Assert.Equal(queryBefore, files[0].Bytes);
+
         await using (var session = factory.Open(ShortGuid.NewShortGuid(), ProjectRoot.From(_root), body, registration))
         {
             // 1. A full render.
@@ -154,6 +170,8 @@ public class NoWriterSweepTests : IDisposable
         // Act & assert.
         AssertTestExists(assembly, typeof(NoWriterSurfaceTests), "TheModuleDeclaresNoCommandAndNoWriter");
         AssertTestExists(assembly, typeof(NoWriterSurfaceTests), "TheStoreSurface_EndsAtReading");
+        AssertTestExists(assembly, typeof(NoWriterSurfaceTests), "NoCodeInTheModule_PlansASplice_WritesABody_OrHoldsAWriter");
+        AssertTestExists(assembly, typeof(SparqlBindingTests), "TheBinding_IsReadOnly_WithTheSentenceTheDiagramShows");
         AssertTestExists(assembly, typeof(NoWriterSweepTests), "EverySurfaceThisModuleOffers_LeavesTheQueryByteIdentical");
         AssertTestExists(assembly, typeof(DiagramTests), "TheModule_RegistersNoToolboxAndNoCommands");
     }
