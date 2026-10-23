@@ -16,18 +16,18 @@ public class DiagramStateDecoratorTests : IDisposable
     private static readonly DiagramDefinition Structure = new(new ToolOrigin("ansible", "structure"), "Ansible structure", Subject: DiagramSubject.Folder);
     private static readonly EditorDefinition Plain = new("plain", "Plain Text", IsFallback: true);
 
+    private readonly TestFolder _testFolder = TestFolder.Create("diagram-state-decorator");
     private readonly string _root;
     private readonly IDiagramDefinitionCatalog _catalog = new TestDiagramDefinitionCatalog(Mindmap, Structure);
 
     public DiagramStateDecoratorTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     private sealed class StubEditorCatalog(params EditorDefinition[] definitions) : IEditorDefinitionCatalog

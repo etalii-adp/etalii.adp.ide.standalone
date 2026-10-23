@@ -11,17 +11,17 @@ namespace EtAlii.Adp.Editor.Tests;
 /// </summary>
 public class TextFileBufferTests : IDisposable
 {
+    private readonly TestFolder _testFolder = TestFolder.Create("text-file-buffer");
     private readonly string _root;
 
     public TextFileBufferTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     private string Write(string name, byte[] bytes)

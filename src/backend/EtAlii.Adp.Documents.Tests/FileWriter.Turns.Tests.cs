@@ -13,13 +13,14 @@ public class FileWriterTurnsTests : IDisposable
 {
     private static readonly TimeSpan Patience = TimeSpan.FromSeconds(10);
 
-    private readonly string _folder = IoPath.Combine(IoPath.GetTempPath(), "adp-file-writer-turns-" + Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-file-writer-turns");
+    private readonly string _folder;
 
-    public FileWriterTurnsTests() => Directory.CreateDirectory(_folder);
+    public FileWriterTurnsTests() => _folder = _testFolder.Path;
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_folder);
+        _testFolder.Dispose();
         GC.SuppressFinalize(this);
     }
 

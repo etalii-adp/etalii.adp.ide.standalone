@@ -11,17 +11,17 @@ public class AdpFileWriterTests : IDisposable
 {
     private readonly FileWriter _writer = new();
 
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-file-writer");
     private readonly string _folder;
 
     public AdpFileWriterTests()
     {
-        _folder = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_folder);
+        _folder = _testFolder.Path;
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_folder);
+        _testFolder.Dispose();
     }
 
     private string[] TempFiles() =>

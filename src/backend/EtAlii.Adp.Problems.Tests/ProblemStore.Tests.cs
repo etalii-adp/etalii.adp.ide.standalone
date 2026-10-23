@@ -12,13 +12,14 @@ public class ProblemStoreTests : IDisposable
     private static readonly ToolOrigin Mindmap = new("freeplane", "mindmap");
     private static readonly DiagramDefinition MindmapDefinition = new(Mindmap, "Mind map", Extension: ".mm");
 
+    private readonly TestFolder _testFolder = TestFolder.Create("problem-store");
     private readonly FakeTimeProvider _clock = new();
     private readonly string _appData;
     private readonly string _root;
 
     public ProblemStoreTests()
     {
-        var scratch = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
+        var scratch = _testFolder.Path;
         _appData = IoPath.Combine(scratch, "appdata");
         _root = IoPath.Combine(scratch, "project");
         Directory.CreateDirectory(_appData);
@@ -27,8 +28,7 @@ public class ProblemStoreTests : IDisposable
 
     public void Dispose()
     {
-        var scratch = IoPath.GetDirectoryName(_root)!;
-        TestFolder.TryDelete(scratch);
+        _testFolder.Dispose();
     }
 
     // ---- what an untouched project answers ---------------------------------------------

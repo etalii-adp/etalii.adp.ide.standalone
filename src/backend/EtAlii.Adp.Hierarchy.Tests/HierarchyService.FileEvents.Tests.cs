@@ -15,16 +15,18 @@ public sealed class HierarchyServiceFileEventsTests : IDisposable
 {
     private static readonly TimeSpan Patience = TimeSpan.FromSeconds(10);
 
-    private readonly string _appDataRoot = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("service-file-events");
+    private readonly string _appDataRoot;
     private readonly string _projectFolder;
 
     public HierarchyServiceFileEventsTests()
     {
+        _appDataRoot = _testFolder.Path;
         _projectFolder = IoPath.Combine(_appDataRoot, "project");
         Directory.CreateDirectory(_projectFolder);
     }
 
-    public void Dispose() => TestFolder.TryDelete(_appDataRoot);
+    public void Dispose() => _testFolder.Dispose();
 
     [Fact]
     public async Task TwoWatchesOfOneProject_ShareTheRootsOneWatcher_AndBothHearIt()

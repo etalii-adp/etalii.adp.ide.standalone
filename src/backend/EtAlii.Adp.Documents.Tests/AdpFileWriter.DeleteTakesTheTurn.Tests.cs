@@ -35,13 +35,14 @@ public class AdpFileWriterDeleteTakesTheTurnTests : IDisposable
 
     private static readonly TimeSpan Patience = TimeSpan.FromSeconds(10);
 
-    private readonly string _folder = IoPath.Combine(IoPath.GetTempPath(), "adp-delete-turn-" + Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-delete-turn");
+    private readonly string _folder;
 
-    public AdpFileWriterDeleteTakesTheTurnTests() => Directory.CreateDirectory(_folder);
+    public AdpFileWriterDeleteTakesTheTurnTests() => _folder = _testFolder.Path;
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_folder);
+        _testFolder.Dispose();
         GC.SuppressFinalize(this);
     }
 

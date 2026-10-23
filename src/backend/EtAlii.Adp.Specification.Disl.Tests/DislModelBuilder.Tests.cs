@@ -101,33 +101,27 @@ public class DislModelBuilderTests
     public void AnElementOfAFolderSubject_KeepsTheFileItWasReadIn()
     {
         // Arrange: a folder on disk read by a folder body, whose plugin says which file each element is in.
-        var folder = Path.Combine(Path.GetTempPath(), "disl-" + Guid.NewGuid().ToString("N"));
+        using var scratch = TestFolder.Create("disl");
+        var folder = scratch.Path;
         Directory.CreateDirectory(Path.Combine(folder, "pages"));
-        try
-        {
-            File.WriteAllText(Path.Combine(folder, "index.txt"), "index");
-            File.WriteAllText(Path.Combine(folder, "pages", "a.txt"), "a");
-            var problems = FblDocumentLoader.Load("""
-                { "fbl": "0.1", "bindings": { "notes": {
-                  "claims": { "names": ["index.txt"] },
-                  "body": { "kind": "folder", "recognise": { "all": ["index.txt"] },
-                    "files": [ { "name": "all", "glob": "**", "family": "lines" } ] },
-                  "reader": { "plugin": "net.example.files" } } } }
-                """u8.ToArray(), out var document);
-            Assert.Empty(problems);
-            var body = FolderBody.Open(folder, document!.Bindings["notes"], new FilePerItemPlugin());
+        File.WriteAllText(Path.Combine(folder, "index.txt"), "index");
+        File.WriteAllText(Path.Combine(folder, "pages", "a.txt"), "a");
+        var problems = FblDocumentLoader.Load("""
+            { "fbl": "0.1", "bindings": { "notes": {
+              "claims": { "names": ["index.txt"] },
+              "body": { "kind": "folder", "recognise": { "all": ["index.txt"] },
+                "files": [ { "name": "all", "glob": "**", "family": "lines" } ] },
+              "reader": { "plugin": "net.example.files" } } } }
+            """u8.ToArray(), out var document);
+        Assert.Empty(problems);
+        var body = FolderBody.Open(folder, document!.Bindings["notes"], new FilePerItemPlugin());
 
-            // Act.
-            var diagram = DislModelBuilder.From(body.Model, Mapped).Diagram;
+        // Act.
+        var diagram = DislModelBuilder.From(body.Model, Mapped).Diagram;
 
-            // Assert.
-            Assert.Equal([("index.txt", "index.txt"), ("pages/a.txt", "pages/a.txt")], diagram.Nodes.Select(node => (node.Id, node.File)));
-            Assert.Equal(("index.txt|pages/a.txt", "pages/a.txt"), (diagram.Relations.Single().Id, diagram.Relations.Single().File));
-        }
-        finally
-        {
-            Directory.Delete(folder, recursive: true);
-        }
+        // Assert.
+        Assert.Equal([("index.txt", "index.txt"), ("pages/a.txt", "pages/a.txt")], diagram.Nodes.Select(node => (node.Id, node.File)));
+        Assert.Equal(("index.txt|pages/a.txt", "pages/a.txt"), (diagram.Relations.Single().Id, diagram.Relations.Single().File));
     }
 
     /// <summary>Each read value against what the attribute stores: the value in its CEL type, or nothing when it does not fit.</summary>

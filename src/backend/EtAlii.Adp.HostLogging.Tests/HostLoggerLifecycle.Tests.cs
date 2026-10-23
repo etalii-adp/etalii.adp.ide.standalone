@@ -7,7 +7,6 @@ using Serilog;
 using Serilog.Core;
 using Serilog.Events;
 using Xunit;
-using IoPath = System.IO.Path;
 
 namespace EtAlii.Adp.HostLogging.Tests;
 
@@ -44,14 +43,15 @@ public class HostLoggerLifecycleTests : IDisposable
 {
     private static readonly TimeSpan Settle = TimeSpan.FromSeconds(5);
 
-    private readonly string _root = IoPath.Combine(IoPath.GetTempPath(), "adp-host-logger-" + Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-host-logger");
+    private readonly string _root;
     private readonly List<WebApplicationFactory<Program>> _hosts = [];
 
     // LogCapture's pipeline in this assembly: whatever a case does to the global, the tests that run
     // after it get it back.
     private readonly ILogger _original = Log.Logger;
 
-    public HostLoggerLifecycleTests() => Directory.CreateDirectory(_root);
+    public HostLoggerLifecycleTests() => _root = _testFolder.Path;
 
     public void Dispose()
     {
@@ -60,7 +60,7 @@ public class HostLoggerLifecycleTests : IDisposable
             host.Dispose();
         }
         Log.Logger = _original;
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
         GC.SuppressFinalize(this);
     }
 

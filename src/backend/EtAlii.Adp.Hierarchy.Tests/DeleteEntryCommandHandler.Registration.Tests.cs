@@ -15,17 +15,17 @@ public class DeleteEntryCommandHandlerRegistrationTests : IDisposable
     /// <summary>A designer type recognised by its registration alone, as the Knowledge designer is.</summary>
     private static readonly DesignerDefinition Sheet = new("fixture/sheet", "Sheet", Formats: [new DesignerFormat("YAML", ".yaml")]);
 
+    private readonly TestFolder _testFolder = TestFolder.Create("delete-registration");
     private readonly string _root;
     private readonly IHistoryStack _history;
 
     public DeleteEntryCommandHandlerRegistrationTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
         _history = TestHistory.Create(_root, out _, [RequirementsDesigner.Definition, Sheet]);
     }
 
-    public void Dispose() => TestFolder.TryDelete(_root);
+    public void Dispose() => _testFolder.Dispose();
 
     private string[] Listing() => [.. Directory.GetFileSystemEntries(_root).Select(path => IoPath.GetFileName(path)).Order(StringComparer.Ordinal)];
 

@@ -75,24 +75,18 @@ public class TextEditorSessionSpeaksAfterLateConfigurationTests : IDisposable
 {
     private static readonly TimeSpan Patience = TimeSpan.FromSeconds(10);
 
-    private readonly string _folder = IoPath.Combine(IoPath.GetTempPath(), "adp-text-late-" + Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-text-late");
+    private readonly string _folder;
     private readonly ILogger _original = Log.Logger;
 
-    public TextEditorSessionSpeaksAfterLateConfigurationTests() => Directory.CreateDirectory(_folder);
+    public TextEditorSessionSpeaksAfterLateConfigurationTests() => _folder = _testFolder.Path;
 
     public void Dispose()
     {
         // Restored, never disposed: the original pipeline is the assembly's one substrate and it
         // outlives every test in it.
         Log.Logger = _original;
-        try
-        {
-            Directory.Delete(_folder, recursive: true);
-        }
-        catch (IOException)
-        {
-            // A temp folder a virus scanner still holds is not a test failure.
-        }
+        _testFolder.Dispose();
 
         GC.SuppressFinalize(this);
     }

@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Time.Testing;
 using Xunit;
-using IoPath = System.IO.Path;
 
 namespace EtAlii.Adp.Hierarchy.Tests;
 
@@ -9,17 +8,17 @@ public class HierarchyModelStoreTests : IDisposable
     private static readonly TimeSpan IdleTimeout = TimeSpan.FromSeconds(30);
 
     private readonly FakeTimeProvider _clock = new();
+    private readonly TestFolder _testFolder = TestFolder.Create("hierarchy-model-store");
     private readonly string _root;
 
     public HierarchyModelStoreTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     [Fact]

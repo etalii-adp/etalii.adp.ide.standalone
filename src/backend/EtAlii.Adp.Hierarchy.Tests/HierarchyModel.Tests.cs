@@ -6,17 +6,17 @@ namespace EtAlii.Adp.Hierarchy.Tests;
 
 public class HierarchyModelTests : IDisposable
 {
+    private readonly TestFolder _testFolder = TestFolder.Create("hierarchy-model");
     private readonly string _root;
 
     public HierarchyModelTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     private string CreateFolder(params string[] segments)
@@ -438,34 +438,27 @@ public class HierarchyModelTests : IDisposable
     {
         // Arrange.
         CreateFolder("real");
-        var outsideRoot = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(outsideRoot);
+        using var outsideFolder = TestFolder.Create("hierarchy-model-outside");
+        var outsideRoot = outsideFolder.Path;
+        var symlinkPath = IoPath.Combine(_root, "escape");
         try
         {
-            var symlinkPath = IoPath.Combine(_root, "escape");
-            try
-            {
-                Directory.CreateSymbolicLink(symlinkPath, outsideRoot);
-            }
-            catch (Exception)
-            {
-                // Creating a directory symlink requires a privilege this environment may not
-                // grant (e.g. no Developer Mode / not elevated) - nothing to assert without it.
-                return;
-            }
+            Directory.CreateSymbolicLink(symlinkPath, outsideRoot);
+        }
+        catch (Exception)
+        {
+            // Creating a directory symlink requires a privilege this environment may not
+            // grant (e.g. no Developer Mode / not elevated) - nothing to assert without it.
+            return;
+        }
 
-            // Act.
-            var model = new HierarchyModel(_root, TestToolRouters.For());
-            var children = model.ListChildren(null);
+        // Act.
+        var model = new HierarchyModel(_root, TestToolRouters.For());
+        var children = model.ListChildren(null);
 
         // Assert.
-            Assert.Contains(children, c => c.Name == "real");
-            Assert.DoesNotContain(children, c => c.Name == "escape");
-        }
-        finally
-        {
-            TestFolder.TryDelete(outsideRoot);
-        }
+        Assert.Contains(children, c => c.Name == "real");
+        Assert.DoesNotContain(children, c => c.Name == "escape");
     }
 
     [Fact]
@@ -505,36 +498,29 @@ public class HierarchyModelTests : IDisposable
     public void TryResolvePath_ForAnEntryTurnedIntoASymlinkEscapingTheRoot_ResolvesToNothing()
     {
         // Arrange.
-        var outsideRoot = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(outsideRoot);
-        try
-        {
-            var entryPath = CreateFolder("swapped");
-            var model = new HierarchyModel(_root, TestToolRouters.For());
-            var entryId = model.ListChildren(null).Single(c => c.Name == "swapped").Id;
+        using var outsideFolder = TestFolder.Create("hierarchy-model-outside");
+        var outsideRoot = outsideFolder.Path;
+        var entryPath = CreateFolder("swapped");
+        var model = new HierarchyModel(_root, TestToolRouters.For());
+        var entryId = model.ListChildren(null).Single(c => c.Name == "swapped").Id;
 
         // Act.
-            // Swap the real folder for a symlink pointing outside, exactly the case
-            // resolving straight from the listing-time path would walk into.
-            Directory.Delete(entryPath);
-            try
-            {
-                Directory.CreateSymbolicLink(entryPath, outsideRoot);
-            }
-            catch (Exception)
-            {
-                // Creating a directory symlink requires a privilege this environment may not
-                // grant (e.g. no Developer Mode / not elevated) - nothing to assert without it.
-                return;
-            }
-
-            // Assert.
-            Assert.False(model.TryResolvePath(entryId, out _, out _));
-        }
-        finally
+        // Swap the real folder for a symlink pointing outside, exactly the case
+        // resolving straight from the listing-time path would walk into.
+        Directory.Delete(entryPath);
+        try
         {
-            TestFolder.TryDelete(outsideRoot);
+            Directory.CreateSymbolicLink(entryPath, outsideRoot);
         }
+        catch (Exception)
+        {
+            // Creating a directory symlink requires a privilege this environment may not
+            // grant (e.g. no Developer Mode / not elevated) - nothing to assert without it.
+            return;
+        }
+
+        // Assert.
+        Assert.False(model.TryResolvePath(entryId, out _, out _));
     }
     [Fact]
     public void OnWatcherEvent_ForTheWritersScratchFile_RaisesNothingAndListsNothing()

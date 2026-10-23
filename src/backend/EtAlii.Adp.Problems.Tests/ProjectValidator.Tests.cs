@@ -13,17 +13,17 @@ public class ProjectValidatorTests : IDisposable
     private static readonly ToolOrigin Mindmap = new("freeplane", "mindmap");
     private static readonly DiagramDefinition MindmapDefinition = new(Mindmap, "Mind map", Extension: ".mm");
 
+    private readonly TestFolder _testFolder = TestFolder.Create("project-validator");
     private readonly string _root;
 
     public ProjectValidatorTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     // ---- what the walk finds -----------------------------------------------------------
@@ -351,76 +351,57 @@ public class ProjectValidatorTests : IDisposable
     public async Task ValidateAsync_RefusesAPathThatLeavesTheRoot()
     {
         // Arrange.
-        var elsewhere = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(elsewhere);
-        try
-        {
-            await File.WriteAllTextAsync(IoPath.Combine(elsewhere, "outside.adp"), "freeplane/mindmap\n", TestContext.Current.CancellationToken);
-            var validator = Validator(problems: []);
+        using var elsewhereFolder = TestFolder.Create("project-validator-elsewhere");
+        var elsewhere = elsewhereFolder.Path;
+        await File.WriteAllTextAsync(IoPath.Combine(elsewhere, "outside.adp"), "freeplane/mindmap\n", TestContext.Current.CancellationToken);
+        var validator = Validator(problems: []);
 
         // Act.
-            var outcome = await Validate(validator, new FileValidationScope(_root, IoPath.Combine("..", IoPath.GetFileName(elsewhere), "outside.adp")));
+        var outcome = await Validate(validator, new FileValidationScope(_root, IoPath.Combine("..", IoPath.GetFileName(elsewhere), "outside.adp")));
 
         // Assert.
-            Assert.Empty(outcome.Problems);
-            Assert.Equal(0, outcome.FilesConsidered);
-            Assert.Equal(1, outcome.Skipped);
-            Assert.Equal(0, validator.Calls);
-        }
-        finally
-        {
-            TestFolder.TryDelete(elsewhere);
-        }
+        Assert.Empty(outcome.Problems);
+        Assert.Equal(0, outcome.FilesConsidered);
+        Assert.Equal(1, outcome.Skipped);
+        Assert.Equal(0, validator.Calls);
     }
 
     [Fact]
     public async Task ValidateAsync_RefusesAFileReachedThroughALinkThatLeavesTheRoot()
     {
         // Arrange: a link inside the project that leads to a diagram outside it (D6).
-        var elsewhere = Directory.CreateTempSubdirectory("project-validator-elsewhere-").FullName;
-        try
-        {
-            await File.WriteAllTextAsync(IoPath.Combine(elsewhere, "outside.adp"), "freeplane/mindmap\n", TestContext.Current.CancellationToken);
-            await File.WriteAllTextAsync(IoPath.Combine(elsewhere, "outside.mm"), "the document", TestContext.Current.CancellationToken);
-            CreateLinkOrSkip(IoPath.Combine(_root, "escape"), elsewhere);
-            var validator = Validator(problems: []);
+        using var elsewhereFolder = TestFolder.Create("project-validator-elsewhere");
+        var elsewhere = elsewhereFolder.Path;
+        await File.WriteAllTextAsync(IoPath.Combine(elsewhere, "outside.adp"), "freeplane/mindmap\n", TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(IoPath.Combine(elsewhere, "outside.mm"), "the document", TestContext.Current.CancellationToken);
+        CreateLinkOrSkip(IoPath.Combine(_root, "escape"), elsewhere);
+        var validator = Validator(problems: []);
 
-            // Act.
-            var outcome = await Validate(validator, new FileValidationScope(_root, IoPath.Combine("escape", "outside.adp")));
+        // Act.
+        var outcome = await Validate(validator, new FileValidationScope(_root, IoPath.Combine("escape", "outside.adp")));
 
-            // Assert.
-            Assert.Equal(1, outcome.Skipped);
-            Assert.Equal(0, validator.Calls);
-        }
-        finally
-        {
-            TestFolder.TryDelete(elsewhere);
-        }
+        // Assert.
+        Assert.Equal(1, outcome.Skipped);
+        Assert.Equal(0, validator.Calls);
     }
 
     [Fact]
     public async Task ValidateAsync_RefusesAFolderReachedThroughALinkThatLeavesTheRoot()
     {
         // Arrange.
-        var elsewhere = Directory.CreateTempSubdirectory("project-validator-elsewhere-").FullName;
-        try
-        {
-            await File.WriteAllTextAsync(IoPath.Combine(elsewhere, "outside.adp"), "freeplane/mindmap\n", TestContext.Current.CancellationToken);
-            await File.WriteAllTextAsync(IoPath.Combine(elsewhere, "outside.mm"), "the document", TestContext.Current.CancellationToken);
-            CreateLinkOrSkip(IoPath.Combine(_root, "escape"), elsewhere);
-            var validator = Validator(problems: []);
+        using var elsewhereFolder = TestFolder.Create("project-validator-elsewhere");
+        var elsewhere = elsewhereFolder.Path;
+        await File.WriteAllTextAsync(IoPath.Combine(elsewhere, "outside.adp"), "freeplane/mindmap\n", TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(IoPath.Combine(elsewhere, "outside.mm"), "the document", TestContext.Current.CancellationToken);
+        CreateLinkOrSkip(IoPath.Combine(_root, "escape"), elsewhere);
+        var validator = Validator(problems: []);
 
-            // Act.
-            var outcome = await Validate(validator, new FolderValidationScope(_root, "escape"));
+        // Act.
+        var outcome = await Validate(validator, new FolderValidationScope(_root, "escape"));
 
-            // Assert.
-            Assert.Equal(1, outcome.Skipped);
-            Assert.Equal(0, validator.Calls);
-        }
-        finally
-        {
-            TestFolder.TryDelete(elsewhere);
-        }
+        // Assert.
+        Assert.Equal(1, outcome.Skipped);
+        Assert.Equal(0, validator.Calls);
     }
 
     // Windows lets only an elevated process or one in developer mode create a symbolic link.
