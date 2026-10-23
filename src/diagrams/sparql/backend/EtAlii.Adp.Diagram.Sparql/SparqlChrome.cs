@@ -19,10 +19,10 @@ internal static class SparqlChrome
     public static IReadOnlyList<DiagramElement> Elements(SparqlProjectionResult drawing)
     {
         ArgumentNullException.ThrowIfNull(drawing);
-        var wire = Wire.Value;
+        (string headerId, string headerType, string truncationId, string truncationType) = Wire.Value;
         var elements = new List<DiagramElement>
         {
-            SparqlElementMapper.Pack(wire.HeaderId, default, wire.HeaderType, new SparqlHeaderPayload
+            SparqlElementMapper.Pack(headerId, default, headerType, new SparqlHeaderPayload
             {
                 Form = drawing.HeaderForm,
                 ModifierRows = { drawing.HeaderRows },
@@ -30,7 +30,7 @@ internal static class SparqlChrome
         };
         if (drawing.Truncated)
         {
-            elements.Add(SparqlElementMapper.Pack(wire.TruncationId, default, wire.TruncationType, new SparqlTruncationPayload
+            elements.Add(SparqlElementMapper.Pack(truncationId, default, truncationType, new SparqlTruncationPayload
             {
                 Shown = drawing.Shown,
                 Total = drawing.Total,
