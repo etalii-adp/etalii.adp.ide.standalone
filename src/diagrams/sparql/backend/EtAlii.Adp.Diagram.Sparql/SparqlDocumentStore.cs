@@ -22,7 +22,9 @@ namespace EtAlii.Adp.Diagram.Sparql;
 /// <para>
 /// <b>There is no save path, and none is borrowed.</b> This store holds the read-only lifecycle, not
 /// the writable one, so there is no self-write bookkeeping here either: a store that never writes has
-/// nothing to suppress, and every change on disk is somebody else's and is always taken.
+/// nothing to suppress, and every change on disk is somebody else's and is always taken. What would stop
+/// a write if one were attempted is the body's: the binding's <c>readOnly</c> and the plugin's refusing
+/// <see cref="SparqlQueryPlugin.Plan"/>.
 /// </para>
 /// <para>
 /// <b>The sessions hear about a reload only when the lifecycle installed a document.</b> One that
@@ -66,13 +68,17 @@ public sealed class SparqlDocumentStore : ISparqlDocumentStore
     }
 
     /// <summary>
-    /// A query that does not parse opens as unavailable naming the reason (Requirement 1.3), with the
-    /// line it stopped at among the entry's problems.
+    /// A query read through the module's binding (<see cref="SparqlBody"/>). One the plugin cannot read opens as
+    /// unavailable naming the reason (Requirement 1.3), with the line it stopped at among the entry's problems.
     /// </summary>
     private static DocumentEntry<string, SparqlDocument> Parse(string text)
     {
-        var outcome = SparqlParser.Outcome(text);
-        return new(text, new ParseOutcome<SparqlDocument>(new SparqlDocument(outcome.Model, text), outcome.Problems, outcome.Unreadable));
+        var body = SparqlBody.Parse(text);
+        var document = new SparqlDocument(body);
+        if (!body.IsUnreadable) return new(text, new ParseOutcome<SparqlDocument>(document, []));
+
+        var finding = body.Reading.Findings[0];
+        return new(text, new ParseOutcome<SparqlDocument>(document, [new ParseProblem((finding.Location?.Line ?? 1) - 1, finding.Message)], finding.Message));
     }
 
     /// <summary>
