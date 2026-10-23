@@ -1,5 +1,4 @@
 using System.Text.Json;
-using EtAlii.Adp.Diagram.Modules;
 
 namespace EtAlii.Adp.Diagram.Sparql;
 
