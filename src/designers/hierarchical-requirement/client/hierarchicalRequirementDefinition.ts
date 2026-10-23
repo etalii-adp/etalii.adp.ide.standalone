@@ -4,14 +4,26 @@ import type { HierarchySurfaceDefinition } from "@client/hierarchySurface/librar
  * What the Hierarchical Requirement Designer declares for the hierarchy surface (spec 029 R9): its levels are items and
  * its entries requirements, the labels its `.des` gives under `surface.labels`, the icon of each assessment kind from
  * its `AssessmentKind`, the icon R10 settles for several open assessments, and the operations its gestures send with
- * their labels and the words of a delete's question and of the assessments' list. `register.test.ts` holds each to the definition as it is checked
- * in.
+ * their labels and the words of a delete's question and of the assessments' list, and the tag operations of its tag
+ * field. `register.test.ts` holds each to the definition as it is checked in.
  */
 export const hierarchicalRequirementSurface: HierarchySurfaceDefinition = {
   levelType: "Item",
   entryType: "Requirement",
   labels: [
-    { label: "tags", prefix: "#", many: true, on: ["Item", "Requirement"] },
+    {
+      label: "tags",
+      prefix: "#",
+      many: true,
+      on: ["Item", "Requirement"],
+      // The six tag operations, their params and labels, and the `confirm` of deleteTag with its CEL written out.
+      edit: {
+        operations: { add: "addTag", remove: "removeTag", rename: "renameTag", recolour: "recolourTag", move: "moveTag", delete: "deleteTag" },
+        params: { name: "name", colour: "colour", after: "after" },
+        words: { list: "Tags", add: "Add tag", remove: "Remove tag" },
+        deletion: { threshold: 1, message: (name, count) => `${count} entries carry #${name}. Delete it and remove it from them?` },
+      },
+    },
     { label: "category", prefix: "category:", many: false, on: ["Requirement"] },
     { label: "state", prefix: "state:", many: false, on: ["Requirement"] },
   ],

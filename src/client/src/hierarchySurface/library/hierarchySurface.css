@@ -149,7 +149,8 @@
 .hs-hidden-levels,
 .hs-add-description,
 .hs-note-mark,
-.hs-note-add {
+.hs-note-add,
+.hs-tag-add {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -166,7 +167,8 @@
 .hs-focus:hover,
 .hs-hidden-levels:hover,
 .hs-add-description:hover,
-.hs-note-add:hover {
+.hs-note-add:hover,
+.hs-tag-add:hover {
   color: var(--color-text);
 }
 
@@ -215,6 +217,7 @@
 }
 
 .hs-tags {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
@@ -476,4 +479,109 @@
   width: 300px;
   max-width: calc(100% - 28px);
   box-shadow: var(--shadow);
+}
+
+/* A label's field (FR-011): its values open its list, the Knowledge designer's searchable list, from which the list
+   itself is edited in the table's options editor. The control that adds the first value stands in the header, kept in
+   its place while hidden, so showing it moves nothing a click aims at. */
+.hs-tag-add {
+  visibility: hidden;
+  flex: none;
+}
+
+.hs-box:hover > .hs-box-header > .hs-tag-add,
+.hs-box.hs-selected > .hs-box-header > .hs-tag-add,
+.hs-tag-add:focus-visible {
+  visibility: visible;
+}
+
+/* Its values flow with the other labels' tags; its list opens under the row. */
+.hs-tags .hs-tag-field {
+  display: contents;
+}
+
+.hs-tag-values {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.hs-tag-values:hover {
+  background: var(--color-surface-raised);
+}
+
+.hs-tag-values:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+.hs-tag-values .table-option-tag + .table-option-tag {
+  margin-inline-start: 0;
+}
+
+.hs-tag-list {
+  position: absolute;
+  z-index: 10;
+  top: 100%;
+  left: 0;
+  box-sizing: border-box;
+  width: 300px;
+  max-width: calc(100% + 22px);
+  margin-top: 4px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  box-shadow: var(--shadow);
+  cursor: default;
+}
+
+.hs-tag-chosen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 6px 6px 0;
+}
+
+.hs-tag-chosen-value {
+  display: inline-flex;
+  align-items: center;
+}
+
+.hs-tag-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.hs-tag-remove:hover {
+  color: var(--color-text);
+}
+
+.hs-tag-edit-list {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 6px 8px;
+  border: none;
+  border-top: 1px solid var(--color-border);
+  background: none;
+  color: var(--color-text-muted);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.hs-tag-edit-list:hover {
+  background: var(--color-surface-raised);
+  color: var(--color-text);
 }

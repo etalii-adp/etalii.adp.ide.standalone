@@ -6,9 +6,10 @@ namespace EtAlii.Adp.Designer.HierarchicalRequirement;
 
 /// <summary>
 /// Carries out a <see cref="HierarchicalRequirementEditCommand"/>: checks that the body still holds the bytes the edit
-/// was planned against, makes the edit through the FBL library, and saves the result with the central writer. Its
-/// inverse is a <see cref="RestoreRequirementFilesCommand"/> of the body's bytes from before, so an undo gives them back
-/// exactly, and refuses once another program has written the file since.
+/// was planned against, makes the edit through the FBL library, and saves the result with the central writer: the body,
+/// and the registration too when the step changes a list it keeps. Its inverse is a
+/// <see cref="RestoreRequirementFilesCommand"/> of the bytes of each file from before, so an undo gives them back exactly,
+/// and refuses once another program has written one of them since.
 /// </summary>
 internal sealed class HierarchicalRequirementEditCommandHandler(IHierarchicalRequirementDocumentStore documents, IFileWriter writer) : ICommandHandler<HierarchicalRequirementEditCommand>
 {
@@ -33,6 +34,11 @@ internal sealed class HierarchicalRequirementEditCommandHandler(IHierarchicalReq
             return CommandResult.Failure(HierarchicalRequirementGestures.Drifted);
         }
 
+        if (TagOperations.Handles(command.Operation))
+        {
+            return await WriteAsync(command, Tags(command, before, name), cancellationToken);
+        }
+
         (byte[]? after, string refusal) = command.Operation switch
         {
             _ when TextOperations.Handles(command.Operation) => TextOperations.Apply(before, name, command.Operation, command.TargetId, command.Params.GetValueOrDefault(TextOperations.AttributeOf(command.Operation), "")),
@@ -45,24 +51,88 @@ internal sealed class HierarchicalRequirementEditCommandHandler(IHierarchicalReq
             return CommandResult.Failure(refusal);
         }
 
-        if (after.AsSpan().SequenceEqual(before))
+        return await WriteAsync(command, ([new RequirementFileState(command.BodyPath, before, after)], ""), cancellationToken);
+    }
+
+    /// <summary>
+    /// What a tag operation writes: the body when its entries' tags change, and the registration when the list does, the
+    /// body first. A registration the body has none of is created as the step's starting point, outside the step.
+    /// </summary>
+    private static (List<RequirementFileState> Files, string Refusal) Tags(HierarchicalRequirementEditCommand command, byte[] body, string name)
+    {
+        var registrationPath = command.RegistrationPath ?? Path.ChangeExtension(command.BodyPath, ".adp");
+        byte[]? registration;
+        try
+        {
+            registration = File.Exists(registrationPath) ? SharedDocumentReader.ReadAllBytes(registrationPath) : null;
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            return ([], $"{Path.GetFileName(registrationPath)} could not be read: {exception.Message}");
+        }
+
+        var edit = TagOperations.Apply(body, name, registration, Path.GetFileName(registrationPath), command.Operation, command.TargetId, command.Params);
+        if (edit.Refusal.Length > 0) return ([], edit.Refusal);
+        List<RequirementFileState> files = [];
+        if (edit.Body is { } after) files.Add(new RequirementFileState(command.BodyPath, body, after));
+        if (edit.RegistrationAfter is { } kept) files.Add(new RequirementFileState(registrationPath, edit.RegistrationBefore!, kept));
+        return (files, "");
+    }
+
+    /// <summary>
+    /// Writes each file the step changes, every one or none; then has the pages read them, and returns the step's inverse,
+    /// which puts back what each held before it.
+    /// </summary>
+    private async Task<CommandResult> WriteAsync(HierarchicalRequirementEditCommand command, (List<RequirementFileState> Files, string Refusal) step, CancellationToken cancellationToken)
+    {
+        if (step.Refusal.Length > 0)
+        {
+            return CommandResult.Failure(step.Refusal);
+        }
+
+        var files = step.Files.Where(file => !file.After.AsSpan().SequenceEqual(file.Before)).ToList();
+        if (files.Count == 0)
         {
             // Nothing to write and nothing to undo.
             return CommandResult.Success();
         }
 
-        documents.WillWrite(command.BodyPath, after);
-        try
+        List<RequirementFileState> written = [];
+        foreach (var file in files)
         {
-            await writer.SaveAsync(command.BodyPath, after, cancellationToken);
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            return CommandResult.Failure($"{name} could not be written: {exception.Message}");
+            documents.WillWrite(file.Path, file.After);
+            try
+            {
+                await writer.SaveAsync(file.Path, file.After, cancellationToken);
+                written.Add(file);
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+            {
+                // What was written before this one is put back: a step is every file or none. A registration this step
+                // created is put back as created, which is not part of the step (FBL 0.7 section 8.4).
+                foreach (var done in written)
+                {
+                    documents.WillWrite(done.Path, done.Before);
+                    try
+                    {
+                        await writer.SaveAsync(done.Path, done.Before, CancellationToken.None);
+                    }
+                    catch (Exception again) when (again is IOException or UnauthorizedAccessException)
+                    {
+                        // The failure that is reported is the one that started this.
+                    }
+                }
+
+                return CommandResult.Failure($"{Path.GetFileName(file.Path)} could not be written: {exception.Message}");
+            }
         }
 
-        // Not with the request's token: the file is written, so the pages read it whatever becomes of the request.
-        await documents.ReloadAsync(command.BodyPath, CancellationToken.None);
-        return CommandResult.Success(new RestoreRequirementFilesCommand([new RequirementFileState(command.BodyPath, before, after)], command));
+        foreach (var file in written)
+        {
+            // Not with the request's token: the file is written, so the pages read it whatever becomes of the request.
+            await documents.ReloadAsync(file.Path, CancellationToken.None);
+        }
+
+        return CommandResult.Success(new RestoreRequirementFilesCommand(written, command));
     }
 }

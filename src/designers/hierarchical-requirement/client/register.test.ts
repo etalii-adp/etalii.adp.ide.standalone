@@ -109,6 +109,27 @@ describe("the Hierarchical Requirement Designer's surface", () => {
     expect((operations[notes.operations.resolve]?.label as { cel: string }).cel).toBe(`self.resolved ? '${notes.words.reopen}' : '${notes.words.resolve}'`);
   });
 
+  it("edits the tags with the tag operations its definition has, with their params and labels, and asks before a delete as its confirm says", () => {
+    // Act.
+    const { operations } = definition();
+    const edit = hierarchicalRequirementSurface.labels.find((label) => label.edit !== undefined)?.edit;
+
+    // Assert: only the tags are edited here; each operation exists with the param the field sends, and words its control as labelled.
+    expect(hierarchicalRequirementSurface.labels.filter((label) => label.edit !== undefined).map((label) => label.label)).toEqual(["tags"]);
+    expect(Object.keys(operations[edit!.operations.add]?.params ?? {})).toEqual([edit!.params.name]);
+    expect(Object.keys(operations[edit!.operations.remove]?.params ?? {})).toEqual([edit!.params.name]);
+    expect(Object.keys(operations[edit!.operations.rename]?.params ?? {})).toEqual([edit!.params.name]);
+    expect(Object.keys(operations[edit!.operations.recolour]?.params ?? {})).toEqual([edit!.params.colour]);
+    expect(Object.keys(operations[edit!.operations.move]?.params ?? {})).toEqual([edit!.params.after]);
+    expect(Object.keys(operations)).toContain(edit!.operations.delete);
+    expect(String(operations[edit!.operations.add]?.label)).toBe(edit!.words.add);
+    expect(String(operations[edit!.operations.remove]?.label)).toBe(edit!.words.remove);
+    const confirm = operations[edit!.operations.delete]?.confirm;
+    expect(confirm?.threshold).toBe(edit!.deletion.threshold);
+    const written = (confirm?.message.cel ?? "").replace("string(count) + ' entries carry #' + self.name + '", "'3 entries carry #ux").replace(/^'|'$/g, "");
+    expect(written).toBe(edit!.deletion.message("ux", 3));
+  });
+
   it("asks before a delete in the words and at the threshold of its definition's confirm", () => {
     // Act.
     const confirm = definition().operations[hierarchicalRequirementSurface.operations.delete]?.confirm;

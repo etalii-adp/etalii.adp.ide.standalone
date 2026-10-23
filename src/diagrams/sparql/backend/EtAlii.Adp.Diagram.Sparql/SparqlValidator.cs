@@ -1,3 +1,6 @@
+using EtAlii.Adp.Diagram.Modules;
+using EtAlii.Adp.Specification.Disl;
+
 namespace EtAlii.Adp.Diagram.Sparql;
 
 /// <summary>
@@ -6,17 +9,14 @@ namespace EtAlii.Adp.Diagram.Sparql;
 /// the query, never contacts an endpoint, and never resolves a <c>SERVICE</c> clause - not as a
 /// policy applied here, but because this module references no HTTP client at all.
 /// </summary>
+/// <remarks>
+/// <b>The findings are the definition's</b> (<see cref="SparqlDefinition.Findings"/>, sparql-disl-fbl, task 8): a query
+/// the parser cannot read is the one finding <c>std.unparseable</c>, which the definition words with the parser's
+/// sentence at the line it stopped at; any other query is judged by the definition's rules. This holds no rule, code or
+/// sentence of its own.
+/// </remarks>
 public sealed class SparqlValidator(ToolOrigin origin) : IDiagramValidator
 {
-    /// <summary>The rule reported when the file is not a SPARQL query this can read - SPARQL Update included.</summary>
-    public const string UnparseableRuleId = "sparql.unparseable";
-
-    /// <summary>The rule reported when a projected variable never appears in the where clause.</summary>
-    public const string UnboundProjectionRuleId = "sparql.unbound-projection";
-
-    /// <summary>The rule reported when a prefix is declared but never used.</summary>
-    public const string UnusedPrefixRuleId = "sparql.unused-prefix";
-
     /// <inheritdoc />
     public ToolOrigin Origin { get; } = origin;
 
@@ -29,96 +29,27 @@ public sealed class SparqlValidator(ToolOrigin origin) : IDiagramValidator
 
         // ReSharper disable once NullCoalescingConditionIsAlwaysNotNullAccordingToAPIContract - Reason: IDiagramValidator.ValidateAsync is a public module seam and the record's non-nullable Document is a compile-time annotation the runtime does not enforce, so a caller that passes null (null!, or code built without nullable checks) gets an empty document here rather than a NullReferenceException; ProjectValidator, the one caller in this repository, always passes the text it read, so an empty file arrives as "", not null.
         var text = request.Document ?? "";
+        IReadOnlyList<DiagramProblem> problems = [.. Findings(text).Select(finding => new DiagramProblem(
+            DislDiagramDefinition.SeverityOf(finding),
+            finding.Message,
+            finding.Code,
+            new DiagramProblemLineLocation((uint)Math.Max(1, finding.Line ?? 1))))];
+        return ValueTask.FromResult(problems);
+    }
+
+    /// <summary>The definition's findings over <paramref name="text"/>, read as the store reads it.</summary>
+    internal static IReadOnlyList<DislFinding> Findings(string text)
+    {
         var outcome = SparqlParser.Outcome(text);
-        if (!outcome.IsUsable)
+        var document = new SparqlDocument(outcome.Model, text);
+        if (outcome.IsUsable)
         {
-            // One finding, not a list of consequences: running the rules over an empty model
-            // would bury the reason the file could not be read (Requirement 7.1).
-            var problem = outcome.Problems[0];
-            return ValueTask.FromResult<IReadOnlyList<DiagramProblem>>(
-            [
-                new DiagramProblem(
-                    DiagramProblemSeverity.Error,
-                    $"This is not a SPARQL query that can be read: {problem.Message}",
-                    UnparseableRuleId,
-                    new DiagramProblemLineLocation((uint)problem.Line + 1)),
-            ]);
+            return SparqlDefinition.Findings(document);
         }
 
-        return ValueTask.FromResult(Judge(outcome.Model, text));
-    }
-
-    /// <summary>The Requirement 7 findings over a parsed query - a pure function, tested as one.</summary>
-    internal static IReadOnlyList<DiagramProblem> Judge(SparqlQueryModel model, string text)
-    {
-        var problems = new List<DiagramProblem>();
-
-        // A projected variable the pattern never binds is legal SPARQL and yields a silently
-        // empty column - exactly the kind of lie a reader wants caught (Requirement 7.2).
-        foreach (var item in model.Projection)
-        {
-            if (!model.Variables.TryGetValue(item.Name, out var usage))
-            {
-                continue;
-            }
-
-            if (usage is { PatternOccurrences: 0, DefiningExpression.Length: 0 })
-            {
-                problems.Add(new DiagramProblem(
-                    DiagramProblemSeverity.Warning,
-                    $"?{item.Name} is selected but never appears in the where clause, so its column will always be unbound.",
-                    UnboundProjectionRuleId,
-                    new DiagramProblemLineLocation(1)));
-            }
-        }
-
-        // An unused prefix declaration is harmless but misleading - info, at its own line
-        // (Requirement 7.3). A prefix used but not declared is a parse error, reported above.
-        foreach (var prefix in model.Prefixes)
-        {
-            if (!IsUsed(prefix.Prefix, text))
-            {
-                problems.Add(new DiagramProblem(
-                    DiagramProblemSeverity.Info,
-                    $"The prefix '{prefix.Prefix}:' is declared but never used.",
-                    UnusedPrefixRuleId,
-                    new DiagramProblemLineLocation((uint)Math.Max(prefix.Line, 1))));
-            }
-        }
-
-        return problems;
-    }
-
-    /// <summary>
-    /// Whether the query uses <paramref name="prefix"/> anywhere outside its own declarations.
-    /// Asked of the source text rather than the model, because a prefixed name can appear in an
-    /// expression or a solution modifier - places the model keeps as written rather than as terms.
-    /// </summary>
-    private static bool IsUsed(string prefix, string text)
-    {
-        var needle = prefix + ":";
-        var from = 0;
-
-        while (true)
-        {
-            var at = text.IndexOf(needle, from, StringComparison.Ordinal);
-            if (at < 0)
-            {
-                return false;
-            }
-
-            from = at + needle.Length;
-
-            // The declaration itself is not a use: skip an occurrence whose line starts with
-            // PREFIX before it.
-            var lineStart = text.LastIndexOf('\n', Math.Max(at - 1, 0)) + 1;
-            var beforeOnLine = text[lineStart..at].TrimStart();
-            if (beforeOnLine.StartsWith("PREFIX", StringComparison.OrdinalIgnoreCase))
-            {
-                continue;
-            }
-
-            return true;
-        }
+        // One finding, not a list of consequences: running the rules over an empty model would bury
+        // the reason the file could not be read (Requirement 7.1).
+        var problem = outcome.Problems[0];
+        return SparqlDefinition.Findings(document, DislReaderFinding.NotParsed(problem.Message, problem.Line + 1));
     }
 }

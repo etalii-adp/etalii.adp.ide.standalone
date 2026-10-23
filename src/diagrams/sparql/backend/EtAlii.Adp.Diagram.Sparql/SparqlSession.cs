@@ -32,8 +32,7 @@ public sealed class SparqlSession(
     private readonly SparqlElementMapper _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
 
     /// <inheritdoc />
-    protected override string ParentRefusal =>
-        "A query's structure comes from its text, so nothing here can be moved into a different group. Dragging changes where an element sits on the canvas.";
+    protected override string ParentRefusal => SparqlDefinition.ReparentRefusal;
 
     /// <summary>
     /// Stores an authored position in the registration's <c>layout:</c> block, as one undoable
@@ -48,36 +47,11 @@ public sealed class SparqlSession(
             return DiagramPlacement.Refused("This query was opened without a registration, so there is nowhere to store a position. Register the file to arrange it.");
         }
 
-        var refusal = Refusal(elementId);
-        return refusal.Length > 0
+        // Why this element cannot carry an authored position (Requirement 5.4): chrome by its own sentence, an element
+        // by the definition's, the notation's refusal of a move of its kind or the reason of its ephemeral id rule.
+        return (SparqlChrome.MoveRefusal(elementId) ?? SparqlDefinition.MoveRefusal(model, elementId)) is { } refusal
             ? DiagramPlacement.Refused(refusal)
             : DiagramPlacement.By(new SetRegistrationLayoutCommand(registrationPath, elementId, x, y));
-    }
-
-    /// <summary>Why this element cannot carry an authored position, or empty when it can (Requirement 5.4).</summary>
-    private static string Refusal(string elementId)
-    {
-        if (elementId.StartsWith("anon:", StringComparison.Ordinal))
-        {
-            return "That is an anonymous variable - written as a blank node, it has no name to key a stored position by, so it takes its computed place.";
-        }
-
-        if (elementId.StartsWith("edge:", StringComparison.Ordinal))
-        {
-            return "An edge is drawn between its endpoints; move one of those instead.";
-        }
-
-        if (elementId.StartsWith("note:", StringComparison.Ordinal))
-        {
-            return "An annotation stays with what it constrains; move that instead.";
-        }
-
-        return elementId switch
-        {
-            SparqlElementMapper.HeaderId => "The header band states the query's form and modifiers, and stays at the top of the diagram.",
-            SparqlElementMapper.TruncationId => "That banner reports the truncation and is not something this diagram can move.",
-            _ => ""
-        };
     }
 
     /// <inheritdoc />

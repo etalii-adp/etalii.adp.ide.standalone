@@ -14,4 +14,8 @@ namespace EtAlii.Adp.Designer.HierarchicalRequirement;
 /// The body's bytes as the page was read from them. A file that holds other bytes now was changed since, and the edit is
 /// refused rather than made to a file the person did not see (FBL 0.7 section 7.2, spec 029 FR-024).
 /// </param>
-internal sealed record HierarchicalRequirementEditCommand(string BodyPath, string Operation, string TargetId, IReadOnlyDictionary<string, string> Params, byte[] Expected) : ICommand;
+/// <param name="RegistrationPath">
+/// The registration, which an operation on a list writes in the same step: the tag list's colours and order are kept there
+/// (spec 029 R17). Null for one named after the body; it is created with the first such change when there is none.
+/// </param>
+internal sealed record HierarchicalRequirementEditCommand(string BodyPath, string Operation, string TargetId, IReadOnlyDictionary<string, string> Params, byte[] Expected, string? RegistrationPath = null) : ICommand;

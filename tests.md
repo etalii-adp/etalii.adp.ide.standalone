@@ -4096,6 +4096,36 @@ lays out no text, so a fill, a centred Comment and a drag that writes a size are
   - Step 7, first run, **found and fixed**: the lookup under *REQ-0009* stood below the page's bottom edge, one row of it in sight. It now scrolls itself into view when it opens; its bottom then met the page's at 734 pixels in both themes.
   - **Not run in this pass:** the pane of the built-in browser.
 
+## Tags on the Hierarchical Requirement Designer's page (spec 029, task T101)
+
+**Why this is a browser pass and not a test:** the tag field opens a list under a box and takes the focus, and its list editor is laid out against the window where the list stood; both are placed by measuring the page, which jsdom does not lay out. The module's suite covers every tag operation against its fixtures and the history across both files, and the client's cover the field and the editor's gestures; what they cannot show is the place, the look beside the Knowledge designer's tag cell, and the two files on disk after each gesture of a real page.
+
+- **Preconditions**: a locally running developer build from the branch, and a scratch folder registered as a project, holding the module's example `web-shop.md` and `web-shop.adp` in a subfolder `requirements` and the Knowledge showcase's `yaml` folder in a subfolder `knowledge`, at a window 1400 pixels wide.
+- **Steps**:
+  1. Open `cities.yaml` and look at its *Tags* column. Open `web-shop.md` and look at *REQ-0004*'s box, before and with the pointer over it.
+  2. Select *REQ-0004* and press its *Add tag* control. Read where the focus is, type `SECUR`, read the list and press Enter. Read the file and the registration.
+  3. Type `user experience` and press Enter. Read the file and the registration's `tags` block.
+  4. Press the cross of *security*. Read the file. Press Escape.
+  5. Press *REQ-0004*'s tags, then *Edit tags*. Read where the editor stands and what it offers.
+  6. Rename *privacy* to `personal-data`. Read *REQ-0010* and the `tags` block.
+  7. Make *search* green and move *mail* up. Read the `tags` block and compare the Markdown file with the one before.
+  8. Delete *user-experience*, read the question, and press *Delete*. Read the file and the `tags` block. Press outside the editor.
+  9. Press Undo until nothing is left to undo. Compare the files with the example.
+  10. Delete `web-shop.adp` while the page is open. Read *REQ-0004*'s box; then make *mail* orange and read the registration.
+  11. Steps 1 to 10 in light and dark.
+- **Expected**: a box's tags stand below its title as the Knowledge designer's rounded tags, in their list's colours, before the category and the state; the add control shows on a box that is hovered or selected; the list has the focus and finds a member in any case, written with the list's spelling, or creates one from other text, written with `-` for a space and added last to the list; a member is taken off by its cross; the list editor stands where the list stood, adds nothing, and renames, recolours, moves and deletes a member, asking first, in the definition's words, when entries carry it; a rename or a delete writes both files and a colour or a place only the registration; each gesture is one step of undo, and undoing them all leaves both files as the example; a deleted registration leaves the page with its tags in the default colour, and the first change of a setting creates it again.
+- **Result 2026-10-23, the Spec 029 thread, `features/029-tags` on `40a6c9101` and the fixes below, backend 5080 and Vite 5174, headless Chromium through Playwright, light and dark (results read from the DOM, screenshots and the files): steps 1 to 11 passed after two defects, found in steps 2 and 5 and fixed with guards.**
+  - Step 1: the Knowledge designer draws *Port* and *Capital* as rounded tags in their colours; *REQ-0004* draws *mail* in yellow, then *functional* and *done*, the same tags. The add control was hidden until the box was hovered or selected.
+  - Step 2, first run, **found and fixed**: the list opened without the focus, so typing went nowhere until its search was pressed. Its search now takes the focus when it opens, as the Knowledge designer's does (`TagField.test.tsx`, *searches the list, which has the focus, …*, seen failing). Second run, in both themes: the focus was in the search; `SECUR` offered *security* and *Create “SECUR”*, Enter wrote `#mail #security` on *REQ-0004*'s line, and the `tags` block was unchanged.
+  - Step 3: the list offered only *Create “user experience”*; the line read `#mail #security #user-experience`, and the `tags` block ended with `user-experience: default`.
+  - Step 4: the line read `#mail #user-experience`; Escape closed the list and kept the box.
+  - Step 5, first run, **found and fixed**: the editor stood at the window's top left corner, over the hierarchy, because it measured the field, which draws no box of its own. It now takes the list's place on the screen (`TagField.test.tsx`, *opens the editor where the field's list was on the screen*, seen failing). Second run, in both themes: the editor stood where the list was, beside *REQ-0004*, listing the ten members with no row to add one, and the list had closed.
+  - Step 6: *REQ-0010* read `#legal #personal-data`, and `privacy: pink` became `personal-data: pink` in its place.
+  - Step 7: the block read `search: green` and had `mail` before `payment`; the Markdown file was byte-identical to the one before.
+  - Step 8: the question read *1 entries carry #user-experience. Delete it and remove it from them?*, the definition's sentence; after *Delete* the line read `#mail` and the block no longer held it. A press outside closed the editor.
+  - Step 9: seven steps of Undo, one for each gesture of steps 2 to 8, after which both files were byte-identical to the example.
+  - Step 10: the page kept its 14 boxes and *REQ-0004*'s *mail*, now in the default colour; making *mail* orange created `web-shop.adp` with every tag the entries carry in the `tags` block, *mail* orange and the rest default.
+  - **Not run in this pass:** the pane of the built-in browser.
 ## The compiled SPARQL query canvas, in a browser (sparql-disl-fbl, task 10, Requirement 10.3)
 
 **Why this is a browser pass and not only tests:** `sparqlCompiledDefinition.test.tsx` proves that the definition compiled from `sparql-query.dis` draws the same markup as the hand-written one it replaces, over every document of the backend's parity transcript, and the library's tests prove the header band, the budget's notice, the literal label, the text badge and the `text` shape it now compiles, but jsdom computes no style from a stylesheet and lays nothing out: what a frame's dash, a path's dash, the header band or the banner computes to in each theme, where a node sits against a region's border, and what the `.adp` and the `.rq` hold after a drag, a refusal and an undo are decided between the specification, the stylesheet, the canvas, the stream and the files.

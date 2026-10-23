@@ -14,7 +14,7 @@ public static class SparqlSelection
         path is { Length: > 0 } && path.EndsWith(".rq", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>The projection of a loaded entry, or null when the file does not parse.</summary>
-    public static SparqlProjectionResult? ProjectionOf(DocumentEntry<string, SparqlDocument> entry)
+    private static SparqlProjectionResult? ProjectionOf(DocumentEntry<string, SparqlDocument> entry)
     {
         ArgumentNullException.ThrowIfNull(entry);
         return entry.IsUsable ? entry.Model.Drawing : null;

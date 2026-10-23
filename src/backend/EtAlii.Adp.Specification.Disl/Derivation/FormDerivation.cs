@@ -121,6 +121,9 @@ public static class FormDerivation
     {
         private readonly CelMap _env = env.ToCel();
 
+        /// <summary>The subject's type and its ancestors, most specific first, which a type-keyed row id is looked up by.</summary>
+        private readonly IReadOnlyList<string> _types = specification.Metamodel.TypeOf(self.TypeName)?.Linearisation ?? [self.TypeName];
+
         public void Items(IReadOnlyList<DislFormItem>? items, string group)
         {
             foreach (var item in items ?? []) Item(item, group);
@@ -184,8 +187,8 @@ public static class FormDerivation
 
             var key = item.Id ?? attribute ?? label;
             return item.Kind == "type"
-                ? new DerivedRow(ids.PropertyId(key), label, value, item.Widget, reason ?? "", group, Types(item, variables), Retypes: true)
-                : new DerivedRow(ids.PropertyId(key), label, value, item.Widget, reason ?? "", group, Candidates(item, variables));
+                ? new DerivedRow(ids.PropertyId(_types, key), label, value, item.Widget, reason ?? "", group, Types(item, variables), Retypes: true)
+                : new DerivedRow(ids.PropertyId(_types, key), label, value, item.Widget, reason ?? "", group, Candidates(item, variables));
         }
 
         /// <summary>The types a type item offers, each named by its <c>optionLabel</c> with <c>item</c> bound, else as itself.</summary>

@@ -16,7 +16,9 @@ namespace EtAlii.Adp.Specification.Disl;
 /// <c>"&lt;Type&gt;/&lt;kind&gt;"</c> overrides it for entries offered on that type or its subtypes. A
 /// <c>&lt;name&gt;</c> in an id is replaced by the entry's binding of that name (its <c>as</c> name or an argument), mapped
 /// through <c>types</c> when it is a type name there.</item>
-/// <item><c>properties</c>: per form item key - its row id: its <c>id</c>, else its attribute, else a computed item's label - the row id.</item>
+/// <item><c>properties</c>: per form item key - its row id: its <c>id</c>, else its attribute, else a computed item's label - the row id.
+/// A key <c>"&lt;Type&gt;/&lt;key&gt;"</c> overrides it for the rows of a form for that type or its subtypes, and
+/// <c>"diagram/&lt;key&gt;"</c> for the diagram's own form, so that two forms whose items share a key can give two ids.</item>
 /// <item><c>types</c>: per type name, the host's kind, which <c>&lt;name&gt;</c> substitution reads.</item>
 /// </list>
 /// <para>A name the block does not map is its own id, so a specification without a block keeps DISL's names.</para>
@@ -83,6 +85,21 @@ public sealed partial class WireIdMap
 
     /// <summary>The row id of a form item known by <paramref name="key"/>.</summary>
     public string PropertyId(string key) => _properties.GetValueOrDefault(key, key);
+
+    /// <summary>
+    /// The row id of a form item known by <paramref name="key"/>, in a form read for a subject whose type linearisation is
+    /// <paramref name="types"/> (most specific first; <c>diagram</c> for the diagram's own form): the first
+    /// <c>"&lt;Type&gt;/&lt;key&gt;"</c> entry, else the key's own.
+    /// </summary>
+    public string PropertyId(IReadOnlyList<string> types, string key)
+    {
+        ArgumentNullException.ThrowIfNull(types);
+        foreach (var type in types)
+        {
+            if (_properties.TryGetValue($"{type}/{key}", out var byType)) return byType;
+        }
+        return PropertyId(key);
+    }
 
     private string Substitute(string id, IReadOnlyDictionary<string, object?> bindings) =>
         Placeholder().Replace(id, match =>
