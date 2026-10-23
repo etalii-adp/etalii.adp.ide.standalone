@@ -8,7 +8,7 @@ namespace EtAlii.Adp.Specification.Fbl.Registration;
 /// Creates a registration beside a body the first time the user places an element or changes a setting a declared block
 /// keeps, when the binding's <c>registration.createOnFirstPlacement</c> is true (FBL §8.4, 0.7 §8.4).
 /// </summary>
-internal static class RegistrationCreation
+public static class RegistrationCreation
 {
     /// <summary>
     /// The text of the registration <paramref name="registrationName"/> to write beside the body <paramref name="bodyName"/>

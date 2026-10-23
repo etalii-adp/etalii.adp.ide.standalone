@@ -35,6 +35,21 @@ service DesignerService {
   // One gesture of the author. Answered as soon as the edit is accepted, which is before it is
   // written: the table shows it at once and the write follows (TableEditOutcome).
   rpc Edit(TableEditRequest) returns (TableEditResponse);
+
+  // The hierarchy surface's calls (DESL section 7.7, spec 029 R8): a designer whose document is one
+  // page of nested boxes is served by these, whichever designer it is. Its content arrives on the
+  // same Watch stream, as the `hierarchy_surface` member, and never on a second stream.
+
+  // Starts a hierarchy surface stream on the connection's Watch: the whole model, then the whole
+  // model again after every change. Refused with the permanent codes OpenTable uses.
+  rpc OpenHierarchySurface(OpenHierarchySurfaceRequest) returns (OpenHierarchySurfaceResponse);
+
+  // Ends one hierarchy surface stream. Closing a stream that is already gone is not an error.
+  rpc CloseHierarchySurface(CloseHierarchySurfaceRequest) returns (CloseHierarchySurfaceResponse);
+
+  // One gesture of the person. Answered when the gesture is accepted or refused; the outcome of an
+  // accepted one follows on the stream.
+  rpc HierarchySurfaceGesture(HierarchySurfaceGestureRequest) returns (HierarchySurfaceGestureResponse);
 }
 
 message OpenTableRequest {
@@ -247,4 +262,126 @@ message TableEditOutcome {
   bool written = 2;
   string error = 3;                       // why, when it was not written
   repeated ShortGuid taken_back = 4;      // the later edits taken back with it
+}
+
+message OpenHierarchySurfaceRequest {
+  ShortGuid project_id = 1;
+  ShortGuid watch_id = 2;   // the connection this stream belongs to
+  ShortGuid stream_id = 3;  // client-generated, unique on the connection among all its streams
+  Path path = 4;            // project-relative path of the document's body or of its registration
+}
+
+message OpenHierarchySurfaceResponse {}
+
+message CloseHierarchySurfaceRequest {
+  ShortGuid watch_id = 1;
+  ShortGuid stream_id = 2;
+}
+
+message CloseHierarchySurfaceResponse {}
+
+message HierarchySurfaceGestureRequest {
+  ShortGuid watch_id = 1;
+  ShortGuid stream_id = 2;
+  ShortGuid edit_id = 3;           // client-generated; the outcome names it
+  string operation = 4;            // the operation's name in the specification, e.g. "toggleCollapsed"
+  string target_id = 5;            // what the operation is for; empty for an operation "for" the document
+  map<string, string> params = 6;  // the operation's params by their names in the specification, in their written form
+}
+
+message HierarchySurfaceGestureResponse {
+  string error = 1;  // empty when accepted; otherwise the sentence the client shows, and nothing changed
+}
+
+// One event of one hierarchy surface stream, told apart from the connection's other streams by
+// the id the client gave it.
+message HierarchySurfaceStreamMessage {
+  ShortGuid stream_id = 1;
+  oneof event {
+    HierarchySurfaceModel model = 2;
+    HierarchySurfaceEditOutcome outcome = 3;
+    HierarchySurfaceStreamEnded ended = 4;  // the backend ended the stream itself; the client re-opens
+  }
+}
+
+message HierarchySurfaceStreamEnded {}
+
+// The whole read model of a hierarchy surface. It carries no focus, narrowing, sort or selection:
+// those are the client's.
+message HierarchySurfaceModel {
+  string title = 1;                                 // the document's title, for the trail
+  string read_only_reason = 2;                      // non-empty when nothing can be edited, saying why
+  string cause = 3;                                 // "open", "edit" or "outside": what this model follows
+  repeated HierarchySurfaceNode nodes = 4;          // every level and entry, in the file's order
+  repeated HierarchySurfaceOptionList option_lists = 5;
+  repeated HierarchySurfaceFilter filters = 6;      // the stored filters, in their order
+  repeated HierarchySurfaceNote notes = 7;          // every note, open and resolved, in the file's order
+  repeated HierarchySurfaceFinding findings = 8;    // all of them, whatever the client narrows to
+}
+
+message HierarchySurfaceNode {
+  string id = 1;           // the number when usable, otherwise "line/<n>", valid for this model only
+  string number = 2;       // as written: "ITEM-0004", "REQ-NEW", "REQ-12"
+  string role = 3;         // "level" or "entry"
+  string type = 4;         // the specification's type
+  string parent_id = 5;    // empty at the top level
+  string title = 6;
+  string description = 7;  // its lines joined by LF, the indentation taken off
+  repeated HierarchySurfaceLabelValues labels = 8;
+  repeated HierarchySurfaceReference references = 9;
+  bool collapsed = 10;
+}
+
+message HierarchySurfaceLabelValues {
+  string label = 1;            // the label's attribute in the specification
+  repeated string values = 2;  // the member names as the node carries them, in the order of its line
+}
+
+message HierarchySurfaceReference {
+  int32 start = 1;       // offset in the text, in UTF-16 code units
+  int32 length = 2;      // of the bracketed number, brackets included
+  string target_id = 3;  // empty when it names no node
+}
+
+message HierarchySurfaceOptionList {
+  string label = 1;                             // the label's attribute in the specification
+  repeated HierarchySurfaceOption options = 2;  // stored members in their order, then implicit ones
+}
+
+message HierarchySurfaceOption {
+  string id = 1;      // the specification's id of the member
+  string name = 2;
+  string colour = 3;  // one of the ten: default, gray, brown, orange, yellow, green, blue, purple, pink, red
+  bool implicit = 4;  // carried by a node, not held by the list
+}
+
+message HierarchySurfaceFilter {
+  string id = 1;
+  string name = 2;
+  string query = 3;  // words in DESL section 7.7.3's notation
+}
+
+message HierarchySurfaceNote {
+  string id = 1;        // its place among the notes, valid for this model only
+  string kind = 2;      // as the specification names it
+  string about = 3;     // the number as written
+  string about_id = 4;  // the node it names; empty when it names none
+  string text = 5;
+  string detail = 6;
+  bool resolved = 7;
+  repeated HierarchySurfaceReference references = 8;  // offsets in text, then in detail after one LF
+}
+
+message HierarchySurfaceFinding {
+  string code = 1;      // e.g. "std.duplicateId", "std.mentions", "fbl.unknown-block"
+  string severity = 2;  // "error", "warning" or "info"
+  string message = 3;
+  string node_id = 4;   // the node it stands at, when it stands at one
+  int32 line = 5;       // 1-based line of the body, or of the registration for a registration finding
+}
+
+message HierarchySurfaceEditOutcome {
+  ShortGuid edit_id = 1;
+  bool written = 2;
+  string error = 3;  // why, when it was not written
 }

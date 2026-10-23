@@ -1,0 +1,213 @@
+/*
+ * The hierarchy surface (DESL section 7.7, spec 029): one page of nested boxes in the Knowledge designer's looks
+ * (FR-011). Every colour is a theme token, so both themes follow; the tags are the table's own `.table-option-tag`.
+ */
+
+.hs-surface {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 13px;
+}
+
+/* The trail scrolls with the page's header, not the page (R10). */
+.hs-trail {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.hs-trail-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.hs-trail-link,
+.hs-finding-link {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.hs-trail-separator,
+.hs-finding-line {
+  color: var(--color-text-muted);
+}
+
+.hs-trail-current {
+  font-weight: 600;
+}
+
+.hs-read-only {
+  margin: 0;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+}
+
+.hs-findings {
+  margin: 0;
+  padding: 4px 12px;
+  border-bottom: 1px solid var(--color-border);
+  list-style: none;
+}
+
+.hs-finding {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 2px 0;
+}
+
+.hs-finding-error .mdi {
+  color: var(--color-danger);
+}
+
+.hs-finding-warning .mdi {
+  color: var(--color-warning);
+}
+
+.hs-finding-info .mdi {
+  color: var(--color-text-muted);
+}
+
+/* One page that scrolls from top to bottom; the boxes share their borders (FR-006, FR-007). */
+.hs-page {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 12px;
+}
+
+.hs-level,
+.hs-entry {
+  display: flex;
+  margin: -1px 0 0 -1px;
+  border: 1px solid var(--color-border);
+}
+
+.hs-page > .hs-level,
+.hs-page > .hs-entry {
+  margin-left: 0;
+}
+
+/* A level's own box is as high as what stands to its right: the row stretches it. */
+.hs-level-box {
+  display: flex;
+  flex: 0 0 240px;
+  width: 240px;
+}
+
+.hs-level-content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 280px;
+}
+
+.hs-entry {
+  flex: 1;
+}
+
+.hs-box {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  padding: 6px 28px 6px 6px;
+  cursor: default;
+}
+
+.hs-level-box .hs-box {
+  background: var(--color-surface-raised);
+}
+
+.hs-box.hs-selected {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+.hs-box-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.hs-toggle,
+.hs-focus,
+.hs-hidden-levels {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.hs-toggle:hover,
+.hs-focus:hover,
+.hs-hidden-levels:hover {
+  color: var(--color-text);
+}
+
+.hs-number {
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.hs-title {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.hs-note-mark {
+  position: relative;
+  color: var(--color-warning);
+}
+
+.hs-note-count {
+  margin-inline-start: 1px;
+  font-size: 10px;
+}
+
+.hs-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 4px 0 0 22px;
+}
+
+.hs-tags .table-option-tag + .table-option-tag {
+  margin-inline-start: 0;
+}
+
+.hs-description {
+  margin: 4px 0 0 22px;
+  color: var(--color-text);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* The mark of the levels the page does not show, at the box's right edge (R10). */
+.hs-hidden-levels {
+  position: absolute;
+  top: 6px;
+  right: 4px;
+}
