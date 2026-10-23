@@ -33,9 +33,12 @@ internal sealed class HierarchicalRequirementEditCommandHandler(IHierarchicalReq
             return CommandResult.Failure(HierarchicalRequirementGestures.Drifted);
         }
 
-        (byte[]? after, string refusal) = TextOperations.Handles(command.Operation)
-            ? TextOperations.Apply(before, name, command.Operation, command.TargetId, command.Value)
-            : (null, $"'{command.Operation}' cannot be done here yet.");
+        (byte[]? after, string refusal) = command.Operation switch
+        {
+            _ when TextOperations.Handles(command.Operation) => TextOperations.Apply(before, name, command.Operation, command.TargetId, command.Params.GetValueOrDefault(TextOperations.AttributeOf(command.Operation), "")),
+            _ when StructureOperations.Handles(command.Operation) => StructureOperations.Apply(before, name, command.Operation, command.TargetId, command.Params),
+            _ => (null, $"'{command.Operation}' cannot be done here yet."),
+        };
         if (after is null)
         {
             return CommandResult.Failure(refusal);

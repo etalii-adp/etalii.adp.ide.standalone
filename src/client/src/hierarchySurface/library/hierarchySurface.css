@@ -251,3 +251,61 @@
   right: 6px;
   bottom: 6px;
 }
+
+/* The place a node is added, at the end of a level's content and of the page, as the table's new row (FR-012). */
+.hs-add {
+  display: flex;
+  gap: 8px;
+  padding: 2px 6px;
+}
+
+.hs-page > .hs-add {
+  padding: 4px 0;
+}
+
+.hs-add-button {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.hs-add-button:hover {
+  color: var(--color-text);
+}
+
+/* What a node is dragged by, with everything in it (FR-013): in the box's left margin, so the title keeps its width. */
+.hs-box.hs-draggable {
+  padding-left: 16px;
+}
+
+.hs-grip {
+  position: absolute;
+  top: 8px;
+  left: 1px;
+  font-size: 14px;
+  line-height: 1;
+  color: var(--color-text-muted);
+  cursor: grab;
+  touch-action: none;
+}
+
+/* Where a dragged node would go: into the box, or above or below it. */
+.hs-box.hs-drop-into {
+  background: var(--color-surface-raised);
+  outline: 2px dashed var(--color-primary);
+  outline-offset: -2px;
+}
+
+.hs-box.hs-drop-after {
+  box-shadow: inset 0 -3px 0 var(--color-primary);
+}
+
+.hs-box.hs-drop-before {
+  box-shadow: inset 0 3px 0 var(--color-primary);
+}

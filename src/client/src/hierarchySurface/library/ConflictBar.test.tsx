@@ -10,7 +10,20 @@ const definition: HierarchySurfaceDefinition = {
   labels: [],
   noteIcons: {},
   severalNotesIcon: "mdi-comment-multiple-outline",
-  operations: { toggleCollapsed: "fold", setTitle: "retitle", setDescription: "redescribe" },
+  operations: {
+    toggleCollapsed: "fold",
+    setTitle: "retitle",
+    setDescription: "redescribe",
+    addTopLevel: { operation: "open", label: "New section" },
+    addEntry: { operation: "jot", label: "New point" },
+    addLevel: { operation: "nest", label: "New section" },
+    moveLevel: "shift",
+    moveEntry: "slide",
+    delete: "drop",
+  },
+  moveParams: { into: "section", after: "behind" },
+  deletion: { threshold: 1, message: (number: string, count: number) => `Drop ${number}? ${count} things concern it.` },
+  shortcutKeys: ["Enter"],
 };
 
 function node(id: string, role: "level" | "entry", parentId: string, title: string, description = ""): HierarchySurfaceNode {

@@ -1,7 +1,9 @@
 import { useCallback } from "react";
-import { elementSelectionOf } from "@client/canvas/selection";
+import { create } from "@bufbuild/protobuf";
+import { elementSelectionOf, elementSourceOf } from "@client/canvas/selection";
+import { ContextShortcutSchema } from "@client/generated/context-contract_pb";
 import { useHierarchySurfaceStream } from "@client/designers/useHierarchySurfaceStream";
-import { HierarchySurface } from "@client/hierarchySurface/library/HierarchySurface";
+import { HierarchySurface, type HierarchySurfaceChord } from "@client/hierarchySurface/library/HierarchySurface";
 import { useContextConnection } from "@client/shell/context/ContextConnectionProvider";
 import type { ToolContentProps } from "@client/shell/panels/toolPanelRegistration";
 import { hierarchicalRequirementSurface } from "./hierarchicalRequirementDefinition";
@@ -17,8 +19,16 @@ export function HierarchicalRequirementPanel({ path, entryId }: ToolContentProps
   const { gesture } = surface;
 
   // One selected entry is the selection of the whole application, as a table's row is.
-  const { select } = useContextConnection();
+  const { select, executeShortcut } = useContextConnection();
   const onSelectNode = useCallback((id: string) => select(id === "" ? null : elementSelectionOf(entryId, path, id)), [select, entryId, path]);
+  // A key on a selected entry is the backend's to match against the entry's actions, Ctrl+Enter's among them.
+  const onShortcut = useCallback(
+    async (id: string, chord: HierarchySurfaceChord) => {
+      const outcome = await executeShortcut(create(ContextShortcutSchema, chord), elementSourceOf(id, entryId));
+      return outcome.accepted ? "" : outcome.error;
+    },
+    [executeShortcut, entryId],
+  );
   const onGesture = useCallback(
     (operation: string, targetId: string, params: Readonly<Record<string, string>>) => gesture(operation, targetId, params),
     [gesture],
@@ -30,6 +40,7 @@ export function HierarchicalRequirementPanel({ path, entryId }: ToolContentProps
       definition={hierarchicalRequirementSurface}
       pendingEdits={surface.pendingEdits}
       onGesture={onGesture}
+      onShortcut={onShortcut}
       onSelectNode={onSelectNode}
     />
   );
