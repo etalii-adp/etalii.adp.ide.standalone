@@ -69,7 +69,7 @@ public sealed class BundledDefinitionTests : BundledDefinitionContract<BundledDe
             declared.UnionWith(block.GetProperty(map).EnumerateObject().Select(entry => entry.Value.GetString()!));
         }
 
-        using var transcript = JsonDocument.Parse(await File.ReadAllBytesAsync(PipelineTranscript.CheckedInPath, TestContext.Current.CancellationToken));
+        using var transcript = JsonDocument.Parse(await File.ReadAllBytesAsync(new PipelineTranscript().CheckedInPath, TestContext.Current.CancellationToken));
         var held = TranscriptIds(transcript.RootElement);
 
         Assert.True(held.Count >= 20, $"Only {held.Count} wire ids were read from the transcript; the reading has stopped finding them.");
@@ -103,7 +103,7 @@ public sealed class BundledDefinitionTests : BundledDefinitionContract<BundledDe
         services.AddAzurePipeline();
         await using var provider = services.BuildServiceProvider();
         var factory = provider.GetServices<IDiagramDocumentFactory>().Single(candidate => candidate.Origin == Diagram.Pipeline.Origin);
-        using var transcript = JsonDocument.Parse(await File.ReadAllBytesAsync(PipelineTranscript.CheckedInPath, TestContext.Current.CancellationToken));
+        using var transcript = JsonDocument.Parse(await File.ReadAllBytesAsync(new PipelineTranscript().CheckedInPath, TestContext.Current.CancellationToken));
 
         Assert.Equal(transcript.RootElement.GetProperty("emptyDocument").GetString(), PipelineBody.NewDocument("parity"));
         foreach (var name in new[] { "parity", "azure-pipelines", "build.ci", "" })
