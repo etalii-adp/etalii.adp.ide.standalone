@@ -1,4 +1,5 @@
 using System.Globalization;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.Specification.Disl;
 using EtAlii.Adp.Specification.Fbl;
 
@@ -48,6 +49,21 @@ internal static class FdgReaderSentences
     private const string NotYamlLeadIn = "The body is not well-formed YAML: ";
 
     private static readonly string[] _numbers = ["x", "y", "width"];
+
+    /// <summary>
+    /// The planner's refusal <paramref name="reason"/> in the tool's words, where they differ (finding B16): a list the
+    /// body does not have is today's missing section. Every other reason is the planner's own.
+    /// </summary>
+    public static string RefusalOf(string reason)
+    {
+        ArgumentNullException.ThrowIfNull(reason);
+        foreach (var section in (string[])["elements", "connections"])
+        {
+            if (reason == $"The file has no {section} to add to.") return $"The document has no `{section}:` section to add to.";
+        }
+
+        return reason;
+    }
 
     /// <summary>The reader's findings of <paramref name="body"/>, in reading order, for the evaluator.</summary>
     public static IReadOnlyList<DislReaderFinding> Of(FdgBody body) =>
@@ -138,7 +154,7 @@ internal static class FdgReaderSentences
             return;
         }
 
-        var line = body.KeyLine(new(0, body.Lines.Count - 1), HeaderKey);
+        var line = body.KeyLine(new LineRange(0, body.Lines.Count - 1), HeaderKey);
         if (!int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var version))
         {
             sentences.Add(new FdgReaderSentence(line, $"The version `{text}` is not a number."));

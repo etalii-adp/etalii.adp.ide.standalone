@@ -1,0 +1,7 @@
+# A pattern whose subject and object are the same variable.
+PREFIX ex: <http://example.org/>
+
+SELECT ?x
+WHERE {
+  ?x ex:knows ?x .
+}

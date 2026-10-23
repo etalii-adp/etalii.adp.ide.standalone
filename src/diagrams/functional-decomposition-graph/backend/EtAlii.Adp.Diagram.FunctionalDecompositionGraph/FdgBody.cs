@@ -1,6 +1,7 @@
 using System.Text;
 using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.History;
 using EtAlii.Adp.Specification.Disl;
 using EtAlii.Adp.Specification.Fbl;
 using EtAlii.Adp.Specification.Fbl.Documents;
@@ -23,9 +24,14 @@ namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
 /// the shape the model is built from, with the tool's numbers and ids.
 /// </para>
 /// <para>
-/// <b>Writing is still <see cref="FdgWriter"/>'s</b> until every edit is written by splices
-/// (functional-decomposition-graph-disl-fbl task 10): a command writes a copy of the text with it, and
-/// <see cref="Rewrite"/> reads the copy's new text.
+/// <b>Nothing in this module parses or splices YAML.</b> Every write is a <see cref="ModelChange"/> the
+/// library plans as splices in the body's own conventions (FBL section 6), so an unchanged document stays
+/// byte-identical, and a comment, an unknown key and a blank line survive because no splice touches them.
+/// A change of the DISL model is written with the ids the binding gave its entries
+/// (<see cref="ForBinding"/>), which differ from the model's where an id is written twice or not at all.
+/// </para>
+/// <para>
+/// <b>Undo stays the host's</b>: the shared restore command puts the text back.
 /// </para>
 /// <para>
 /// <b>A text read recently is not read again.</b> Reading is a pure function of the bytes, so
@@ -46,12 +52,13 @@ public sealed class FdgBody : ITextBody<FdgBody>
 
     private static readonly RecentBodies Recent = new();
 
-    private OpenBody _body;
-    private FblBodyEdits _edits;
+    private readonly OpenBody _body;
+    private readonly FblBodyEdits _edits;
 
     private readonly TextMemo<FblModel> _model = new();
     private readonly TextMemo<IReadOnlyList<Line>> _lines = new();
     private readonly TextMemo<DislModel> _disl = new();
+    private readonly TextMemo<IReadOnlyDictionary<string, string>> _bindingIds = new();
 
     private FdgBody(OpenBody body)
     {
@@ -98,15 +105,46 @@ public sealed class FdgBody : ITextBody<FdgBody>
         return body;
     }
 
+    /// <summary>The id the binding gave each entry, by the id the DISL model gives it (<see cref="FdgReading.BindingIds"/>).</summary>
+    private IReadOnlyDictionary<string, string> BindingIds => _bindingIds.Of(_body.Bytes, () => FdgReading.BindingIds(Model));
+
     /// <summary>
-    /// Makes <paramref name="text"/> this body's text: what <see cref="FdgWriter"/> wrote to a copy of it.
-    /// The bridge of task 9, removed when every edit is a <see cref="ModelChange"/> (task 10).
+    /// <paramref name="change"/>, made to the DISL model, as the binding is told it: each entry named by the id the
+    /// binding gave it, and a connection's ends by the ids they are written with.
     /// </summary>
-    internal void Rewrite(string text)
+    internal ModelChange ForBinding(ModelChange change)
     {
-        _body = Open(text);
-        _edits = new FblBodyEdits(_body, Recent);
+        ArgumentNullException.ThrowIfNull(change);
+        return change switch
+        {
+            ModelChange.Set set => set with { Id = BindingIdOf(set.Id) },
+            ModelChange.Remove remove => new ModelChange.Remove(BindingIdOf(remove.Id)),
+            ModelChange.Add add => add with { Attributes = add.Attributes.ToDictionary(pair => pair.Key, pair => pair.Key is "from" or "to" ? WrittenIdOf(pair.Value) : pair.Value, StringComparer.Ordinal) },
+            _ => change,
+        };
     }
+
+    private string BindingIdOf(string id) => BindingIds.GetValueOrDefault(id, id);
+
+    private object? WrittenIdOf(object? end) =>
+        end is string id && Disl.Diagram.Elements.FirstOrDefault(candidate => candidate.Id == id) is { } element ? FdgDefinition.WrittenId(element) : end;
+
+    /// <summary>Plans and applies one change; the refusal's sentence when the library refuses it.</summary>
+    internal EditOutcome Change(ModelChange change) => _edits.Change(change);
+
+    /// <summary>Plans <paramref name="change"/> against the body as it is now, without applying it.</summary>
+    internal PlanResult Plan(ModelChange change) => _body.Plan(change);
+
+    /// <summary>Applies an edit planned against the body as it is now.</summary>
+    internal void Apply(Edit edit)
+    {
+        ArgumentNullException.ThrowIfNull(edit);
+        _body.Apply(edit);
+        Recent.Remember(_body.Fork());
+    }
+
+    /// <summary>The body's bytes now.</summary>
+    internal byte[] Bytes => _body.Bytes;
 
     /// <summary>The 0-based lines <paramref name="span"/> covers.</summary>
     internal LineRange LinesOf(Span span) => _edits.LinesOf(span);

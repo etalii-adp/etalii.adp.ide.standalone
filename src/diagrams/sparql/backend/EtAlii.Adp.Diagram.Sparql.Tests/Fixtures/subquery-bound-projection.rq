@@ -1,0 +1,9 @@
+# Finding A9: ?n is bound by the subquery's projection alone, and is projected outward.
+PREFIX ex: <http://example.org/>
+
+SELECT ?n
+WHERE {
+  {
+    SELECT (COUNT(?s) AS ?n) WHERE { ?s ex:p ?o }
+  }
+}

@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Specification.Disl;
 
@@ -15,28 +14,27 @@ public sealed class ConnectFdgElementsCommandHandler(IFdgDocumentStore documents
         await base.RunAsync(command.ConnectionId.Length > 0 ? command : command with { ConnectionId = ShortGuid.NewShortGuid().ToString() }, cancellationToken);
 
     /// <inheritdoc />
-    protected override EditOutcome Apply(LineDocument document, FdgModel model, ConnectFdgElementsCommand command)
+    protected override EditOutcome Apply(FdgBody body, DislModel model, ConnectFdgElementsCommand command)
     {
-        if (RefusalOf(FdgBody.Parse(document.Text).Disl.Diagram, command.RelationType, command.FromId, command.ToId) is { } refusal)
+        ArgumentNullException.ThrowIfNull(body);
+        ArgumentNullException.ThrowIfNull(model);
+        ArgumentNullException.ThrowIfNull(command);
+
+        var diagram = model.Diagram;
+        if (RefusalOf(diagram, command.RelationType, command.FromId, command.ToId) is { } refusal)
         {
             return EditOutcome.Refused(refusal);
         }
 
-        if (model.IsTaken(command.ConnectionId))
+        if (FdgDefinition.IsTaken(diagram, command.ConnectionId))
         {
             return EditOutcome.Refused("That id is already used in this graph.");
         }
 
-        var connection = new FdgConnection(
-            command.ConnectionId,
-            command.RelationType,
-            command.FromId,
-            command.ToId,
-            Name: "",
-            Description: "",
-            Range: new LineRange(0, 0));
-
-        return FdgWriter.Connect(document, model, connection);
+        var from = FdgDefinition.EndOf(diagram, command.FromId)!;
+        var to = FdgDefinition.EndOf(diagram, command.ToId)!;
+        var connect = new DislChange.Connect(FdgReading.RelationTypeOf(command.RelationType)!, command.ConnectionId, from.Id, to.Id, new Dictionary<string, object?>(StringComparer.Ordinal));
+        return FdgDefinition.Apply(body, new DislTransaction([connect], [], null));
     }
 
     /// <summary>

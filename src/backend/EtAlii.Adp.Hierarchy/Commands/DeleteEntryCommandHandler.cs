@@ -118,8 +118,10 @@ public sealed class DeleteEntryCommandHandler : ICommandHandler<DeleteEntryComma
     {
         var designer = _tools?.Route(path) as DesignerRouted;
         var isRegistration = DiagramFilePair.IsRegistrationFile(path);
+        // The registration of a type that creates it with the first setting is view data beside a document that stands
+        // on its own: it goes alone, and the body opens without it (spec 029 FR-004, R4).
         var sibling = designer is null ? DiagramFilePair.SiblingOf(path, _catalog)
-            : isRegistration ? designer.BodyPath
+            : isRegistration && designer.Definition.Claim is not { CreatesRegistration: true } ? designer.BodyPath
             : null;
 
         // A SUBJECT's delete cascades to its registrations (adp-file-nesting Requirement 6.1):
@@ -129,10 +131,10 @@ public sealed class DeleteEntryCommandHandler : ICommandHandler<DeleteEntryComma
         List<string> cascade = !isRegistration
             ? DiagramRegistrationSet.Over(IoPath.GetDirectoryName(path)!, path, _catalog).ToList()
             : [];
-        if (designer is not null && !isRegistration)
+        if (designer is { RegistrationPath: { } registration } && !isRegistration)
         {
             // The body of a designer's document: its registration names nothing once it is gone.
-            cascade.Add(designer.RegistrationPath);
+            cascade.Add(registration);
         }
 
         return (sibling, cascade);

@@ -18,7 +18,7 @@ namespace EtAlii.Adp.Specification.Fbl.Tests.Conformance;
 public class ConformanceFixturesTests
 {
     /// <summary>The number of fixtures vendored: fewer means the enumeration broke.</summary>
-    private const int MinimumFixtures = 22;
+    private const int MinimumFixtures = 23;
 
     /// <summary>The fixtures copied in etalii.adp's own layout, beside the Knowledge designer's.</summary>
     private const string AdpFixtures = "etalii.adp/specifications/fbl/fixtures";
@@ -132,7 +132,7 @@ public class ConformanceFixturesTests
         Assert.DoesNotContain(problems, p => p.Severity == LoadSeverity.Error);
         var inputName = root.GetProperty("input").GetString()!;
         var input = File.ReadAllBytes(Path.Combine(folder, inputName));
-        var subject = Subject.Open(input, inputName, binding);
+        var subject = Subject.Open(input, inputName, binding, folder);
         var reference = BindingReference(root.GetProperty("binding").GetString()!, folder);
         var bindingText = File.ReadAllText(Path.GetFullPath(Path.Combine(folder, reference[..reference.LastIndexOf('#')])));
 
@@ -224,7 +224,7 @@ public class ConformanceFixturesTests
         var inputName = fixture.RootElement.GetProperty("input").GetString()!;
         var binding = FblDocumentLoader.ResolveReference(BindingReference(fixture.RootElement.GetProperty("binding").GetString()!, folder), fixturePath, out _);
         var input = File.ReadAllBytes(Path.Combine(folder, inputName));
-        var subject = Subject.Open(input, inputName, binding);
+        var subject = Subject.Open(input, inputName, binding, folder);
 
         // Act.
         var result = subject.Change(new ModelChange.Save());
@@ -314,7 +314,7 @@ public class ConformanceFixturesTests
     private static ModelChange ReadChange(JsonElement edit, FblModel? model)
     {
         if (edit.ValueKind == JsonValueKind.Array) throw new NotSupportedException("A fixture edit that is a list of changes is not run yet.");
-        if (edit.TryGetProperty("setting", out _)) throw new NotSupportedException("A fixture's setting edit is not run yet.");
+        if (edit.TryGetProperty("setting", out var setting)) return Setting(setting);
         if (edit.TryGetProperty("move", out var move))
         {
             var id = move.GetProperty("element").GetString()!;
@@ -325,8 +325,7 @@ public class ConformanceFixturesTests
         if (edit.TryGetProperty("save", out _)) return new ModelChange.Save();
         if (edit.TryGetProperty("set", out var set))
         {
-            if (set.TryGetProperty("occurrence", out _)) throw new NotSupportedException("A fixture edit naming an occurrence is not run yet.");
-            return new ModelChange.Set(set.GetProperty("element").GetString()!, Attributes(set.GetProperty("attributes")));
+            return set.TryGetProperty("occurrence", out _) ? throw new NotSupportedException("A fixture edit naming an occurrence is not run yet.") : new ModelChange.Set(set.GetProperty("element").GetString()!, Attributes(set.GetProperty("attributes")));
         }
         if (edit.TryGetProperty("add", out var add))
         {
@@ -344,14 +343,35 @@ public class ConformanceFixturesTests
             : throw new InvalidOperationException($"Unknown fixture edit: {edit}.");
     }
 
+    /// <summary>A fixture's change to an entry of a block the binding declares (FBL 0.7 §8.4, §15.3).</summary>
+    private static ModelChange.Setting Setting(JsonElement setting)
+    {
+        SettingPosition? position = null;
+        if (setting.TryGetProperty("position", out var at))
+        {
+            position = new SettingPosition(
+                at.TryGetProperty("index", out var index) ? index.GetInt32() : null,
+                at.TryGetProperty("after", out var after) ? after.GetString() : null,
+                at.TryGetProperty("before", out var before) ? before.GetString() : null);
+        }
+        return new ModelChange.Setting(
+            setting.GetProperty("block").GetString()!,
+            setting.GetProperty("key").GetString()!,
+            setting.TryGetProperty("value", out var value) ? value.GetString() : null,
+            position,
+            setting.TryGetProperty("rename", out var rename) ? rename.GetString() : null,
+            setting.TryGetProperty("remove", out var remove) && remove.GetBoolean());
+    }
+
     /// <summary>The model change's index for a fixture's position among <paramref name="parent"/>'s children of <paramref name="type"/>.</summary>
     private static int? Index(JsonElement position, FblModel? model, string? parent, string? type)
     {
         if (position.TryGetProperty("index", out var index)) return index.GetInt32();
         var siblings = model?.Elements.Where(element => element.ParentId == parent && element.Type == type).Select(element => element.Id).ToList() ?? [];
         if (position.TryGetProperty("after", out var after)) return Place(after.GetString()!) + 1;
-        if (position.TryGetProperty("before", out var before)) return Place(before.GetString()!);
-        throw new InvalidOperationException($"Unknown fixture position: {position}.");
+        return position.TryGetProperty("before", out var before)
+            ? Place(before.GetString()!)
+            : throw new InvalidOperationException($"Unknown fixture position: {position}.");
 
         int Place(string sibling) =>
             siblings.IndexOf(sibling) is var at and >= 0 ? at : throw new InvalidOperationException($"The position names '{sibling}', which is no sibling here.");
@@ -377,17 +397,36 @@ public class ConformanceFixturesTests
         private OpenRegistration? _registration;
         private FblBinding? _binding;
 
-        public static Subject Open(byte[] input, string name, FblBinding binding) =>
+        /// <summary>A registration's reading: the elements of its body and the findings of both (FBL §8.1, §8.5).</summary>
+        private FblModel? Read { get; set; }
+
+        public static Subject Open(byte[] input, string name, FblBinding binding, string folder) =>
             name.EndsWith(".adp", StringComparison.OrdinalIgnoreCase)
-                ? new Subject { _registration = OpenRegistration.Open(input) }
+                ? Registration(input, name, binding, folder)
                 : new Subject { _binding = binding, _body = OpenBody.Open(input, binding, new FblOptions { FileName = name, DeriveId = NaturalIds.For(binding.Name), TimeAttributes = NaturalIds.TimeAttributes(binding.Name), AttributeType = AttributeTypes(binding.Name) }) };
+
+        /// <summary>
+        /// A registration opened through its binding (FBL 0.7 §8.1). When its body is beside it, the body is read too, as
+        /// the document the registration opens: its elements are the reading's, and the ids the registration's stale
+        /// entries are told by (FBL §8.5); the findings are the body's and the registration's.
+        /// </summary>
+        private static Subject Registration(byte[] input, string name, FblBinding binding, string folder)
+        {
+            var registration = OpenRegistration.Open(input, binding);
+            var subject = new Subject { _registration = registration };
+            if (registration.Document.Body is not { } bodyName || !File.Exists(Path.Combine(folder, bodyName))) return subject;
+            var body = OpenBody.Open(File.ReadAllBytes(Path.Combine(folder, bodyName)), binding, new FblOptions { FileName = bodyName });
+            registration.KnownIds = body.Model.Elements.Select(element => element.Id).ToHashSet(StringComparer.Ordinal);
+            subject.Read = body.Model with { Findings = [.. body.Model.Findings, .. registration.Findings(name)] };
+            return subject;
+        }
 
         /// <summary>The attribute types of a binding's tool type, which a binding does not carry (FBL 0.5 section 5.2): the timeline's, from its specification.</summary>
         private static Func<string, string, string?>? AttributeTypes(string binding) => binding == "timeline" ? TimelineTypes.Of : null;
 
         public byte[] Bytes => _body?.Bytes ?? _registration!.Bytes;
 
-        public FblModel? Model => _body?.Model;
+        public FblModel? Model => _body?.Model ?? Read;
 
         public PlanResult Change(ModelChange change)
         {

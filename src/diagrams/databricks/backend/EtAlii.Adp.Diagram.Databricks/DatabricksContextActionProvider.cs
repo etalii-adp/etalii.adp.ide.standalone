@@ -118,99 +118,113 @@ public sealed class DatabricksContextActionProvider : DiagramActionProvider<Line
         var model = DatabricksSelection.ReadingOf(entry.Model, target);
         var task = DatabricksSelection.TaskOf(model, target.ElementId);
 
-        switch (actionId)
+        return actionId switch
         {
-            case RenameTaskActionId when task is { } selected:
-                return new ContextExecutionRequiresInput(new ContextInputRequest(
-                    "Rename task", "mdi-pencil-outline", "Key", selected.Task.Key, "Rename", target.ElementId));
+            RenameTaskActionId or SetRunIfActionId or AssignClusterActionId when task is { } selected =>
+                AskAboutTask(target, actionId, selected.Task),
+            RemoveTaskActionId when task is { } selected =>
+                await RemoveTaskAsync(target, entry, selected.Job, selected.Task, cancellationToken),
+            _ when actionId.StartsWith(DisconnectActionPrefix, StringComparison.Ordinal) && task is { } selected =>
+                await DisconnectAsync(target, actionId, selected.Job, selected.Task, cancellationToken),
+            RemoveEdgeActionId when DatabricksSelection.TryEdge(target.ElementId, out var fromKey, out var toKey) =>
+                await DispatchAsync(target, new DisconnectDatabricksTasksCommand(
+                    target.ResolvedFullPath, JobKeyFor(model, target, toKey), fromKey, toKey), cancellationToken),
+            ConnectActionId when DatabricksRelationGesture.TryParse(target.ElementId, out var from, out var to) =>
+                await ConnectAsync(target, model, from, to, cancellationToken),
+            _ when actionId.StartsWith(AddTaskActionPrefix, StringComparison.Ordinal)
+                && DatabricksNewPlacement.IsPlacement(target.ElementId) =>
+                await AddTaskAtPlacementAsync(target, model, actionId, cancellationToken),
+            _ when actionId.StartsWith(AddTaskActionPrefix, StringComparison.Ordinal) =>
+                AskForNew("Add task", "Task key"),
+            RenameBundleActionId when DatabricksSelection.IsBundle(target.ElementId) =>
+                new ContextExecutionRequiresInput(new ContextInputRequest(
+                    "Rename bundle", "mdi-pencil-outline", "Name", model.Bundle.Name, "Rename", target.ElementId)),
+            _ when actionId.StartsWith(AddResourceActionPrefix, StringComparison.Ordinal) =>
+                AskForNew("Add resource", "Key"),
+            _ when actionId.StartsWith(AddLibraryActionPrefix, StringComparison.Ordinal) =>
+                AskForNew("Add library", "Path"),
+            RemoveLibraryActionId when DatabricksSelection.LibraryOf(model, target.ElementId) is { } selected =>
+                await DispatchAsync(target, new RemoveDatabricksLibraryCommand(
+                    target.ResolvedFullPath, selected.Pipeline.Key, selected.Library.Kind, selected.Library.Path), cancellationToken),
+            _ => new ContextExecutionCompleted(),
+        };
+    }
 
-            case SetRunIfActionId when task is { } selected:
-                return new ContextExecutionRequiresInput(new ContextInputRequest(
-                    "Set run if", "mdi-filter-outline", "Run if (empty = ALL_SUCCESS)", selected.Task.RunIf, "Set"));
+    /// <summary>Rename a task, set its run_if or assign its cluster: each asks for the value first.</summary>
+    private static ContextExecutionRequiresInput AskAboutTask(ContextTarget target, string actionId, JobTask task) =>
+        new(actionId switch
+        {
+            RenameTaskActionId => new ContextInputRequest(
+                "Rename task", "mdi-pencil-outline", "Key", task.Key, "Rename", target.ElementId),
+            SetRunIfActionId => new ContextInputRequest(
+                "Set run if", "mdi-filter-outline", "Run if (empty = ALL_SUCCESS)", task.RunIf, "Set"),
+            _ => new ContextInputRequest(
+                "Assign cluster", "mdi-server", "Cluster key (empty = serverless)", task.ClusterKey, "Assign"),
+        });
 
-            case AssignClusterActionId when task is { } selected:
-                return new ContextExecutionRequiresInput(new ContextInputRequest(
-                    "Assign cluster", "mdi-server", "Cluster key (empty = serverless)", selected.Task.ClusterKey, "Assign"));
+    /// <summary>Add something through a dialog, asking for its <paramref name="field"/> first.</summary>
+    private static ContextExecutionRequiresInput AskForNew(string title, string field) =>
+        new(new ContextInputRequest(title, "mdi-plus", field, "", "Add"));
 
-            case RemoveTaskActionId when task is { } selected:
-                // Requirement 2.5's shape: the definition's confirmation says how many edges go with it,
-                // before it runs. An untouched task needs no ceremony - and no ceremony means the removal
-                // happens HERE, because a Completed execution never reaches the commit leg.
-                return await RemoveAsync(
-                    target,
-                    new RemoveDatabricksTaskCommand(target.ResolvedFullPath, selected.Job.Key, selected.Task.Key),
-                    DatabricksDefinition.RemoveConfirmation(target, entry.Model),
-                    cancellationToken);
+    /// <summary>Remove a task and every edge touching it, confirming first when there are any.</summary>
+    private async ValueTask<ContextExecutionResult> RemoveTaskAsync(
+        ContextTarget target, DocumentEntry<LineDocument, DatabricksModel> entry, JobModel job, JobTask task, CancellationToken cancellationToken)
+    {
+        // Requirement 2.5's shape: the definition's confirmation says how many edges go with it,
+        // before it runs. An untouched task needs no ceremony - and no ceremony means the removal
+        // happens HERE, because a Completed execution never reaches the commit leg.
+        return await RemoveAsync(
+            target,
+            new RemoveDatabricksTaskCommand(target.ResolvedFullPath, job.Key, task.Key),
+            DatabricksDefinition.RemoveConfirmation(target, entry.Model),
+            cancellationToken);
+    }
 
-            case var _ when actionId.StartsWith(DisconnectActionPrefix, StringComparison.Ordinal) && task is { } selected:
-                return await DispatchAsync(target, new DisconnectDatabricksTasksCommand(
-                    target.ResolvedFullPath,
-                    selected.Job.Key,
-                    actionId[DisconnectActionPrefix.Length..],
-                    selected.Task.Key), cancellationToken);
+    /// <summary>Remove the selected task's dependency on the task the action id names: <c>databricks.disconnect:{fromKey}</c>.</summary>
+    private async ValueTask<ContextExecutionResult> DisconnectAsync(
+        ContextTarget target, string actionId, JobModel job, JobTask task, CancellationToken cancellationToken) =>
+        await DispatchAsync(target, new DisconnectDatabricksTasksCommand(
+            target.ResolvedFullPath,
+            job.Key,
+            actionId[DisconnectActionPrefix.Length..],
+            task.Key), cancellationToken);
 
-            case RemoveEdgeActionId when DatabricksSelection.TryEdge(target.ElementId, out var fromKey, out var toKey):
-                return await DispatchAsync(target, new DisconnectDatabricksTasksCommand(
-                    target.ResolvedFullPath, JobKeyFor(model, target, toKey), fromKey, toKey), cancellationToken);
-
-            case ConnectActionId when DatabricksRelationGesture.TryParse(target.ElementId, out var from, out var to):
-            {
-                // The whole gesture in one call. This family creates tasks by drop, not by
-                // relation-to-empty-space, so either end being a placement is a polite refusal
-                // rather than a create-and-connect.
-                if (DatabricksNewPlacement.IsPlacement(from) || DatabricksNewPlacement.IsPlacement(to))
-                {
-                    return new ContextExecutionFailed("Drop the dependency on a task; a dependency needs both of its ends.");
-                }
-
-                var fromKey = KeyOf(from);
-                var toKey = KeyOf(to);
-                return await DispatchAsync(target, new ConnectDatabricksTasksCommand(
-                    target.ResolvedFullPath, JobKeyFor(model, target, toKey), fromKey, toKey), cancellationToken);
-            }
-
-            case var _ when actionId.StartsWith(AddTaskActionPrefix, StringComparison.Ordinal)
-                && DatabricksNewPlacement.IsPlacement(target.ElementId):
-            {
-                // The gesture already said everything an add needs - so nothing is asked, and
-                // the task appears with the key the definition's drop gives it (finding A11). The
-                // authored drop position is the client's follow-up layout write; the computed
-                // layout places it until then.
-                var job = model.Jobs.FirstOrDefault();
-                if (job is null)
-                {
-                    return new ContextExecutionFailed("This file declares no job to add a task to.");
-                }
-
-                var taskType = actionId[AddTaskActionPrefix.Length..];
-                var key = DatabricksDefinition.DroppedTaskKey(job, actionId);
-                return await DispatchAsync(target, new InsertDatabricksTaskCommand(
-                    target.ResolvedFullPath, job.Key, key, taskType, SourceFor(taskType, key)), cancellationToken);
-            }
-
-            case var _ when actionId.StartsWith(AddTaskActionPrefix, StringComparison.Ordinal):
-                return new ContextExecutionRequiresInput(new ContextInputRequest(
-                    "Add task", "mdi-plus", "Task key", "", "Add"));
-
-            case RenameBundleActionId when DatabricksSelection.IsBundle(target.ElementId):
-                return new ContextExecutionRequiresInput(new ContextInputRequest(
-                    "Rename bundle", "mdi-pencil-outline", "Name", model.Bundle.Name, "Rename", target.ElementId));
-
-            case var _ when actionId.StartsWith(AddResourceActionPrefix, StringComparison.Ordinal):
-                return new ContextExecutionRequiresInput(new ContextInputRequest(
-                    "Add resource", "mdi-plus", "Key", "", "Add"));
-
-            case var _ when actionId.StartsWith(AddLibraryActionPrefix, StringComparison.Ordinal):
-                return new ContextExecutionRequiresInput(new ContextInputRequest(
-                    "Add library", "mdi-plus", "Path", "", "Add"));
-
-            case RemoveLibraryActionId when DatabricksSelection.LibraryOf(model, target.ElementId) is { } selected:
-                return await DispatchAsync(target, new RemoveDatabricksLibraryCommand(
-                    target.ResolvedFullPath, selected.Pipeline.Key, selected.Library.Kind, selected.Library.Path), cancellationToken);
-
-            default:
-                return new ContextExecutionCompleted();
+    /// <summary>A finished relation gesture, from <paramref name="from"/> to <paramref name="to"/>.</summary>
+    private async ValueTask<ContextExecutionResult> ConnectAsync(
+        ContextTarget target, DatabricksModel model, string from, string to, CancellationToken cancellationToken)
+    {
+        // The whole gesture in one call. This family creates tasks by drop, not by
+        // relation-to-empty-space, so either end being a placement is a polite refusal
+        // rather than a create-and-connect.
+        if (DatabricksNewPlacement.IsPlacement(from) || DatabricksNewPlacement.IsPlacement(to))
+        {
+            return new ContextExecutionFailed("Drop the dependency on a task; a dependency needs both of its ends.");
         }
+
+        var fromKey = KeyOf(from);
+        var toKey = KeyOf(to);
+        return await DispatchAsync(target, new ConnectDatabricksTasksCommand(
+            target.ResolvedFullPath, JobKeyFor(model, target, toKey), fromKey, toKey), cancellationToken);
+    }
+
+    /// <summary>A task dropped on a placement: added at once, with the key the definition's drop gives it.</summary>
+    private async ValueTask<ContextExecutionResult> AddTaskAtPlacementAsync(
+        ContextTarget target, DatabricksModel model, string actionId, CancellationToken cancellationToken)
+    {
+        // The gesture already said everything an add needs - so nothing is asked, and
+        // the task appears with the key the definition's drop gives it (finding A11). The
+        // authored drop position is the client's follow-up layout write; the computed
+        // layout places it until then.
+        var job = model.Jobs.FirstOrDefault();
+        if (job is null)
+        {
+            return new ContextExecutionFailed("This file declares no job to add a task to.");
+        }
+
+        var taskType = actionId[AddTaskActionPrefix.Length..];
+        var key = DatabricksDefinition.DroppedTaskKey(job, actionId);
+        return await DispatchAsync(target, new InsertDatabricksTaskCommand(
+            target.ResolvedFullPath, job.Key, key, taskType, SourceFor(taskType, key)), cancellationToken);
     }
 
     /// <inheritdoc />

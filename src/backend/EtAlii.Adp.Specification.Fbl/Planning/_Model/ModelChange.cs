@@ -51,6 +51,14 @@ public abstract record ModelChange
     /// </summary>
     public sealed record StoreId(string Id, string NewId) : ModelChange;
 
+    /// <summary>
+    /// Changes an entry of a block of the registration that the binding declares (FBL 0.7 §8.1, §8.4, §15.3): gives the
+    /// entry <paramref name="Key"/> of <paramref name="Block"/> a new <paramref name="Value"/>, moves it to
+    /// <paramref name="Position"/> in a <c>kept</c> block, renames it to <paramref name="Rename"/>, or removes it. A setting
+    /// with a position and no value moves the entry; one with a value and no entry of that key adds it.
+    /// </summary>
+    public sealed record Setting(string Block, string Key, string? Value = null, SettingPosition? Position = null, string? Rename = null, bool RemoveEntry = false) : ModelChange;
+
     /// <summary>Saves without a change: no splice (FBL §15.3).</summary>
     public sealed record Save : ModelChange;
 }

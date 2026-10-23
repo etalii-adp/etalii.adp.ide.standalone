@@ -12,7 +12,7 @@ namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests.Parity;
 /// <remarks>
 /// It lives in the module's test project, as every cross-check does since code-structure T287, so that no core
 /// project references a tool module. The binding is the module's own, embedded one, because etalii.adp vendors no
-/// <c>.fdg</c> binding, and the parser stays in the product code until task 10 moves it here.
+/// <c>.fdg</c> binding. The parser is the oracle's, in this project since task 10 took it out of the product code.
 /// </remarks>
 public class FdgCrossCheckTests
 {
