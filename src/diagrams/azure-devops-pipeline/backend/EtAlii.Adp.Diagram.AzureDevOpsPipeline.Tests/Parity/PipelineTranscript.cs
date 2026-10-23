@@ -92,7 +92,7 @@ internal static class PipelineTranscript
     private static ServiceProvider Services()
     {
         var services = new ServiceCollection();
-        services.AddSingleton<IHistoryStackStore>(new HistoryStackStore(new PipelineTestDispatcher(new PipelineDocumentStore(new FileWriter()))));
+        services.AddSingleton(TestHistory.For(s => s.AddAzurePipeline()));
         services.AddAzurePipeline();
         return services.BuildServiceProvider();
     }
@@ -389,7 +389,7 @@ internal static class PipelineTranscript
         {
             Folder = folder;
             Body = body;
-            History = new HistoryStackStore(new PipelineTestDispatcher(Store));
+            History = TestHistory.For(s => { s.AddAzurePipeline(); s.AddSingleton<IPipelineDocumentStore>(Store); });
             Actions = new PipelineContextActionProvider(History, Store, Views);
             Properties = new PipelineContextPropertyProvider(History, Store);
         }
@@ -402,7 +402,7 @@ internal static class PipelineTranscript
 
         private PipelineViewState Views { get; } = new();
 
-        public HistoryStackStore History { get; }
+        public IHistoryStackStore History { get; }
 
         public PipelineContextActionProvider Actions { get; }
 
@@ -424,7 +424,7 @@ internal static class PipelineTranscript
             return new PipelineElementMapper(PipelineMetrics.Default).Visible(model, DiagramViewport.Unbounded, opened);
         }
 
-        public void Dispose() => History.Dispose();
+        public void Dispose() => (History as IDisposable)?.Dispose();
     }
 
     /// <summary>Runs the steps of one document's edit sequence and writes each as it goes.</summary>

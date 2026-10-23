@@ -63,9 +63,20 @@ public static class TestHistory
     /// registrations <paramref name="configure"/> adds: <c>TestHistory.For(s => s.AddTimeline())</c>
     /// gives a module test the dispatcher the host builds, so a command with no handler fails
     /// here as it would in the application. A test that drives a store it holds registers that
-    /// store first; a module that registers its store with TryAdd then keeps it.
+    /// store after the module's registrations, so it is the one resolved whether the module adds
+    /// its own with TryAdd or with Add.
     /// </summary>
-    public static IHistoryStackStore For(Action<IServiceCollection> configure)
+    public static IHistoryStackStore For(Action<IServiceCollection> configure) =>
+        Pipeline(configure).GetRequiredService<IHistoryStackStore>();
+
+    /// <summary>
+    /// The dispatcher of the same pipeline as <see cref="For"/>, for a test that runs a command
+    /// once without a history, or hands a dispatcher to a history it builds itself.
+    /// </summary>
+    public static ICommandDispatcher Dispatcher(Action<IServiceCollection> configure) =>
+        Pipeline(configure).GetRequiredService<ICommandDispatcher>();
+
+    private static ServiceProvider Pipeline(Action<IServiceCollection> configure)
     {
         ArgumentNullException.ThrowIfNull(configure);
         var services = new ServiceCollection()
@@ -73,8 +84,7 @@ public static class TestHistory
         configure(services);
         return services
             .AddCommands().AddHierarchyCommandHandlers()
-            .BuildServiceProvider()
-            .GetRequiredService<IHistoryStackStore>();
+            .BuildServiceProvider();
     }
 
     /// <summary>

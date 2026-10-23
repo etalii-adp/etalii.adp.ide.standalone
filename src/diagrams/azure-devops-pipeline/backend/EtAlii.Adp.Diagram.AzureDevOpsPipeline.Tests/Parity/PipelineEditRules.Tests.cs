@@ -1,6 +1,5 @@
 using System.Text;
 using EtAlii.Adp.Documents;
-using EtAlii.Adp.Files;
 using Xunit;
 using Path = System.IO.Path;
 
@@ -298,7 +297,7 @@ public class PipelineEditRulesTests
         var text = LineDocument.Parse(pipeline);
         var refusal = handWritten(text, PipelineParser.Parse(text, new PipelineTemplates(ProjectRoot.From(workspace.Root)), workspace.Body));
 
-        var result = await new PipelineTestDispatcher(new PipelineDocumentStore(new FileWriter())).DispatchAsync(command(workspace), TestContext.Current.CancellationToken);
+        var result = await TestHistory.Dispatcher(s => s.AddAzurePipeline()).DispatchAsync(command(workspace), TestContext.Current.CancellationToken);
         return new Outcome(
             refusal is null ? "written" : $"refused: {refusal}",
             result.IsSuccess ? "written" : $"refused: {result.Error}");

@@ -3,6 +3,7 @@ using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -16,7 +17,7 @@ public sealed class GhgProvidersTests : IDisposable
 {
     private readonly string _folder = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.GhgProvidersTests", Guid.NewGuid().ToString("N"));
     private readonly GhgDocumentStore _store = new(new FileWriter());
-    private readonly HistoryStackStore _historyStacks;
+    private readonly IHistoryStackStore _historyStacks;
     private readonly GhgContextPropertyProvider _properties;
     private readonly GhgContextActionProvider _actions;
     private readonly byte[] _original;
@@ -26,7 +27,7 @@ public sealed class GhgProvidersTests : IDisposable
         Directory.CreateDirectory(_folder);
         File.Copy(GhgModuleFiles.Example, Body);
         _original = File.ReadAllBytes(Body);
-        _historyStacks = new HistoryStackStore(new GhgTestDispatcher(_store));
+        _historyStacks = TestHistory.For(s => { s.AddGartnerHypeCycleGraph(); s.AddSingleton<IGhgDocumentStore>(_store); });
         _properties = new GhgContextPropertyProvider(_historyStacks, _store);
         _actions = new GhgContextActionProvider(_historyStacks, _store);
     }
@@ -35,7 +36,7 @@ public sealed class GhgProvidersTests : IDisposable
 
     public void Dispose()
     {
-        _historyStacks.Dispose();
+        (_historyStacks as IDisposable)?.Dispose();
         try
         {
             Directory.Delete(_folder, recursive: true);
@@ -213,7 +214,7 @@ public sealed class GhgProvidersTests : IDisposable
             Assert.False((await store.GetOrLoadAsync(Body, TestContext.Current.CancellationToken)).IsUsable);
         }
 
-        using var historyStacks = new HistoryStackStore(new GhgTestDispatcher(store));
+        var historyStacks = TestHistory.For(s => { s.AddGartnerHypeCycleGraph(); s.AddSingleton<IGhgDocumentStore>(store); });
         var actions = new GhgContextActionProvider(historyStacks, store);
         var properties = new GhgContextPropertyProvider(historyStacks, store);
 
@@ -237,7 +238,7 @@ public sealed class GhgProvidersTests : IDisposable
         const string broken = "gartner-hypecycle-graph: 1\ntrends: []\ninfluences: \"never closed\n";
         await File.WriteAllTextAsync(Body, broken, TestContext.Current.CancellationToken);
         var store = new GhgDocumentStore(new FileWriter());
-        using var historyStacks = new HistoryStackStore(new GhgTestDispatcher(store));
+        var historyStacks = TestHistory.For(s => { s.AddGartnerHypeCycleGraph(); s.AddSingleton<IGhgDocumentStore>(store); });
         var actions = new GhgContextActionProvider(historyStacks, store);
 
         // Act.

@@ -2,7 +2,7 @@ using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Files;
-using EtAlii.Adp.History;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -25,7 +25,7 @@ public class TimelineToolboxTests : IDisposable
     public TimelineToolboxTests()
     {
         Directory.CreateDirectory(_workspace);
-        _actions = new TimelineContextActionProvider(new HistoryStackStore(new TimelineTestDispatcher(_store)), _store);
+        _actions = new TimelineContextActionProvider(TestHistory.For(s => { s.AddTimeline(); s.AddSingleton<ITimelineDocumentStore>(_store); }), _store);
     }
 
     public void Dispose()

@@ -1,4 +1,5 @@
 using EtAlii.Adp.Files;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph.Tests;
@@ -161,7 +162,7 @@ public sealed class GhgTimeUnitTests : IDisposable
         var body = Path.Combine(_folder, "eras.ghg");
         await File.WriteAllTextAsync(body, Document("decade"), TestContext.Current.CancellationToken);
 
-        var moved = await new GhgTestDispatcher(_store).DispatchAsync(
+        var moved = await TestHistory.Dispatcher(s => { s.AddGartnerHypeCycleGraph(); s.AddSingleton<IGhgDocumentStore>(_store); }).DispatchAsync(
             new SetGhgPlacementCommand(body, "printing", GhgScale.XOf(M(1453, 7), GhgTimeUnit.Decade), GhgScale.TopOf(4)),
             TestContext.Current.CancellationToken);
 
@@ -177,7 +178,7 @@ public sealed class GhgTimeUnitTests : IDisposable
         var body = Path.Combine(_folder, "eras.ghg");
         await File.WriteAllTextAsync(body, Document("century"), TestContext.Current.CancellationToken);
 
-        var added = await new GhgTestDispatcher(_store).DispatchAsync(
+        var added = await TestHistory.Dispatcher(s => { s.AddGartnerHypeCycleGraph(); s.AddSingleton<IGhgDocumentStore>(_store); }).DispatchAsync(
             new AddGhgTrendCommand(body, GhgScale.XOf(M(1250), GhgTimeUnit.Century), GhgScale.TopOf(6) + 10),
             TestContext.Current.CancellationToken);
 

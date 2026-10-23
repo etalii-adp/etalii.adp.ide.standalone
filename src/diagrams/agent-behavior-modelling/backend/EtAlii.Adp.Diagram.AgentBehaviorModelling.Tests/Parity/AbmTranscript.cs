@@ -5,6 +5,7 @@ using EtAlii.Adp.Files;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using Google.Protobuf.Reflection;
+using Microsoft.Extensions.DependencyInjection;
 using Path = System.IO.Path;
 
 namespace EtAlii.Adp.Diagram.AgentBehaviorModelling.Tests.Parity;
@@ -345,7 +346,7 @@ internal static class AbmTranscript
         {
             Folder = folder;
             Body = body;
-            History = new HistoryStackStore(new AbmTestDispatcher(Store));
+            History = TestHistory.For(s => { s.AddAgentBehaviorModelling(); s.AddSingleton<IAbmDocumentStore>(Store); });
             var readOnly = new ReadOnlyStore(Store);
             Actions = new AbmContextActionProvider(History, Store);
             ReadOnlyActions = new AbmContextActionProvider(History, readOnly);
@@ -361,7 +362,7 @@ internal static class AbmTranscript
 
         private AbmDocumentStore Store { get; } = new(new FileWriter());
 
-        public HistoryStackStore History { get; }
+        public IHistoryStackStore History { get; }
 
         public AbmContextActionProvider Actions { get; }
 
@@ -379,7 +380,7 @@ internal static class AbmTranscript
         public ContextTarget Target(string elementId) =>
             ContextTarget.ForElement(Body, elementId, ProjectRoot.From(Folder), origin: Diagram.AgentBehaviorModelling.Origin);
 
-        public void Dispose() => History.Dispose();
+        public void Dispose() => (History as IDisposable)?.Dispose();
     }
 
     /// <summary>The store's own entries, each marked as unreadable: the backend's one read-only case.</summary>

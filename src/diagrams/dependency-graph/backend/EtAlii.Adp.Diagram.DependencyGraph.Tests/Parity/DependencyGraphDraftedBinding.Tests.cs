@@ -1,7 +1,6 @@
 using System.Text;
 using EtAlii.Adp.Diagram.DependencyGraph.Tests.Parity.Oracle;
 using EtAlii.Adp.Documents;
-using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Specification.Disl;
 using EtAlii.Adp.Specification.Fbl.History;
@@ -329,7 +328,7 @@ public class DependencyGraphDraftedBindingTests
         {
             var path = IoPath.Combine(folder, "body.dgr");
             await File.WriteAllTextAsync(path, Text(name), TestContext.Current.CancellationToken);
-            var result = await new DependencyGraphTestDispatcher(new DependencyGraphDocumentStore(new FileWriter())).DispatchAsync(command(path), TestContext.Current.CancellationToken);
+            var result = await TestHistory.Dispatcher(s => s.AddDependencyGraph()).DispatchAsync(command(path), TestContext.Current.CancellationToken);
             Assert.True(result.IsSuccess, result.Error);
             return await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
         }

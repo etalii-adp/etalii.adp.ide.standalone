@@ -1,5 +1,6 @@
 using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -17,12 +18,12 @@ public class DependencyGraphSessionTests : IDisposable
 
     private readonly DependencyGraphDocumentStore _store = new(new FileWriter());
     private readonly DependencyGraphElementMapper _mapper = new();
-    private readonly HistoryStackStore _historyStacks;
+    private readonly IHistoryStackStore _historyStacks;
 
     public DependencyGraphSessionTests()
     {
         Directory.CreateDirectory(_workspace);
-        _historyStacks = new HistoryStackStore(new DependencyGraphTestDispatcher(_store));
+        _historyStacks = TestHistory.For(s => { s.AddDependencyGraph(); s.AddSingleton<IDependencyGraphDocumentStore>(_store); });
     }
 
     public void Dispose()

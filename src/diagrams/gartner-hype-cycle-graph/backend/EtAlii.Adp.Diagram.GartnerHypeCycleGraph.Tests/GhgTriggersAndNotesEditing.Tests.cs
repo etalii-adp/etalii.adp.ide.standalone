@@ -2,6 +2,7 @@ using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -16,8 +17,8 @@ public sealed class GhgTriggersAndNotesEditingTests : IDisposable
 {
     private readonly string _folder = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.GhgTriggersAndNotesEditingTests", Guid.NewGuid().ToString("N"));
     private readonly GhgDocumentStore _store = new(new FileWriter());
-    private readonly GhgTestDispatcher _dispatcher;
-    private readonly HistoryStackStore _historyStacks;
+    private readonly ICommandDispatcher _dispatcher;
+    private readonly IHistoryStackStore _historyStacks;
     private readonly byte[] _original;
 
     public GhgTriggersAndNotesEditingTests()
@@ -25,7 +26,7 @@ public sealed class GhgTriggersAndNotesEditingTests : IDisposable
         Directory.CreateDirectory(_folder);
         File.Copy(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", "triggers-and-notes.ghg"), Body);
         _original = File.ReadAllBytes(Body);
-        _dispatcher = new GhgTestDispatcher(_store);
+        _dispatcher = TestHistory.Dispatcher(s => { s.AddGartnerHypeCycleGraph(); s.AddSingleton<IGhgDocumentStore>(_store); });
         _historyStacks = new HistoryStackStore(_dispatcher);
     }
 
@@ -33,7 +34,7 @@ public sealed class GhgTriggersAndNotesEditingTests : IDisposable
 
     public void Dispose()
     {
-        _historyStacks.Dispose();
+        (_historyStacks as IDisposable)?.Dispose();
         try
         {
             Directory.Delete(_folder, recursive: true);
@@ -283,7 +284,7 @@ public sealed class GhgTriggersAndNotesEditingTests : IDisposable
             Assert.False((await store.GetOrLoadAsync(Body, TestContext.Current.CancellationToken)).IsUsable);
         }
 
-        var dispatcher = new GhgTestDispatcher(store);
+        var dispatcher = TestHistory.Dispatcher(s => { s.AddGartnerHypeCycleGraph(); s.AddSingleton<IGhgDocumentStore>(store); });
         ICommand[] commands =
         [
             new AddGhgTriggerCommand(Body, 0, 0),

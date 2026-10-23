@@ -8,6 +8,7 @@ using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Specification.Disl;
 using Google.Protobuf.Reflection;
+using Microsoft.Extensions.DependencyInjection;
 using Path = System.IO.Path;
 
 namespace EtAlii.Adp.Diagram.DependencyGraph.Tests.Parity;
@@ -366,7 +367,7 @@ internal static partial class DependencyGraphTranscript
         {
             Folder = folder;
             Body = body;
-            History = new HistoryStackStore(new DependencyGraphTestDispatcher(Store));
+            History = TestHistory.For(s => { s.AddDependencyGraph(); s.AddSingleton<IDependencyGraphDocumentStore>(Store); });
             var readOnly = new ReadOnlyStore(Store);
             Actions = new DependencyGraphContextActionProvider(History, Store);
             ReadOnlyActions = new DependencyGraphContextActionProvider(History, readOnly);
@@ -380,7 +381,7 @@ internal static partial class DependencyGraphTranscript
 
         public DependencyGraphDocumentStore Store { get; } = new(new FileWriter());
 
-        public HistoryStackStore History { get; }
+        public IHistoryStackStore History { get; }
 
         public DependencyGraphContextActionProvider Actions { get; }
 
@@ -398,7 +399,7 @@ internal static partial class DependencyGraphTranscript
         public ContextTarget Target(string elementId) =>
             ContextTarget.ForElement(Body, elementId, ProjectRoot.From(Folder), origin: Diagram.DependencyGraph.Origin);
 
-        public void Dispose() => History.Dispose();
+        public void Dispose() => (History as IDisposable)?.Dispose();
     }
 
     /// <summary>

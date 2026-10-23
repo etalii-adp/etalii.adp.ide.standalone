@@ -5,6 +5,7 @@ using EtAlii.Adp.Documents;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using Google.Protobuf.Reflection;
+using Microsoft.Extensions.DependencyInjection;
 using Path = System.IO.Path;
 
 namespace EtAlii.Adp.Diagram.Timeline.Tests.Parity;
@@ -372,7 +373,7 @@ internal static class TimelineTranscript
         {
             Folder = folder;
             Body = body;
-            History = new HistoryStackStore(new TimelineTestDispatcher(Store));
+            History = TestHistory.For(s => { s.AddTimeline(); s.AddSingleton<ITimelineDocumentStore>(Store); });
             Actions = new TimelineContextActionProvider(History, Store);
             Properties = new TimelineContextPropertyProvider(History, Store);
         }
@@ -383,7 +384,7 @@ internal static class TimelineTranscript
 
         private TimelineDocumentStore Store { get; } = new(new FileWriter());
 
-        public HistoryStackStore History { get; }
+        public IHistoryStackStore History { get; }
 
         public TimelineContextActionProvider Actions { get; }
 
@@ -397,7 +398,7 @@ internal static class TimelineTranscript
         public ContextTarget Target(string elementId) =>
             ContextTarget.ForElement(Body, elementId, ProjectRoot.From(Folder), origin: Diagram.Timeline.Origin);
 
-        public void Dispose() => History.Dispose();
+        public void Dispose() => (History as IDisposable)?.Dispose();
     }
 
     /// <summary>Runs the steps of one document's edit sequence and writes each as it goes.</summary>

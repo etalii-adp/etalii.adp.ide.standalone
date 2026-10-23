@@ -1,6 +1,7 @@
 using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Specification.Disl;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace EtAlii.Adp.Diagram.DependencyGraph.Tests;
 
@@ -13,7 +14,7 @@ public sealed class DependencyGraphCommandHandlersTests : EditHandlerContract<ID
 
     protected override IDependencyGraphDocumentStore Warning(IDependencyGraphDocumentStore store, string warning) => new WarningStore(store, warning);
 
-    protected override ICommandDispatcher Dispatcher(IDependencyGraphDocumentStore store) => new DependencyGraphTestDispatcher(store);
+    protected override ICommandDispatcher Dispatcher(IDependencyGraphDocumentStore store) => TestHistory.Dispatcher(s => { s.AddDependencyGraph(); s.AddSingleton(store); });
 
     protected override ICommand EditOf(string bodyPath) => new RenameDependencyGraphElementCommand(bodyPath, "k7Qv2mXa", "Edge proxy");
 

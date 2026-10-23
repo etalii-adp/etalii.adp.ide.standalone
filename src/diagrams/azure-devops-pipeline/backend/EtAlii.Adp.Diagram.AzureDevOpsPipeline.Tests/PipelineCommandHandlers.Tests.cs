@@ -1,6 +1,7 @@
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -28,7 +29,7 @@ public sealed class PipelineCommandHandlersTests : EditHandlerContract<IDiagramD
         new WarningDocumentStore<PipelineBody, PipelineModel>(store, warning);
 
     protected override ICommandDispatcher Dispatcher(IDiagramDocumentStore<PipelineBody, PipelineModel> store) =>
-        new PipelineTestDispatcher(new ViewedPipelineDocumentStore(store));
+        TestHistory.Dispatcher(s => { s.AddAzurePipeline(); s.AddSingleton<IPipelineDocumentStore>(new ViewedPipelineDocumentStore(store)); });
 
     protected override ICommand EditOf(string bodyPath) => new RenamePipelineElementCommand(ProjectRoot.From(RootOf(bodyPath)), bodyPath, "Build", "Build it all");
 

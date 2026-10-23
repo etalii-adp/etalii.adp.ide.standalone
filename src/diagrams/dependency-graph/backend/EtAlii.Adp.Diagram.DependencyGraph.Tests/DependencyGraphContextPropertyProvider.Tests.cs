@@ -1,6 +1,7 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -18,12 +19,12 @@ public class DependencyGraphContextPropertyProviderTests : IDisposable
 
     private readonly DependencyGraphDocumentStore _store = new(new FileWriter());
     private readonly DependencyGraphContextPropertyProvider _properties;
-    private readonly HistoryStackStore _historyStacks;
+    private readonly IHistoryStackStore _historyStacks;
 
     public DependencyGraphContextPropertyProviderTests()
     {
         Directory.CreateDirectory(_workspace);
-        _historyStacks = new HistoryStackStore(new DependencyGraphTestDispatcher(_store));
+        _historyStacks = TestHistory.For(s => { s.AddDependencyGraph(); s.AddSingleton<IDependencyGraphDocumentStore>(_store); });
         _properties = new DependencyGraphContextPropertyProvider(_historyStacks, _store);
     }
 

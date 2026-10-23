@@ -42,7 +42,7 @@ public class ServiceCollectionAddAzurePipelineTests
 
         // The few core services this module's own registrations depend on. A production host has
         // far more; what matters here is that AddAzurePipeline asks for nothing else.
-        services.AddSingleton<ICommandDispatcher>(new PipelineTestDispatcher(new PipelineDocumentStore(new FileWriter())));
+        services.AddSingleton(TestHistory.Dispatcher(s => s.AddAzurePipeline()));
         services.AddSingleton<IHistoryStackStore>(provider =>
             new HistoryStackStore(provider.GetRequiredService<ICommandDispatcher>()));
         services.AddSingleton<IDiagramDefinitionCatalog, PipelineOnlyCatalog>();

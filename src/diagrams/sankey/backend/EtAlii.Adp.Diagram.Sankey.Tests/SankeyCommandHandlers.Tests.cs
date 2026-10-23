@@ -1,6 +1,7 @@
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace EtAlii.Adp.Diagram.Sankey.Tests;
 
@@ -13,7 +14,7 @@ public sealed class SankeyCommandHandlersTests : EditHandlerContract<ISankeyDocu
 
     protected override ISankeyDocumentStore Warning(ISankeyDocumentStore store, string warning) => new WarningStore(store, warning);
 
-    protected override ICommandDispatcher Dispatcher(ISankeyDocumentStore store) => new SankeyTestDispatcher(store);
+    protected override ICommandDispatcher Dispatcher(ISankeyDocumentStore store) => TestHistory.Dispatcher(s => { s.AddSankey(); s.AddSingleton(store); });
 
     protected override ICommand EditOf(string bodyPath) => new SetSankeyPropertyCommand(bodyPath, "cafes", SankeyKeys.Name, "Coffee bars");
 
