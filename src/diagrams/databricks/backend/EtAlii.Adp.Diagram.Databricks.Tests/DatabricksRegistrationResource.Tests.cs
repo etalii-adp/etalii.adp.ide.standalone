@@ -19,6 +19,7 @@ public sealed class DatabricksRegistrationResourceTests : IDisposable
 {
     private const string Fixture = "two-jobs-two-pipelines.yml";
 
+    private readonly TestFolder _testFolder = TestFolder.Create("databricks-registration-resource");
     private readonly string _root;
     private readonly ServiceProvider _provider;
     private readonly DatabricksContextPropertyProvider _properties;
@@ -27,8 +28,7 @@ public sealed class DatabricksRegistrationResourceTests : IDisposable
 
     public DatabricksRegistrationResourceTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
         _provider = new ServiceCollection()
             .AddSingleton<IReadOnlyList<DiagramDefinition>>(Diagram.Definitions)
             .AddCommands().AddHierarchyCommandHandlers()
@@ -45,7 +45,7 @@ public sealed class DatabricksRegistrationResourceTests : IDisposable
     public void Dispose()
     {
         _provider.Dispose();
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     [Fact]

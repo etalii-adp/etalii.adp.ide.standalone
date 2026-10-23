@@ -13,13 +13,19 @@ namespace EtAlii.Adp.Diagram.DotNetDependencyGraph.Tests;
 /// </summary>
 public sealed class DotNetDependencyGraphSessionTests : IDisposable
 {
-    private readonly string _root = Directory.CreateTempSubdirectory("ddg-session-").FullName;
+    private readonly TestFolder _testFolder = TestFolder.Create("ddg-session");
+    private readonly string _root;
 
     /// <summary>
     /// Every store a test made, disposed with it: a store watches what it reads, and on Linux each
     /// watcher holds one of the user's inotify instances, of which there are only 128.
     /// </summary>
     private readonly List<DependencyGraphStore> _stores = [];
+
+    public DotNetDependencyGraphSessionTests()
+    {
+        _root = _testFolder.Path;
+    }
 
     /// <summary>
     /// Stands in for the history, running core's <c>PlaceInRegistrationCommandHandler</c> for the
@@ -360,14 +366,7 @@ public sealed class DotNetDependencyGraphSessionTests : IDisposable
             store.Dispose();
         }
 
-        try
-        {
-            Directory.Delete(_root, recursive: true);
-        }
-        catch (IOException)
-        {
-            // A temp folder a virus scanner still holds is not a test failure.
-        }
+        _testFolder.Dispose();
     }
 
 

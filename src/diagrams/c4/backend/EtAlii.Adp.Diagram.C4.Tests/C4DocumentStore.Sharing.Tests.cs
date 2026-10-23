@@ -12,18 +12,18 @@ namespace EtAlii.Adp.Diagram.C4.Tests;
 /// </summary>
 public class C4DocumentStoreSharingTests : IDisposable
 {
+    private readonly TestFolder _testFolder = TestFolder.Create("c4-document-store-sharing");
     private readonly string _root;
     private readonly C4DocumentStore _store = new(new FileWriter());
 
     public C4DocumentStoreSharingTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Diagram.C4.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     private string Write(string name, string text)

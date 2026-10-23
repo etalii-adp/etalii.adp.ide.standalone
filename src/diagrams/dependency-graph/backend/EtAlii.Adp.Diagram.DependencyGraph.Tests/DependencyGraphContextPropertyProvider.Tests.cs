@@ -13,9 +13,8 @@ namespace EtAlii.Adp.Diagram.DependencyGraph.Tests;
 /// </summary>
 public class DependencyGraphContextPropertyProviderTests : IDisposable
 {
-    private readonly string _workspace = IoPath.Combine(
-        IoPath.GetTempPath(),
-        "adp-dgr-properties-" + Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-dgr-properties");
+    private readonly string _workspace;
 
     private readonly DependencyGraphDocumentStore _store = new(new FileWriter());
     private readonly DependencyGraphContextPropertyProvider _properties;
@@ -23,14 +22,14 @@ public class DependencyGraphContextPropertyProviderTests : IDisposable
 
     public DependencyGraphContextPropertyProviderTests()
     {
-        Directory.CreateDirectory(_workspace);
+        _workspace = _testFolder.Path;
         _historyStacks = TestHistory.For(s => { s.AddDependencyGraph(); s.AddSingleton<IDependencyGraphDocumentStore>(_store); });
         _properties = new DependencyGraphContextPropertyProvider(_historyStacks, _store);
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_workspace);
+        _testFolder.Dispose();
 
         GC.SuppressFinalize(this);
     }

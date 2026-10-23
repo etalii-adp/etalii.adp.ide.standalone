@@ -14,11 +14,12 @@ namespace EtAlii.Adp.Diagram.CausalLoopDiagram.Tests.Parity;
 /// </summary>
 public sealed class CausalLoopRoundTripTests : IDisposable
 {
-    private readonly string _root = Path.Combine(Path.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("causal-loop-round-trip");
+    private readonly string _root;
 
-    public CausalLoopRoundTripTests() => Directory.CreateDirectory(_root);
+    public CausalLoopRoundTripTests() => _root = _testFolder.Path;
 
-    public void Dispose() => TestFolder.TryDelete(_root);
+    public void Dispose() => _testFolder.Dispose();
 
     public static TheoryData<string> Documents() => [.. CausalLoopTranscript.Corpus()];
 

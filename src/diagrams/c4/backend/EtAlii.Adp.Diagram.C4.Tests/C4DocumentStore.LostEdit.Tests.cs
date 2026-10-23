@@ -44,15 +44,14 @@ public class C4DocumentStoreLostEditTests : IDisposable
 
     private const string EditedLine = "        s = softwareSystem \"System\" \"Renamed by the command.\"";
 
-    private readonly string _workspace = IoPath.Combine(
-        IoPath.GetTempPath(),
-        "adp-c4-lost-edit-" + Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-c4-lost-edit");
+    private readonly string _workspace;
 
-    public C4DocumentStoreLostEditTests() => Directory.CreateDirectory(_workspace);
+    public C4DocumentStoreLostEditTests() => _workspace = _testFolder.Path;
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_workspace);
+        _testFolder.Dispose();
 
         GC.SuppressFinalize(this);
     }

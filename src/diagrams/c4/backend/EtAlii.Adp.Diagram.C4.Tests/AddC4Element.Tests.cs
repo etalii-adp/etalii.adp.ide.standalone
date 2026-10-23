@@ -35,7 +35,7 @@ public class AddC4ElementTests : IDisposable
         }
         """;
 
-    private readonly string _root;
+    private readonly TestFolder _testFolder = TestFolder.Create("c4-add-element");
     private readonly string _bodyPath;
     private readonly ServiceProvider _services;
     private readonly IHistoryStack _history;
@@ -43,16 +43,15 @@ public class AddC4ElementTests : IDisposable
 
     public AddC4ElementTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.C4.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
-        _bodyPath = IoPath.Combine(_root, "model.dsl");
+        var root = _testFolder.Path;
+        _bodyPath = IoPath.Combine(root, "model.dsl");
         File.WriteAllText(_bodyPath, Model);
 
         _services = new ServiceCollection()
             .AddCommands().AddHierarchyCommandHandlers()
             .AddC4()
             .BuildServiceProvider();
-        _history = _services.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(_root));
+        _history = _services.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(root));
         _documents = _services.GetRequiredService<IC4DocumentStore>();
     }
 
@@ -60,7 +59,7 @@ public class AddC4ElementTests : IDisposable
     {
         GC.SuppressFinalize(this);
         _services.Dispose();
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     private async Task<CommandResult> AddAsync(C4ElementKind kind, string name, string parentId = "") =>

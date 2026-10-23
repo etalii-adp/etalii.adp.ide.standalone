@@ -16,9 +16,8 @@ namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline.Tests;
 /// </summary>
 public class PipelineToolboxTests : IDisposable
 {
-    private readonly string _workspace = IoPath.Combine(
-        IoPath.GetTempPath(),
-        "adp-pipeline-toolbox-" + Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-pipeline-toolbox");
+    private readonly string _workspace;
 
     private ProjectRoot Root => ProjectRoot.From(_workspace);
 
@@ -29,13 +28,13 @@ public class PipelineToolboxTests : IDisposable
 
     public PipelineToolboxTests()
     {
-        Directory.CreateDirectory(_workspace);
+        _workspace = _testFolder.Path;
         _actions = new PipelineContextActionProvider(TestHistory.For(s => { s.AddAzurePipeline(); s.AddSingleton<IPipelineDocumentStore>(_store); }), _store, _views);
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_workspace);
+        _testFolder.Dispose();
 
         GC.SuppressFinalize(this);
     }
