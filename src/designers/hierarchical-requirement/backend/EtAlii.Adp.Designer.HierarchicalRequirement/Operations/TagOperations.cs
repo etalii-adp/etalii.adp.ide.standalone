@@ -93,7 +93,7 @@ internal static class TagOperations
         }
         else
         {
-            if (members.FirstOrDefault(member => TagIdPrefix + LowerAscii(member) == targetId) is not { } member) return TagEdit.Refused(HierarchicalRequirementGestures.Drifted);
+            if (members.FirstOrDefault(candidate => TagIdPrefix + LowerAscii(candidate) == targetId) is not { } member) return TagEdit.Refused(HierarchicalRequirementGestures.Drifted);
             switch (operation)
             {
                 case RenameTag:
@@ -135,7 +135,7 @@ internal static class TagOperations
             }
 
             // A member the block does not hold, an agent's tag the list has not taken in, has nothing there to change.
-            if (setting is not null && read.Registration?.BlockEntries(TagsBlock) is { } held && !held.Any(entry => entry.Key == member))
+            if (setting is not null && read.Registration?.BlockEntries(TagsBlock) is { } held && held.All(entry => entry.Key != member))
             {
                 setting = setting.RemoveEntry || setting.Rename is not null ? null : setting;
             }

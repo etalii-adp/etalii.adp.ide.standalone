@@ -62,7 +62,7 @@ public sealed class RegistrationDeletedTests : IDisposable
     public async Task DeletedAndCreatedAgain_TheDocumentHasEveryTagCategoryStateReferenceAndAssessment()
     {
         // Arrange.
-        Model before;
+        string before;
         await using (var first = RequirementPage.Open(_folder.Body, _folder.Registration))
         {
             before = Kept(first.Session.Model());
@@ -84,7 +84,8 @@ public sealed class RegistrationDeletedTests : IDisposable
     /// What the Markdown file holds of the page: each node's tags, category and state, and its references; the assessments;
     /// and the names of each list's members, whose order and colours are the registration's.
     /// </summary>
-    private static Model Kept(HierarchySurfaceModel model) => new(
+    private static string Kept(HierarchySurfaceModel model) => string.Join(
+        "\n\n",
         string.Join("\n", model.Nodes.Select(node =>
             $"{node.Id} {string.Join(" ", node.Labels.Select(values => $"{values.Label}={string.Join(",", values.Values)}"))} {string.Join(",", node.References.Select(reference => reference.TargetId))}")),
         string.Join("\n", model.Notes.Select(note => $"{note.Id} {note.Kind} {note.About} {note.Text} {note.Resolved}")),
@@ -107,6 +108,4 @@ public sealed class RegistrationDeletedTests : IDisposable
         var outcome = await page.OutcomeAsync(editId);
         Assert.True(outcome?.Written, outcome?.Error);
     }
-
-    private sealed record Model(string Nodes, string Notes, string Lists);
 }
