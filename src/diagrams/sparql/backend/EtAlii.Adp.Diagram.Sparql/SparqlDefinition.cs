@@ -3,6 +3,7 @@ using System.Text.Json;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Specification.Disl;
+using EtAlii.Adp.Specification.Fbl;
 
 namespace EtAlii.Adp.Diagram.Sparql;
 
@@ -64,12 +65,12 @@ internal static class SparqlDefinition
     /// <summary>The toolbox the definition declares: none, since a reading surface offers nothing to place.</summary>
     public static IReadOnlyList<DerivedTool> Toolbox => ToolboxDerivation.Derive(Specification, Ids);
 
-    /// <summary>The model of <paramref name="query"/>, read from <paramref name="text"/>: the builder's, from its records.</summary>
-    public static DislModel Model(SparqlQueryModel query, string text) => Model(query, text, Specification);
-
-    /// <summary>The model of <paramref name="query"/>, read from <paramref name="text"/>, under <paramref name="specification"/>.</summary>
-    private static DislModel Model(SparqlQueryModel query, string text, DislSpecification specification) =>
-        DislModelBuilder.From(SparqlRecords.From(query, text), specification, Env);
+    /// <summary>The model of what the plugin read (<paramref name="reading"/>): the builder's, from its records.</summary>
+    public static DislModel Model(FblModel reading)
+    {
+        ArgumentNullException.ThrowIfNull(reading);
+        return DislModelBuilder.From(reading, Specification, Env);
+    }
 
     /// <summary>What <paramref name="document"/> draws: its model's drawn elements, in the budget's order, with its two numbers.</summary>
     public static SparqlProjectionResult Drawing(SparqlDocument document)
