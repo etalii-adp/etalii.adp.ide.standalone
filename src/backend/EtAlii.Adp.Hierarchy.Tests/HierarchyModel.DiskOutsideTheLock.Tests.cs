@@ -22,19 +22,19 @@ public class HierarchyModelDiskOutsideTheLockTests : IDisposable
     // How long the read is allowed to stay stopped before the test gives up on it.
     private static readonly TimeSpan Stopped = TimeSpan.FromSeconds(30);
 
+    private readonly TestFolder _testFolder = TestFolder.Create("disk-outside-lock");
     private readonly string _root;
     private readonly StoppingCatalog _catalog = new(Mindmap);
 
     public HierarchyModelDiskOutsideTheLockTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
     }
 
     public void Dispose()
     {
         _catalog.Release();
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     /// <summary>A catalog that, once armed, stops the next caller until it is released.</summary>

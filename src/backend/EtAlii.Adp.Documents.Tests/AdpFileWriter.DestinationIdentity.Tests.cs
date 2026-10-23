@@ -19,11 +19,12 @@ public class AdpFileWriterDestinationIdentityTests : IDisposable
 {
     private readonly FileWriter _writer = new();
 
-    private readonly string _folder = IoPath.Combine(IoPath.GetTempPath(), "adp-destination-identity-" + Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-destination-identity");
+    private readonly string _folder;
 
     public AdpFileWriterDestinationIdentityTests()
     {
-        Directory.CreateDirectory(_folder);
+        _folder = _testFolder.Path;
         // The holder query is not this test's subject; answering at once keeps each failure quick.
         FileHolders.Query = _ => FileHolders.None;
     }
@@ -31,7 +32,7 @@ public class AdpFileWriterDestinationIdentityTests : IDisposable
     public void Dispose()
     {
         FileHolders.Query = null;
-        TestFolder.TryDelete(_folder);
+        _testFolder.Dispose();
         GC.SuppressFinalize(this);
     }
 

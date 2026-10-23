@@ -22,15 +22,16 @@ public class AdpFileWriterSnapshotBeforeHoldersTests : IDisposable
 {
     private readonly FileWriter _writer = new();
 
-    private readonly string _folder = IoPath.Combine(IoPath.GetTempPath(), "adp-snapshot-order-" + Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-snapshot-order");
+    private readonly string _folder;
 
-    public AdpFileWriterSnapshotBeforeHoldersTests() => Directory.CreateDirectory(_folder);
+    public AdpFileWriterSnapshotBeforeHoldersTests() => _folder = _testFolder.Path;
 
     public void Dispose()
     {
         FileHolders.Query = null;
         FileHolders.Budget = TimeSpan.FromSeconds(2);
-        TestFolder.TryDelete(_folder);
+        _testFolder.Dispose();
         GC.SuppressFinalize(this);
     }
 

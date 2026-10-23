@@ -9,17 +9,17 @@ namespace EtAlii.Adp.Hierarchy.Tests;
 /// </summary>
 public class EntryNameRulesTests : IDisposable
 {
+    private readonly TestFolder _testFolder = TestFolder.Create("entry-name-rules");
     private readonly string _folder;
 
     public EntryNameRulesTests()
     {
-        _folder = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_folder);
+        _folder = _testFolder.Path;
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_folder);
+        _testFolder.Dispose();
     }
 
     [Theory]

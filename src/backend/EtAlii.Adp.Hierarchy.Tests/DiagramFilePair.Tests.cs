@@ -14,20 +14,20 @@ public class DiagramFilePairTests : IDisposable
     private static readonly DiagramDefinition Mindmap = new(new ToolOrigin("freeplane", "mindmap"), "Mind map", Extension: ".mm");
     private static readonly DiagramDefinition ClassDiagram = new(new ToolOrigin("uml", "class"), "Class diagram");
 
+    private readonly TestFolder _testFolder = TestFolder.Create("diagram-file-pair");
     private readonly string _root;
     private readonly IHistoryStack _history;
     private readonly IDiagramDefinitionCatalog _catalog = new TestDiagramDefinitionCatalog(Mindmap, ClassDiagram);
 
     public DiagramFilePairTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
         _history = TestHistory.Create(_root, out _, Mindmap, ClassDiagram);
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     private string WriteRegistration(string baseName, DiagramDefinition definition)

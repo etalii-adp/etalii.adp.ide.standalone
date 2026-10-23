@@ -10,6 +10,7 @@ public class StartupRevalidationTests : IDisposable
     private static readonly ToolOrigin Mindmap = new("freeplane", "mindmap");
     private static readonly DiagramDefinition MindmapDefinition = new(Mindmap, "Mind map", Extension: ".mm");
 
+    private readonly TestFolder _testFolder = TestFolder.Create("startup-revalidation");
     private readonly string _scratch;
     private readonly StartupRevalidationRecordingStore _store = new();
     private readonly StartupRevalidationGatedValidator _validator = new(Mindmap);
@@ -17,15 +18,14 @@ public class StartupRevalidationTests : IDisposable
 
     public StartupRevalidationTests()
     {
-        _scratch = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_scratch);
+        _scratch = _testFolder.Path;
         var router = new DiagramFileRouter(new TestDiagramDefinitionCatalog(MindmapDefinition));
         _projectValidator = new ProjectValidator(router, new DiagramValidators([_validator]));
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_scratch);
+        _testFolder.Dispose();
     }
 
     [Fact]

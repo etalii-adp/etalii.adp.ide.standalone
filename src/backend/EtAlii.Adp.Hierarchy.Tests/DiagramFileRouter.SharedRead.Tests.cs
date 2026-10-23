@@ -15,17 +15,17 @@ public class DiagramFileRouterSharedReadTests : IDisposable
 {
     private static readonly DiagramDefinition Mindmap = new(new ToolOrigin("freeplane", "mindmap"), "Mind map", Extension: ".mm");
 
+    private readonly TestFolder _testFolder = TestFolder.Create("router-shared-read");
     private readonly string _root;
 
     public DiagramFileRouterSharedReadTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     [Fact]
