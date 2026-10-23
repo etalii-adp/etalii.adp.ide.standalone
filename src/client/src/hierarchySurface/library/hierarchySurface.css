@@ -211,3 +211,43 @@
   top: 6px;
   right: 4px;
 }
+
+/* The bar of an outside change while a field is open (R10), in the text editors' conflict bar's colours. */
+.hs-conflict {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  padding: 0.4rem 0.6rem;
+  background: var(--color-warning-bg);
+  color: var(--color-text);
+}
+
+/* A field whose node the file no longer has, kept under the bar so its text is not lost. */
+.hs-orphan-field {
+  padding: 0.4rem 0.6rem;
+}
+
+/* A title or description typed in place, in the box's own font. */
+.hs-field {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 1px 4px;
+  border: 1px solid var(--color-border);
+  border-radius: 3px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.hs-field-multiline {
+  resize: vertical;
+}
+
+.hs-add-description {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  font: inherit;
+  cursor: pointer;
+}

@@ -10,7 +10,7 @@ namespace EtAlii.Adp.Designer.HierarchicalRequirement;
 internal static class HierarchicalRequirementGestures
 {
     /// <summary>What a gesture planned against a file that changed since its model was sent is refused with (spec 029 R10).</summary>
-    private const string Drifted = "The file changed while you were editing, so this change was not written. The page now shows the file as it is.";
+    internal const string Drifted = "The file changed while you were editing, so this change was not written. The page now shows the file as it is.";
 
     /// <summary>The block of the registration that keeps what is collapsed, outside the history (hierarchical-requirement.fbl).</summary>
     private const string CollapsedBlock = "collapsed";

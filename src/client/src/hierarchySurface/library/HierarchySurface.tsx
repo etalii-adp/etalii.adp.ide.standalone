@@ -2,7 +2,10 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import "@client/table/library/table.css";
 import "./hierarchySurface.css";
 import type { HierarchySurfaceModel, HierarchySurfaceNode } from "./api/hierarchySurfaceModel";
+import { ConflictBar } from "./ConflictBar";
 import type { HierarchySurfaceDefinition } from "./definition/hierarchySurfaceDefinition";
+import type { EntryEditing, EntryTextAttribute, OpenField } from "./editing/entryEditing";
+import { EntryTextField } from "./editing/EntryTextField";
 import { FindingList } from "./FindingList";
 import { HierarchySurfaceBox } from "./HierarchySurfaceBox";
 import { HierarchySurfaceTrail } from "./HierarchySurfaceTrail";
@@ -29,6 +32,10 @@ const isLineId = (id: string) => id.startsWith("line/");
  * are shown; an item whose deeper levels do not fit carries a mark, and any item can be made the left edge of the page,
  * with a trail leading back (FR-008). Focus is this component's own state and is never sent.
  *
+ * A title or description is typed in place; that text is the one thing on the page that can be unsaved (R11). When
+ * another program changes the file while a field is open, the page is shown as the file now is around it, and a bar
+ * offers to drop the text or keep it; kept, committing it is a new edit of the file as it is now (FR-023).
+ *
  * It knows no designer type: which type is a level, which an entry, which labels they carry and which icon a note
  * shows are the definition's.
  */
@@ -39,7 +46,11 @@ export function HierarchySurface({ model, definition, onGesture, selectedNode, o
   // Collapsing an entry with no number of its own is the page's alone: the document has nothing to keep it by.
   const [localCollapse, setLocalCollapse] = useState<ReadonlySet<string>>(new Set());
   const [width, setWidth] = useState(0);
+  const [field, setField] = useState<OpenField | null>(null);
+  const [conflict, setConflict] = useState(false);
   const pageRef = useRef<HTMLDivElement>(null);
+  const fieldRef = useRef(field);
+  fieldRef.current = field;
 
   useEffect(() => setSelected(selectedNode ?? ""), [selectedNode]);
 
@@ -62,6 +73,48 @@ export function HierarchySurface({ model, definition, onGesture, selectedNode, o
 
   const fit = levelsThatFit(width);
   const readOnly = model.readOnlyReason !== "";
+
+  // A change from outside while a field is open asks what to do with the text; the page itself is already the file's.
+  useEffect(() => {
+    if (model.cause === "outside" && fieldRef.current !== null) {
+      setConflict(true);
+    }
+  }, [model]);
+
+  const closeField = useCallback(() => {
+    setField(null);
+    setConflict(false);
+  }, []);
+
+  const commitField = useCallback(() => {
+    const open = fieldRef.current;
+    if (open === null) {
+      return;
+    }
+    closeField();
+    const node = index.byId.get(open.nodeId);
+    // Unchanged is no edit. A node the file no longer has is still sent: refusing it is the file's to say.
+    if (node !== undefined && node[open.attribute] === open.text) {
+      return;
+    }
+    const operation = open.attribute === "title" ? definition.operations.setTitle : definition.operations.setDescription;
+    onGesture(operation, open.nodeId, { [open.attribute]: open.text });
+  }, [closeField, index, definition.operations, onGesture]);
+
+  const editingOf = useCallback(
+    (node: HierarchySurfaceNode): EntryEditing | undefined =>
+      readOnly
+        ? undefined
+        : {
+            field: field !== null && field.nodeId === node.id ? field : null,
+            open: (attribute: EntryTextAttribute) =>
+              setField({ nodeId: node.id, attribute, text: node[attribute], label: `${attribute === "title" ? "Title" : "Description"} of ${node.number}` }),
+            change: (text: string) => setField((current) => (current === null ? null : { ...current, text })),
+            commit: commitField,
+            cancel: closeField,
+          },
+    [readOnly, field, commitField, closeField],
+  );
 
   const isCollapsed = useCallback(
     (node: HierarchySurfaceNode) => (localCollapse.has(node.id) ? !node.collapsed : node.collapsed),
@@ -101,6 +154,21 @@ export function HierarchySurface({ model, definition, onGesture, selectedNode, o
   return (
     <div className="hs-surface" aria-busy={pendingEdits > 0}>
       {focused !== "" && <HierarchySurfaceTrail title={model.title} path={trail} onFocus={setFocus} />}
+      {conflict && field !== null && <ConflictBar onShowFile={closeField} onKeepText={() => setConflict(false)} />}
+      {field !== null && !index.byId.has(field.nodeId) && (
+        // The file no longer has the node the field is open on, so its box is gone; the text is kept here instead,
+        // and committing it is for the file to refuse (R10).
+        <div className="hs-orphan-field">
+          <EntryTextField
+            text={field.text}
+            multiline={field.attribute === "description"}
+            label={field.label}
+            onChange={(text) => setField((current) => (current === null ? null : { ...current, text }))}
+            onCommit={commitField}
+            onCancel={closeField}
+          />
+        </div>
+      )}
       {readOnly && (
         <p className="hs-read-only" role="status">
           <span className="mdi mdi-lock-outline" aria-hidden="true" /> {model.readOnlyReason}
@@ -122,6 +190,7 @@ export function HierarchySurface({ model, definition, onGesture, selectedNode, o
             onToggle={toggle}
             onSelect={select}
             onFocus={setFocus}
+            editingOf={editingOf}
           />
         ))}
       </div>
@@ -142,10 +211,11 @@ interface NodeViewProps {
   onToggle: (node: HierarchySurfaceNode) => void;
   onSelect: (id: string) => void;
   onFocus: (id: string) => void;
+  editingOf: (node: HierarchySurfaceNode) => EntryEditing | undefined;
 }
 
 function NodeView(props: NodeViewProps) {
-  const { node, depth, fit, index, model, definition, selected, isCollapsed, onToggle, onSelect, onFocus } = props;
+  const { node, depth, fit, index, model, definition, selected, isCollapsed, onToggle, onSelect, onFocus, editingOf } = props;
   const collapsed = isCollapsed(node);
   const level = node.role === "level";
   // A collapsed level's mark counts every note inside it, since nothing inside it shows.
@@ -172,6 +242,7 @@ function NodeView(props: NodeViewProps) {
       onToggle={() => onToggle(node)}
       onSelect={() => onSelect(node.id)}
       onFocus={level ? () => onFocus(node.id) : undefined}
+      editing={editingOf(node)}
     />
   );
 
