@@ -25,7 +25,7 @@ describe("the Hierarchical Requirement Designer's surface", () => {
       entries: { type: string };
       labels: Record<string, { on: string[]; prefix: string }>;
     };
-    operations: Record<string, unknown>;
+    operations: Record<string, { label?: unknown; params?: Record<string, unknown>; confirm?: { message: { cel: string }; threshold: number } }>;
   }
 
   /** The designer's definition, as it is checked in. */
@@ -75,7 +75,34 @@ describe("the Hierarchical Requirement Designer's surface", () => {
 
     // Assert.
     for (const operation of Object.values(hierarchicalRequirementSurface.operations)) {
-      expect(Object.keys(operations)).toContain(operation);
+      expect(Object.keys(operations)).toContain(typeof operation === "string" ? operation : operation.operation);
     }
+  });
+
+  it("labels each add control as its operation is labelled, and names the move's params as its definition does", () => {
+    // Act.
+    const { operations } = definition();
+    const { addTopLevel, addEntry, addLevel, moveLevel, moveEntry } = hierarchicalRequirementSurface.operations;
+
+    // Assert.
+    for (const add of [addTopLevel, addEntry, addLevel]) {
+      expect(`${add.operation}: ${add.label}`).toBe(`${add.operation}: ${String(operations[add.operation]?.label)}`);
+    }
+    for (const move of [moveLevel, moveEntry]) {
+      expect(Object.keys(operations[move]?.params ?? {}).sort()).toEqual(Object.values(hierarchicalRequirementSurface.moveParams).sort());
+    }
+  });
+
+  it("asks before a delete in the words and at the threshold of its definition's confirm", () => {
+    // Act.
+    const confirm = definition().operations[hierarchicalRequirementSurface.operations.delete]?.confirm;
+
+    // Assert: the CEL with self.id and the count in place gives the sentence the page asks.
+    expect(confirm?.threshold).toBe(hierarchicalRequirementSurface.deletion.threshold);
+    const cel = confirm?.message.cel ?? "";
+    const written = cel
+      .replace("'Delete ' + self.id + ' with everything in it? ' + string(count) + '", "'Delete ITEM-0002 with everything in it? 3")
+      .replace(/^'|'$/g, "");
+    expect(written).toBe(hierarchicalRequirementSurface.deletion.message("ITEM-0002", 3));
   });
 });

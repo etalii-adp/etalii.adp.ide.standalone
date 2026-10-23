@@ -3,8 +3,9 @@ import type { HierarchySurfaceDefinition } from "@client/hierarchySurface/librar
 /**
  * What the Hierarchical Requirement Designer declares for the hierarchy surface (spec 029 R9): its levels are items and
  * its entries requirements, the labels its `.des` gives under `surface.labels`, the icon of each assessment kind from
- * its `AssessmentKind`, and the icon R10 settles for several open assessments. `register.test.ts` holds each to the
- * definition as it is checked in.
+ * its `AssessmentKind`, the icon R10 settles for several open assessments, and the operations its gestures send with
+ * their labels and the words of a delete's question. `register.test.ts` holds each to the definition as it is checked
+ * in.
  */
 export const hierarchicalRequirementSurface: HierarchySurfaceDefinition = {
   levelType: "Item",
@@ -25,5 +26,20 @@ export const hierarchicalRequirementSurface: HierarchySurfaceDefinition = {
     toggleCollapsed: "toggleCollapsed",
     setTitle: "setTitle",
     setDescription: "setDescription",
+    addTopLevel: { operation: "addTopItem", label: "New item" },
+    addEntry: { operation: "addRequirement", label: "New requirement" },
+    addLevel: { operation: "addItem", label: "New item" },
+    moveLevel: "moveItem",
+    moveEntry: "moveRequirement",
+    delete: "deleteEntry",
   },
+  moveParams: { into: "item", after: "after" },
+  // The `confirm` of deleteEntry, its CEL written out: the count is the page's, from the model's references.
+  deletion: {
+    threshold: 1,
+    message: (number, count) =>
+      `Delete ${number} with everything in it? ${count} entries, references or assessments concern it; the references and assessments are kept, and reported.`,
+  },
+  // Ctrl+Enter and Ctrl+Shift+Enter, the context actions of an entry.
+  shortcutKeys: ["Enter"],
 };

@@ -1,3 +1,4 @@
+import type { PointerPressWiring } from "@client/canvas/gesture/usePointerGesture";
 import { OptionTag } from "@client/table/library/cells/OptionTag";
 import type { HierarchySurfaceNode, HierarchySurfaceOptionList } from "./api/hierarchySurfaceModel";
 import { CollapseToggle } from "./CollapseToggle";
@@ -21,6 +22,10 @@ export interface HierarchySurfaceBoxProps {
   onFocus?: () => void;
   /** Its title and description typed in place; absent when the document cannot be changed. */
   editing?: EntryEditing;
+  /** The wiring of the grip it is dragged by; absent when the document cannot be changed. */
+  grip?: PointerPressWiring;
+  /** Where a node dragged over this box would go, or absent. */
+  dropHint?: "into" | "after" | "before";
 }
 
 /** The colour the option list of `label` gives `value`, matched by name as a person types it. */
@@ -35,7 +40,8 @@ function colourOf(optionLists: readonly HierarchySurfaceOptionList[], label: str
  * and the description under them (FR-009, FR-010). A level's box also offers focus, and the mark of the levels the
  * page does not show (FR-008, R10). What stands to its right is the page's.
  */
-export function HierarchySurfaceBox({ node, definition, optionLists, collapsed, selected, notes, hiddenLevels, onToggle, onSelect, onFocus, editing }: HierarchySurfaceBoxProps) {
+export function HierarchySurfaceBox(props: HierarchySurfaceBoxProps) {
+  const { node, definition, optionLists, collapsed, selected, notes, hiddenLevels, onToggle, onSelect, onFocus, editing, grip, dropHint } = props;
   const labels = definition.labels.filter((label) => label.on.includes(node.type));
   const field = editing?.field ?? null;
   const fieldOf = (attribute: "title" | "description") =>
@@ -55,7 +61,7 @@ export function HierarchySurfaceBox({ node, definition, optionLists, collapsed, 
 
   return (
     <div
-      className={`hs-box${selected ? " hs-selected" : ""}${collapsed ? " hs-collapsed" : ""}`}
+      className={`hs-box${selected ? " hs-selected" : ""}${collapsed ? " hs-collapsed" : ""}${dropHint === undefined ? "" : ` hs-drop-${dropHint}`}`}
       data-node-id={node.id}
       aria-selected={selected}
       role="treeitem"
@@ -63,6 +69,7 @@ export function HierarchySurfaceBox({ node, definition, optionLists, collapsed, 
       onClick={onSelect}
     >
       <div className="hs-box-header">
+        {grip !== undefined && <span className="mdi mdi-drag-vertical hs-grip" title={`Drag ${node.number}`} aria-hidden="true" {...grip} />}
         <CollapseToggle collapsed={collapsed} title={`${node.number} ${node.title}`} onToggle={onToggle} />
         <span className="hs-number">{node.number}</span>
         {fieldOf("title") ?? (

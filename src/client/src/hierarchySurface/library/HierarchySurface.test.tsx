@@ -13,7 +13,20 @@ const definition: HierarchySurfaceDefinition = {
   ],
   noteIcons: { Doubt: "mdi-help-circle-outline", Aside: "mdi-comment-text-outline" },
   severalNotesIcon: "mdi-comment-multiple-outline",
-  operations: { toggleCollapsed: "fold", setTitle: "retitle", setDescription: "redescribe" },
+  operations: {
+    toggleCollapsed: "fold",
+    setTitle: "retitle",
+    setDescription: "redescribe",
+    addTopLevel: { operation: "open", label: "New section" },
+    addEntry: { operation: "jot", label: "New point" },
+    addLevel: { operation: "nest", label: "New section" },
+    moveLevel: "shift",
+    moveEntry: "slide",
+    delete: "drop",
+  },
+  moveParams: { into: "section", after: "behind" },
+  deletion: { threshold: 1, message: (number: string, count: number) => `Drop ${number}? ${count} things concern it.` },
+  shortcutKeys: ["Enter"],
 };
 
 function level(id: string, parentId: string, title: string, extra: Partial<HierarchySurfaceNode> = {}): HierarchySurfaceNode {
@@ -90,13 +103,13 @@ describe("the hierarchy surface", () => {
     // Act.
     render(<HierarchySurface model={threeLevels()} definition={definition} onGesture={vi.fn()} />);
 
-    // Assert: the level's row is its box and then what stands to its right, entries first.
+    // Assert: the level's row is its box and then what stands to its right, entries first and the add control last.
     const row = boxOf("Orders").closest(".hs-level") as HTMLElement;
     const [own, content] = Array.from(row.children) as HTMLElement[];
     expect(own!.className).toBe("hs-level-box");
     expect(content!.className).toBe("hs-level-content");
-    const right = Array.from(content!.children).map((child) => child.querySelector(".hs-title")?.textContent);
-    expect(right).toEqual(["Take an order", "Payment"]);
+    const right = Array.from(content!.children).map((child) => child.querySelector(".hs-title")?.textContent ?? child.className);
+    expect(right).toEqual(["Take an order", "Payment", "hs-add"]);
   });
 
   it("shows the number beside the title, the tags below it and the description under them", () => {
