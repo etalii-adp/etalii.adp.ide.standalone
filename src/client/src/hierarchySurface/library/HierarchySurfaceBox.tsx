@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { PointerPressWiring } from "@client/canvas/gesture/usePointerGesture";
 import { OptionTag } from "@client/table/library/cells/OptionTag";
 import type { HierarchySurfaceNode, HierarchySurfaceOptionList } from "./api/hierarchySurfaceModel";
@@ -5,7 +6,8 @@ import { CollapseToggle } from "./CollapseToggle";
 import { FOCUS_ICON, HIDDEN_LEVELS_ICON, type HierarchySurfaceDefinition } from "./definition/hierarchySurfaceDefinition";
 import type { EntryEditing } from "./editing/entryEditing";
 import { EntryTextField } from "./editing/EntryTextField";
-import type { NoteMark } from "./notes";
+import { NoteIcon } from "./notes/NoteIcon";
+import type { NoteMark } from "./notes/noteMark";
 
 export interface HierarchySurfaceBoxProps {
   node: HierarchySurfaceNode;
@@ -14,6 +16,11 @@ export interface HierarchySurfaceBoxProps {
   collapsed: boolean;
   selected: boolean;
   notes: NoteMark | null;
+  /** Whether the list of its notes is open. */
+  notesOpen: boolean;
+  onToggleNotes: () => void;
+  /** The list of its notes while it is open; absent otherwise. */
+  noteList?: ReactNode;
   /** How many levels below this one the page does not show; 0 when they all fit. */
   hiddenLevels: number;
   onToggle: () => void;
@@ -36,12 +43,13 @@ function colourOf(optionLists: readonly HierarchySurfaceOptionList[], label: str
 }
 
 /**
- * One node's own box: the collapse control, the number beside the title, the note mark, the tags below the title
- * and the description under them (FR-009, FR-010). A level's box also offers focus, and the mark of the levels the
- * page does not show (FR-008, R10). What stands to its right is the page's.
+ * One node's own box: the collapse control, the number beside the title, the tags below the title and the description
+ * under them (FR-009, FR-010), and at its top right the icon of its notes, which opens their list (FR-015, FR-016). A
+ * level's box also offers focus, and the mark of the levels the page does not show (FR-008, R10). What stands to its
+ * right is the page's.
  */
 export function HierarchySurfaceBox(props: HierarchySurfaceBoxProps) {
-  const { node, definition, optionLists, collapsed, selected, notes, hiddenLevels, onToggle, onSelect, onFocus, editing, grip, dropHint } = props;
+  const { node, definition, optionLists, collapsed, selected, notes, notesOpen, onToggleNotes, noteList, hiddenLevels, onToggle, onSelect, onFocus, editing, grip, dropHint } = props;
   const labels = definition.labels.filter((label) => label.on.includes(node.type));
   const field = editing?.field ?? null;
   const fieldOf = (attribute: "title" | "description") =>
@@ -75,11 +83,6 @@ export function HierarchySurfaceBox(props: HierarchySurfaceBoxProps) {
         {fieldOf("title") ?? (
           <span className="hs-title" onDoubleClick={editing === undefined ? undefined : () => editing.open("title")}>
             {node.title}
-          </span>
-        )}
-        {notes !== null && (
-          <span className={`mdi ${notes.icon} hs-note-mark`} role="img" aria-label={notes.label} title={notes.label}>
-            {notes.count > 1 && <span className="hs-note-count">{notes.count}</span>}
           </span>
         )}
         {onFocus !== undefined && (
@@ -127,6 +130,15 @@ export function HierarchySurfaceBox(props: HierarchySurfaceBoxProps) {
               />
             )
           )))}
+      <NoteIcon
+        mark={notes}
+        number={node.number}
+        addLabel={definition.notes.words.add}
+        canAdd={editing !== undefined}
+        open={notesOpen}
+        onToggle={onToggleNotes}
+      />
+      {noteList}
       {hiddenLevels > 0 && onFocus !== undefined && (
         <button
           type="button"

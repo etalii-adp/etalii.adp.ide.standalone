@@ -1,5 +1,5 @@
-import type { HierarchySurfaceNote } from "./api/hierarchySurfaceModel";
-import type { HierarchySurfaceDefinition } from "./definition/hierarchySurfaceDefinition";
+import type { HierarchySurfaceNote } from "../api/hierarchySurfaceModel";
+import type { HierarchySurfaceDefinition } from "../definition/hierarchySurfaceDefinition";
 
 /** The icon a node shows for its open notes, and what its tooltip says; null when it has none. */
 export interface NoteMark {

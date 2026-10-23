@@ -13,7 +13,8 @@ import { FindingList } from "./FindingList";
 import { HierarchySurfaceBox } from "./HierarchySurfaceBox";
 import { HierarchySurfaceTrail } from "./HierarchySurfaceTrail";
 import { ancestorsOf, descendantsOf, type HierarchyIndex, indexOf, levelsBelow, levelsThatFit } from "./layout";
-import { noteMarkOf } from "./notes";
+import { NoteList } from "./notes/NoteList";
+import { noteMarkOf } from "./notes/noteMark";
 
 /** A key with the modifiers held, as the backend matches it against an action's shortcut. */
 export interface HierarchySurfaceChord {
@@ -55,7 +56,8 @@ const isLineId = (id: string) => id.startsWith("line/");
  *
  * A node is added by the control at the end of every level and of the page, or by a key on a selected node, with no
  * dialog: the page opens the new node's title for typing (FR-012). A node is dragged by its grip, with everything in
- * it (FR-013), and deleted with Delete, asking first when anything concerns it (FR-014).
+ * it (FR-013), and deleted with Delete, asking first when anything concerns it (FR-014). The icon at a box's top right
+ * opens the list of its notes, one box's at a time, where they are added, changed, resolved and removed (FR-015, FR-016).
  *
  * It knows no designer type: which type is a level, which an entry, which labels they carry, which icon a note shows
  * and which operation each gesture sends are the definition's.
@@ -70,6 +72,8 @@ export function HierarchySurface({ model, definition, onGesture, onShortcut, sel
   const [field, setField] = useState<OpenField | null>(null);
   const [conflict, setConflict] = useState(false);
   const [deleting, setDeleting] = useState<{ nodeId: string; question: string } | null>(null);
+  // The node whose list of notes is open; one at a time.
+  const [openNotes, setOpenNotes] = useState("");
   const pageRef = useRef<HTMLDivElement>(null);
   const fieldRef = useRef(field);
   fieldRef.current = field;
@@ -236,7 +240,7 @@ export function HierarchySurface({ model, definition, onGesture, onShortcut, sel
 
   const onKeyDown = (event: KeyboardEvent) => {
     // A field keeps its own keys, Enter and Delete among them.
-    const typing = event.target instanceof HTMLElement && (event.target.tagName === "INPUT" || event.target.tagName === "TEXTAREA");
+    const typing = event.target instanceof HTMLElement && ["INPUT", "TEXTAREA", "SELECT"].includes(event.target.tagName);
     const node = index.byId.get(selected);
     if (typing || readOnly || node === undefined) {
       return;
@@ -298,6 +302,10 @@ export function HierarchySurface({ model, definition, onGesture, onShortcut, sel
             editingOf={editingOf}
             onAdd={readOnly ? undefined : addTo}
             drag={readOnly ? undefined : drag}
+            openNotes={openNotes}
+            onToggleNotes={(id) => setOpenNotes((current) => (current === id ? "" : id))}
+            onGesture={onGesture}
+            readOnly={readOnly}
           />
         ))}
         {!readOnly && focused === "" && <AddControl adds={[definition.operations.addTopLevel]} within="" onAdd={(what) => addTo("", what)} />}
@@ -334,10 +342,15 @@ interface NodeViewProps {
   onAdd?: (levelId: string, what: HierarchySurfaceAdd) => void;
   /** Dragging a node by its grip; absent when the document cannot be changed. */
   drag?: DragEntry;
+  /** The node whose list of notes is open, or empty. */
+  openNotes: string;
+  onToggleNotes: (id: string) => void;
+  onGesture: HierarchySurfaceProps["onGesture"];
+  readOnly: boolean;
 }
 
 function NodeView(props: NodeViewProps) {
-  const { node, depth, fit, index, model, definition, selected, isCollapsed, onToggle, onSelect, onFocus, editingOf, onAdd, drag } = props;
+  const { node, depth, fit, index, model, definition, selected, isCollapsed, onToggle, onSelect, onFocus, editingOf, onAdd, drag, openNotes, onToggleNotes, onGesture, readOnly } = props;
   const collapsed = isCollapsed(node);
   const level = node.role === "level";
   // A collapsed level's mark counts every note inside it, since nothing inside it shows.
@@ -346,6 +359,7 @@ function NodeView(props: NodeViewProps) {
     [index, node.id, level, collapsed],
   );
   const notes = noteMarkOf(model.notes, about, definition);
+  const notesOpen = openNotes === node.id;
   const children = index.children.get(node.id) ?? [];
   const entries = children.filter((child) => child.role !== "level");
   const subLevels = children.filter((child) => child.role === "level");
@@ -360,6 +374,22 @@ function NodeView(props: NodeViewProps) {
       collapsed={collapsed}
       selected={selected === node.id}
       notes={notes}
+      notesOpen={notesOpen}
+      onToggleNotes={() => onToggleNotes(node.id)}
+      noteList={
+        notesOpen && (
+          // The list shows what the mark counts, and the resolved notes beside them.
+          <NoteList
+            notes={model.notes.filter((note) => about.has(note.aboutId))}
+            number={node.number}
+            definition={definition}
+            canEdit={!readOnly}
+            onGesture={onGesture}
+            nodeId={node.id}
+            onClose={() => onToggleNotes(node.id)}
+          />
+        )
+      }
       hiddenLevels={hiddenLevels}
       onToggle={() => onToggle(node)}
       onSelect={() => onSelect(node.id)}

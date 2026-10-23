@@ -93,6 +93,22 @@ describe("the Hierarchical Requirement Designer's surface", () => {
     }
   });
 
+  it("sends the assessment operations its definition has, with their params, and words them as they are labelled", () => {
+    // Act.
+    const { operations } = definition();
+    const { notes } = hierarchicalRequirementSurface;
+
+    // Assert: an add names the kind and the text, a change the detail too; each control says what its operation's label says.
+    expect(Object.keys(operations[notes.operations.add]?.params ?? {}).sort()).toEqual([notes.params.kind, notes.params.text].sort());
+    expect(Object.keys(operations[notes.operations.change]?.params ?? {}).sort()).toEqual(Object.values(notes.params).sort());
+    expect(Object.keys(operations)).toContain(notes.operations.resolve);
+    expect(Object.keys(operations)).toContain(notes.operations.remove);
+    expect(String(operations[notes.operations.add]?.label)).toBe(notes.words.add);
+    expect(String(operations[notes.operations.change]?.label)).toBe(notes.words.change);
+    expect(String(operations[notes.operations.remove]?.label)).toBe(notes.words.remove);
+    expect((operations[notes.operations.resolve]?.label as { cel: string }).cel).toBe(`self.resolved ? '${notes.words.reopen}' : '${notes.words.resolve}'`);
+  });
+
   it("asks before a delete in the words and at the threshold of its definition's confirm", () => {
     // Act.
     const confirm = definition().operations[hierarchicalRequirementSurface.operations.delete]?.confirm;
