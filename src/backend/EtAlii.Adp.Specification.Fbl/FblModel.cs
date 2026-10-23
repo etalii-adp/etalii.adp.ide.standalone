@@ -109,6 +109,19 @@ public sealed class FblOptions
     public Func<string, string, string?>? AttributeType { get; init; }
 
     /// <summary>
+    /// Whether the tool type's specification gives an attribute of an element type <c>many</c>, by the two names. A
+    /// word slot of such an attribute holds every word of its group that matches, as a list (FBL 0.7 §4.6); without
+    /// this, it holds the first. A binding does not carry it.
+    /// </summary>
+    public Func<string, string, bool>? Many { get; init; }
+
+    /// <summary>
+    /// The binding types the tool type's specification maps as unreadable (DESL §5.2): an entry a rule of such a type
+    /// takes is an unreadable entry, reported and kept, and nothing nested in it is looked into (FBL 0.7 §4.8, §7.4).
+    /// </summary>
+    public IReadOnlySet<string> UnreadableTypes { get; init; } = new HashSet<string>(StringComparer.Ordinal);
+
+    /// <summary>
     /// The attributes whose type, in the tool type's specification, is a date or a date-time, each
     /// as <c>rule.attribute</c>. FBL does not know an attribute's type and section 6.3 needs it: a
     /// new value that reads as a timestamp is written plain when it IS one, and quoted when it is a
