@@ -22,7 +22,7 @@ public class HandWrittenSparqlTests
     private static SparqlProjectionResult Project(string text)
     {
         var expected = HandWrittenSparql.Project(SparqlParser.Parse(text));
-        Assert.Equal(SparqlDrawingLines.Of(expected), SparqlDrawingLines.Of(new SparqlDocument(SparqlParser.Parse(text), text).Drawing));
+        Assert.Equal(SparqlDrawingLines.Of(expected), SparqlDrawingLines.Of(new SparqlDocument(SparqlBody.Parse(text)).Drawing));
         return expected;
     }
 

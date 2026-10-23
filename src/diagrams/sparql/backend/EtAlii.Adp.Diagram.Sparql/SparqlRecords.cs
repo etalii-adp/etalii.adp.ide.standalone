@@ -1,3 +1,4 @@
+using System.Text;
 using EtAlii.Adp.Specification.Cel;
 using EtAlii.Adp.Specification.Fbl;
 
@@ -43,22 +44,29 @@ internal static class SparqlRecords
     private sealed class Reader(SparqlQueryModel model, string text)
     {
         private readonly List<FblElement> _records = [];
+        private readonly int[]? _byteOffsets = ByteOffsets(text);
         private readonly Dictionary<TriplePattern, int> _repeats = new(ReferenceEqualityComparer.Instance);
         private int _patterns;
         private int _prefixes;
+
+        /// <summary>The span of the characters <paramref name="span"/> covers, in the UTF-8 bytes FBL's spans count (FBL 6.1).</summary>
+        private Span ByteSpan(SparqlSpan span) => ByteSpan(span.Start, span.End);
+
+        /// <summary>The span of the characters from <paramref name="start"/> to <paramref name="end"/>, in UTF-8 bytes.</summary>
+        private Span ByteSpan(int start, int end) => _byteOffsets is null ? new Span(start, end) : new Span(_byteOffsets[start], _byteOffsets[end]);
 
         public List<FblElement> Read()
         {
             var repeatsWhere = RepeatsWhere();
             Repeats(repeatsWhere);
 
-            _records.Add(Record(QueryId, "Query", Query(repeatsWhere), null, new Span(0, text.Length), 1));
+            _records.Add(Record(QueryId, "Query", Query(repeatsWhere), null, ByteSpan(0, text.Length), 1));
             foreach (var prefix in model.Prefixes)
             {
                 _records.Add(Record($"prefix-{_prefixes++}", "Prefix", Attributes(
                     ("prefix", prefix.Prefix),
                     ("iri", prefix.Iri),
-                    ("used", IsUsed(prefix.Prefix))), null, Of(prefix.Span), prefix.Line));
+                    ("used", IsUsed(prefix.Prefix))), null, ByteSpan(prefix.Span), prefix.Line));
             }
 
             // The template of CONSTRUCT is written before the where clause; the short form's shares the where
@@ -93,7 +101,7 @@ internal static class SparqlRecords
             _records.Add(Record(scope.Path, "Scope", Attributes(
                 ("path", scope.Path),
                 ("scopeKind", scope.Kind.ToString().ToLowerInvariant()),
-                ("term", scope.Label)), parent, Of(scope.Span), scope.Span.Line));
+                ("term", scope.Label)), parent, ByteSpan(scope.Span), scope.Span.Line));
             if (ownEntries)
             {
                 Entries(scope);
@@ -131,7 +139,7 @@ internal static class SparqlRecords
                 ("repeat", (long)_repeats[pattern]));
             End(attributes, "s", pattern.Subject);
             End(attributes, "o", pattern.Object);
-            _records.Add(Record($"pattern-{_patterns++}", "Pattern", attributes, null, Of(pattern.Span), pattern.Span.Line));
+            _records.Add(Record($"pattern-{_patterns++}", "Pattern", attributes, null, ByteSpan(pattern.Span), pattern.Span.Line));
         }
 
         private void Constraint(GroupScope scope, int index)
@@ -144,7 +152,7 @@ internal static class SparqlRecords
                 ("scope", scope.Path),
                 ("ordinal", (long)ordinal),
                 ("definedVariable", constraint.DefinedVariable),
-                ("referencedVariables", constraint.ReferencedVariables.ToList())), null, Of(constraint.Span), constraint.Span.Line));
+                ("referencedVariables", constraint.ReferencedVariables.ToList())), null, ByteSpan(constraint.Span), constraint.Span.Line));
         }
 
         private void SubQuery(SparqlSubSelect subSelect, string scope, string? parent)
@@ -154,7 +162,7 @@ internal static class SparqlRecords
                 ("ordinal", (long)subSelect.Ordinal),
                 ("display", subSelect.ProjectionText),
                 ("text", subSelect.Text),
-                ("projectedNames", subSelect.ProjectedNames.ToList())), parent, Of(subSelect.Span), subSelect.Span.Line));
+                ("projectedNames", subSelect.ProjectedNames.ToList())), parent, ByteSpan(subSelect.Span), subSelect.Span.Line));
         }
 
         /// <summary>Whether the template of <c>CONSTRUCT WHERE</c> is the where clause's own patterns, stated once.</summary>
@@ -305,10 +313,35 @@ internal static class SparqlRecords
         return slash >= 0 && slash < iri.Length - 1 ? iri[(slash + 1)..] : iri;
     }
 
+    /// <summary>
+    /// The UTF-8 byte offset of every character offset of <paramref name="text"/>, or null when the two are the same,
+    /// as they are for every query that is ASCII. A surrogate pair is four bytes, counted at its first half, and a lone
+    /// surrogate the three of the replacement character it is encoded as.
+    /// </summary>
+    private static int[]? ByteOffsets(string text)
+    {
+        if (Ascii.IsValid(text)) return null;
+
+        var offsets = new int[text.Length + 1];
+        for (var index = 0; index < text.Length; index++)
+        {
+            var character = text[index];
+            var bytes = character switch
+            {
+                < (char)0x80 => 1,
+                < (char)0x800 => 2,
+                _ when char.IsHighSurrogate(character) && index + 1 < text.Length && char.IsLowSurrogate(text[index + 1]) => 4,
+                _ when char.IsLowSurrogate(character) && index > 0 && char.IsHighSurrogate(text[index - 1]) => 0,
+                _ => 3,
+            };
+            offsets[index + 1] = offsets[index] + bytes;
+        }
+        return offsets;
+    }
+
     private static FblElement Record(string id, string type, IReadOnlyDictionary<string, object?> attributes, string? parent, Span span, int line) =>
         new(id, false, type, type, false, attributes, parent, parent is null ? null : "children", null, null, span, line);
 
-    private static Span Of(SparqlSpan span) => new(span.Start, span.End);
 
     private static Dictionary<string, object?> Attributes(params (string Name, object? Value)[] attributes) =>
         attributes.ToDictionary(attribute => attribute.Name, attribute => attribute.Value, StringComparer.Ordinal);
