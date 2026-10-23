@@ -58,7 +58,7 @@ internal static class AssessmentOperations
         if (operation == AddAssessment)
         {
             var ids = HierarchicalRequirementSurfaceMapper.NodeIds(read.Document.Entries);
-            if (read.Document.Entries.FirstOrDefault(entry => ids[entry] == targetId) is not { } entry) return (null, HierarchicalRequirementGestures.Drifted);
+            if (read.Document.Entries.FirstOrDefault(candidate => ids[candidate] == targetId) is not { } entry) return (null, HierarchicalRequirementGestures.Drifted);
 
             // An assessment names its entry by number; a placeholder's is the one this same edit writes for it.
             var kind = parameters.TryGetValue("kind", out var named) ? Stored(named) : Stored(nameof(AssessmentKind.Question));
