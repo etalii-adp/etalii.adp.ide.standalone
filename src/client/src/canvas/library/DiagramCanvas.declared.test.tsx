@@ -146,6 +146,17 @@ describe("the shapes and the paint a row could not otherwise reach", () => {
     expect(container.querySelector('[data-element-id="a"].picked, [data-element-id="a"] .picked')).not.toBeNull();
   });
 
+  it("keeps the hit target pressable inside a group a module made inert", () => {
+    // Found in the browser after the target above was added: a module put `canvas-hint` on the
+    // element's group, whose rule sets `pointer-events: none`, and the property inherits, so the
+    // target took no press either. Its own inline value is the one a class on an ancestor cannot
+    // reach; jsdom cascades no stylesheet, so this asks for that value directly.
+    const { container } = canvasOf({ shape: "none", labels: [{ text: { path: "payload.text" } }], classNames: [{ className: "canvas-hint", on: "element" }] }, { text: "a note" });
+
+    const hit = container.querySelector<SVGRectElement>('[data-element-id="a"] rect.library-bodyless-hit');
+    expect(hit?.style.pointerEvents).toBe("all");
+  });
+
   it("gives an unselectable element of shape `none` no hit target", () => {
     const { container } = canvasOf({ shape: "none", selectable: false, labels: [{ text: { path: "payload.text" } }] }, { text: "a note" });
 

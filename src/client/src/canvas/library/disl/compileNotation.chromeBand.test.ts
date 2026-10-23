@@ -6,8 +6,8 @@ import type { DislDocument } from "./disTypes";
  * The canvas's header band and a budget's notice (DISL §6.13 `canvas.header` and notices, §3.2.1): the
  * band's rows bound against the diagram's attributes, each with the module's class and drawn while its
  * `visible` holds, and a budget's sentence shown on the module's condition, since only its backend
- * knows the budget cut what is drawn. The SPARQL query diagram was the first to state both: the query's
- * form and modifiers above the canvas, and "Showing N of M" over a query larger than it draws.
+ * knows the budget cut what is drawn. A read-only diagram uses both to say what it shows: its model's
+ * form above the canvas, and "Showing N of M" over a model larger than it draws.
  */
 
 function specOf(): DislDocument {

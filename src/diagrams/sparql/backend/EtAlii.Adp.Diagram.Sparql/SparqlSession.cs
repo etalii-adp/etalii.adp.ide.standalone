@@ -14,7 +14,8 @@ namespace EtAlii.Adp.Diagram.Sparql;
 /// Repositioning is the only mutating gesture this module has, and it never touches the
 /// <c>.rq</c>: it dispatches the core <see cref="SetRegistrationLayoutCommand"/>, which writes
 /// the <c>.adp</c>'s <c>layout:</c> block. The query file has no writer anywhere in this module,
-/// so its byte-identical round trip holds by construction rather than by care.
+/// and a write that reached its body would be stopped twice: by the binding's <c>readOnly</c> and
+/// by <see cref="SparqlQueryPlugin"/>'s refusing <c>Plan</c>.
 /// </para>
 /// <para>
 /// Following the store, the baseline, the viewport and the dispatch are the session base's; this
