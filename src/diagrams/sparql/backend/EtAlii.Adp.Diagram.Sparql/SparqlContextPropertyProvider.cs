@@ -11,66 +11,20 @@ namespace EtAlii.Adp.Diagram.Sparql;
 /// panel requires, and it is what makes the diagram honest about being a reading surface.
 /// </summary>
 /// <remarks>
+/// <para>
+/// <b>It hands out what the definition derives</b> (sparql-disl-fbl, task 8): an element's rows are its form's
+/// (<see cref="SparqlDefinition.Rows"/>), the header band's the query's own (<see cref="SparqlChrome.Rows"/>), and a set
+/// is refused with the definition's <c>std.readOnly</c>. It holds no row, label or reason of its own.
+/// </para>
+/// <para>
 /// <b>It stays off <see cref="DiagramPropertyProvider{TBody, TModel}"/></b> (code-structure T099):
 /// that frame exists to dispatch a changed value through the project's history, which would make this
 /// provider take a history it never uses and answer a set on an unreadable query with the frame's
 /// "cannot be edited" rather than the one reason every row of this diagram gives.
+/// </para>
 /// </remarks>
 public sealed class SparqlContextPropertyProvider : IContextPropertyProvider
 {
-    /// <summary>A variable's name.</summary>
-    public const string VariableNameProperty = "sparql.variable.name";
-
-    /// <summary>Whether the projection carries the variable outward.</summary>
-    public const string VariableProjectedProperty = "sparql.variable.projected";
-
-    /// <summary>How many triple-pattern positions mention the variable - its degree on the canvas.</summary>
-    public const string VariableJoinCountProperty = "sparql.variable.joins";
-
-    /// <summary>The expression that defines the variable, as written.</summary>
-    public const string VariableDefinitionProperty = "sparql.variable.definition";
-
-    /// <summary>A concrete term's display form.</summary>
-    private const string TermDisplayProperty = "sparql.term.display";
-
-    /// <summary>A concrete term's full IRI, or a literal exactly as written.</summary>
-    private const string TermFullProperty = "sparql.term.full";
-
-    /// <summary>A literal's datatype or language annotation.</summary>
-    private const string TermAnnotationProperty = "sparql.term.annotation";
-
-    /// <summary>A region's construct kind.</summary>
-    public const string RegionKindProperty = "sparql.region.kind";
-
-    /// <summary>A region's label - its graph term or service endpoint where it has one.</summary>
-    public const string RegionLabelProperty = "sparql.region.label";
-
-    /// <summary>An edge's predicate or property path, as written.</summary>
-    private const string EdgeLabelProperty = "sparql.edge.label";
-
-    /// <summary>An annotation's text, as written.</summary>
-    private const string AnnotationTextProperty = "sparql.annotation.text";
-
-    /// <summary>The query's form.</summary>
-    public const string QueryFormProperty = "sparql.query.form";
-
-    /// <summary>The query's solution modifiers and dataset clauses.</summary>
-    public const string QueryModifiersProperty = "sparql.query.modifiers";
-
-    /// <summary>A subquery's whole text, which is what a collapsed node has to offer.</summary>
-    private const string SubQueryTextProperty = "sparql.subquery.text";
-
-    private const string IdentityGroup = "Identity";
-    private const string StructureGroup = "Structure";
-    private const string QueryGroup = "Query";
-
-    /// <summary>
-    /// The reason every row carries. One sentence, and the same one everywhere: this diagram
-    /// reads a query, and a query is edited where it was written.
-    /// </summary>
-    public const string ReadOnlyReason =
-        "This diagram reads the query; edit the .rq file in a text editor and the diagram follows.";
-
     private readonly ISparqlDocumentStore _documents;
 
     public SparqlContextPropertyProvider(ISparqlDocumentStore documents)
@@ -94,51 +48,14 @@ public sealed class SparqlContextPropertyProvider : IContextPropertyProvider
         }
 
         var entry = await _documents.GetOrLoadAsync(target.ResolvedFullPath, cancellationToken);
-        if (SparqlSelection.ProjectionOf(entry) is not { } projection)
+        if (!entry.IsUsable || target.ElementId is not { Length: > 0 } elementId)
         {
             return [];
         }
 
-        if (target.ElementId == SparqlElementMapper.HeaderId)
-        {
-            return
-            [
-                Row(QueryFormProperty, "Form", projection.HeaderForm, QueryGroup),
-                Row(QueryModifiersProperty, "Modifiers", string.Join(" · ", projection.HeaderRows), QueryGroup),
-            ];
-        }
-
-        if (SparqlSelection.NodeOf(projection, target.ElementId) is { } node)
-        {
-            return RowsFor(node);
-        }
-
-        if (SparqlSelection.RegionOf(projection, target.ElementId) is { } region)
-        {
-            return
-            [
-                Row(RegionKindProperty, "Group", region.Kind.ToUpperInvariant(), StructureGroup),
-                Row(RegionLabelProperty, "Constraint", region.Label, StructureGroup),
-            ];
-        }
-
-        if (SparqlSelection.EdgeOf(projection, target.ElementId) is { } edge)
-        {
-            return
-            [
-                Row(EdgeLabelProperty, edge.IsPath ? "Property path" : "Predicate", edge.Label, StructureGroup),
-            ];
-        }
-
-        if (SparqlSelection.AnnotationOf(projection, target.ElementId) is { } annotation)
-        {
-            return
-            [
-                Row(AnnotationTextProperty, annotation.Kind.ToUpperInvariant(), annotation.Text, StructureGroup),
-            ];
-        }
-
-        return [];
+        return SparqlChrome.IsChrome(elementId)
+            ? SparqlChrome.Rows(entry.Model, elementId)
+            : SparqlDefinition.Rows(entry.Model, elementId);
     }
 
     /// <summary>
@@ -156,33 +73,6 @@ public sealed class SparqlContextPropertyProvider : IContextPropertyProvider
         _ = propertyId;
         _ = value;
 
-        return ValueTask.FromResult(ContextPropertyResult.Failure(ReadOnlyReason));
+        return ValueTask.FromResult(ContextPropertyResult.Failure(SparqlDefinition.Refusal));
     }
-
-    private static IReadOnlyList<ContextPropertyDefinition> RowsFor(SparqlNode node) => node.Kind switch
-    {
-        SparqlNodeKind.Variable or SparqlNodeKind.Anonymous =>
-        [
-            Row(VariableNameProperty, node.Kind == SparqlNodeKind.Anonymous ? "Anonymous variable" : "Variable", node.Display, IdentityGroup),
-            Row(VariableProjectedProperty, "Projected", node.Projected ? "Yes" : "No", IdentityGroup),
-            // The join count is the fact the whole diagram is built around, said in words.
-            Row(VariableJoinCountProperty, "Joins", node.JoinCount.ToString(System.Globalization.CultureInfo.InvariantCulture), StructureGroup),
-            Row(VariableDefinitionProperty, "Defined by", node.DefiningExpression, StructureGroup),
-        ],
-        SparqlNodeKind.SubSelect =>
-        [
-            Row(TermDisplayProperty, "Projection", node.Display, IdentityGroup),
-            Row(SubQueryTextProperty, "Subquery", node.Full, QueryGroup),
-        ],
-        _ =>
-        [
-            Row(TermDisplayProperty, node.Kind == SparqlNodeKind.Iri ? "Prefixed name" : "Literal", node.Display, IdentityGroup),
-            Row(TermFullProperty, node.Kind == SparqlNodeKind.Iri ? "IRI" : "As written", node.Full, IdentityGroup),
-            Row(TermAnnotationProperty, "Type", node.Annotation, IdentityGroup),
-        ],
-    };
-
-    /// <summary>Every row is built here, so none can be created without its reason.</summary>
-    private static ContextPropertyDefinition Row(string id, string label, string value, string group) =>
-        new(id, label, value, ReadOnlyReason: ReadOnlyReason, Group: group);
 }

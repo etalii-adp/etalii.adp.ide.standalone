@@ -339,7 +339,7 @@ internal static class SparqlTranscript
             () => session.MoveElementAsync(child, parent, 0, cancellationToken), cancellationToken);
 
         var properties = new SparqlContextPropertyProvider(documents);
-        var rowId = (await properties.DescribeAsync(Target(body, folder, child), cancellationToken)).FirstOrDefault()?.Id ?? SparqlContextPropertyProvider.QueryFormProperty;
+        var rowId = (await properties.DescribeAsync(Target(body, folder, child), cancellationToken)).FirstOrDefault()?.Id ?? HandWrittenSparql.QueryFormProperty;
         await WriteStepAsync(json, $"write {rowId} of {child}", body, registration, folder, async () =>
         {
             var result = await properties.SetAsync(Target(body, folder, child), rowId, "Renamed", cancellationToken);

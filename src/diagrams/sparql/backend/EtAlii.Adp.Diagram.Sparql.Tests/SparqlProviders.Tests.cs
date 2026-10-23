@@ -1,5 +1,6 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents.Wire;
+using EtAlii.Adp.Diagram.Sparql.Tests.Parity;
 using EtAlii.Adp.Hierarchy;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -64,7 +65,7 @@ public class SparqlProvidersTests : IDisposable
         {
             ArgumentNullException.ThrowIfNull(row);
 
-            Assert.Equal(SparqlContextPropertyProvider.ReadOnlyReason, row.ReadOnlyReason);
+            Assert.Equal(HandWrittenSparql.ReadOnlyReason, row.ReadOnlyReason);
             Assert.Contains("text editor", row.ReadOnlyReason);
         }
     }
@@ -76,9 +77,9 @@ public class SparqlProvidersTests : IDisposable
         var rows = await RowsFor("var:x");
 
         // Assert.
-        Assert.Equal("?x", Single(rows, SparqlContextPropertyProvider.VariableNameProperty).Value);
-        Assert.Equal("Yes", Single(rows, SparqlContextPropertyProvider.VariableProjectedProperty).Value);
-        Assert.Equal("5", Single(rows, SparqlContextPropertyProvider.VariableJoinCountProperty).Value);
+        Assert.Equal("?x", Single(rows, HandWrittenSparql.VariableNameProperty).Value);
+        Assert.Equal("Yes", Single(rows, HandWrittenSparql.VariableProjectedProperty).Value);
+        Assert.Equal("5", Single(rows, HandWrittenSparql.VariableJoinCountProperty).Value);
     }
 
     [Fact]
@@ -88,7 +89,7 @@ public class SparqlProvidersTests : IDisposable
         var rows = await RowsFor("var:doubled");
 
         // Assert.
-        Assert.Equal("BIND(?x * 2 AS ?doubled)", Single(rows, SparqlContextPropertyProvider.VariableDefinitionProperty).Value);
+        Assert.Equal("BIND(?x * 2 AS ?doubled)", Single(rows, HandWrittenSparql.VariableDefinitionProperty).Value);
     }
 
     [Fact]
@@ -98,8 +99,8 @@ public class SparqlProvidersTests : IDisposable
         var rows = await RowsFor("region:where/service.0");
 
         // Assert.
-        Assert.Equal("SERVICE", Single(rows, SparqlContextPropertyProvider.RegionKindProperty).Value);
-        Assert.Contains("http://example.org/sparql", Single(rows, SparqlContextPropertyProvider.RegionLabelProperty).Value);
+        Assert.Equal("SERVICE", Single(rows, HandWrittenSparql.RegionKindProperty).Value);
+        Assert.Contains("http://example.org/sparql", Single(rows, HandWrittenSparql.RegionLabelProperty).Value);
     }
 
     [Fact]
@@ -111,8 +112,8 @@ public class SparqlProvidersTests : IDisposable
         var rows = await provider.DescribeAsync(TargetFor(body, SparqlElementMapper.HeaderId), CancellationToken.None);
 
         // Assert.
-        Assert.Equal("SELECT DISTINCT", Single(rows, SparqlContextPropertyProvider.QueryFormProperty).Value);
-        Assert.Contains("LIMIT 10", Single(rows, SparqlContextPropertyProvider.QueryModifiersProperty).Value);
+        Assert.Equal("SELECT DISTINCT", Single(rows, HandWrittenSparql.QueryFormProperty).Value);
+        Assert.Contains("LIMIT 10", Single(rows, HandWrittenSparql.QueryModifiersProperty).Value);
     }
 
     [Fact]
@@ -125,11 +126,11 @@ public class SparqlProvidersTests : IDisposable
 
         // Act.
         var result = await provider.SetAsync(
-            TargetFor(body, "var:x"), SparqlContextPropertyProvider.VariableNameProperty, "y", CancellationToken.None);
+            TargetFor(body, "var:x"), HandWrittenSparql.VariableNameProperty, "y", CancellationToken.None);
 
         // Assert.
         Assert.False(result.IsSuccess);
-        Assert.Equal(SparqlContextPropertyProvider.ReadOnlyReason, result.Error);
+        Assert.Equal(HandWrittenSparql.ReadOnlyReason, result.Error);
         Assert.Equal(original, await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken));
     }
 
@@ -222,7 +223,7 @@ public class SparqlValidatorTests
         // Assert.
         var problem = Assert.Single(problems);
         Assert.Equal(DiagramProblemSeverity.Error, problem.Severity);
-        Assert.Equal(SparqlValidator.UnparseableRuleId, problem.RuleId);
+        Assert.Equal(HandWrittenSparql.UnparseableRuleId, problem.RuleId);
         Assert.Equal(4u, Assert.IsType<DiagramProblemLineLocation>(problem.Location).Number);
     }
 
@@ -244,7 +245,7 @@ public class SparqlValidatorTests
         var problems = await Validate("PREFIX ex: <http://example.org/>\nSELECT ?s ?missing WHERE { ?s ex:p ?o }\n");
 
         // Assert.
-        var problem = Assert.Single(problems, candidate => candidate.RuleId == SparqlValidator.UnboundProjectionRuleId);
+        var problem = Assert.Single(problems, candidate => candidate.RuleId == HandWrittenSparql.UnboundProjectionRuleId);
         Assert.Equal(DiagramProblemSeverity.Warning, problem.Severity);
         Assert.Contains("?missing", problem.Message);
     }
@@ -256,7 +257,7 @@ public class SparqlValidatorTests
         var problems = await Validate("PREFIX ex: <http://example.org/>\nPREFIX unused: <http://example.org/unused/>\nSELECT * WHERE { ?s ex:p ?o }\n");
 
         // Assert.
-        var problem = Assert.Single(problems, candidate => candidate.RuleId == SparqlValidator.UnusedPrefixRuleId);
+        var problem = Assert.Single(problems, candidate => candidate.RuleId == HandWrittenSparql.UnusedPrefixRuleId);
         Assert.Equal(DiagramProblemSeverity.Info, problem.Severity);
         Assert.Contains("unused:", problem.Message);
         Assert.Equal(2u, Assert.IsType<DiagramProblemLineLocation>(problem.Location).Number);

@@ -1,3 +1,4 @@
+using EtAlii.Adp.Diagram.Modules;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -32,12 +33,12 @@ public class ExampleCorpusTests
         // Act.
         var model = SparqlParser.Parse(text);
         var projection = new SparqlDocument(model, text).Drawing;
-        var problems = SparqlValidator.Judge(model, text);
+        var problems = SparqlValidator.Findings(text);
 
         // Assert.
         Assert.NotEmpty(projection.Nodes);
         Assert.False(projection.Truncated);
-        Assert.DoesNotContain(problems, problem => problem.Severity > DiagramProblemSeverity.Info);
+        Assert.DoesNotContain(problems, problem => DislDiagramDefinition.SeverityOf(problem) > DiagramProblemSeverity.Info);
     }
 
     [Theory]

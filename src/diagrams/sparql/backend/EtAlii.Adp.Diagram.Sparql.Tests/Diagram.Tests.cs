@@ -132,7 +132,7 @@ public class DiagramTests : IDisposable
         var model = SparqlParser.Parse(text);
         Assert.Equal(SparqlQueryForm.Select, model.Form);
         Assert.NotEmpty(new SparqlDocument(model, text).Drawing.Nodes);
-        Assert.Empty(SparqlValidator.Judge(model, text));
+        Assert.Empty(SparqlValidator.Findings(text));
         Assert.EndsWith("\r\n", text);
     }
 }

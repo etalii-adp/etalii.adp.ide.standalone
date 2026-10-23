@@ -1,9 +1,14 @@
+using System.Globalization;
+using EtAlii.Adp.Context;
+
 namespace EtAlii.Adp.Diagram.Sparql.Tests.Parity;
 
 /// <summary>
 /// The drawn query as the module projected it by hand before it was derived from the DISL definition
 /// (sparql-disl-fbl, task 7), kept verbatim as the oracle the derived drawing is compared with, document by
-/// document and element by element (<see cref="SparqlDerivedDrawingTests"/>).
+/// document and element by element (<see cref="SparqlDerivedDrawingTests"/>); and the rows, findings and refusals the
+/// two providers, the validator and the session gave by hand before task 8 derived them, the oracle of
+/// <see cref="SparqlDerivedRowsTests"/>, <see cref="SparqlDerivedFindingsTests"/> and <see cref="SparqlDerivedRefusalsTests"/>.
 /// </summary>
 /// <remarks>
 /// Pure: model in, drawn elements out - the variable-as-node projection that is this module's
@@ -440,5 +445,249 @@ internal static class HandWrittenSparql
             remaining -= taken.Count;
             return taken;
         }
+    }
+
+    // The surfaces beside the drawing, as the module answered them by hand before they were derived from the
+    // definition (sparql-disl-fbl, task 8): the property rows of the two providers, the findings of the validator and
+    // the refusals of the session and the action provider, each copied verbatim.
+
+    /// <summary>The reason every row carried: one sentence, the same everywhere.</summary>
+    public const string ReadOnlyReason =
+        "This diagram reads the query; edit the .rq file in a text editor and the diagram follows.";
+
+    /// <summary>What an action arriving anyway was told.</summary>
+    public const string NoActionsReason =
+        "A query diagram offers no edits: it reads the .rq file, which is edited in a text editor.";
+
+    /// <summary>What a drag onto another parent was told, whatever was dragged.</summary>
+    public const string ParentRefusal =
+        "A query's structure comes from its text, so nothing here can be moved into a different group. Dragging changes where an element sits on the canvas.";
+
+    /// <summary>The rule reported when the file is not a SPARQL query this can read - SPARQL Update included.</summary>
+    public const string UnparseableRuleId = "sparql.unparseable";
+
+    /// <summary>The rule reported when a projected variable never appears in the where clause.</summary>
+    public const string UnboundProjectionRuleId = "sparql.unbound-projection";
+
+    /// <summary>The rule reported when a prefix is declared but never used.</summary>
+    public const string UnusedPrefixRuleId = "sparql.unused-prefix";
+
+    /// <summary>A variable's name.</summary>
+    public const string VariableNameProperty = "sparql.variable.name";
+
+    /// <summary>Whether the projection carries the variable outward.</summary>
+    public const string VariableProjectedProperty = "sparql.variable.projected";
+
+    /// <summary>How many triple-pattern positions mention the variable - its degree on the canvas.</summary>
+    public const string VariableJoinCountProperty = "sparql.variable.joins";
+
+    /// <summary>The expression that defines the variable, as written.</summary>
+    public const string VariableDefinitionProperty = "sparql.variable.definition";
+
+    private const string TermDisplayProperty = "sparql.term.display";
+    private const string TermFullProperty = "sparql.term.full";
+    private const string TermAnnotationProperty = "sparql.term.annotation";
+
+    /// <summary>A region's construct kind.</summary>
+    public const string RegionKindProperty = "sparql.region.kind";
+
+    /// <summary>A region's label - its graph term or service endpoint where it has one.</summary>
+    public const string RegionLabelProperty = "sparql.region.label";
+
+    private const string EdgeLabelProperty = "sparql.edge.label";
+    private const string AnnotationTextProperty = "sparql.annotation.text";
+
+    /// <summary>The query's form.</summary>
+    public const string QueryFormProperty = "sparql.query.form";
+
+    /// <summary>The query's solution modifiers and dataset clauses.</summary>
+    public const string QueryModifiersProperty = "sparql.query.modifiers";
+
+    private const string SubQueryTextProperty = "sparql.subquery.text";
+
+    private const string IdentityGroup = "Identity";
+    private const string StructureGroup = "Structure";
+    private const string QueryGroup = "Query";
+
+    /// <summary>The header band's id on the wire.</summary>
+    public const string HeaderId = "header:query";
+
+    /// <summary>The truncation banner's id on the wire.</summary>
+    public const string TruncationId = "truncation";
+
+    /// <summary>The rows the property provider gave for <paramref name="elementId"/> of a query that parsed, drawn as <paramref name="projection"/>.</summary>
+    public static IReadOnlyList<ContextPropertyDefinition> Rows(SparqlProjectionResult projection, string elementId)
+    {
+        ArgumentNullException.ThrowIfNull(projection);
+        if (elementId == HeaderId)
+        {
+            return
+            [
+                Row(QueryFormProperty, "Form", projection.HeaderForm, QueryGroup),
+                Row(QueryModifiersProperty, "Modifiers", string.Join(" · ", projection.HeaderRows), QueryGroup),
+            ];
+        }
+
+        if (SparqlSelection.NodeOf(projection, elementId) is { } node)
+        {
+            return RowsFor(node);
+        }
+
+        if (SparqlSelection.RegionOf(projection, elementId) is { } region)
+        {
+            return
+            [
+                Row(RegionKindProperty, "Group", region.Kind.ToUpperInvariant(), StructureGroup),
+                Row(RegionLabelProperty, "Constraint", region.Label, StructureGroup),
+            ];
+        }
+
+        if (SparqlSelection.EdgeOf(projection, elementId) is { } edge)
+        {
+            return [Row(EdgeLabelProperty, edge.IsPath ? "Property path" : "Predicate", edge.Label, StructureGroup)];
+        }
+
+        if (SparqlSelection.AnnotationOf(projection, elementId) is { } annotation)
+        {
+            return [Row(AnnotationTextProperty, annotation.Kind.ToUpperInvariant(), annotation.Text, StructureGroup)];
+        }
+
+        return [];
+    }
+
+    private static IReadOnlyList<ContextPropertyDefinition> RowsFor(SparqlNode node) => node.Kind switch
+    {
+        SparqlNodeKind.Variable or SparqlNodeKind.Anonymous =>
+        [
+            Row(VariableNameProperty, node.Kind == SparqlNodeKind.Anonymous ? "Anonymous variable" : "Variable", node.Display, IdentityGroup),
+            Row(VariableProjectedProperty, "Projected", node.Projected ? "Yes" : "No", IdentityGroup),
+            Row(VariableJoinCountProperty, "Joins", node.JoinCount.ToString(CultureInfo.InvariantCulture), StructureGroup),
+            Row(VariableDefinitionProperty, "Defined by", node.DefiningExpression, StructureGroup),
+        ],
+        SparqlNodeKind.SubSelect =>
+        [
+            Row(TermDisplayProperty, "Projection", node.Display, IdentityGroup),
+            Row(SubQueryTextProperty, "Subquery", node.Full, QueryGroup),
+        ],
+        _ =>
+        [
+            Row(TermDisplayProperty, node.Kind == SparqlNodeKind.Iri ? "Prefixed name" : "Literal", node.Display, IdentityGroup),
+            Row(TermFullProperty, node.Kind == SparqlNodeKind.Iri ? "IRI" : "As written", node.Full, IdentityGroup),
+            Row(TermAnnotationProperty, "Type", node.Annotation, IdentityGroup),
+        ],
+    };
+
+    private static ContextPropertyDefinition Row(string id, string label, string value, string group) =>
+        new(id, label, value, ReadOnlyReason: ReadOnlyReason, Group: group);
+
+    /// <summary>The validator's findings over <paramref name="text"/>: the one unparseable finding alone, else the unbound projections and the unused prefixes.</summary>
+    public static IReadOnlyList<DiagramProblem> Findings(string text)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        var outcome = SparqlParser.Outcome(text);
+        if (!outcome.IsUsable)
+        {
+            var problem = outcome.Problems[0];
+            return
+            [
+                new DiagramProblem(
+                    DiagramProblemSeverity.Error,
+                    $"This is not a SPARQL query that can be read: {problem.Message}",
+                    UnparseableRuleId,
+                    new DiagramProblemLineLocation((uint)problem.Line + 1)),
+            ];
+        }
+
+        return Judge(outcome.Model, text);
+    }
+
+    /// <summary>The findings over a parsed query.</summary>
+    public static IReadOnlyList<DiagramProblem> Judge(SparqlQueryModel model, string text)
+    {
+        ArgumentNullException.ThrowIfNull(model);
+        ArgumentNullException.ThrowIfNull(text);
+        var problems = new List<DiagramProblem>();
+        foreach (var item in model.Projection)
+        {
+            if (!model.Variables.TryGetValue(item.Name, out var usage))
+            {
+                continue;
+            }
+
+            if (usage is { PatternOccurrences: 0, DefiningExpression.Length: 0 })
+            {
+                problems.Add(new DiagramProblem(
+                    DiagramProblemSeverity.Warning,
+                    $"?{item.Name} is selected but never appears in the where clause, so its column will always be unbound.",
+                    UnboundProjectionRuleId,
+                    new DiagramProblemLineLocation(1)));
+            }
+        }
+
+        foreach (var prefix in model.Prefixes)
+        {
+            if (!IsUsed(prefix.Prefix, text))
+            {
+                problems.Add(new DiagramProblem(
+                    DiagramProblemSeverity.Info,
+                    $"The prefix '{prefix.Prefix}:' is declared but never used.",
+                    UnusedPrefixRuleId,
+                    new DiagramProblemLineLocation((uint)Math.Max(prefix.Line, 1))));
+            }
+        }
+
+        return problems;
+    }
+
+    private static bool IsUsed(string prefix, string text)
+    {
+        var needle = prefix + ":";
+        var from = 0;
+
+        while (true)
+        {
+            var at = text.IndexOf(needle, from, StringComparison.Ordinal);
+            if (at < 0)
+            {
+                return false;
+            }
+
+            from = at + needle.Length;
+            var lineStart = text.LastIndexOf('\n', Math.Max(at - 1, 0)) + 1;
+            var beforeOnLine = text[lineStart..at].TrimStart();
+            if (beforeOnLine.StartsWith("PREFIX", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            return true;
+        }
+    }
+
+    /// <summary>Why the session refused to store a position for <paramref name="elementId"/>, or empty when it stored one.</summary>
+    public static string MoveRefusal(string elementId)
+    {
+        ArgumentNullException.ThrowIfNull(elementId);
+        if (elementId.StartsWith("anon:", StringComparison.Ordinal))
+        {
+            return "That is an anonymous variable - written as a blank node, it has no name to key a stored position by, so it takes its computed place.";
+        }
+
+        if (elementId.StartsWith("edge:", StringComparison.Ordinal))
+        {
+            return "An edge is drawn between its endpoints; move one of those instead.";
+        }
+
+        if (elementId.StartsWith("note:", StringComparison.Ordinal))
+        {
+            return "An annotation stays with what it constrains; move that instead.";
+        }
+
+        return elementId switch
+        {
+            HeaderId => "The header band states the query's form and modifiers, and stays at the top of the diagram.",
+            TruncationId => "That banner reports the truncation and is not something this diagram can move.",
+            _ => "",
+        };
     }
 }
