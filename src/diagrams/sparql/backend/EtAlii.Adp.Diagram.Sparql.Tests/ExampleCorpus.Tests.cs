@@ -31,11 +31,12 @@ public class ExampleCorpusTests
         var text = File.ReadAllText(path);
 
         // Act.
-        var model = SparqlParser.Parse(text);
-        var projection = new SparqlDocument(model, text).Drawing;
+        var body = SparqlBody.Parse(text);
+        var projection = new SparqlDocument(body).Drawing;
         var problems = SparqlValidator.Findings(text);
 
         // Assert.
+        Assert.False(body.IsUnreadable);
         Assert.NotEmpty(projection.Nodes);
         Assert.False(projection.Truncated);
         Assert.DoesNotContain(problems, problem => DislDiagramDefinition.SeverityOf(problem) > DiagramProblemSeverity.Info);

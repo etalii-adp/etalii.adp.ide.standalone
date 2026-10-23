@@ -3752,7 +3752,10 @@ function renderShapeBody(
   switch (shape) {
     case "none":
       // No body at all: this element is its labels and its decorations. Rows 2, 8, 14 and 25.
-      return null;
+      // Both of those take no pointer events, so a selectable one gets a transparent press
+      // target over its bounds; without it the element could never be pressed, selected, or
+      // shown its move refusal. An unselectable one stays inert.
+      return type.selectable === false ? null : <rect className="library-bodyless-hit" x={bounds.x} y={bounds.y} width={bounds.width} height={bounds.height} />;
     case "moment": {
       // A DIAMOND rather than a circle, because that is what the notation that justified this
       // shape draws: `SpanElement` renders a moment as `M x-r y L x y-r L x+r y L x y+r Z`, and
