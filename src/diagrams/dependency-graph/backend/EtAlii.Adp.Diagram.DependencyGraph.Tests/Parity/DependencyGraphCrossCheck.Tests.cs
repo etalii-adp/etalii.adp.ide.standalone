@@ -13,13 +13,15 @@ namespace EtAlii.Adp.Diagram.DependencyGraph.Tests.Parity;
 /// </summary>
 public class DependencyGraphCrossCheckTests
 {
+    private static readonly DependencyGraphTranscript _transcript = new();
+
     /// <summary>How many <c>.dgr</c> files the repository held when this was written.</summary>
     private const int Minimum = 13;
 
     public static TheoryData<string> Files()
     {
         var data = new TheoryData<string>();
-        foreach ((string name, _) in DependencyGraphTranscript.Corpus().Where(document => document.Name.EndsWith(".dgr", StringComparison.Ordinal))) data.Add(name);
+        foreach ((string name, _) in _transcript.Corpus().Where(document => document.Name.EndsWith(".dgr", StringComparison.Ordinal))) data.Add(name);
         return data;
     }
 
@@ -28,7 +30,7 @@ public class DependencyGraphCrossCheckTests
     public async Task TheBindingReadsTheIdsTheOracleReads(string name)
     {
         // Arrange.
-        var bytes = await DependencyGraphTranscript.Corpus().Single(document => document.Name == name).Read(TestContext.Current.CancellationToken);
+        var bytes = await _transcript.Corpus().Single(document => document.Name == name).Read(TestContext.Current.CancellationToken);
         var text = Encoding.UTF8.GetString(bytes);
 
         // Act.
