@@ -51,9 +51,13 @@ vi.mock("@client/shell/panels/DiagramViewContext", () => ({
   useRegisterDiagramView: () => undefined,
 }));
 
+let registeredToolboxes: unknown[] = [];
+
 vi.mock("@client/shell/panels/DiagramToolboxContext", () => ({
   TOOLBOX_DRAG_TYPE: "application/x-adp-toolbox-item",
-  useRegisterDiagramToolbox: () => undefined,
+  useRegisterDiagramToolbox: (items: unknown) => {
+    registeredToolboxes.push(items);
+  },
 }));
 
 vi.mock("@client/shell/panels/useToolboxItems", () => ({
@@ -266,6 +270,19 @@ describe("SparqlCanvas", () => {
     // Assert.
     expect(moves).toHaveLength(0);
     expect(selections).toHaveLength(1);
+  });
+
+  it("tells the toolbox panel the backend's empty palette, never one derived from the element types", () => {
+    // Arrange: the library derives an item per element type for a canvas that hands it no
+    // palette, which would offer seven kinds of term to drop on a diagram that edits nothing.
+    registeredToolboxes = [];
+
+    // Act.
+    renderCanvas();
+
+    // Assert.
+    expect(registeredToolboxes.length).toBeGreaterThan(0);
+    expect(registeredToolboxes.every((items) => Array.isArray(items) && items.length === 0)).toBe(true);
   });
 
   it("offers no editing affordance at all", () => {

@@ -139,7 +139,41 @@ export interface RulerDeclaration {
   when?: Condition;
 }
 
+/**
+ * A band of rows drawn between the title and the drawing surface (DISL §6.13 `canvas.header`): each
+ * row one line of chrome, bound to the model's background, drawn in order while it says something. The
+ * band is drawn while one of its rows is.
+ */
+export interface ChromeBandDeclaration {
+  rows: readonly ChromeTextDeclaration[];
+  when?: Condition;
+  className?: string;
+  /** `data-*` attributes, which the module's tests find the band by. */
+  data?: Readonly<Record<string, string>>;
+}
+
+/**
+ * A status notice outside the drawing (DISL §6.13 notices), such as a budget's while it cuts what is
+ * drawn: one line of chrome, drawn below the drawing surface and exposed as a status region. Where on
+ * the canvas it shows is its `position`, which the canvas carries for the stylesheet to place.
+ */
+export interface ChromeNoticeDeclaration extends ChromeTextDeclaration {
+  id: string;
+  severity: "info" | "warning" | "error";
+  position: "top" | "bottom" | "top-left" | "top-right" | "bottom-left" | "bottom-right";
+}
+
+/** A band as drawn: its rows that say something. */
+export interface ResolvedBand {
+  rows: readonly ResolvedChromeText[];
+  className?: string;
+}
+
 export interface ChromeDeclaration {
+  /** Between the title and the drawing surface. */
+  header?: ChromeBandDeclaration;
+  /** Below the drawing surface, in declaration order. */
+  notices?: readonly ChromeNoticeDeclaration[];
   /** Shown until the module's model has arrived. */
   loading?: ChromeTextDeclaration;
   /** Shown when the diagram cannot be opened at this path. */
@@ -225,6 +259,16 @@ export function resolveChromeText(
 
   const text = resolveOne(declaration.text, source);
   return text === null ? null : { text, typography: declaration.typography, className: declaration.className };
+}
+
+/** A band's rows that say something, in order, or null when the band is hidden or none does. */
+export function resolveChromeBand(declaration: ChromeBandDeclaration | undefined, source: BindingSource): ResolvedBand | null {
+  if (!declaration || !holds(declaration.when, source)) {
+    return null;
+  }
+
+  const rows = declaration.rows.map((row) => resolveChromeText(row, source)).filter((row): row is ResolvedChromeText => row !== null);
+  return rows.length === 0 ? null : { rows, className: declaration.className };
 }
 
 /** A legend's entries, one per model collection entry. */

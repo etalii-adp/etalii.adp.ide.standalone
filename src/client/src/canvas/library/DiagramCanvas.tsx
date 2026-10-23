@@ -42,7 +42,7 @@ import { BEFORE_GAP, labelKey, layoutLabels, wrappedLabelRegion, type LaidOutLab
 import { wavyUnderlinePath } from "./definition/wavyUnderline";
 import { resolveDecorations, type ResolvedDecoration } from "./definition/decorations";
 import { resolveBackground } from "./definition/background";
-import { resolveChromeText, resolveLegend } from "./definition/chrome";
+import { resolveChromeBand, resolveChromeText, resolveLegend } from "./definition/chrome";
 import { actionForGesture, actionForKey, flagOf, type ElementGesture } from "./definition/actions";
 import { isCustomShape } from "./definition/diagramDefinition";
 import { outlineEdgePoint, outlineOf } from "./shapes/outline";
@@ -2202,6 +2202,13 @@ export function DiagramCanvasCore({
   const title = resolveChromeText(definition.chrome?.title, chromeSource);
   const legend = definition.chrome?.legend;
   const legendEntries = resolveLegend(legend, chromeSource);
+  // THE HEADER BAND AND THE NOTICES (DISL §6.13): the band between the title and the surface, the
+  // notices below everything else, each a status region a reader's assistive technology announces.
+  const header = resolveChromeBand(definition.chrome?.header, chromeSource);
+  const notices = (definition.chrome?.notices ?? []).flatMap((notice) => {
+    const resolved = resolveChromeText(notice, chromeSource);
+    return resolved === null ? [] : [{ notice, resolved }];
+  });
 
   return (
     <>
@@ -2209,6 +2216,15 @@ export function DiagramCanvasCore({
       <div className={title.className} {...dataAttributesOf(definition.chrome?.title?.data)}>
         {title.text}
       </div>
+    )}
+    {header !== null && (
+      <header className={header.className} {...dataAttributesOf(definition.chrome?.header?.data)}>
+        {header.rows.map((row, index) => (
+          <span key={index} className={row.className}>
+            {row.text}
+          </span>
+        ))}
+      </header>
     )}
     <div
       ref={rootRef}
@@ -2468,6 +2484,11 @@ export function DiagramCanvasCore({
         ))}
       </div>
     )}
+    {notices.map(({ notice, resolved }) => (
+      <p key={notice.id} className={resolved.className} role="status" data-notice-position={notice.position} data-notice-severity={notice.severity} {...dataAttributesOf(notice.data)}>
+        {resolved.text}
+      </p>
+    ))}
     </>
   );
 }
