@@ -21,5 +21,5 @@ export function noteMarkOf(notes: readonly HierarchySurfaceNote[], ids: Readonly
     const only = open[0]!;
     return { icon: definition.noteIcons[only.kind] ?? definition.severalNotesIcon, count: 1, label: `${only.kind}: ${only.text}` };
   }
-  return { icon: definition.severalNotesIcon, count: open.length, label: `${open.length} open notes` };
+  return { icon: definition.severalNotesIcon, count: open.length, label: `${open.length} open ${definition.notes.words.list.toLowerCase()}` };
 }

@@ -26,7 +26,8 @@ interface Draft {
 /**
  * The list of a box's notes, opened from its icon (FR-016): each with its kind, the number it is about, its text and its
  * detail, resolved ones too; each changed, resolved or reopened, or removed; and a new one added at the bottom. A gesture
- * is sent as soon as it is made; what the file then says is the page's next model. Escape or a click outside closes it.
+ * is sent as soon as it is made; what the file then says is the page's next model. Escape, wherever the focus is, or a
+ * click outside closes it.
  */
 export function NoteList({ notes, number, definition, canEdit, onGesture, nodeId, onClose }: NoteListProps) {
   const kinds = Object.keys(definition.noteIcons);
@@ -36,6 +37,9 @@ export function NoteList({ notes, number, definition, canEdit, onGesture, nodeId
   const ref = useRef<HTMLDivElement>(null);
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
+  // Escape drops a change being typed, and otherwise closes the list.
+  const escapeRef = useRef(() => {});
+  escapeRef.current = () => (changing !== null ? setChanging(null) : onClose());
 
   useEffect(() => {
     const outside = (event: PointerEvent) => {
@@ -43,8 +47,19 @@ export function NoteList({ notes, number, definition, canEdit, onGesture, nodeId
         closeRef.current();
       }
     };
+    // Escape pressed outside the list counts too: a removed note, or a note opened for a change, takes the focus its
+    // button held with it.
+    const escape = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") {
+        escapeRef.current();
+      }
+    };
     document.addEventListener("pointerdown", outside);
-    return () => document.removeEventListener("pointerdown", outside);
+    document.addEventListener("keydown", escape);
+    return () => {
+      document.removeEventListener("pointerdown", outside);
+      document.removeEventListener("keydown", escape);
+    };
   }, []);
 
   // The list keeps its keys: Delete or Enter typed here is not the page's delete or add.
@@ -52,11 +67,7 @@ export function NoteList({ notes, number, definition, canEdit, onGesture, nodeId
     event.stopPropagation();
     if (event.key === "Escape") {
       event.preventDefault();
-      if (changing !== null) {
-        setChanging(null);
-      } else {
-        onClose();
-      }
+      escapeRef.current();
     }
   };
 
@@ -96,7 +107,7 @@ export function NoteList({ notes, number, definition, canEdit, onGesture, nodeId
             return (
               <li key={note.id} className="hs-note hs-note-changing">
                 <KindChoice kinds={kinds} value={draft.kind} label={`Kind of ${note.about}`} onChange={(kind) => set({ kind })} />
-                <input className="hs-field" aria-label={`Text about ${note.about}`} value={draft.text} onChange={(event) => set({ text: event.target.value })} onKeyDown={(event) => event.key === "Enter" && save()} />
+                <input autoFocus className="hs-field" aria-label={`Text about ${note.about}`} value={draft.text} onChange={(event) => set({ text: event.target.value })} onKeyDown={(event) => event.key === "Enter" && save()} />
                 <textarea className="hs-field hs-field-multiline" aria-label={`Detail about ${note.about}`} rows={2} value={draft.detail} onChange={(event) => set({ detail: event.target.value })} />
                 <div className="hs-note-actions">
                   <button type="button" className="hs-note-action" onClick={save} disabled={draft.text.trim() === ""}>

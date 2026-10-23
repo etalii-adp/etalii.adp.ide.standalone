@@ -4042,3 +4042,32 @@ lays out no text, so a fill, a centred Comment and a drag that writes a size are
   - Step 7: *ITEM-0004* and everything in it were back, *REQ-0011* among them; the folder held `shaping.md` alone.
   - Found on the way, and changed: the drag grip took the width of the box's header, so a long word of a level's title broke a letter earlier than before. The grip now stands in the box's left margin. Check: *ITEM-0003 Integration* reads on one line at a 1400-pixel-wide window.
   - **Not run in this pass:** the dark theme, which this task adds nothing to beyond tokens the page already uses, and the pane of the built-in browser.
+
+## Assessments on the Hierarchical Requirement Designer's page (spec 029, task T088)
+
+**Why this is a browser pass and not a test:** the icon stands at a box's corner over a layout jsdom does not compute, appears on hover, and its list sits over the boxes beside it; a gesture in the list travels to the file, back as the page's next model, and into the project's history. The module's suites cover each operation against the fixtures and the history, and the client's cover the icon and the list in jsdom, which lays nothing out, hovers nothing and moves no focus as a browser does.
+
+- **Preconditions**: a locally running developer build from the branch, and a scratch folder registered as a project, holding the module's example `web-shop.md` and `web-shop.adp` in a subfolder `requirements`.
+- **Steps**:
+  1. Open `web-shop.md`. Read the icon at the top right of *REQ-0006*, *REQ-0003*, *ITEM-0006* and *ITEM-0002*, and of *REQ-0001* before and while the pointer is over it.
+  2. Click *REQ-0006*'s icon. Read the list. Choose *Remark*, type a text in *New assessment* and press *New assessment*. Read the file and the icon.
+  3. Press *Change* on the new remark, choose *Warning*, change its text, type a detail and press *Change*. Read the file.
+  4. Press *Resolve* on the question, read its line and the icon; press *Reopen* and read the line again.
+  5. Press *Remove* on the warning. Read the file. Press Escape.
+  6. Open *ITEM-0006*'s list and press *Resolve* on the idea, whose line has no checkbox. Read the line. Click another box.
+  7. Collapse *ITEM-0004* and read its icon and its list; expand it again.
+  8. Press *Change* on a note and then Escape.
+  9. Press Undo until nothing is left to undo. Compare the file with the example.
+- **Expected**: one open assessment shows its kind's icon, several the icon for several with their count, and a resolved one is not counted; a box with none offers the way to add only under the pointer or when selected; the list names each assessment's entry, its text and detail, resolved ones too; an add is written at the end of Assessments in the stored form with an open checkbox, a change sets kind, text and detail, a resolve writes one character and a line with no checkbox gets one; a collapsed item's icon counts what is inside it; Escape drops a change being typed, and otherwise closes the list, as a click outside does; every gesture is one step of Undo.
+- **Result 2026-10-23, the Spec 029 thread, `features/029-assessments` on `5e8170afb` and the fixes below, backend 5080 and Vite 5174, headless Chromium through Playwright, light and dark (results read from the DOM, screenshots, the backend log and the file): steps 1 to 9 passed after two defects, found in steps 1 and 5 and fixed with guards.**
+  - Step 1: *REQ-0006* showed the question's icon (`mdi-help-circle-outline`, *Question: Is 30 minutes right for the mobile app?*), *REQ-0003* the remark's though the file writes `remark` in lower case, *ITEM-0006* the idea's; *ITEM-0002*, whose one warning is resolved, showed the add icon, hidden like *REQ-0001*'s until the pointer was over the box. The icon stood 4 pixels from the box's right edge and 6 from its top.
+  - Step 2: the list *Assessments of REQ-0006* held the question with *Resolve*, *Change* and *Remove*. The file then ended `- [ ] Remark REQ-0006: A minute of grace would help on slow networks.` and the icon became the icon for several, with *2*.
+  - Step 2, first run, **found and fixed with a guard**: the icon for several said *2 open notes*, the page's own word, rather than the designer's. It now names the definition's list, *2 open assessments* (`NoteIcon.test.tsx`, *calls several open notes by the name the definition gives its list*, seen failing).
+  - Step 3: the line became `- [ ] Warning REQ-0006: Slow networks drop sessions.` with `  Seen in the field test.` below it.
+  - Step 4: `- [x] Question REQ-0006: ...`, the icon the warning's alone; after *Reopen*, `- [ ] Question REQ-0006: ...`.
+  - Step 5: the warning's two lines were gone. First run, **failed and is fixed with a guard**: Escape left the list open, because the removed note's button had held the focus and the list heard keys only inside itself. Escape now counts wherever the focus is, and opening a change puts the focus in its text (`NoteIcon.test.tsx`, *closes on Escape when the focus is no longer in it* and *drops a change on Escape and keeps the list*, each seen failing). Second run: the list closed.
+  - Step 6: the line became `- [x] Idea ITEM-0006: Move orders older than a year to cheaper storage.`; a click on *REQ-0009* closed the list.
+  - Step 7: collapsed, *ITEM-0004* showed the question of *REQ-0006* inside it, and its list held that question.
+  - Step 8: the change was dropped and the list stayed open.
+  - Step 9: six steps of Undo, one for each gesture of steps 2 to 6, after which the file was byte-identical to the example and Undo had nothing left.
+  - **Not run in this pass:** the pane of the built-in browser.

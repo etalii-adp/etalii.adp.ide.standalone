@@ -405,6 +405,7 @@
 
 .hs-note-action {
   padding: 0;
+  white-space: nowrap;
   border: 0;
   background: transparent;
   color: var(--color-text-muted);
@@ -430,4 +431,9 @@
 
 .hs-note-kind {
   width: auto;
+}
+
+.hs-note-new .hs-field:not(.hs-note-kind) {
+  flex: 1;
+  min-width: 0;
 }

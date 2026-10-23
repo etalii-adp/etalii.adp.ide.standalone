@@ -118,6 +118,15 @@ describe("the icon of a box's notes", () => {
     expect(two.textContent).toBe("2");
   });
 
+  it("calls several open notes by the name the definition gives its list", () => {
+    // Act.
+    const remarks = { ...definition, notes: { ...definition.notes, words: { ...definition.notes.words, list: "Remarks" } } };
+    render(<HierarchySurface model={model([note("n1", "3", "Doubt"), note("n2", "3", "Aside")])} definition={remarks} onGesture={vi.fn()} />);
+
+    // Assert.
+    expect(iconOf("Cancel an order").getAttribute("aria-label")).toBe("2 open remarks");
+  });
+
   it("counts every open note inside a collapsed section on its icon, and only its own while it is open", () => {
     // Arrange.
     const notes = [note("n1", "2", "Aside"), note("n2", "5", "Doubt"), note("n3", "4", "Aside")];
@@ -244,6 +253,39 @@ describe("the list of a box's notes", () => {
 
     // Assert.
     expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("closes on Escape when the focus is no longer in it, as after a removed note took its button away", () => {
+    // Arrange.
+    render(<HierarchySurface model={model([note("n1", "2", "Doubt")])} definition={definition} onGesture={vi.fn()} />);
+    fireEvent.click(iconOf("Take an order"));
+    expect(screen.getByRole("dialog")).toBeDefined();
+
+    // Act.
+    fireEvent.keyDown(document.body, { key: "Escape" });
+
+    // Assert.
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("drops a change on Escape and keeps the list, with the focus in the change or not", () => {
+    // Arrange.
+    const onGesture = vi.fn();
+    render(<HierarchySurface model={model([note("n1", "2", "Doubt")])} definition={definition} onGesture={onGesture} />);
+    fireEvent.click(iconOf("Take an order"));
+    const list = screen.getByRole("dialog");
+    fireEvent.click(within(list).getByRole("button", { name: "Reword" }));
+
+    // Assert: the text is ready for typing.
+    expect(document.activeElement).toBe(within(list).getByRole("textbox", { name: "Text about [2]" }));
+
+    // Act.
+    fireEvent.keyDown(document.body, { key: "Escape" });
+
+    // Assert.
+    expect(within(list).queryByRole("textbox", { name: "Text about [2]" })).toBeNull();
+    expect(screen.getByRole("dialog")).toBeDefined();
+    expect(onGesture).not.toHaveBeenCalled();
   });
 
   it("only shows the notes of a document that cannot be changed", () => {
