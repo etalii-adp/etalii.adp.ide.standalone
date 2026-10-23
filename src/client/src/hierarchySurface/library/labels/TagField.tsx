@@ -1,11 +1,10 @@
 import { type KeyboardEvent, useEffect, useRef, useState } from "react";
 import { SearchList } from "@client/components/SearchList";
-import type { TableColumn } from "@client/table/library/api/tableModel";
-import type { TableGesture } from "@client/table/library/api/tableEvents";
 import { OptionTag } from "@client/table/library/cells/OptionTag";
-import { OptionsEditor, USES_PREFIX } from "@client/table/library/header/OptionsEditor";
+import { OptionsEditor } from "@client/table/library/header/OptionsEditor";
 import type { HierarchySurfaceNode, HierarchySurfaceOption } from "../api/hierarchySurfaceModel";
 import type { HierarchySurfaceLabelEdit } from "../definition/hierarchySurfaceDefinition";
+import { listColumn, listRaise, lowerAscii as lower, valuesOf } from "./listEditing";
 
 /** The class of the field's list, which a press outside it closes. */
 export const TAG_FIELD_LIST = "hs-tag-list";
@@ -27,14 +26,6 @@ export interface TagFieldProps {
   /** Whether the values and the list can be changed: false while the document cannot be. */
   canEdit: boolean;
   onGesture: (operation: string, targetId: string, params: Readonly<Record<string, string>>) => unknown;
-}
-
-/** CEL's `lowerAscii`, as the specification compares a label's values with its members. */
-const lower = (text: string) => text.replace(/[A-Z]/g, (letter) => letter.toLowerCase());
-
-/** The values of `label` that `node` carries. */
-export function valuesOf(node: HierarchySurfaceNode, label: string): readonly string[] {
-  return node.labels.find((values) => values.label === label)?.values ?? [];
 }
 
 /**
@@ -82,38 +73,8 @@ export function TagField({ label, edit, node, options, nodes, open, onOpen, onCl
   const remove = (name: string) => onGesture(operations.remove, node.id, { [params.name]: name });
 
   // The list, as the table's options editor edits a column's: one gesture for each change it raises.
-  const column: TableColumn = {
-    id: label,
-    name: words.list,
-    kind: "options",
-    options: options.map((option) => ({ id: option.id, name: option.name, color: option.colour })),
-    width: 0,
-    visible: true,
-    isTitle: false,
-    wraps: false,
-    settings: Object.fromEntries(options.map((option) => [`${USES_PREFIX}${option.id}`, String(nodes.filter((other) => valuesOf(other, label).some((value) => lower(value) === lower(option.name))).length)])),
-  };
-  const raise = (gesture: TableGesture) => {
-    const target = gesture.targetId ?? "";
-    switch (gesture.kind) {
-      case "renameOption":
-        onGesture(operations.rename, target, { [params.name]: gesture.values?.[0] ?? "" });
-        break;
-      case "recolourOption":
-        onGesture(operations.recolour, target, { [params.colour]: gesture.settings?.colour ?? "" });
-        break;
-      case "moveOption": {
-        // A place in the list is the member it goes after, among those that stay where they are.
-        const others = options.filter((option) => option.id !== target);
-        const at = gesture.index ?? 0;
-        onGesture(operations.move, target, { [params.after]: at === 0 ? "" : (others[at - 1]?.id ?? "") });
-        break;
-      }
-      case "deleteOption":
-        onGesture(operations.delete, target, {});
-        break;
-    }
-  };
+  const column = listColumn(label, words.list, options, nodes);
+  const raise = listRaise({ ...operations, add: undefined, params }, options, onGesture);
 
   // The list keeps its keys: Delete or Enter typed here is not the page's delete or add.
   const onKeyDown = (event: KeyboardEvent) => event.stopPropagation();

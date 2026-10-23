@@ -33,4 +33,21 @@ internal static class RegistrationEdit
             _ => (created.Bytes, open.Bytes, ""),
         };
     }
+
+    /// <summary>
+    /// A list's members as the document has them, by block, implicit ones included: what a first change of an absent block
+    /// writes (DESL 0.2 sections 5.5 and 7.7.2). The filters have no initial or implicit members, so an absent block of
+    /// them has none to write.
+    /// </summary>
+    public static IReadOnlyList<KeyValuePair<string, string>> Members(HierarchicalRequirementDocument document, string block)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        return block switch
+        {
+            "tags" => [.. document.Tags.Select(tag => new KeyValuePair<string, string>(tag.Name, tag.Colour))],
+            "categories" => [.. document.Categories.Select(category => new KeyValuePair<string, string>(category.Name, category.Colour))],
+            "states" => [.. document.States.Select(state => new KeyValuePair<string, string>(state.Name, state.Colour))],
+            _ => [],
+        };
+    }
 }
