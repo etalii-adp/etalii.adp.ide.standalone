@@ -72,6 +72,7 @@ internal static class DislDerivedReader
                 Field(specification, JsonPointer.Append(pointer, "target")),
                 Optional(specification, derived, pointer, "id"),
                 Optional(specification, derived, pointer, "sources"),
+                Optional(specification, derived, pointer, "owner"),
                 [.. DislJson.Members(derived, "attributes").Select(attribute => (attribute.Name, Field(specification, JsonPointer.Append(JsonPointer.Append(pointer, "attributes"), attribute.Name))))]),
             _ => null,
         };
