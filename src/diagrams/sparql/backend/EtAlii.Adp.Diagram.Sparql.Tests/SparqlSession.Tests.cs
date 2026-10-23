@@ -180,6 +180,34 @@ public class SparqlSessionTests : IDisposable
     }
 
     [Fact]
+    public async Task AStoredPositionNamingNoElement_IsLeftInTheRegistration_AndGivesNoFinding()
+    {
+        // Arrange: a position for a variable the query does not have, beside one it does (Requirement 7.3).
+        var body = CopyFixture("groups.rq");
+        var registration = WriteRegistration("groups.rq");
+        await File.AppendAllTextAsync(registration, "layout:\r\n  var:x: 640 480\r\n  var:nobody: 10 20\r\n", TestContext.Current.CancellationToken);
+        var before = await File.ReadAllTextAsync(registration, TestContext.Current.CancellationToken);
+        var validator = _provider.GetServices<IDiagramValidator>().Single(candidate => candidate.Origin == ServiceCollectionAddSparqlExtension.SparqlOrigin);
+        var text = await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken);
+
+        // Act.
+        await using var session = Open(body, registration);
+        var elements = await session.BaselineElementsAsync(TestContext.Current.CancellationToken);
+        var opened = await File.ReadAllTextAsync(registration, TestContext.Current.CancellationToken);
+        var problems = await validator.ValidateAsync(new DiagramValidationRequest(text, "groups.rq", ProjectRoot.From(_root), body, registration), CancellationToken.None);
+        Assert.Equal("", await session.MoveElementToAsync("var:x", 320, 200, CancellationToken.None));
+
+        // Assert: nothing is drawn for it and nothing reports it, opening rewrites nothing, and a move elsewhere keeps it.
+        Assert.DoesNotContain(elements, element => element.Id == "var:nobody");
+        Assert.Equal(640, Assert.Single(elements, element => element.Id == "var:x").X);
+        Assert.Equal(before, opened);
+        Assert.Empty(problems);
+        var moved = await File.ReadAllTextAsync(registration, TestContext.Current.CancellationToken);
+        Assert.Contains("var:x: 320 200", moved, StringComparison.Ordinal);
+        Assert.Contains("var:nobody: 10 20", moved, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task Repositioning_WritesTheRegistrationAndLeavesTheQueryByteIdentical()
     {
         // Arrange.

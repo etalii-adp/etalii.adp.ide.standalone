@@ -46,7 +46,7 @@ public sealed class SparqlElementMapperRecordedTests
     {
         // Arrange.
         var text = Text(name);
-        var projection = new SparqlDocument(SparqlParser.Parse(text), text).Drawing;
+        var projection = new SparqlDocument(SparqlBody.Parse(text)).Drawing;
         var layout = SparqlLayout.Compute(projection, new Dictionary<string, RegistrationPosition>(StringComparer.Ordinal));
 
         // Act.

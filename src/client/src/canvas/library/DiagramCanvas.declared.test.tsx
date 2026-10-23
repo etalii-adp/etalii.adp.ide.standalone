@@ -125,6 +125,33 @@ describe("the shapes and the paint a row could not otherwise reach", () => {
     expect(container.textContent).toContain("when: never");
   });
 
+  it("gives a selectable element of shape `none` something to press", () => {
+    // Its labels carry `pointer-events: none` in canvas.css and its decorations carry it inline,
+    // so without a hit target nothing inside its group can be pressed in a browser: it could
+    // never be selected, and a refused move of it could never be reached. jsdom applies no
+    // stylesheet, which is why this asks for the target itself rather than pressing the label.
+    const { container } = canvasOf(
+      { shape: "none", labels: [{ text: { path: "payload.text" } }], classNames: [{ className: "picked", on: "element", when: { path: "state.selected", is: "true" } }] },
+      { text: "a note" },
+    );
+
+    const hit = container.querySelector('[data-element-id="a"] rect.library-bodyless-hit');
+    expect(hit).not.toBeNull();
+    expect(hit!.getAttribute("width")).toBe("120");
+    expect(hit!.getAttribute("height")).toBe("40");
+
+    fireEvent(hit!, pointer("pointerdown", { button: 0 }));
+    fireEvent(hit!, pointer("pointerup"));
+
+    expect(container.querySelector('[data-element-id="a"].picked, [data-element-id="a"] .picked')).not.toBeNull();
+  });
+
+  it("gives an unselectable element of shape `none` no hit target", () => {
+    const { container } = canvasOf({ shape: "none", selectable: false, labels: [{ text: { path: "payload.text" } }] }, { text: "a note" });
+
+    expect(container.querySelector('[data-element-id="a"] .library-bodyless-hit')).toBeNull();
+  });
+
   it("takes its paint from the model where the document sets it (G10)", () => {
     // c4 stores background and text colour per element, because the notation lets an author
     // set them. `style` names tokens chosen once for the type and cannot say that.

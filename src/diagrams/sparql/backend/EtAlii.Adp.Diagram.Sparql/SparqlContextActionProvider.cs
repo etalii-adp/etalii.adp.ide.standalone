@@ -15,7 +15,7 @@ namespace EtAlii.Adp.Diagram.Sparql;
 /// <para>
 /// <b>The definition declares no operation</b>, so the menu it derives for every element is empty, which a parity test
 /// holds over the corpus (sparql-disl-fbl, task 8). The refusal is the sentence the module's binding gives for
-/// <c>readOnly</c> once the query is read through it (task 9); until then it is written here.
+/// <c>readOnly</c>, which the query is read through (<see cref="SparqlBody.Binding"/>).
 /// </para>
 /// <para>
 /// <b>It stays off <see cref="DiagramActionProvider{TBody, TModel}"/></b> (code-structure T099): what
@@ -26,9 +26,8 @@ namespace EtAlii.Adp.Diagram.Sparql;
 /// </remarks>
 public sealed class SparqlContextActionProvider : IContextActionProvider
 {
-    /// <summary>What an action arriving anyway is told.</summary>
-    public const string NoActionsReason =
-        "A query diagram offers no edits: it reads the .rq file, which is edited in a text editor.";
+    /// <summary>What an action arriving anyway is told: the binding's <c>readOnly</c> sentence.</summary>
+    public static string NoActionsReason => SparqlBody.Binding.ReadOnly!;
 
     /// <inheritdoc />
     public ContextScope Scope => ContextScope.DiagramElement;
