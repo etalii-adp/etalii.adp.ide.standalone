@@ -21,7 +21,7 @@ namespace EtAlii.Adp.Diagram.DotNetDependencyGraph.Tests.Parity;
 public sealed class DotNetBuilderParityTests
 {
     /// <summary>The corpus, as the transcript names it.</summary>
-    public static TheoryData<string> Solutions() => [.. DotNetTranscript.Corpus()];
+    public static TheoryData<string> Solutions() => [.. DotNetCorpus.Solutions()];
 
     /// <summary>The hand-built graphs, by name.</summary>
     public static TheoryData<string> Graphs() => [.. DotNetTranscript.HandBuiltGraphs().Select(graph => graph.Name)];
@@ -32,10 +32,10 @@ public sealed class DotNetBuilderParityTests
     {
         // Arrange.
         var body = DotNetBody.Open(
-            Path.Combine(DotNetTranscript.SourceFolder, solution),
+            Path.Combine(DotNetCorpus.SourceFolder, solution),
             new SolutionReader(),
             new ProjectReader(),
-            new PackageDescriptionReader(DotNetTranscript.FixtureCache));
+            new PackageDescriptionReader(DotNetCorpus.FixtureCache));
 
         // Act.
         var built = body.Disl;
