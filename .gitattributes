@@ -164,6 +164,9 @@ src/diagrams/*/definition/*.fbl -text
 *.des   -text
 src/designers/*/definition/*.fbl -text
 src/designers/*/examples/** -text
+# A designer's companion `.md` is vendored beside its specification and held by the same provenance hash; by
+# folder, because every other `.md` in the tree is ordinary text.
+src/designers/*/definition/*.md -text
 
 # `.yml` is deliberately NOT marked repo-wide, however byte-sensitive the Azure Pipelines module's
 # fixtures are: it is far too common an extension, and a blanket rule would catch every workflow,

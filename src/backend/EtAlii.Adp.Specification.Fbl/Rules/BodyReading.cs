@@ -278,6 +278,13 @@ internal sealed class BodyReading
                         if (problem is not null) error ??= problem;
                         if (holds is not true) continue;
                     }
+                    if (Options.UnreadableTypes.Contains(rule.Type))
+                    {
+                        // The specification maps the rule's type as unreadable (FBL 0.7 §4.8, DESL §5.2): the entry
+                        // is the rule's, an unreadable entry, and what it holds is not looked into.
+                        error = "it is in no form this file's entries are written in.";
+                        break;
+                    }
                     var element = new ReadElement { Rule = rule, Candidate = candidate, Line = Text.Position(entry.Own.Start).Line };
                     ReadSlots(element);
                     if (element.Mistyped is { } mistyped)
@@ -455,7 +462,8 @@ internal sealed class BodyReading
         var rule = element.Rule;
         foreach ((string name, AttributeBinding binding) in rule.Attributes)
         {
-            var read = ReadSlot(element.Candidate, binding, element);
+            var many = binding is { Word: not null, Flag: false } && Options.Many?.Invoke(rule.Type, name) == true;
+            var read = ReadSlot(element.Candidate, binding, element, many);
             element.Slots[name] = read;
             object? value = read.Present ? read.Value : null;
             var mode = ReadModes.Of(rule, name, binding, Options);
@@ -464,7 +472,7 @@ internal sealed class BodyReading
             if (scalar && mode == ReadMode.Text) value = read.Written;
             if (read.Present && binding.Map is { } map && value is string wire)
             {
-                var mapped = map.FirstOrDefault(m => m.Key == wire);
+                var mapped = map.FirstOrDefault(m => string.Equals(m.Key, wire, rule.CaseInsensitive ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal));
                 if (mapped.Key is not null)
                 {
                     value = mapped.Value;
@@ -517,9 +525,9 @@ internal sealed class BodyReading
         return replacement;
     }
 
-    public SlotRead ReadSlot(Candidate candidate, Slot slot, ReadElement element)
+    public SlotRead ReadSlot(Candidate candidate, Slot slot, ReadElement element, bool many = false)
     {
-        var read = ReadSlotUnchecked(candidate, slot, element);
+        var read = many ? Family.ReadMany(candidate, slot) : ReadSlotUnchecked(candidate, slot, element);
         var reason = (slot as AttributeBinding)?.ReadOnly ?? element.Rule.ReadOnly ?? Binding.ReadOnly;
         if (reason is not null && read.Writable) read = read with { Writable = false, Reason = reason };
         return read;

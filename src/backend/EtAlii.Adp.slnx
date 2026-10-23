@@ -26,6 +26,8 @@
   <Project Path="EtAlii.Adp.Designer.Tests/EtAlii.Adp.Designer.Tests.csproj" />
   <Project Path="EtAlii.Adp.Editor.Tests/EtAlii.Adp.Editor.Tests.csproj" />
   <Folder Name="/designers/">
+    <Project Path="../designers/hierarchical-requirement/backend/EtAlii.Adp.Designer.HierarchicalRequirement/EtAlii.Adp.Designer.HierarchicalRequirement.csproj" />
+    <Project Path="../designers/hierarchical-requirement/backend/EtAlii.Adp.Designer.HierarchicalRequirement.Tests/EtAlii.Adp.Designer.HierarchicalRequirement.Tests.csproj" />
     <Project Path="../designers/knowledge/backend/EtAlii.Adp.Designer.Knowledge/EtAlii.Adp.Designer.Knowledge.csproj" />
     <Project Path="../designers/knowledge/backend/EtAlii.Adp.Designer.Knowledge.Tests/EtAlii.Adp.Designer.Knowledge.Tests.csproj" />
   </Folder>

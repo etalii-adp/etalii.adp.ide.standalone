@@ -142,6 +142,13 @@ internal sealed class BulletsFamily(BodyText text, FblBinding binding, FblOption
             Plan.Refuse($"The binding gives no form to write a new {rule.Type} in.");
             return;
         }
+        if (rule.Insert.Place == InsertPlace.AfterHeader && rule.Within is null)
+        {
+            // A statement written right after the line the header matched, as a line of its own (FBL 0.7 §6.2).
+            var afterHeader = Text.Lines[0].End;
+            plan.Add(SpliceOperation.InsertEntry, afterHeader, afterHeader, AsLines(Render(emit, rule, request.Values, request.Id, null, null), afterHeader, false, NewlineAt(afterHeader)));
+            return;
+        }
         if (rule.Insert.Place is not (InsertPlace.AfterLast or InsertPlace.End or InsertPlace.LastChild or InsertPlace.Start))
         {
             Plan.Refuse($"A bullets body cannot place a new entry '{WireName.Of(rule.Insert.Place)}'.");

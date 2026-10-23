@@ -348,4 +348,173 @@ public class SparqlParserTests
         // Assert.
         Assert.Contains("never closed", exception.Message);
     }
+
+    // -- Where each entry was read from (sparql-disl-fbl, Requirement 3.3, findings B3 and B4) --------
+
+    /// <summary>Every query of the corpus that parses, by its path relative to <c>src/</c>.</summary>
+    public static TheoryData<string> CorpusQueries()
+    {
+        var source = RepositoryPaths.Under("src");
+        var data = new TheoryData<string>();
+        foreach (var path in ((string[])
+                 [
+                     IoPath.Combine(source, "diagrams", "sparql", "backend", "EtAlii.Adp.Diagram.Sparql.Tests", "Fixtures"),
+                     IoPath.Combine(source, "diagrams", "sparql", "examples"),
+                     IoPath.Combine(source, "examples", "diagrams", "sparql"),
+                 ])
+                 .SelectMany(folder => Directory.GetFiles(folder, "*.rq", SearchOption.AllDirectories))
+                 .Order(StringComparer.Ordinal))
+        {
+            if (SparqlParser.Outcome(File.ReadAllText(path)).IsUsable)
+            {
+                data.Add(IoPath.GetRelativePath(source, path).Replace('\\', '/'));
+            }
+        }
+
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(CorpusQueries))]
+    public void EveryEntry_CarriesTheSpanAndTheLineItWasReadFrom_InDocumentOrder(string relative)
+    {
+        // Arrange.
+        var text = File.ReadAllText(IoPath.Combine(RepositoryPaths.Under("src"), relative));
+
+        // Act.
+        var model = SparqlParser.Parse(text);
+
+        // Assert: a prefix declaration is its PREFIX and its IRI, in order.
+        AssertInOrder(model.Prefixes.Select(prefix => prefix.Span));
+        foreach (var prefix in model.Prefixes)
+        {
+            var written = AssertSpan(text, prefix.Span);
+            Assert.StartsWith("PREFIX", written, StringComparison.OrdinalIgnoreCase);
+            Assert.EndsWith(">", written, StringComparison.Ordinal);
+            Assert.Equal(prefix.Line, prefix.Span.Line);
+        }
+
+        foreach (var scope in Scopes(model))
+        {
+            AssertScope(text, scope);
+        }
+    }
+
+    [Fact]
+    public void TheCorpus_HoldsTheQueriesTheSpanTestReads()
+    {
+        // Arrange & act: the theory above reads nothing if the corpus is not where it looks.
+        var queries = CorpusQueries();
+
+        // Assert: the 31 files less broken.rq and update-document.rq, and the eight finding fixtures.
+        Assert.True(queries.Count >= 29, $"Only {queries.Count} queries were found.");
+    }
+
+    [Fact]
+    public void AFileThatDoesNotParse_NamesItsColumnBesideItsLine()
+    {
+        // Arrange: broken.rq stops at 'undeclared:p', the third column of its fourth line.
+        var text = File.ReadAllText(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", "broken.rq"));
+
+        // Act.
+        var exception = Assert.Throws<SparqlParseException>(() => SparqlParser.Parse(text));
+
+        // Assert.
+        Assert.Equal(4, exception.Line);
+        Assert.Equal(6, exception.Column);
+    }
+
+    [Fact]
+    public void ATokenizerRefusal_NamesItsColumnBesideItsLine()
+    {
+        // Arrange & act: the string opens at the ninth character of the second line.
+        var exception = Assert.Throws<SparqlParseException>(() => SparqlParser.Parse("SELECT * WHERE {\r\n  ?s ?p \"a\rb\" .\r\n}\r\n"));
+
+        // Assert.
+        Assert.Equal(2, exception.Line);
+        Assert.Equal(9, exception.Column);
+    }
+
+    private static IEnumerable<GroupScope> Scopes(SparqlQueryModel model)
+    {
+        static IEnumerable<GroupScope> Walk(GroupScope scope) => [scope, .. scope.Children.SelectMany(Walk)];
+        return model.Template is { } template ? [.. Walk(model.Where), .. Walk(template)] : Walk(model.Where);
+    }
+
+    private static void AssertScope(string text, GroupScope scope)
+    {
+        AssertInOrder(scope.Children.Select(child => child.Span));
+        AssertInOrder(scope.Constraints.Select(constraint => constraint.Span));
+        AssertInOrder(scope.SubSelects.Select(subSelect => subSelect.Span));
+
+        // A DESCRIBE with no where clause has a root group with no text, and nothing in it.
+        if (scope.Span.Line == 0)
+        {
+            Assert.Empty(scope.Patterns);
+            return;
+        }
+
+        var written = AssertSpan(text, scope.Span);
+        Assert.EndsWith("}", written, StringComparison.Ordinal);
+        Assert.Matches(scope.Kind switch
+        {
+            GroupScopeKind.Optional => "^(?i:OPTIONAL)",
+            GroupScopeKind.Minus => "^(?i:MINUS)",
+            GroupScopeKind.Graph => "^(?i:GRAPH)",
+            GroupScopeKind.Service => "^(?i:SERVICE)",
+            _ => "^\\{",
+        }, written);
+
+        foreach (var child in scope.Children)
+        {
+            Assert.InRange(child.Span.Start, scope.Span.Start, scope.Span.End);
+            Assert.InRange(child.Span.End, scope.Span.Start, scope.Span.End);
+        }
+
+        foreach (var constraint in scope.Constraints)
+        {
+            Assert.Equal(constraint.Text, AssertSpan(text, constraint.Span));
+        }
+
+        foreach (var subSelect in scope.SubSelects)
+        {
+            Assert.Equal(subSelect.Text, AssertSpan(text, subSelect.Span));
+        }
+
+        foreach (var pattern in scope.Patterns)
+        {
+            var span = AssertSpan(text, pattern.Span);
+            Assert.InRange(pattern.Span.Start, scope.Span.Start, scope.Span.End);
+            Assert.InRange(pattern.Span.End, scope.Span.Start, scope.Span.End);
+            if (pattern.Subject is not AnonymousTerm)
+            {
+                Assert.StartsWith(pattern.Subject.AsWritten, span, StringComparison.Ordinal);
+            }
+
+            if (pattern.Object is not AnonymousTerm && pattern.Object is not IriTerm { Iri: SparqlVocabulary.Nil })
+            {
+                Assert.EndsWith(pattern.Object.AsWritten, span, StringComparison.Ordinal);
+            }
+
+            if (pattern.Predicate is not IriTerm { Iri: SparqlVocabulary.First or SparqlVocabulary.Rest })
+            {
+                Assert.Contains(pattern.Predicate.AsWritten, span, StringComparison.Ordinal);
+            }
+        }
+    }
+
+    /// <summary>The text <paramref name="span"/> covers, after checking that it lies in the text, is not empty and starts on its line.</summary>
+    private static string AssertSpan(string text, SparqlSpan span)
+    {
+        Assert.InRange(span.Start, 0, text.Length);
+        Assert.InRange(span.End, span.Start + 1, text.Length);
+        Assert.Equal(text[..span.Start].Count(character => character == '\n') + 1, span.Line);
+        return span.Of(text);
+    }
+
+    private static void AssertInOrder(IEnumerable<SparqlSpan> spans)
+    {
+        var starts = spans.Select(span => span.Start).ToList();
+        Assert.Equal(starts.Order(), starts);
+    }
 }
