@@ -6,9 +6,8 @@ import { libraryShapeOf } from "./shapeCatalog";
 /**
  * Text a notation writes as it is: a label whose text is a literal (DISL §2.5b, a Bindable string is
  * shown as written), a mark badge that shows a glyph of text at its corner moved by its offset (§6.9),
- * and the `text` shape, a node that is only its label (Appendix B.2). The SPARQL query diagram was the
- * first to state all three: a subquery's "subquery" line, the arrow on a projected variable, and a
- * FILTER drawn as its text.
+ * and the `text` shape, a node that is only its label (Appendix B.2): a fixed second line under a
+ * node's name, an arrow marking a node at its corner, and a constraint drawn as nothing but its text.
  */
 
 function specOf(): DislDocument {
