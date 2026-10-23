@@ -211,4 +211,35 @@ public class DerivedNodeTypesTests
         var counted = model.Diagram.NodesOfType("Counted");
         Assert.Equal([2L, 1L, 2L], counted.Select(node => node.ValueOf("count")));
     }
+
+    /// <summary>
+    /// A derived attribute may be called <c>display</c>, a name the language gives a data type's summary (§4.4) too:
+    /// under a derived type's <c>attributes</c> it is an Expression of the deriveItem context like any other.
+    /// </summary>
+    private static readonly DislSpecification Displayed = Specifications.Loaded(Specifications.With("""
+        "disl": "0.3",
+        "metamodel": {
+          "types": {
+            "Word": { "attributes": { "text": { "type": "string" } } },
+            "Shout": {
+              "attributes": { "display": { "type": "string" } },
+              "derived": { "from": "diagram.nodesOfType('Word')", "id": "'shout:' + item.id", "attributes": { "display": "item.text + '!'" } }
+            }
+          }
+        }
+        """));
+
+    [Fact]
+    public void ADerivedAttributeCalledDisplay_IsComputedLikeAnyOther()
+    {
+        // Act.
+        var model = DislModelBuilder.From(new FblModel(
+        [
+            new FblElement("w", true, "Word", "word", false, new Dictionary<string, object?> { ["text"] = "hey" }, null, null, null, null, new Span(0, 0), 1),
+        ], [], false), Displayed);
+
+        // Assert.
+        Assert.Empty(model.Findings);
+        Assert.Equal("hey!", Assert.Single(model.Diagram.NodesOfType("Shout")).ValueOf("display"));
+    }
 }

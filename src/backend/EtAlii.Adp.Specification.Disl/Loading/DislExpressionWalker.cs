@@ -209,7 +209,8 @@ internal static partial class DislExpressionWalker
             if (key == "default" && path is [.., "attributes", _]) return frame.In(DislContext.Create).As(Mode.Literal);
             // An attribute's read-only reasons (§4.3) are Reasons in the element context.
             if (key == "readOnlyReasons" && path is [.., "attributes", _]) return frame.In(DislContext.Element).As(Mode.Literal);
-            if (key == "display") return frame.In(DislContext.DataTypeDisplay).As(Mode.Literal);
+            // A data type's display (§4.4); a derived attribute that happens to be called display is the derived type's, below.
+            if (key == "display" && path is not [.., "derived", "attributes"]) return frame.In(DislContext.DataTypeDisplay).As(Mode.Literal);
 
             // A derived type (§4.11): from is the derive context, every other expression the deriveItem context.
             if (key == "derived" && path is [.., "types" or "relations", _])

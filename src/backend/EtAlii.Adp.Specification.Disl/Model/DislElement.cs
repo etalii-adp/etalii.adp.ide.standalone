@@ -72,6 +72,28 @@ public sealed class DislElement : ICelObject
     /// <summary>A relation's target; null for a node, and for a relation without one (§4.9).</summary>
     public DislElement? Target { get; internal init; }
 
+    /// <summary>
+    /// The element a relation belongs to (§4.11.3): its derived <c>owner</c> when it states one, else the nearest
+    /// common ancestor of its ends; a node's parent. Null for the diagram. An ancestor is never the element itself
+    /// (<see cref="Ancestors"/>), so a relation from a node to its own child belongs to that node's parent.
+    /// </summary>
+    internal DislElement? Owner => !Type.IsRelation ? Parent : OwnerIsStated ? StatedOwner : CommonAncestor();
+
+    /// <summary>A derived relation's stated <c>owner</c> (§4.11.3); null for the diagram, or when it states none.</summary>
+    internal DislElement? StatedOwner { get; init; }
+
+    /// <summary>Whether a derived relation states its <c>owner</c> (§4.11.3), so that its ends do not decide it.</summary>
+    internal bool OwnerIsStated { get; init; }
+
+    /// <summary>The nearest ancestor of a relation's source that is an ancestor of its target too; the source's parent without a target.</summary>
+    private DislElement? CommonAncestor()
+    {
+        if (Source is null) return null;
+        if (Target is null) return Source.Parent;
+        var ofTarget = Target.Ancestors().ToHashSet();
+        return Source.Ancestors().FirstOrDefault(ofTarget.Contains);
+    }
+
     /// <summary>Whether the element is derived (§4.11) rather than stored.</summary>
     public bool IsDerived { get; internal init; }
 
@@ -261,7 +283,7 @@ public sealed class DislElement : ICelObject
             "derived" => IsDerived,
             "sources" => List(Sources),
             "parent" when !Type.IsRelation => Parent,
-            "owner" => Parent is null ? Diagram : Parent,
+            "owner" => (object?)Owner ?? Diagram,
             "slot" when !Type.IsRelation => Slot ?? "",
             "children" when !Type.IsRelation => List(_children),
             "incoming" when !Type.IsRelation => List(Incoming),
