@@ -14,14 +14,14 @@ namespace EtAlii.Adp.Workspace;
 /// </remarks>
 public sealed class TableStreams
 {
-    private readonly ConcurrentDictionary<(ShortGuid WatchId, ShortGuid StreamId), IDesignerSession> _sessions = new();
+    private readonly ConcurrentDictionary<(ShortGuid WatchId, ShortGuid StreamId), ITableDesignerSession> _sessions = new();
 
-    public void Add(ShortGuid watchId, ShortGuid streamId, IDesignerSession session) => _sessions[(watchId, streamId)] = session;
+    public void Add(ShortGuid watchId, ShortGuid streamId, ITableDesignerSession session) => _sessions[(watchId, streamId)] = session;
 
-    public IDesignerSession? Find(ShortGuid watchId, ShortGuid streamId) => _sessions.GetValueOrDefault((watchId, streamId));
+    public ITableDesignerSession? Find(ShortGuid watchId, ShortGuid streamId) => _sessions.GetValueOrDefault((watchId, streamId));
 
-    public void Remove(ShortGuid watchId, ShortGuid streamId, IDesignerSession session) =>
-        _sessions.TryRemove(new KeyValuePair<(ShortGuid, ShortGuid), IDesignerSession>((watchId, streamId), session));
+    public void Remove(ShortGuid watchId, ShortGuid streamId, ITableDesignerSession session) =>
+        _sessions.TryRemove(new KeyValuePair<(ShortGuid, ShortGuid), ITableDesignerSession>((watchId, streamId), session));
 
     /// <summary>How many table streams are running, across all connections.</summary>
     public int Count => _sessions.Count;
