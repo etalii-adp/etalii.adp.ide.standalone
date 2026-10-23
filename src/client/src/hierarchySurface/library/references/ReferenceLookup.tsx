@@ -27,6 +27,8 @@ export function ReferenceLookup({ candidates, onPick, onClose, onLeave }: Refere
 
   useEffect(() => {
     ref.current?.querySelector<HTMLInputElement>("input")?.focus();
+    // Opened near the page's bottom edge, it would stand below what the page shows.
+    ref.current?.scrollIntoView?.({ block: "nearest" });
   }, []);
 
   return (

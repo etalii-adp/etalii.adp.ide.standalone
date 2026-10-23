@@ -23,19 +23,29 @@ export function ReferenceBox({ written, target, onReveal }: ReferenceBoxProps) {
       </span>
     );
   }
+  // A span rather than a button: a button is laid out as one block, which a long title pushes onto a line of its own,
+  // where a span flows with the text around it.
   return (
-    <button
-      type="button"
+    <span
+      role="button"
+      tabIndex={0}
       className="hs-reference"
       title={`Show ${target.number}`}
       onClick={(event) => {
         event.stopPropagation();
         onReveal(target.id);
       }}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          event.stopPropagation();
+          onReveal(target.id);
+        }
+      }}
       onDoubleClick={(event) => event.stopPropagation()}
     >
       <span className="hs-number">{target.number}</span> {target.title}
-    </button>
+    </span>
   );
 }
 

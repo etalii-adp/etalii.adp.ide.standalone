@@ -220,6 +220,21 @@ describe("a reference in a description", () => {
     expect(boxOf("Refund in full").getAttribute("aria-selected")).toBe("true");
   });
 
+  it("shows its target from the keyboard too, by Enter on the box", () => {
+    // Arrange.
+    const onSelectNode = vi.fn();
+    render(<HierarchySurface model={model(false)} definition={definition} onGesture={vi.fn()} onSelectNode={onSelectNode} />);
+    const box = within(boxOf("Ship it")).getByRole("button", { name: "N-5 Refund in full" });
+
+    // Act.
+    box.focus();
+    fireEvent.keyDown(box, { key: "Enter" });
+
+    // Assert.
+    expect(box.tabIndex).toBe(0);
+    expect(onSelectNode).toHaveBeenLastCalledWith("5");
+  });
+
   it("does not open the description for typing when its box is selected", () => {
     // Arrange.
     render(<HierarchySurface model={model(false)} definition={definition} onGesture={vi.fn()} />);
