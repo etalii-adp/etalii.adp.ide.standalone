@@ -364,12 +364,15 @@ public static class DislModelBuilder
             sources = [.. list.OfType<DislElement>()];
         }
 
+        var owner = new StatedOwner(false, null);
+        if (derived.Owner is { } derivedOwner && !run.Owner(derivedOwner.Evaluate(item), out owner)) return;
+
         var attributes = new Dictionary<string, object?>(StringComparer.Ordinal);
         foreach ((string name, DislDerivedField value) in derived.Attributes)
         {
             attributes[name] = value.Evaluate(item);
         }
-        run.Add(id, from, to, attributes, sources);
+        run.Add(id, from, to, attributes, sources, owner);
     }
 
     /// <summary>
@@ -494,10 +497,13 @@ public static class DislModelBuilder
             sources = [.. list.OfType<DislElement>()];
         }
 
+        var owner = new StatedOwner(false, null);
+        if (map.TryGetValue("owner", out var stated) && !run.Owner(stated, out owner)) return;
+
         var attributes = map
             .Where(entry => run.Type.Attributes.ContainsKey(entry.Key))
             .ToDictionary(entry => entry.Key, entry => entry.Value, StringComparer.Ordinal);
-        run.Add(id, from, to, attributes, sources);
+        run.Add(id, from, to, attributes, sources, owner);
     }
 
     private static bool Allows(DislRelationEnd? end, object? value) =>
@@ -632,6 +638,9 @@ public static class DislModelBuilder
     /// One derived relation type's items as they become relations (§4.11.3, §4.9): the variables its expressions
     /// read, the relations it adds, and what it drops, reported once its items are done.
     /// </summary>
+    /// <summary>The <c>owner</c> a derived relation states (§4.11.3): whether it states one, and the node it names, null for the diagram.</summary>
+    private readonly record struct StatedOwner(bool IsStated, DislElement? Element);
+
     private sealed class DerivedItems(DislDiagram diagram, DislType type, List<Finding> findings)
     {
         private readonly HashSet<string> _failures = new(StringComparer.Ordinal);
@@ -674,7 +683,30 @@ public static class DislModelBuilder
         }
 
         /// <summary>Adds the derived relation, unless its id is taken (§4.11.5).</summary>
-        public void Add(string id, DislElement from, DislElement to, Dictionary<string, object?> attributes, IReadOnlyList<DislElement> sources)
+        /// <summary>
+        /// The <c>owner</c> an item states (§4.11.3) as <paramref name="owner"/>: a node, or null for the diagram.
+        /// False, with the item dropped, when it fails or is neither.
+        /// </summary>
+        public bool Owner(object? value, out StatedOwner owner)
+        {
+            owner = new StatedOwner(true, value as DislElement);
+            switch (value)
+            {
+                case null or DislDiagram:
+                    owner = new StatedOwner(true, null);
+                    return true;
+                case DislElement { Type.IsRelation: false }:
+                    return true;
+                case CelError error:
+                    Fail(error.Message);
+                    return false;
+                default:
+                    Fail("the owner of an item is not a node or the diagram");
+                    return false;
+            }
+        }
+
+        public void Add(string id, DislElement from, DislElement to, Dictionary<string, object?> attributes, IReadOnlyList<DislElement> sources, StatedOwner owner)
         {
             if (diagram.ElementById(id) is { } taken)
             {
@@ -690,6 +722,8 @@ public static class DislModelBuilder
                 IsDerived = true,
                 Sources = sources,
                 IdIsStored = false,
+                OwnerIsStated = owner.IsStated,
+                StatedOwner = owner.Element,
             });
         }
 
