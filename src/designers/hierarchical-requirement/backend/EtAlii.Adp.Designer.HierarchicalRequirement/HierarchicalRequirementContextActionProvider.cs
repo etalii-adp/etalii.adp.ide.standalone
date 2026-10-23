@@ -1,7 +1,5 @@
 using EtAlii.Adp.Context;
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
-using EtAlii.Adp.Specification.Fbl.Routing;
 using ContextScope = EtAlii.Adp.Documents.Wire.ContextScope;
 
 namespace EtAlii.Adp.Designer.HierarchicalRequirement;
@@ -92,31 +90,7 @@ internal sealed class HierarchicalRequirementContextActionProvider(IHistoryStack
     public ValueTask<ContextCommitResult> CommitAsync(ContextTarget target, string actionId, string value, string text, CancellationToken cancellationToken) =>
         ValueTask.FromResult(ContextCommitResult.Failed($"'{actionId}' asks nothing to commit."));
 
-    /// <summary>The entry the target names in the requirement document it is in, with the bytes it was read from; null for anything else.</summary>
-    private static Resolved? Resolve(ContextTarget target)
-    {
-        if (target.Scope != ContextScope.DiagramElement || target.ElementId.Length == 0 || !target.ResolvedFullPath.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
-        {
-            return null;
-        }
-
-        byte[] bytes;
-        try
-        {
-            bytes = SharedDocumentReader.ReadAllBytes(target.ResolvedFullPath);
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            return null;
-        }
-
-        var name = Path.GetFileName(target.ResolvedFullPath);
-        if (!BodyClaim.Claims(HierarchicalRequirementDefinition.Binding, name, bytes)) return null;
-        var read = HierarchicalRequirementBody.Read(bytes, name);
-        if (read.Document.ReadOnlyReason.Length > 0) return null;
-        var ids = HierarchicalRequirementSurfaceMapper.NodeIds(read.Document.Entries);
-        return read.Document.Entries.FirstOrDefault(entry => ids[entry] == target.ElementId) is { } found ? new Resolved(found, bytes) : null;
-    }
-
-    private sealed record Resolved(RequirementEntry Entry, byte[] Bytes);
+    /// <summary>The entry the target names in the requirement document it is in, with the bytes it was read from; null for anything else, and for a file that cannot be changed.</summary>
+    private static HierarchicalRequirementEntries.Found? Resolve(ContextTarget target) =>
+        target.Scope == ContextScope.DiagramElement && HierarchicalRequirementEntries.Find(target.ResolvedFullPath, target.ElementId) is { Document.ReadOnlyReason.Length: 0 } found ? found : null;
 }
