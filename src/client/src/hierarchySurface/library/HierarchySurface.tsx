@@ -13,6 +13,8 @@ import { FindingList } from "./FindingList";
 import { HierarchySurfaceBox } from "./HierarchySurfaceBox";
 import { HierarchySurfaceTrail } from "./HierarchySurfaceTrail";
 import { ancestorsOf, descendantsOf, type HierarchyIndex, indexOf, levelsBelow, levelsThatFit } from "./layout";
+import { FilterBar } from "./narrowing/FilterBar";
+import { type Narrowing, narrowingOf, parseQuery, queryText, sortOf, unhiding, withSort } from "./narrowing/filterQuery";
 import { NoteList } from "./notes/NoteList";
 import { noteMarkOf } from "./notes/noteMark";
 import { revealOf } from "./references/reveal";
@@ -61,7 +63,11 @@ const isLineId = (id: string) => id.startsWith("line/");
  * opens the list of its notes, one box's at a time, where they are added, changed, resolved and removed (FR-015, FR-016).
  * `#` in a description refers to another node, which stands there as a box; selecting the box shows its target, changing
  * focus and expanding what hides it, and writes nothing but the collapse the registration keeps (FR-017, FR-018). A
- * label's values are picked, created and taken off in a field below the title, and its list is edited from there (FR-011).
+ * label's values are picked, created and taken off in a field below the title, and its list is edited from there (FR-011);
+ * a label of one value is picked from its list, edited from there too. The bar above the page narrows it by a query
+ * and sorts the entries within each level, writing nothing, and stores the query under a name (FR-019, FR-020, FR-048).
+ * A finding stays listed whatever the query hides, and selecting it, as a reference box, shows its node, taking out of
+ * the query the words that hide it (FR-021).
  *
  * It knows no designer type: which type is a level, which an entry, which labels they carry, which icon a note shows
  * and which operation each gesture sends are the definition's.
@@ -78,6 +84,10 @@ export function HierarchySurface({ model, definition, onGesture, onShortcut, sel
   const [deleting, setDeleting] = useState<{ nodeId: string; question: string } | null>(null);
   // The node whose list of notes is open; one at a time.
   const [openNotes, setOpenNotes] = useState("");
+  // The query the bar applies, as typed; it is the page's own, never sent until it is stored.
+  const [query, setQuery] = useState("");
+  const words = useMemo(() => parseQuery(query, definition.labels), [query, definition.labels]);
+  const narrowing = useMemo(() => narrowingOf(model, index, words), [model, index, words]);
   const pageRef = useRef<HTMLDivElement>(null);
   const fieldRef = useRef(field);
   fieldRef.current = field;
@@ -187,12 +197,19 @@ export function HierarchySurface({ model, definition, onGesture, onShortcut, sel
     [onSelectNode],
   );
 
-  /** Shows the node a reference box names: the focus that keeps it in sight, every level above it expanded, selected. */
+  /**
+   * Shows the node a reference box or a finding names: the query without the words that hide it, the focus that keeps
+   * it in sight, every level above it expanded, selected.
+   */
   const reveal = useCallback(
     (targetId: string) => {
       const plan = revealOf(index, targetId, focused, fit, isCollapsed);
       if (plan === null) {
         return;
+      }
+      const unhidden = unhiding(model, index, words, targetId);
+      if (unhidden.length !== words.length) {
+        setQuery(queryText(unhidden));
       }
       setFocus(plan.focus);
       for (const level of plan.expand) {
@@ -201,7 +218,7 @@ export function HierarchySurface({ model, definition, onGesture, onShortcut, sel
       select(targetId);
       revealing.current = targetId;
     },
-    [index, focused, fit, isCollapsed, toggle, select],
+    [model, index, words, focused, fit, isCollapsed, toggle, select],
   );
 
   // Once the revealed node's box is on the page, which can take the model an expand brings, it is scrolled to.
@@ -293,7 +310,16 @@ export function HierarchySurface({ model, definition, onGesture, onShortcut, sel
     }
   };
 
-  const roots = focused === "" ? (index.children.get("") ?? []) : [index.byId.get(focused)!];
+  const roots = (focused === "" ? (index.children.get("") ?? []) : [index.byId.get(focused)!]).filter(narrowing.shows);
+  const entries = model.nodes.filter((node) => node.role === "entry");
+  const filters = definition.filters;
+  const sortKeys = useMemo(
+    () => [
+      ...(filters?.sortKeys ?? []),
+      ...definition.labels.filter((label) => !label.many).map((label) => ({ key: label.label, label: label.pick?.words.value ?? label.label })),
+    ],
+    [filters, definition.labels],
+  );
   const trail = focused === "" ? [] : [...ancestorsOf(index, focused), index.byId.get(focused)!];
 
   return (
@@ -320,7 +346,22 @@ export function HierarchySurface({ model, definition, onGesture, onShortcut, sel
           <span className="mdi mdi-lock-outline" aria-hidden="true" /> {model.readOnlyReason}
         </p>
       )}
-      <FindingList findings={model.findings} onSelect={select} />
+      {filters !== undefined && (
+        <FilterBar
+          text={query}
+          onChange={setQuery}
+          sort={sortOf(words)}
+          onSort={(key) => setQuery(queryText(withSort(words, key)))}
+          sortKeys={sortKeys}
+          stored={model.filters}
+          filters={filters}
+          shown={entries.filter(narrowing.shows).length}
+          total={entries.length}
+          canEdit={!readOnly}
+          onGesture={onGesture}
+        />
+      )}
+      <FindingList findings={model.findings} onSelect={reveal} />
       <div className="hs-page" ref={pageRef} role="tree" aria-label={model.title} tabIndex={0}>
         {roots.map((node) => (
           <NodeView
@@ -344,6 +385,7 @@ export function HierarchySurface({ model, definition, onGesture, onShortcut, sel
             onGesture={onGesture}
             readOnly={readOnly}
             onReveal={reveal}
+            narrowing={narrowing}
           />
         ))}
         {!readOnly && focused === "" && <AddControl adds={[definition.operations.addTopLevel]} within="" onAdd={(what) => addTo("", what)} />}
@@ -386,10 +428,12 @@ interface NodeViewProps {
   onGesture: HierarchySurfaceProps["onGesture"];
   readOnly: boolean;
   onReveal: (id: string) => void;
+  /** What the bar's query leaves of the page, and the order of a level's entries. */
+  narrowing: Narrowing;
 }
 
 function NodeView(props: NodeViewProps) {
-  const { node, depth, fit, index, model, definition, selected, isCollapsed, onToggle, onSelect, onFocus, editingOf, onAdd, drag, openNotes, onToggleNotes, onGesture, readOnly, onReveal } = props;
+  const { node, depth, fit, index, model, definition, selected, isCollapsed, onToggle, onSelect, onFocus, editingOf, onAdd, drag, openNotes, onToggleNotes, onGesture, readOnly, onReveal, narrowing } = props;
   const collapsed = isCollapsed(node);
   const level = node.role === "level";
   // A collapsed level's mark counts every note inside it, since nothing inside it shows.
@@ -399,8 +443,8 @@ function NodeView(props: NodeViewProps) {
   );
   const notes = noteMarkOf(model.notes, about, definition);
   const notesOpen = openNotes === node.id;
-  const children = index.children.get(node.id) ?? [];
-  const entries = children.filter((child) => child.role !== "level");
+  const children = (index.children.get(node.id) ?? []).filter(narrowing.shows);
+  const entries = narrowing.order(children.filter((child) => child.role !== "level"));
   const subLevels = children.filter((child) => child.role === "level");
   const showsSubLevels = depth + 1 < fit;
   const hiddenLevels = level && !showsSubLevels ? levelsBelow(index, node.id) : 0;

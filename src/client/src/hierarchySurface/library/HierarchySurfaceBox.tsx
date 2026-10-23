@@ -2,11 +2,13 @@ import { type ReactNode, useState } from "react";
 import type { PointerPressWiring } from "@client/canvas/gesture/usePointerGesture";
 import { OptionTag } from "@client/table/library/cells/OptionTag";
 import type { HierarchySurfaceNode, HierarchySurfaceOptionList } from "./api/hierarchySurfaceModel";
+import { ClassificationPicker } from "./classification/ClassificationPicker";
 import { CollapseToggle } from "./CollapseToggle";
 import { FOCUS_ICON, HIDDEN_LEVELS_ICON, type HierarchySurfaceDefinition } from "./definition/hierarchySurfaceDefinition";
 import type { EntryEditing } from "./editing/entryEditing";
 import { EntryTextField } from "./editing/EntryTextField";
-import { TagField, valuesOf } from "./labels/TagField";
+import { valuesOf } from "./labels/listEditing";
+import { TagField } from "./labels/TagField";
 import { NoteIcon } from "./notes/NoteIcon";
 import type { NoteMark } from "./notes/noteMark";
 import { ReferenceText } from "./references/ReferenceBox";
@@ -80,9 +82,10 @@ export function HierarchySurfaceBox(props: HierarchySurfaceBoxProps) {
         references={attribute === "description" ? editing.references : undefined}
       />
     ) : null;
-  const tags = labels.flatMap((label) =>
-    (node.labels.find((values) => values.label === label.label)?.values ?? []).map((value) => ({ label: label.label, value })),
-  );
+  const shown = labels.filter((label) => label.pick === undefined);
+  const tags = shown.flatMap((label) => valuesOf(node, label.label).map((value) => ({ label: label.label, value })));
+  // A label of one value the page changes is its picker: its value, or on the selected box the way to give one.
+  const picks = labels.filter((label) => label.pick !== undefined && (valuesOf(node, label.label).length > 0 || (selected && onLabelGesture !== undefined)));
 
   return (
     <div
@@ -131,7 +134,7 @@ export function HierarchySurfaceBox(props: HierarchySurfaceBoxProps) {
           </button>
         )}
       </div>
-      {(tags.length > 0 || (field !== undefined && (valuesOf(node, field.label).length > 0 || fieldOpen))) && (
+      {(tags.length > 0 || picks.length > 0 || (field !== undefined && (valuesOf(node, field.label).length > 0 || fieldOpen))) && (
         <div className="hs-tags">
           {field !== undefined && fieldEdit !== undefined && (
             <TagField
@@ -149,6 +152,18 @@ export function HierarchySurfaceBox(props: HierarchySurfaceBoxProps) {
           )}
           {tags.map((tag) => (
             <OptionTag key={`${tag.label}:${tag.value}`} label={tag.value} color={colourOf(optionLists, tag.label, tag.value)} />
+          ))}
+          {picks.map((label) => (
+            <ClassificationPicker
+              key={label.label}
+              label={label.label}
+              pick={label.pick!}
+              node={node}
+              options={optionLists.find((list) => list.label === label.label)?.options ?? []}
+              nodes={nodes}
+              canEdit={onLabelGesture !== undefined}
+              onGesture={onLabelGesture ?? (() => "")}
+            />
           ))}
         </div>
       )}

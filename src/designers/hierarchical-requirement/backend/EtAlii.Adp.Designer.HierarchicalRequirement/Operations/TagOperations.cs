@@ -60,15 +60,15 @@ internal static class TagOperations
     /// as a change made against an older file.
     /// </summary>
     /// <param name="registration">The registration's bytes, or null when the body has none yet.</param>
-    public static TagEdit Apply(byte[] body, string bodyName, byte[]? registration, string registrationName, string operation, string targetId, IReadOnlyDictionary<string, string> parameters)
+    public static ListEdit Apply(byte[] body, string bodyName, byte[]? registration, string registrationName, string operation, string targetId, IReadOnlyDictionary<string, string> parameters)
     {
         ArgumentNullException.ThrowIfNull(body);
         ArgumentNullException.ThrowIfNull(parameters);
-        if (Refusal(operation, parameters) is { Length: > 0 } refusal) return TagEdit.Refused(refusal);
+        if (Refusal(operation, parameters) is { Length: > 0 } refusal) return ListEdit.Refused(refusal);
 
         var read = HierarchicalRequirementBody.Read(body, bodyName, registration, registrationName);
         var document = read.Document;
-        if (document.ReadOnlyReason.Length > 0) return TagEdit.Refused(document.ReadOnlyReason);
+        if (document.ReadOnlyReason.Length > 0) return ListEdit.Refused(document.ReadOnlyReason);
         var members = Members(document);
         var edit = new BodyEdit(read);
         ModelChange.Setting? setting;
@@ -76,7 +76,7 @@ internal static class TagOperations
         if (operation is AddTag or RemoveTag)
         {
             var ids = HierarchicalRequirementSurfaceMapper.NodeIds(document.Entries);
-            if (document.Entries.FirstOrDefault(candidate => ids[candidate] == targetId) is not { } entry) return TagEdit.Refused(HierarchicalRequirementGestures.Drifted);
+            if (document.Entries.FirstOrDefault(candidate => ids[candidate] == targetId) is not { } entry) return ListEdit.Refused(HierarchicalRequirementGestures.Drifted);
             var name = Normalised(parameters["name"]);
             if (operation == RemoveTag)
             {
@@ -93,12 +93,12 @@ internal static class TagOperations
         }
         else
         {
-            if (members.FirstOrDefault(candidate => TagIdPrefix + LowerAscii(candidate) == targetId) is not { } member) return TagEdit.Refused(HierarchicalRequirementGestures.Drifted);
+            if (members.FirstOrDefault(candidate => TagIdPrefix + LowerAscii(candidate) == targetId) is not { } member) return ListEdit.Refused(HierarchicalRequirementGestures.Drifted);
             switch (operation)
             {
                 case RenameTag:
                     var name = Normalised(parameters["name"]);
-                    if (members.Any(other => other != member && Same(other, name))) return TagEdit.Refused($"There is already a tag named {name}.");
+                    if (members.Any(other => other != member && Same(other, name))) return ListEdit.Refused($"There is already a tag named {name}.");
                     foreach (var carrier in Carriers(document, member))
                     {
                         SetTags(edit, carrier, [.. carrier.Tags.Select(tag => Same(tag, member) ? name : tag)]);
@@ -120,7 +120,7 @@ internal static class TagOperations
                     }
                     else
                     {
-                        return TagEdit.Refused(HierarchicalRequirementGestures.Drifted);
+                        return ListEdit.Refused(HierarchicalRequirementGestures.Drifted);
                     }
 
                     break;
@@ -146,14 +146,14 @@ internal static class TagOperations
         if (edit.Sets > 0)
         {
             (byte[]? bytes, string unwritten) = edit.Write();
-            if (bytes is null) return TagEdit.Refused(unwritten);
+            if (bytes is null) return ListEdit.Refused(unwritten);
             newBody = bytes;
         }
 
-        if (setting is null) return new TagEdit(newBody, null, null, "");
+        if (setting is null) return new ListEdit(newBody, null, null, "");
 
-        (byte[]? before, byte[]? afterRegistration, string refused) = RegistrationEdit.Apply(body, bodyName, registration, registrationName, block => Lists(document, block), setting);
-        return afterRegistration is null ? TagEdit.Refused(refused) : new TagEdit(newBody, before, afterRegistration, "");
+        (byte[]? before, byte[]? afterRegistration, string refused) = RegistrationEdit.Apply(body, bodyName, registration, registrationName, block => RegistrationEdit.Members(document, block), setting);
+        return afterRegistration is null ? ListEdit.Refused(refused) : new ListEdit(newBody, before, afterRegistration, "");
     }
 
     /// <summary>The tag list as the page shows it: its members, then the tags the entries carry that it does not hold.</summary>
@@ -167,15 +167,6 @@ internal static class TagOperations
 
         return members;
     }
-
-    /// <summary>A list's members as the document has them, by block: what a first change of an absent block writes.</summary>
-    private static IReadOnlyList<KeyValuePair<string, string>> Lists(HierarchicalRequirementDocument document, string block) => block switch
-    {
-        TagsBlock => [.. document.Tags.Select(tag => new KeyValuePair<string, string>(tag.Name, tag.Colour))],
-        "categories" => [.. document.Categories.Select(category => new KeyValuePair<string, string>(category.Name, category.Colour))],
-        "states" => [.. document.States.Select(state => new KeyValuePair<string, string>(state.Name, state.Colour))],
-        _ => [],
-    };
 
     /// <summary>The items and the requirements that carry <paramref name="tag"/> in any case, items first, as the operations' forEach takes them.</summary>
     private static IEnumerable<RequirementEntry> Carriers(HierarchicalRequirementDocument document, string tag) =>
@@ -194,14 +185,4 @@ internal static class TagOperations
 
     /// <summary>CEL's <c>lowerAscii</c>, which the specification compares tags and derives their ids with.</summary>
     private static string LowerAscii(string text) => string.Concat(text.Select(c => c is >= 'A' and <= 'Z' ? (char)(c + 32) : c));
-}
-
-/// <summary>What a tag operation writes: the body, and the registration with what it held before; null where it writes nothing.</summary>
-/// <param name="Body">The body's bytes after the operation, or null when they do not change.</param>
-/// <param name="RegistrationBefore">The registration as the step starts from it: as it is, or as it is created first, outside the step.</param>
-/// <param name="RegistrationAfter">The registration's bytes after the operation, or null when it is not written.</param>
-/// <param name="Refusal">Why nothing was written, or empty.</param>
-internal sealed record TagEdit(byte[]? Body, byte[]? RegistrationBefore, byte[]? RegistrationAfter, string Refusal)
-{
-    public static TagEdit Refused(string refusal) => new(null, null, null, refusal);
 }
