@@ -585,3 +585,139 @@
   background: var(--color-surface-raised);
   color: var(--color-text);
 }
+
+/* A label of one value (FR-030, FR-031): its tag, or the way to give one, opens its list under the row, as the tags do. */
+.hs-tags .hs-pick {
+  display: contents;
+}
+
+.hs-pick-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.hs-pick-value:hover {
+  background: var(--color-surface-raised);
+}
+
+.hs-pick-value:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+.hs-pick-empty {
+  padding: 0 4px;
+  color: var(--color-text-muted);
+}
+
+.hs-pick-list {
+  position: absolute;
+  z-index: 10;
+  top: 100%;
+  left: 0;
+  box-sizing: border-box;
+  width: 300px;
+  max-width: calc(100% + 22px);
+  margin-top: 4px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  box-shadow: var(--shadow);
+  cursor: default;
+}
+
+.hs-pick-clear {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 6px 8px;
+  border: none;
+  border-top: 1px solid var(--color-border);
+  background: none;
+  color: var(--color-text-muted);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.hs-pick-clear:hover {
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+}
+
+/* The bar that narrows and sorts the page (FR-019, FR-020, FR-048), above it with the findings. */
+.hs-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+}
+
+.hs-filter-query,
+.hs-filter-name,
+.hs-sort select,
+.hs-stored-filters {
+  box-sizing: border-box;
+  height: 24px;
+  padding: 0 6px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.hs-filter-query {
+  flex: 1;
+  min-width: 160px;
+}
+
+.hs-filter-name {
+  width: 160px;
+}
+
+.hs-filter-query:focus-visible,
+.hs-filter-name:focus-visible,
+.hs-sort select:focus-visible,
+.hs-stored-filters:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -1px;
+}
+
+.hs-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.hs-filter-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 24px;
+  padding: 0 6px;
+  border: none;
+  border-radius: var(--radius);
+  background: none;
+  color: var(--color-text-muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.hs-filter-button:hover {
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+}
+
+.hs-filter-count {
+  margin-inline-start: auto;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}

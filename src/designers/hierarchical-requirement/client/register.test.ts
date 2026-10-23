@@ -24,6 +24,7 @@ describe("the Hierarchical Requirement Designer's surface", () => {
       levels: { type: string };
       entries: { type: string };
       labels: Record<string, { on: string[]; prefix: string }>;
+      filters?: { type: string; name: string; query: string };
     };
     operations: Record<string, { label?: unknown; params?: Record<string, unknown>; confirm?: { message: { cel: string }; threshold: number } }>;
   }
@@ -128,6 +129,45 @@ describe("the Hierarchical Requirement Designer's surface", () => {
     expect(confirm?.threshold).toBe(edit!.deletion.threshold);
     const written = (confirm?.message.cel ?? "").replace("string(count) + ' entries carry #' + self.name + '", "'3 entries carry #ux").replace(/^'|'$/g, "");
     expect(written).toBe(edit!.deletion.message("ux", 3));
+  });
+
+  it("picks the category and the state with the operations its definition has, with their params and labels, and asks before a delete as its confirm says", () => {
+    // Act.
+    const { operations } = definition();
+    const picked = hierarchicalRequirementSurface.labels.filter((label) => label.pick !== undefined);
+
+    // Assert: both labels of one value are picked; each operation exists with the params the picker sends, and words its control as labelled.
+    expect(picked.map((label) => label.label)).toEqual(["category", "state"]);
+    for (const { label, pick } of picked) {
+      const { operations: names, params, words, deletion } = pick!;
+      expect(Object.keys(operations[names.set]?.params ?? {})).toEqual([params.value]);
+      expect(params.value).toBe(label);
+      expect(Object.keys(operations[names.clear]?.params ?? {})).toEqual([]);
+      expect(Object.keys(operations[names.add]?.params ?? {}).sort()).toEqual([params.name, params.colour].sort());
+      expect(Object.keys(operations[names.rename]?.params ?? {})).toEqual([params.name]);
+      expect(Object.keys(operations[names.recolour]?.params ?? {})).toEqual([params.colour]);
+      expect(Object.keys(operations[names.move]?.params ?? {})).toEqual([params.after]);
+      expect(Object.keys(operations)).toContain(names.delete);
+      expect(String(operations[names.set]?.label)).toBe(words.value);
+      expect(String(operations[names.clear]?.label)).toBe(words.clear);
+      const confirm = operations[names.delete]?.confirm;
+      expect(confirm?.threshold).toBe(deletion.threshold);
+      const written = (confirm?.message.cel ?? "").replace("string(count) + ' requirements are ' + self.name + '", "'3 requirements are draft").replace(/^'|'$/g, "");
+      expect(written).toBe(deletion.message("draft", 3));
+    }
+  });
+
+  it("stores, renames and removes filters with the operations its definition has, and sorts by the keys of its notation", () => {
+    // Act.
+    const { operations, surface } = definition();
+    const filters = hierarchicalRequirementSurface.filters!;
+
+    // Assert: a store names the filter and its query, a rename the new name; a remove takes nothing.
+    expect(surface.filters?.type).toBe("Filter");
+    expect(Object.keys(operations[filters.operations.store]?.params ?? {}).sort()).toEqual([filters.params.name, filters.params.query].sort());
+    expect(Object.keys(operations[filters.operations.rename]?.params ?? {})).toEqual([filters.params.name]);
+    expect(Object.keys(operations[filters.operations.remove]?.params ?? {})).toEqual([]);
+    expect(filters.sortKeys.map((key) => key.key)).toEqual(["number", "title"]);
   });
 
   it("asks before a delete in the words and at the threshold of its definition's confirm", () => {

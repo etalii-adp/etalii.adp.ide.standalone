@@ -34,9 +34,9 @@ internal sealed class HierarchicalRequirementEditCommandHandler(IHierarchicalReq
             return CommandResult.Failure(HierarchicalRequirementGestures.Drifted);
         }
 
-        if (TagOperations.Handles(command.Operation))
+        if (TagOperations.Handles(command.Operation) || CategoryStateOperations.Handles(command.Operation) || FilterOperations.Handles(command.Operation))
         {
-            return await WriteAsync(command, Tags(command, before, name), cancellationToken);
+            return await WriteAsync(command, Lists(command, before, name), cancellationToken);
         }
 
         (byte[]? after, string refusal) = command.Operation switch
@@ -55,10 +55,10 @@ internal sealed class HierarchicalRequirementEditCommandHandler(IHierarchicalReq
     }
 
     /// <summary>
-    /// What a tag operation writes: the body when its entries' tags change, and the registration when the list does, the
-    /// body first. A registration the body has none of is created as the step's starting point, outside the step.
+    /// What an operation on a list the registration keeps writes, the tags, the categories, the states or the filters: the
+    /// body when its entries change, and the registration when the list does, the body first. A registration the body has none of is created as the step's starting point, outside the step.
     /// </summary>
-    private static (List<RequirementFileState> Files, string Refusal) Tags(HierarchicalRequirementEditCommand command, byte[] body, string name)
+    private static (List<RequirementFileState> Files, string Refusal) Lists(HierarchicalRequirementEditCommand command, byte[] body, string name)
     {
         var registrationPath = command.RegistrationPath ?? Path.ChangeExtension(command.BodyPath, ".adp");
         byte[]? registration;
@@ -71,7 +71,13 @@ internal sealed class HierarchicalRequirementEditCommandHandler(IHierarchicalReq
             return ([], $"{Path.GetFileName(registrationPath)} could not be read: {exception.Message}");
         }
 
-        var edit = TagOperations.Apply(body, name, registration, Path.GetFileName(registrationPath), command.Operation, command.TargetId, command.Params);
+        var registrationName = Path.GetFileName(registrationPath);
+        var edit = command.Operation switch
+        {
+            _ when CategoryStateOperations.Handles(command.Operation) => CategoryStateOperations.Apply(body, name, registration, registrationName, command.Operation, command.TargetId, command.Params),
+            _ when FilterOperations.Handles(command.Operation) => FilterOperations.Apply(body, name, registration, registrationName, command.Operation, command.TargetId, command.Params),
+            _ => TagOperations.Apply(body, name, registration, registrationName, command.Operation, command.TargetId, command.Params),
+        };
         if (edit.Refusal.Length > 0) return ([], edit.Refusal);
         List<RequirementFileState> files = [];
         if (edit.Body is { } after) files.Add(new RequirementFileState(command.BodyPath, body, after));

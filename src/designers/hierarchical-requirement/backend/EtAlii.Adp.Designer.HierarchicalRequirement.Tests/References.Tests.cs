@@ -72,6 +72,8 @@ public sealed class ReferencesTests
         var checkout = model.Nodes.Single(node => node.Number == "ITEM-0001");
         var broken = Assert.Single(checkout.References);
         Assert.Equal(("[REQ-0002]", ""), (checkout.Description.Substring(broken.Start, broken.Length), broken.TargetId));
+        // Its finding stands at ITEM-0001, whose description holds it, so selecting it shows that box (FR-021).
+        Assert.Contains(checkout.Id, model.Findings.Select(finding => finding.NodeId));
         // A link that writes a number is no reference: REQ-0001's description holds no box.
         Assert.Empty(model.Nodes.Single(node => node.Number == "REQ-0001").References);
         var named = model.Notes.SelectMany(note => note.References).Select(reference => reference.TargetId).ToList();

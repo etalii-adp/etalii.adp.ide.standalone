@@ -14,8 +14,10 @@ export interface HierarchySurfaceLabelDefinition {
   many: boolean;
   /** The types that carry it. */
   on: readonly string[];
-  /** How its values and its list are changed on the page (FR-011); absent for a label that is only shown. */
+  /** How its values and its list are changed on the page (FR-011), for a label of many values; absent for one only shown. */
   edit?: HierarchySurfaceLabelEdit;
+  /** How its value and its list are changed on the page, for a label of one value; absent for one only shown. */
+  pick?: HierarchySurfaceLabelPick;
 }
 
 /**
@@ -44,6 +46,45 @@ export interface HierarchySurfaceLabelEdit {
   words: { list: string; add: string; remove: string };
   /** When deleting a member asks first, and in which words: the specification's `confirm` of its delete. */
   deletion: { threshold: number; message: (name: string, count: number) => string };
+}
+
+/**
+ * How a label of one value is changed: its value, or the way to give one, opens the label's list, where a member is
+ * picked or the value cleared, and from where the list is edited in the options editor, a new member added there too.
+ * A pick and a clear name the node; an add names the document; the others the member of the list.
+ */
+export interface HierarchySurfaceLabelPick {
+  operations: {
+    /** The node's value from now on, a member picked by its name; its param is `params.value`. */
+    set: string;
+    /** The node's value taken off. */
+    clear: string;
+    /** A new member of the list; its params are the name and the colour. */
+    add: string;
+    rename: string;
+    recolour: string;
+    move: string;
+    /** A member deleted, and cleared from every node that carries it, asked first as `deletion` says. */
+    delete: string;
+  };
+  /** The names of the params: the picked value, a member's name and colour, and the member a moved one goes after. */
+  params: { value: string; name: string; colour: string; after: string };
+  /** What the control and the list say: the list's name, the value's own name, and the words of a clear. */
+  words: { list: string; value: string; clear: string };
+  deletion: { threshold: number; message: (name: string, count: number) => string };
+}
+
+/**
+ * What the page's filters are stored, renamed and removed by (FR-048): a store names the document, the others the stored
+ * filter; and the keys a sort offers besides the labels of one value, in the query's notation (DESL section 7.7.3).
+ */
+export interface HierarchySurfaceFilters {
+  operations: { store: string; rename: string; remove: string };
+  params: { name: string; query: string };
+  /** The keys of `sort:` that are not labels, with what the menu calls them: `number`, `title`. */
+  sortKeys: readonly { key: string; label: string }[];
+  /** What the bar's count calls the entries: `requirements`. */
+  entries: string;
 }
 
 /** A control that adds a node: the operation it sends, with no params, and what the control says. */
@@ -121,6 +162,8 @@ export interface HierarchySurfaceDefinition {
   notes: HierarchySurfaceNotes;
   moveParams: HierarchySurfaceMoveParams;
   deletion: HierarchySurfaceDeletion;
+  /** The filter bar's stored filters and sort keys; absent, the page offers no filter bar. */
+  filters?: HierarchySurfaceFilters;
   /**
    * The keys a selected node sends to the backend as a shortcut, with Ctrl or Cmd and the other modifiers held: which
    * action a chord runs is the backend's, so the page holds no table of them.
