@@ -23,13 +23,13 @@ namespace EtAlii.Adp.Designer.HierarchicalRequirement;
 internal sealed class HierarchicalRequirementContextActionProvider(IHistoryStackStore histories) : IContextActionProvider
 {
     public const string AddBelowActionId = "hierarchical-requirement.add-below";
-    public const string AddRequirementActionId = "hierarchical-requirement.add-requirement";
+    private const string AddRequirementActionId = "hierarchical-requirement.add-requirement";
 
     /// <summary>Ctrl+Enter: a new entry of the selected one's kind, directly below it.</summary>
-    public static ContextShortcutDefinition BelowShortcut { get; } = new("Enter", Ctrl: true);
+    private static ContextShortcutDefinition BelowShortcut { get; } = new("Enter", Ctrl: true);
 
     /// <summary>Ctrl+Shift+Enter: a new requirement in the selected item.</summary>
-    public static ContextShortcutDefinition RequirementShortcut { get; } = new("Enter", Ctrl: true, Shift: true);
+    private static ContextShortcutDefinition RequirementShortcut { get; } = new("Enter", Ctrl: true, Shift: true);
 
     private const string EntryGone = "That entry is no longer in the file.";
 

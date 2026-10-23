@@ -17,7 +17,7 @@ namespace EtAlii.Adp.Designer.HierarchicalRequirement;
 internal sealed class HierarchicalRequirementEntrySourceResolver(IHierarchicalRequirementDocumentStore documents) : IContextSourceResolver
 {
     /// <summary>The origin a selected entry is marked with, so that only this module's providers answer for it.</summary>
-    public static readonly ToolOrigin EntryOrigin = ToolOrigin.TryParse(Designer.Origin)!;
+    private static readonly ToolOrigin EntryOrigin = ToolOrigin.TryParse(Designer.Origin)!;
 
     public bool CanResolve(ContextSource source) => source.SourceCase == ContextSource.SourceOneofCase.ElementId;
 
@@ -110,7 +110,7 @@ internal static class HierarchicalRequirementEntries
 
         var document = HierarchicalRequirementBody.Read(bytes, name).Document;
         var ids = HierarchicalRequirementSurfaceMapper.NodeIds(document.Entries);
-        return document.Entries.FirstOrDefault(entry => ids[entry] == elementId) is { } entry ? new Found(entry, bytes, document) : null;
+        return document.Entries.FirstOrDefault(candidate => ids[candidate] == elementId) is { } entry ? new Found(entry, bytes, document) : null;
     }
 
     internal sealed record Found(RequirementEntry Entry, byte[] Bytes, HierarchicalRequirementDocument Document);

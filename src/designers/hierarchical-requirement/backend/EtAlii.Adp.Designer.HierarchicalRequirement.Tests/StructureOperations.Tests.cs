@@ -101,7 +101,7 @@ public sealed class StructureOperationsTests
     public void WhatTheSpecificationRollsBackOrMakesUnavailable_IsRefused_AndNothingIsWritten()
     {
         var catalogue = Catalogue();
-        var topLevel = Encoding.UTF8.GetBytes("<!-- ded: 0.2 designer: etalii/hierarchical-requirement -->\r\n# Alone\r\n\r\n## Requirements\r\n\r\n- REQ-0001 Stands in no item.\r\n");
+        var topLevel = "<!-- ded: 0.2 designer: etalii/hierarchical-requirement -->\r\n# Alone\r\n\r\n## Requirements\r\n\r\n- REQ-0001 Stands in no item.\r\n"u8.ToArray();
 
         Assert.Equal((null, StructureOperations.NoItem), StructureOperations.Apply(topLevel, "alone.md", StructureOperations.AddRequirementBelow, "REQ-0001", Params("")));
         Assert.Equal((null, "ITEM-0001 cannot be moved into itself or into anything it holds."), StructureOperations.Apply(catalogue, "catalogue.md", StructureOperations.MoveItem, "ITEM-0001", Params("item=ITEM-0001")));
