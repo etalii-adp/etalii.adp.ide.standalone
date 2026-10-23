@@ -25,14 +25,15 @@ namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests;
 /// </remarks>
 public sealed class FdgCommandsTests : IDisposable
 {
-    private readonly string _folder = Path.Combine(Path.GetTempPath(), "EtAlii.Adp.FdgCommandsTests", Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("EtAlii.Adp.FdgCommandsTests");
+    private readonly string _folder;
     private readonly FdgDocumentStore _store = new(new FileWriter());
     private readonly FdgTestDispatcher _dispatcher;
     private readonly byte[] _original;
 
     public FdgCommandsTests()
     {
-        Directory.CreateDirectory(_folder);
+        _folder = _testFolder.Path;
         File.Copy(FieldServiceExample.Path, Body);
         _original = File.ReadAllBytes(Body);
         _dispatcher = new FdgTestDispatcher(_store);
@@ -42,14 +43,7 @@ public sealed class FdgCommandsTests : IDisposable
 
     public void Dispose()
     {
-        try
-        {
-            Directory.Delete(_folder, recursive: true);
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            // A temp folder left behind is not a test failure.
-        }
+        _testFolder.Dispose();
     }
 
     public static TheoryData<string> EveryEdit =>

@@ -13,7 +13,8 @@ namespace EtAlii.Adp.Diagram.WardleyMap.Tests;
 /// </summary>
 public sealed class WardleyToolboxProviderTests : IDisposable
 {
-    private readonly string _root = IoPath.Combine(IoPath.GetTempPath(), $"wardley-toolbox-{Guid.NewGuid():N}");
+    private readonly TestFolder _testFolder = TestFolder.Create("wardley-toolbox");
+    private readonly string _root;
     private readonly ServiceProvider _services;
     private readonly IWardleyDocumentStore _documents;
     private readonly WardleyToolboxProvider _toolbox = new();
@@ -22,7 +23,7 @@ public sealed class WardleyToolboxProviderTests : IDisposable
 
     public WardleyToolboxProviderTests()
     {
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
         _services = new ServiceCollection().AddCommands().AddHierarchyCommandHandlers().AddWardleyMap().BuildServiceProvider();
         _documents = _services.GetRequiredService<IWardleyDocumentStore>();
         _actions = _services.GetServices<IContextActionProvider>().OfType<WardleyContextActionProvider>().Single();
@@ -44,7 +45,7 @@ public sealed class WardleyToolboxProviderTests : IDisposable
     public void Dispose()
     {
         _services.Dispose();
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     [Fact]

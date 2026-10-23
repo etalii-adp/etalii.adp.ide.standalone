@@ -13,7 +13,8 @@ namespace EtAlii.Adp.Diagram.WardleyMap.Tests;
 /// </summary>
 public sealed class WardleySessionTests : IDisposable
 {
-    private readonly string _root = IoPath.Combine(IoPath.GetTempPath(), $"wardley-session-{Guid.NewGuid():N}");
+    private readonly TestFolder _testFolder = TestFolder.Create("wardley-session");
+    private readonly string _root;
     private readonly ServiceProvider _services;
     private readonly IWardleyDocumentStore _documents;
     private readonly IHistoryStack _history;
@@ -22,7 +23,7 @@ public sealed class WardleySessionTests : IDisposable
 
     public WardleySessionTests()
     {
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
         _services = new ServiceCollection().AddCommands().AddHierarchyCommandHandlers().AddWardleyMap().BuildServiceProvider();
         _documents = _services.GetRequiredService<IWardleyDocumentStore>();
         // _identities = _services.GetRequiredService<WardleyIdentities>();
@@ -33,7 +34,7 @@ public sealed class WardleySessionTests : IDisposable
     public void Dispose()
     {
         _services.Dispose();
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     private string Write(string text)

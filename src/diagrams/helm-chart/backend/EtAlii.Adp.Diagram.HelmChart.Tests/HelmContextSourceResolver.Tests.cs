@@ -17,6 +17,7 @@ public class HelmContextSourceResolverTests : IDisposable
     private static readonly TimeSpan WaitLimit = TimeSpan.FromSeconds(15);
     private static readonly TimeSpan Silence = TimeSpan.FromMilliseconds(400);
 
+    private readonly TestFolder _testFolder = TestFolder.Create("helm-context-source-resolver");
     private readonly string _root;
     private readonly string _registration;
     private readonly FakeTimeProvider _clock = new();
@@ -26,7 +27,7 @@ public class HelmContextSourceResolverTests : IDisposable
     public HelmContextSourceResolverTests()
     {
         _store = new HelmChartStore(new HelmChartReader(), _clock);
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
+        _root = _testFolder.Path;
         Directory.CreateDirectory(IoPath.Combine(_root, "templates"));
         File.WriteAllText(IoPath.Combine(_root, "Chart.yaml"),
             "apiVersion: v2\nname: resolved\nversion: 1.0.0\ndependencies:\n  - name: redis\n    version: 1.0.0\n");
@@ -46,7 +47,7 @@ public class HelmContextSourceResolverTests : IDisposable
     public void Dispose()
     {
         _store.Dispose();
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     [Fact]

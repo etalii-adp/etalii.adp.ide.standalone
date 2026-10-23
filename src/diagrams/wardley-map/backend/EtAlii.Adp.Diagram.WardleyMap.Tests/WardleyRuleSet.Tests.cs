@@ -261,14 +261,15 @@ public sealed class WardleyRuleSetTests
 /// </summary>
 public sealed class WardleyValidatorTests : IDisposable
 {
-    private readonly string _root = IoPath.Combine(IoPath.GetTempPath(), $"wardley-validator-{Guid.NewGuid():N}");
+    private readonly TestFolder _testFolder = TestFolder.Create("wardley-validator");
+    private readonly string _root;
     private readonly WardleyValidator _validator = new();
 
-    public WardleyValidatorTests() => Directory.CreateDirectory(_root);
+    public WardleyValidatorTests() => _root = _testFolder.Path;
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     [Fact]

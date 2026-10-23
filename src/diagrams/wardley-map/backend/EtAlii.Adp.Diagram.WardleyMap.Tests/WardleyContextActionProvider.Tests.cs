@@ -25,7 +25,8 @@ public sealed class WardleyContextActionProviderTests : IDisposable
 
         """;
 
-    private readonly string _root = IoPath.Combine(IoPath.GetTempPath(), $"wardley-actions-{Guid.NewGuid():N}");
+    private readonly TestFolder _testFolder = TestFolder.Create("wardley-actions");
+    private readonly string _root;
     private readonly ServiceProvider _services;
     private readonly IWardleyDocumentStore _documents;
     private readonly WardleyContextActionProvider _provider;
@@ -33,7 +34,7 @@ public sealed class WardleyContextActionProviderTests : IDisposable
 
     public WardleyContextActionProviderTests()
     {
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
         _services = new ServiceCollection().AddCommands().AddHierarchyCommandHandlers().AddWardleyMap().BuildServiceProvider();
         _documents = _services.GetRequiredService<IWardleyDocumentStore>();
         _provider = _services.GetServices<IContextActionProvider>().OfType<WardleyContextActionProvider>().Single();
@@ -44,7 +45,7 @@ public sealed class WardleyContextActionProviderTests : IDisposable
     public void Dispose()
     {
         _services.Dispose();
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     // ---- what is offered ----------------------------------------------------------------------
