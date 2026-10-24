@@ -96,8 +96,8 @@ public class SankeyDerivedOperationsTests
         var left = expected.Split('\n');
         var right = actual.Split('\n');
         var line = Enumerable.Range(0, Math.Min(left.Length, right.Length)).FirstOrDefault(index => left[index] != right[index], Math.Min(left.Length, right.Length));
-        string At(string[] lines) => line < lines.Length ? lines[line].TrimEnd('\r') : "(end)";
         return $"line {line + 1}: command {TranscriptText.Quoted(At(left))}, operation {TranscriptText.Quoted(At(right))}";
+        string At(string[] lines) => line < lines.Length ? lines[line].TrimEnd('\r') : "(end)";
     }
 
     /// <summary>What the command leaves in the file, or its refusal.</summary>
