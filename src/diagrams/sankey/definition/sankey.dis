@@ -36,9 +36,9 @@
       "celFunctions": [
         { "name": "sankeyColumn", "params": [ { "name": "node", "type": "dyn" } ], "returns": "int", "cost": 100,
           "doc": "A drawn node's zero-based column." },
-        { "name": "sankeyColumnCount", "params": [], "returns": "int", "cost": 100,
+        { "name": "sankeyColumnCount", "params": [], "returns": "int", "cost": 100, "uses": ["diagram"],
           "doc": "How many columns the diagram has." },
-        { "name": "sankeyScale", "params": [], "returns": "double", "cost": 100,
+        { "name": "sankeyScale", "params": [], "returns": "double", "cost": 100, "uses": ["diagram"],
           "doc": "Canvas units per unit of value: 560 times the drawn thickness divided by the fullest column's sum of node values, or 0 when nothing flows." },
         { "name": "sankeyTop", "params": [ { "name": "node", "type": "dyn" } ], "returns": "double", "cost": 100,
           "doc": "A drawn node's top edge after relaxation, rounded to two decimals." },
