@@ -176,10 +176,13 @@
 }
 
 /* The first line: the grip, the collapse control and the number stand on it as words do, so a title of several lines
-   wraps under them to the box's left. While the title is typed its field takes the rest of the line. */
+   wraps under them, its next lines as far from the box's left as the tags and the description. While the title is typed
+   its field takes the rest of the line. */
 .hs-box-header {
   min-width: 0;
+  padding-inline-start: 6px;
   line-height: 20px;
+  text-indent: -6px;
   overflow-wrap: break-word;
 }
 
@@ -187,12 +190,15 @@
 .hs-box-header > .hs-toggle,
 .hs-box-header > .hs-number {
   margin-inline-end: 4px;
+  text-indent: 0;
   vertical-align: top;
 }
 
 .hs-box-header-typing {
   display: flex;
   align-items: flex-start;
+  padding-inline-start: 0;
+  text-indent: 0;
 }
 
 /* The column at the box's right: its controls when they stand in a column, and at its bottom the place of its delete,
@@ -326,7 +332,7 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 4px;
-  margin: 4px 0 0;
+  margin: 4px 0 0 6px;
 }
 
 .hs-tags .table-option-tag + .table-option-tag {
@@ -370,7 +376,7 @@
 }
 
 .hs-description {
-  margin: 4px 0 0;
+  margin: 4px 0 6px 6px;
   color: var(--color-text);
   line-height: 20px;
   white-space: pre-wrap;
@@ -418,9 +424,11 @@
   resize: none;
 }
 
+/* A title typed in place starts after the number, whose space it keeps, and is one line high until its text wraps. */
 .hs-field-title {
   flex: 1 1 0;
   min-width: 0;
+  margin-inline-start: 0;
   font-weight: 600;
   overflow-wrap: break-word;
 }
@@ -437,14 +445,14 @@
 .hs-description-field > .hs-field-multiline {
   flex: 1 0 auto;
   width: auto;
-  margin: 2px 0 0;
+  margin: 2px 0 6px 6px;
   padding: 0 4px;
   white-space: pre-wrap;
 }
 
 .hs-description-field > .hs-reference-lookup {
   top: 100%;
-  left: 0;
+  left: 6px;
 }
 
 /* The place a node is added, at the end of a level's content and of the page, as the table's new row (FR-012). */
