@@ -13,6 +13,8 @@ import { FindingList } from "./FindingList";
 import { HierarchySurfaceBox } from "./HierarchySurfaceBox";
 import { HierarchySurfaceTrail } from "./HierarchySurfaceTrail";
 import { ancestorsOf, descendantsOf, type HierarchyIndex, indexOf, levelsBelow, levelsThatFit } from "./layout";
+import { ColumnEdge } from "./columns/ColumnEdge";
+import { type ColumnWidths, useColumnWidths } from "./columns/useColumnWidths";
 import { FilterBar } from "./narrowing/FilterBar";
 import { type Narrowing, narrowingOf, parseQuery, queryText, sortOf, unhiding, withSort } from "./narrowing/filterQuery";
 import { NoteList } from "./notes/NoteList";
@@ -121,7 +123,10 @@ export function HierarchySurface({ model, definition, onGesture, onShortcut, sel
     return () => observer.disconnect();
   }, []);
 
-  const fit = levelsThatFit(width);
+  // The depth of the page's left column, 1 for the top levels: a column's width is kept by its depth.
+  const rootLevel = focused === "" ? 1 : ancestorsOf(index, focused).length + (focus.inside ? 2 : 1);
+  const columns = useColumnWidths(model.widths, definition.widths, onGesture);
+  const fit = levelsThatFit(width, (column) => columns.widthOf(rootLevel + column));
   const readOnly = model.readOnlyReason !== "";
   // Where only one level fits, a level made the left edge shows its sub-levels in its place: beside it they cannot fit.
   const inside = focused !== "" && focus.inside;
@@ -396,6 +401,9 @@ export function HierarchySurface({ model, definition, onGesture, onShortcut, sel
               key={node.id}
               node={node}
               depth={0}
+              rootLevel={rootLevel}
+              columns={columns}
+              resizable={!readOnly && definition.widths !== undefined}
               fit={fit}
               index={index}
               model={model}
@@ -439,6 +447,12 @@ interface NodeViewProps {
   node: HierarchySurfaceNode;
   /** The node's level counted from the page's left edge. */
   depth: number;
+  /** The depth of the page's left column, 1 for the top levels. */
+  rootLevel: number;
+  /** The widths of the columns of levels, by depth. */
+  columns: ColumnWidths;
+  /** Whether a column's right edge is dragged to change its width. */
+  resizable: boolean;
   fit: number;
   index: HierarchyIndex;
   model: HierarchySurfaceModel;
@@ -467,7 +481,7 @@ interface NodeViewProps {
 }
 
 function NodeView(props: NodeViewProps) {
-  const { node, depth, fit, index, model, definition, selected, isCollapsed, onToggle, onSelect, onFocus, onShowHidden, onDelete, editingOf, onAdd, drag, openNotes, onToggleNotes, onGesture, readOnly, onReveal, narrowing } = props;
+  const { node, depth, rootLevel, columns, resizable, fit, index, model, definition, selected, isCollapsed, onToggle, onSelect, onFocus, onShowHidden, onDelete, editingOf, onAdd, drag, openNotes, onToggleNotes, onGesture, readOnly, onReveal, narrowing } = props;
   const collapsed = isCollapsed(node);
   const level = node.role === "level";
   // A collapsed level's mark counts every note inside it, since nothing inside it shows.
@@ -532,7 +546,10 @@ function NodeView(props: NodeViewProps) {
   const adds = onAdd === undefined || collapsed ? [] : [definition.operations.addEntry, definition.operations.addLevel];
   return (
     <div className={`hs-level${dragging}`}>
-      <div className="hs-level-box">{box}</div>
+      <div className="hs-level-box" style={{ flex: `0 0 ${columns.widthOf(rootLevel + depth)}px`, width: columns.widthOf(rootLevel + depth) }}>
+        {box}
+        {resizable && <ColumnEdge level={rootLevel + depth} columns={columns} />}
+      </div>
       {content.length + adds.length > 0 && (
         <div className="hs-level-content" role="group">
           {content.map((child) =>

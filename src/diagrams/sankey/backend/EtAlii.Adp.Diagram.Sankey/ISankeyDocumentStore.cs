@@ -10,4 +10,4 @@ namespace EtAlii.Adp.Diagram.Sankey;
 /// this type is what the module's registrations, its reloader and the shared restore command
 /// resolve, so a document of another type can never reach them.
 /// </remarks>
-public interface ISankeyDocumentStore : IDiagramDocumentStore<LineDocument, SankeyModel>;
+public interface ISankeyDocumentStore : IDiagramDocumentStore<SankeyBody, SankeyModel>;

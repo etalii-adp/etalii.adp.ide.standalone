@@ -1,19 +1,21 @@
 using System.Text;
 using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.History;
 using EtAlii.Adp.Specification.Disl;
 using EtAlii.Adp.Specification.Fbl;
 using EtAlii.Adp.Specification.Fbl.Documents;
 using EtAlii.Adp.Specification.Fbl.History;
+using EtAlii.Adp.Specification.Fbl.Planning;
 using YamlDotNet.Core;
 using YamlDotNet.RepresentationModel;
 
 namespace EtAlii.Adp.Diagram.Sankey;
 
 /// <summary>
-/// One <c>.skv</c> body, read through FBL: the module's binding (<c>sankey.fbl</c>, embedded) applied by
+/// One <c>.skv</c> body, read and written through FBL: the module's binding (<c>sankey.fbl</c>, embedded) applied by
 /// <c>EtAlii.Adp.Specification.Fbl</c>, and the DISL model built from that reading under the bundled definition
-/// (sankey-disl-fbl Requirement 4).
+/// (sankey-disl-fbl Requirements 4 and 5).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -23,8 +25,13 @@ namespace EtAlii.Adp.Diagram.Sankey;
 /// read, and the DISL model is built by <see cref="DislModelBuilder"/> from the binding's reading with those values.
 /// </para>
 /// <para>
-/// <b>Writing still goes through <see cref="SankeyWriter"/></b>, on the store's lines: the body is read here and
-/// never written (sankey-disl-fbl task 10).
+/// <b>Every write is a <see cref="ModelChange"/></b> the library plans as splices in the body's own conventions (FBL
+/// section 6): a value's own span in its own style, a new key where the binding orders it, an entry moved or removed
+/// with the comments above it (Q1). Nothing in the module builds a line of YAML; <see cref="SankeyEdits"/> says what
+/// each command changes, in the binding's attribute names.
+/// </para>
+/// <para>
+/// <b>Undo stays the host's</b>: the shared restore command puts the text back.
 /// </para>
 /// <para>
 /// <b>A body that is not YAML is read-only</b> (<see cref="IsReadOnly"/>, Q3): FBL opens it empty and never writes
@@ -38,7 +45,7 @@ namespace EtAlii.Adp.Diagram.Sankey;
 /// in turn.
 /// </para>
 /// </remarks>
-public sealed class SankeyBody
+public sealed class SankeyBody : ITextBody<SankeyBody>
 {
     private static readonly Lazy<FblBinding> LoadedBinding = new(() => BundledBinding.Load(typeof(SankeyBody).Assembly, "sankey.fbl", "skv"));
 
@@ -103,6 +110,27 @@ public sealed class SankeyBody
 
     /// <summary>The 0-based lines <paramref name="span"/> covers.</summary>
     internal LineRange LinesOf(Span span) => _edits.LinesOf(span);
+
+    /// <summary>The element of <paramref name="rule"/> the module read on <paramref name="range"/>; null when there is none now.</summary>
+    internal FblElement? EntryAt(string rule, LineRange range) =>
+        Model.Elements.FirstOrDefault(element => element.Rule == rule && LinesOf(element.OwnSpan).Start == range.Start);
+
+    /// <summary>The root mapping's element, which holds the document-wide keys; null for a body whose root is not a mapping.</summary>
+    internal FblElement? Root => Model.Elements.FirstOrDefault(element => element.Rule == SankeyReader.DocumentRule);
+
+    /// <summary>
+    /// Where <paramref name="entry"/> stands among the entries of the <c>nodes</c> list, those that are not a mapping
+    /// included: the index a <see cref="ModelChange.Move"/> counts.
+    /// </summary>
+    internal int IndexOf(FblElement entry) =>
+        Model.Elements
+            .Where(element => element.Rule is SankeyReader.NodeRule or SankeyReader.NodeNotAMappingRule)
+            .OrderBy(element => element.OwnSpan.Start)
+            .ToList()
+            .FindIndex(element => element.Id == entry.Id);
+
+    /// <summary>Plans and applies one change; the refusal's sentence when the library refuses it.</summary>
+    internal EditOutcome Change(ModelChange change) => _edits.Change(change);
 
     /// <summary>
     /// The 0-based line of <paramref name="key"/> in the mapping on <paramref name="range"/>: the line that starts

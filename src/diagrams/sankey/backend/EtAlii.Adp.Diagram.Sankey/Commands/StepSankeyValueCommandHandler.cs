@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.Sankey;
@@ -16,7 +15,7 @@ public sealed class StepSankeyValueCommandHandler(ISankeyDocumentStore documents
     }
 
     /// <inheritdoc />
-    protected override EditOutcome Apply(LineDocument document, SankeyModel model, StepSankeyValueCommand command)
+    protected override EditOutcome Apply(SankeyBody document, SankeyModel model, StepSankeyValueCommand command)
     {
         if (model.FlowOf(command.FlowId) is not { } flow)
         {
@@ -26,7 +25,7 @@ public sealed class StepSankeyValueCommandHandler(ISankeyDocumentStore documents
         }
 
         return Stepped(flow.Value, flow.Step, command.Steps) is { } value
-            ? SankeyWriter.SetNumber(document, flow.Range, SankeyKeys.Value, value)
+            ? SankeyEdits.SetNumber(document, flow, SankeyKeys.Value, value)
             : EditOutcome.Refused("The value is already zero.");
     }
 

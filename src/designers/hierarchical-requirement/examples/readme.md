@@ -1,6 +1,6 @@
 # The Hierarchical Requirement Designer's examples
 
-The files here are copied, byte for byte, from [`etalii-adp/etalii.adp`](https://github.com/etalii-adp/etalii.adp), folder `definitions/designers/examples/`, at commit `bee6f1f0c765964b5394b898442584ac30682f60` (`develop`, 2026-10-22, the commit etalii.adp spec 029's task T001 records):
+The files here are copied, byte for byte, from [`etalii-adp/etalii.adp`](https://github.com/etalii-adp/etalii.adp), folder `definitions/designers/examples/`, at commit `f8ec747dae801ce9a35d161349d79a22e0ee978a` (`develop`, 2026-10-24, after etalii.adp #508 wrote the stored filter's state as `@proposed`; spec 029's task T001 recorded `bee6f1f0c765964b5394b898442584ac30682f60`):
 
 - `web-shop.md`: one requirement document, the requirements of a web shop, in the Markdown file a requirement document is: the envelope, the mark line, the legend, six items at three levels with ten numbered requirements and one `REQ-NEW`, and four assessments;
 - `web-shop.adp`: its registration, with the tag, category and state lists and their colours, two collapsed entries and two stored filters;

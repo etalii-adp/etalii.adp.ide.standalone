@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
@@ -6,7 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace EtAlii.Adp.Diagram.Sankey.Tests;
 
 /// <summary>What every handler does with a save, through the shared contract (code-structure FR-022).</summary>
-public sealed class SankeyCommandHandlersTests : EditHandlerContract<ISankeyDocumentStore, LineDocument, SankeyModel>
+public sealed class SankeyCommandHandlersTests : EditHandlerContract<ISankeyDocumentStore, SankeyBody, SankeyModel>
 {
     protected override string Example => SankeyExamples.BrightwaterCoffee;
 
@@ -21,5 +20,5 @@ public sealed class SankeyCommandHandlersTests : EditHandlerContract<ISankeyDocu
     protected override ICommand EditOfMissing(string bodyPath) => new SetSankeyPropertyCommand(bodyPath, "no-such-node", SankeyKeys.Name, "Coffee bars");
 
     private sealed class WarningStore(ISankeyDocumentStore inner, string warning)
-        : WarningDocumentStore<LineDocument, SankeyModel>(inner, warning), ISankeyDocumentStore;
+        : WarningDocumentStore<SankeyBody, SankeyModel>(inner, warning), ISankeyDocumentStore;
 }

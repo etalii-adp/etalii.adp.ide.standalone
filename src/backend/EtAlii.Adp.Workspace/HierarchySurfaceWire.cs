@@ -24,6 +24,7 @@ internal static class HierarchySurfaceWire
             NodeId = finding.NodeId,
             Line = finding.Line,
         }));
+        message.Widths.AddRange(model.Widths.Select(column => new Proto.HierarchySurfaceColumnWidth { Id = column.Id, Level = column.Level, Width = column.Width }));
         return message;
     }
 

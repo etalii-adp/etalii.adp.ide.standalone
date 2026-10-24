@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.Sankey;
@@ -21,7 +20,7 @@ public sealed class ScaleSankeyThicknessCommandHandler(ISankeyDocumentStore docu
     }
 
     /// <inheritdoc />
-    protected override EditOutcome Apply(LineDocument document, SankeyModel model, ScaleSankeyThicknessCommand command)
+    protected override EditOutcome Apply(SankeyBody document, SankeyModel model, ScaleSankeyThicknessCommand command)
     {
         var current = model.Settings.Thickness;
         var scaled = Math.Round(Math.Clamp(current * Math.Pow(SankeyGeometry.ThicknessFactor, command.Steps), SankeyGeometry.MinimumScale, SankeyGeometry.MaximumScale), 2);
@@ -29,6 +28,6 @@ public sealed class ScaleSankeyThicknessCommandHandler(ISankeyDocumentStore docu
             ? EditOutcome.Refused(command.Steps > 0
                 ? "The bands are already as thick as this diagram draws them."
                 : "The bands are already as thin as this diagram draws them.")
-            : SankeyWriter.SetRootKey(document, model.Settings.ThicknessLine, SankeyWriter.ThicknessKey, DslNumber.Format(scaled));
+            : SankeyEdits.SetThickness(document, scaled);
     }
 }

@@ -123,7 +123,8 @@ internal sealed class HierarchicalRequirementSession : IHierarchySurfaceSession
     {
         ArgumentNullException.ThrowIfNull(gesture);
         if (TextOperations.Handles(gesture.Operation) || StructureOperations.Handles(gesture.Operation) || AssessmentOperations.Handles(gesture.Operation) || TagOperations.Handles(gesture.Operation)
-            || CategoryStateOperations.Handles(gesture.Operation) || FilterOperations.Handles(gesture.Operation))
+            || CategoryStateOperations.Handles(gesture.Operation) || FilterOperations.Handles(gesture.Operation)
+            || ColumnOperations.Handles(gesture.Operation))
         {
             return BodyGesture(editId, gesture);
         }
@@ -147,7 +148,7 @@ internal sealed class HierarchicalRequirementSession : IHierarchySurfaceSession
 
     /// <summary>
     /// Takes a change of the body, of an entry's text, of the hierarchy, of an assessment, or of a list the registration
-    /// keeps, the tags, the categories, the states and the filters: refused at once when the page cannot be changed,
+    /// keeps, the tags, the categories, the states, the filters and the widths of the columns: refused at once when the page cannot be changed,
     /// the entry is gone or a text cannot be written; otherwise run through the history behind the writes before it,
     /// against the bytes the page was made from.
     /// </summary>
@@ -165,6 +166,7 @@ internal sealed class HierarchicalRequirementSession : IHierarchySurfaceSession
         if (TagOperations.Refusal(gesture.Operation, gesture.Params) is { Length: > 0 } unnamed) return unnamed;
         if (CategoryStateOperations.Refusal(gesture.Operation, gesture.Params) is { Length: > 0 } unclassified) return unclassified;
         if (FilterOperations.Refusal(gesture.Operation, gesture.Params) is { Length: > 0 } unstored) return unstored;
+        if (ColumnOperations.Refusal(gesture.Operation, gesture.Params) is { Length: > 0 } unsized) return unsized;
 
         lock (_gate)
         {
@@ -175,8 +177,9 @@ internal sealed class HierarchicalRequirementSession : IHierarchySurfaceSession
                 _ when AssessmentOperations.TargetsAnAssessment(gesture.Operation) => _reading.Model.Notes.All(note => note.Id != gesture.TargetId),
                 _ when TagOperations.TargetsATag(gesture.Operation) || CategoryStateOperations.TargetsAMember(gesture.Operation) => _reading.Model.OptionLists.SelectMany(list => list.Options).All(option => option.Id != gesture.TargetId),
                 _ when FilterOperations.TargetsAFilter(gesture.Operation) => _reading.Model.Filters.All(filter => filter.Id != gesture.TargetId),
+                _ when ColumnOperations.TargetsAColumn(gesture.Operation) => _reading.Model.Widths.All(column => column.Id != gesture.TargetId),
                 _ when CategoryStateOperations.TargetsTheDocument(gesture.Operation) => false,
-                StructureOperations.AddTopItem or FilterOperations.StoreFilter => false,
+                StructureOperations.AddTopItem or FilterOperations.StoreFilter or ColumnOperations.AddColumnWidth => false,
                 _ => _reading.Model.Nodes.All(node => node.Id != gesture.TargetId),
             };
             if (gone) return HierarchicalRequirementGestures.Drifted;
@@ -461,6 +464,7 @@ internal sealed class HierarchicalRequirementSession : IHierarchySurfaceSession
             Path.GetFileNameWithoutExtension(_bodyPath),
             $"'{Path.GetFileName(_bodyPath)}' cannot be read: {refusal}",
             HierarchySurfaceCauses.Open,
+            [],
             [],
             [],
             [],

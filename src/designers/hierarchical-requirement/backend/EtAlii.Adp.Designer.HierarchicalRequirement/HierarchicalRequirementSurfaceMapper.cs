@@ -55,7 +55,8 @@ internal static partial class HierarchicalRequirementSurfaceMapper
                 Severity(finding.Code),
                 finding.Message,
                 finding.InRegistration ? "" : nodeAt.GetValueOrDefault(finding.Line, ""),
-                finding.Line))]);
+                finding.Line))],
+            [.. document.Columns.Select(column => new HierarchySurfaceColumnWidth(ColumnOperations.IdPrefix + column.Level.ToString(CultureInfo.InvariantCulture), column.Level, column.Width))]);
     }
 
     /// <summary>The lines below an entry's bullet that its description takes.</summary>

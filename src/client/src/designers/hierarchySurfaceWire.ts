@@ -56,6 +56,7 @@ function modelOf(model: Wire.HierarchySurfaceModel): HierarchySurfaceModel {
       options: list.options.map((option) => ({ id: option.id, name: option.name, colour: option.colour, implicit: option.implicit })),
     })),
     filters: model.filters.map((filter) => ({ id: filter.id, name: filter.name, query: filter.query })),
+    widths: model.widths.map((column) => ({ id: column.id, level: column.level, width: column.width })),
     notes: model.notes.map((note) => ({
       id: note.id,
       kind: note.kind,
