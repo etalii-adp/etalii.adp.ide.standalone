@@ -17,6 +17,7 @@ import type {
   EndpointConstraint,
   FilterDeclaration,
   LabelDeclaration,
+  LabelTypography,
   LabelUnderline,
   LayoutDefinition,
   LayoutMode,
@@ -35,6 +36,7 @@ import type {
 } from "../definition/diagramDefinition";
 import { ArcBow } from "./bowedArc";
 import { bowedArcAdornment, bowedArcRoute, type ArcBarsDeclaration, type ArcMarkDeclaration, type BowedArcDeclaration } from "./bowedArcLine";
+import { ribbonAdornment, type RibbonDeclaration } from "./ribbonLine";
 import { BEFORE_GAP } from "../definition/labels";
 import {
   typeList,
@@ -182,6 +184,12 @@ export interface NotationBindings {
    */
   customRoutes?: Readonly<Record<string, CustomRouteRef>>;
   /**
+   * The edges drawn as a ribbon, a filled band along their route as thick as their style's stroke width,
+   * measured vertically, in their stroke's colour, with the class each names. DISL strokes every edge, and
+   * a stroke is thick across a curve rather than down it; the route is the edge's custom route.
+   */
+  ribbons?: Readonly<Record<string, { className?: string }>>;
+  /**
    * An action as the module dispatches it, given the compiled declaration and the shortcut its menu
    * entry writes (its `KeyboardEvent.key`, without the modifiers, which a `backendKey` cannot carry): where a module's backend resolves an action by its key
    * (`backendKey`), or a second key invokes it, which DISL's one `shortcut` per entry cannot say.
@@ -221,6 +229,12 @@ export interface NotationBindings {
    * library fits a label by its own measures, as it does for every specification that states none.
    */
   labelFit?: "style";
+  /**
+   * Whether a node's stroke and fill, and its labels' size, weight, slant and colour, are drawn from the
+   * notation's styles (DISL §6.6 `stroke`, `fill`, `font`) rather than left to the module's stylesheet. A
+   * stroke of no width is not drawn; a token is its custom property, `--` and its name with dashes for dots.
+   */
+  stylesFromNotation?: boolean;
   /**
    * The canvas's title and key (DISL §6.13 `canvas.title`, `canvas.legend`) as the module's stylesheet and
    * tests know them. A computed key's CEL runs over the elements drawn, which the backend evaluates, so its
@@ -892,11 +906,13 @@ class Compiler {
     const { sizing, resize } = this.sizing(node);
     const editOnDrop = (this.spec.toolbox?.groups ?? []).some((group) => group.tools.some((tool) => tool.creates === name && tool.after === "editLabel"));
     const boundStyle = this.bindings.boundStyle?.(name, node);
+    const style = { ...(cornerRadius !== undefined ? { cornerRadius } : {}), ...this.notationStyle(node) };
+    const dragAxis = this.dragAxis(node);
 
     return {
       id: this.typeId(name),
       shape,
-      ...(cornerRadius !== undefined ? { style: { cornerRadius } } : {}),
+      ...(Object.keys(style).length > 0 ? { style } : {}),
       ...(boundStyle !== undefined ? { boundStyle } : {}),
       ...(classNames.length > 0 ? { classNames } : {}),
       ...(data !== undefined ? { data } : {}),
@@ -910,6 +926,7 @@ class Compiler {
       sizing,
       ...(resize !== undefined ? { resize } : {}),
       ...(this.movable(node) ? {} : { draggable: false }),
+      ...(dragAxis !== undefined ? { dragAxis } : {}),
       ...(node.deletable === false ? { deletable: false } : {}),
       // The background layer (DISL 6.16) is beneath the connections, so a container's arrows stay over it.
       ...(node.layer === "background" ? { beneathConnections: true } : {}),
@@ -1019,14 +1036,21 @@ class Compiler {
   /**
    * Where a node with no position of its own is drawn (DISL §6.9 placement): the mean of the centres of
    * the members one attribute lists, `self.<members>.map(m, m.view.bounds.center()[0]).avg()` and its
-   * `[1]` - the members the payload lists under the attribute's name. Any other CEL is refused; a
-   * placement by attribute or by the layout is not this one's.
+   * `[1]` - the members the payload lists under the attribute's name. A CEL the module's celPaths name
+   * `element.x` and `element.y` is the position the backend computed, which the model carries. Any other
+   * CEL is refused; a placement by attribute or by the layout is not this one's.
    */
   private centreOf(name: string, node: DislNodeNotation): string | undefined {
     const { x, y } = node.placement ?? {};
     // An attribute or the layout places a node as the other placements do; only a CEL is read here.
     const computed = (value: unknown) => isObject(value) && typeof value.cel === "string";
     if (!computed(x) && !computed(y)) {
+      return undefined;
+    }
+
+    // A position the backend computes arrives as the element's own, where the module's celPaths say so.
+    const own = (value: unknown, axis: "x" | "y") => isObject(value) && typeof value.cel === "string" && this.bindings.celPaths[value.cel] === `element.${axis}`;
+    if (own(x, "x") && own(y, "y")) {
       return undefined;
     }
 
@@ -1134,12 +1158,20 @@ class Compiler {
       if (anchorTo === undefined || (ax !== 0.5 && edge === undefined)) {
         fail(`${where} anchors at ${JSON.stringify(position.anchor)}; the library anchors a label at the top, centre or bottom of the middle or of an edge.`);
       }
-      if (edge !== undefined && position.align !== edge) {
-        fail(`${where} anchors at its ${edge === "start" ? "left" : "right"} edge ${position.align === undefined ? "with no align" : `aligned "${position.align}"`}; the library aligns such a line "${edge}".`);
+      // A line aligned away from its edge runs out beyond it: the library's aligned line from the opposite
+      // edge, inset across the node, which only a node of a stated width can say.
+      const across = edge === undefined ? undefined : edge === "start" ? "end" : "start";
+      const width = across !== undefined && position.align === across ? this.statedWidth(type) : undefined;
+      if (edge !== undefined && position.align !== edge && width === undefined) {
+        fail(`${where} anchors at its ${edge === "start" ? "left" : "right"} edge ${position.align === undefined ? "with no align" : `aligned "${position.align}"`}; the library aligns such a line "${edge}", or "${across}" beyond the edge of a node of a stated width.`);
       }
       declaration.anchorTo = anchorTo;
       const offset = position.offset as readonly [number, number] | undefined;
-      if (edge !== undefined) {
+      if (edge !== undefined && width !== undefined) {
+        declaration.align = across;
+        declaration.insetX = width + (edge === "end" ? (offset?.[0] ?? 0) : -(offset?.[0] ?? 0));
+        declaration.offset = { x: 0, y: offset?.[1] ?? 0 };
+      } else if (edge !== undefined) {
         declaration.align = edge;
         declaration.insetX = edge === "start" ? (offset?.[0] ?? 0) : -(offset?.[0] ?? 0);
         declaration.offset = { x: 0, y: offset?.[1] ?? 0 };
@@ -1168,6 +1200,10 @@ class Compiler {
     if (label.tooltip !== undefined) {
       declaration.tooltip = this.binding(label.tooltip, `${where} tooltip`);
     }
+    const typography = this.typography(type, label, where);
+    if (typography !== undefined) {
+      declaration.typography = typography;
+    }
     const when = this.labelVisibility(label.visible, where);
     if (when !== undefined) {
       declaration.when = when;
@@ -1187,6 +1223,16 @@ class Compiler {
     }
 
     return declaration as unknown as LabelDeclaration;
+  }
+
+  /** A node's width where it states one that nothing changes: a number, or the first of a fixed size. */
+  private statedWidth(type: string): number | undefined {
+    const size = this.spec.notation.nodes[type]?.size;
+    if (size?.fixed !== undefined) {
+      return size.fixed[0];
+    }
+
+    return typeof size?.width === "number" && (size.resizable === undefined || size.resizable === false || size.resizable === "vertical") ? size.width : undefined;
   }
 
   /**
@@ -1312,6 +1358,11 @@ class Compiler {
       return { kind: "edge" };
     }
 
+    if (anchors?.mode === "sides" && anchors.spread === true) {
+      // Spread along each side: an end sits anywhere along the edge, where the model attaches it.
+      return { kind: "along", edges: [...(anchors.sides ?? ["top", "right", "bottom", "left"])], visible: false };
+    }
+
     if (anchors?.mode === "sides") {
       const sides = [...(anchors.sides ?? ["top", "right", "bottom", "left"])].sort().join(",");
       const edgeSides = sides === "bottom,top" ? "vertical" : sides === "left,right" ? "horizontal" : sides === "bottom,left,right,top" ? undefined : fail(`node "${name}" attaches on ${sides}, which the library's edge anchors cannot narrow to.`);
@@ -1388,6 +1439,69 @@ class Compiler {
     };
   }
 
+  /** The one axis a node moves along, where its placement is movable along one and not the other. */
+  private dragAxis(node: DislNodeNotation): "x" | "y" | undefined {
+    const movable = node.placement?.movable;
+    if (!isObject(movable) || (movable.x === true) === (movable.y === true)) {
+      return undefined;
+    }
+
+    return movable.x === true ? "x" : "y";
+  }
+
+  /**
+   * A node's stroke and fill from its style, where the module asks for them ({@link NotationBindings.stylesFromNotation}):
+   * a stroke of no width is not drawn, and a token is its custom property. A CEL colour is the element's
+   * {@link NotationBindings.boundStyle}'s, which the payload carries.
+   */
+  private notationStyle(node: DislNodeNotation): { stroke?: string; strokeWidth?: number; fill?: string } {
+    if (this.bindings.stylesFromNotation !== true) {
+      return {};
+    }
+
+    const style = this.styleOf(node.style);
+    const stroke = isObject(style?.stroke) ? style.stroke : undefined;
+    const fill = style?.fill;
+    const strokeColour = isObject(stroke?.color) && typeof stroke.color.token === "string" ? tokenProperty(stroke.color.token) : undefined;
+    return {
+      ...(stroke?.width === 0 ? { stroke: "transparent" } : {
+        ...(strokeColour !== undefined ? { stroke: strokeColour } : {}),
+        ...(typeof stroke?.width === "number" ? { strokeWidth: stroke.width } : {}),
+      }),
+      ...(isObject(fill) && typeof fill.token === "string" ? { fill: tokenProperty(fill.token) } : {}),
+    };
+  }
+
+  /**
+   * A label's size, weight, slant and colour from its style's `font`, where the module asks for them
+   * ({@link NotationBindings.stylesFromNotation}). A CEL colour is the element's bound label colour, and
+   * refused where the module binds none.
+   */
+  private typography(type: string, label: DislLabel, where: string): LabelTypography | undefined {
+    if (this.bindings.stylesFromNotation !== true) {
+      return undefined;
+    }
+
+    const font = this.styleOf(label.style)?.font;
+    if (!isObject(font)) {
+      return undefined;
+    }
+
+    const colour = font.color;
+    if (isObject(colour) && typeof colour.cel === "string" && this.bindings.boundStyle?.(type, this.spec.notation.nodes[type]!)?.labelColor === undefined) {
+      fail(`${where} is coloured by "${colour.cel}", which no bound label colour of the module carries.`);
+    }
+
+    const weight = font.weight;
+    const typography: LabelTypography = {
+      ...(typeof font.size === "number" ? { fontSize: font.size } : {}),
+      ...(weight === "bold" || (typeof weight === "number" && weight >= 600) ? { fontWeight: "bold" as const } : {}),
+      ...(font.style === "italic" ? { fontStyle: "italic" as const } : {}),
+      ...(isObject(colour) && typeof colour.token === "string" ? { color: tokenProperty(colour.token) } : {}),
+    };
+    return Object.keys(typography).length > 0 ? typography : undefined;
+  }
+
   private movable(node: DislNodeNotation): boolean {
     const movable = node.placement?.movable;
     return movable === undefined || movable === true || (isObject(movable) && (movable.x === true || movable.y === true));
@@ -1461,6 +1575,10 @@ class Compiler {
     const strokeLadder = this.strokeLadder(name, edge);
     const stub = this.stub(name, edge);
     const { dash, dashWhen } = this.dash(name, edge);
+    const ribbon = this.ribbon(name, edge, customRoute);
+    if (ribbon !== undefined && along !== undefined) {
+      fail(`edge "${name}" is a ribbon and a bowed arc; the library draws one or the other.`);
+    }
 
     // Only a type that may hold children can be the parent end of a relation derived from containment.
     const derivedFromParent = isObject(relation.derived) && relation.derived.source === "item.parent";
@@ -1485,6 +1603,7 @@ class Compiler {
       style: { ...(source !== "none" ? { startMarker: this.marker(source) } : {}), endMarker: this.marker(target), ...(dash !== undefined ? { dash } : {}) },
       ...(dashWhen !== undefined ? { dashWhen } : {}),
       ...(along !== undefined && ((along.bars?.length ?? 0) > 0 || (along.marks?.length ?? 0) > 0) ? { adorn: bowedArcAdornment(along) } : {}),
+      ...(ribbon !== undefined ? { adorn: ribbonAdornment(ribbon, customRoute!) } : {}),
       ...(strokeLadder !== undefined ? { strokeLadder } : {}),
       ...(stub !== undefined ? { stub } : {}),
       ...(className !== undefined ? { className } : {}),
@@ -1501,6 +1620,46 @@ class Compiler {
         ...(Object.keys(cardinality).length > 0 ? { cardinality } : {}),
       },
       ...(this.createsOnEmptyRelease(name, edge) ? { emptyRelease: "complete" as const } : {}),
+    };
+  }
+
+  /**
+   * An edge the module names in {@link NotationBindings.ribbons}: its style's stroke width the band's
+   * thickness and its stroke colour the band's fill, each bound to the payload as a CEL term the
+   * module's celPaths name, and its selected state's casing
+   * width the outline it is drawn with while highlighted.
+   */
+  private ribbon(name: string, edge: DislEdgeNotation, route: CustomRouteRef | undefined): RibbonDeclaration | undefined {
+    const ribbon = this.bindings.ribbons?.[name];
+    if (ribbon === undefined) {
+      return undefined;
+    }
+
+    const where = `edge "${name}" is a ribbon`;
+    if (route === undefined) {
+      return fail(`${where}, which the library sweeps along a custom route the module binds; it binds none.`);
+    }
+
+    const stroke = this.styleOf(edge.style)?.stroke;
+    const width = isObject(stroke) ? stroke.width : undefined;
+    const thickness = width === undefined ? undefined : this.binding(width, `${where}: its thickness`);
+    if (thickness === undefined || !("path" in thickness)) {
+      return fail(`${where}: its style's stroke width ${JSON.stringify(width)} is no payload path to read a thickness from.`);
+    }
+
+    const colour = isObject(stroke) ? stroke.color : undefined;
+    const fill = colour === undefined ? undefined : this.binding(colour, `${where}: its colour`);
+    if (fill !== undefined && !("path" in fill)) {
+      return fail(`${where}: its style's stroke colour ${JSON.stringify(colour)} is no payload path to read a paint from.`);
+    }
+
+    const casing = this.styleOf(edge.states?.selected)?.stroke;
+    const highlightWidth = isObject(casing) && isObject(casing.casing) && typeof casing.casing.width === "number" ? casing.casing.width : undefined;
+    return {
+      thickness: { path: thickness.path },
+      ...(fill !== undefined ? { fill: { path: fill.path } } : {}),
+      ...(ribbon.className !== undefined ? { className: ribbon.className } : {}),
+      ...(highlightWidth !== undefined ? { highlightWidth } : {}),
     };
   }
 
@@ -2209,7 +2368,7 @@ class Compiler {
     const origins = this.bindings.snapOrigins;
     const step = (axisName: "x" | "y"): number => {
       const rule = snapping[axisName] as Record<string, unknown> | undefined;
-      const axis = this.axis(system[axisName]);
+      const axis = this.axis(system[axisName] ?? fail(`the ${axisName} snapping rule ${JSON.stringify(rule)} is on a system that declares no ${axisName} axis.`));
       if (isObject(rule?.calendar) && isObject(axis.scale) && JSON.stringify(rule.calendar.unit) === JSON.stringify(axis.scale.unit)) {
         // A calendar snap in the axis's own unit is one step of the axis: `scale.size` canvas units.
         return axis.scale.size;
@@ -2253,7 +2412,12 @@ class Compiler {
     }
 
     return (["x", "y"] as const).flatMap((axisName): RulerDeclaration[] => {
-      const axis = this.axis(system[axisName]);
+      const declared = system[axisName];
+      if (declared === undefined) {
+        return [];
+      }
+
+      const axis = this.axis(declared);
       const ruler = axis.ruler;
       if (ruler === undefined || ruler.visible === false) {
         return [];
@@ -2449,7 +2613,7 @@ class Compiler {
     }
 
     const system = this.systemNamed(variant.coordinateSystem);
-    const rows = system === undefined ? undefined : this.axis(system.y);
+    const rows = system?.y === undefined ? undefined : this.axis(system.y);
     if (rows === undefined || typeof rows.scale !== "number") {
       return fail("the row-packed viewpoint's system needs a linear row axis.");
     }
@@ -2540,6 +2704,11 @@ function inheritedNotation(spec: DislDocument): DislDocument {
 }
 
 /** A DISL notation as the library's diagram definition. See this file's opening comment. */
+/** A theme token as its CSS custom property: `color.text.muted` is `--color-text-muted`. */
+function tokenProperty(token: string): string {
+  return `--${token.replace(/\./g, "-")}`;
+}
+
 export function compileNotation(spec: DislDocument, bindings: NotationBindings, options: CompileOptions = {}): DiagramDefinition {
   return new Compiler(inheritedNotation(spec), bindings, options).compile();
 }

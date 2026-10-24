@@ -1,12 +1,13 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { elementSourceOf } from "@client/canvas/selection";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
-import type { DiagramDefinition, ElementTypeDefinition, LabelDeclaration, ShapeBounds, ShapePoint } from "@client/canvas/library/definition/diagramDefinition";
-import type { ActionInvocation } from "@client/canvas/library/definition/actions";
+import type { DiagramDefinition, ShapeBounds } from "@client/canvas/library/definition/diagramDefinition";
 import type { DiagramEventHandlers } from "@client/canvas/library/api/diagramEvents";
 import type { DiagramModel, DiagramModelConnection, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
+import { compileNotation } from "@client/canvas/library/disl/compileNotation";
+import { parseDisl } from "@client/canvas/library/disl/disTypes";
 import { useContextConnection } from "@client/shell/context/ContextConnectionProvider";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import type { ToolContentProps } from "@client/shell/panels/toolPanelRegistration";
@@ -14,177 +15,21 @@ import { useDiagramStream } from "@client/diagrams/useDiagramStream";
 import { viewReportOf } from "@client/diagrams/viewReport";
 import { useViewReport } from "@client/diagrams/useViewReport";
 import { placementId, relationId } from "@client/canvas/gestureIds";
-import { DEFAULT_COLOR, FLOW_TYPE, NODE_TYPE, SankeyActions, SankeySides } from "./sankeyIds";
-import { applyDelta, columnPlaceOf, emptyModel, type SankeyFlow, type SankeyModel } from "./sankeyModel";
-
-/** How far a label sits from its bar: the bar's width plus a little air, measured from the far edge. */
-const LABEL_INSET = 24 + 10;
-
-/** The keys that step a flow: `+` with or without Shift (its key differs by layout), `=` beside it, and `-`. */
-const INCREASE_KEYS: readonly ActionInvocation[] = [
-  { kind: "shortcut", key: "+" },
-  { kind: "shortcut", key: "+", shift: true },
-  { kind: "shortcut", key: "=" },
-];
-const DECREASE_KEYS: readonly ActionInvocation[] = [
-  { kind: "shortcut", key: "-" },
-  { kind: "shortcut", key: "_", shift: true },
-];
-
-/**
- * A step so large that the only resting line is the one at the node's own left: a node moves up and
- * down its column and never out of it. A column is decided by the flows, or by a `column` the
- * property grid sets; a drag sideways would be a third way that the document could not keep.
- */
-const COLUMN_LOCK = 1_000_000;
-
-/** How strongly a band's curve pulls: half the distance it travels, so it leaves and arrives level. */
-function pullOf(from: ShapePoint, to: ShapePoint): number {
-  return Math.max(40, Math.abs(to.x - from.x) / 2);
-}
-
-/**
- * The centre line of a band: a horizontal S from where it leaves its source's right edge to where
- * it reaches its target's left edge. It is what the library hit-tests and what a connect preview
- * draws; the band itself is {@link bandPath}, drawn around it.
- */
-export function centrePath(from: ShapePoint, to: ShapePoint): string {
-  const pull = pullOf(from, to);
-  return `M ${from.x} ${from.y} C ${from.x + pull} ${from.y} ${to.x - pull} ${to.y} ${to.x} ${to.y}`;
-}
-
-/**
- * The band itself, filled: its top edge and its bottom edge are the same S, `thickness` apart
- * VERTICALLY all the way along.
- *
- * <b>Filled rather than stroked, because a stroke is thick across the curve, not down it.</b> A
- * stroked S is as wide as its value only where it runs level; on the slope it narrows, so a band
- * looks pinched exactly where two bands cross, and the ends it meets at the bars no longer line up
- * with the stacked bands beside it. Two parallel curves keep the value's height at every x - which
- * is how the bands at a bar stack edge to edge with no gap and no overlap.
- */
-export function bandPath(from: ShapePoint, to: ShapePoint, thickness: number): string {
-  const half = thickness / 2;
-  const pull = pullOf(from, to);
-  const [x0, x1, c0, c1] = [from.x, to.x, from.x + pull, to.x - pull];
-  return [
-    `M ${x0} ${from.y - half}`,
-    `C ${c0} ${from.y - half} ${c1} ${to.y - half} ${x1} ${to.y - half}`,
-    `L ${x1} ${to.y + half}`,
-    `C ${c1} ${to.y + half} ${c0} ${from.y + half} ${x0} ${from.y + half}`,
-    "Z",
-  ].join(" ");
-}
+import disText from "../definition/sankey.dis?raw";
+import { SANKEY_BINDINGS } from "./sankeyBindings";
+import { DEFAULT_COLOR, FLOW_TYPE, NODE_TYPE, SankeyActions } from "./sankeyIds";
+import { applyDelta, columnPlaceOf, emptyModel, type SankeyModel } from "./sankeyModel";
 
 /** A palette word as its theme token, or a `#rrggbb` as itself. */
 export function paintOf(word: string, custom: string): string {
   return custom !== "" ? custom : `--color-diagram-sankey-${word !== "" ? word : DEFAULT_COLOR}`;
 }
 
-/** A token as CSS can use it inline; a literal colour as itself. */
-function cssColour(paint: string): string {
-  return paint.startsWith("--") ? `var(${paint})` : paint;
-}
-
-/** What a flow connection carries beside the library's own fields, for the band to read. */
-interface FlowConnection extends DiagramModelConnection {
-  flow: SankeyFlow;
-}
-
 /**
- * The band: a filled ribbon in its colour, as thick as its value, drawn inside the connection's
- * group so a press on it selects the flow. The library's own line is the centre, kept for hit
- * testing and hidden by the stylesheet; the highlight is painted here instead, as an outline.
+ * What a Sankey diagram draws, and what each gesture on it means: compiled from the bundled
+ * specification the backend runs, with what the library cannot read from it in `SANKEY_BINDINGS`.
  */
-function bandAdornment(route: { from: ShapePoint; to: ShapePoint; highlighted?: boolean }, raw: unknown): ReactNode {
-  const { flow } = raw as FlowConnection;
-  const paint = cssColour(paintOf(flow.payload.color, flow.payload.customColor));
-  return (
-    <path
-      className="sankey-band"
-      d={bandPath(route.from, route.to, flow.payload.thickness)}
-      style={{
-        fill: paint,
-        ...(route.highlighted === true ? { stroke: "var(--color-selected)", strokeWidth: 2 } : {}),
-      }}
-    />
-  );
-}
-
-/** One side's three lines: the name in the node's colour, the value beneath it, and the note under that. */
-function sideLabels(side: string, align: "start" | "end"): LabelDeclaration[] {
-  const on = { path: "payload.side", equals: side };
-  return [
-    { text: { path: "payload.name" }, offset: { x: 0, y: -5 }, align, insetX: LABEL_INSET, when: on, typography: { fontSize: 13, fontWeight: "bold" }, className: "sankey-label sankey-name" },
-    { text: { path: "payload.displayValue" }, offset: { x: 0, y: 11 }, align, insetX: LABEL_INSET, when: on, typography: { fontSize: 12 }, className: "sankey-label sankey-value" },
-    {
-      text: { path: "payload.note" },
-      offset: { x: 0, y: 26 },
-      align,
-      insetX: LABEL_INSET,
-      when: { path: "payload.noteSide", equals: side },
-      typography: { fontSize: 11, fontStyle: "italic", color: "--color-text-muted" },
-      className: "sankey-label sankey-note",
-    },
-  ];
-}
-
-/** A bar: as tall as its value, painted in its colour, its labels before it in the first column and after it elsewhere. */
-const NODE_ELEMENT_TYPE: ElementTypeDefinition = {
-  id: NODE_TYPE,
-  shape: "box",
-  style: { stroke: "transparent" },
-  boundStyle: { fill: { path: "payload.paint" }, labelColor: { path: "payload.paint" } },
-  classNames: [
-    { className: "canvas-element sankey-node", on: "element" },
-    { className: "sankey-bar", on: "shape" },
-  ],
-  labels: [...sideLabels(SankeySides.left, "end"), ...sideLabels(SankeySides.right, "start")],
-  tooltip: { path: "payload.tooltip" },
-  // A band leaves anywhere along the right edge and arrives anywhere along the left, where the
-  // layout stacked it; the whole edge is the handle, so no dot is drawn.
-  anchors: { kind: "along", edges: ["left", "right"], visible: false },
-  sizing: "model",
-};
-
-/** What a Sankey diagram draws, and what each gesture on it means. */
-export const SANKEY_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
-  elementTypes: [NODE_ELEMENT_TYPE],
-  relationTypes: [
-    {
-      id: FLOW_TYPE,
-      route: { customRoute: "sankey-band", path: (from, to) => centrePath(from, to) },
-      style: { endMarker: "none" },
-      className: "sankey-flow",
-      lineClassName: "sankey-flow-line",
-      adorn: bandAdornment,
-      endpoints: {
-        source: { elementTypes: [NODE_TYPE] },
-        target: { elementTypes: [NODE_TYPE] },
-        allowSelf: false,
-        cardinality: { perPair: "ordered" },
-      },
-    },
-  ],
-  actions: [
-    { id: SankeyActions.increase, invokedBy: INCREASE_KEYS, appliesTo: [{ kind: "connection" }] },
-    { id: SankeyActions.decrease, invokedBy: DECREASE_KEYS, appliesTo: [{ kind: "connection" }] },
-    {
-      id: SankeyActions.rename,
-      invokedBy: [{ kind: "shortcut", key: "F2" }, { kind: "gesture", gesture: "activate" }],
-      appliesTo: [{ kind: "element", elementTypes: [NODE_TYPE] }],
-    },
-    { id: SankeyActions.remove, invokedBy: [{ kind: "gesture", gesture: "delete" }], appliesTo: [{ kind: "element", elementTypes: [NODE_TYPE] }, { kind: "connection" }] },
-  ],
-  layout: { modes: ["manual"] },
-  dragging: "enabled",
-  // Up and down its column only: x rests on the node's own left edge.
-  snap: { x: { step: { path: "payload.snapStep" }, origin: { path: "payload.snapLeft" } } },
-  // A flow is drawn by dragging with the right button from one node to another.
-  connectOnRightDrag: true,
-  // "Add node here" and the thickness on empty canvas, from the backend's own list.
-  backgroundMenu: true,
-});
+export const SANKEY_DEFINITION: DiagramDefinition = assertValidDiagramDefinition(compileNotation(parseDisl(disText), SANKEY_BINDINGS));
 
 /** The declared actions this module forwards; anything else the library raises is not ours. */
 const FORWARDED_ACTIONS: ReadonlySet<string> = new Set([SankeyActions.increase, SankeyActions.decrease, SankeyActions.rename, SankeyActions.remove]);
@@ -218,13 +63,11 @@ export function diagramModelOf(model: SankeyModel, rearrangement?: Rearrangement
         noteSide: note !== "" ? side : "",
         paint: paintOf(color, customColor),
         tooltip: `${name}: ${displayValue}${note !== "" ? ` (${note})` : ""}`,
-        snapLeft: node.x - width / 2,
-        snapStep: COLUMN_LOCK,
       },
     };
   });
 
-  const connections = [...model.flows.values()].flatMap((flow): FlowConnection[] => {
+  const connections = [...model.flows.values()].flatMap((flow): DiagramModelConnection[] => {
     const from = model.nodes.get(flow.payload.fromElementId);
     const to = model.nodes.get(flow.payload.toElementId);
     if (from === undefined || to === undefined) {
@@ -239,7 +82,7 @@ export function diagramModelOf(model: SankeyModel, rearrangement?: Rearrangement
       sourceAttachment: { edge: "right", at: flow.payload.sourceAt },
       targetAttachment: { edge: "left", at: flow.payload.targetAt },
       title: `${from.payload.name} → ${to.payload.name}: ${flow.payload.displayValue}`,
-      flow,
+      payload: { paint: paintOf(flow.payload.color, flow.payload.customColor), thickness: flow.payload.thickness },
     }];
   });
 
