@@ -38,7 +38,7 @@ namespace EtAlii.Adp.Diagram.Sankey;
 internal static class SankeyDefinition
 {
     /// <summary>The definition, with its <c>x-sankey</c> wire ids.</summary>
-    public static DislDiagramDefinition Definition { get; } = new(
+    private static DislDiagramDefinition Definition { get; } = new(
         typeof(SankeyDefinition).Assembly,
         "sankey.dis",
         "x-sankey",
