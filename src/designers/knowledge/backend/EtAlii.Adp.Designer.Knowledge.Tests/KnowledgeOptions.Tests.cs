@@ -114,19 +114,16 @@ public sealed class KnowledgeOptionsTests : IDisposable
         await using var table = Open(extension);
 
         // Assert.
-        Assert.Equal(("3", "1"), (Settings("p4")["uses:o3"], Settings("p4")["uses:o4"]));
-        Assert.Equal(("4", "1"), (Settings("p2")["uses:o1"], Settings("p2")["uses:o2"]));
+        Assert.Equal(("3", "1"), (table.ColumnSettings("p4")["uses:o3"], table.ColumnSettings("p4")["uses:o4"]));
+        Assert.Equal(("4", "1"), (table.ColumnSettings("p2")["uses:o1"], table.ColumnSettings("p2")["uses:o2"]));
 
         // Act: an option nobody has says nothing, and the count follows the rows.
         await table.Edit(Option("addOption", "p2", name: "Luxembourg"));
         await table.Edit(new TableGesture("setCell", RowId: "r1", ColumnId: "p4", Values: ["o4"]));
 
         // Assert.
-        Assert.Equal(6, Settings("p2").Keys.Count(key => key.StartsWith("uses:", StringComparison.Ordinal)));
-        Assert.Equal("2", Settings("p4")["uses:o3"]);
-        return;
-
-        IReadOnlyDictionary<string, string> Settings(string id) => table.Session.Baseline().Columns.Single(column => column.Id == id).Settings;
+        Assert.Equal(6, table.ColumnSettings("p2").Keys.Count(key => key.StartsWith("uses:", StringComparison.Ordinal)));
+        Assert.Equal("2", table.ColumnSettings("p4")["uses:o3"]);
     }
 
     [Theory]

@@ -295,12 +295,9 @@ public sealed class KnowledgeRelationsTests : IDisposable
         var provinces = KnowledgeDocumentStore.Read(Provinces).Body!.Table;
         var nearby = provinces.Properties.Single(property => property.Name == "Cities nearby");
         Assert.Equal(("", false, "relation", "cities" + extension), (nearby.Counterpart, nearby.IsComputed, nearby.ValueType, nearby.TargetFile));
-        Assert.Equal(["r1"], Held("nh"));
-        Assert.Equal(["r1", "r2"], Held("zh"));
-        Assert.Null(Held("an"));
-        return;
-
-        IReadOnlyList<string>? Held(string rowId) => provinces.Rows.Single(row => row.Id == rowId).Cells.FirstOrDefault(cell => cell.PropertyId == nearby.Id)?.Values;
+        Assert.Equal(["r1"], provinces.ValuesOf("nh", nearby.Id));
+        Assert.Equal(["r1", "r2"], provinces.ValuesOf("zh", nearby.Id));
+        Assert.Null(provinces.ValuesOf("an", nearby.Id));
     }
 
     [Fact]
@@ -487,20 +484,20 @@ public sealed class KnowledgeRelationsTests : IDisposable
     {
         // Arrange: the province of a city, which holds one row and is shown in this table only.
         await using var table = Open(extension);
-        Assert.Equal(("one", ""), (Province().Limit, Province().Counterpart));
+        Assert.Equal(("one", ""), (table.OnDisk().Property("p5").Limit, table.OnDisk().Property("p5").Counterpart));
         var rows = KnowledgeFiles.Describe(table.OnDisk() with { Properties = [], Views = [] });
         var theirs = KnowledgeFiles.Describe(KnowledgeDocumentStore.Read(Provinces).Body!.Table);
 
         // Act: any number of rows, then one again; saying what it is already changes nothing.
         await table.Edit(new TableGesture("setRelationLimit", ColumnId: "p5", Settings: Settings(("limit", "none"))));
-        Assert.Equal("none", Province().Limit);
+        Assert.Equal("none", table.OnDisk().Property("p5").Limit);
         Assert.Equal("none", table.Session.Baseline().Columns.Single(column => column.Id == "p5").Settings["limit"]);
         var bytes = table.Bytes();
         (_, string same) = table.Begin(new TableGesture("setRelationLimit", ColumnId: "p5", Settings: Settings(("limit", "none"))));
         Assert.Equal("", same);
         Assert.Equal(bytes, table.Bytes());
         await table.Edit(new TableGesture("setRelationLimit", ColumnId: "p5", Settings: Settings(("limit", "one"))));
-        Assert.Equal("one", Province().Limit);
+        Assert.Equal("one", table.OnDisk().Property("p5").Limit);
 
         // Act: shown in the provinces too, under a name.
         await table.Edit(new TableGesture("setRelationOtherSide", ColumnId: "p5", Settings: Settings(("twoWay", "true"), ("counterpart", "Towns"))));
@@ -508,14 +505,14 @@ public sealed class KnowledgeRelationsTests : IDisposable
         // Assert: the other side is there, shows this side's values and holds none; this side names it.
         var other = KnowledgeDocumentStore.Read(Provinces).Body!.Table.Properties.Single(property => property.Name == "Towns");
         Assert.Equal((true, "p5", "relation"), (other.IsComputed, other.Counterpart, other.ValueType));
-        Assert.Equal(other.Id, Province().Counterpart);
+        Assert.Equal(other.Id, table.OnDisk().Property("p5").Counterpart);
         Assert.Equal("Towns", table.Session.Baseline().Columns.Single(column => column.Id == "p5").Settings["otherSide"]);
 
         // Act: in this table only again.
         await table.Edit(new TableGesture("setRelationOtherSide", ColumnId: "p5", Settings: Settings(("twoWay", "false"))));
 
         // Assert: the other side is gone, this side names none, and the provinces are what they were.
-        Assert.Equal("", Province().Counterpart);
+        Assert.Equal("", table.OnDisk().Property("p5").Counterpart);
         Assert.DoesNotContain(KnowledgeDocumentStore.Read(Provinces).Body!.Table.Properties, property => property.Name == "Towns");
         Assert.Equal(theirs, KnowledgeFiles.Describe(KnowledgeDocumentStore.Read(Provinces).Body!.Table));
 
@@ -533,9 +530,6 @@ public sealed class KnowledgeRelationsTests : IDisposable
         await table.Edit(new TableGesture("setColumnParent", ColumnId: partOf, Settings: Settings(("parent", "true"))));
         (_, string parent) = table.Begin(new TableGesture("setRelationLimit", ColumnId: partOf, Settings: Settings(("limit", "none"))));
         Assert.Equal(KnowledgeColumnEdits.ParentHoldsOne, parent);
-        return;
-
-        KnowledgeProperty Province() => table.OnDisk().Properties.Single(property => property.Id == "p5");
     }
 
     [Fact]
@@ -586,19 +580,16 @@ public sealed class KnowledgeRelationsTests : IDisposable
         await table.Edit(new TableGesture("addRelation", Values: ["Twinned with"], Settings: Settings(("target", KnowledgeRelations.Self))));
 
         // Assert.
-        Assert.Equal("true", Of("Part of")["nestable"]);
-        Assert.DoesNotContain("nestable", Of("Twinned with").Keys);
+        Assert.Equal("true", table.ColumnSettingsNamed("Part of")["nestable"]);
+        Assert.DoesNotContain("nestable", table.ColumnSettingsNamed("Twinned with").Keys);
         Assert.DoesNotContain("nestable", table.Session.Baseline().Columns.Single(column => column.Id == "p5").Settings.Keys);
-        Assert.DoesNotContain("parent", Of("Part of").Keys);
+        Assert.DoesNotContain("parent", table.ColumnSettingsNamed("Part of").Keys);
 
         // Act: made the parent relation, as the column's menu does.
         await table.Edit(new TableGesture("setColumnParent", ColumnId: Property(table, "Part of").Id, Settings: Settings(("parent", "true"))));
 
         // Assert.
-        Assert.Equal("true", Of("Part of")["parent"]);
-        return;
-
-        IReadOnlyDictionary<string, string> Of(string name) => table.Session.Baseline().Columns.Single(column => column.Name == name).Settings;
+        Assert.Equal("true", table.ColumnSettingsNamed("Part of")["parent"]);
     }
 
     [Theory]
@@ -614,8 +605,8 @@ public sealed class KnowledgeRelationsTests : IDisposable
         await table.Edit(new TableGesture("setCell", RowId: "r1", ColumnId: twinned, Values: ["r2"]));
 
         // Assert: one of the two holds the pair, and both show it.
-        Assert.Equal(["r2"], Held("r1"));
-        Assert.Null(Held("r2"));
+        Assert.Equal(["r2"], table.OnDisk().ValuesOf("r1", twinned));
+        Assert.Null(table.OnDisk().ValuesOf("r2", twinned));
         var lines = table.Lines();
         Assert.Equal(["r2"], Cell(lines, "r1", twinned)?.Values);
         Assert.Equal(["r1"], Cell(lines, "r2", twinned)?.Values);
@@ -629,8 +620,8 @@ public sealed class KnowledgeRelationsTests : IDisposable
         await table.Edit(new TableGesture("setCell", RowId: "r2", ColumnId: twinned, Values: []));
 
         // Assert: gone from the end that held it, and from both rows on the screen.
-        Assert.Null(Held("r1"));
-        Assert.Null(Held("r2"));
+        Assert.Null(table.OnDisk().ValuesOf("r1", twinned));
+        Assert.Null(table.OnDisk().ValuesOf("r2", twinned));
         Assert.Null(Cell(table.Lines(), "r1", twinned));
 
         // The parent relation keeps its direction: a row under another does not put that one under it.
@@ -639,9 +630,6 @@ public sealed class KnowledgeRelationsTests : IDisposable
         await table.Edit(new TableGesture("setColumnParent", ColumnId: partOf, Settings: Settings(("parent", "true"))));
         await table.Edit(new TableGesture("setCell", RowId: "r2", ColumnId: partOf, Values: ["r1"]));
         Assert.Null(Cell(table.Lines(), "r1", partOf));
-        return;
-
-        IReadOnlyList<string>? Held(string rowId) => table.OnDisk().Rows.Single(row => row.Id == rowId).Cells.FirstOrDefault(cell => cell.PropertyId == twinned)?.Values;
     }
 
     [Fact]

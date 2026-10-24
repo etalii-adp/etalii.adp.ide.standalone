@@ -81,7 +81,7 @@ internal static class DislToolboxReader
         {
             Id = JsonProperties.String(tool, "id"),
             Creates = JsonProperties.String(tool, "creates"),
-            Label = tool.TryGetProperty("label", out var label) ? DislFieldReader.Message(specification, label, JsonPointer.Append(pointer, "label")) : null,
+            Label = DislFieldReader.OptionalMessage(specification, tool, pointer, "label"),
             Icon = JsonProperties.String(tool, "icon"),
             Doc = tool.TryGetProperty("doc", out var doc) ? (doc.ValueKind == JsonValueKind.String ? doc.GetString()! : JsonProperties.String(doc, "summary") ?? "") : "",
             Kind = JsonProperties.String(tool, "kind"),
@@ -163,7 +163,7 @@ internal static class DislToolboxReader
         return new DislMenuSet(
             set.TryGetProperty("for", out _),
             JsonProperties.StringOrStrings(set, "for"),
-            set.TryGetProperty("when", out var when) ? DislFieldReader.Expression(specification, when, JsonPointer.Append(pointer, "when")) : null,
+            DislFieldReader.OptionalExpression(specification, set, pointer, "when"),
             tools,
             null);
     }
@@ -174,19 +174,19 @@ internal static class DislToolboxReader
         return new DislMenuTool
         {
             Group = JsonProperties.String(tool, "group"),
-            ForEach = tool.TryGetProperty("forEach", out var forEach) ? DislFieldReader.Expression(specification, forEach, JsonPointer.Append(pointer, "forEach")) : null,
+            ForEach = DislFieldReader.OptionalExpression(specification, tool, pointer, "forEach"),
             As = JsonProperties.String(tool, "as"),
-            Visible = tool.TryGetProperty("visible", out var visible) ? DislFieldReader.Expression(specification, visible, JsonPointer.Append(pointer, "visible")) : null,
+            Visible = DislFieldReader.OptionalExpression(specification, tool, pointer, "visible"),
             Kind = JsonProperties.String(tool, "kind") ?? "operation",
             Operation = JsonProperties.String(tool, "operation"),
             Form = JsonProperties.String(tool, "form"),
             Arguments = Arguments(specification, tool, pointer),
             Via = JsonProperties.String(tool, "via"),
-            Label = tool.TryGetProperty("label", out var label) ? DislFieldReader.Message(specification, label, JsonPointer.Append(pointer, "label")) : null,
+            Label = DislFieldReader.OptionalMessage(specification, tool, pointer, "label"),
             Icon = JsonProperties.String(tool, "icon"),
             Shortcut = JsonProperties.String(tool, "shortcut"),
             Unavailable = tool.TryGetProperty("unavailable", out var unavailable) ? DislFieldReader.Reasons(specification, unavailable, JsonPointer.Append(pointer, "unavailable")) : [],
-            Enabled = tool.TryGetProperty("enabled", out var enabled) ? DislFieldReader.Expression(specification, enabled, JsonPointer.Append(pointer, "enabled")) : null,
+            Enabled = DislFieldReader.OptionalExpression(specification, tool, pointer, "enabled"),
         };
     }
 }
