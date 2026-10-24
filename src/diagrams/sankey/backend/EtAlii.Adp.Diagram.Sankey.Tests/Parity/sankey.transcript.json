@@ -1301,22 +1301,13 @@
       "document": "diagrams/sankey/backend/EtAlii.Adp.Diagram.Sankey.Tests/Fixtures/duplicate-key.skv",
       "sha256": "bbba2b2f9e9eb54ac6830dfab0f5f8221a3b94435029f58577167dbdd12abee9",
       "menus": [
-        [],
-        [
-          "g1 sankey.add | Add node here | mdi-plus | - | on",
-          "g2 sankey.arrange | Arrange diagram | mdi-sitemap-outline | - | off (There is nothing to arrange until this diagram has a node.)",
-          "g2 sankey.thicker | Thicker bands | mdi-arrow-expand-vertical | - | on (The bands are already as thick as they go.)",
-          "g2 sankey.thinner | Thinner bands | mdi-arrow-collapse-vertical | - | on (The bands are already as thin as they go.)"
-        ],
-        [
-          "g1 sankey.connect | Add flow | mdi-arrow-right-thin | - | on"
-        ]
+        []
       ],
       "choices": [],
       "targets": [
         "\"\" => menu #0",
-        "\"new:330,40\" => menu #1",
-        "\"rel:a->b\" => menu #2",
+        "\"new:330,40\" => menu #0",
+        "\"rel:a->b\" => menu #0",
         "\"parity:unknown\" => menu #0"
       ],
       "rows": [],
@@ -7578,22 +7569,13 @@
       "document": "diagrams/sankey/backend/EtAlii.Adp.Diagram.Sankey.Tests/Fixtures/not-yaml.skv",
       "sha256": "83746c8ee87f14983e277c4047ef4b3d8561d5e2f448a378053e18e2a3a2f75b",
       "menus": [
-        [],
-        [
-          "g1 sankey.add | Add node here | mdi-plus | - | on",
-          "g2 sankey.arrange | Arrange diagram | mdi-sitemap-outline | - | off (There is nothing to arrange until this diagram has a node.)",
-          "g2 sankey.thicker | Thicker bands | mdi-arrow-expand-vertical | - | on (The bands are already as thick as they go.)",
-          "g2 sankey.thinner | Thinner bands | mdi-arrow-collapse-vertical | - | on (The bands are already as thin as they go.)"
-        ],
-        [
-          "g1 sankey.connect | Add flow | mdi-arrow-right-thin | - | on"
-        ]
+        []
       ],
       "choices": [],
       "targets": [
         "\"\" => menu #0",
-        "\"new:330,40\" => menu #1",
-        "\"rel:a->b\" => menu #2",
+        "\"new:330,40\" => menu #0",
+        "\"rel:a->b\" => menu #0",
         "\"parity:unknown\" => menu #0"
       ],
       "rows": [],

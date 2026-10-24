@@ -6,7 +6,8 @@ namespace EtAlii.Adp.Diagram.Sankey.Tests.Parity;
 /// <summary>
 /// The palette and the context menus derived from the DISL definition equal the hand-written ones (sankey-disl-fbl
 /// task 6), record for record: for every document of the parity corpus, every node and flow id, the empty id, a
-/// placement, a connect gesture and an unknown id.
+/// placement, a connect gesture and an unknown id. A body that is not YAML is the one exception: it is read-only, so
+/// it offers nothing where the hand-written menus offered edits that were then refused (B8 as reworded on 2026-10-24).
 /// </summary>
 public class SankeyDerivedMenusTests
 {
@@ -27,6 +28,12 @@ public class SankeyDerivedMenusTests
         {
             var expected = HandWrittenSankey.Menus(entry, target);
             var actual = SankeyDefinition.Menus(entry, target);
+            if (entry.Document.IsReadOnly)
+            {
+                Assert.Empty(actual);
+                continue;
+            }
+
             Assert.True(
                 expected.Select(group => group.Actions).SequenceEqual(actual.Select(group => group.Actions), GroupComparer.Instance),
                 $"{name} {target}:\nexpected {Text(expected)}\nactual   {Text(actual)}");

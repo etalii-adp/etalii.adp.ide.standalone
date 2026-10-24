@@ -56,7 +56,7 @@ public static class SankeyReader
     internal const string FlowRule = "flow";
 
     /// <summary>The binding's rule of an entry of <c>flows</c> that is not a mapping.</summary>
-    internal const string FlowNotAMappingRule = "flow-not-a-mapping";
+    private const string FlowNotAMappingRule = "flow-not-a-mapping";
 
     private const string HeaderKey = "sankey";
     private const string Written = "written";

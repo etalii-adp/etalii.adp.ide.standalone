@@ -1,4 +1,3 @@
-using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Specification.Disl;
 using EtAlii.Adp.Specification.Fbl.Planning;
@@ -70,7 +69,7 @@ public class SankeyDerivedOperationsTests
         List<string> differing = [];
         foreach ((string step, string operation, DislElement self, DislInvocation? invocation, Func<string, ICommand> command) in steps)
         {
-            if (SankeyDefinition.ElementOf(diagram, self.Id) != self)
+            if (!ReferenceEquals(SankeyDefinition.ElementOf(diagram, self.Id), self))
             {
                 // A later holder of an id is not the entry the command names.
                 continue;

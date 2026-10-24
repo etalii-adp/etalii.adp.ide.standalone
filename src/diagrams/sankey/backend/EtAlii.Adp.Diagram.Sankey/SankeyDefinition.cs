@@ -31,9 +31,10 @@ namespace EtAlii.Adp.Diagram.Sankey;
 /// hand-written menus did.
 /// </para>
 /// <para>
-/// <b>Not read-only</b> (<c>env.readOnly</c> false): the hand-written menus and rows offered everything on an entry that
-/// could not be read, and the commands refuse there; whether that should change is the specification's question, not
-/// this derivation's.
+/// <b>A body that is not YAML is derived read-only</b> (<c>env.readOnly</c> true, B8 as reworded on 2026-10-24): its menus
+/// offer nothing, because every entry of the definition's menus edits the model and a read-only diagram refuses an
+/// edit, so "Add node here" is no longer offered where the edit would be refused. Every other body is editable
+/// (<c>env.readOnly</c> false), and the commands still refuse where the store could not read the file.
 /// </para>
 /// </remarks>
 internal static class SankeyDefinition
@@ -55,10 +56,19 @@ internal static class SankeyDefinition
     /// <summary>What <c>env</c> reads for a menu and a form: editable, in no viewpoint.</summary>
     private static DislEnv Env { get; } = new();
 
+    /// <summary>What <c>env</c> reads for a body that is not YAML: read-only, in no viewpoint.</summary>
+    private static DislEnv ReadOnlyEnv { get; } = new(ReadOnly: true);
+
     /// <summary>The context menu of <paramref name="elementId"/> in <paramref name="entry"/>: an element, a placement, a connect gesture; none for anything else.</summary>
     public static IReadOnlyList<ContextActionGroupDefinition> Menus(DocumentEntry<SankeyBody, SankeyModel> entry, string elementId)
     {
         ArgumentNullException.ThrowIfNull(entry);
+        if (EnvOf(entry).ReadOnly)
+        {
+            // Every entry of the definition's menus edits the model, and a read-only diagram refuses every edit.
+            return [];
+        }
+
         var diagram = entry.Document.Disl.Diagram;
         DislMenuTarget? target = ElementOf(diagram, elementId) is { } element
             ? DislMenuTarget.Element(element)
@@ -74,8 +84,11 @@ internal static class SankeyDefinition
     public static IReadOnlyList<ContextPropertyDefinition> Rows(DocumentEntry<SankeyBody, SankeyModel> entry, string elementId)
     {
         ArgumentNullException.ThrowIfNull(entry);
-        return ElementOf(entry.Document.Disl.Diagram, elementId) is { } element ? Definition.Rows(element, Env) : [];
+        return ElementOf(entry.Document.Disl.Diagram, elementId) is { } element ? Definition.Rows(element, EnvOf(entry)) : [];
     }
+
+    /// <summary>What <c>env</c> reads for <paramref name="entry"/>: read-only for a body that is not YAML, editable otherwise.</summary>
+    private static DislEnv EnvOf(DocumentEntry<SankeyBody, SankeyModel> entry) => entry.Document.IsReadOnly ? ReadOnlyEnv : Env;
 
     /// <summary>
     /// What removing the element <paramref name="elementId"/> asks first, the definition's <c>behavior.deletion</c>: a node with a flow

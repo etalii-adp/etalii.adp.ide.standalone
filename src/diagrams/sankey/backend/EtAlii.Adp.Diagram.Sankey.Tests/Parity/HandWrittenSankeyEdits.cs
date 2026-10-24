@@ -1,6 +1,5 @@
 using System.Globalization;
 using EtAlii.Adp.Documents;
-using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.Sankey.Tests.Parity;
 
@@ -20,7 +19,7 @@ internal static class HandWrittenSankeyEdits
     private const string NodesSection = "nodes:";
 
     /// <summary>Writes a text key, removing it instead when <paramref name="removeWhenEmpty"/> and the value is blank.</summary>
-    public static EditOutcome SetText(LineDocument document, LineRange range, string key, string value, bool removeWhenEmpty)
+    public static void SetText(LineDocument document, LineRange range, string key, string value, bool removeWhenEmpty)
     {
         ArgumentNullException.ThrowIfNull(document);
 
@@ -32,14 +31,12 @@ internal static class HandWrittenSankeyEdits
         {
             LineSplice.SetKey(document, range, key, LineSplice.QuoteText(value));
         }
-
-        return EditOutcome.Applied;
     }
 
     /// <summary>
     /// Adds a node entry after the last node, matching whatever indentation the document already uses.
     /// </summary>
-    public static EditOutcome AddNode(LineDocument document, SankeyModel model, SankeyNode node)
+    public static void AddNode(LineDocument document, SankeyModel model, SankeyNode node)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(model);
@@ -56,10 +53,10 @@ internal static class HandWrittenSankeyEdits
             keys.Add(("column", column.ToString(CultureInfo.InvariantCulture)));
         }
 
-        return Append(document, model.Nodes.Select(existing => existing.Range).ToList(), NodesSection, node.Id, keys);
+        Append(document, model.Nodes.Select(existing => existing.Range).ToList(), NodesSection, node.Id, keys);
     }
 
-    private static EditOutcome Append(
+    private static void Append(
         LineDocument document,
         IReadOnlyList<LineRange> ranges,
         string section,
@@ -76,7 +73,6 @@ internal static class HandWrittenSankeyEdits
 
         (string itemIndent, string dashGap, string keyIndent) = LineSplice.IndentOf(document, ranges);
         document.Insert(at, Entry(itemIndent, dashGap, keyIndent, id, keys));
-        return EditOutcome.Applied;
     }
 
     private static List<string> Entry(string itemIndent, string dashGap, string keyIndent, string id, IReadOnlyList<(string Key, string Value)> keys)
