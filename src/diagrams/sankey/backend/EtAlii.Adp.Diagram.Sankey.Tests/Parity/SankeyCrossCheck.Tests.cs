@@ -6,8 +6,8 @@ namespace EtAlii.Adp.Diagram.Sankey.Tests.Parity;
 
 /// <summary>
 /// The cross-check of sankey-disl-fbl Requirement 1.5: for every <c>.skv</c> file of the repository, the nodes and flows
-/// the module's binding (<c>sankey.fbl</c>, embedded and read by nothing but tests until task 10) reads, each by the id
-/// it is written with, are the ones <see cref="SankeyParser"/> reads. Every difference is a divergence listed in
+/// the module's binding (<c>sankey.fbl</c>, embedded) reads, each by the id it is written with, are the ones the
+/// module's reader (<see cref="SankeyReader"/>) reads from that binding's reading. Every difference is a divergence listed in
 /// <c>RealFiles/divergences.json</c> of <c>EtAlii.Adp.Specification.Fbl.Tests</c>.
 /// </summary>
 public class SankeyCrossCheckTests
@@ -31,11 +31,11 @@ public class SankeyCrossCheckTests
         _ => null,
     };
 
-    /// <summary>The module's side: every node with an id and every flow, by the ids <see cref="SankeyParser"/> gives them.</summary>
+    /// <summary>The module's side: every node with an id and every flow, by the ids <see cref="SankeyReader"/> gives them.</summary>
     private static IReadOnlyDictionary<string, SortedSet<string>> Module(string text)
     {
         var ids = new Dictionary<string, SortedSet<string>>(StringComparer.Ordinal);
-        var model = SankeyParser.Parse(LineDocument.Parse(text));
+        var model = SankeyReader.Parse(text);
         foreach (var node in model.Nodes.Where(node => node.Id.Length > 0)) ModuleCrossCheck.Add(ids, "Node", node.Id);
         foreach (var flow in model.Flows) ModuleCrossCheck.Add(ids, "Flow", flow.Id);
         return ids;

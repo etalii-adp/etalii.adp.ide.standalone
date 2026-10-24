@@ -14,8 +14,9 @@ namespace EtAlii.Adp.Diagram.Sankey;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>The model is the reading's own</b>: <see cref="SankeyDisl.Of"/>, kept with the <see cref="SankeyModel"/> it was
-/// built from, so a menu and a row read the same snapshot and no call builds it twice.
+/// <b>The model is the reading's own</b>: <see cref="SankeyBody.Disl"/> of the body the <see cref="SankeyModel"/> was
+/// read from, built by <see cref="DislModelBuilder"/> from the binding's reading, so a menu and a row read the same
+/// snapshot and no call builds it twice.
 /// </para>
 /// <para>
 /// <b>A menu target</b> is an element, the empty canvas (a placement), or a connect gesture between the nodes it
@@ -23,8 +24,8 @@ namespace EtAlii.Adp.Diagram.Sankey;
 /// </para>
 /// <para>
 /// <b>An element is found by the id written in the document</b>, as <see cref="SankeyModel"/> finds it: the first node
-/// with it, else the first flow. A node without an id, or a later holder of one, has an ephemeral model id, so it is
-/// never the one an id finds.
+/// with it, else the first flow. A node without an id, or a later holder of one, is addressed by its place (FBL
+/// section 5.3), so it is never the one an id finds.
 /// </para>
 /// <para>
 /// <b>Arrange, thicker, thinner and decrease carry their sentence even while they are available</b>, as the
@@ -59,7 +60,7 @@ internal static class SankeyDefinition
     public static IReadOnlyList<ContextActionGroupDefinition> Menus(DocumentEntry<LineDocument, SankeyModel> entry, string elementId)
     {
         ArgumentNullException.ThrowIfNull(entry);
-        var diagram = SankeyDisl.Of(entry.Model).Diagram;
+        var diagram = DislOf(entry.Model).Diagram;
         DislMenuTarget? target = ElementOf(diagram, elementId) is { } element
             ? DislMenuTarget.Element(element)
             : GestureIds.TryParsePlacement(elementId, out _, out _)
@@ -74,7 +75,7 @@ internal static class SankeyDefinition
     public static IReadOnlyList<ContextPropertyDefinition> Rows(DocumentEntry<LineDocument, SankeyModel> entry, string elementId)
     {
         ArgumentNullException.ThrowIfNull(entry);
-        return ElementOf(SankeyDisl.Of(entry.Model).Diagram, elementId) is { } element ? Definition.Rows(element, Env) : [];
+        return ElementOf(DislOf(entry.Model).Diagram, elementId) is { } element ? Definition.Rows(element, Env) : [];
     }
 
     /// <summary>
@@ -84,7 +85,7 @@ internal static class SankeyDefinition
     public static RemovalConfirmation? RemovalConfirmation(SankeyModel model, string elementId)
     {
         ArgumentNullException.ThrowIfNull(model);
-        return ElementOf(SankeyDisl.Of(model).Diagram, elementId) is { } element && DeletionPolicy.Confirmation(Specification, element, env: Env) is { } asked
+        return ElementOf(DislOf(model).Diagram, elementId) is { } element && DeletionPolicy.Confirmation(Specification, element, env: Env) is { } asked
             ? new RemovalConfirmation(asked.Title, asked.Message, asked.ConfirmLabel, asked.Danger)
             : null;
     }
@@ -97,8 +98,8 @@ internal static class SankeyDefinition
     public static IReadOnlyList<DislFinding> Findings(ParseOutcome<SankeyModel> outcome)
     {
         ArgumentNullException.ThrowIfNull(outcome);
-        var options = new DislConstraintOptions(Env, ReaderFindings(outcome), WrittenId);
-        return SankeyFindingOrder.ByLine(ConstraintEvaluator.Evaluate(Specification, SankeyDisl.Of(outcome.Model).Diagram, options));
+        var options = new DislConstraintOptions(Env, SankeyReader.Findings(outcome), WrittenId);
+        return SankeyFindingOrder.ByLine(ConstraintEvaluator.Evaluate(Specification, DislOf(outcome.Model).Diagram, options));
     }
 
     /// <summary>The element <paramref name="id"/> names, as <see cref="SankeyModel"/> finds it: the first node with it, else the first flow; null for none.</summary>
@@ -111,28 +112,8 @@ internal static class SankeyDefinition
     private static DislElement? NodeOf(DislDiagram diagram, string? id) =>
         id is { Length: > 0 } ? diagram.NodesOfType("Node").FirstOrDefault(node => node.Id == id) : null;
 
-    /// <summary>
-    /// What the module's reader found, in reading order, as the binding's reader would hand it in: a text that is not
-    /// YAML, every entry or value it passed over (<see cref="SankeyModel.Problems"/>), and every node without an id.
-    /// </summary>
-    private static IReadOnlyList<DislReaderFinding> ReaderFindings(ParseOutcome<SankeyModel> outcome)
-    {
-        var model = outcome.Model;
-        if (!outcome.IsUsable)
-        {
-            var problem = model.Problems.FirstOrDefault();
-            var reason = problem?.Message is { } message && message.StartsWith(SankeyParser.NotYaml, StringComparison.Ordinal) ? message[SankeyParser.NotYaml.Length..] : outcome.Unreadable;
-            return [DislReaderFinding.NotParsed(reason, (problem?.Line ?? 0) + 1)];
-        }
-
-        return
-        [
-            .. model.Problems.Select(problem => DislReaderFinding.Unreadable(problem.Message, problem.Line + 1)),
-            .. model.Nodes
-                .Where(node => node.Id.Length == 0)
-                .Select(node => new DislReaderFinding(FindingCodes.MissingId, new Dictionary<string, object?>(StringComparer.Ordinal), node.Range.Start + 1)),
-        ];
-    }
+    /// <summary>The DISL model of the body <paramref name="model"/> was read from; an empty diagram's for a model no body was read into.</summary>
+    private static DislModel DislOf(SankeyModel model) => (SankeyReader.BodyOf(model) ?? SankeyBody.Parse("")).Disl;
 
     /// <summary>The id an element is written with: a node's <c>storedId</c>, a flow's id.</summary>
     private static string WrittenId(DislElement element) => element.Type.IsRelation ? element.Id : SankeyFunctions.WrittenId(element);

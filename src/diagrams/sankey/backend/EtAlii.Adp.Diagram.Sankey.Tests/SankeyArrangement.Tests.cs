@@ -108,5 +108,5 @@ public sealed class SankeyArrangementTests : IDisposable
         Assert.Equal(before.Flows.Select(flow => (flow.Id, flow.Value)), after.Flows.Select(flow => (flow.Id, flow.Value)));
     }
 
-    private static SankeyModel Parse(string path) => SankeyParser.Parse(LineDocument.Parse(File.ReadAllText(path)));
+    private static SankeyModel Parse(string path) => SankeyReader.Parse(File.ReadAllText(path));
 }

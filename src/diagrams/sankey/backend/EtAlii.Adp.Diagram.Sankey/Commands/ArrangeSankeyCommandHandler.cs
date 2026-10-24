@@ -22,7 +22,7 @@ public sealed class ArrangeSankeyCommandHandler(ISankeyDocumentStore documents) 
         var moved = false;
         for (var index = 0; index < target.Count; index++)
         {
-            var parsed = SankeyParser.Parse(document);
+            var parsed = SankeyReader.Parse(document.Text);
             var taken = new HashSet<string>(StringComparer.Ordinal);
             var current = parsed.Nodes.Where(node => wanted.Contains(node.Id) && taken.Add(node.Id)).ToList();
             if (current[index].Id == target[index])

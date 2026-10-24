@@ -275,5 +275,5 @@ public sealed class SankeyCommandsTests : IDisposable
         Assert.True(result.IsSuccess, result.Error);
     }
 
-    private SankeyModel Parse() => SankeyParser.Parse(LineDocument.Parse(File.ReadAllText(Body)));
+    private SankeyModel Parse() => SankeyReader.Parse(File.ReadAllText(Body));
 }

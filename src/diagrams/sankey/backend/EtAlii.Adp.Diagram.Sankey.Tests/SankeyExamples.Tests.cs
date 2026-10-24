@@ -85,5 +85,5 @@ public sealed class SankeyExamplesTests
         Assert.Equal(16, layout.ColumnOrder[0].Count);
     }
 
-    private static SankeyModel Load(string path) => SankeyParser.Parse(LineDocument.Parse(File.ReadAllText(path)));
+    private static SankeyModel Load(string path) => SankeyReader.Parse(File.ReadAllText(path));
 }

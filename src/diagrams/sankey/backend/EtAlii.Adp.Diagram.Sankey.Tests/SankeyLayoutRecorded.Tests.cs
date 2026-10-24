@@ -28,7 +28,7 @@ public sealed class SankeyLayoutRecordedTests
     public void AnExample_IsLaidOutAsRecorded(string path, string digest)
     {
         // Act.
-        var layout = SankeyLayout.Of(SankeyParser.Parse(LineDocument.Parse(File.ReadAllText(path))));
+        var layout = SankeyLayout.Of(SankeyReader.Parse(File.ReadAllText(path)));
         var described = Describe(layout);
 
         // Assert.

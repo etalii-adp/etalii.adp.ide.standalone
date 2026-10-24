@@ -4,7 +4,7 @@ using EtAlii.Adp.History;
 namespace EtAlii.Adp.Diagram.Sankey;
 
 /// <summary>
-/// What every Sankey command handler shares: the store, the parser, and the refusal of an entry
+/// What every Sankey command handler shares: the store, the reader, and the refusal of an entry
 /// that is not there. The run itself - load, edit a copy, save, undo - is
 /// <see cref="DocumentEditRun"/>'s.
 /// </summary>
@@ -16,5 +16,5 @@ public abstract class SankeyEditHandler<TCommand>(ISankeyDocumentStore documents
     protected static EditOutcome Gone => EditOutcome.Refused("That is no longer in this diagram.");
 
     /// <inheritdoc />
-    protected sealed override SankeyModel Parse(LineDocument body) => SankeyParser.Parse(body);
+    protected sealed override SankeyModel Parse(LineDocument body) => SankeyReader.Parse(body.Text);
 }
