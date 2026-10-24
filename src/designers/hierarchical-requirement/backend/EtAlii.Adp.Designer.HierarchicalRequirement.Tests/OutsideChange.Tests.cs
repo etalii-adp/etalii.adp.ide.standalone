@@ -118,9 +118,11 @@ public sealed class OutsideChangeTests : IDisposable
         Assert.Contains("not valid UTF-8", kept.ReadOnlyReason, StringComparison.Ordinal);
         Assert.Equal(kept.ReadOnlyReason, page.Gesture(TextOperations.SetTitle, "REQ-0001", ("title", "Lost.")).Refusal);
 
-        // Act and assert: readable again, it is the page again.
+        // Act and assert: readable again, it is the page again. Counted before the write: the page can be sent
+        // before this test's own continuation runs, and counting after would skip it.
+        var sent = page.Models.Count;
         await File.WriteAllBytesAsync(_folder.Body, readable, TestContext.Current.CancellationToken);
-        var again = await page.ModelAsync(page.Models.Count, model => model.ReadOnlyReason.Length == 0);
+        var again = await page.ModelAsync(sent, model => model.ReadOnlyReason.Length == 0);
         Assert.NotNull(again);
         Assert.Equal(opened.Nodes.Select(node => (node.Id, node.Title)), again.Nodes.Select(node => (node.Id, node.Title)));
     }
