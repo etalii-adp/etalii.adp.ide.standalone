@@ -48,7 +48,7 @@ export const hierarchicalRequirementSurface: HierarchySurfaceDefinition = {
     },
     {
       label: "state",
-      prefix: "state:",
+      prefix: "@",
       many: false,
       look: "status",
       on: ["Requirement"],
@@ -109,6 +109,13 @@ export const hierarchicalRequirementSurface: HierarchySurfaceDefinition = {
       { key: "title", label: "Title" },
     ],
     entries: "requirements",
+  },
+  // The widths of the columns of items, kept in the registration's widths block; Column.width's range.
+  widths: {
+    operations: { add: "addColumnWidth", set: "setColumnWidth", reset: "resetColumnWidth" },
+    params: { level: "level", width: "width" },
+    min: 120,
+    max: 2000,
   },
   // Ctrl+Enter and Ctrl+Shift+Enter, the context actions of an entry.
   shortcutKeys: ["Enter"],

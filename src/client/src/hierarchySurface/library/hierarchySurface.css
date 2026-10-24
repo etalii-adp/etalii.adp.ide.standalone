@@ -102,11 +102,44 @@
   margin-left: 0;
 }
 
-/* A level's own box is as high as what stands to its right: the row stretches it. */
+/* A level's own box is as high as what stands to its right: the row stretches it. Its width is its column's. */
 .hs-level-box {
+  position: relative;
   display: flex;
   flex: 0 0 240px;
   width: 240px;
+}
+
+/* The right edge of a column of levels, dragged to change its width (DESL section 7.7.1). */
+.hs-column-edge {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  right: -4px;
+  bottom: 0;
+  width: 8px;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.hs-column-edge::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 3px;
+  width: 2px;
+  background: transparent;
+}
+
+.hs-column-edge:hover::after,
+.hs-column-edge:active::after,
+.hs-column-edge:focus-visible::after {
+  background: var(--color-primary);
+}
+
+.hs-column-edge:focus-visible {
+  outline: none;
 }
 
 .hs-level-content {
