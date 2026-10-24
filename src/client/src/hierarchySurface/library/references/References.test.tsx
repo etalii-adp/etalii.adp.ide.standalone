@@ -15,9 +15,9 @@ const definition: HierarchySurfaceDefinition = {
     toggleCollapsed: "fold",
     setTitle: "retitle",
     setDescription: "redescribe",
-    addTopLevel: { operation: "open", label: "New section" },
-    addEntry: { operation: "jot", label: "New point" },
-    addLevel: { operation: "nest", label: "New section" },
+    addTopLevel: { operation: "open", label: "New section", icon: "mdi-plus" },
+    addEntry: { operation: "jot", label: "New point", icon: "mdi-plus" },
+    addLevel: { operation: "nest", label: "New section", icon: "mdi-plus" },
     moveLevel: "shift",
     moveEntry: "slide",
     delete: "drop",
@@ -206,7 +206,7 @@ describe("a reference in a description", () => {
     fireEvent.click(within(boxOf("Ship it")).getByRole("button", { name: "N-5 Refund in full" }));
 
     // Assert: the whole page again, and only the collapse of the two levels that hide the target is sent.
-    expect(screen.queryByRole("navigation", { name: "Trail" })).toBeNull();
+    expect(screen.getByRole("navigation", { name: "Trail" }).querySelector("[aria-current]")?.textContent).toBe("Shop");
     expect(onGesture.mock.calls).toEqual([
       ["fold", "3", {}],
       ["fold", "4", {}],

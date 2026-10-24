@@ -122,9 +122,10 @@
 
 .hs-box {
   position: relative;
+  display: flow-root;
   flex: 1;
   min-width: 0;
-  padding: 6px 28px 6px 6px;
+  padding: 6px;
   cursor: default;
 }
 
@@ -137,11 +138,23 @@
   outline-offset: -2px;
 }
 
+/* Everything in the header stands at its top, so a title of several lines leaves the rest on its first line. */
 .hs-box-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 4px;
   min-width: 0;
+  line-height: 20px;
+}
+
+/* The box's controls at its top right, two in a row from right to left with the notes' icon first, wrapping to a next
+   line rather than over the title; the header, the tags and the description flow beside them. */
+.hs-box-icons {
+  display: flex;
+  float: right;
+  flex-flow: row-reverse wrap;
+  max-width: 40px;
+  margin-inline-start: 4px;
 }
 
 .hs-toggle,
@@ -150,12 +163,14 @@
 .hs-add-description,
 .hs-note-mark,
 .hs-note-add,
-.hs-tag-add {
+.hs-tag-add,
+.hs-delete {
   display: inline-flex;
+  flex: none;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   padding: 0;
   border: none;
   background: none;
@@ -168,7 +183,8 @@
 .hs-hidden-levels:hover,
 .hs-add-description:hover,
 .hs-note-add:hover,
-.hs-tag-add:hover {
+.hs-tag-add:hover,
+.hs-delete:hover {
   color: var(--color-text);
 }
 
@@ -177,21 +193,18 @@
   font-variant-numeric: tabular-nums;
 }
 
+.hs-number {
+  flex: none;
+}
+
+/* A word is broken only when it is wider than the title's line, never where a narrow column happens to end. */
 .hs-title {
-  flex: 1;
-  min-width: 0;
+  flex: 1 1 auto;
   font-weight: 600;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 /* The icon of a box's notes, at its top right (FR-015): its open notes' mark, or the way to add the first. */
-.hs-note-mark,
-.hs-note-add {
-  position: absolute;
-  top: 6px;
-  right: 4px;
-}
-
 .hs-note-mark,
 .hs-note-mark:hover {
   width: auto;
@@ -199,16 +212,36 @@
   color: var(--color-warning);
 }
 
-/* With nothing to show, the way to add is offered where a person is looking: the box under the pointer or selected. */
-.hs-note-add {
+/* With nothing to show, the way to add is offered where a person is looking: the box under the pointer or selected.
+   So are focus, adding a tag and adding a description, each kept in its place while hidden, so showing them moves
+   nothing a click aims at. */
+.hs-note-add,
+.hs-focus,
+.hs-tag-add,
+.hs-add-description {
   visibility: hidden;
 }
 
-.hs-box:hover > .hs-note-add,
-.hs-box.hs-selected > .hs-note-add,
+.hs-box:hover > .hs-box-icons > *,
+.hs-box.hs-selected > .hs-box-icons > *,
 .hs-note-add[aria-expanded="true"],
-.hs-note-add:focus-visible {
+.hs-box-icons > :focus-visible {
   visibility: visible;
+}
+
+/* A selected box's delete, at its bottom right, below everything else in it. */
+.hs-box.hs-deletable {
+  padding-bottom: 26px;
+}
+
+.hs-delete {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+}
+
+.hs-delete:hover {
+  color: var(--color-danger);
 }
 
 .hs-note-count {
@@ -220,26 +253,57 @@
   position: relative;
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 4px;
-  margin: 4px 0 0 22px;
+  margin: 4px 0 0 24px;
 }
 
 .hs-tags .table-option-tag + .table-option-tag {
   margin-inline-start: 0;
 }
 
-.hs-description {
-  margin: 4px 0 0 22px;
-  color: var(--color-text);
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
+/* A label's values, smaller than the text and centred in their shape, each label in a look of its own: a rounded tag
+   written with `#`, a square badge, or a rounded status with a dot. */
+.hs-look {
+  display: contents;
 }
 
-/* The mark of the levels the page does not show, at the box's right edge (R10). */
-.hs-hidden-levels {
-  position: absolute;
-  top: 28px;
-  right: 4px;
+.hs-look .table-option-tag {
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  height: 18px;
+  padding: 0 7px;
+  font-size: 11px;
+  line-height: 1;
+}
+
+.hs-look-tag .table-option-tag::before {
+  content: "#";
+  margin-inline-end: 1px;
+  opacity: 0.55;
+}
+
+.hs-look-badge .table-option-tag {
+  border-radius: 3px;
+}
+
+.hs-look-status .table-option-tag::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  margin-inline-end: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.6;
+}
+
+.hs-description {
+  margin: 4px 0 0 24px;
+  color: var(--color-text);
+  line-height: 20px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 /* The bar of an outside change while a field is open (R10), in the text editors' conflict bar's colours. */
@@ -273,11 +337,27 @@
   resize: vertical;
 }
 
-/* In the box's right margin, out of the flow: shown on selecting, it moves nothing a double-click lands on. */
-.hs-add-description {
-  position: absolute;
-  right: 6px;
-  bottom: 6px;
+/* In place of a title or description: its text where the text stood, in its weight, as high as it wraps to. */
+.hs-field-inplace {
+  display: block;
+  margin: -2px -5px;
+  padding: 1px 4px;
+  overflow: hidden;
+  line-height: 20px;
+  resize: none;
+}
+
+.hs-field-title {
+  flex: 1 1 0;
+  min-width: 0;
+  font-weight: 600;
+  overflow-wrap: break-word;
+}
+
+.hs-box > .hs-field-multiline {
+  width: calc(100% - 24px + 10px);
+  margin: 2px -5px -2px 19px;
+  white-space: pre-wrap;
 }
 
 /* The place a node is added, at the end of a level's content and of the page, as the table's new row (FR-012). */
@@ -294,8 +374,11 @@
 .hs-add-button {
   display: flex;
   align-items: center;
-  gap: 4px;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
   padding: 0;
+  font-size: 16px;
   border: 0;
   background: transparent;
   color: var(--color-text-muted);
@@ -304,6 +387,8 @@
 }
 
 .hs-add-button:hover {
+  border-radius: var(--radius);
+  background: var(--color-surface-raised);
   color: var(--color-text);
 }
 
@@ -314,7 +399,7 @@
 
 .hs-grip {
   position: absolute;
-  top: 8px;
+  top: 9px;
   left: 1px;
   font-size: 14px;
   line-height: 1;
@@ -323,35 +408,60 @@
   touch-action: none;
 }
 
-/* Where a dragged node would go: into the box, or above or below it. */
+/* Where a dragged node would go: the level it goes into marked, and the place it would stand drawn there, its number
+   and title in a dashed box; the node itself, still in its place, is faded. */
 .hs-box.hs-drop-into {
   background: var(--color-surface-raised);
   outline: 2px dashed var(--color-primary);
   outline-offset: -2px;
 }
 
-.hs-box.hs-drop-after {
-  box-shadow: inset 0 -3px 0 var(--color-primary);
+.hs-dragging {
+  opacity: 0.45;
 }
 
-.hs-box.hs-drop-before {
-  box-shadow: inset 0 3px 0 var(--color-primary);
+.hs-drop-slot {
+  margin: -1px 0 0 -1px;
+  padding: 6px 6px 6px 40px;
+  border: 2px dashed var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface));
+  line-height: 20px;
 }
 
-/* The list of a box's notes, under its icon (FR-016): above the boxes to its right, as wide as a level's column allows. */
-.hs-note-list {
-  position: absolute;
-  top: 26px;
-  right: 4px;
-  z-index: 10;
+.hs-page > .hs-drop-slot {
+  margin-left: 0;
+}
+
+.hs-drop-slot-level {
+  width: 240px;
   box-sizing: border-box;
-  width: 300px;
-  max-width: calc(100vw - 32px);
-  padding: 6px;
+}
+
+.hs-drop-slot-title {
+  font-weight: 600;
+}
+
+/* The list of a box's notes, under its icons (FR-016): at the document's top, above every pane, placed in the window. */
+.hs-note-spot {
+  display: none;
+}
+
+.hs-note-list {
+  position: fixed;
+  z-index: 30;
+  box-sizing: border-box;
+  width: 340px;
+  max-width: calc(100vw - 8px);
+  max-height: calc(100vh - 8px);
+  overflow: auto;
+  padding: 8px;
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius);
   background: var(--color-surface);
   box-shadow: var(--shadow);
+  color: var(--color-text);
+  font-size: 13px;
+  line-height: 20px;
   cursor: default;
 }
 
@@ -361,12 +471,55 @@
   list-style: none;
 }
 
+/* A note, its controls at its right: beside it, one above the other, when it takes several lines; under it, side by side,
+   when it takes one. */
 .hs-note {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
   padding: 4px 0;
   border-bottom: 1px solid var(--color-border);
+}
+
+.hs-note.hs-note-tall {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.hs-note-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.hs-note-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 2px;
+}
+
+.hs-note-tall > .hs-note-actions {
+  flex-direction: column;
+}
+
+.hs-note-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.hs-note-action:hover {
+  background: var(--color-surface-raised);
+  color: var(--color-text);
 }
 
 .hs-note-resolved .hs-note-head,
@@ -380,7 +533,7 @@
 
 .hs-note-head {
   display: flex;
-  align-items: baseline;
+  align-items: flex-start;
   gap: 4px;
 }
 
@@ -400,45 +553,99 @@
   overflow-wrap: anywhere;
 }
 
-.hs-note-actions {
+/* A new note, and a note being changed: its kind, then its text over the list's width, then its buttons at the right. */
+.hs-note-new,
+.hs-note-changing {
   display: flex;
-  gap: 8px;
-  margin-left: 22px;
-}
-
-.hs-note-action {
-  padding: 0;
-  white-space: nowrap;
-  border: 0;
-  background: transparent;
-  color: var(--color-text-muted);
-  font: inherit;
-  cursor: pointer;
-}
-
-.hs-note-action:hover:not(:disabled) {
-  color: var(--color-text);
-}
-
-.hs-note-action:disabled {
-  cursor: default;
-  opacity: 0.5;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
 }
 
 .hs-note-new {
+  padding-top: 8px;
+}
+
+.hs-note-text-field {
+  resize: none;
+  line-height: 20px;
+}
+
+.hs-note-buttons {
   display: flex;
-  gap: 4px;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+/* The dialogs' own buttons, in the compact size of a list. */
+.hs-note-button {
+  padding: 3px 14px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+/* A note's kind, each with its icon to its left. */
+.hs-kind {
+  position: relative;
+  align-self: flex-start;
+}
+
+.hs-kind-button {
+  display: inline-flex;
   align-items: center;
-  padding-top: 6px;
-}
-
-.hs-note-kind {
+  gap: 6px;
   width: auto;
+  min-width: 140px;
+  height: 26px;
+  cursor: pointer;
 }
 
-.hs-note-new .hs-field:not(.hs-note-kind) {
+.hs-kind-button .mdi:first-child {
+  color: var(--color-warning);
+}
+
+.hs-kind-name {
   flex: 1;
-  min-width: 0;
+  text-align: start;
+}
+
+.hs-kind-chevron {
+  color: var(--color-text-muted);
+}
+
+.hs-kind-list {
+  position: absolute;
+  z-index: 1;
+  top: 100%;
+  left: 0;
+  min-width: 100%;
+  margin: 2px 0 0;
+  padding: 4px 0;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  box-shadow: var(--shadow);
+  list-style: none;
+}
+
+.hs-kind-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 10px;
+  cursor: pointer;
+}
+
+.hs-kind-option .mdi {
+  color: var(--color-warning);
+}
+
+.hs-kind-option.hs-kind-active {
+  background: var(--color-surface-raised);
+}
+
+.hs-kind-option[aria-selected="true"] {
+  font-weight: 600;
 }
 
 /* A reference in a description (FR-018): a box with its target's number and title, inline in the text. */
@@ -483,19 +690,8 @@
 
 /* A label's field (FR-011): its values open its list, the Knowledge designer's searchable list, from which the list
    itself is edited in the table's options editor. The control that adds the first value stands in the header, kept in
-   its place while hidden, so showing it moves nothing a click aims at. */
-.hs-tag-add {
-  visibility: hidden;
-  flex: none;
-}
-
-.hs-box:hover > .hs-box-header > .hs-tag-add,
-.hs-box.hs-selected > .hs-box-header > .hs-tag-add,
-.hs-tag-add:focus-visible {
-  visibility: visible;
-}
-
-/* Its values flow with the other labels' tags; its list opens under the row. */
+   its place while hidden, so showing it moves nothing a click aims at. Its values flow with the other labels' tags; its
+   list opens under the row. */
 .hs-tags .hs-tag-field {
   display: contents;
 }
@@ -674,9 +870,61 @@
   font: inherit;
 }
 
-.hs-filter-query {
+.hs-filter-field {
+  position: relative;
+  display: flex;
   flex: 1;
   min-width: 160px;
+}
+
+.hs-filter-query {
+  flex: 1;
+  min-width: 0;
+}
+
+/* The words the field offers to complete the one being typed, under it and above the page. */
+.hs-filter-completions {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 2px);
+  left: 0;
+  box-sizing: border-box;
+  min-width: 220px;
+  max-height: 280px;
+  overflow: auto;
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  box-shadow: var(--shadow);
+  font-size: 13px;
+}
+
+.hs-filter-completion {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 3px 10px;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.hs-filter-completion-active {
+  background: var(--color-surface-raised);
+}
+
+.hs-filter-completion-word {
+  font-family: var(--font-mono);
+  white-space: nowrap;
+}
+
+.hs-filter-completion-hint {
+  color: var(--color-text-muted);
+  font-size: 11px;
+  white-space: nowrap;
 }
 
 .hs-filter-name {

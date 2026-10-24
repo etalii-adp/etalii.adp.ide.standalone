@@ -12,6 +12,11 @@ export interface HierarchySurfaceLabelDefinition {
   prefix: string;
   /** Whether a node holds many values of it, or one. */
   many: boolean;
+  /**
+   * How its values look, so labels side by side tell apart: a rounded tag written with `#`, a square badge, or a rounded
+   * status with a dot. Absent, a label of many values is a tag and one of one value a badge.
+   */
+  look?: HierarchySurfaceLabelLook;
   /** The types that carry it. */
   on: readonly string[];
   /** How its values and its list are changed on the page (FR-011), for a label of many values; absent for one only shown. */
@@ -19,6 +24,9 @@ export interface HierarchySurfaceLabelDefinition {
   /** How its value and its list are changed on the page, for a label of one value; absent for one only shown. */
   pick?: HierarchySurfaceLabelPick;
 }
+
+/** How a label's values look on the page. */
+export type HierarchySurfaceLabelLook = "tag" | "badge" | "status";
 
 /**
  * How a label of many values is changed: a field below the title that searches the label's list, picks and creates, and
@@ -87,10 +95,12 @@ export interface HierarchySurfaceFilters {
   entries: string;
 }
 
-/** A control that adds a node: the operation it sends, with no params, and what the control says. */
+/** A control that adds a node: the operation it sends, with no params, what the control says and the icon it shows. */
 export interface HierarchySurfaceAdd {
   operation: string;
   label: string;
+  /** The control is this icon alone, its label the tooltip. */
+  icon: string;
 }
 
 /** Which operation of the specification each gesture sends. */
@@ -179,3 +189,6 @@ export const ADD_NOTE_ICON = "mdi-comment-plus-outline";
 
 /** The icon of the control that makes a level the left edge of the page. */
 export const FOCUS_ICON = "mdi-target";
+
+/** The icon of the control at a selected box's bottom right that deletes its node. */
+export const DELETE_ICON = "mdi-delete-outline";

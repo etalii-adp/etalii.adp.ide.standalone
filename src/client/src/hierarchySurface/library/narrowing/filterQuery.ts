@@ -172,3 +172,49 @@ export function unhiding(model: HierarchySurfaceModel, index: HierarchyIndex, wo
     return valuesOf(node, word.label).some((value) => names.has(lowerAscii(value)));
   });
 }
+
+/** A word the filter field offers to complete the one being typed: the word, and what it is, shown beside it. */
+export interface Completion {
+  word: string;
+  hint: string;
+}
+
+/** The word the caret stands in or at the end of: where it starts and what of it is typed. */
+export function wordAt(text: string, caret: number): { start: number; end: number; typed: string } {
+  const start = text.slice(0, caret).search(/\S*$/);
+  const rest = text.slice(caret).search(/\s|$/);
+  return { start, end: caret + rest, typed: text.slice(start, caret) };
+}
+
+/**
+ * What the field offers for `typed`, the start of a word (DESL section 7.7.3): the labels' prefixes, `item:` and `sort:`,
+ * then every member of every label's list written with the label's prefix, then `sort:` with each key, those that start
+ * with what is typed, in any case. A word written in full is not offered again. Nothing is offered for nothing typed but the prefixes.
+ */
+export function completionsOf(
+  typed: string,
+  labels: readonly HierarchySurfaceLabelDefinition[],
+  optionLists: HierarchySurfaceModel["optionLists"],
+  sortKeys: readonly { key: string; label: string }[],
+): Completion[] {
+  const words: Completion[] = [];
+  for (const label of labels) {
+    for (const option of optionLists.find((list) => list.label === label.label)?.options ?? []) {
+      words.push({ word: `${label.prefix}${option.name}`, hint: label.pick?.words.value ?? label.label });
+    }
+  }
+  const prefixes: Completion[] = [
+    ...labels.map((label) => ({ word: label.prefix, hint: label.pick?.words.value ?? label.label })),
+    { word: ITEM_PREFIX, hint: "title" },
+    { word: SORT_PREFIX, hint: "order" },
+  ];
+  const sorts = sortKeys.map((key) => ({ word: `${SORT_PREFIX}${key.key}`, hint: key.label }));
+  const wanted = lowerAscii(typed);
+  if (wanted === "") {
+    return prefixes;
+  }
+  return [...prefixes, ...words, ...sorts].filter((candidate) => {
+    const word = lowerAscii(candidate.word);
+    return word.startsWith(wanted) && word !== wanted;
+  });
+}

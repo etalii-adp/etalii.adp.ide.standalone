@@ -50,6 +50,7 @@ export const hierarchicalRequirementSurface: HierarchySurfaceDefinition = {
       label: "state",
       prefix: "state:",
       many: false,
+      look: "status",
       on: ["Requirement"],
       // The seven state operations, their params and labels, and the `confirm` of deleteState with its CEL written out.
       pick: {
@@ -79,9 +80,9 @@ export const hierarchicalRequirementSurface: HierarchySurfaceDefinition = {
     toggleCollapsed: "toggleCollapsed",
     setTitle: "setTitle",
     setDescription: "setDescription",
-    addTopLevel: { operation: "addTopItem", label: "New item" },
-    addEntry: { operation: "addRequirement", label: "New requirement" },
-    addLevel: { operation: "addItem", label: "New item" },
+    addTopLevel: { operation: "addTopItem", label: "New item", icon: "mdi-folder-plus-outline" },
+    addEntry: { operation: "addRequirement", label: "New requirement", icon: "mdi-playlist-plus" },
+    addLevel: { operation: "addItem", label: "New item", icon: "mdi-folder-plus-outline" },
     moveLevel: "moveItem",
     moveEntry: "moveRequirement",
     delete: "deleteEntry",

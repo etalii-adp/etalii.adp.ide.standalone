@@ -6,7 +6,7 @@ import type { HierarchySurfaceDefinition } from "../definition/hierarchySurfaceD
 import { HierarchySurface, type HierarchySurfaceProps } from "../HierarchySurface";
 import { indexOf } from "../layout";
 import { addedNode } from "./AddControl";
-import { dropOf } from "./useDragEntry";
+import { dropOf, slotIndex } from "./useDragEntry";
 
 const definition: HierarchySurfaceDefinition = {
   levelType: "Section",
@@ -18,9 +18,9 @@ const definition: HierarchySurfaceDefinition = {
     toggleCollapsed: "fold",
     setTitle: "retitle",
     setDescription: "redescribe",
-    addTopLevel: { operation: "open", label: "New section" },
-    addEntry: { operation: "jot", label: "New point" },
-    addLevel: { operation: "nest", label: "New section" },
+    addTopLevel: { operation: "open", label: "New section", icon: "mdi-plus" },
+    addEntry: { operation: "jot", label: "New point", icon: "mdi-note-plus-outline" },
+    addLevel: { operation: "nest", label: "New section", icon: "mdi-folder-plus-outline" },
     moveLevel: "shift",
     moveEntry: "slide",
     delete: "drop",
@@ -95,6 +95,18 @@ describe("adding a node", () => {
       ["open", "", {}],
     ]);
     expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("offers each add as its icon alone, its label the tooltip", () => {
+    // Act.
+    show(page());
+
+    // Assert.
+    const control = screen.getByRole("button", { name: "New point in [4]" });
+    expect(control.textContent).toBe("");
+    expect(control.title).toBe("New point");
+    expect(control.querySelector(".mdi-note-plus-outline")).not.toBeNull();
+    expect(screen.getByRole("button", { name: "New section in [4]" }).querySelector(".mdi-folder-plus-outline")).not.toBeNull();
   });
 
   it("opens the added node's title for typing when it arrives, and selects it", async () => {
@@ -216,6 +228,48 @@ describe("dragging a node", () => {
     ]);
   });
 
+  it("shows the dragged node where it would stand while it is dragged, and drops it there from that place", () => {
+    // Arrange.
+    const { onGesture } = show(page());
+    const grip = gripOf("Pay");
+
+    // Act: dragged over the lower half of Take, not yet dropped.
+    under(boxOf("Take"));
+    fireEvent(grip, pointer("pointerdown", { pointerId: 1, button: 0, clientX: 5, clientY: 5 }));
+    fireEvent(grip, pointer("pointermove", { pointerId: 1, clientX: 5, clientY: 30 }));
+
+    // Assert: its place drawn after Take, with its number and title, and the node itself still in its own, faded.
+    const slot = document.querySelector(".hs-drop-slot") as HTMLElement;
+    expect(slot.textContent).toBe("[5] Pay");
+    expect(slot.previousElementSibling?.querySelector(".hs-title")?.textContent).toBe("Take");
+    expect(screen.getByText("Pay", { selector: ".hs-title" }).closest(".hs-entry")?.className).toContain("hs-dragging");
+    expect(onGesture).not.toHaveBeenCalled();
+
+    // Act: the place moved the boxes away from under the pointer; over it, the drop stays, and it is made there.
+    under(slot);
+    fireEvent(grip, pointer("pointermove", { pointerId: 1, clientX: 5, clientY: 34 }));
+    expect(document.querySelector(".hs-drop-slot")).not.toBeNull();
+    fireEvent(grip, pointer("pointerup", { pointerId: 1, button: 0, clientX: 5, clientY: 34 }));
+
+    // Assert.
+    expect(onGesture.mock.calls).toEqual([["slide", "5", { section: "1", behind: "2" }]]);
+    expect(document.querySelector(".hs-drop-slot")).toBeNull();
+  });
+
+  it("shows a drop without a sibling where the move puts it: to the front in its own level, after the last of its kind in another", () => {
+    // Arrange: 1 shows 2, 3 and 4.
+    const index = indexOf(page());
+    const shown = (index.children.get("1") ?? []).slice();
+    const hint = (id: string, into: string) => ({ nodeId: into, kind: "into" as const, dragged: index.byId.get(id)!, drop: { into, after: "" } });
+
+    // Act and assert: an entry of its own level to the front, one from another after the last entry; a level of its
+    // own level before the first level, one from another at the end.
+    expect(slotIndex(shown, hint("3", "1"))).toBe(0);
+    expect(slotIndex(shown, hint("5", "1"))).toBe(2);
+    expect(slotIndex(shown, hint("4", "1"))).toBe(2);
+    expect(slotIndex(shown, hint("6", "1"))).toBe(3);
+  });
+
   it("does not drop a level into itself or into what it holds", () => {
     // Arrange.
     const index = indexOf(page());
@@ -270,6 +324,40 @@ describe("deleting a node", () => {
 
     // Assert.
     expect(onGesture.mock.calls).toEqual([["drop", "4", {}]]);
+  });
+
+  it("offers a selected box's delete at its bottom right, and always asks first, saying what it takes", () => {
+    // Arrange.
+    const { onGesture } = show(page());
+    expect(screen.queryByRole("button", { name: "Delete [3] Keep" })).toBeNull();
+    fireEvent.click(boxOf("Keep"));
+
+    // Act: nothing concerns it, and it still asks.
+    fireEvent.click(screen.getByRole("button", { name: "Delete [3] Keep" }));
+
+    // Assert.
+    expect(screen.getByRole("dialog").textContent).toContain("Delete [3] Keep? Nothing else concerns it.");
+    expect(onGesture).not.toHaveBeenCalled();
+
+    // Act: confirmed; then a level that holds something asks in the definition's words.
+    fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+    fireEvent.click(boxOf("Payment"));
+    fireEvent.click(screen.getByRole("button", { name: "Delete [4] Payment" }));
+
+    // Assert.
+    expect(screen.getByRole("dialog").textContent).toContain("Drop [4]? 1 things concern it.");
+    expect(onGesture.mock.calls).toEqual([["drop", "3", {}]]);
+  });
+
+  it("offers no delete on a document that cannot be changed", () => {
+    // Arrange.
+    show(page(undefined, { readOnlyReason: "Read only." }));
+
+    // Act.
+    fireEvent.click(boxOf("Keep"));
+
+    // Assert.
+    expect(screen.queryByRole("button", { name: "Delete [3] Keep" })).toBeNull();
   });
 
   it("leaves Delete and Enter to a field that is open", () => {

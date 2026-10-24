@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { EMPTY_HIERARCHY_SURFACE, type HierarchySurfaceModel, type HierarchySurfaceNode } from "../api/hierarchySurfaceModel";
 import type { HierarchySurfaceLabelDefinition } from "../definition/hierarchySurfaceDefinition";
 import { indexOf } from "../layout";
-import { narrowingOf, parseQuery, queryText, sortOf, unhiding, withSort } from "./filterQuery";
+import { completionsOf, narrowingOf, parseQuery, queryText, sortOf, unhiding, withSort, wordAt } from "./filterQuery";
 
 // Made-up names throughout: the query knows only the prefixes the definition gives its labels.
 const labels: HierarchySurfaceLabelDefinition[] = [
@@ -187,5 +187,37 @@ describe("unhiding an entry", () => {
     expect(unhidden("item:front* ~none sort:title", "1")).toBe("sort:title");
     expect(unhidden("item:back* ~none", "4")).toBe("item:back*");
     expect(unhidden("~safe", "5")).toBe("");
+  });
+});
+
+describe("completing a word", () => {
+  const sortKeys = [{ key: "number", label: "By number" }];
+
+  it("finds the word the caret stands in, and what of it is typed", () => {
+    // Act.
+    const word = wordAt("~fast pha sort:number", 8);
+
+    // Assert.
+    expect(word).toEqual({ start: 6, end: 9, typed: "ph" });
+  });
+
+  it("offers the members of a label's list with its prefix, in any case, then the prefixes and the sort keys that fit", () => {
+    // Act.
+    const offered = completionsOf("PHASE:D", labels, model().optionLists, sortKeys).map((completion) => completion.word);
+    const sorts = completionsOf("so", labels, model().optionLists, sortKeys).map((completion) => completion.word);
+
+    // Assert.
+    expect(offered).toEqual(["phase:draft", "phase:done"]);
+    expect(sorts).toEqual(["sort:", "sort:number"]);
+  });
+
+  it("offers the prefixes for nothing typed, and nothing again for a word written in full", () => {
+    // Act.
+    const empty = completionsOf("", labels, model().optionLists, sortKeys).map((completion) => completion.word);
+    const full = completionsOf("phase:done", labels, model().optionLists, sortKeys);
+
+    // Assert.
+    expect(empty).toEqual(["~", "k", "kind:", "phase:", "item:", "sort:"]);
+    expect(full).toEqual([]);
   });
 });

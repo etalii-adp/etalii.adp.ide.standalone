@@ -9,10 +9,36 @@ export interface EntryDrop {
   after: string;
 }
 
-/** What the page shows under the pointer while a node is dragged: the box it would go into, after or before. */
+/**
+ * What the page shows while a node is dragged: the box under the pointer it would go into, after or before, and the
+ * node and the place it would be dropped at, where the page draws it as it would stand.
+ */
 export interface DropHint {
   nodeId: string;
   kind: "into" | "after" | "before";
+  dragged: HierarchySurfaceNode;
+  drop: EntryDrop;
+}
+
+/** The class of the place the page draws a dragged node at: the pointer over it keeps the drop it shows. */
+export const DROP_SLOT = "hs-drop-slot";
+
+/**
+ * Where the place a drop shows stands among `shown`, the children of its level as the page draws them, entries before
+ * levels; -1 where it stands nowhere among them. A move after a sibling goes right after it; without one, as the move
+ * of the definition says, to the front of its kind within its own level, and after the last of its kind into another.
+ */
+export function slotIndex(shown: readonly HierarchySurfaceNode[], hint: DropHint): number {
+  const { dragged, drop } = hint;
+  if (drop.after !== "") {
+    const at = shown.findIndex((node) => node.id === drop.after);
+    return at < 0 ? -1 : at + 1;
+  }
+  const entries = shown.filter((node) => node.role !== "level").length;
+  if (dragged.parentId === drop.into) {
+    return dragged.role === "level" ? entries : 0;
+  }
+  return dragged.role === "level" ? shown.length : entries;
 }
 
 /**
@@ -58,11 +84,18 @@ export interface DragEntry {
  */
 export function useDragEntry(index: HierarchyIndex, onDrop: (dragged: HierarchySurfaceNode, drop: EntryDrop) => void): DragEntry {
   const [hint, setHint] = useState<DropHint | null>(null);
+  const hintRef = useRef(hint);
+  hintRef.current = hint;
   // Where the pointer is: the gesture reports how far it moved, the page needs what it is over.
   const pointer = useRef({ x: 0, y: 0 });
 
-  const target = (dragged: HierarchySurfaceNode): { over: HierarchySurfaceNode; drop: EntryDrop | null } | null => {
-    const element = document.elementFromPoint?.(pointer.current.x, pointer.current.y)?.closest<HTMLElement>("[data-node-id]");
+  const target = (dragged: HierarchySurfaceNode): { over: HierarchySurfaceNode; drop: EntryDrop | null } | "slot" | null => {
+    const under = document.elementFromPoint?.(pointer.current.x, pointer.current.y);
+    // Over the place the drop is shown at, the drop stays: that place moved the boxes away from under the pointer.
+    if (under?.closest(`.${DROP_SLOT}`) !== null && under?.closest(`.${DROP_SLOT}`) !== undefined) {
+      return "slot";
+    }
+    const element = under?.closest<HTMLElement>("[data-node-id]");
     const over = element === null || element === undefined ? undefined : index.byId.get(element.dataset.nodeId ?? "");
     if (element === null || element === undefined || over === undefined) {
       return null;
@@ -76,17 +109,27 @@ export function useDragEntry(index: HierarchyIndex, onDrop: (dragged: HierarchyS
     onPress: () => undefined,
     onDragMove: (dragged) => {
       const found = target(dragged);
+      if (found === "slot") {
+        return;
+      }
       setHint(
         found === null || found.drop === null
           ? null
-          : { nodeId: found.over.id, kind: found.drop.into === found.over.id ? "into" : found.drop.after === found.over.id ? "after" : "before" },
+          : {
+              nodeId: found.over.id,
+              kind: found.drop.into === found.over.id ? "into" : found.drop.after === found.over.id ? "after" : "before",
+              dragged,
+              drop: found.drop,
+            },
       );
     },
     onDragEnd: (dragged) => {
+      const shown = hintRef.current;
       setHint(null);
       const found = target(dragged);
-      if (found !== null && found.drop !== null) {
-        onDrop(dragged, found.drop);
+      const drop = found === "slot" ? shown?.drop : found?.drop;
+      if (drop !== null && drop !== undefined) {
+        onDrop(dragged, drop);
       }
     },
     onDragAbandon: () => setHint(null),

@@ -1,4 +1,4 @@
-import { type FocusEvent, type KeyboardEvent, type MouseEvent, useEffect, useRef, useState } from "react";
+import { type FocusEvent, type KeyboardEvent, type MouseEvent, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { HierarchySurfaceNode } from "../api/hierarchySurfaceModel";
 import { CONFLICT_BAR } from "../ConflictBar";
 import { REFERENCE_LOOKUP, ReferenceLookup } from "../references/ReferenceLookup";
@@ -26,9 +26,13 @@ export interface EntryTextFieldProps {
  * Typing `#` where references are offered opens the lookup in place of the `#`; the pick is written as its bracketed
  * number, which the page then shows as a box. While the lookup is open the field is not left: the text is committed
  * only once the focus is outside both.
+ *
+ * It stands where the text stood, in its font, and is as high as its text wraps to, so a title or description opened
+ * for typing keeps the size of what it replaced. A title is one line however it wraps: a line break typed or pasted
+ * into it is taken out.
  */
 export function EntryTextField({ text, multiline, label, onChange, onCommit, onCancel, references }: EntryTextFieldProps) {
-  const ref = useRef<HTMLInputElement & HTMLTextAreaElement>(null);
+  const ref = useRef<HTMLTextAreaElement>(null);
   // Leaving the field by Escape is no commit, though the blur that follows looks like one.
   const cancelled = useRef(false);
   // Where the `#` that opened the lookup stands, while it is open.
@@ -40,6 +44,15 @@ export function EntryTextField({ text, multiline, label, onChange, onCommit, onC
     ref.current?.focus();
     ref.current?.select();
   }, []);
+
+  // As high as the text wraps to, as the text it replaced was.
+  useLayoutEffect(() => {
+    const field = ref.current;
+    if (field !== null) {
+      field.style.height = "auto";
+      field.style.height = `${field.scrollHeight + field.offsetHeight - field.clientHeight}px`;
+    }
+  }, [text]);
 
   useEffect(() => {
     if (caret.current !== null && lookupAt === null) {
@@ -60,7 +73,9 @@ export function EntryTextField({ text, multiline, label, onChange, onCommit, onC
     onCommit();
   };
 
-  const change = (value: string, selection: number) => {
+  const change = (typed: string, typedAt: number) => {
+    const value = multiline ? typed : typed.replace(/\r?\n/g, " ");
+    const selection = Math.min(typedAt, value.length);
     // One `#` typed into the text, and nothing else changed.
     const at = selection - 1;
     if (references !== undefined && value.length === text.length + 1 && value[at] === "#" && value.slice(0, at) + value.slice(at + 1) === text) {
@@ -71,7 +86,7 @@ export function EntryTextField({ text, multiline, label, onChange, onCommit, onC
 
   const shared = {
     ref,
-    className: `hs-field${multiline ? " hs-field-multiline" : ""}`,
+    className: `hs-field hs-field-inplace${multiline ? " hs-field-multiline" : " hs-field-title"}`,
     "aria-label": label,
     value: text,
     onClick: (event: MouseEvent) => event.stopPropagation(),
@@ -107,14 +122,9 @@ export function EntryTextField({ text, multiline, label, onChange, onCommit, onC
     />
   );
 
-  return multiline ? (
+  return (
     <>
-      <textarea {...shared} rows={Math.max(2, text.split("\n").length)} onChange={(event) => change(event.target.value, event.target.selectionStart)} />
-      {lookup}
-    </>
-  ) : (
-    <>
-      <input {...shared} type="text" onChange={(event) => change(event.target.value, event.target.selectionStart ?? event.target.value.length)} />
+      <textarea {...shared} rows={1} onChange={(event) => change(event.target.value, event.target.selectionStart)} />
       {lookup}
     </>
   );

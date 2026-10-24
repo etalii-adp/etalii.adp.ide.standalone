@@ -866,26 +866,72 @@
   background: var(--color-surface-raised);
 }
 
+/* The options in columns of their own: every option's tag as wide as the widest, its name, its colour and its controls
+   lined up below each other. */
 .table-options-list {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: auto max-content minmax(80px, 1fr) auto auto auto auto;
   gap: 4px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.table-options-line,
+.table-options-line {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  align-items: center;
+}
+
+.table-options-line > .table-option-tag {
+  justify-self: stretch;
+  text-align: center;
+}
+
 .table-options-add {
   display: flex;
   align-items: center;
   gap: 4px;
 }
 
-.table-options-line input,
 .table-options-add input {
   flex: 1;
   min-width: 0;
+}
+
+/* The fields in the looks of the rest: the theme's border, surface and text, and its colour where they have the focus. */
+.table-options-line input,
+.table-options-line select,
+.table-options-add input {
+  box-sizing: border-box;
+  height: 26px;
+  min-width: 0;
+  padding: 0 6px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.table-options-line input:focus-visible,
+.table-options-line select:focus-visible,
+.table-options-add input:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -1px;
+}
+
+.table-options-add-button.dialog-button {
+  padding: 3px 14px;
+  font-size: inherit;
+}
+
+/* The option being dragged, under the pointer, above the others making way for it. */
+.table-options-dragging {
+  border-radius: var(--radius);
+  background: var(--color-surface-raised);
+  box-shadow: var(--shadow);
 }
 
 .table-options-button {
@@ -897,13 +943,9 @@
   cursor: pointer;
 }
 
-.table-options-line {
-  flex-wrap: wrap;
-}
-
 .table-options-ask {
   display: flex;
-  flex-basis: 100%;
+  grid-column: 1 / -1;
   align-items: center;
   gap: 6px;
   padding: 4px 6px;
