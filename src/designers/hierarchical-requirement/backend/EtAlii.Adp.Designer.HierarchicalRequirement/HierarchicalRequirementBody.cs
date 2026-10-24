@@ -48,7 +48,7 @@ internal sealed partial class HierarchicalRequirementBody
         if (model.Unreadable)
         {
             var reason = model.Findings.FirstOrDefault()?.Message ?? "The file could not be read.";
-            var document = new HierarchicalRequirementDocument(null, null, [], [], [], [], [], [], [.. model.Findings.Select(Of)],
+            var document = new HierarchicalRequirementDocument(null, null, [], [], [], [], [], [], [], [.. model.Findings.Select(Of)],
                 $"This file cannot be read as a requirement document: {reason} It is left exactly as it is and cannot be changed here.");
             return new HierarchicalRequirementBody(body, registration, document);
         }
@@ -91,9 +91,23 @@ internal sealed partial class HierarchicalRequirementBody
                 [.. Members("categories", "category", entries).Select(member => new Category(member.Key, member.Value))],
                 [.. Members("states", "state", entries).Select(member => new State(member.Key, member.Value))],
                 [.. Block("filters")?.Select(entry => new Filter(entry.Key, entry.Value)) ?? []],
+                Columns(),
                 findings,
                 envelope?.ReadOnlyReason ?? "");
         }
+
+        /// <summary>
+        /// The widths the user set, by depth: an entry whose depth or width is not a number in the specification's range
+        /// is left out, so its column has the host's width.
+        /// </summary>
+        private List<Column> Columns() =>
+        [
+            .. (Block("widths") ?? []).Select(entry => (
+                    Level: int.TryParse(entry.Key, NumberStyles.None, CultureInfo.InvariantCulture, out var level) ? level : 0,
+                    Width: int.TryParse(entry.Value, NumberStyles.None, CultureInfo.InvariantCulture, out var width) ? width : 0))
+                .Where(column => column is { Level: >= 1, Width: >= ColumnOperations.MinimumWidth and <= ColumnOperations.MaximumWidth })
+                .Select(column => new Column(column.Level, column.Width)),
+        ];
 
         private string? Mark(string attribute) => _marks?.Attributes.GetValueOrDefault(attribute) as string;
 

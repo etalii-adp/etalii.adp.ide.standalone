@@ -34,7 +34,7 @@ internal sealed class HierarchicalRequirementEditCommandHandler(IHierarchicalReq
             return CommandResult.Failure(HierarchicalRequirementGestures.Drifted);
         }
 
-        if (TagOperations.Handles(command.Operation) || CategoryStateOperations.Handles(command.Operation) || FilterOperations.Handles(command.Operation))
+        if (TagOperations.Handles(command.Operation) || CategoryStateOperations.Handles(command.Operation) || FilterOperations.Handles(command.Operation) || ColumnOperations.Handles(command.Operation))
         {
             return await WriteAsync(command, Lists(command, before, name), cancellationToken);
         }
@@ -55,7 +55,7 @@ internal sealed class HierarchicalRequirementEditCommandHandler(IHierarchicalReq
     }
 
     /// <summary>
-    /// What an operation on a list the registration keeps writes, the tags, the categories, the states or the filters: the
+    /// What an operation on a list the registration keeps writes, the tags, the categories, the states, the filters or the widths: the
     /// body when its entries change, and the registration when the list does, the body first. A registration the body has none of is created as the step's starting point, outside the step.
     /// </summary>
     private static (List<RequirementFileState> Files, string Refusal) Lists(HierarchicalRequirementEditCommand command, byte[] body, string name)
@@ -76,6 +76,7 @@ internal sealed class HierarchicalRequirementEditCommandHandler(IHierarchicalReq
         {
             _ when CategoryStateOperations.Handles(command.Operation) => CategoryStateOperations.Apply(body, name, registration, registrationName, command.Operation, command.TargetId, command.Params),
             _ when FilterOperations.Handles(command.Operation) => FilterOperations.Apply(body, name, registration, registrationName, command.Operation, command.TargetId, command.Params),
+            _ when ColumnOperations.Handles(command.Operation) => ColumnOperations.Apply(body, name, registration, registrationName, command.Operation, command.TargetId, command.Params),
             _ => TagOperations.Apply(body, name, registration, registrationName, command.Operation, command.TargetId, command.Params),
         };
         if (edit.Refusal.Length > 0) return ([], edit.Refusal);

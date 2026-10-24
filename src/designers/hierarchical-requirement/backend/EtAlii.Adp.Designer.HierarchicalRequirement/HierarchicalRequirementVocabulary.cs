@@ -25,6 +25,7 @@ internal static class HierarchicalRequirementVocabulary
         ["Category"] = ["name", "colour"],
         ["State"] = ["name", "colour"],
         ["Filter"] = ["name", "query"],
+        ["Column"] = ["level", "width"],
     };
 
     /// <summary>The document's own attributes: the marks of the two counters, on line 2 of the file.</summary>
@@ -46,5 +47,6 @@ internal static class HierarchicalRequirementVocabulary
         "setState", "clearState", "addState", "renameState", "recolourState", "moveState", "deleteState",
         "addAssessment", "changeAssessment", "resolveAssessment", "removeAssessment",
         "storeFilter", "renameFilter", "removeFilter",
+        "addColumnWidth", "setColumnWidth", "resetColumnWidth",
     ];
 }

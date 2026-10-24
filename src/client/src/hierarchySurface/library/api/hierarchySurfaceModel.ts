@@ -97,6 +97,17 @@ export interface HierarchySurfaceModel {
   filters: readonly HierarchySurfaceFilter[];
   notes: readonly HierarchySurfaceNote[];
   findings: readonly HierarchySurfaceFinding[];
+  /** The widths the user set of the columns of levels, by depth; a column not listed has the page's own. */
+  widths: readonly HierarchySurfaceColumnWidth[];
+}
+
+/** The width the user set of one column of levels (DESL section 7.7.1). */
+export interface HierarchySurfaceColumnWidth {
+  id: string;
+  /** The depth of the levels the column holds, 1 for the top ones. */
+  level: number;
+  /** In pixels. */
+  width: number;
 }
 
 /** The page before anything arrived. */
@@ -109,4 +120,5 @@ export const EMPTY_HIERARCHY_SURFACE: HierarchySurfaceModel = {
   filters: [],
   notes: [],
   findings: [],
+  widths: [],
 };

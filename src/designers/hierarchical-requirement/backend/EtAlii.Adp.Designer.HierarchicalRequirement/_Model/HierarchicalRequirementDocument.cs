@@ -2,7 +2,7 @@ namespace EtAlii.Adp.Designer.HierarchicalRequirement;
 
 /// <summary>
 /// A requirement document as the designer holds it: the marks of its counters, its entries and assessments in reading
-/// order, the members of its lists and its stored filters, and what reading it reported.
+/// order, the members of its lists, its stored filters and the widths of its columns, and what reading it reported.
 /// </summary>
 /// <param name="LastItem">The mark of the item counter on line 2, <c>ITEM-0007</c>, or null when the file has none.</param>
 /// <param name="LastRequirement">The mark of the requirement counter, or null when the file has none.</param>
@@ -16,5 +16,6 @@ public sealed record HierarchicalRequirementDocument(
     IReadOnlyList<Category> Categories,
     IReadOnlyList<State> States,
     IReadOnlyList<Filter> Filters,
+    IReadOnlyList<Column> Columns,
     IReadOnlyList<HierarchicalRequirementFinding> Findings,
     string ReadOnlyReason);
