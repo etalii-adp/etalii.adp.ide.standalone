@@ -63,7 +63,7 @@ function boxOf(title: string): HTMLElement {
 
 /** The icon at the top right of a box: its notes' mark, or the way to add the first. */
 function iconOf(title: string): HTMLElement {
-  return boxOf(title).querySelector(":scope > .hs-box-icons > .hs-note-mark, :scope > .hs-box-icons > .hs-note-add") as HTMLElement;
+  return boxOf(title).querySelector(":scope > .hs-box-side > .hs-box-icons > .hs-note-mark, :scope > .hs-box-side > .hs-box-icons > .hs-note-add") as HTMLElement;
 }
 
 /** Picks a note's kind in the list: the choice opened, and the kind clicked among its options. */
