@@ -18,9 +18,9 @@ const definition: HierarchySurfaceDefinition = {
     toggleCollapsed: "fold",
     setTitle: "retitle",
     setDescription: "redescribe",
-    addTopLevel: { operation: "open", label: "New section" },
-    addEntry: { operation: "jot", label: "New point" },
-    addLevel: { operation: "nest", label: "New section" },
+    addTopLevel: { operation: "open", label: "New section", icon: "mdi-plus" },
+    addEntry: { operation: "jot", label: "New point", icon: "mdi-plus" },
+    addLevel: { operation: "nest", label: "New section", icon: "mdi-plus" },
     moveLevel: "shift",
     moveEntry: "slide",
     delete: "drop",
@@ -229,6 +229,69 @@ describe("the filter bar", () => {
     // Assert.
     expect(within(bar()).queryByRole("button", { name: /Store|Rename|Remove/ })).toBeNull();
     expect(titles()).toHaveLength(4);
+  });
+});
+
+describe("completing the word being typed", () => {
+  const withMarks = { label: "marks", options: [{ id: "marks/fast", name: "fast", colour: "default", implicit: true }] };
+
+  /** Types `text` into the focused field, with the caret at its end. */
+  function typeFocused(text: string) {
+    const field = within(bar()).getByRole("searchbox", { name: "Filter" }) as HTMLInputElement;
+    field.focus();
+    fireEvent.change(field, { target: { value: text, selectionStart: text.length } });
+    return field;
+  }
+
+  it("lists the members of a label's list with its prefix under the field, and Tab takes the one marked and applies it", () => {
+    // Arrange.
+    const page = model();
+    render(<HierarchySurface model={{ ...page, optionLists: [...page.optionLists, withMarks] }} definition={definition} onGesture={vi.fn()} />);
+    const field = typeFocused("~f");
+    const offered = within(screen.getByRole("listbox", { name: "Completions" })).getAllByRole("option").map((option) => option.textContent);
+
+    // Act.
+    fireEvent.keyDown(field, { key: "Tab" });
+
+    // Assert.
+    expect(offered).toEqual(["~fastmarks"]);
+    expect(field.value).toBe("~fast ");
+    expect(titles()).toEqual(["Orders", "Take an order", "Refunds", "Refund in full"]);
+  });
+
+  it("keeps a prefix open for its name, then offers the members, and a press takes one", () => {
+    // Arrange.
+    render(<HierarchySurface model={model()} definition={definition} onGesture={vi.fn()} />);
+    const field = typeFocused("~fast ph");
+    fireEvent.keyDown(field, { key: "Enter" });
+    const afterPrefix = field.value;
+    fireEvent.change(field, { target: { value: afterPrefix, selectionStart: afterPrefix.length } });
+
+    // Act.
+    fireEvent.pointerDown(within(screen.getByRole("listbox", { name: "Completions" })).getByRole("option", { name: /phase:done/ }));
+
+    // Assert.
+    expect(afterPrefix).toBe("~fast phase:");
+    expect(field.value).toBe("~fast phase:done ");
+    expect(titles()).toEqual(["Orders", "Take an order"]);
+  });
+
+  it("offers nothing after Escape, and nothing while the field does not have the focus", () => {
+    // Arrange.
+    render(<HierarchySurface model={model()} definition={definition} onGesture={vi.fn()} />);
+    const field = typeFocused("ph");
+
+    // Act.
+    fireEvent.keyDown(field, { key: "Escape" });
+    const afterEscape = screen.queryByRole("listbox", { name: "Completions" });
+    fireEvent.change(field, { target: { value: "pha", selectionStart: 3 } });
+    const afterTyping = screen.queryByRole("listbox", { name: "Completions" });
+    fireEvent.blur(field);
+
+    // Assert.
+    expect(afterEscape).toBeNull();
+    expect(afterTyping).not.toBeNull();
+    expect(screen.queryByRole("listbox", { name: "Completions" })).toBeNull();
   });
 });
 

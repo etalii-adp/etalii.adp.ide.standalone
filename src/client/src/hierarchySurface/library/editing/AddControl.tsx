@@ -10,7 +10,8 @@ export interface AddControlProps {
 }
 
 /**
- * The place a node is added: at the end of every level's content, and at the end of the page (FR-012). It asks nothing:
+ * The place a node is added: at the end of every level's content, and at the end of the page (FR-012), each control
+ * its icon alone with its label as the tooltip. It asks nothing:
  * the node is added at once under the operation's own title, and the page opens that title for typing, as the table's
  * `NewRow` adds a row without a dialog.
  */
@@ -23,13 +24,13 @@ export function AddControl({ adds, within, onAdd }: AddControlProps) {
           type="button"
           className="hs-add-button"
           aria-label={within === "" ? add.label : `${add.label} in ${within}`}
+          title={add.label}
           onClick={(event) => {
             event.stopPropagation();
             onAdd(add);
           }}
         >
-          <span className="mdi mdi-plus" aria-hidden="true" />
-          <span>{add.label}</span>
+          <span className={`mdi ${add.icon}`} aria-hidden="true" />
         </button>
       ))}
     </div>

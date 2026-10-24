@@ -17,9 +17,9 @@ const definition: HierarchySurfaceDefinition = {
     toggleCollapsed: "fold",
     setTitle: "retitle",
     setDescription: "redescribe",
-    addTopLevel: { operation: "open", label: "New section" },
-    addEntry: { operation: "jot", label: "New point" },
-    addLevel: { operation: "nest", label: "New section" },
+    addTopLevel: { operation: "open", label: "New section", icon: "mdi-plus" },
+    addEntry: { operation: "jot", label: "New point", icon: "mdi-plus" },
+    addLevel: { operation: "nest", label: "New section", icon: "mdi-plus" },
     moveLevel: "shift",
     moveEntry: "slide",
     delete: "drop",
@@ -101,7 +101,7 @@ describe("the hierarchy surface", () => {
       expect(within(page).getAllByText(title)).toHaveLength(1);
     }
     expect(container.querySelectorAll(".hs-box")).toHaveLength(7);
-    expect(container.querySelector(".hs-trail")).toBeNull();
+    expect(container.querySelector(".hs-trail")?.textContent).toBe("Requirements");
   });
 
   it("puts a level's requirements to its right and above its sub-items, beside its own box", () => {
@@ -124,12 +124,14 @@ describe("the hierarchy surface", () => {
     // Assert.
     const box = boxOf("Take an order");
     const parts = Array.from(box.children).map((child) => child.className);
-    // The note icon stands at the box's top right, out of the flow (FR-015).
-    expect(parts).toEqual(["hs-box-header", "hs-tags", "hs-description", "mdi mdi-comment-plus-outline hs-note-add"]);
+    // The note icon stands first of the controls at the box's top right, which the rest flows beside (FR-015).
+    expect(parts).toEqual(["hs-box-icons", "hs-box-header", "hs-tags", "hs-description"]);
+    expect(box.querySelector(".hs-box-icons")?.firstElementChild?.className).toBe("mdi mdi-comment-plus-outline hs-note-add");
     const header = box.querySelector(".hs-box-header") as HTMLElement;
     expect(within(header).getByText("[2]").nextElementSibling?.textContent).toBe("Take an order");
-    const tags = Array.from(box.querySelectorAll(".hs-tags .table-option-tag")).map((tag) => `${tag.textContent} ${tag.className}`);
-    expect(tags).toEqual(["core table-option-tag table-option-green", "draft table-option-tag table-option-default"]);
+    const tags = Array.from(box.querySelectorAll(".hs-tags .table-option-tag")).map((tag) => `${tag.textContent} ${tag.className} in ${tag.closest(".hs-look")?.className}`);
+    // Each label in a look of its own: a label of many values a tag, one of one value a badge.
+    expect(tags).toEqual(["core table-option-tag table-option-green in hs-look hs-look-tag", "draft table-option-tag table-option-default in hs-look hs-look-badge"]);
     expect(box.querySelector(".hs-description")?.textContent).toBe("Any open order can be taken.");
   });
 
@@ -173,8 +175,45 @@ describe("the hierarchy surface", () => {
 
     // Assert.
     expect(screen.getByText("Shipping")).toBeDefined();
-    expect(screen.queryByRole("navigation", { name: "Trail" })).toBeNull();
+    expect(screen.getByRole("navigation", { name: "Trail" }).textContent).toBe("Requirements");
     expect(onGesture).not.toHaveBeenCalled();
+  });
+
+  it("shows the levels an item's mark hides at every level, also where only one level fits", () => {
+    // Arrange: room for one level beside the entries' least width.
+    pageWidth(600);
+    render(<HierarchySurface model={threeLevels()} definition={definition} onGesture={vi.fn()} />);
+    expect(screen.queryByText("Payment")).toBeNull();
+
+    // Act: the mark of the top level; then the mark of the level it brought.
+    fireEvent.click(boxOf("Orders").querySelector(".hs-hidden-levels") as HTMLElement);
+
+    // Assert: its sub-levels stand in its place, since beside it they cannot fit.
+    expect(boxOf("Payment")).toBeDefined();
+    expect(screen.getByText("Pay by card")).toBeDefined();
+
+    // Act.
+    fireEvent.click(boxOf("Payment").querySelector(".hs-hidden-levels") as HTMLElement);
+
+    // Assert: and so on, a level deeper; the trail leads back to the item.
+    expect(screen.getByText("Refund in full")).toBeDefined();
+    expect(screen.queryByText("Pay by card")).toBeNull();
+    fireEvent.click(within(screen.getByRole("navigation", { name: "Trail" })).getByRole("button", { name: "[3] Payment" }));
+    expect(screen.getByText("Pay by card")).toBeDefined();
+  });
+
+  it("always shows the trail, down to the level the selected node stands in, naming levels only", () => {
+    // Arrange.
+    render(<HierarchySurface model={threeLevels()} definition={definition} onGesture={vi.fn()} />);
+    const steps = () => Array.from(screen.getByRole("navigation", { name: "Trail" }).querySelectorAll("button, [aria-current]"), (step) => step.textContent);
+
+    // Act and assert.
+    fireEvent.click(boxOf("Pay by card"));
+    expect(steps()).toEqual(["Requirements", "[1] Orders", "[3] Payment"]);
+    fireEvent.click(boxOf("Refunds"));
+    expect(steps()).toEqual(["Requirements", "[1] Orders", "[3] Payment", "[5] Refunds"]);
+    fireEvent.click(boxOf("Shipping"));
+    expect(steps()).toEqual(["Requirements", "[7] Shipping"]);
   });
 
   it("focuses an item by the control in its header", () => {
@@ -212,7 +251,7 @@ describe("the hierarchy surface", () => {
 
     // Assert.
     const box = boxOf("Take an order");
-    expect(Array.from(box.children).map((child) => child.className)).toEqual(["hs-box-header", "hs-tags", "mdi mdi-help-circle-outline hs-note-mark"]);
+    expect(Array.from(box.children).map((child) => child.className)).toEqual(["hs-box-icons", "hs-box-header", "hs-tags"]);
     expect(within(box).getByText("[2]")).toBeDefined();
     expect(box.querySelector(".hs-note-mark.mdi-help-circle-outline")).not.toBeNull();
     expect(within(box).getByRole("button", { name: "Expand [2] Take an order" }).getAttribute("aria-expanded")).toBe("false");
