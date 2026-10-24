@@ -1,0 +1,23 @@
+sankey: 1
+# A12: a node's value counts only the flows that are drawn.
+nodes:
+  - id: a
+    name: A
+  - id: b
+    name: B
+flows:
+  - from: a
+    to: b
+    value: 5
+  - from: a
+    to: b
+    value: 7
+  - from: a
+    to: a
+    value: 11
+  - from: a
+    to: ghost
+    value: 13
+  - from: ghost
+    to: b
+    value: 17

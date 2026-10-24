@@ -29,6 +29,6 @@ public sealed class ScaleSankeyThicknessCommandHandler(ISankeyDocumentStore docu
             ? EditOutcome.Refused(command.Steps > 0
                 ? "The bands are already as thick as this diagram draws them."
                 : "The bands are already as thin as this diagram draws them.")
-            : SankeyWriter.SetRootKey(document, model.Settings.ThicknessLine, SankeyParser.ThicknessKey, DslNumber.Format(scaled));
+            : SankeyWriter.SetRootKey(document, model.Settings.ThicknessLine, SankeyWriter.ThicknessKey, DslNumber.Format(scaled));
     }
 }

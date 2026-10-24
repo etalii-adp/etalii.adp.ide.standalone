@@ -4461,7 +4461,9 @@ function dragLanding(
   dx: number,
   dy: number,
 ): Point {
-  const clamped = clampToDragBounds(definition.dragBounds, element, dx, dy);
+  // A type dragged along one axis keeps the other where the model has it, before any bound or snap.
+  const axis = elementTypes.get(element.type)?.dragAxis;
+  const clamped = clampToDragBounds(definition.dragBounds, element, axis === "y" ? 0 : dx, axis === "x" ? 0 : dy);
   const snap = definition.snap;
   if (snap === undefined) {
     return clamped;
@@ -4470,8 +4472,8 @@ function dragLanding(
   const { width, height } = elementBounds(element, elementTypes.get(element.type));
   const source = sourceOf(element);
   return {
-    x: snapLeadingEdge(clamped.x, width, snap.x, source),
-    y: snapLeadingEdge(clamped.y, height, snap.y, source),
+    x: axis === "y" ? clamped.x : snapLeadingEdge(clamped.x, width, snap.x, source),
+    y: axis === "x" ? clamped.y : snapLeadingEdge(clamped.y, height, snap.y, source),
   };
 }
 

@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Text.RegularExpressions;
 using EtAlii.Adp.Specification.Cel;
 
 namespace EtAlii.Adp.Specification.Disl;
@@ -51,6 +53,8 @@ internal static class DislCelLibrary
         environment.AddFunction(new CelFunction("budget", CelCallStyle.Global, 0, 1, Budget, _ => 1));
         environment.AddFunction(CelFunction.Global("enumLabel", 2, arguments => EnumLabel(enums, arguments[0], arguments[1])));
         environment.AddFunction(CelFunction.Receiver("avg", 0, arguments => Average(arguments[0]), arguments => arguments[0] is IReadOnlyList<object?> list ? list.Count : 1));
+        environment.AddFunction(CelFunction.Receiver("sum", 0, arguments => Sum(arguments[0]), arguments => arguments[0] is IReadOnlyList<object?> list ? list.Count : 1));
+        environment.AddFunction(CelFunction.Global("formatNumber", 2, arguments => FormatNumber(arguments[0], arguments[1])));
         environment.AddFunction(CelFunction.Receiver("center", 0, arguments => Center(arguments[0])));
         environment.AddFunction(CelFunction.Global("token", 1, arguments => throw new CelException($"The theme token '{Text(arguments[0])}' is resolved where the diagram is drawn; this runtime has no theme.")));
         environment.AddFunction(CelFunction.Global("color", 1, arguments => DislColor.Of(arguments[0])));
@@ -144,6 +148,51 @@ internal static class DislCelLibrary
         var list = value as IReadOnlyList<object?> ?? throw new CelException("avg() takes a list of numbers.");
         if (list.Count == 0) throw new CelException("avg() of an empty list has no value.");
         return list.Sum(item => item is long or double ? Number(item) : throw new CelException("avg() takes a list of numbers.")) / list.Count;
+    }
+
+    /// <summary>
+    /// <c>l.sum()</c> (§12.4): the total of a list of numbers, an int while every item is an int and a
+    /// double once one is not; the total of an empty list is the int 0.
+    /// </summary>
+    private static object Sum(object? value)
+    {
+        var list = value as IReadOnlyList<object?> ?? throw new CelException("sum() takes a list of numbers.");
+        if (list.All(item => item is long))
+        {
+            long total = 0;
+            foreach (var item in list)
+            {
+                try
+                {
+                    total = checked(total + (long)item!);
+                }
+                catch (OverflowException)
+                {
+                    throw new CelException("sum() of these ints overflows.");
+                }
+            }
+            return total;
+        }
+        return list.Sum(item => item is long or double ? Number(item) : throw new CelException("sum() takes a list of numbers."));
+    }
+
+    /// <summary>The number patterns <c>formatNumber</c> writes: digit placeholders with grouping, and decimals after one point.</summary>
+    private static readonly Regex NumberPattern = new(@"^[#,]*0[0,]*(\.[0#]+)?$|^#[#,]*(\.[0#]+)?$", RegexOptions.CultureInvariant);
+
+    /// <summary>
+    /// <c>formatNumber(n, pattern)</c> (§12.4): <paramref name="number"/> written by <paramref name="pattern"/>, with
+    /// <c>0</c> a digit always written, <c>#</c> one written when it is significant, <c>,</c> grouping by
+    /// thousands and <c>.</c> the decimal point, in the invariant culture. A half in the last kept decimal
+    /// rounds as .NET's custom numeric formats round it, which is what the hosts of this runtime write.
+    /// </summary>
+    private static string FormatNumber(object? number, object? pattern)
+    {
+        if (number is not (long or double) || pattern is not string text) throw new CelException("formatNumber() takes a number and a pattern.");
+        if (!NumberPattern.IsMatch(text))
+        {
+            throw new CelException($"'{text}' is not a number pattern this runtime writes: digits '0' and '#', grouping ',' and one decimal point '.'.");
+        }
+        return number is long integer ? integer.ToString(text, CultureInfo.InvariantCulture) : ((double)number).ToString(text, CultureInfo.InvariantCulture);
     }
 
     /// <summary><c>b.center()</c> on a Bounds (§12.2): <c>[x + width / 2, y + height / 2]</c>, as doubles.</summary>

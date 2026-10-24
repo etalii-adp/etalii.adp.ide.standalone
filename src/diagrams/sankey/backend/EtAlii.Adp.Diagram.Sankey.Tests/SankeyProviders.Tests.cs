@@ -235,7 +235,7 @@ public sealed class SankeyProvidersTests : IDisposable
     private ContextTarget Target(string elementId) =>
         ContextTarget.ForElement(_folder.Body, elementId, ProjectRoot.From(_folder.Folder), ShortGuid.NewShortGuid());
 
-    private SankeyModel Parse() => SankeyParser.Parse(LineDocument.Parse(File.ReadAllText(_folder.Body)));
+    private SankeyModel Parse() => SankeyReader.Parse(File.ReadAllText(_folder.Body));
 
     /// <summary>A store whose every document reads as one that could not be read.</summary>
     private sealed class UnreadableStore(ISankeyDocumentStore inner) : ISankeyDocumentStore

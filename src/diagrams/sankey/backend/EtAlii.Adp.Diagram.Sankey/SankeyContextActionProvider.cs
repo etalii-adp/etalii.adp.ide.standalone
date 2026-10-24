@@ -14,6 +14,11 @@ namespace EtAlii.Adp.Diagram.Sankey;
 /// <b>The ids are the client's</b>, stated once in the client module's <c>sankeyIds.ts</c>; this
 /// provider answers exactly those strings.
 /// </para>
+/// <para>
+/// <b>What is offered is derived from the DISL definition</b> (<see cref="SankeyDefinition.Menus"/>): its
+/// context menus, their availability and groups, and the ids of its <c>x-sankey</c> block. What each
+/// action does, what it asks and what it refuses stays here.
+/// </para>
 /// </remarks>
 public sealed class SankeyContextActionProvider(IHistoryStackStore historyStacks, ISankeyDocumentStore documents)
     : DiagramActionProvider<LineDocument, SankeyModel>(historyStacks, documents)
@@ -49,55 +54,9 @@ public sealed class SankeyContextActionProvider(IHistoryStackStore historyStacks
     protected override bool IsBody(string path) => Diagram.IsBody(path);
 
     /// <inheritdoc />
-    protected override IReadOnlyList<ContextActionGroupDefinition> Discover(DocumentEntry<LineDocument, SankeyModel> entry, string elementId)
-    {
-        var model = entry.Model;
-        var thickness = Thickness(model);
-
-        if (model.NodeOf(elementId) is not null)
-        {
-            return
-            [
-                new ContextActionGroupDefinition(
-                [
-                    new ContextActionDefinition(RenameActionId, "Rename…", "mdi-pencil-outline", new ContextShortcutDefinition("F2")),
-                    new ContextActionDefinition(RemoveActionId, "Remove", "mdi-delete-outline", new ContextShortcutDefinition("Delete")),
-                ]),
-                thickness,
-            ];
-        }
-
-        if (model.FlowOf(elementId) is { } flow)
-        {
-            var atZero = (flow.Value ?? 0) <= 0;
-            return
-            [
-                new ContextActionGroupDefinition(
-                [
-                    new ContextActionDefinition(IncreaseActionId, "Increase value", "mdi-plus-circle-outline", new ContextShortcutDefinition("+")),
-                    new ContextActionDefinition(DecreaseActionId, "Decrease value", "mdi-minus-circle-outline", new ContextShortcutDefinition("-"), !atZero, "The value is already zero."),
-                ]),
-                new ContextActionGroupDefinition(
-                [
-                    new ContextActionDefinition(RemoveActionId, "Remove flow", "mdi-vector-polyline-remove", new ContextShortcutDefinition("Delete")),
-                ]),
-                thickness,
-            ];
-        }
-
-        if (GestureIds.TryParsePlacement(elementId, out _, out _))
-        {
-            return
-            [
-                new ContextActionGroupDefinition([new ContextActionDefinition(AddActionId, "Add node here", "mdi-plus")]),
-                thickness,
-            ];
-        }
-
-        return GestureIds.TryParseRelation(elementId, out _, out _)
-            ? [new ContextActionGroupDefinition([new ContextActionDefinition(ConnectActionId, "Add flow", "mdi-arrow-right-thin")])]
-            : [];
-    }
+    protected override IReadOnlyList<ContextActionGroupDefinition> Discover(DocumentEntry<LineDocument, SankeyModel> entry, string elementId) =>
+        // Derived from the DISL definition: a node's, a flow's, a placement's or a connect gesture's menu.
+        SankeyDefinition.Menus(entry, elementId);
 
     /// <inheritdoc />
     protected override async ValueTask<ContextExecutionResult> RunAsync(
@@ -112,53 +71,23 @@ public sealed class SankeyContextActionProvider(IHistoryStackStore historyStacks
         var node = model.NodeOf(id);
         var flow = model.FlowOf(id);
 
-        switch (actionId)
+        return actionId switch
         {
-            case AddActionId:
-                return GestureIds.TryParsePlacement(id, out var x, out var y)
-                    ? await DispatchAsync(target, new AddSankeyNodeCommand(body, x, y), cancellationToken)
-                    : new ContextExecutionFailed("A node is added by dropping it where it belongs.");
-
-            case ConnectActionId:
-                return GestureIds.TryParseRelation(id, out var from, out var to)
-                    ? await DispatchAsync(target, new ConnectSankeyNodesCommand(body, from, to), cancellationToken)
-                    : new ContextExecutionFailed("A flow is drawn from one node to another.");
-
-            case ArrangeActionId:
-                return await DispatchAsync(target, new ArrangeSankeyCommand(body), cancellationToken);
-
-            case ThickerActionId or ThinnerActionId:
-                return await DispatchAsync(target, new ScaleSankeyThicknessCommand(body, actionId == ThickerActionId ? 1 : -1), cancellationToken);
-
-            case IncreaseActionId or DecreaseActionId when flow is not null:
-                return await DispatchAsync(target, new StepSankeyValueCommand(body, id, actionId == IncreaseActionId ? 1 : -1), cancellationToken);
-
-            case RenameActionId when node is not null:
-                return new ContextExecutionRequiresInput(new ContextInputRequest("Rename", "mdi-pencil-outline", "Name", node.Label, "Rename"));
-
-            case RemoveActionId when node is not null:
-            {
-                var going = model.Flows.Count(candidate => candidate.From == node.Id || candidate.To == node.Id);
-                var confirmation = going == 0
-                    ? null
-                    : new RemovalConfirmation(
-                        "Remove",
-                        going == 1
-                            ? "Removing this node also removes the 1 flow to or from it."
-                            : $"Removing this node also removes the {going} flows to or from it.",
-                        "Remove");
-                return await RemoveAsync(target, new RemoveSankeyEntryCommand(body, id), confirmation, cancellationToken);
-            }
-
-            case RemoveActionId when flow is not null:
-                return await DispatchAsync(target, new RemoveSankeyEntryCommand(body, id), cancellationToken);
-
-            case RenameActionId or IncreaseActionId or DecreaseActionId or RemoveActionId:
-                return new ContextExecutionFailed("That is no longer in this diagram.");
-
-            default:
-                return new ContextExecutionCompleted();
-        }
+            AddActionId => GestureIds.TryParsePlacement(id, out var x, out var y)
+                ? await DispatchAsync(target, new AddSankeyNodeCommand(body, x, y), cancellationToken)
+                : new ContextExecutionFailed("A node is added by dropping it where it belongs."),
+            ConnectActionId => GestureIds.TryParseRelation(id, out var from, out var to)
+                ? await DispatchAsync(target, new ConnectSankeyNodesCommand(body, from, to), cancellationToken)
+                : new ContextExecutionFailed("A flow is drawn from one node to another."),
+            ArrangeActionId => await DispatchAsync(target, new ArrangeSankeyCommand(body), cancellationToken),
+            ThickerActionId or ThinnerActionId => await DispatchAsync(target, new ScaleSankeyThicknessCommand(body, actionId == ThickerActionId ? 1 : -1), cancellationToken),
+            IncreaseActionId or DecreaseActionId when flow is not null => await DispatchAsync(target, new StepSankeyValueCommand(body, id, actionId == IncreaseActionId ? 1 : -1), cancellationToken),
+            RenameActionId when node is not null => new ContextExecutionRequiresInput(new ContextInputRequest("Rename", "mdi-pencil-outline", "Name", node.Label, "Rename")),
+            RemoveActionId when node is not null => await RemoveAsync(target, new RemoveSankeyEntryCommand(body, id), SankeyDefinition.RemovalConfirmation(model, id), cancellationToken),
+            RemoveActionId when flow is not null => await DispatchAsync(target, new RemoveSankeyEntryCommand(body, id), cancellationToken),
+            RenameActionId or IncreaseActionId or DecreaseActionId or RemoveActionId => new ContextExecutionFailed("That is no longer in this diagram."),
+            _ => new ContextExecutionCompleted(),
+        };
     }
 
     /// <inheritdoc />
@@ -175,20 +104,4 @@ public sealed class SankeyContextActionProvider(IHistoryStackStore historyStacks
         _ => null,
     };
 
-    /// <summary>
-    /// What applies to the whole diagram, offered wherever the reader is so it stays in the ribbon:
-    /// arranging it, and thicker and thinner, each disabled at its end of the range.
-    /// </summary>
-    private static ContextActionGroupDefinition Thickness(SankeyModel model) => new(
-    [
-        new ContextActionDefinition(
-            ArrangeActionId, "Arrange diagram", "mdi-sitemap-outline", null,
-            model.Nodes.Count > 0, "There is nothing to arrange until this diagram has a node."),
-        new ContextActionDefinition(
-            ThickerActionId, "Thicker bands", "mdi-arrow-expand-vertical", null,
-            model.Settings.Thickness < SankeyGeometry.MaximumScale, "The bands are already as thick as they go."),
-        new ContextActionDefinition(
-            ThinnerActionId, "Thinner bands", "mdi-arrow-collapse-vertical", null,
-            model.Settings.Thickness > SankeyGeometry.MinimumScale, "The bands are already as thin as they go."),
-    ]);
 }

@@ -24,7 +24,7 @@ public sealed class ServiceCollectionAddSankeyTests
             .CreateEmptyDocument("flows");
 
         // Assert.
-        var model = SankeyParser.Parse(LineDocument.Parse(text));
+        var model = SankeyReader.Parse(text);
         Assert.Empty(model.Problems);
         Assert.Empty(model.Nodes);
         Assert.Empty(model.Flows);

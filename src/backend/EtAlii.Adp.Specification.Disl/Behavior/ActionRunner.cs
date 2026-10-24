@@ -83,7 +83,7 @@ internal sealed class ActionRunner(DislSpecification specification, DislDiagram 
         DislAction.ForEach forEach => ForEach(forEach, variables),
         DislAction.Select select => Select(select, variables),
         DislAction.EditLabel editLabel => EditLabel(editLabel, variables),
-        DislAction.Layout layout => Layout(layout),
+        DislAction.Layout layout => Layout(layout, variables),
         DislAction.View view => View(view, variables),
         DislAction.Plugin plugin => Plugin(plugin, variables),
         DislAction.Abort abort => Abort(abort, variables),
@@ -202,10 +202,10 @@ internal sealed class ActionRunner(DislSpecification specification, DislDiagram 
         return true;
     }
 
-    /// <summary>A <c>layout</c>: its <c>algorithm</c>, handed to the host.</summary>
-    private bool Layout(DislAction.Layout layout)
+    /// <summary>A <c>layout</c>: its <c>algorithm</c> and its <c>refusals</c>, evaluated, handed to the host.</summary>
+    private bool Layout(DislAction.Layout layout, Dictionary<string, object?> variables)
     {
-        _host.Add(new HostAction.Layout(layout.Algorithm));
+        _host.Add(new HostAction.Layout(layout.Algorithm, layout.NothingDrawn?.Text(variables, layout.Algorithm), layout.Unchanged?.Text(variables, layout.Algorithm)));
         return true;
     }
 

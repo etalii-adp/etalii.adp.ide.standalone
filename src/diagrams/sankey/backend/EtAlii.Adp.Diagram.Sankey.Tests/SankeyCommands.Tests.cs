@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
@@ -275,5 +274,5 @@ public sealed class SankeyCommandsTests : IDisposable
         Assert.True(result.IsSuccess, result.Error);
     }
 
-    private SankeyModel Parse() => SankeyParser.Parse(LineDocument.Parse(File.ReadAllText(Body)));
+    private SankeyModel Parse() => SankeyReader.Parse(File.ReadAllText(Body));
 }

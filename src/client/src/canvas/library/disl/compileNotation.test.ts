@@ -172,6 +172,106 @@ describe("compileNotation", () => {
     expect(left).toEqual({ text: { path: "payload.name" }, anchorTo: "bottom", align: "start", insetX: 3, offset: { x: 0, y: -2 } });
   });
 
+  it("maps a label anchored at an edge and aligned away from it to the aligned line beyond that edge, across a node of a stated width", () => {
+    const fixed = (label: Partial<DislLabel>): DislDocument => {
+      const spec = withLabel(label);
+      const card = spec.notation.nodes.Card!;
+      return { ...spec, notation: { ...spec.notation, nodes: { ...spec.notation.nodes, Card: { ...card, size: { width: 24, height: 40, resizable: false } } } } };
+    };
+    const right = compileNotation(fixed({ position: { anchor: [1, 0.5], offset: [10, -5], align: "start" } }), BINDINGS).elementTypes[0]!.labels![0];
+    expect(right).toEqual({ text: { path: "payload.name" }, anchorTo: "centre", align: "start", insetX: 34, offset: { x: 0, y: -5 } });
+
+    const left = compileNotation(fixed({ position: { anchor: [0, 0.5], offset: [-10, 11], align: "end" } }), BINDINGS).elementTypes[0]!.labels![0];
+    expect(left).toEqual({ text: { path: "payload.name" }, anchorTo: "centre", align: "end", insetX: 34, offset: { x: 0, y: 11 } });
+  });
+
+  /** The spec with Card's notation merged with `notation`, and the styles `styles` beside it. */
+  function withCard(notation: Record<string, unknown>, styles?: Record<string, unknown>): DislDocument {
+    const spec = specOf();
+    const card = spec.notation.nodes.Card!;
+    return { ...spec, notation: { ...spec.notation, ...(styles !== undefined ? { styles } : {}), nodes: { ...spec.notation.nodes, Card: { ...card, ...notation } as typeof card } } };
+  }
+
+  it("attaches anchors spread along sides anywhere along those edges, drawing no handle", () => {
+    const card = compileNotation(withCard({ anchors: { mode: "sides", sides: ["left", "right"], spread: true } }), BINDINGS).elementTypes[0]!;
+    expect(card.anchors).toEqual({ kind: "along", edges: ["left", "right"], visible: false });
+  });
+
+  it("drags a node movable along one axis only along that axis", () => {
+    const vertical = compileNotation(withCard({ placement: { movable: { x: false, y: true } } }), BINDINGS).elementTypes[0]!;
+    expect(vertical.dragAxis).toBe("y");
+    const horizontal = compileNotation(withCard({ placement: { movable: { x: true, y: false } } }), BINDINGS).elementTypes[0]!;
+    expect(horizontal.dragAxis).toBe("x");
+    expect(compileNotation(specOf(), BINDINGS).elementTypes[0]).not.toHaveProperty("dragAxis");
+  });
+
+  it("draws a node's stroke and its labels' type from the notation's styles where the module asks it to", () => {
+    const styles = {
+      plain: { stroke: { width: 0 } },
+      heading: { font: { size: 13, weight: 700, color: { cel: "paint(self)" } } },
+      aside: { font: { size: 11, style: "italic", color: { token: "color.text.muted" } } },
+    };
+    const notation = { style: "plain", labels: [
+      { id: "name", text: { attribute: "name" }, style: "heading" },
+      { id: "when", text: { attribute: "when" }, style: "aside" },
+    ] };
+    const painted = { ...BINDINGS, boundStyle: () => ({ labelColor: { path: "payload.paint" } }) };
+    const styled = compileNotation(withCard(notation, styles), { ...painted, stylesFromNotation: true }).elementTypes[0]!;
+    expect(styled.style).toEqual({ stroke: "transparent" });
+    expect(styled.labels!.map((label) => label.typography)).toEqual([
+      { fontSize: 13, fontWeight: "bold" },
+      { fontSize: 11, fontStyle: "italic", color: "--color-text-muted" },
+    ]);
+
+    const unstyled = compileNotation(withCard(notation, styles), painted).elementTypes[0]!;
+    expect(unstyled).not.toHaveProperty("style");
+    expect(unstyled.labels!.map((label) => label.typography)).toEqual([undefined, undefined]);
+
+    // A colour the element's own label colour does not bind is refused rather than dropped.
+    expect(() => compileNotation(withCard(notation, styles), { ...BINDINGS, stylesFromNotation: true })).toThrow(/label "name".*colour/);
+  });
+
+  it("draws an edge the module names a ribbon as a filled band of its style's bound width and colour, along its custom route", () => {
+    const route = { customRoute: "t-s", path: (from: { x: number; y: number }, to: { x: number; y: number }) => `M ${from.x} ${from.y} L ${to.x} ${to.y}` };
+    const banded = (ribbons: NotationBindings["ribbons"], customRoutes: NotationBindings["customRoutes"] = { Link: route }) => {
+      const spec = specOf();
+      const styles = { band: { stroke: { color: { cel: "paint(self)" }, width: { cel: "thickness(self)" } } }, chosen: { stroke: { casing: { width: 2 } } } };
+      const edges = { Link: { ...spec.notation.edges!.Link!, style: "band", states: { selected: "chosen" } } };
+      const celPaths = { ...BINDINGS.celPaths, "paint(self)": "payload.paint", "thickness(self)": "payload.thickness" };
+      return compileNotation({ ...spec, notation: { ...spec.notation, styles, edges } }, { ...BINDINGS, celPaths, customRoutes, ...(ribbons !== undefined ? { ribbons } : {}) });
+    };
+
+    const [link] = banded({ Link: { className: "t-band" } }).relationTypes;
+    const connection = { id: "l", type: "link", sourceId: "a", targetId: "b", payload: { thickness: 4, paint: "#123456" } };
+    const drawn = link!.adorn!({ from: { x: 0, y: 0 }, to: { x: 10, y: 0 }, waypoints: [], highlighted: true }, connection) as { props: Record<string, unknown> };
+    expect(drawn.props).toEqual({ className: "t-band", d: "M 0 -2 L 10 -2 L 10 2 L 0 2 Z", style: { fill: "#123456", stroke: expect.stringContaining("--color-selected"), strokeWidth: 2 } });
+
+    expect(banded(undefined).relationTypes[0]).not.toHaveProperty("adorn");
+    expect(() => banded({ Link: {} }, {})).toThrow(/edge "Link" is a ribbon.*custom route/);
+  });
+
+  it("compiles a coordinate system that declares no axes, drawing no ruler for it", () => {
+    const coordinates = { systems: { canvas: { kind: "cartesian", orientation: "y-down", infinite: true, grid: { visible: false } } }, default: "canvas" } as unknown as DislDocument["coordinates"];
+    const definition = compileNotation(specOf({ coordinates }), BINDINGS);
+    expect(definition).not.toHaveProperty("rulers");
+    expect(definition).not.toHaveProperty("snap");
+  });
+
+  it("reads a placement the backend computes as the position the model carries, and refuses one it is not told of", () => {
+    const placed = (celPaths: Readonly<Record<string, string>>) => {
+      const spec = specOf();
+      const card = spec.notation.nodes.Card!;
+      const nodes = { ...spec.notation.nodes, Card: { ...card, placement: { system: "canvas", x: { cel: "column(self) * 320.0" }, y: { cel: "top(self)" } } } };
+      return compileNotation({ ...spec, notation: { ...spec.notation, nodes } }, { ...BINDINGS, celPaths: { ...BINDINGS.celPaths, ...celPaths } });
+    };
+    const card = placed({ "column(self) * 320.0": "element.x", "top(self)": "element.y" }).elementTypes[0]!;
+    expect(card).not.toHaveProperty("centreOf");
+    expect(card.id).toBe("card");
+
+    expect(() => placed({ "column(self) * 320.0": "element.x" })).toThrow(/is placed at/);
+    expect(() => placed({ "column(self) * 320.0": "payload.left", "top(self)": "element.y" })).toThrow(/is placed at/);
+  });
+
   it("refuses a label at an edge aligned other than toward it, and one anchored off the middle and the edges", () => {
     expect(() => compileNotation(withLabel({ position: { anchor: [1, 0], align: "start" } }), BINDINGS)).toThrow(/right edge aligned "start"/);
     expect(() => compileNotation(withLabel({ position: { anchor: [1, 0] } }), BINDINGS)).toThrow(/right edge with no align/);

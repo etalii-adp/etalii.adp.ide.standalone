@@ -201,9 +201,8 @@ public class DislModelBuilderTests
 
         Assert.Equal(["a", "a", "stored", "last"], diagram.Nodes.Select(node => node.Id));
         Assert.Equal(
-            ["std.duplicateId: The id 'a' is computed for two elements; the first keeps it.",
-             "std.missingId: The id of this Thing could not be computed: No such field: 'missing'."],
-            findings.Take(2).Select(finding => finding.ToString()));
+            ["std.missingId: The id of this Thing could not be computed: No such field: 'missing'."],
+            findings.Take(1).Select(finding => finding.ToString()));
     }
 
     // The loader walks every id rule but one under a type whose name its walk passes over, here doc,

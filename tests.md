@@ -4199,3 +4199,50 @@ lays out no text, so a fill, a centred Comment and a drag that writes a size are
 - **Observed 2026-10-23, before the repair**, light and dark: the element under the pointer is `svg.library-canvas-surface`; the whole canvas pans by 80 by 60; no move reaches the backend and no sentence is shown; both files are unchanged. The same was observed after #649 alone, with `rect.library-bodyless-hit` present over each annotation and its computed `pointer-events` `none`.
 - **Result 2026-10-23, after the repair**, agent-7-sparql-disl-fbl-11, `features/sparql-disl-fbl-11` with the inline `pointer-events` uncommitted, a developer build (backend on 5392, Vite on 5386, both changed for the pass and reverted), headless Chromium 1194 driven by Playwright at 1600 by 1000 with real mouse input and `colorScheme` set per theme, in the developer session: **passes in both themes.** For each of the four annotations the element under the pointer at its text's middle is the annotation itself (`note:where/filter.0`, `note:where/bind.0`, `note:where/values.0`, `note:where/optional.0/filter.0`); the drag moved it by 0 by 0; the page showed *An annotation stays with what it constrains; move that instead.*; the backend logged "The module refused the move of note:... : An annotation stays with what it constrains; move that instead." once per drag, eight in all; `groups.adp` and `groups.rq` stayed byte-identical (`<theme>-refused-<id>.png`).
 - **Status: closed.**
+
+## The compiled Sankey canvas, in a browser (sankey-disl-fbl, task 8, Requirement 8.4)
+
+**Why this is a browser pass and not only tests:** `sankeyCompiledDefinition.test.tsx` proves that the definition compiled from `sankey.dis` draws the same markup as the hand-written one it replaces, and the library's tests prove the ribbon, the drag along one axis and the labels beyond an edge that it now compiles. However, jsdom computes no style from a stylesheet, lays nothing out and runs no backend. Whether bands meet edge to edge, what a bar or band computes to in each theme, and what the file holds after a gesture and its undo are only decided in a browser.
+
+- **Preconditions**: a build from the branch, signed in with `admin`/`changeme` (or the developer session), and a scratch folder added as a project. It holds a copy of `src/examples/diagrams/sankey/brightwater-coffee/` and two documents of `etalii/sankey`:
+  - `palette.skv`: one node per palette word, each flowing into `Hex` (`color: "#336699"`) or `Sink` in its own colour, and `Hex` flowing into `Sink` in `#aa3300`.
+  - `arrange.skv`: sources `A` and `B`, targets `X` and `Y` in that order, with `A` to `Y` and `B` to `X`, so the two bands cross.
+- **Steps**, in the light theme and again in the dark, pressing *Fit to View* after opening each document:
+  1. Open `brightwater-coffee.skv`. At each bar where two bands or more meet one side, read where each band's edges reach the bar.
+  2. Read each band's height down its length, at five points from its source to its target.
+  3. Read every label's side, alignment, size, weight, slant and colour.
+  4. Open `palette.skv` and read each bar's and band's computed fill against its theme token, and the hex colours.
+  5. In `brightwater-coffee.skv`, drag the first column's top node (Cafés) down past the second and to the right. While dragging, read where both nodes are drawn. Release, then read the file. Press *Undo*.
+  6. In `palette.skv`, drag with the right button from `Brown` to `Hex`. Read the file, then press *Undo*.
+  7. Select the band `Blue` to `Sink` and press `+`, `=`, Shift with `+`, `-` and Shift with `_`, reading the file after each. Then undo them.
+  8. Drag the toolbox's *Node* into the second column of `brightwater-coffee.skv`. Read the file, then press *Undo*.
+  9. Run *Thicker bands* from the canvas's context menu until it is no longer offered, then *Thinner bands* the same way, reading `thickness:` each time.
+  10. Open `arrange.skv`, run *Arrange diagram*, read the file and the positions, then press *Undo*.
+- **Expected**:
+  1. The bands at a bar stack edge to edge, from the bar's top to its bottom, with no gap and no overlap.
+  2. A band is as thick as its value all the way along, however steep, translucent at 0.42 over a hidden centre line.
+  3. Labels sit before the bar in the first column and after it elsewhere, 10 from the bar. The name is 13px bold and the value 12px, both in the bar's colour; the note is 11px italic in the muted text colour.
+  4. Each bar and band is in its word's token in both themes, and a hex colour is painted as written.
+  5. The dragged node stays in its column while the one it passes steps aside. The release moves its entry, and *Undo* restores the file byte for byte.
+  6. The right-button drag writes a new flow, and *Undo* removes it.
+  7. `+`, `=` and Shift with `+` each add one step, and `-` and Shift with `_` each take one off.
+  8. The drop writes a node with `column: 2`.
+  9. The thickness climbs to 10 and falls to 0.1, after which the entry is no longer offered.
+  10. *Arrange diagram* uncrosses the bands and *Undo* restores the file and the positions.
+- **Result 2026-10-24, agent-8-sankey-disl-fbl, `features/sankey-disl-fbl-8` at `3c018e25b` (the definition bundled from etalii.adp `0155d71`), a developer build (backend on 5585 with `Client__DevServerUrl` and `--urls`, Vite on 5584 with `--port`, so no file was changed for the ports), headless Chromium 1194 driven by Playwright at 1600 by 1000 with real mouse and keyboard input and `colorScheme` set per theme, in the developer session: all ten steps pass in both themes.** The values below come from the page's DOM and computed styles and from the files on disk. Screenshots are `<theme>-<step>.png` in the session's scratchpad.
+  - Step 1: five bar sides in `brightwater-coffee.skv` meet two bands or more. On each, the bands' edges ran from the bar's top to its bottom, and the largest gap between neighbours was 0.0002 units, for example Revenue's four inflows over its 560.
+  - Step 2: all 13 bands, sloping from -0.239 to 0.364, varied by 0 in height across the five points; for example Cafés to Revenue measured 294.4 at every point. Each had `fill-opacity` 0.42 and its centre line `opacity` 0.
+  - Step 3: the 4 nodes of the first column had every label `text-anchor: end`, ending 10 left of the bar; the 10 others had `start`, beginning 10 right of it. The name was 13px at weight 700 and the value 12px at 400, both in the bar's colour, for example `rgb(102, 102, 102)` light and `rgb(168, 168, 168)` dark for grey. The note was 11px italic in `rgb(100, 116, 139)` light and `rgb(148, 163, 184)` dark. Bars have a transparent stroke.
+  - Step 4: all twelve bars and bands equalled their tokens, and the label colour equalled the bar's.
+    - Light: grey `rgb(102, 102, 102)`, slate `rgb(47, 91, 138)`, purple `rgb(134, 25, 143)`, blue `rgb(29, 78, 216)`, teal `rgb(15, 118, 110)`, green `rgb(21, 128, 61)`, lime `rgb(77, 124, 15)`, yellow `rgb(161, 98, 7)`, orange `rgb(194, 65, 12)`, red `rgb(163, 21, 26)`, pink `rgb(190, 24, 93)`, brown `rgb(124, 74, 30)`.
+    - Dark: grey `rgb(168, 168, 168)`, slate `rgb(143, 176, 212)`, purple `rgb(232, 121, 249)`, blue `rgb(96, 165, 250)`, teal `rgb(45, 212, 191)`, green `rgb(74, 222, 128)`, lime `rgb(163, 230, 53)`, yellow `rgb(250, 204, 21)`, orange `rgb(251, 146, 60)`, red `rgb(248, 113, 113)`, pink `rgb(244, 114, 182)`, brown `rgb(214, 162, 111)`.
+    - `Hex` was `rgb(51, 102, 153)` and its band `rgb(170, 51, 0)` in both themes.
+  - Step 5: dragged 80 right and past Packaged coffee, Cafés stayed at its column's x (435.8 px) while Packaged coffee stepped up from 437.2 to 245.9 px. On release the file moved Cafés' entry after Packaged coffee's, and nothing else changed. The column redrew as Packaged coffee, Cafés, Wholesale & roasting, Licensing, and *Undo* made the file byte-identical again.
+  - Step 6: during the drag a `library-connect-preview` ran from Brown. On release the file gained `- from: brown`, `to: hex`, `value: 1`, a band `brown->hex` was drawn, and *Undo* made the file byte-identical.
+  - Step 7: the selected band's group took `canvas-selected`, and the band an outline in `rgb(124, 58, 237)` light and `rgb(167, 139, 250)` dark, 2px wide. The keys took `value` from 19 to 20, 21 and 22, then back to 21 and 20. Undoing the five made the file byte-identical.
+  - Step 8: the file gained a node `name: New node`, `column: 2`, with a fresh id, and *Undo* made the file byte-identical.
+  - Step 9: *Thicker bands* wrote 1.25, 1.56, 1.95, 2.44, 3.05, 3.81, 4.76, 5.95, 7.44, 9.3 and 10, after which the entry was disabled. *Thinner bands* wrote 8, 6.4, and on down to 0.11 and 0.1, after which it was disabled too.
+  - Step 10: *Arrange diagram* moved `X` after `Y` in the file, and 2 of the 4 nodes were drawn elsewhere. *Undo* made the file byte-identical and every node went back to where it was.
+- **Observations, not failures of this task:**
+  - In headless Chromium on Linux the right button's press opens a context menu as the drag starts, because Linux sends `contextmenu` on the press where Windows sends it on the release. The drag still completed and wrote its flow, and the menu was dismissed with Escape. This is the platform, not the definition: the hand-written definition declared the same `connectOnRightDrag` and `backgroundMenu`.
+  - The examples, and `palette.skv`, are already arranged: *Arrange diagram* answers *This diagram is already arranged.* on them, so step 10 needs a document whose bands cross.

@@ -159,14 +159,14 @@ public static class DislModelBuilder
     }
 
     /// <summary>
-    /// The ids of the <c>derived</c> strategy (§11.5.2), in the identity context, in the order given;
-    /// an id computed twice is reported as <c>std.duplicateId</c> unless the specification switches that built-in off (§8.1).
+    /// The ids of the <c>derived</c> strategy (§11.5.2), in the identity context, in the order given. An id computed
+    /// twice is kept by both holders, the first in reading order first, and is not reported here: the constraints report
+    /// it as <c>std.duplicateId</c> on the later holder's line, with the built-in's settings (§8.7, §11.5.4), as they report
+    /// a written id held twice.
     /// </summary>
     private static void DerivedIds(DislDiagram diagram, IReadOnlyList<DislElement> elements, List<Finding> findings)
     {
         var specification = diagram.Specification;
-        var computed = new Dictionary<string, DislElement>(specification.IdComparer);
-        var reportsDuplicates = specification.Constraints.BuiltIn(FindingCodes.DuplicateId).Enabled;
         foreach (var element in elements)
         {
             var rule = specification.IdRuleOf(element.Type.Name);
@@ -188,10 +188,6 @@ public static class DislModelBuilder
 
             element.Id = id;
             element.IdIsStored = false;
-            if (!computed.TryAdd(id, element) && reportsDuplicates)
-            {
-                findings.Add(new Finding(FindingCodes.DuplicateId, FindingSeverity.Warning, $"The id '{id}' is computed for two elements; the first keeps it.", null));
-            }
         }
     }
 

@@ -11,7 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Reading only: every write is a splice through LineSplice. -->
+    <!-- Whether a body is YAML (SankeyBody.Refusal) only: every write is a splice through LineSplice. -->
     <PackageReference Include="YamlDotNet" />
     <!-- Google.Protobuf is the runtime; Grpc.Tools compiles the .proto below at build. -->
     <PackageReference Include="Google.Protobuf" />
@@ -23,6 +23,17 @@
   <ItemGroup>
     <!-- This type's own wire payloads, packed into the core Element's Any. -->
     <Protobuf Include="..\..\api\*.proto" ProtoRoot="..\..\api" GrpcServices="None" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The DISL definition bundled from etalii-adp/etalii.adp (src/diagrams/tools/bundle-disl.sh), and its provenance. The palette, the menus and the rows are derived from it (SankeyDefinition). -->
+    <EmbeddedResource Include="..\..\definition\sankey.dis" LogicalName="sankey.dis" />
+    <EmbeddedResource Include="..\..\definition\provenance.json" LogicalName="sankey.provenance.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The FBL binding of the .skv body (sankey-disl-fbl), through which SankeyBody reads it. -->
+    <EmbeddedResource Include="sankey.fbl" LogicalName="sankey.fbl" />
   </ItemGroup>
 
   <ItemGroup>

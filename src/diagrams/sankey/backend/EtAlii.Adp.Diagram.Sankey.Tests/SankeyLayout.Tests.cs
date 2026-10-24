@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.Sankey.Tests;
@@ -10,9 +9,9 @@ namespace EtAlii.Adp.Diagram.Sankey.Tests;
 public sealed class SankeyLayoutTests
 {
     private static SankeyModel Small() =>
-        SankeyParser.Parse(LineDocument.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", "lf-line-endings.skv"))));
+        SankeyReader.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", "lf-line-endings.skv")));
 
-    private static SankeyModel Parse(string text) => SankeyParser.Parse(LineDocument.Parse(text));
+    private static SankeyModel Parse(string text) => SankeyReader.Parse(text);
 
     [Fact]
     public void Columns_FollowTheFlows_FromTheSourcesRightwards()
