@@ -16,6 +16,7 @@ namespace EtAlii.Adp.Designer;
 /// <param name="Filters">The stored filters, in their order.</param>
 /// <param name="Notes">Every note, open and resolved, in the file's order.</param>
 /// <param name="Findings">Everything reading reported, whatever the client narrows to.</param>
+/// <param name="Widths">The widths the user set of the columns of levels, by depth; a column not listed has the host's.</param>
 public sealed record HierarchySurfaceModel(
     string Title,
     string ReadOnlyReason,
@@ -24,4 +25,5 @@ public sealed record HierarchySurfaceModel(
     IReadOnlyList<HierarchySurfaceOptionList> OptionLists,
     IReadOnlyList<HierarchySurfaceFilter> Filters,
     IReadOnlyList<HierarchySurfaceNote> Notes,
-    IReadOnlyList<HierarchySurfaceFinding> Findings);
+    IReadOnlyList<HierarchySurfaceFinding> Findings,
+    IReadOnlyList<HierarchySurfaceColumnWidth> Widths);

@@ -48,7 +48,7 @@ public sealed class DefinitionConformanceTests
         var types = Definition().GetProperty("metamodel").GetProperty("types");
 
         // Assert: the definition was read at all, and the two are one, type by type.
-        Assert.Equal(7, types.EnumerateObject().Count());
+        Assert.Equal(8, types.EnumerateObject().Count());
         Assert.Empty(Differences("The type", types.EnumerateObject().Select(type => type.Name), HierarchicalRequirementVocabulary.Types.Keys));
         List<string> differing = [];
         foreach (var type in types.EnumerateObject())
@@ -87,7 +87,7 @@ public sealed class DefinitionConformanceTests
         var operations = Definition().GetProperty("operations").EnumerateObject().Select(operation => operation.Name).ToList();
 
         // Assert.
-        Assert.Equal(38, operations.Count);
+        Assert.Equal(41, operations.Count);
         Assert.Empty(Differences("The operation", operations, HierarchicalRequirementVocabulary.Operations));
     }
 

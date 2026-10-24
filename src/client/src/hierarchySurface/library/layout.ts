@@ -6,12 +6,24 @@ export const LEVEL_WIDTH = 240;
 /** The least width the entries of the deepest level shown keep, in pixels. */
 export const ENTRY_MIN_WIDTH = 280;
 
-/** How many levels fit a page of `width` pixels, at least one. An unmeasured page, width 0, shows them all. */
-export function levelsThatFit(width: number): number {
+/** The most columns of levels the page counts; more than any document holds. */
+const MOST_COLUMNS = 1000;
+
+/**
+ * How many levels fit a page of `width` pixels, at least one, the page's columns from the left having the widths
+ * `columnWidth` gives them, counted from 0. An unmeasured page, width 0, shows them all.
+ */
+export function levelsThatFit(width: number, columnWidth: (column: number) => number = () => LEVEL_WIDTH): number {
   if (width <= 0) {
     return Number.POSITIVE_INFINITY;
   }
-  return Math.max(1, Math.floor((width - ENTRY_MIN_WIDTH) / LEVEL_WIDTH));
+  let used = ENTRY_MIN_WIDTH;
+  let fit = 0;
+  while (fit < MOST_COLUMNS && used + columnWidth(fit) <= width) {
+    used += columnWidth(fit);
+    fit++;
+  }
+  return Math.max(1, fit);
 }
 
 /** The nodes of one model by their place in the hierarchy. */

@@ -95,6 +95,18 @@ export interface HierarchySurfaceFilters {
   entries: string;
 }
 
+/**
+ * How the widths of the columns of levels are kept (DESL section 7.7.1): the operation that gives a column its first
+ * width, with the column's depth and the width as params, the one that changes a kept width and the one that drops it,
+ * both sent to the column's id, and the range a width is held to.
+ */
+export interface HierarchySurfaceWidths {
+  operations: { add: string; set: string; reset: string };
+  params: { level: string; width: string };
+  min: number;
+  max: number;
+}
+
 /** A control that adds a node: the operation it sends, with no params, what the control says and the icon it shows. */
 export interface HierarchySurfaceAdd {
   operation: string;
@@ -174,6 +186,8 @@ export interface HierarchySurfaceDefinition {
   deletion: HierarchySurfaceDeletion;
   /** The filter bar's stored filters and sort keys; absent, the page offers no filter bar. */
   filters?: HierarchySurfaceFilters;
+  /** How the columns' widths are kept; absent when the page's own widths are not changed. */
+  widths?: HierarchySurfaceWidths;
   /**
    * The keys a selected node sends to the backend as a shortcut, with Ctrl or Cmd and the other modifiers held: which
    * action a chord runs is the backend's, so the page holds no table of them.

@@ -123,6 +123,10 @@ async function collapsePath(segments) {
 }
 
 async function shoot(name) {
+  // The pointer is left where the last click put it; on a page that shows controls under the pointer, such as the
+  // hierarchical requirement designer's boxes, it would show them on whatever stands there. The explorer's empty bottom
+  // corner shows nothing.
+  await page.mouse.move(4, 896);
   await sleep(1200);
   await page.screenshot({ path: path.join(outDir, name) });
   console.log("captured " + name);

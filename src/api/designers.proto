@@ -317,6 +317,7 @@ message HierarchySurfaceModel {
   repeated HierarchySurfaceFilter filters = 6;      // the stored filters, in their order
   repeated HierarchySurfaceNote notes = 7;          // every note, open and resolved, in the file's order
   repeated HierarchySurfaceFinding findings = 8;    // all of them, whatever the client narrows to
+  repeated HierarchySurfaceColumnWidth widths = 9;  // the widths the user set, by depth; others are the host's
 }
 
 message HierarchySurfaceNode {
@@ -359,6 +360,12 @@ message HierarchySurfaceFilter {
   string id = 1;
   string name = 2;
   string query = 3;  // words in DESL section 7.7.3's notation
+}
+
+message HierarchySurfaceColumnWidth {
+  string id = 1;
+  int32 level = 2;  // the depth of the levels the column holds, 1 for the top ones
+  int32 width = 3;  // in pixels
 }
 
 message HierarchySurfaceNote {

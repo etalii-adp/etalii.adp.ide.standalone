@@ -18,15 +18,19 @@ describe("the Hierarchical Requirement Designer registration", () => {
 
 describe("the Hierarchical Requirement Designer's surface", () => {
   interface Definition {
-    metamodel: { enums: { AssessmentKind: { values: Record<string, { value: string; icon: string }> } } };
     surface: {
       kind: string;
       levels: { type: string };
       entries: { type: string };
       labels: Record<string, { on: string[]; prefix: string }>;
       filters?: { type: string; name: string; query: string };
+      widths?: { type: string; level: string; width: string };
     };
-    operations: Record<string, { label?: unknown; params?: Record<string, unknown>; confirm?: { message: { cel: string }; threshold: number } }>;
+    metamodel: {
+      enums: { AssessmentKind: { values: Record<string, { value: string; icon: string }> } };
+      types: Record<string, { attributes: Record<string, { min?: number; max?: number }> }>;
+    };
+    operations: Record<string, { for?: unknown; label?: unknown; params?: Record<string, unknown>; confirm?: { message: { cel: string }; threshold: number } }>;
   }
 
   /** The designer's definition, as it is checked in. */
@@ -168,6 +172,20 @@ describe("the Hierarchical Requirement Designer's surface", () => {
     expect(Object.keys(operations[filters.operations.rename]?.params ?? {})).toEqual([filters.params.name]);
     expect(Object.keys(operations[filters.operations.remove]?.params ?? {})).toEqual([]);
     expect(filters.sortKeys.map((key) => key.key)).toEqual(["number", "title"]);
+  });
+
+  it("keeps the columns' widths with the operations its definition has, with their params, in the range of a column's width", () => {
+    // Act.
+    const { operations, surface, metamodel } = definition();
+    const widths = hierarchicalRequirementSurface.widths!;
+    const width = metamodel.types[surface.widths!.type]!.attributes[surface.widths!.width]!;
+
+    // Assert: a first width names the column's depth and its width, sent to the document; a change the width alone.
+    expect(Object.keys(operations[widths.operations.add]?.params ?? {}).sort()).toEqual([widths.params.level, widths.params.width].sort());
+    expect(operations[widths.operations.add]?.for).toBe("document");
+    expect(Object.keys(operations[widths.operations.set]?.params ?? {})).toEqual([widths.params.width]);
+    expect(Object.keys(operations[widths.operations.reset]?.params ?? {})).toEqual([]);
+    expect([widths.min, widths.max]).toEqual([width.min, width.max]);
   });
 
   it("asks before a delete in the words and at the threshold of its definition's confirm", () => {
