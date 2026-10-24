@@ -94,13 +94,16 @@ internal static class HandWrittenHelm
         }
 
         return edges;
-
-        static string ValuesId(ValuesFile values) => $"values:{values.RelativePath}";
-
-        static string TemplateId(TemplateFile template) => $"tpl:{template.RelativePath}";
-
-        static string VendoredId(VendoredEntry entry) => $"{(entry.Sealed ? "tgz" : "sub")}:{entry.RelativePath}";
     }
+
+    /// <summary>The id a values file is drawn under.</summary>
+    private static string ValuesId(ValuesFile values) => $"values:{values.RelativePath}";
+
+    /// <summary>The id a template is drawn under.</summary>
+    private static string TemplateId(TemplateFile template) => $"tpl:{template.RelativePath}";
+
+    /// <summary>The id a vendored chart is drawn under: <c>tgz:</c> for an archive, <c>sub:</c> for an unpacked subchart.</summary>
+    internal static string VendoredId(VendoredEntry entry) => $"{(entry.Sealed ? "tgz" : "sub")}:{entry.RelativePath}";
 
     private static IReadOnlyList<ContextPropertyDefinition> Describe(HelmChart chart, HelmGraph graph, HelmNode node) =>
         node.Kind switch
