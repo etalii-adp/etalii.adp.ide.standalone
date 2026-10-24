@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Test support for the watched-folder layer: FileSystemWatchers and the contract every
+    watched-folder store test derives from (WatchedFolderStoreContract).
+  -->
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3.assert" />
+    <PackageReference Include="xunit.v3.extensibility.core" />
+    <ProjectReference Include="..\EtAlii.Adp.Files\EtAlii.Adp.Files.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Tests.Support\EtAlii.Adp.Tests.Support.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -133,11 +133,10 @@ public partial class ShapeOfFileAccessTests
     /// have been told to use <c>SharedDocumentReader</c> for no reason at all.
     /// </para>
     /// <para>
-    /// The same holds for the two test libraries, <c>EtAlii.Adp.TestSupport</c> and
-    /// <c>EtAlii.Adp.TestSupport.Host</c>, which every test project references and nothing
-    /// ships. Their folders are named for the project, so the <c>TestSupport</c> segment does not
-    /// match them either; that helper which needs to read a fixture arrived with the FBL real-file
-    /// corpus (code-structure T287).
+    /// The test libraries ship nowhere either: the <c>*.Tests.Support</c> projects, one per area,
+    /// which the test projects reference. Their names carry <c>.Tests</c>, so the first exclusion
+    /// already covers them; the helper among them that reads a fixture arrived with the FBL
+    /// real-file corpus (code-structure T287).
     /// </para>
     /// </remarks>
     private static IEnumerable<string> ProductionSources() =>
@@ -149,8 +148,7 @@ public partial class ShapeOfFileAccessTests
             .Where(path => !path.EndsWith(".g.cs", StringComparison.Ordinal));
 
     private static bool IsTestSupport(string path) =>
-        path.Split(IoPath.DirectorySeparatorChar).Any(segment =>
-            segment == "TestSupport" || segment.StartsWith("EtAlii.Adp.TestSupport", StringComparison.Ordinal));
+        path.Split(IoPath.DirectorySeparatorChar).Any(segment => segment == "TestSupport");
 
     /// <summary>
     /// The rules, as a pure function over one file's lines so they can be exercised directly
@@ -412,7 +410,7 @@ public partial class ShapeOfFileAccessTests
             path => path.Contains($"{IoPath.DirectorySeparatorChar}TestSupport{IoPath.DirectorySeparatorChar}", StringComparison.Ordinal));
 
         // The test libraries ship nowhere either, and their folders are named for the project.
-        Assert.DoesNotContain(scanned, path => path.Contains("EtAlii.Adp.TestSupport", StringComparison.Ordinal));
+        Assert.DoesNotContain(scanned, path => path.Contains(".Tests.Support", StringComparison.Ordinal));
 
         // And the exclusions have not swallowed the subject: the application is still walked.
         Assert.Contains(scanned, path => path.EndsWith("SharedDocumentReader.cs", StringComparison.Ordinal));
