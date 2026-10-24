@@ -97,7 +97,7 @@ internal abstract record DislAction(string At, DislExpressionField? When)
     public sealed record EditLabel(string At, DislExpressionField? When, DislActionValue? Target, string? Label) : DislAction(At, When);
 
     /// <summary>A <c>layout</c> by its <c>algorithm</c>, handed to the host.</summary>
-    public sealed record Layout(string At, DislExpressionField? When, string Algorithm) : DislAction(At, When);
+    public sealed record Layout(string At, DislExpressionField? When, string Algorithm, DislMessage? NothingDrawn = null, DislMessage? Unchanged = null) : DislAction(At, When);
 
     /// <summary>A <c>view</c> of its <c>target</c>, by default <c>self</c>: its values, or for <c>filters</c> and <c>groups</c> a map of them, handed to the host.</summary>
     public sealed record View(string At, DislExpressionField? When, DislActionValue? Target, IReadOnlyList<DislViewValue> Values, string? Malformed) : DislAction(At, When);

@@ -82,13 +82,20 @@ internal static class DislActionReader
             "forEach" => new DislAction.ForEach(at, when, DislFieldReader.Value(specification, body, bodyAt), JsonProperties.String(action, "as") ?? "item", Nested(specification, action, at, "do")),
             "select" => new DislAction.Select(at, when, DislFieldReader.Value(specification, body, bodyAt)),
             "editLabel" => new DislAction.EditLabel(at, when, Member(specification, body, bodyAt, "target"), body.ValueKind == JsonValueKind.Object ? JsonProperties.String(body, "label") : null),
-            "layout" => new DislAction.Layout(at, when, JsonProperties.String(body, "algorithm") ?? ""),
+            "layout" => new DislAction.Layout(at, when, JsonProperties.String(body, "algorithm") ?? "", Refusal(specification, body, bodyAt, "nothingDrawn"), Refusal(specification, body, bodyAt, "unchanged")),
             "view" => new DislAction.View(at, when, Target(specification, action, at), View(specification, body, bodyAt), DislFieldReader.NotAnObject(body)),
             "plugin" => Plugin(specification, action, at, when, body),
             "abort" => new DislAction.Abort(at, when, Member(specification, body, bodyAt, "message")),
             _ => new DislAction.Unsupported(at, when, kind),
         };
     }
+
+    /// <summary>A <c>layout</c>'s refusal <paramref name="name"/> (DISL 0.3 §9.4), a Message, or null when its body states none.</summary>
+    private static DislMessage? Refusal(DislSpecification specification, JsonElement body, string at, string name) =>
+        body.ValueKind == JsonValueKind.Object && body.TryGetProperty("refusals", out var refusals) && refusals.ValueKind == JsonValueKind.Object
+            && refusals.TryGetProperty(name, out var message)
+            ? DislFieldReader.Message(specification, message, JsonPointer.Append(JsonPointer.Append(at, "refusals"), name))
+            : null;
 
     /// <summary>The action's <c>target</c>, or null when it names none and the runner takes <c>self</c>.</summary>
     private static DislActionValue? Target(DislSpecification specification, JsonElement action, string at) =>
