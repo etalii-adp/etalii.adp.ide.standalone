@@ -19,7 +19,7 @@ public static class RepositoryPaths
     public static string Root => _root.Value;
 
     /// <summary><c>src/</c>, which every parity corpus names its documents relative to.</summary>
-    public static string Source => IoPath.Combine(Root, "src");
+    private static string Source => IoPath.Combine(Root, "src");
 
     /// <summary><c>src/fixtures/</c>, the test data both suites read.</summary>
     public static string Fixtures => IoPath.Combine(Source, "fixtures");
