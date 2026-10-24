@@ -76,10 +76,13 @@ function colourOf(optionLists: readonly HierarchySurfaceOptionList[], label: str
  * (FR-011). A level's box also offers focus, and the mark of the levels the page does not show (FR-008, R10). What
  * stands to its right is the page's.
  *
- * The box's controls stand in one group at its top right, laid out from right to left with the icon of the notes first,
- * so it stays in sight whatever else is offered, wrapping to a next line rather than over the title, and the title,
- * tags and description flow beside them. Everything in the header is aligned to the top, so a title of several lines
- * leaves the rest on its first. A selected box offers its delete at its bottom right.
+ * The box's controls stand in one column at its right, laid out from right to left with the icon of the notes first,
+ * so it stays in sight whatever else is offered, wrapping to a next line rather than over the title. The column is as
+ * high as the title, the tags and the description together, which stand to its left and never under it. Everything in
+ * the header is aligned to the top, so a title of several lines leaves the rest on its first. A selected box offers its
+ * delete at its bottom right, below the column.
+ *
+ * A description opened for typing stands where its text stood and takes the height the box has left below the tags.
  */
 export function HierarchySurfaceBox(props: HierarchySurfaceBoxProps) {
   const { node, definition, optionLists, collapsed, selected, notes, notesOpen, onToggleNotes, noteList, hiddenLevels, onToggle, onSelect, onFocus, onShowHidden, onDelete, editing, grip, dropHint, nodeOf, onReveal, nodes, onLabelGesture } = props;
@@ -102,6 +105,7 @@ export function HierarchySurfaceBox(props: HierarchySurfaceBoxProps) {
         references={attribute === "description" ? editing.references : undefined}
       />
     ) : null;
+  const descriptionField = fieldOf("description");
   const shown = labels.filter((label) => label.pick === undefined);
   const tags = shown.flatMap((label) => valuesOf(node, label.label).map((value) => ({ label: label.label, value, look: lookOf(label) })));
   // A label of one value the page changes is its picker: its value, or on the selected box the way to give one.
@@ -181,62 +185,67 @@ export function HierarchySurfaceBox(props: HierarchySurfaceBoxProps) {
           />
         )}
       </span>
-      <div className="hs-box-header">
-        {grip !== undefined && <span className="mdi mdi-drag-vertical hs-grip" title={`Drag ${node.number}`} aria-hidden="true" {...grip} />}
-        <CollapseToggle collapsed={collapsed} title={`${node.number} ${node.title}`} onToggle={onToggle} />
-        <span className="hs-number">{node.number}</span>
-        {fieldOf("title") ?? (
-          <span className="hs-title" onDoubleClick={editing === undefined ? undefined : () => editing.open("title")}>
-            {node.title}
-          </span>
-        )}
-      </div>
-      {(tags.length > 0 || picks.length > 0 || (field !== undefined && (valuesOf(node, field.label).length > 0 || fieldOpen))) && (
-        <div className="hs-tags">
-          {field !== undefined && fieldEdit !== undefined && (
-            <span className={lookOf(field)}>
-              <TagField
-                label={field.label}
-                edit={fieldEdit}
-                node={node}
-                options={optionLists.find((list) => list.label === field.label)?.options ?? []}
-                nodes={nodes}
-                open={fieldOpen && onLabelGesture !== undefined}
-                onOpen={() => setFieldOpen(true)}
-                onClose={() => setFieldOpen(false)}
-                canEdit={onLabelGesture !== undefined}
-                onGesture={onLabelGesture ?? (() => "")}
-              />
+      <div className="hs-box-content">
+        <div className="hs-box-header">
+          {grip !== undefined && <span className="mdi mdi-drag-vertical hs-grip" title={`Drag ${node.number}`} aria-hidden="true" {...grip} />}
+          <CollapseToggle collapsed={collapsed} title={`${node.number} ${node.title}`} onToggle={onToggle} />
+          <span className="hs-number">{node.number}</span>
+          {fieldOf("title") ?? (
+            <span className="hs-title" onDoubleClick={editing === undefined ? undefined : () => editing.open("title")}>
+              {node.title}
             </span>
           )}
-          {tags.map((tag) => (
-            <span key={`${tag.label}:${tag.value}`} className={tag.look}>
-              <OptionTag label={tag.value} color={colourOf(optionLists, tag.label, tag.value)} />
-            </span>
-          ))}
-          {picks.map((label) => (
-            <span key={label.label} className={lookOf(label)}>
-              <ClassificationPicker
-                label={label.label}
-                pick={label.pick!}
-                node={node}
-                options={optionLists.find((list) => list.label === label.label)?.options ?? []}
-                nodes={nodes}
-                canEdit={onLabelGesture !== undefined}
-                onGesture={onLabelGesture ?? (() => "")}
-              />
-            </span>
-          ))}
         </div>
-      )}
-      {!collapsed &&
-        (fieldOf("description") ??
-          (node.description !== "" && (
-            <p className="hs-description" onDoubleClick={editing === undefined ? undefined : () => editing.open("description")}>
-              <ReferenceText text={node.description} references={node.references} nodeOf={nodeOf} onReveal={onReveal} />
-            </p>
-          )))}
-      {noteList}
+        {(tags.length > 0 || picks.length > 0 || (field !== undefined && (valuesOf(node, field.label).length > 0 || fieldOpen))) && (
+          <div className="hs-tags">
+            {field !== undefined && fieldEdit !== undefined && (
+              <span className={lookOf(field)}>
+                <TagField
+                  label={field.label}
+                  edit={fieldEdit}
+                  node={node}
+                  options={optionLists.find((list) => list.label === field.label)?.options ?? []}
+                  nodes={nodes}
+                  open={fieldOpen && onLabelGesture !== undefined}
+                  onOpen={() => setFieldOpen(true)}
+                  onClose={() => setFieldOpen(false)}
+                  canEdit={onLabelGesture !== undefined}
+                  onGesture={onLabelGesture ?? (() => "")}
+                />
+              </span>
+            )}
+            {tags.map((tag) => (
+              <span key={`${tag.label}:${tag.value}`} className={tag.look}>
+                <OptionTag label={tag.value} color={colourOf(optionLists, tag.label, tag.value)} />
+              </span>
+            ))}
+            {picks.map((label) => (
+              <span key={label.label} className={lookOf(label)}>
+                <ClassificationPicker
+                  label={label.label}
+                  pick={label.pick!}
+                  node={node}
+                  options={optionLists.find((list) => list.label === label.label)?.options ?? []}
+                  nodes={nodes}
+                  canEdit={onLabelGesture !== undefined}
+                  onGesture={onLabelGesture ?? (() => "")}
+                />
+              </span>
+            ))}
+          </div>
+        )}
+        {!collapsed &&
+          (descriptionField !== null ? (
+            <div className="hs-description-field">{descriptionField}</div>
+          ) : (
+            node.description !== "" && (
+              <p className="hs-description" onDoubleClick={editing === undefined ? undefined : () => editing.open("description")}>
+                <ReferenceText text={node.description} references={node.references} nodeOf={nodeOf} onReveal={onReveal} />
+              </p>
+            )
+          ))}
+        {noteList}
+      </div>
       {selected && onDelete !== undefined && (
         <button
           type="button"

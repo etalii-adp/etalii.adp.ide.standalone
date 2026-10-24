@@ -124,8 +124,10 @@ describe("the hierarchy surface", () => {
     // Assert.
     const box = boxOf("Take an order");
     const parts = Array.from(box.children).map((child) => child.className);
-    // The note icon stands first of the controls at the box's top right, which the rest flows beside (FR-015).
-    expect(parts).toEqual(["hs-box-icons", "hs-box-header", "hs-tags", "hs-description"]);
+    // The note icon stands first of the controls in the column at the box's right, beside the rest and never over it (FR-015).
+    expect(parts).toEqual(["hs-box-icons", "hs-box-content"]);
+    const content = Array.from(box.querySelector(".hs-box-content")!.children).map((child) => child.className);
+    expect(content).toEqual(["hs-box-header", "hs-tags", "hs-description"]);
     expect(box.querySelector(".hs-box-icons")?.firstElementChild?.className).toBe("mdi mdi-comment-plus-outline hs-note-add");
     const header = box.querySelector(".hs-box-header") as HTMLElement;
     expect(within(header).getByText("[2]").nextElementSibling?.textContent).toBe("Take an order");
@@ -241,6 +243,21 @@ describe("the hierarchy surface", () => {
     expect(boxOf("Take an order").querySelector(".hs-focus")).toBeNull();
   });
 
+  it("opens a description for typing where its text stood, beside the column of controls and not under it", () => {
+    // Arrange.
+    render(<HierarchySurface model={threeLevels()} definition={definition} onGesture={vi.fn()} />);
+    const box = boxOf("Take an order");
+
+    // Act.
+    fireEvent.doubleClick(box.querySelector(".hs-description")!);
+
+    // Assert.
+    const field = within(box).getByRole("textbox", { name: /^Description of / });
+    // In the content beside the controls, after the tags as the description was, in the part that takes the box's height.
+    expect(field.parentElement?.className).toBe("hs-description-field");
+    expect(Array.from(box.querySelector(".hs-box-content")!.children).map((child) => child.className)).toEqual(["hs-box-header", "hs-tags", "hs-description-field"]);
+  });
+
   it("shows a collapsed entry as its number, title, tags and note mark only", () => {
     // Arrange.
     const model = threeLevels({ notes: [note("n1", "2", "Doubt")] });
@@ -251,7 +268,7 @@ describe("the hierarchy surface", () => {
 
     // Assert.
     const box = boxOf("Take an order");
-    expect(Array.from(box.children).map((child) => child.className)).toEqual(["hs-box-icons", "hs-box-header", "hs-tags"]);
+    expect(Array.from(box.querySelector(".hs-box-content")!.children).map((child) => child.className)).toEqual(["hs-box-header", "hs-tags"]);
     expect(within(box).getByText("[2]")).toBeDefined();
     expect(box.querySelector(".hs-note-mark.mdi-help-circle-outline")).not.toBeNull();
     expect(within(box).getByRole("button", { name: "Expand [2] Take an order" }).getAttribute("aria-expanded")).toBe("false");
