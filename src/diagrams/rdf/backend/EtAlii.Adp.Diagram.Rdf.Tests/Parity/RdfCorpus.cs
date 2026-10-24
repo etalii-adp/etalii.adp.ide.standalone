@@ -36,10 +36,7 @@ internal static class RdfCorpus
         var fixtures = Directory.GetFiles(Path.Combine(ModuleFolder, "backend", TestProject, "Fixtures"));
         var examples = Directory.GetFiles(Path.Combine(ModuleFolder, "examples"), "*", SearchOption.AllDirectories);
         var shipped = Directory.GetFiles(Path.Combine(SourceFolder, "examples", "diagrams", "rdf"), "*", SearchOption.AllDirectories);
-        return [.. Sorted(fixtures), .. Sorted(examples), .. Sorted(shipped)];
-
-        static IEnumerable<string> Sorted(IEnumerable<string> paths) =>
-            paths.Where(IsBody).Select(path => Path.GetRelativePath(SourceFolder, path).Replace('\\', '/')).Order(StringComparer.Ordinal);
+        return [.. RepositoryPaths.SortedRelativeToSource(fixtures.Where(IsBody)), .. RepositoryPaths.SortedRelativeToSource(examples.Where(IsBody)), .. RepositoryPaths.SortedRelativeToSource(shipped.Where(IsBody))];
     }
 
     /// <summary>

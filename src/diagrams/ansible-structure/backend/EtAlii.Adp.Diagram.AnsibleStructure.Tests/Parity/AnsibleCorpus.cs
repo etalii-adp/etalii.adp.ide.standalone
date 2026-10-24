@@ -30,23 +30,17 @@ internal static class AnsibleCorpus
     {
         return
         [
-            .. Children(Path.Combine(TestFolderPath, "Fixtures")),
-            .. Children(FindingFolders)
-                .Concat(AnsibleFindingFolders.MadeFromNothing(FindingFolders).Select(name => Relative(Path.Combine(FindingFolders, name))))
-                .Order(StringComparer.Ordinal),
+            .. RepositoryPaths.SortedRelativeToSource(Directory.GetDirectories(Path.Combine(TestFolderPath, "Fixtures"))),
+            .. RepositoryPaths.SortedRelativeToSource(Directory.GetDirectories(FindingFolders)
+                .Concat(AnsibleFindingFolders.MadeFromNothing(FindingFolders).Select(name => Path.Combine(FindingFolders, name)))),
             .. Registered(Path.Combine(ModuleFolder, "examples")),
             .. Registered(Path.Combine(SourceFolder, "examples", "diagrams", "ansible-structure")),
         ];
-
-        static IEnumerable<string> Children(string folder) =>
-            Directory.GetDirectories(folder).Select(Relative).Order(StringComparer.Ordinal);
-
-        static IEnumerable<string> Registered(string folder) =>
-            Directory.GetFiles(folder, "*.adp", SearchOption.AllDirectories)
-                .Select(path => Relative(Path.GetDirectoryName(path)!))
-                .Distinct(StringComparer.Ordinal)
-                .Order(StringComparer.Ordinal);
-
-        static string Relative(string path) => Path.GetRelativePath(SourceFolder, path).Replace('\\', '/');
     }
+
+    /// <summary>Every folder under <paramref name="folder"/> that holds a registration, once, as the corpus lists them.</summary>
+    private static IEnumerable<string> Registered(string folder) =>
+        RepositoryPaths.SortedRelativeToSource(Directory.GetFiles(folder, "*.adp", SearchOption.AllDirectories)
+            .Select(path => Path.GetDirectoryName(path)!)
+            .Distinct(StringComparer.Ordinal));
 }

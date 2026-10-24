@@ -222,23 +222,23 @@ internal static class DatabricksTranscript
     {
         var documents = new List<Document>();
         var fixtures = Path.Combine(ModuleFolder, "backend", TestProject, "Fixtures");
-        foreach (var body in Sorted(Directory.GetFiles(fixtures).Where(IsBody)))
+        foreach (var body in Directory.GetFiles(fixtures).Where(IsBody).Order(StringComparer.Ordinal))
         {
-            documents.Add(new Document(RelativeToSource(body), await File.ReadAllBytesAsync(body, cancellationToken), []));
+            documents.Add(new Document(RepositoryPaths.RelativeToSource(body), await File.ReadAllBytesAsync(body, cancellationToken), []));
         }
 
         var examples = Directory.GetFiles(Path.Combine(ModuleFolder, "examples"), "*", SearchOption.AllDirectories)
             .Concat(Directory.GetFiles(Path.Combine(SourceFolder, "examples", "diagrams", "databricks"), "*", SearchOption.AllDirectories))
             .Where(IsBody);
-        foreach (var body in Sorted(examples))
+        foreach (var body in examples.Order(StringComparer.Ordinal))
         {
             var companions = new List<(string, byte[])>();
-            foreach (var file in Sorted(Directory.GetFiles(Path.GetDirectoryName(body)!)).Where(file => !string.Equals(file, body, StringComparison.Ordinal)))
+            foreach (var file in Directory.GetFiles(Path.GetDirectoryName(body)!).Order(StringComparer.Ordinal).Where(file => !string.Equals(file, body, StringComparison.Ordinal)))
             {
                 companions.Add((Path.GetFileName(file), await File.ReadAllBytesAsync(file, cancellationToken)));
             }
 
-            documents.Add(new Document(RelativeToSource(body), await File.ReadAllBytesAsync(body, cancellationToken), companions));
+            documents.Add(new Document(RepositoryPaths.RelativeToSource(body), await File.ReadAllBytesAsync(body, cancellationToken), companions));
         }
 
         await using var services = Services();
@@ -249,14 +249,9 @@ internal static class DatabricksTranscript
         }
 
         return documents;
-
-        static IEnumerable<string> Sorted(IEnumerable<string> paths) => paths.Order(StringComparer.Ordinal);
     }
 
     private static bool IsBody(string path) => Path.GetExtension(path) is ".yml" or ".yaml" or ".json";
-
-    /// <summary>A path as the transcript names it: relative to <c>src/</c>, with forward slashes.</summary>
-    private static string RelativeToSource(string path) => Path.GetRelativePath(SourceFolder, path).Replace('\\', '/');
 
     private static async Task WriteDocumentAsync(Utf8JsonWriter json, Document document, Dictionary<string, string> recorded, CancellationToken cancellationToken)
     {
