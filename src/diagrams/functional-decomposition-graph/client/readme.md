@@ -50,6 +50,7 @@ Every library event takes the one route that can carry it (the user's chat rulin
 | `element-moved` | the stream's `moveElementTo`, as the top-left | — |
 | `element-resized` | `setProperty` on the element | `fdg.width`, `fdg.height` |
 | `element-dropped` | context action on `new:x,y` (the drop's centre) | `fdg.add.<type>` |
+| right-click on empty canvas | the backend's menu for the placement `new:x,y` (`backgroundMenu`) | `fdg.add.<type>` |
 | `connection-drawn` | context action on `rel:from->to` | `fdg.connect.<relation>` |
 | delete, on an element or a connection | declared action | `fdg.remove`, `fdg.disconnect` |
 | F2, or a double-click on an element | declared action, answered with an inline prompt | `fdg.rename`, `fdg.rename-connection` |
@@ -65,8 +66,12 @@ move, and undoes in two steps.
 
 Nothing of the canvas. The connect gesture's relation is chosen by the pair of ends (the library's
 `relationOnto`), so every relation is drawn from the same element, and `fdgConnect.test.tsx`'s two
-Shows cases pass. Whether a right-click on empty canvas opens the specification's "Add … here" menu,
-which the compiled definition offers and the hand-written one did not, is the user's to rule.
+Shows cases pass.
+
+A right-click on empty canvas opens the specification's "Add … here" menu - Add ui element, data
+element, action, function and comment here - which the compiled definition offers and the
+hand-written one did not. The user ruled that it is offered (chat ruling of 2026-10-24), and
+`FdgCanvas.test.tsx` holds the canvas to it.
 
 See [../../readme.md](../../readme.md) for what this folder is for, and
 [`functional-decomposition-graph`](../../../../.spec-workflow/specs/functional-decomposition-graph/)

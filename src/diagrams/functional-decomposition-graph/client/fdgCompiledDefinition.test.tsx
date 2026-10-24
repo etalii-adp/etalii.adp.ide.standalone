@@ -20,7 +20,7 @@ import { FdgElementTypes } from "./fdgIds";
  * <b>Two differences are named, not hidden.</b> The actions are declared in the order the definition's
  * menus list them, which changes nothing the canvas does with them. The compiled canvas opens the
  * definition's "Add … here" menu on a right-click on empty canvas (`backgroundMenu`), which the hand-written
- * one did not; that addition waits on the user's ruling and is the one key compared apart.
+ * one did not; the user ruled that it is offered (chat ruling of 2026-10-24), and it is the one key compared apart.
  */
 
 /** The height every type but a Comment shares - `FdgGeometry.SharedHeight` on the backend. */

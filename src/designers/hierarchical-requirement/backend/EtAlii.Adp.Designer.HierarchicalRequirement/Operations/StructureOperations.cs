@@ -54,7 +54,6 @@ internal static class StructureOperations
 
         var entries = read.Document.Entries;
         var ids = HierarchicalRequirementSurfaceMapper.NodeIds(entries);
-        RequirementEntry? Find(string id) => entries.FirstOrDefault(entry => ids[entry] == id);
 
         RequirementEntry? target = null;
         if (operation != AddTopItem && (target = Find(targetId)) is null) return (null, HierarchicalRequirementGestures.Drifted);
@@ -84,10 +83,12 @@ internal static class StructureOperations
 
         // The structure, against the numbered bytes, with each entry found again at its place in reading order.
         var again = HierarchicalRequirementBody.Read(numbered, fileName);
-        RequirementEntry? Same(RequirementEntry? entry) => entry is null ? null : again.Document.Entries[IndexOf(entries, entry)];
         var edit = new BodyEdit(again);
         if (Change(again, edit, operation, given, Same(target), Same(item), Same(after)) is { } change) edit.Change(change);
         return edit.Write();
+
+        RequirementEntry? Same(RequirementEntry? entry) => entry is null ? null : again.Document.Entries[IndexOf(entries, entry)];
+        RequirementEntry? Find(string id) => entries.FirstOrDefault(entry => ids[entry] == id);
     }
 
     /// <summary>Why <paramref name="operation"/> cannot be done with these entries, or empty when it can.</summary>

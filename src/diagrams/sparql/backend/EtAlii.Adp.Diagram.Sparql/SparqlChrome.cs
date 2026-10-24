@@ -67,8 +67,9 @@ internal static class SparqlChrome
     {
         (string headerId, _, string truncationId, _) = Wire.Value;
         if (wireId == headerId) return "The header band states the query's form and modifiers, and stays at the top of the diagram.";
-        if (wireId == truncationId) return "That banner reports the truncation and is not something this diagram can move.";
-        return null;
+        return wireId == truncationId
+            ? "That banner reports the truncation and is not something this diagram can move."
+            : null;
     }
 
     private static (string, string, string, string) Read()
