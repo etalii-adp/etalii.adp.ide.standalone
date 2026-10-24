@@ -1,0 +1,19 @@
+title Out of range
+anchor User [1.2, 0.5]
+component Below [-0.25, 0.4]
+component Far [0.5, 1.00005]
+component Precise [0.12345, 0.98765]
+component Broken [1.2.3, 0]
+component Dotted [., 0.5]
+User->Below
+evolve Below 1.5
+note Off the edge [0.5, -0.1]
+accelerator Push [1.1, 0.5]
+pioneers [0.9, 0.1, 1.3, 0.3]
+annotation 1 [[0.4, 0.4], [1.5, 0.2]] Twice, once off the map
+component Piped [0.6, 0.6]
+pipeline Piped
+{
+  component Too evolved [1.3]
+}
+pipeline Precise [0.1, 1.2]
