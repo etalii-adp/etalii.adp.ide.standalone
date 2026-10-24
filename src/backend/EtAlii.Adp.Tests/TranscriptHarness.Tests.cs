@@ -152,7 +152,7 @@ public class TranscriptHarnessTests
 
         public override string Origin => "etalii/fake";
 
-        protected override IReadOnlyList<ToolboxItemDefinition>? Toolbox { get; } = [new("add-box", "Box", "square", "A box.", "add-box-here")];
+        protected override IReadOnlyList<ToolboxItemDefinition>? Toolbox { get; } = [new ToolboxItemDefinition("add-box", "Box", "square", "A box.", "add-box-here")];
 
         public override IReadOnlyList<TranscriptDocument> Corpus() => [Inline("first", "one"), Inline("second", "two"), Inline("copy", "one")];
 

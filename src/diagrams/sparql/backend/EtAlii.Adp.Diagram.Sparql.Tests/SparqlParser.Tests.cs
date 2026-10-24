@@ -437,8 +437,9 @@ public class SparqlParserTests
 
     private static IEnumerable<GroupScope> Scopes(SparqlQueryModel model)
     {
-        static IEnumerable<GroupScope> Walk(GroupScope scope) => [scope, .. scope.Children.SelectMany(Walk)];
         return model.Template is { } template ? [.. Walk(model.Where), .. Walk(template)] : Walk(model.Where);
+
+        static IEnumerable<GroupScope> Walk(GroupScope scope) => [scope, .. scope.Children.SelectMany(Walk)];
     }
 
     private static void AssertScope(string text, GroupScope scope)

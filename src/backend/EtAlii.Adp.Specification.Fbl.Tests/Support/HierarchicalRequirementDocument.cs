@@ -313,8 +313,9 @@ internal sealed partial class HierarchicalRequirementDocument
         var entries = Entries();
         var siblings = entries.Where(entry => entry.Element.ParentId == parent && (parent is not null || entry.Element.Type == type)).Select(entry => entry.Id).ToList();
         if (position.TryGetProperty("after", out var after)) return siblings.IndexOf(after.GetString()!) + 1;
-        if (position.TryGetProperty("before", out var before)) return siblings.IndexOf(before.GetString()!);
-        throw new InvalidOperationException($"Unknown fixture position: {position}.");
+        return position.TryGetProperty("before", out var before)
+            ? siblings.IndexOf(before.GetString()!)
+            : throw new InvalidOperationException($"Unknown fixture position: {position}.");
     }
 
     private static string Prefix(string type) => type == Item ? "ITEM-" : "REQ-";
