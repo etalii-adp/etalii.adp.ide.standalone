@@ -51,7 +51,7 @@ public sealed class SankeyTranscript() : TranscriptAdapter("sankey", "EtAlii.Adp
 
     public override string Origin => Diagram.Sankey.Origin.Key;
 
-    protected override IReadOnlyList<ToolboxItemDefinition> Toolbox => new SankeyToolboxProvider().Items;
+    protected override IReadOnlyList<ToolboxItemDefinition> Toolbox => SankeyDefinition.Toolbox;
 
     /// <summary>The corpus, in the order it is recorded.</summary>
     public override IReadOnlyList<TranscriptDocument> Corpus() => [.. Files().Select(OnDisk)];
