@@ -892,6 +892,11 @@ export interface ElementTypeDefinition {
   /** Overrides the canvas-wide {@link DraggingPolicy} for this type (Requirement 5.2). */
   draggable?: boolean;
   /**
+   * The one axis an element of this type is dragged along, the other staying where the model has it:
+   * a bar moved up and down its column. Omitted, a drag moves both.
+   */
+  dragAxis?: "x" | "y";
+  /**
    * Whether an element of this type that a toolbox drop just created is selected and its label
    * opened for editing, through the type's `activate` gesture, as soon as the model brings it.
    * The canvas remembers the drop point for five seconds; the first new element of such a type

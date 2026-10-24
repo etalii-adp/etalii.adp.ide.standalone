@@ -111,9 +111,9 @@ export interface DislRuler extends Extensions {
 
 export interface DislCoordinateSystem {
   kind: string;
-  /** An axis name, or an inline axis. */
-  x: string | DislAxis;
-  y: string | DislAxis;
+  /** An axis name, or an inline axis; a system may declare none (DISL §5). */
+  x?: string | DislAxis;
+  y?: string | DislAxis;
 }
 
 export interface DislNotation {
@@ -215,6 +215,8 @@ export interface DislAnchors extends Extensions {
   mode?: "outline" | "center" | "fixed" | "sides";
   points?: readonly { id: string; x: number; y: number }[];
   sides?: readonly ("top" | "right" | "bottom" | "left")[];
+  /** Whether the ends on one side are spread along it rather than meeting at its middle (DISL §6.9). */
+  spread?: boolean;
   /** Where an edge's end is drawn (DISL 0.3 §6.9): at its anchor (`point`, the default), or where the line crosses the outline. */
   drawnFrom?: "point" | "outline";
 }
@@ -301,6 +303,8 @@ export interface DislEdgeNotation extends Extensions {
   reconnectable?: boolean;
   /** Whether a press on the edge selects it (DISL §6.10); `false` makes a press on it a press on the background. */
   selectable?: boolean;
+  /** The style each interaction state layers over the edge's own (DISL §6.10). */
+  states?: Readonly<Partial<Record<"hover" | "selected", string | Readonly<Record<string, unknown>>>>>;
   /**
    * How a new connection is drawn (DISL 0.3 §6.10): the pointer button, where it starts and the modifier keys
    * held; which end of the relation each named anchor starts (`from`); and the tool the gesture runs (`tool`).

@@ -524,6 +524,7 @@
         "states": { "hover": "bandHover", "selected": "bandSelected" },
         "tooltip": { "cel": "labelOf(self.source) + ' → ' + labelOf(self.target) + ': ' + flowDisplay(self)" },
         "reconnectable": false,
+        "connect": { "pointer": { "button": "secondary", "start": "body" }, "doc": "Drawn by dragging with the right button from anywhere on one node to another; the node dragged from is the source." },
         "layer": "belowNodes",
         "doc": "A horizontal S from the source's right edge to the target's left edge, as thick as the flow's value, at the point along each edge where the layout stacked it (bandAt), so the bands at a bar meet edge to edge. No arrowhead and no label: the direction is the reading direction, and the value is written at the bars. The band the tool draws is a filled ribbon, not a stroke (sankey.md)."
       }
