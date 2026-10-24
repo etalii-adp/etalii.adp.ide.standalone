@@ -267,8 +267,8 @@ public sealed class KnowledgeCalculationsTests : IDisposable
 
         // Assert: the rows whose name has it, the count under the name is of them, and the view says what is searched for.
         var named = onDisk.Rows.Where(row => row.Cells.Any(cell => cell.PropertyId != "p6" && cell.Key == "text" && cell.Values.Any(value => value.Contains(name[1..], StringComparison.CurrentCultureIgnoreCase)))).Select(row => row.Id).ToList();
-        Assert.Contains(first.Id, Found());
-        Assert.Equal(named, Found());
+        Assert.Contains(first.Id, table.ShownRowIds());
+        Assert.Equal(named, table.ShownRowIds());
         Assert.True(named.Count < all.Count, "A search that finds every row tells nothing.");
         Assert.Equal(named.Count.ToString(CultureInfo.InvariantCulture), Shown(table, "p1"));
         Assert.Equal(name[1..].ToUpperInvariant(), table.Session.Baseline().Settings.Settings["search"]);
@@ -279,8 +279,8 @@ public sealed class KnowledgeCalculationsTests : IDisposable
         // Assert.
         var belgian = onDisk.Rows.Where(row => row.Cells.Any(cell => cell.PropertyId == "p2" && cell.Values.Contains("o2"))).Select(row => row.Id).ToList();
         Assert.NotEmpty(belgian);
-        Assert.Equal(belgian, Found().Intersect(belgian));
-        Assert.DoesNotContain("o2", Found());
+        Assert.Equal(belgian, table.ShownRowIds().Intersect(belgian));
+        Assert.DoesNotContain("o2", table.ShownRowIds());
 
         // Act: by the title of a related row, which the rows hold by its id too.
         var provinces = KnowledgeDocumentStore.Read(IoPath.Combine(_root, KnowledgeFiles.Related)).Body!.Table;
@@ -290,19 +290,16 @@ public sealed class KnowledgeCalculationsTests : IDisposable
 
         // Assert.
         var inProvince = onDisk.Rows.Where(row => row.Cells.Any(cell => cell.PropertyId == "p5" && cell.Values.Contains(related))).Select(row => row.Id).ToList();
-        Assert.Equal(inProvince, Found().Intersect(inProvince));
+        Assert.Equal(inProvince, table.ShownRowIds().Intersect(inProvince));
 
         // Act: for what no row mentions, then for nothing.
         await table.Edit(new TableGesture("search", Values: ["no city is called this"]));
-        Assert.Empty(Found());
+        Assert.Empty(table.ShownRowIds());
         await table.Edit(new TableGesture("search", Values: [""]));
 
         // Assert: every row again, and through all of it the file was never written.
-        Assert.Equal(all, Found());
+        Assert.Equal(all, table.ShownRowIds());
         Assert.False(table.Session.Baseline().Settings.Settings.ContainsKey("search"));
         Assert.Equal(bytes, table.Bytes());
-        return;
-
-        List<string> Found() => [.. table.Lines().Where(line => line.Id.Length > 0).Select(line => line.Id)];
     }
 }
