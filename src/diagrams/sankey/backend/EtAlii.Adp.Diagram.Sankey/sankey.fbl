@@ -1,0 +1,66 @@
+{
+  "$schema": "https://etalii.net/adp/fbl/schema/0.1/fbl.schema.json#/$defs/Document",
+  "fbl": "0.2",
+  "doc": "The Sankey diagram's .skv body (definitions/diagrams/sankey.dis, sankey.md): ADP's own YAML. Drafted by sankey-disl-fbl (requirements, appendix: the binding), without its \"as\": \"text\" markers, which are not FBL; no product class reads it yet, only the module's tests. A flow is an element with reference attributes rather than a relation, so a flow whose end names no node is kept and reported (B6), and it has no id rule (B7). Every entry carries the keys the module does not read as unknownKeys (B4), and the two Unreadable rules take an entry of nodes or flows that is not a mapping (B5). No header is declared (B10).",
+  "bindings": {
+    "skv": {
+      "title": "Sankey diagram",
+      "claims": { "extensions": [".skv"], "origins": ["etalii/sankey"] },
+      "body": { "kind": "file", "family": "yaml" },
+      "reader": "declared",
+      "text": { "newline": "crlf", "indent": 2, "sequenceIndent": "indented", "finalNewline": true, "quote": "double" },
+      "elements": [
+        {
+          "name": "document", "type": "Document", "at": "/",
+          "attributes": {
+            "version": { "key": "sankey", "readOnly": "The version is changed in the file itself." },
+            "format": { "key": "format", "readOnly": "The format is changed in the file itself." },
+            "flowColor": { "key": "flow-color", "readOnly": "The flow colour is changed in the file itself." },
+            "thickness": { "key": "thickness", "number": { "decimals": 2 } },
+            "unknownKeys": { "value": "entry.filter(k, !(k in ['sankey', 'format', 'flow-color', 'thickness', 'nodes', 'flows']))" }
+          }
+        },
+        {
+          "name": "node", "type": "Node", "at": "/nodes/*", "when": "entry.all(k, true)",
+          "id": { "from": { "key": "id" } },
+          "attributes": {
+            "storedId": { "key": "id", "readOnly": true },
+            "unknownKeys": { "value": "entry.filter(k, !(k in ['id', 'name', 'color', 'note', 'format', 'column', 'description']))" },
+            "name": { "key": "name", "empty": "refuse" },
+            "color": { "key": "color", "empty": "remove" },
+            "note": { "key": "note", "empty": "remove" },
+            "format": { "key": "format", "empty": "remove" },
+            "column": { "key": "column", "empty": "remove" },
+            "description": { "key": "description", "empty": "remove" }
+          },
+          "insert": {
+            "place": "after-last", "container": "/nodes", "create": { "at": "end-of-document" },
+            "keys": ["id", "name", "color", "note", "format", "column", "description"]
+          },
+          "remove": { "cascade": ["flow"] }
+        },
+        {
+          "name": "flow", "type": "Flow", "at": "/flows/*", "when": "entry.all(k, true)",
+          "attributes": {
+            "statedId": { "key": "id", "readOnly": true },
+            "unknownKeys": { "value": "entry.filter(k, !(k in ['id', 'from', 'to', 'value', 'step', 'color', 'description']))" },
+            "from": { "key": "from", "reference": { "to": ["node"], "by": "storedId" } },
+            "to": { "key": "to", "reference": { "to": ["node"], "by": "storedId" } },
+            "value": { "key": "value", "number": { "decimals": 4 }, "empty": "remove" },
+            "step": { "key": "step", "number": { "decimals": 4 }, "empty": "remove" },
+            "color": { "key": "color", "empty": "remove" },
+            "description": { "key": "description", "empty": "remove" }
+          },
+          "insert": {
+            "place": "after-last", "container": "/flows", "create": { "at": "end-of-document" },
+            "keys": ["id", "from", "to", "value", "step", "color", "description"]
+          },
+          "remove": {}
+        },
+        { "name": "node-not-a-mapping", "type": "Unreadable", "at": "/nodes/*", "readOnly": "This entry is not a mapping, so it is kept as it is." },
+        { "name": "flow-not-a-mapping", "type": "Unreadable", "at": "/flows/*", "readOnly": "This entry is not a mapping, so it is kept as it is." }
+      ],
+      "template": { "text": "sankey: 1\r\nnodes: []\r\nflows: []\r\n" }
+    }
+  }
+}
