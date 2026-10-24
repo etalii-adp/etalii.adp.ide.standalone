@@ -125,7 +125,7 @@ describe("the hierarchy surface", () => {
     const box = boxOf("Take an order");
     const parts = Array.from(box.children).map((child) => child.className);
     // The note icon stands first of the controls in the column at the box's right, beside the rest and never over it (FR-015).
-    expect(parts).toEqual(["hs-box-icons", "hs-box-content"]);
+    expect(parts).toEqual(["hs-box-side", "hs-box-content"]);
     const content = Array.from(box.querySelector(".hs-box-content")!.children).map((child) => child.className);
     expect(content).toEqual(["hs-box-header", "hs-tags", "hs-description"]);
     expect(box.querySelector(".hs-box-icons")?.firstElementChild?.className).toBe("mdi mdi-comment-plus-outline hs-note-add");
@@ -256,6 +256,31 @@ describe("the hierarchy surface", () => {
     // In the content beside the controls, after the tags as the description was, in the part that takes the box's height.
     expect(field.parentElement?.className).toBe("hs-description-field");
     expect(Array.from(box.querySelector(".hs-box-content")!.children).map((child) => child.className)).toEqual(["hs-box-header", "hs-tags", "hs-description-field"]);
+  });
+
+  it("keeps the place of the delete on every box that can be deleted, and fills it on the selected one only", () => {
+    // Arrange.
+    render(<HierarchySurface model={threeLevels()} definition={definition} onGesture={vi.fn()} />);
+    const box = boxOf("Take an order");
+    const place = () => box.querySelector(":scope > .hs-box-side > .hs-delete-place");
+    expect(place()?.childElementCount).toBe(0);
+
+    // Act.
+    fireEvent.click(box);
+
+    // Assert: the same place, under the controls, now holds the delete; the box changes its size nothing.
+    expect(place()?.firstElementChild?.getAttribute("aria-label")).toBe("Delete [2] Take an order");
+  });
+
+  it("keeps every control of a level in one list, the icon of its notes first and focus after it", () => {
+    // Act.
+    render(<HierarchySurface model={threeLevels()} definition={definition} onGesture={vi.fn()} />);
+
+    // Assert.
+    const icons = boxOf("Orders").querySelector(":scope > .hs-box-side > .hs-box-icons")!;
+    const kinds = Array.from(icons.children).map((icon) => icon.classList.contains("hs-note-add") ? "note" : icon.classList.contains("hs-focus") ? "focus" : "other");
+    expect(kinds.slice(0, 2)).toEqual(["note", "focus"]);
+    expect(document.querySelectorAll(".hs-focus").length).toBe(document.querySelectorAll(".hs-box-icons > .hs-focus").length);
   });
 
   it("shows a collapsed entry as its number, title, tags and note mark only", () => {
