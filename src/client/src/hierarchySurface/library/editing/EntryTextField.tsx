@@ -45,12 +45,15 @@ export function EntryTextField({ text, multiline, label, onChange, onCommit, onC
     ref.current?.select();
   }, []);
 
-  // As high as the text wraps to, as the text it replaced was.
+  // As high as the text wraps to, as the text it replaced was; where it stands in a column that leaves it more, it grows
+  // into that, so it is measured without growing.
   useLayoutEffect(() => {
     const field = ref.current;
     if (field !== null) {
+      field.style.flexGrow = "0";
       field.style.height = "auto";
       field.style.height = `${field.scrollHeight + field.offsetHeight - field.clientHeight}px`;
+      field.style.flexGrow = "";
     }
   }, [text]);
 
