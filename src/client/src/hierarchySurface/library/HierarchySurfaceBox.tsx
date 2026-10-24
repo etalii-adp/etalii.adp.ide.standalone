@@ -1,4 +1,4 @@
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useRef, useState } from "react";
 import type { PointerPressWiring } from "@client/canvas/gesture/usePointerGesture";
 import { OptionTag } from "@client/table/library/cells/OptionTag";
 import type { HierarchySurfaceNode, HierarchySurfaceOptionList } from "./api/hierarchySurfaceModel";
@@ -17,6 +17,7 @@ import { valuesOf } from "./labels/listEditing";
 import { TagField } from "./labels/TagField";
 import { NoteIcon } from "./notes/NoteIcon";
 import type { NoteMark } from "./notes/noteMark";
+import { BOX_SPACING, headerWidth, ICON_SIZE, iconsLayoutOf, useBoxWidth } from "./iconsLayout";
 import { ReferenceText } from "./references/ReferenceBox";
 
 export interface HierarchySurfaceBoxProps {
@@ -76,10 +77,15 @@ function colourOf(optionLists: readonly HierarchySurfaceOptionList[], label: str
  * (FR-011). A level's box also offers focus, and the mark of the levels the page does not show (FR-008, R10). What
  * stands to its right is the page's.
  *
- * The box's controls stand in one group at its top right, laid out from right to left with the icon of the notes first,
- * so it stays in sight whatever else is offered, wrapping to a next line rather than over the title, and the title,
- * tags and description flow beside them. Everything in the header is aligned to the top, so a title of several lines
- * leaves the rest on its first. A selected box offers its delete at its bottom right.
+ * The box's controls are one list with the icon of the notes first, so it stays in sight whatever else is offered. When
+ * the whole first line fits beside them they stand in a row at its end, from right to left; otherwise in a column at
+ * the box's right, from the top down, as high as the title, the tags and the description together, which stand to its
+ * left and never under it. The title wraps under the grip and the collapse control, and the tags and the description
+ * start at the box's left, the same space from its border as the controls are from its right.
+ *
+ * A box that can be deleted keeps a place for its delete at its bottom right, beside the description, which the
+ * selected box fills: selecting a box changes its size nothing. A description opened for typing stands where its text
+ * stood and takes the height the box has left below the tags.
  */
 export function HierarchySurfaceBox(props: HierarchySurfaceBoxProps) {
   const { node, definition, optionLists, collapsed, selected, notes, notesOpen, onToggleNotes, noteList, hiddenLevels, onToggle, onSelect, onFocus, onShowHidden, onDelete, editing, grip, dropHint, nodeOf, onReveal, nodes, onLabelGesture } = props;
@@ -102,153 +108,179 @@ export function HierarchySurfaceBox(props: HierarchySurfaceBoxProps) {
         references={attribute === "description" ? editing.references : undefined}
       />
     ) : null;
+  const descriptionField = fieldOf("description");
   const shown = labels.filter((label) => label.pick === undefined);
   const tags = shown.flatMap((label) => valuesOf(node, label.label).map((value) => ({ label: label.label, value, look: lookOf(label) })));
   // A label of one value the page changes is its picker: its value, or on the selected box the way to give one.
   const picks = labels.filter((label) => label.pick !== undefined && (valuesOf(node, label.label).length > 0 || (selected && onLabelGesture !== undefined)));
 
+  const canAddTag = field !== undefined && fieldEdit !== undefined && onLabelGesture !== undefined;
+  // The place of adding a description is kept on every box that could offer it, so selecting one moves nothing.
+  const offersDescription = !collapsed && node.description === "" && editing !== undefined;
+  const icons = [notes !== null || editing !== undefined, hiddenLevels > 0 && onShowHidden !== undefined, onFocus !== undefined, canAddTag, offersDescription].filter(Boolean).length;
+  const deletable = onDelete !== undefined;
+  const boxRef = useRef<HTMLDivElement>(null);
+  const width = useBoxWidth(boxRef);
+  const layout = iconsLayoutOf(width, headerWidth({ grip: grip !== undefined, number: node.number, title: node.title }), icons);
+  // The column at the right: the controls when they stand in a column, and the place of the delete.
+  const side = layout === "column" ? icons > 0 || deletable : deletable;
+  // A row of controls stands over the end of the first line, which keeps clear of it.
+  const headerEnd = layout === "row" ? Math.max(0, BOX_SPACING + icons * ICON_SIZE - (side ? ICON_SIZE + BOX_SPACING : 0)) : 0;
+
   return (
     <div
-      className={`hs-box${grip === undefined ? "" : " hs-draggable"}${selected ? " hs-selected" : ""}${selected && onDelete !== undefined ? " hs-deletable" : ""}${collapsed ? " hs-collapsed" : ""}${dropHint === undefined ? "" : ` hs-drop-${dropHint}`}`}
+      ref={boxRef}
+      className={`hs-box hs-icons-${layout}${side ? "" : " hs-no-side"}${grip === undefined ? "" : " hs-draggable"}${selected ? " hs-selected" : ""}${collapsed ? " hs-collapsed" : ""}${dropHint === undefined ? "" : ` hs-drop-${dropHint}`}`}
       data-node-id={node.id}
       aria-selected={selected}
       role="treeitem"
       aria-expanded={!collapsed}
       onClick={onSelect}
     >
-      <span className="hs-box-icons">
-        <NoteIcon
-          mark={notes}
-          number={node.number}
-          addLabel={definition.notes.words.add}
-          canAdd={editing !== undefined}
-          open={notesOpen}
-          onToggle={onToggleNotes}
-        />
-        {hiddenLevels > 0 && onShowHidden !== undefined && (
-          <button
-            type="button"
-            className="hs-hidden-levels"
-            aria-label={`${hiddenLevels} more ${hiddenLevels === 1 ? "level" : "levels"}: show the levels of ${node.number} ${node.title}`}
-            title={`${hiddenLevels} more ${hiddenLevels === 1 ? "level" : "levels"}`}
-            onClick={(event) => {
-              event.stopPropagation();
-              onShowHidden();
-            }}
-          >
-            <span className={`mdi ${HIDDEN_LEVELS_ICON}`} aria-hidden="true" />
-          </button>
-        )}
-        {onFocus !== undefined && (
-          <button
-            type="button"
-            className="hs-focus"
-            aria-label={`Focus on ${node.number} ${node.title}`}
-            title="Focus on this item"
-            onClick={(event) => {
-              event.stopPropagation();
-              onFocus();
-            }}
-          >
-            <span className={`mdi ${FOCUS_ICON}`} aria-hidden="true" />
-          </button>
-        )}
-        {field !== undefined && fieldEdit !== undefined && onLabelGesture !== undefined && (
-          // Shown under the pointer or on the selected box, and kept in its place otherwise: it moves nothing a click aims at.
-          <button
-            type="button"
-            className="mdi mdi-tag-plus-outline hs-tag-add"
-            aria-label={`${fieldEdit.words.add} to ${node.number}`}
-            title={fieldEdit.words.add}
-            onClick={(event) => {
-              event.stopPropagation();
-              onSelect();
-              setFieldOpen(true);
-            }}
+      <span className="hs-box-side">
+        <span className="hs-box-icons">
+          <NoteIcon
+            mark={notes}
+            number={node.number}
+            addLabel={definition.notes.words.add}
+            canAdd={editing !== undefined}
+            open={notesOpen}
+            onToggle={onToggleNotes}
           />
-        )}
-        {selected && !collapsed && node.description === "" && editing !== undefined && editing.field === null && (
-          // Last of the controls, on the selected box: showing it moves the title and the tags nothing.
-          <button
-            type="button"
-            className="mdi mdi-text-box-plus-outline hs-add-description"
-            aria-label="Add a description"
-            title="Add a description"
-            onClick={(event) => {
-              event.stopPropagation();
-              editing.open("description");
-            }}
-          />
-        )}
-      </span>
-      <div className="hs-box-header">
-        {grip !== undefined && <span className="mdi mdi-drag-vertical hs-grip" title={`Drag ${node.number}`} aria-hidden="true" {...grip} />}
-        <CollapseToggle collapsed={collapsed} title={`${node.number} ${node.title}`} onToggle={onToggle} />
-        <span className="hs-number">{node.number}</span>
-        {fieldOf("title") ?? (
-          <span className="hs-title" onDoubleClick={editing === undefined ? undefined : () => editing.open("title")}>
-            {node.title}
+          {hiddenLevels > 0 && onShowHidden !== undefined && (
+            <button
+              type="button"
+              className="hs-hidden-levels"
+              aria-label={`${hiddenLevels} more ${hiddenLevels === 1 ? "level" : "levels"}: show the levels of ${node.number} ${node.title}`}
+              title={`${hiddenLevels} more ${hiddenLevels === 1 ? "level" : "levels"}`}
+              onClick={(event) => {
+                event.stopPropagation();
+                onShowHidden();
+              }}
+            >
+              <span className={`mdi ${HIDDEN_LEVELS_ICON}`} aria-hidden="true" />
+            </button>
+          )}
+          {onFocus !== undefined && (
+            <button
+              type="button"
+              className="hs-focus"
+              aria-label={`Focus on ${node.number} ${node.title}`}
+              title="Focus on this item"
+              onClick={(event) => {
+                event.stopPropagation();
+                onFocus();
+              }}
+            >
+              <span className={`mdi ${FOCUS_ICON}`} aria-hidden="true" />
+            </button>
+          )}
+          {canAddTag && (
+            // Shown under the pointer or on the selected box, and kept in its place otherwise: it moves nothing a click aims at.
+            <button
+              type="button"
+              className="mdi mdi-tag-plus-outline hs-tag-add"
+              aria-label={`${fieldEdit.words.add} to ${node.number}`}
+              title={fieldEdit.words.add}
+              onClick={(event) => {
+                event.stopPropagation();
+                onSelect();
+                setFieldOpen(true);
+              }}
+            />
+          )}
+          {selected && offersDescription && editing.field === null && (
+            // Last of the controls, on the selected box: showing it moves the title and the tags nothing.
+            <button
+              type="button"
+              className="mdi mdi-text-box-plus-outline hs-add-description"
+              aria-label="Add a description"
+              title="Add a description"
+              onClick={(event) => {
+                event.stopPropagation();
+                editing.open("description");
+              }}
+            />
+          )}
+        </span>
+        {onDelete !== undefined && (
+          <span className="hs-delete-place">
+            {selected && (
+              <button
+                type="button"
+                className={`mdi ${DELETE_ICON} hs-delete`}
+                aria-label={`Delete ${node.number} ${node.title}`}
+                title="Delete"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onDelete();
+                }}
+              />
+            )}
           </span>
         )}
-      </div>
-      {(tags.length > 0 || picks.length > 0 || (field !== undefined && (valuesOf(node, field.label).length > 0 || fieldOpen))) && (
-        <div className="hs-tags">
-          {field !== undefined && fieldEdit !== undefined && (
-            <span className={lookOf(field)}>
-              <TagField
-                label={field.label}
-                edit={fieldEdit}
-                node={node}
-                options={optionLists.find((list) => list.label === field.label)?.options ?? []}
-                nodes={nodes}
-                open={fieldOpen && onLabelGesture !== undefined}
-                onOpen={() => setFieldOpen(true)}
-                onClose={() => setFieldOpen(false)}
-                canEdit={onLabelGesture !== undefined}
-                onGesture={onLabelGesture ?? (() => "")}
-              />
+      </span>
+      <div className="hs-box-content">
+        <div className={`hs-box-header${text !== null && text.attribute === "title" ? " hs-box-header-typing" : ""}`} style={headerEnd > 0 ? { paddingInlineEnd: headerEnd } : undefined}>
+          {grip !== undefined && <span className="mdi mdi-drag-vertical hs-grip" title={`Drag ${node.number}`} aria-hidden="true" {...grip} />}
+          <CollapseToggle collapsed={collapsed} title={`${node.number} ${node.title}`} onToggle={onToggle} />
+          <span className="hs-number">{node.number}</span>
+          {fieldOf("title") ?? (
+            <span className="hs-title" onDoubleClick={editing === undefined ? undefined : () => editing.open("title")}>
+              {node.title}
             </span>
           )}
-          {tags.map((tag) => (
-            <span key={`${tag.label}:${tag.value}`} className={tag.look}>
-              <OptionTag label={tag.value} color={colourOf(optionLists, tag.label, tag.value)} />
-            </span>
-          ))}
-          {picks.map((label) => (
-            <span key={label.label} className={lookOf(label)}>
-              <ClassificationPicker
-                label={label.label}
-                pick={label.pick!}
-                node={node}
-                options={optionLists.find((list) => list.label === label.label)?.options ?? []}
-                nodes={nodes}
-                canEdit={onLabelGesture !== undefined}
-                onGesture={onLabelGesture ?? (() => "")}
-              />
-            </span>
-          ))}
         </div>
-      )}
-      {!collapsed &&
-        (fieldOf("description") ??
-          (node.description !== "" && (
-            <p className="hs-description" onDoubleClick={editing === undefined ? undefined : () => editing.open("description")}>
-              <ReferenceText text={node.description} references={node.references} nodeOf={nodeOf} onReveal={onReveal} />
-            </p>
-          )))}
-      {noteList}
-      {selected && onDelete !== undefined && (
-        <button
-          type="button"
-          className={`mdi ${DELETE_ICON} hs-delete`}
-          aria-label={`Delete ${node.number} ${node.title}`}
-          title="Delete"
-          onClick={(event) => {
-            event.stopPropagation();
-            onDelete();
-          }}
-        />
-      )}
+        {(tags.length > 0 || picks.length > 0 || (field !== undefined && (valuesOf(node, field.label).length > 0 || fieldOpen))) && (
+          <div className="hs-tags">
+            {field !== undefined && fieldEdit !== undefined && (
+              <span className={lookOf(field)}>
+                <TagField
+                  label={field.label}
+                  edit={fieldEdit}
+                  node={node}
+                  options={optionLists.find((list) => list.label === field.label)?.options ?? []}
+                  nodes={nodes}
+                  open={fieldOpen && onLabelGesture !== undefined}
+                  onOpen={() => setFieldOpen(true)}
+                  onClose={() => setFieldOpen(false)}
+                  canEdit={onLabelGesture !== undefined}
+                  onGesture={onLabelGesture ?? (() => "")}
+                />
+              </span>
+            )}
+            {tags.map((tag) => (
+              <span key={`${tag.label}:${tag.value}`} className={tag.look}>
+                <OptionTag label={tag.value} color={colourOf(optionLists, tag.label, tag.value)} />
+              </span>
+            ))}
+            {picks.map((label) => (
+              <span key={label.label} className={lookOf(label)}>
+                <ClassificationPicker
+                  label={label.label}
+                  pick={label.pick!}
+                  node={node}
+                  options={optionLists.find((list) => list.label === label.label)?.options ?? []}
+                  nodes={nodes}
+                  canEdit={onLabelGesture !== undefined}
+                  onGesture={onLabelGesture ?? (() => "")}
+                />
+              </span>
+            ))}
+          </div>
+        )}
+        {!collapsed &&
+          (descriptionField !== null ? (
+            <div className="hs-description-field">{descriptionField}</div>
+          ) : (
+            node.description !== "" && (
+              <p className="hs-description" onDoubleClick={editing === undefined ? undefined : () => editing.open("description")}>
+                <ReferenceText text={node.description} references={node.references} nodeOf={nodeOf} onReveal={onReveal} />
+              </p>
+            )
+          ))}
+        {noteList}
+      </div>
     </div>
   );
 }

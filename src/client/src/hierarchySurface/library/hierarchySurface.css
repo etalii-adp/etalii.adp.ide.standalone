@@ -153,10 +153,14 @@
   flex: 1;
 }
 
+/* Its column of controls stands at its right, first in its markup and last in the row, as high as its content. The
+   space between its border and what it holds is the same on every side. */
 .hs-box {
   position: relative;
-  display: flow-root;
+  display: flex;
   flex: 1;
+  flex-direction: row-reverse;
+  align-items: stretch;
   min-width: 0;
   padding: 6px;
   cursor: default;
@@ -171,23 +175,67 @@
   outline-offset: -2px;
 }
 
-/* Everything in the header stands at its top, so a title of several lines leaves the rest on its first line. */
+/* The first line: the grip, the collapse control and the number stand on it as words do, so a title of several lines
+   wraps under them to the box's left. While the title is typed its field takes the rest of the line. */
 .hs-box-header {
-  display: flex;
-  align-items: flex-start;
-  gap: 4px;
   min-width: 0;
   line-height: 20px;
+  overflow-wrap: break-word;
 }
 
-/* The box's controls at its top right, two in a row from right to left with the notes' icon first, wrapping to a next
-   line rather than over the title; the header, the tags and the description flow beside them. */
+.hs-box-header > .hs-grip,
+.hs-box-header > .hs-toggle,
+.hs-box-header > .hs-number {
+  margin-inline-end: 4px;
+  vertical-align: top;
+}
+
+.hs-box-header-typing {
+  display: flex;
+  align-items: flex-start;
+}
+
+/* The column at the box's right: its controls when they stand in a column, and at its bottom the place of its delete,
+   beside the description. It is as high as the header, the tags and the description, which never stand under it. */
+.hs-box-side {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: flex-end;
+  margin-inline-start: 6px;
+}
+
+.hs-box.hs-no-side > .hs-box-side {
+  margin-inline-start: 0;
+}
+
+/* The box's controls, one list with the notes' icon first: from the top down in the column, or, when the whole first
+   line fits beside them, in a row at its end from right to left, the same space from the border as everything else. */
 .hs-box-icons {
   display: flex;
-  float: right;
-  flex-flow: row-reverse wrap;
-  max-width: 40px;
-  margin-inline-start: 4px;
+  flex-direction: column;
+}
+
+.hs-icons-row > .hs-box-side > .hs-box-icons {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  flex-direction: row-reverse;
+}
+
+.hs-delete-place {
+  display: flex;
+  width: 20px;
+  height: 20px;
+  margin-top: auto;
+}
+
+/* The header, the tags and the description, beside the controls; a description opened for typing takes what is left. */
+.hs-box-content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
 }
 
 .hs-toggle,
@@ -255,24 +303,14 @@
   visibility: hidden;
 }
 
-.hs-box:hover > .hs-box-icons > *,
-.hs-box.hs-selected > .hs-box-icons > *,
+.hs-box:hover > .hs-box-side > .hs-box-icons > *,
+.hs-box.hs-selected > .hs-box-side > .hs-box-icons > *,
 .hs-note-add[aria-expanded="true"],
 .hs-box-icons > :focus-visible {
   visibility: visible;
 }
 
-/* A selected box's delete, at its bottom right, below everything else in it. */
-.hs-box.hs-deletable {
-  padding-bottom: 26px;
-}
-
-.hs-delete {
-  position: absolute;
-  right: 4px;
-  bottom: 4px;
-}
-
+/* A selected box's delete, in its place at the bottom of the column. */
 .hs-delete:hover {
   color: var(--color-danger);
 }
@@ -288,7 +326,7 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 4px;
-  margin: 4px 0 0 24px;
+  margin: 4px 0 0;
 }
 
 .hs-tags .table-option-tag + .table-option-tag {
@@ -332,7 +370,7 @@
 }
 
 .hs-description {
-  margin: 4px 0 0 24px;
+  margin: 4px 0 0;
   color: var(--color-text);
   line-height: 20px;
   white-space: pre-wrap;
@@ -387,10 +425,26 @@
   overflow-wrap: break-word;
 }
 
-.hs-box > .hs-field-multiline {
-  width: calc(100% - 24px + 10px);
-  margin: 2px -5px -2px 19px;
+/* A description typed in place: where the description stood and as high, reaching down the box to its padding, and
+   the box's own space from the controls at its right. Its reference lookup opens under it. */
+.hs-description-field {
+  position: relative;
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+}
+
+.hs-description-field > .hs-field-multiline {
+  flex: 1 0 auto;
+  width: auto;
+  margin: 2px 0 0;
+  padding: 0 4px;
   white-space: pre-wrap;
+}
+
+.hs-description-field > .hs-reference-lookup {
+  top: 100%;
+  left: 0;
 }
 
 /* The place a node is added, at the end of a level's content and of the page, as the table's new row (FR-012). */
@@ -425,17 +479,13 @@
   color: var(--color-text);
 }
 
-/* What a node is dragged by, with everything in it (FR-013): in the box's left margin, so the title keeps its width. */
-.hs-box.hs-draggable {
-  padding-left: 16px;
-}
-
+/* What a node is dragged by, with everything in it (FR-013): first on the first line, which the title wraps under. */
 .hs-grip {
-  position: absolute;
-  top: 9px;
-  left: 1px;
+  display: inline-block;
+  width: 14px;
   font-size: 14px;
-  line-height: 1;
+  line-height: 20px;
+  text-align: center;
   color: var(--color-text-muted);
   cursor: grab;
   touch-action: none;
