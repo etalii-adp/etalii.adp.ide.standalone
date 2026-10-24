@@ -5,6 +5,9 @@ namespace EtAlii.Adp.Specification.Disl.Tests;
 /// <summary>The findings of a diagram (DISL §8.2, §8.6, §8.7) and the refusals of a gesture (§8.4).</summary>
 public class ConstraintEvaluationTests
 {
+    /// <summary>The refusals as one line, each as its rule's id and message, in order; empty when nothing refuses.</summary>
+    private static string Refused(IReadOnlyList<DislFinding> refusals) => string.Join(" / ", refusals.Select(refusal => $"{refusal.ConstraintId}: {refusal.Message}"));
+
     private const string Metamodel = """
         "metamodel": {
           "types": {
@@ -180,9 +183,6 @@ public class ConstraintEvaluationTests
         var bounds = new Dictionary<string, object?> { ["width"] = 10.0 };
         Assert.Equal("wide: Only wider.", Refused(GestureConstraintEvaluator.Placement(specification, box, "resize", bounds, new Dictionary<string, object?> { ["width"] = 5.0 })));
         Assert.Equal("", Refused(GestureConstraintEvaluator.Placement(specification, box, "move", bounds, new Dictionary<string, object?> { ["width"] = 5.0 })));
-        return;
-
-        static string Refused(IReadOnlyList<DislFinding> refusals) => string.Join(" / ", refusals.Select(refusal => $"{refusal.ConstraintId}: {refusal.Message}"));
     }
 
     [Fact]
@@ -210,9 +210,6 @@ public class ConstraintEvaluationTests
         Assert.Equal("lidFirst: Only down, from 1.", Refused(GestureConstraintEvaluator.Reorder(specification, other, [lid, other], 1, 0)));
         Assert.Equal("", Refused(GestureConstraintEvaluator.Reorder(specification, lid, [lid, other], 0, 1)));
         Assert.Equal("", Refused(GestureConstraintEvaluator.Reorder(specification, box, [box], 0, 0)));
-        return;
-
-        static string Refused(IReadOnlyList<DislFinding> refusals) => string.Join(" / ", refusals.Select(refusal => $"{refusal.ConstraintId}: {refusal.Message}"));
     }
 
     [Fact]

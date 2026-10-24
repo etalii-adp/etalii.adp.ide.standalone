@@ -19,7 +19,7 @@
     <InternalsVisibleTo Include="EtAlii.Adp.Documents.Tests" />
     <!-- The watched-folder contract makes a store's own watcher overflow, which only its internal
          watchers allow; every module's store test inherits that one test. -->
-    <InternalsVisibleTo Include="EtAlii.Adp.TestSupport" />
+    <InternalsVisibleTo Include="EtAlii.Adp.Files.Tests.Support" />
   </ItemGroup>
 
 </Project>

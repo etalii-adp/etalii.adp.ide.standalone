@@ -93,7 +93,7 @@
         "code_lines": 0
       },
       {
-        "project": "EtAlii.Adp.TestSupport",
+        "project": "EtAlii.Adp.Tests.Support",
         "kind": "core",
         "group": "test",
         "module": null,
@@ -102,7 +102,7 @@
         "code_lines": 11
       },
       {
-        "project": "EtAlii.Adp.TestSupport.Host",
+        "project": "EtAlii.Adp.Backend.Tests.Support",
         "kind": "core",
         "group": "test",
         "module": null,
@@ -257,13 +257,13 @@
     },
     "referenced_by": {
       "EtAlii.Adp.Core": 4,
-      "EtAlii.Adp.TestSupport": 3,
+      "EtAlii.Adp.Tests.Support": 3,
       "EtAlii.Adp.Diagram.Alpha": 1,
       "EtAlii.Adp.Diagram.Alpha.Tests": 0,
       "EtAlii.Adp.Diagram.BetaGamma": 0,
       "EtAlii.Adp.Empty": 0,
       "EtAlii.Adp.Modules.Tests": 0,
-      "EtAlii.Adp.TestSupport.Host": 0
+      "EtAlii.Adp.Backend.Tests.Support": 0
     },
     "without_cs_file": [
       "EtAlii.Adp.Empty"
@@ -297,17 +297,17 @@
         "to": "Microsoft.AspNetCore.App"
       },
       {
-        "from": "EtAlii.Adp.TestSupport",
+        "from": "EtAlii.Adp.Tests.Support",
         "kind": "ProjectReference",
         "to": "EtAlii.Adp.Core"
       },
       {
-        "from": "EtAlii.Adp.TestSupport.Host",
+        "from": "EtAlii.Adp.Backend.Tests.Support",
         "kind": "ProjectReference",
-        "to": "EtAlii.Adp.TestSupport"
+        "to": "EtAlii.Adp.Tests.Support"
       },
       {
-        "from": "EtAlii.Adp.TestSupport.Host",
+        "from": "EtAlii.Adp.Backend.Tests.Support",
         "kind": "PackageReference",
         "to": "Microsoft.AspNetCore.Mvc.Testing"
       },
@@ -324,7 +324,7 @@
       {
         "from": "EtAlii.Adp.Diagram.Alpha.Tests",
         "kind": "ProjectReference",
-        "to": "EtAlii.Adp.TestSupport",
+        "to": "EtAlii.Adp.Tests.Support",
         "via": "src/Directory.Build.targets"
       },
       {
@@ -340,7 +340,7 @@
       {
         "from": "EtAlii.Adp.Modules.Tests",
         "kind": "ProjectReference",
-        "to": "EtAlii.Adp.TestSupport",
+        "to": "EtAlii.Adp.Tests.Support",
         "via": "src/Directory.Build.targets"
       }
     ]
@@ -354,12 +354,12 @@
     "wait_sites": {
       "test": [
         {
-          "file": "src/backend/EtAlii.Adp.TestSupport/Polling.cs",
+          "file": "src/backend/EtAlii.Adp.Tests.Support/Polling.cs",
           "line": 10,
           "call": "Thread.Sleep"
         },
         {
-          "file": "src/backend/EtAlii.Adp.TestSupport.Host/Host.cs",
+          "file": "src/backend/EtAlii.Adp.Backend.Tests.Support/Host.cs",
           "line": 7,
           "call": "Task.Delay"
         },
@@ -378,7 +378,7 @@
     },
     "helper_sites": [
       {
-        "file": "src/backend/EtAlii.Adp.TestSupport/Polling.cs",
+        "file": "src/backend/EtAlii.Adp.Tests.Support/Polling.cs",
         "line": 6,
         "helper": "WaitUntil"
       },

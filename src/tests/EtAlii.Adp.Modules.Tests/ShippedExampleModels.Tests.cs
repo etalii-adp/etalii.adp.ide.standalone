@@ -3,7 +3,6 @@ using System.Text.Json;
 using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.Sessions;
-using EtAlii.Adp.TestSupport.Host;
 using EtAlii.Adp.Workspace;
 using Google.Protobuf;
 using Microsoft.Extensions.DependencyInjection;

@@ -42,7 +42,7 @@ public static class OwlProjection
         var order = new List<string>();
         var unitOf = new Dictionary<string, string>(StringComparer.Ordinal);
         var edges = new List<OwlEdge>();
-        var edgeCounts = new Dictionary<string, int>(StringComparer.Ordinal);
+        var edgeIds = new RdfEdgeIds();
 
         // Named nodes, in document order of first appearance - every role an IRI has draws
         // in its own place, which is all punning needs (Requirement 2.4).
@@ -363,10 +363,7 @@ public static class OwlProjection
                 return;
             }
 
-            var key = $"{fromId}|{propertyIri}|{toId}";
-            edgeCounts.TryGetValue(key, out var count);
-            edgeCounts[key] = count + 1;
-            var id = count == 0 ? $"edge:{key}" : $"edge:{key}|{count}";
+            var id = edgeIds.Next(fromId, propertyIri, toId);
             edges.Add(new OwlEdge(id, kind, fromId, toId, label, propertyIri));
         }
 

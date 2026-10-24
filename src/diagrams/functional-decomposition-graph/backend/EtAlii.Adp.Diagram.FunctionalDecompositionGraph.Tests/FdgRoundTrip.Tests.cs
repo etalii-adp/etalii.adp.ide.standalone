@@ -1,7 +1,6 @@
 using EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests.Parity;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Files;
-using EtAlii.Adp.History;
 using EtAlii.Adp.Specification.Disl;
 using Xunit;
 using Path = System.IO.Path;
@@ -68,33 +67,32 @@ public sealed class FdgRoundTripTests
         var body = folder.Copy(relative);
         var original = await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken);
         var model = FdgParser.Parse(LineDocument.Parse(await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken)));
-        List<string> failures = [];
-        var applied = 0;
+        var roundTrip = new UndoRoundTrip(body, original, () => new FdgTestDispatcher(new FdgDocumentStore(new FileWriter())));
 
         // Act and assert.
         foreach (var type in FdgElementTypes.All)
         {
-            await Check(new AddFdgElementCommand(body, type, 240, 160));
+            await roundTrip.CheckAsync(new AddFdgElementCommand(body, type, 240, 160), TestContext.Current.CancellationToken);
         }
 
         foreach (var element in model.Elements.Where(element => element.Id.Length > 0).Where((element, index) => index < Sample || element.IsComment).DistinctBy(element => element.Id, StringComparer.Ordinal))
         {
-            await Check(new SetFdgPlacementCommand(body, element.Id, element.X + 10.5, element.Y - 4E-05));
-            await Check(new SetFdgSizeCommand(body, element.Id, 10, element.IsComment ? 10 : null));
-            await Check(new SetFdgSizeCommand(body, element.Id, 300.25, element.IsComment ? 200 : null));
-            await Check(new RenameFdgElementCommand(body, element.Id, "Round trip"));
-            await Check(new RenameFdgElementCommand(body, element.Id, " leading space\nand a second line"));
-            await Check(new SetFdgDescriptionCommand(body, element.Id, "Described: here # and there"));
-            await Check(new SetFdgDescriptionCommand(body, element.Id, ""));
-            await Check(new RemoveFdgElementCommand(body, element.Id));
+            await roundTrip.CheckAsync(new SetFdgPlacementCommand(body, element.Id, element.X + 10.5, element.Y - 4E-05), TestContext.Current.CancellationToken);
+            await roundTrip.CheckAsync(new SetFdgSizeCommand(body, element.Id, 10, element.IsComment ? 10 : null), TestContext.Current.CancellationToken);
+            await roundTrip.CheckAsync(new SetFdgSizeCommand(body, element.Id, 300.25, element.IsComment ? 200 : null), TestContext.Current.CancellationToken);
+            await roundTrip.CheckAsync(new RenameFdgElementCommand(body, element.Id, "Round trip"), TestContext.Current.CancellationToken);
+            await roundTrip.CheckAsync(new RenameFdgElementCommand(body, element.Id, " leading space\nand a second line"), TestContext.Current.CancellationToken);
+            await roundTrip.CheckAsync(new SetFdgDescriptionCommand(body, element.Id, "Described: here # and there"), TestContext.Current.CancellationToken);
+            await roundTrip.CheckAsync(new SetFdgDescriptionCommand(body, element.Id, ""), TestContext.Current.CancellationToken);
+            await roundTrip.CheckAsync(new RemoveFdgElementCommand(body, element.Id), TestContext.Current.CancellationToken);
         }
 
         foreach (var connection in model.Connections.Where(connection => connection.Id.Length > 0).DistinctBy(connection => connection.Id, StringComparer.Ordinal).Take(Sample))
         {
-            await Check(new RenameFdgConnectionCommand(body, connection.Id, "Round trip"));
-            await Check(new SetFdgDescriptionCommand(body, connection.Id, "A link's description"));
-            await Check(new SetFdgDescriptionCommand(body, connection.Id, ""));
-            await Check(new DisconnectFdgConnectionCommand(body, connection.Id));
+            await roundTrip.CheckAsync(new RenameFdgConnectionCommand(body, connection.Id, "Round trip"), TestContext.Current.CancellationToken);
+            await roundTrip.CheckAsync(new SetFdgDescriptionCommand(body, connection.Id, "A link's description"), TestContext.Current.CancellationToken);
+            await roundTrip.CheckAsync(new SetFdgDescriptionCommand(body, connection.Id, ""), TestContext.Current.CancellationToken);
+            await roundTrip.CheckAsync(new DisconnectFdgConnectionCommand(body, connection.Id), TestContext.Current.CancellationToken);
         }
 
         var ends = model.Elements.Where(element => element.Id.Length > 0).Take(Sample + 1).Select(element => element.Id).ToList();
@@ -104,37 +102,14 @@ public sealed class FdgRoundTripTests
             {
                 foreach (var to in ends.Where(to => to != from))
                 {
-                    await Check(new ConnectFdgElementsCommand(body, type, from, to));
+                    await roundTrip.CheckAsync(new ConnectFdgElementsCommand(body, type, from, to), TestContext.Current.CancellationToken);
                 }
             }
         }
 
-        Assert.True(failures.Count == 0, $"{relative}: {failures.Count} of {applied} edits\n{string.Join("\n", failures)}");
+        Assert.True(roundTrip.Failures.Count == 0, $"{relative}: {roundTrip.Failures.Count} of {roundTrip.Applied} edits\n{roundTrip}");
         // An empty file has no section to add to, so it takes no edit; every other readable one takes some.
-        if (original.Length > 0 && !FdgBody.Parse(await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken)).IsUnreadable) Assert.True(applied > 0, $"{relative}: no edit applied, so nothing was undone.");
-        return;
-
-        async Task Check(ICommand command)
-        {
-            var cancellationToken = TestContext.Current.CancellationToken;
-            await File.WriteAllBytesAsync(body, original, cancellationToken);
-            var dispatcher = new FdgTestDispatcher(new FdgDocumentStore(new FileWriter()));
-            var done = await dispatcher.DispatchAsync(command, cancellationToken);
-            if (done is not { IsSuccess: true, Inverse: not null }) return;
-
-            applied++;
-            var edited = await File.ReadAllBytesAsync(body, cancellationToken);
-            var undone = await dispatcher.DispatchAsync(done.Inverse, cancellationToken);
-            var afterUndo = await File.ReadAllBytesAsync(body, cancellationToken);
-            if (!undone.IsSuccess)
-            {
-                failures.Add($"{command}: its undo was refused: {undone.Error}");
-            }
-            else if (!afterUndo.AsSpan().SequenceEqual(original))
-            {
-                failures.Add($"{command}: undone, the file is not what it was ({(edited.AsSpan().SequenceEqual(original) ? "the edit wrote nothing" : "the edit wrote")})");
-            }
-        }
+        if (original.Length > 0 && !FdgBody.Parse(await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken)).IsUnreadable) Assert.True(roundTrip.Applied > 0, $"{relative}: no edit applied, so nothing was undone.");
     }
 
     private static Dictionary<string, object?> Values(string attribute, DislElement element) =>

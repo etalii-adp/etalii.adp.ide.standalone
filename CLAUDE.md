@@ -134,6 +134,8 @@ Run `dotnet format style --verify-no-changes --severity info` (from `src/backend
 - **In a test, pass `TestContext.Current.CancellationToken`** to every call that takes a token. xUnit1051, already an error; it follows automatically once the call above is async.
 - **No `using` the file does not need** - including a parent of the file's own namespace (`EtAlii.Adp.Authentication` inside `EtAlii.Adp.Authentication.Tests`) and one an alias already covers. IDE0005, a warning the format gate refuses. It only fires because `src/Directory.Build.props` generates a documentation file; remove that and the rule goes silent while the gate stays green.
 
+**No local functions in new code** (the user, 2026-10-24). A method nested inside another method is not the house shape: put it on the class it works on, as an instance method where it reads that instance's state, as a `private static` method where it reads only its arguments, and as a shared helper - an `extension` block, a method in a `*.Tests.Support` project - where more than one file needs it. A local that captures a test's state is usually a small class waiting to be named (`UndoRoundTrip`, `RdfEdgeIds`). No gate refuses a local function, so this holds by review; the existing ones were inventoried and moved out family by family in October 2026.
+
 ## Folders and namespaces
 
 **A folder that should not contribute to the namespace is fixed in the project's `.DotSettings`, not by touching the namespace.** The namespace rules themselves are already right - do not "correct" a namespace to match a folder. What is wrong in that situation is the *folder*, which is still marked as a namespace provider, and Rider's way to say otherwise is a per-folder boolean in `<Project>.csproj.DotSettings`:

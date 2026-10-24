@@ -24,6 +24,19 @@ public class YamlAccessTests
     }
 
     [Fact]
+    public void AScalarNode_IsTheNodeItself_AndAnythingElseIsNull()
+    {
+        // Arrange.
+        var root = Root();
+
+        // Act and assert.
+        Assert.Same(root.Children[new YamlScalarNode("name")], YamlAccess.ScalarNode(root, "name"));
+        Assert.Equal("", YamlAccess.ScalarNode(root, "empty")!.Value);
+        Assert.Null(YamlAccess.ScalarNode(root, "stages"));
+        Assert.Null(YamlAccess.ScalarNode(root, "missing"));
+    }
+
+    [Fact]
     public void ASequence_IsItsItems_AndAnythingElseIsEmpty()
     {
         // Arrange.

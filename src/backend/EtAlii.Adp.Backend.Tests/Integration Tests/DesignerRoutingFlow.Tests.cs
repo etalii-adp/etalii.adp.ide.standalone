@@ -3,7 +3,6 @@ using EtAlii.Adp.Designer;
 using EtAlii.Adp.Diagram.Wire;
 using EtAlii.Adp.Problems;
 using EtAlii.Adp.Projects;
-using EtAlii.Adp.TestSupport.Host;
 using Grpc.Core;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;

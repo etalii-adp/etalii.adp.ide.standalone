@@ -75,9 +75,10 @@ public sealed class KnowledgeTypeChangeTests : IDisposable
         }
 
         return table;
-
-        static string[] Cells(string line) => [.. line.Trim().Trim('|').Split('|').Select(cell => cell.Trim())];
     }
+
+    /// <summary>The cells of one row of a Markdown table, trimmed.</summary>
+    private static string[] Cells(string line) => [.. line.Trim().Trim('|').Split('|').Select(cell => cell.Trim())];
 
     /// <summary>
     /// Every pair of the table but a relation's: a relation is made by choosing its target and
@@ -191,19 +192,16 @@ public sealed class KnowledgeTypeChangeTests : IDisposable
         await table.Edit(new TableGesture("setColumnType", ColumnId: id, Settings: new Dictionary<string, string> { ["type"] = "number" }));
 
         // Assert: the number is a number, and the word is the word it was, as text.
-        Assert.Equal("number: 42", Show(Cell("r1")));
-        Assert.Equal("text: a great many", Show(Cell("r2")));
+        Assert.Equal("number: 42", Show(table.OnDisk().Cell("r1", id)));
+        Assert.Equal("text: a great many", Show(table.OnDisk().Cell("r2", id)));
         Assert.Contains("a great many", await File.ReadAllTextAsync(table.Path, TestContext.Current.CancellationToken), StringComparison.Ordinal);
 
         // Act: back to text.
         await table.Edit(new TableGesture("setColumnType", ColumnId: id, Settings: new Dictionary<string, string> { ["type"] = "text" }));
 
         // Assert: both are text again, and neither was lost on the way.
-        Assert.Equal("text: 42", Show(Cell("r1")));
-        Assert.Equal("text: a great many", Show(Cell("r2")));
-        return;
-
-        KnowledgeCell Cell(string rowId) => table.OnDisk().Rows.Single(row => row.Id == rowId).Cells.Single(cell => cell.PropertyId == id);
+        Assert.Equal("text: 42", Show(table.OnDisk().Cell("r1", id)));
+        Assert.Equal("text: a great many", Show(table.OnDisk().Cell("r2", id)));
     }
 
     [Theory]
@@ -238,19 +236,16 @@ public sealed class KnowledgeTypeChangeTests : IDisposable
         await table.Edit(new TableGesture("setColumnType", ColumnId: "p4", Settings: new Dictionary<string, string> { ["type"] = "text" }));
 
         // Assert.
-        Assert.Equal("text: Port, Capital", Show(Cell("r1", "p4")));
+        Assert.Equal("text: Port, Capital", Show(table.OnDisk().Cell("r1", "p4")));
 
         // Act: a number becomes a checkbox, which keeps it; ticking the box then replaces it.
         await table.Edit(new TableGesture("setColumnType", ColumnId: "p3", Settings: new Dictionary<string, string> { ["type"] = "checkbox" }));
-        Assert.Equal("number: 931298", Show(Cell("r1", "p3")));
+        Assert.Equal("number: 931298", Show(table.OnDisk().Cell("r1", "p3")));
         await table.Edit(new TableGesture("setCell", RowId: "r1", ColumnId: "p3", Values: ["true"]));
 
         // Assert: one value, the new one.
-        Assert.Equal("checked: true", Show(Cell("r1", "p3")));
+        Assert.Equal("checked: true", Show(table.OnDisk().Cell("r1", "p3")));
         Assert.DoesNotContain("931298", await File.ReadAllTextAsync(table.Path, TestContext.Current.CancellationToken), StringComparison.Ordinal);
-        return;
-
-        KnowledgeCell Cell(string rowId, string propertyId) => table.OnDisk().Rows.Single(row => row.Id == rowId).Cells.Single(cell => cell.PropertyId == propertyId);
     }
 
     [Fact]

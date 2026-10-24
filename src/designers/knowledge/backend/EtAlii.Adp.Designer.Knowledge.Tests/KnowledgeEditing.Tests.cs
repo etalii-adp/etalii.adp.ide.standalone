@@ -33,8 +33,7 @@ public sealed class KnowledgeEditingTests : IDisposable
     /// <summary>The example, left in its plain view: every row, in the file's order. A test that is about a view names the view.</summary>
     private EditingTable Open(string extension) => new(KnowledgeFiles.CopyPlain("cities" + extension, _root));
 
-    private static IReadOnlyList<string> Cell(KnowledgeTable table, string rowId, string propertyId) =>
-        table.Rows.Single(row => row.Id == rowId).Cells.FirstOrDefault(cell => cell.PropertyId == propertyId)?.Values ?? [];
+    private static IReadOnlyList<string> Cell(KnowledgeTable table, string rowId, string propertyId) => table.ValuesOf(rowId, propertyId) ?? [];
 
     private static TableGesture SetCell(string rowId, string columnId, params string[] values) => new("setCell", RowId: rowId, ColumnId: columnId, Values: values);
 
@@ -457,18 +456,15 @@ public sealed class KnowledgeEditingTests : IDisposable
         await table.Edit(new TableGesture("moveSort", ColumnId: "p1", ViewId: "v1", Index: 0));
 
         // Assert.
-        Assert.Equal([new KnowledgeSort("p1", Descending: false), new KnowledgeSort("p3", Descending: false)], View().Sorts);
+        Assert.Equal([new KnowledgeSort("p1", Descending: false), new KnowledgeSort("p3", Descending: false)], table.OnDisk().View("v1").Sorts);
 
         // Act.
         await table.Edit(new TableGesture("removeSort", ColumnId: "p3", ViewId: "v1"));
         await table.Edit(new TableGesture("removeSort", ColumnId: "p1", ViewId: "v1"));
 
         // Assert: none left, and the file still reads without a word.
-        Assert.Empty(View().Sorts);
+        Assert.Empty(table.OnDisk().View("v1").Sorts);
         Assert.Empty(KnowledgeDocumentStore.Read(table.Path).Body!.Model.Findings);
-        return;
-
-        KnowledgeView View() => table.OnDisk().Views.Single(view => view.Id == "v1");
     }
 
     [Theory]
@@ -488,7 +484,7 @@ public sealed class KnowledgeEditingTests : IDisposable
         await table.Edit(new TableGesture("setFilterMatch", ViewId: "v1", Settings: Settings(("match", "any"))));
 
         // Assert.
-        var filter = View().Filter;
+        var filter = table.OnDisk().View("v1").Filter;
         Assert.True(filter.Any);
         Assert.Equal(new KnowledgeCondition("p2", "is", "o1"), filter.Items[0]);
         Assert.Equal(new KnowledgeCondition("p3", "at-least", "500000"), filter.Items[1]);
@@ -501,8 +497,8 @@ public sealed class KnowledgeEditingTests : IDisposable
 
         // Assert.
         // It is the last item, after the group, in every format.
-        Assert.Equal(new KnowledgeCondition("p6", "is-checked", ""), View().Filter.Items[3]);
-        Assert.IsType<KnowledgeFilterGroup>(View().Filter.Items[2]);
+        Assert.Equal(new KnowledgeCondition("p6", "is-checked", ""), table.OnDisk().View("v1").Filter.Items[3]);
+        Assert.IsType<KnowledgeFilterGroup>(table.OnDisk().View("v1").Filter.Items[2]);
 
         // Act: taken apart from the end.
         await table.Edit(new TableGesture("removeFilter", ViewId: "v1", TargetId: "3"));
@@ -511,11 +507,8 @@ public sealed class KnowledgeEditingTests : IDisposable
         await table.Edit(new TableGesture("removeFilter", ViewId: "v1", TargetId: "0"));
 
         // Assert.
-        Assert.Empty(View().Filter.Items);
+        Assert.Empty(table.OnDisk().View("v1").Filter.Items);
         Assert.Empty(KnowledgeDocumentStore.Read(table.Path).Body!.Model.Findings);
-        return;
-
-        KnowledgeView View() => table.OnDisk().Views.Single(view => view.Id == "v1");
     }
 
     [Fact]
@@ -546,16 +539,16 @@ public sealed class KnowledgeEditingTests : IDisposable
         await table.Edit(new TableGesture("setHideEmptyGroups", ViewId: "v1", Settings: Settings(("hide", "true"))));
 
         // Assert.
-        Assert.Equal(["o1", "r1"], View().Collapsed);
-        Assert.True(View().HideEmptyGroups);
+        Assert.Equal(["o1", "r1"], table.OnDisk().View("v1").Collapsed);
+        Assert.True(table.OnDisk().View("v1").HideEmptyGroups);
 
         // Act: unfolded, and then grouped by something else - which forgets the old grouping's groups.
         await table.Edit(new TableGesture("toggleGroup", ViewId: "v1", TargetId: "o1", Settings: Settings(("collapsed", "false"))));
         await table.Edit(new TableGesture("groupBy", ColumnId: "p6", ViewId: "v1"));
 
         // Assert.
-        Assert.Equal("p6", View().GroupBy);
-        Assert.Empty(View().Collapsed);
+        Assert.Equal("p6", table.OnDisk().View("v1").GroupBy);
+        Assert.Empty(table.OnDisk().View("v1").Collapsed);
 
         // Act.
         (_, string refused) = table.Begin(new TableGesture("groupBy", ColumnId: "p3", ViewId: "v1"));
@@ -563,11 +556,8 @@ public sealed class KnowledgeEditingTests : IDisposable
 
         // Assert.
         Assert.Equal("A view is grouped by a selection, a checkbox or a relation.", refused);
-        Assert.Equal("", View().GroupBy);
+        Assert.Equal("", table.OnDisk().View("v1").GroupBy);
         Assert.Empty(KnowledgeDocumentStore.Read(table.Path).Body!.Model.Findings);
-        return;
-
-        KnowledgeView View() => table.OnDisk().Views.Single(view => view.Id == "v1");
     }
 
     // ---- shown at once, written behind ------------------------------------------------------------------
@@ -688,8 +678,8 @@ public sealed class KnowledgeEditingTests : IDisposable
         await table.Edit(new TableGesture("setCells", ColumnId: "p2", Values: ["o2"], Settings: Settings(("rows", "r1,r2"))));
 
         // Assert.
-        Assert.Equal(["o2"], Held("r1", "p2"));
-        Assert.Equal(["o2"], Held("r2", "p2"));
+        Assert.Equal(["o2"], table.OnDisk().ValuesOf("r1", "p2"));
+        Assert.Equal(["o2"], table.OnDisk().ValuesOf("r2", "p2"));
 
         // Act: one undo.
         Assert.True((await table.History.UndoAsync(TestContext.Current.CancellationToken)).IsSuccess);
@@ -703,9 +693,6 @@ public sealed class KnowledgeEditingTests : IDisposable
         Assert.Equal(KnowledgeNumberType.Expected, word);
         Assert.Equal(KnowledgeCellEdits.OptionFirst, made);
         Assert.Equal(before, table.Bytes());
-        return;
-
-        IReadOnlyList<string>? Held(string rowId, string propertyId) => table.OnDisk().Rows.Single(row => row.Id == rowId).Cells.FirstOrDefault(cell => cell.PropertyId == propertyId)?.Values;
     }
 
     /// <summary>

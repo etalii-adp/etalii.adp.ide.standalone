@@ -16,7 +16,7 @@
     <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.History\EtAlii.Adp.History.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Diagram.HelmChart\EtAlii.Adp.Diagram.HelmChart.csproj" />
     <!-- The module's flows over the real host (code-structure T303). -->
-    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.TestSupport.Host\EtAlii.Adp.TestSupport.Host.csproj" />
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Backend.Tests.Support\EtAlii.Adp.Backend.Tests.Support.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -28,6 +28,19 @@
       a no-op rather than an error.
     -->
     <Content Include="Fixtures\**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Test support of the areas these tests use; see src/Directory.Build.targets. -->
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Diagram.Tests.Support\EtAlii.Adp.Diagram.Tests.Support.csproj" />
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Files.Tests.Support\EtAlii.Adp.Files.Tests.Support.csproj" />
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Specification.Disl.Tests.Support\EtAlii.Adp.Specification.Disl.Tests.Support.csproj" />
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Specification.Fbl.Tests.Support\EtAlii.Adp.Specification.Fbl.Tests.Support.csproj" />
+    <Using Include="EtAlii.Adp.Backend.Tests.Support" />
+    <Using Include="EtAlii.Adp.Diagram.Tests.Support" />
+    <Using Include="EtAlii.Adp.Files.Tests.Support" />
+    <Using Include="EtAlii.Adp.Specification.Disl.Tests.Support" />
+    <Using Include="EtAlii.Adp.Specification.Fbl.Tests.Support" />
   </ItemGroup>
 
 </Project>

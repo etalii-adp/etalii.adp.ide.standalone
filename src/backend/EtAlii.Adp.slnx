@@ -57,8 +57,14 @@
   <Project Path="EtAlii.Adp.Problems/EtAlii.Adp.Problems.csproj" />
   <Project Path="EtAlii.Adp.History/EtAlii.Adp.History.csproj" />
   <Project Path="EtAlii.Adp.History.Tests/EtAlii.Adp.History.Tests.csproj" />
-  <Project Path="EtAlii.Adp.TestSupport/EtAlii.Adp.TestSupport.csproj" />
-  <Project Path="EtAlii.Adp.TestSupport.Host/EtAlii.Adp.TestSupport.Host.csproj" />
+  <Project Path="EtAlii.Adp.Tests.Support/EtAlii.Adp.Tests.Support.csproj" />
+  <Project Path="EtAlii.Adp.Backend.Tests.Support/EtAlii.Adp.Backend.Tests.Support.csproj" />
+  <Project Path="EtAlii.Adp.Diagram.Tests.Support/EtAlii.Adp.Diagram.Tests.Support.csproj" />
+  <Project Path="EtAlii.Adp.Documents.Tests.Support/EtAlii.Adp.Documents.Tests.Support.csproj" />
+  <Project Path="EtAlii.Adp.Files.Tests.Support/EtAlii.Adp.Files.Tests.Support.csproj" />
+  <Project Path="EtAlii.Adp.History.Tests.Support/EtAlii.Adp.History.Tests.Support.csproj" />
+  <Project Path="EtAlii.Adp.Specification.Disl.Tests.Support/EtAlii.Adp.Specification.Disl.Tests.Support.csproj" />
+  <Project Path="EtAlii.Adp.Specification.Fbl.Tests.Support/EtAlii.Adp.Specification.Fbl.Tests.Support.csproj" />
   <Project Path="EtAlii.Adp.Projects.Tests/EtAlii.Adp.Projects.Tests.csproj" />
   <Project Path="EtAlii.Adp.Sessions.Tests/EtAlii.Adp.Sessions.Tests.csproj" />
   <Project Path="EtAlii.Adp.Repository.Tests/EtAlii.Adp.Repository.Tests.csproj" />

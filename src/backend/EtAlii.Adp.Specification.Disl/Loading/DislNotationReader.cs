@@ -174,12 +174,12 @@ internal static class DislNotationReader
         var computed = legend.TryGetProperty("computed", out var declared) && declared.ValueKind == JsonValueKind.Object && declared.TryGetProperty("key", out var key)
             ? new DislLegendComputed(
                 DislFieldReader.Expression(specification, key, JsonPointer.Append(computedAt, "key")),
-                declared.TryGetProperty("order", out var order) ? DislFieldReader.Expression(specification, order, JsonPointer.Append(computedAt, "order")) : null,
-                declared.TryGetProperty("label", out var label) ? DislFieldReader.Message(specification, label, JsonPointer.Append(computedAt, "label")) : null)
+                DislFieldReader.OptionalExpression(specification, declared, computedAt, "order"),
+                DislFieldReader.OptionalMessage(specification, declared, computedAt, "label"))
             : null;
         return new DislCanvasLegend(
             !(legend.TryGetProperty("visible", out var visible) && visible.ValueKind == JsonValueKind.False),
-            legend.TryGetProperty("title", out var title) ? DislFieldReader.Message(specification, title, JsonPointer.Append(pointer, "title")) : null,
+            DislFieldReader.OptionalMessage(specification, legend, pointer, "title"),
             JsonProperties.String(legend, "from") == "drawn",
             JsonProperties.StringOrStrings(legend, "entries"),
             computed,

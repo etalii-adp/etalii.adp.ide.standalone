@@ -7,8 +7,8 @@
 
   <!-- Attached to every project whose name ends in .Tests: an edge of each of them. -->
   <ItemGroup Condition="'$(MSBuildProjectName.EndsWith(`.Tests`))' == 'true'">
-    <ProjectReference Include="$(MSBuildThisFileDirectory)backend\EtAlii.Adp.TestSupport\EtAlii.Adp.TestSupport.csproj" />
-    <Using Include="EtAlii.Adp.TestSupport" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)backend\EtAlii.Adp.Tests.Support\EtAlii.Adp.Tests.Support.csproj" />
+    <Using Include="EtAlii.Adp.Tests.Support" />
   </ItemGroup>
 
   <!-- A target's items are evaluated only when it runs, so they are not edges either. -->

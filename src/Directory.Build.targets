@@ -32,17 +32,20 @@
   </ItemGroup>
 
   <!--
-    Everything that does not install itself per assembly is shared by reference instead:
-    EtAlii.Adp.TestSupport (TestFolder, TestHistory, the test catalog, DrawnConnections and the
-    helpers spec 025 adds) is attached to every test project here, module test projects included,
-    so a helper is written once and reached from anywhere rather than copied into the module that
-    first needs it. Its namespace is a global using of every test project, so a test names
-    TestFolder or TestHistory without a using of its own. The project is not named *.Tests, so it
-    does not reference itself.
+    Everything that does not install itself per assembly is shared by reference instead, from one
+    *.Tests.Support project per area beside the project it supports: EtAlii.Adp.Tests.Support
+    (TestFolder, RepositoryPaths, Eventually, FakeClocks, EmbeddedResources) for every test
+    project, and Documents, Files, History, Diagram, Specification.Disl, Specification.Fbl and
+    Backend (the flow host) for the areas. Only EtAlii.Adp.Tests.Support is attached here, to every
+    test project, module test projects included, with its namespace as a global using. A test
+    project that uses an area's support references that project itself and makes its namespace a
+    global using beside the reference, so a module's unit tests reach only what they use and none
+    of them pulls in the host. No support project is named *.Tests, so none compiles LogCapture in
+    or references itself.
   -->
   <ItemGroup Condition="'$(MSBuildProjectName.EndsWith(`.Tests`))' == 'true'">
-    <ProjectReference Include="$(MSBuildThisFileDirectory)backend\EtAlii.Adp.TestSupport\EtAlii.Adp.TestSupport.csproj" />
-    <Using Include="EtAlii.Adp.TestSupport" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)backend\EtAlii.Adp.Tests.Support\EtAlii.Adp.Tests.Support.csproj" />
+    <Using Include="EtAlii.Adp.Tests.Support" />
   </ItemGroup>
 
   <!--

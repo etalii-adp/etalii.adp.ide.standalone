@@ -57,19 +57,16 @@ internal static class DislConstraintReader
             Enforcement = JsonProperties.String(rule, "enforcement"),
             Timing = JsonProperties.StringOrStrings(rule, "timing"),
             Scope = JsonProperties.StringOrStrings(rule, "scope"),
-            ForEach = Expression("forEach"),
-            When = Expression("when"),
-            Rule = Expression("rule"),
+            ForEach = DislFieldReader.OptionalExpression(specification, rule, pointer, "forEach"),
+            When = DislFieldReader.OptionalExpression(specification, rule, pointer, "when"),
+            Rule = DislFieldReader.OptionalExpression(specification, rule, pointer, "rule"),
             SeverityText = severity.ValueKind == JsonValueKind.String ? severity.GetString() : null,
             Severity = severity.ValueKind is JsonValueKind.Undefined or JsonValueKind.String ? null : DislFieldReader.Expression(specification, severity, JsonPointer.Append(pointer, "severity")),
-            Message = rule.TryGetProperty("message", out var message) ? DislFieldReader.Message(specification, message, JsonPointer.Append(pointer, "message")) : null,
-            Location = Expression("location"),
-            Subject = Expression("subject"),
-            Target = rule.TryGetProperty("target", out var target) && !(target.ValueKind == JsonValueKind.String && target.GetString() == "self") ? Expression("target") : null,
+            Message = DislFieldReader.OptionalMessage(specification, rule, pointer, "message"),
+            Location = DislFieldReader.OptionalExpression(specification, rule, pointer, "location"),
+            Subject = DislFieldReader.OptionalExpression(specification, rule, pointer, "subject"),
+            Target = rule.TryGetProperty("target", out var target) && !(target.ValueKind == JsonValueKind.String && target.GetString() == "self") ? DislFieldReader.OptionalExpression(specification, rule, pointer, "target") : null,
         };
-
-        DislExpressionField? Expression(string name) =>
-            rule.TryGetProperty(name, out var json) ? DislFieldReader.Expression(specification, json, JsonPointer.Append(pointer, name)) : null;
     }
 
     private static DislBuiltIn BuiltIn(DislSpecification specification, JsonElement setting, string pointer)
@@ -81,7 +78,7 @@ internal static class DislConstraintReader
             JsonProperties.String(setting, "oncePerGroup"),
             code.ValueKind == JsonValueKind.String ? code.GetString() : null,
             code.ValueKind == JsonValueKind.Object ? DislFieldReader.Expression(specification, code, JsonPointer.Append(pointer, "code")) : null,
-            setting.TryGetProperty("message", out var message) ? DislFieldReader.Message(specification, message, JsonPointer.Append(pointer, "message")) : null,
-            setting.TryGetProperty("refusal", out var refusal) ? DislFieldReader.Message(specification, refusal, JsonPointer.Append(pointer, "refusal")) : null);
+            DislFieldReader.OptionalMessage(specification, setting, pointer, "message"),
+            DislFieldReader.OptionalMessage(specification, setting, pointer, "refusal"));
     }
 }

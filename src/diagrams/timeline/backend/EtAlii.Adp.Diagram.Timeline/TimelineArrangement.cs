@@ -66,16 +66,12 @@ public static class TimelineArrangement
             .ToList();
         return RowPacking.Pack([.. elements.Select(ItemOf)], links, Gap, apart);
 
-        double End(TimelineElement element) => element.End is { IsReadable: true } end
-            ? Math.Max(Begin(element), TimelineScale.ToSeconds(end.Value!.Value))
-            : Begin(element);
-        double Begin(TimelineElement element) => TimelineScale.ToSeconds(element.Begin.Value!.Value);
         bool IsLaterThan(string id, string moment) => byId.TryGetValue(id, out var element) && Begin(element) > Begin(byId[moment]);
-        bool IsMoment(string id) => byId.TryGetValue(id, out var element) && element.End is not { IsReadable: true };
+        bool IsMoment(string id) => byId.TryGetValue(id, out var element) && !element.HasReadableEnd;
         RowItem ItemOf(TimelineElement element)
         {
             var left = (Begin(element) - first) * unitsPerSecond;
-            if (element.End is { IsReadable: true })
+            if (element.HasReadableEnd)
             {
                 return new RowItem(element.Id, left, Math.Max(left + 2, (End(element) - first) * unitsPerSecond));
             }
@@ -84,4 +80,11 @@ public static class TimelineArrangement
             return new RowItem(element.Id, left - MomentRadius, left + MomentRadius + LabelGap + TextMetric.WidthOf(label, LabelFontSize));
         }
     }
+    /// <summary>Where an element starts, in seconds; only elements with a readable start are arranged.</summary>
+    private static double Begin(TimelineElement element) => TimelineScale.ToSeconds(element.Begin.Value!.Value);
+
+    /// <summary>Where an element finishes, in seconds: its start for a moment, and never before its start.</summary>
+    private static double End(TimelineElement element) => element.End is { IsReadable: true } end
+        ? Math.Max(Begin(element), TimelineScale.ToSeconds(end.Value!.Value))
+        : Begin(element);
 }

@@ -90,19 +90,7 @@ public class PipelineToolboxTests : IDisposable
         // Assert.
         // The client renders a palette it does not understand, so an entry with no label, icon or
         // description is one the user cannot tell apart from the others.
-        Assert.All(_toolbox.Items, AssertItem);
-        return;
-
-        static void AssertItem(ToolboxItemDefinition item)
-        {
-            ArgumentNullException.ThrowIfNull(item);
-
-            Assert.NotEmpty(item.Id);
-            Assert.NotEmpty(item.Label);
-            Assert.NotEmpty(item.Icon);
-            Assert.NotEmpty(item.Description);
-            Assert.NotEmpty(item.DropActionId);
-        }
+        Assert.All(_toolbox.Items, ToolboxItems.AssertComplete);
     }
 
     [Fact]

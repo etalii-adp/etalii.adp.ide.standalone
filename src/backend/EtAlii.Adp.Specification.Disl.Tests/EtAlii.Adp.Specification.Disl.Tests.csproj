@@ -41,4 +41,10 @@
     <EmbeddedResource Include="Definitions\relation-flag-conflict.provenance.json" LogicalName="relation-flag-conflict.provenance.json" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Test support of the areas these tests use; see src/Directory.Build.targets. -->
+    <ProjectReference Include="..\EtAlii.Adp.Diagram.Tests.Support\EtAlii.Adp.Diagram.Tests.Support.csproj" />
+    <Using Include="EtAlii.Adp.Diagram.Tests.Support" />
+  </ItemGroup>
+
 </Project>
