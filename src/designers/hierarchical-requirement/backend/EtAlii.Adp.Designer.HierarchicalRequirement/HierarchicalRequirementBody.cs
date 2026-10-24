@@ -105,7 +105,7 @@ internal sealed partial class HierarchicalRequirementBody
             .. (Block("widths") ?? []).Select(entry => (
                     Level: int.TryParse(entry.Key, NumberStyles.None, CultureInfo.InvariantCulture, out var level) ? level : 0,
                     Width: int.TryParse(entry.Value, NumberStyles.None, CultureInfo.InvariantCulture, out var width) ? width : 0))
-                .Where(column => column.Level >= 1 && column.Width is >= ColumnOperations.MinimumWidth and <= ColumnOperations.MaximumWidth)
+                .Where(column => column is { Level: >= 1, Width: >= ColumnOperations.MinimumWidth and <= ColumnOperations.MaximumWidth })
                 .Select(column => new Column(column.Level, column.Width)),
         ];
 
