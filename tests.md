@@ -4218,6 +4218,7 @@ lays out no text, so a fill, a centred Comment and a drag that writes a size are
   8. Drag the toolbox's *Node* into the second column of `brightwater-coffee.skv`. Read the file, then press *Undo*.
   9. Run *Thicker bands* from the canvas's context menu until it is no longer offered, then *Thinner bands* the same way, reading `thickness:` each time.
   10. Open `arrange.skv`, run *Arrange diagram*, read the file and the positions, then press *Undo*.
+  11. Copy `not-yaml.skv` and `duplicate-key.skv` from the module's `Fixtures/` into the folder, each with an `.adp` naming it. Open each and right-click the empty canvas, then read the file.
 - **Expected**:
   1. The bands at a bar stack edge to edge, from the bar's top to its bottom, with no gap and no overlap.
   2. A band is as thick as its value all the way along, however steep, translucent at 0.42 over a hidden centre line.
@@ -4229,6 +4230,7 @@ lays out no text, so a fill, a centred Comment and a drag that writes a size are
   8. The drop writes a node with `column: 2`.
   9. The thickness climbs to 10 and falls to 0.1, after which the entry is no longer offered.
   10. *Arrange diagram* uncrosses the bands and *Undo* restores the file and the positions.
+  11. Neither body is drawn, no context menu opens, and neither file changes (finding B8, a body that is not YAML is read-only).
 - **Result 2026-10-24, agent-8-sankey-disl-fbl, `features/sankey-disl-fbl-8` at `3c018e25b` (the definition bundled from etalii.adp `0155d71`), a developer build (backend on 5585 with `Client__DevServerUrl` and `--urls`, Vite on 5584 with `--port`, so no file was changed for the ports), headless Chromium 1194 driven by Playwright at 1600 by 1000 with real mouse and keyboard input and `colorScheme` set per theme, in the developer session: all ten steps pass in both themes.** The values below come from the page's DOM and computed styles and from the files on disk. Screenshots are `<theme>-<step>.png` in the session's scratchpad.
   - Step 1: five bar sides in `brightwater-coffee.skv` meet two bands or more. On each, the bands' edges ran from the bar's top to its bottom, and the largest gap between neighbours was 0.0002 units, for example Revenue's four inflows over its 560.
   - Step 2: all 13 bands, sloping from -0.239 to 0.364, varied by 0 in height across the five points; for example Cafés to Revenue measured 294.4 at every point. Each had `fill-opacity` 0.42 and its centre line `opacity` 0.
@@ -4243,6 +4245,14 @@ lays out no text, so a fill, a centred Comment and a drag that writes a size are
   - Step 8: the file gained a node `name: New node`, `column: 2`, with a fresh id, and *Undo* made the file byte-identical.
   - Step 9: *Thicker bands* wrote 1.25, 1.56, 1.95, 2.44, 3.05, 3.81, 4.76, 5.95, 7.44, 9.3 and 10, after which the entry was disabled. *Thinner bands* wrote 8, 6.4, and on down to 0.11 and 0.1, after which it was disabled too.
   - Step 10: *Arrange diagram* moved `X` after `Y` in the file, and 2 of the 4 nodes were drawn elsewhere. *Undo* made the file byte-identical and every node went back to where it was.
+- **Result 2026-10-24, agent-8-sankey-disl-fbl, `features/sankey-disl-fbl-12` from `develop` at `1d4b84081`, after every edit was written through the binding (task 11), with the same build, ports, browser and input as above: all eleven steps pass in both themes.** Steps 1 to 4, 7 and 9 read the same values as the result above, to the last digit:
+  - Step 1: the five bar sides again had a largest gap of 0.0002 units.
+  - Step 2: the 13 bands, sloping from -0.239 to 0.364, varied by 0 in height.
+  - Steps 3 and 4: the same sizes, weights and colours.
+  - Step 7: `value` from 19 to 20, 21 and 22, then back to 21 and 20.
+  - Step 9: the same ladder up to 10 and down to 0.1.
+  - The splices wrote what the line writer wrote on these documents, because none holds a comment, a quoted value or an unusual indentation where the gesture lands. Step 5 moved Cafés' four lines after Packaged coffee's. Step 6 added `- from: brown`, `to: hex`, `value: 1` at the end of `flows`. Step 8 added a node `name: New node`, `column: 2` after the last node. Step 10 moved `X`'s three lines after `Y`'s. After each, *Undo* made the file byte-identical.
+  - Step 11: on `not-yaml.skv` and `duplicate-key.skv` the canvas drew no element, a right-click opened no menu where `palette.skv`'s offered *Add node here*, *Arrange diagram*, *Thicker bands* and *Thinner bands*, and both files stayed byte-identical. The Errors and Warnings panel listed each body's one `sankey.unreadable` warning. The toolbox still showed *Node*. Its drop was not tried here; the parity transcript records that it is refused, like every edit of such a body.
 - **Observations, not failures of this task:**
   - In headless Chromium on Linux the right button's press opens a context menu as the drag starts, because Linux sends `contextmenu` on the press where Windows sends it on the release. The drag still completed and wrote its flow, and the menu was dismissed with Escape. This is the platform, not the definition: the hand-written definition declared the same `connectOnRightDrag` and `backgroundMenu`.
   - The examples, and `palette.skv`, are already arranged: *Arrange diagram* answers *This diagram is already arranged.* on them, so step 10 needs a document whose bands cross.

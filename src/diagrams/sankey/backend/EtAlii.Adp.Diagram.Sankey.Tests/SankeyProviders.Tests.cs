@@ -227,8 +227,14 @@ public sealed class SankeyProvidersTests : IDisposable
     [Fact]
     public void ThePalette_OffersANode_AddedByTheAddAction()
     {
+        // Arrange.
+        var services = new ServiceCollection();
+        services.AddSankey();
+        using var provider = services.BuildServiceProvider();
+
         // Act.
-        var item = Assert.Single(new SankeyToolboxProvider().Items);
+        var toolbox = Assert.Single(provider.GetServices<IDiagramToolboxProvider>());
+        var item = Assert.Single(toolbox.Items);
 
         // Assert.
         Assert.Equal(SankeyContextActionProvider.AddActionId, item.DropActionId);
