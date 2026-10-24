@@ -34,14 +34,21 @@ public static class WardleyRuleSet
     public const string UrlUndefinedRuleId = "wardley.url-undefined";
 
     /// <summary>Every problem in <paramref name="map"/>, in document order where it has one.</summary>
-    public static IReadOnlyList<DiagramProblem> Validate(WardleyMap map)
+    public static IReadOnlyList<DiagramProblem> Validate(WardleyMap map) => Validate(map, []);
+
+    /// <summary>
+    /// Every problem in <paramref name="map"/>, in document order where it has one, with
+    /// <paramref name="identities"/> to locate a problem at the element it is about.
+    /// </summary>
+    public static IReadOnlyList<DiagramProblem> Validate(WardleyMap map, IReadOnlyList<WardleyIdentityEntry> identities)
     {
         ArgumentNullException.ThrowIfNull(map);
+        ArgumentNullException.ThrowIfNull(identities);
 
         var problems = new List<DiagramProblem>();
         var names = map.Components.Select(component => component.Name).ToHashSet(StringComparer.Ordinal);
 
-        DuplicateNames(map, problems);
+        DuplicateNames(map, identities, problems);
         DanglingReferences(map, names, problems);
         Coordinates(map, problems);
         Urls(map, problems);
@@ -54,12 +61,12 @@ public static class WardleyRuleSet
     /// Two components sharing a name (Requirement 14.4).
     /// </summary>
     /// <remarks>
-    /// The one rule here that reports an ELEMENT location rather than a line, and it is not an
-    /// arbitrary choice: identity is keyed by name, so two statements with one name reconcile to
-    /// <b>one</b> element. There is no single line that is "the" line - the defect is that one
-    /// element is claimed twice - so the element is what the problem points at.
+    /// Reported once, at the first holder's id (finding A7): that is the holder every link,
+    /// `evolve` and pipeline naming it attaches to (ruling 3), so it is where the ambiguity is. An
+    /// id is what an element location holds; without the map's identities the problem is
+    /// located at the first holder's line instead.
     /// </remarks>
-    private static void DuplicateNames(WardleyMap map, List<DiagramProblem> problems)
+    private static void DuplicateNames(WardleyMap map, IReadOnlyList<WardleyIdentityEntry> identities, List<DiagramProblem> problems)
     {
         foreach (var group in map.Components.GroupBy(component => component.Name, StringComparer.Ordinal))
         {
@@ -73,7 +80,9 @@ public static class WardleyRuleSet
                 DiagramProblemSeverity.Error,
                 $"'{group.Key}' is declared more than once (lines {lines}), so every link, evolve and pipeline that names it is ambiguous.",
                 DuplicateNameRuleId,
-                new DiagramProblemElementLocation(WardleyIdentityKeys.Of(group.First()))));
+                identities.FirstOrDefault(entry => entry.Kind == WardleyIdentityKind.Component && entry.Key == group.Key) is { } first
+                    ? new DiagramProblemElementLocation(first.Id)
+                    : new DiagramProblemLineLocation(group.First().Line)));
         }
     }
 

@@ -211,7 +211,7 @@ public sealed partial class WardleyTranscript() : TranscriptAdapter("wardley-map
 
         json.WriteEndArray();
 
-        var problems = await new WardleyValidator().ValidateAsync(
+        var problems = await new WardleyValidator(session.Store).ValidateAsync(
             new DiagramValidationRequest(TranscriptText.Decode(bytes), IoPath.GetFileNameWithoutExtension(session.Body), ProjectRoot.From(session.Folder), session.Body, null),
             cancellationToken);
         json.WritePropertyName("findings");
@@ -517,6 +517,14 @@ public sealed partial class WardleyTranscript() : TranscriptAdapter("wardley-map
                     await script.DragAsync(id, 0.1, 0.1);
                     await script.CommitAsync(id, WardleyContextActionProvider.RenameActionId, $"{repeated} renamed");
                     await script.CommitAsync("", WardleyContextActionProvider.AddComponentActionId, repeated);
+
+                    // A later holder by its own id: moved, linked from (ruling 4 gives it a name with
+                    // a number first) and renamed on its own line (ruling 5).
+                    await script.UndoAsync();
+                    var later = session.IdOf(WardleyIdentityKind.Component, WardleyIdentityKeys.Numbered(repeated, 2))!;
+                    await script.DragAsync(later, 0.2, 0.8);
+                    await script.LinkAsync(later, session.IdOf(WardleyIdentityKind.Component, name == "same-key-twice.owm" ? "User" : "Power"), WardleyContextActionProvider.LinkActionId);
+                    await script.CommitAsync(session.IdOf(WardleyIdentityKind.Component, WardleyIdentityKeys.Numbered(repeated, 2)) ?? later, WardleyContextActionProvider.RenameActionId, $"{repeated} on its own");
                     break;
                 }
         }
@@ -549,7 +557,7 @@ public sealed partial class WardleyTranscript() : TranscriptAdapter("wardley-map
 
         public string Body { get; }
 
-        private IWardleyDocumentStore Store { get; }
+        public IWardleyDocumentStore Store { get; }
 
         public WardleyElementMapper Mapper { get; }
 
