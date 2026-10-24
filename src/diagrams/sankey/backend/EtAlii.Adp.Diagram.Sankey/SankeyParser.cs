@@ -24,6 +24,10 @@ namespace EtAlii.Adp.Diagram.Sankey;
 public static class SankeyParser
 {
     internal const string HeaderKey = "sankey";
+
+    /// <summary>How the sentence for a text that is not YAML begins; the reason follows it.</summary>
+    internal const string NotYaml = "The document could not be read as YAML: ";
+
     private const string FormatKey = "format";
     private const string FlowColorKey = "flow-color";
     internal const string ThicknessKey = "thickness";
@@ -71,7 +75,7 @@ public static class SankeyParser
         catch (YamlException exception)
         {
             var line = Math.Max(0, (int)exception.Start.Line - 1);
-            var problem = new ParseProblem(line, $"The document could not be read as YAML: {exception.Message}");
+            var problem = new ParseProblem(line, NotYaml + exception.Message);
             return new ParseOutcome<SankeyModel>(SankeyModel.Empty with { Problems = [problem] }, [problem], problem.Message);
         }
 

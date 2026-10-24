@@ -49,7 +49,7 @@ internal static class SankeyFunctions
     }
 
     /// <summary>The id <paramref name="node"/> is written with, the binding's <c>storedId</c>: empty for a node without one.</summary>
-    private static string WrittenId(DislElement node)
+    public static string WrittenId(DislElement node)
     {
         ArgumentNullException.ThrowIfNull(node);
         return node.HostAttributes.TryGetValue("storedId", out var stored) && stored is string id ? id : "";
