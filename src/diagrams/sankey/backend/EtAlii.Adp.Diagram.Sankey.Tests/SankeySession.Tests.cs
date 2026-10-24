@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
@@ -113,9 +112,9 @@ public sealed class SankeySessionTests : IDisposable
     public void APlace_IsBeforeTheFirstLowerNode_OrAfterTheLast(double centreY, string anchor, bool after)
     {
         // Arrange: a small column of three.
-        var layout = SankeyLayout.Of(SankeyParser.Parse(LineDocument.Parse(
+        var layout = SankeyLayout.Of(SankeyReader.Parse(
             "sankey: 1\nnodes:\n  - id: a\n  - id: m\n  - id: b\n  - id: z\n    column: 2\nflows:\n" +
-            "  - from: a\n    to: z\n    value: 1\n  - from: m\n    to: z\n    value: 1\n  - from: b\n    to: z\n    value: 1\n")));
+            "  - from: a\n    to: z\n    value: 1\n  - from: m\n    to: z\n    value: 1\n  - from: b\n    to: z\n    value: 1\n"));
 
         // Act.
         var place = SankeySession.PlaceOf(layout, "m", centreY);
@@ -196,7 +195,7 @@ public sealed class SankeySessionTests : IDisposable
         Assert.Equal("", refusal);
     }
 
-    private SankeyModel Parse() => SankeyParser.Parse(LineDocument.Parse(File.ReadAllText(_folder.Body)));
+    private SankeyModel Parse() => SankeyReader.Parse(File.ReadAllText(_folder.Body));
 
     private static SankeyNodePayload Node(IReadOnlyList<DiagramElement> delivered, string id) =>
         SankeyNodePayload.Parser.ParseFrom(delivered.Single(element => element.Id == id).Payload.ToArray());

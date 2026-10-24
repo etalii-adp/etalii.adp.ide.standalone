@@ -1,5 +1,4 @@
 using EtAlii.Adp.Diagram.Modules;
-using EtAlii.Adp.Documents;
 
 namespace EtAlii.Adp.Diagram.Sankey;
 
@@ -32,7 +31,7 @@ public sealed class SankeyValidator : IDiagramValidator
 
         IReadOnlyList<DiagramProblem> problems =
         [
-            .. SankeyDefinition.Findings(SankeyParser.Outcome(LineDocument.Parse(request.Document))).Select(finding => new DiagramProblem(
+            .. SankeyDefinition.Findings(SankeyReader.Outcome(request.Document)).Select(finding => new DiagramProblem(
                 DislDiagramDefinition.SeverityOf(finding),
                 finding.Message,
                 finding.Code,

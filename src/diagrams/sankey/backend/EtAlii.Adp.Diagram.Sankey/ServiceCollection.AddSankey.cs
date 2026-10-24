@@ -17,7 +17,7 @@ public static class ServiceCollectionAddSankeyExtension
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        services.AddEmptyDocument(Diagram.Sankey.Origin, SankeyParser.EmptyDocument);
+        services.AddEmptyDocument(Diagram.Sankey.Origin, SankeyBody.Template);
         services.AddSingleton<SankeyElementMapper>();
 
         // One document per path, shared by every connection viewing it; TryAdd so a test keeps its own.

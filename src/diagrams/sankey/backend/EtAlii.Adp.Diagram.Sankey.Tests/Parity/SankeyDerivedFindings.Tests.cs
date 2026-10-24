@@ -49,7 +49,7 @@ public class SankeyDerivedFindingsTests
         }
 
         var reached = texts.Concat(Reached().Select(row => row.Data.Item2))
-            .SelectMany(text => HandWrittenSankey.Breaches(SankeyParser.Parse(LineDocument.Parse(text))))
+            .SelectMany(text => HandWrittenSankey.Breaches(SankeyReader.Parse(text)))
             .Select(breach => breach.RuleId)
             .ToHashSet(StringComparer.Ordinal);
 
@@ -59,10 +59,10 @@ public class SankeyDerivedFindingsTests
     private static void AssertSame(string name, string text)
     {
         var body = LineDocument.Parse(text);
-        var expected = HandWrittenSankey.Breaches(SankeyParser.Parse(body))
+        var expected = HandWrittenSankey.Breaches(SankeyReader.Parse(body.Text))
             .Select(breach => $"line {breach.Line + 1} | {breach.RuleId} | {(breach.IsWarning ? "warning" : "error")} | {breach.Message}")
             .ToList();
-        var actual = SankeyDefinition.Findings(SankeyParser.Outcome(body))
+        var actual = SankeyDefinition.Findings(SankeyReader.Outcome(body.Text))
             .Select(finding => $"line {finding.Line} | {finding.Code} | {finding.Severity} | {finding.Message}")
             .ToList();
         Assert.True(

@@ -20,8 +20,12 @@ namespace EtAlii.Adp.Diagram.Sankey;
 /// </remarks>
 public static class SankeyWriter
 {
-    private const string NodesSection = SankeyParser.NodesKey + ":";
-    private const string FlowsSection = SankeyParser.FlowsKey + ":";
+    /// <summary>The key of the document-wide thickness, which <see cref="SetRootKey"/> writes.</summary>
+    internal const string ThicknessKey = "thickness";
+
+    private const string HeaderSection = "sankey:";
+    private const string NodesSection = "nodes:";
+    private const string FlowsSection = "flows:";
 
     /// <summary>Writes a text key, removing it instead when <paramref name="removeWhenEmpty"/> and the value is blank.</summary>
     public static EditOutcome SetText(LineDocument document, LineRange range, string key, string value, bool removeWhenEmpty)
@@ -72,7 +76,7 @@ public static class SankeyWriter
             return EditOutcome.Applied;
         }
 
-        var header = LineSplice.FindSection(document, SankeyParser.HeaderKey + ":");
+        var header = LineSplice.FindSection(document, HeaderSection);
         document.Insert(header >= 0 ? header + 1 : 0, [$"{key}: {value}"]);
         return EditOutcome.Applied;
     }

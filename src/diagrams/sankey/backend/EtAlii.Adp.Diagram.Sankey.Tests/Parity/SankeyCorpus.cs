@@ -14,7 +14,7 @@ internal static class SankeyCorpus
     {
         var document = new SankeyTranscript().Corpus().Single(candidate => candidate.Name == name);
         var body = LineDocument.Parse(TranscriptText.Decode(await document.Read(cancellationToken)));
-        return new DocumentEntry<LineDocument, SankeyModel>(body, SankeyParser.Outcome(body));
+        return new DocumentEntry<LineDocument, SankeyModel>(body, SankeyReader.Outcome(body.Text));
     }
 
     /// <summary>The targets the transcript records: every node and flow id, the empty id, a placement, a connect gesture and an unknown id.</summary>

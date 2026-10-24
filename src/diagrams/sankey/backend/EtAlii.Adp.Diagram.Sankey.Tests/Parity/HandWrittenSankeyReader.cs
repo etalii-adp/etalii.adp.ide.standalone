@@ -3,60 +3,34 @@ using EtAlii.Adp.Documents;
 using YamlDotNet.Core;
 using YamlDotNet.RepresentationModel;
 
-namespace EtAlii.Adp.Diagram.Sankey;
+namespace EtAlii.Adp.Diagram.Sankey.Tests.Parity;
 
 /// <summary>
-/// Reads a <see cref="LineDocument"/> into a <see cref="SankeyModel"/>, recording which lines
-/// declare what.
+/// The module's reader as it was written by hand before the body was read through the binding (sankey-disl-fbl
+/// task 10), kept verbatim as the oracle <see cref="SankeyReader"/> is compared with, document for document: the
+/// nodes, the flows, the three settings, the version and every sentence with its line (Requirement 4.2).
 /// </summary>
 /// <remarks>
-/// <para>
-/// <b>YamlDotNet reads and never writes.</b> It gives a line for every node, which is what lets an
-/// entry know its own lines; every write is a splice through <see cref="LineSplice"/>, so an
-/// unchanged document comes back byte-identical rather than merely equivalent.
-/// </para>
-/// <para>
-/// <b>This parser never throws.</b> A document that is not YAML opens empty and says why; an unknown
-/// key or a number that will not read is kept, passed over and reported. A half-typed document must
-/// open and keep every byte its author wrote.
-/// </para>
+/// YamlDotNet reads the text into its representation model; nothing here is used by the product.
 /// </remarks>
-public static class SankeyParser
+internal static class HandWrittenSankeyReader
 {
-    internal const string HeaderKey = "sankey";
+    private const string HeaderKey = "sankey";
 
     /// <summary>How the sentence for a text that is not YAML begins; the reason follows it.</summary>
-    internal const string NotYaml = "The document could not be read as YAML: ";
+    private const string NotYaml = "The document could not be read as YAML: ";
 
     private const string FormatKey = "format";
     private const string FlowColorKey = "flow-color";
-    internal const string ThicknessKey = "thickness";
-    internal const string NodesKey = "nodes";
-    internal const string FlowsKey = "flows";
-
-    /// <summary>The text of a new, empty <c>.skv</c> document.</summary>
-    /// <remarks>
-    /// <para>
-    /// The header and the two sections written flow-empty - <c>nodes: []</c> and <c>flows: []</c> -
-    /// because a bare <c>nodes:</c> parses as a null rather than an empty sequence. The first added
-    /// entry opens the flow form into a block one, which <c>LineSplice.InsertionPointFor</c> does.
-    /// </para>
-    /// <para>CRLF, the repository's house style, because a new file has no style of its own to keep.</para>
-    /// </remarks>
-    internal static string EmptyDocument { get; } = string.Join(
-        "\r\n",
-        $"{HeaderKey}: {SankeyModel.CurrentVersion}",
-        $"{NodesKey}: []",
-        $"{FlowsKey}: []") + "\r\n";
+    private const string ThicknessKey = "thickness";
+    private const string NodesKey = "nodes";
+    private const string FlowsKey = "flows";
 
     private static readonly string[] RootKeys = [HeaderKey, FormatKey, FlowColorKey, ThicknessKey, NodesKey, FlowsKey];
 
     private static readonly string[] NodeKeys = ["id", "name", "color", "note", "format", "column", "description"];
 
     private static readonly string[] FlowKeys = ["id", "from", "to", "value", "step", "color", "description"];
-
-    /// <summary>Reads the document. <b>Never throws.</b></summary>
-    public static SankeyModel Parse(LineDocument document) => Outcome(document).Model;
 
     /// <summary>
     /// What the store keeps of <paramref name="document"/>: the model, its problems, and, for a text

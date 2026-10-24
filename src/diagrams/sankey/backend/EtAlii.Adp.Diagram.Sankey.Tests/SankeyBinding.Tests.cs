@@ -8,9 +8,9 @@ using Xunit;
 namespace EtAlii.Adp.Diagram.Sankey.Tests;
 
 /// <summary>
-/// The module's binding, <c>sankey.fbl</c>, as the requirements' appendix drafts it without its <c>"as": "text"</c>
-/// markers (sankey-disl-fbl, task 2). No product class reads it yet; these tests load it from the module's assembly and
-/// close the four points the appendix leaves open by planning edits through <see cref="OpenBody"/>.
+/// The module's binding, <c>sankey.fbl</c>, as the requirements' appendix drafts it, with FBL 0.5's <c>read: "text"</c>
+/// where the appendix wrote <c>"as": "text"</c> (sankey-disl-fbl, tasks 2 and 10). These tests load it from the module's
+/// assembly and close the four points the appendix leaves open by planning edits through <see cref="OpenBody"/>.
 /// </summary>
 public class SankeyBindingTests
 {
@@ -24,7 +24,7 @@ public class SankeyBindingTests
     public void TheEmbeddedBinding_LoadsWithNoDiagnostic()
     {
         // Arrange.
-        using var stream = typeof(SankeyParser).Assembly.GetManifestResourceStream("sankey.fbl");
+        using var stream = typeof(SankeyBody).Assembly.GetManifestResourceStream("sankey.fbl");
 
         // Act.
         var problems = FblDocumentLoader.Load(Bytes(stream!), out var document);
@@ -77,7 +77,7 @@ public class SankeyBindingTests
 
         // Assert: this library opens nodes: [] and flows: [] into block sequences, which FBL 4.3 and 6.1 do not state
         // (finding B13, gap 5); the other list is left as it was.
-        Assert.Equal(SankeyParser.EmptyDocument, template);
+        Assert.Equal(SankeyBody.Template, template);
         Assert.IsType<PlanResult.Planned>(node);
         Assert.Equal("sankey: 1\r\nnodes:\r\n  - id: n1\r\n    name: \"N\"\r\nflows: []\r\n", Text(nodes));
         Assert.IsType<PlanResult.Planned>(flow);
@@ -85,33 +85,32 @@ public class SankeyBindingTests
     }
 
     [Fact]
-    public void OneBadValue_CostsNothingUntyped_AndTheWholeEntryOnceTheDefinitionTypesIt()
+    public void OneBadValue_CostsNothing_EvenWithTheTypesTheDefinitionGives()
     {
         // Arrange.
         var untyped = Open(BadValues);
         var typed = Open(BadValues, (_, attribute) => attribute is "thickness" or "value" or "step" ? "number" : null);
 
         // Act.
-        var root = untyped.Model.Elements.Single(element => element.Type == "Document");
-        var typedTypes = typed.Model.Elements.Select(element => element.Type).ToList();
+        var roots = new[] { untyped, typed }.Select(body => body.Model.Elements.Single(element => element.Type == "Document")).ToList();
 
-        // Assert: read untyped, as this binding is with nothing else beside it, a bad value is the text it was written
-        // with and costs nothing; read with the types the definition gives (as DislModelBuilder will), FBL 7.4 makes the
-        // root mapping an unreadable entry, so thickness: wide costs every document-wide setting, and value: lots its
-        // flow (finding B3, gap 2).
-        Assert.Equal("wide", root.Attributes["thickness"]);
-        Assert.Equal("sideways", root.Attributes["flowColor"]);
-        Assert.Equal(2, untyped.Model.Elements.Count(element => element.Type == "Flow"));
-        Assert.Empty(untyped.Model.Findings);
-        Assert.Equal(["Node", "Node", "Flow"], typedTypes);
-        Assert.Equal(
-            ["This entry cannot be read: 'thickness' is not a number.", "This entry cannot be read: 'value' is not a number."],
-            typed.Model.Findings.Where(finding => finding.Code == "std.unreadableEntry").Select(finding => finding.Message));
+        // Assert: every slot is read as the text it was written with (read: "text", FBL 0.5 section 5.2), which a type
+        // does not override, so a bad value is that text and costs neither its flow nor the root mapping's settings:
+        // the module's reader converts it and reports it (finding B3, gap 2). Read with the types, FBL 7.4 would make the
+        // root mapping an unreadable entry, so thickness: wide would cost every document-wide setting.
+        foreach ((OpenBody body, FblElement root) in new[] { untyped, typed }.Zip(roots))
+        {
+            Assert.Equal("wide", root.Attributes["thickness"]);
+            Assert.Equal("sideways", root.Attributes["flowColor"]);
+            Assert.Equal(["Document", "Node", "Node", "Flow", "Flow"], body.Model.Elements.Select(element => element.Type));
+            Assert.Equal("lots", body.Model.Elements.First(element => element.Type == "Flow").Attributes["value"]);
+            Assert.Empty(body.Model.Findings);
+        }
     }
 
     private static FblBinding Load()
     {
-        using var stream = typeof(SankeyParser).Assembly.GetManifestResourceStream("sankey.fbl");
+        using var stream = typeof(SankeyBody).Assembly.GetManifestResourceStream("sankey.fbl");
         FblDocumentLoader.Load(Bytes(stream!), out var document);
         return document!.Bindings["skv"];
     }

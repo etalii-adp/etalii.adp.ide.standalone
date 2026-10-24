@@ -11,7 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Reading only: every write is a splice through LineSplice. -->
+    <!-- Whether a body is YAML (SankeyBody.Refusal) only: every write is a splice through LineSplice. -->
     <PackageReference Include="YamlDotNet" />
     <!-- Google.Protobuf is the runtime; Grpc.Tools compiles the .proto below at build. -->
     <PackageReference Include="Google.Protobuf" />
@@ -32,7 +32,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- The FBL binding of the .skv body (sankey-disl-fbl). Until the body is read through it, only the module's tests read it. -->
+    <!-- The FBL binding of the .skv body (sankey-disl-fbl), through which SankeyBody reads it. -->
     <EmbeddedResource Include="sankey.fbl" LogicalName="sankey.fbl" />
   </ItemGroup>
 

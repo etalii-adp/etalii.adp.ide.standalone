@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Specification.Cel;
 using EtAlii.Adp.Specification.Disl;
 using Xunit;
@@ -19,9 +18,9 @@ public class SankeyFunctionsTests
     public async Task TheLayoutFunctions_AnswerTheModulesLayout(string path)
     {
         // Arrange.
-        var model = SankeyParser.Parse(LineDocument.Parse(await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken)));
+        var model = SankeyReader.Parse(await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
         var layout = SankeyLayout.Of(model);
-        var diagram = SankeyDisl.Of(model).Diagram;
+        var diagram = SankeyReader.BodyOf(model)!.Disl.Diagram;
 
         // Act and assert.
         Assert.Equal((long)layout.ColumnOrder.Count, Evaluate("sankeyColumnCount()", diagram, null));
@@ -48,8 +47,8 @@ public class SankeyFunctionsTests
     public async Task TheLayout_IsComputedOncePerDiagram(string path)
     {
         // Arrange.
-        var model = SankeyParser.Parse(LineDocument.Parse(await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken)));
-        var diagram = SankeyDisl.Of(model).Diagram;
+        var model = SankeyReader.Parse(await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
+        var diagram = SankeyReader.BodyOf(model)!.Disl.Diagram;
 
         // Act.
         var first = SankeyFunctions.LayoutOf(diagram);
@@ -88,7 +87,7 @@ public class SankeyFunctionsTests
         Assert.Equal(target, Evaluate("writtenEnd(self, 'target')", diagram, element));
     }
 
-    private static DislDiagram DiagramOf(string text) => SankeyDisl.Of(SankeyParser.Parse(LineDocument.Parse(text))).Diagram;
+    private static DislDiagram DiagramOf(string text) => SankeyReader.BodyOf(SankeyReader.Parse(text))!.Disl.Diagram;
 
     private static object? Evaluate(string expression, DislDiagram diagram, DislElement? self) =>
         SankeyDefinition.Specification.Environment(DislContext.Element).Compile(expression)
