@@ -2,6 +2,7 @@ using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Specification.Disl;
+using EtAlii.Adp.Specification.Fbl;
 
 namespace EtAlii.Adp.Diagram.Sankey;
 
@@ -88,6 +89,18 @@ internal static class SankeyDefinition
             : null;
     }
 
+    /// <summary>
+    /// The findings of <paramref name="outcome"/>, the definition's (<see cref="ConstraintEvaluator"/>) in the order of
+    /// their lines (<see cref="SankeyFindingOrder"/>). What the reader could not read, and a node it read without an id,
+    /// are handed in as the reader's findings, which the definition gives their code, severity and sentence.
+    /// </summary>
+    public static IReadOnlyList<DislFinding> Findings(ParseOutcome<SankeyModel> outcome)
+    {
+        ArgumentNullException.ThrowIfNull(outcome);
+        var options = new DislConstraintOptions(Env, ReaderFindings(outcome), WrittenId);
+        return SankeyFindingOrder.ByLine(ConstraintEvaluator.Evaluate(Specification, SankeyDisl.Of(outcome.Model).Diagram, options));
+    }
+
     /// <summary>The element <paramref name="id"/> names, as <see cref="SankeyModel"/> finds it: the first node with it, else the first flow; null for none.</summary>
     public static DislElement? ElementOf(DislDiagram diagram, string? id)
     {
@@ -97,4 +110,30 @@ internal static class SankeyDefinition
 
     private static DislElement? NodeOf(DislDiagram diagram, string? id) =>
         id is { Length: > 0 } ? diagram.NodesOfType("Node").FirstOrDefault(node => node.Id == id) : null;
+
+    /// <summary>
+    /// What the module's reader found, in reading order, as the binding's reader would hand it in: a text that is not
+    /// YAML, every entry or value it passed over (<see cref="SankeyModel.Problems"/>), and every node without an id.
+    /// </summary>
+    private static IReadOnlyList<DislReaderFinding> ReaderFindings(ParseOutcome<SankeyModel> outcome)
+    {
+        var model = outcome.Model;
+        if (!outcome.IsUsable)
+        {
+            var problem = model.Problems.FirstOrDefault();
+            var reason = problem?.Message is { } message && message.StartsWith(SankeyParser.NotYaml, StringComparison.Ordinal) ? message[SankeyParser.NotYaml.Length..] : outcome.Unreadable;
+            return [DislReaderFinding.NotParsed(reason, (problem?.Line ?? 0) + 1)];
+        }
+
+        return
+        [
+            .. model.Problems.Select(problem => DislReaderFinding.Unreadable(problem.Message, problem.Line + 1)),
+            .. model.Nodes
+                .Where(node => node.Id.Length == 0)
+                .Select(node => new DislReaderFinding(FindingCodes.MissingId, new Dictionary<string, object?>(StringComparer.Ordinal), node.Range.Start + 1)),
+        ];
+    }
+
+    /// <summary>The id an element is written with: a node's <c>storedId</c>, a flow's id.</summary>
+    private static string WrittenId(DislElement element) => element.Type.IsRelation ? element.Id : SankeyFunctions.WrittenId(element);
 }
