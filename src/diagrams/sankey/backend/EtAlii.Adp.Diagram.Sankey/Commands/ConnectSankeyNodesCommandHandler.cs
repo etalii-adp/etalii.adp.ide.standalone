@@ -11,7 +11,7 @@ namespace EtAlii.Adp.Diagram.Sankey;
 public sealed class ConnectSankeyNodesCommandHandler(ISankeyDocumentStore documents) : SankeyEditHandler<ConnectSankeyNodesCommand>(documents)
 {
     /// <inheritdoc />
-    protected override EditOutcome Apply(LineDocument document, SankeyModel model, ConnectSankeyNodesCommand command)
+    protected override EditOutcome Apply(SankeyBody document, SankeyModel model, ConnectSankeyNodesCommand command)
     {
         if (model.NodeOf(command.From) is null || model.NodeOf(command.To) is null)
         {
@@ -29,7 +29,7 @@ public sealed class ConnectSankeyNodesCommandHandler(ISankeyDocumentStore docume
             return EditOutcome.Refused("These two are already joined by a flow in this direction; change its value instead.");
         }
 
-        return SankeyWriter.AddFlow(document, model, new SankeyFlow(
+        return SankeyEdits.AddFlow(document, new SankeyFlow(
             "", command.From, command.To, Remainder(model, command.From), Step: null, Color: "", Description: "", new LineRange(0, 0)));
     }
 

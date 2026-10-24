@@ -10,11 +10,11 @@ internal static class SankeyCorpus
     public static TheoryData<string> Names() => [.. new SankeyTranscript().Corpus().Select(document => document.Name)];
 
     /// <summary>The document <paramref name="name"/>, read as the store reads it.</summary>
-    public static async Task<DocumentEntry<LineDocument, SankeyModel>> ReadAsync(string name, CancellationToken cancellationToken)
+    public static async Task<DocumentEntry<SankeyBody, SankeyModel>> ReadAsync(string name, CancellationToken cancellationToken)
     {
         var document = new SankeyTranscript().Corpus().Single(candidate => candidate.Name == name);
-        var body = LineDocument.Parse(TranscriptText.Decode(await document.Read(cancellationToken)));
-        return new DocumentEntry<LineDocument, SankeyModel>(body, SankeyReader.Outcome(body.Text));
+        var body = SankeyBody.Parse(TranscriptText.Decode(await document.Read(cancellationToken)));
+        return new DocumentEntry<SankeyBody, SankeyModel>(body, body.Reading);
     }
 
     /// <summary>The targets the transcript records: every node and flow id, the empty id, a placement, a connect gesture and an unknown id.</summary>

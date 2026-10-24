@@ -380,7 +380,9 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
                 plan.Add(SpliceOperation.InsertEntry, at, at, NewLine(at, Item(keys, first, first + 2)));
                 return;
             }
-            case ContainerPlace.EndOfDocument:
+            // At the end of a document whose root is a mapping, or that holds nothing yet: a root list or scalar has no
+            // key to write the container beside, and one written after it would leave a file that is not YAML.
+            case ContainerPlace.EndOfDocument when mapping is null or { Kind: ValueKind.Mapping } or { Style: ValueStyle.Empty }:
                 offset = Text.Length;
                 indent = mapping is { Kind: ValueKind.Mapping, Entries.Count: > 0 } ? mapping.Entries[0].Indent : 0;
                 break;

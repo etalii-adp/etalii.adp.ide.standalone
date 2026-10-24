@@ -66,10 +66,12 @@ public sealed class SankeyCommandsTests : IDisposable
         // Act.
         var result = await _dispatcher.DispatchAsync(EditNamed(edit), TestContext.Current.CancellationToken);
 
-        // Assert: it edited - otherwise the undo proves nothing - and left a document that reads cleanly.
+        // Assert: it edited - otherwise the undo proves nothing - left a document that reads cleanly, and wrote no
+        // registration or any other file beside it (Requirement 6.1).
         Assert.True(result.IsSuccess, result.Error);
         Assert.NotEqual(_original, await File.ReadAllBytesAsync(Body, TestContext.Current.CancellationToken));
         Assert.Empty(Parse().Problems);
+        Assert.Equal([Body], Directory.GetFiles(_folder.Folder));
 
         // Act: the undo.
         var undone = await _dispatcher.DispatchAsync(Assert.IsAssignableFrom<ICommand>(result.Inverse), TestContext.Current.CancellationToken);
@@ -256,15 +258,15 @@ public sealed class SankeyCommandsTests : IDisposable
     }
 
     [Fact]
-    public async Task Thicker_WritesTheThicknessUnderTheHeader_AndThinnerChangesThatLine()
+    public async Task Thicker_WritesTheThicknessWhereTheBindingOrdersIt_AndThinnerChangesThatValue()
     {
         // Act.
         await Dispatch(new ScaleSankeyThicknessCommand(Body, 1));
         await Dispatch(new ScaleSankeyThicknessCommand(Body, -2));
 
-        // Assert.
+        // Assert: after the keys the binding orders before it, here the format (finding B12).
         var text = await File.ReadAllTextAsync(Body, TestContext.Current.CancellationToken);
-        Assert.StartsWith("sankey: 1\r\nthickness: 0.8\r\n", text, StringComparison.Ordinal);
+        Assert.Contains("format: \"{value} t\"\r\nthickness: 0.8\r\nnodes:\r\n", text, StringComparison.Ordinal);
         Assert.Equal(0.8, Parse().Settings.Thickness);
     }
 

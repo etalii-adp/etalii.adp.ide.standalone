@@ -43,6 +43,21 @@ public static class SankeyReader
     /// <summary>How the sentence for a text that is not YAML begins; the reason follows it.</summary>
     private const string NotYaml = "The document could not be read as YAML: ";
 
+    /// <summary>The binding's rule of the root mapping.</summary>
+    internal const string DocumentRule = "document";
+
+    /// <summary>The binding's rule of a node entry.</summary>
+    internal const string NodeRule = "node";
+
+    /// <summary>The binding's rule of an entry of <c>nodes</c> that is not a mapping.</summary>
+    internal const string NodeNotAMappingRule = "node-not-a-mapping";
+
+    /// <summary>The binding's rule of a flow entry.</summary>
+    internal const string FlowRule = "flow";
+
+    /// <summary>The binding's rule of an entry of <c>flows</c> that is not a mapping.</summary>
+    internal const string FlowNotAMappingRule = "flow-not-a-mapping";
+
     private const string HeaderKey = "sankey";
     private const string Written = "written";
     private const string UnknownKeys = "unknownKeys";
@@ -98,7 +113,7 @@ public static class SankeyReader
         }
 
         var elements = body.Model.Elements.OrderBy(element => element.OwnSpan.Start).ToList();
-        if (elements.FirstOrDefault(element => element.Rule == "document") is not { } document)
+        if (elements.FirstOrDefault(element => element.Rule == DocumentRule) is not { } document)
         {
             // A document whose root is not a mapping declares nothing, and says nothing about it.
             var nothing = Remember(SankeyModel.Empty with { Problems = [] }, body);
@@ -115,10 +130,10 @@ public static class SankeyReader
         {
             switch (element.Rule)
             {
-                case "node":
+                case NodeRule:
                     nodes.Add(ReadNode(body, element, problems));
                     break;
-                case "node-not-a-mapping":
+                case NodeNotAMappingRule:
                     problems.Add(new ParseProblem(body.LinesOf(element.OwnSpan).Start, "A node entry is not a mapping and was passed over."));
                     break;
             }
@@ -128,10 +143,10 @@ public static class SankeyReader
         {
             switch (element.Rule)
             {
-                case "flow":
+                case FlowRule:
                     flows.Add(ReadFlow(body, element, problems));
                     break;
-                case "flow-not-a-mapping":
+                case FlowNotAMappingRule:
                     problems.Add(new ParseProblem(body.LinesOf(element.OwnSpan).Start, "A flow entry is not a mapping and was passed over."));
                     break;
             }
@@ -165,7 +180,7 @@ public static class SankeyReader
         {
             switch (element.Rule)
             {
-                case "document":
+                case DocumentRule:
                     var settings = model.Settings;
                     elements.Add(With(element, element.Attributes.Where(attribute => attribute.Key is "version" or UnknownKeys), new Dictionary<string, object?>(StringComparer.Ordinal)
                     {
@@ -174,7 +189,7 @@ public static class SankeyReader
                         ["thickness"] = settings.ThicknessLine >= 0 ? settings.Thickness : null,
                     }));
                     break;
-                case "node":
+                case NodeRule:
                     var node = nodes.Dequeue();
                     var read = With(element, element.Attributes.Where(attribute => attribute.Key == UnknownKeys), new Dictionary<string, object?>(StringComparer.Ordinal)
                     {
@@ -192,7 +207,7 @@ public static class SankeyReader
                         ? read with { Id = node.Id, IdIsStored = true }
                         : read);
                     break;
-                case "flow":
+                case FlowRule:
                     var flow = flows.Dequeue();
                     elements.Add(With(element, element.Attributes.Where(attribute => attribute.Key == UnknownKeys), new Dictionary<string, object?>(StringComparer.Ordinal)
                     {

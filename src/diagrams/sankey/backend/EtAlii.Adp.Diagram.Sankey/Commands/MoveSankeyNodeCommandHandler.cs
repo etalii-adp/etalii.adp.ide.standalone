@@ -10,13 +10,13 @@ namespace EtAlii.Adp.Diagram.Sankey;
 public sealed class MoveSankeyNodeCommandHandler(ISankeyDocumentStore documents) : SankeyEditHandler<MoveSankeyNodeCommand>(documents)
 {
     /// <inheritdoc />
-    protected override EditOutcome Apply(LineDocument document, SankeyModel model, MoveSankeyNodeCommand command)
+    protected override EditOutcome Apply(SankeyBody document, SankeyModel model, MoveSankeyNodeCommand command)
     {
         if (model.NodeOf(command.NodeId) is not { } node || model.NodeOf(command.AnchorId) is not { } anchor)
         {
             return Gone;
         }
 
-        return SankeyWriter.MoveNode(document, node, anchor, command.After);
+        return SankeyEdits.MoveNode(document, node, anchor, command.After);
     }
 }

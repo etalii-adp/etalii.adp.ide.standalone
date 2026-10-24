@@ -10,7 +10,7 @@ namespace EtAlii.Adp.Specification.Fbl.Tests.Yaml;
 /// FBL §6.3 for yaml values the hype cycle graph writes: a flow list whose items need quoting in a
 /// flow collection, a multi-line string in a new entry nested in a sequence, a string that starts with
 /// <c>-</c> written plain where it can be, an empty value an attribute keeps, and a container created
-/// before a key that is not there.
+/// before a key that is not there, and none created at the end of a document whose root is not a mapping.
 /// </summary>
 public class YamlWritingTests
 {
@@ -41,6 +41,29 @@ public class YamlWritingTests
     }
 
     private static OpenBody Open(string body) => OpenBody.Open(Encoding.UTF8.GetBytes(body), _binding);
+
+    [Theory]
+    [InlineData("- a\n- b\n")]
+    [InlineData("# a comment\n- a\n")]
+    [InlineData("just text\n")]
+    public void AContainerCreatedAtTheEndOfTheDocument_IsRefused_WhereTheRootIsNotAMapping(string text)
+    {
+        // Arrange: a root that is a list or a scalar has no key to create the container beside.
+        var binding = Load("""
+            [{
+              "name": "item", "type": "Item", "at": "/items/*", "id": { "from": { "key": "id" } },
+              "insert": { "place": "after-last", "container": "/items", "create": { "at": "end-of-document" }, "keys": ["id"] }
+            }]
+            """);
+        var body = OpenBody.Open(Encoding.UTF8.GetBytes(text), binding);
+
+        // Act.
+        var result = body.Change(new ModelChange.Add("Item", "n", new Dictionary<string, object?>()));
+
+        // Assert: writing items: after it would leave a file that is not YAML.
+        Assert.IsType<PlanResult.Refused>(result);
+        Assert.Equal(text, Text(body));
+    }
 
     private static string Text(OpenBody body) => Encoding.UTF8.GetString(body.Bytes);
 

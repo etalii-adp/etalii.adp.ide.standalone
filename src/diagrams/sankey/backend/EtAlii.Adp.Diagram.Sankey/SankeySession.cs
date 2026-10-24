@@ -13,7 +13,7 @@ namespace EtAlii.Adp.Diagram.Sankey;
 /// dropped does not matter: a node's column is its flows'.
 /// </para>
 /// </remarks>
-public sealed class SankeySession : DocumentDiagramSession<LineDocument, SankeyModel>
+public sealed class SankeySession : DocumentDiagramSession<SankeyBody, SankeyModel>
 {
     private readonly SankeyElementMapper _mapper;
 

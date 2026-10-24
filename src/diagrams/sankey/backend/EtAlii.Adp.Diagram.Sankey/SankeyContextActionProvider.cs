@@ -21,7 +21,7 @@ namespace EtAlii.Adp.Diagram.Sankey;
 /// </para>
 /// </remarks>
 public sealed class SankeyContextActionProvider(IHistoryStackStore historyStacks, ISankeyDocumentStore documents)
-    : DiagramActionProvider<LineDocument, SankeyModel>(historyStacks, documents)
+    : DiagramActionProvider<SankeyBody, SankeyModel>(historyStacks, documents)
 {
     /// <summary>Add a node where the canvas was dropped on or clicked.</summary>
     public const string AddActionId = "sankey.add";
@@ -54,14 +54,14 @@ public sealed class SankeyContextActionProvider(IHistoryStackStore historyStacks
     protected override bool IsBody(string path) => Diagram.IsBody(path);
 
     /// <inheritdoc />
-    protected override IReadOnlyList<ContextActionGroupDefinition> Discover(DocumentEntry<LineDocument, SankeyModel> entry, string elementId) =>
+    protected override IReadOnlyList<ContextActionGroupDefinition> Discover(DocumentEntry<SankeyBody, SankeyModel> entry, string elementId) =>
         // Derived from the DISL definition: a node's, a flow's, a placement's or a connect gesture's menu.
         SankeyDefinition.Menus(entry, elementId);
 
     /// <inheritdoc />
     protected override async ValueTask<ContextExecutionResult> RunAsync(
         ContextTarget target,
-        DocumentEntry<LineDocument, SankeyModel> entry,
+        DocumentEntry<SankeyBody, SankeyModel> entry,
         string actionId,
         CancellationToken cancellationToken)
     {

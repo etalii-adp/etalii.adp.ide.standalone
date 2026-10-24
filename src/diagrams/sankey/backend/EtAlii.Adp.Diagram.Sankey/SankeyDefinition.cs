@@ -56,10 +56,10 @@ internal static class SankeyDefinition
     private static DislEnv Env { get; } = new();
 
     /// <summary>The context menu of <paramref name="elementId"/> in <paramref name="entry"/>: an element, a placement, a connect gesture; none for anything else.</summary>
-    public static IReadOnlyList<ContextActionGroupDefinition> Menus(DocumentEntry<LineDocument, SankeyModel> entry, string elementId)
+    public static IReadOnlyList<ContextActionGroupDefinition> Menus(DocumentEntry<SankeyBody, SankeyModel> entry, string elementId)
     {
         ArgumentNullException.ThrowIfNull(entry);
-        var diagram = DislOf(entry.Model).Diagram;
+        var diagram = entry.Document.Disl.Diagram;
         DislMenuTarget? target = ElementOf(diagram, elementId) is { } element
             ? DislMenuTarget.Element(element)
             : GestureIds.TryParsePlacement(elementId, out _, out _)
@@ -71,10 +71,10 @@ internal static class SankeyDefinition
     }
 
     /// <summary>The property rows of <paramref name="elementId"/> in <paramref name="entry"/>: a node's or a flow's form; none for anything else.</summary>
-    public static IReadOnlyList<ContextPropertyDefinition> Rows(DocumentEntry<LineDocument, SankeyModel> entry, string elementId)
+    public static IReadOnlyList<ContextPropertyDefinition> Rows(DocumentEntry<SankeyBody, SankeyModel> entry, string elementId)
     {
         ArgumentNullException.ThrowIfNull(entry);
-        return ElementOf(DislOf(entry.Model).Diagram, elementId) is { } element ? Definition.Rows(element, Env) : [];
+        return ElementOf(entry.Document.Disl.Diagram, elementId) is { } element ? Definition.Rows(element, Env) : [];
     }
 
     /// <summary>
