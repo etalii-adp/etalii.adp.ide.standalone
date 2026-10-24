@@ -29,9 +29,9 @@ const definition: HierarchySurfaceDefinition = {
     toggleCollapsed: "fold",
     setTitle: "retitle",
     setDescription: "redescribe",
-    addTopLevel: { operation: "open", label: "New section" },
-    addEntry: { operation: "jot", label: "New point" },
-    addLevel: { operation: "nest", label: "New section" },
+    addTopLevel: { operation: "open", label: "New section", icon: "mdi-plus" },
+    addEntry: { operation: "jot", label: "New point", icon: "mdi-plus" },
+    addLevel: { operation: "nest", label: "New section", icon: "mdi-plus" },
     moveLevel: "shift",
     moveEntry: "slide",
     delete: "drop",
@@ -116,14 +116,14 @@ describe("a label's field", () => {
     expect(row.previousElementSibling?.className).toBe("hs-box-header");
   });
 
-  it("offers the way to add a value in the box's header, and nothing to change on a document that cannot be changed", () => {
+  it("offers the way to add a value among the box's controls, and nothing to change on a document that cannot be changed", () => {
     // Act.
     const { rerender } = render(<HierarchySurface model={model()} definition={definition} onGesture={vi.fn()} />);
     const parent = within(boxOf("Cancel an order")).getByRole("button", { name: "Add mark to [3]" }).parentElement?.className;
     rerender(<HierarchySurface model={model({ readOnlyReason: "Read only." })} definition={definition} onGesture={vi.fn()} />);
 
     // Assert.
-    expect(parent).toBe("hs-box-header");
+    expect(parent).toBe("hs-box-icons");
     expect(within(boxOf("Cancel an order")).queryByRole("button", { name: "Add mark to [3]" })).toBeNull();
     expect(within(boxOf("Take an order")).queryByRole("button", { name: /^Marks of/ })).toBeNull();
   });

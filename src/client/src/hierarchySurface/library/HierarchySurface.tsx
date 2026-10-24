@@ -8,7 +8,7 @@ import { AddControl, addedNode } from "./editing/AddControl";
 import { ConfirmDelete, deleteCount } from "./editing/ConfirmDelete";
 import type { EntryEditing, EntryTextAttribute, OpenField } from "./editing/entryEditing";
 import { EntryTextField } from "./editing/EntryTextField";
-import { type DragEntry, type EntryDrop, useDragEntry } from "./editing/useDragEntry";
+import { DROP_SLOT, type DragEntry, type DropHint, type EntryDrop, slotIndex, useDragEntry } from "./editing/useDragEntry";
 import { FindingList } from "./FindingList";
 import { HierarchySurfaceBox } from "./HierarchySurfaceBox";
 import { HierarchySurfaceTrail } from "./HierarchySurfaceTrail";
@@ -74,7 +74,9 @@ const isLineId = (id: string) => id.startsWith("line/");
  */
 export function HierarchySurface({ model, definition, onGesture, onShortcut, selectedNode, onSelectNode, pendingEdits = 0 }: HierarchySurfaceProps) {
   const index = useMemo(() => indexOf(model), [model]);
-  const [focus, setFocus] = useState("");
+  // The page's left edge, and whether it shows what is inside that level rather than the level itself.
+  const [focus, setFocusAt] = useState({ id: "", inside: false });
+  const setFocus = useCallback((id: string) => setFocusAt({ id, inside: false }), []);
   const [selected, setSelected] = useState(selectedNode ?? "");
   // Collapsing an entry with no number of its own is the page's alone: the document has nothing to keep it by.
   const [localCollapse, setLocalCollapse] = useState<ReadonlySet<string>>(new Set());
@@ -103,7 +105,7 @@ export function HierarchySurface({ model, definition, onGesture, onShortcut, sel
   useEffect(() => setSelected(selectedNode ?? ""), [selectedNode]);
 
   // A focus on a node the file no longer has falls back to the whole page.
-  const focused = focus !== "" && index.byId.has(focus) ? focus : "";
+  const focused = focus.id !== "" && index.byId.has(focus.id) ? focus.id : "";
 
   useLayoutEffect(() => {
     const page = pageRef.current;
@@ -121,6 +123,11 @@ export function HierarchySurface({ model, definition, onGesture, onShortcut, sel
 
   const fit = levelsThatFit(width);
   const readOnly = model.readOnlyReason !== "";
+  // Where only one level fits, a level made the left edge shows its sub-levels in its place: beside it they cannot fit.
+  const inside = focused !== "" && focus.inside;
+
+  /** The mark of a level's hidden levels shows them: the level becomes the left edge, or its sub-levels do. */
+  const showHidden = useCallback((id: string) => setFocusAt({ id, inside: fit < 2 }), [fit]);
 
   // A change from outside while a field is open asks what to do with the text; the page itself is already the file's.
   useEffect(() => {
@@ -231,7 +238,8 @@ export function HierarchySurface({ model, definition, onGesture, onShortcut, sel
     }
   });
 
-  // The node an add asked for has arrived: it is selected and its title is open for typing.
+  // The node an add asked for has arrived: it is shown, where the page's width hides it too, selected, and its title is
+  // open for typing.
   useEffect(() => {
     const before = awaitingAdd.current;
     if (before === null || before === model.nodes) {
@@ -240,7 +248,7 @@ export function HierarchySurface({ model, definition, onGesture, onShortcut, sel
     const added = addedNode(before, model.nodes);
     if (added !== undefined) {
       awaitingAdd.current = null;
-      select(added.id);
+      reveal(added.id);
       setField({ nodeId: added.id, attribute: "title", text: added.title, label: `Title of ${added.number}` });
       return;
     }
@@ -248,7 +256,7 @@ export function HierarchySurface({ model, definition, onGesture, onShortcut, sel
     if (model.cause === "edit" && pendingRef.current === 0) {
       awaitingAdd.current = null;
     }
-  }, [model, select]);
+  }, [model, reveal]);
 
   /** Sends an add, from a control or a key; a refusal ends the wait for its node at once. */
   const add = useCallback(
@@ -278,12 +286,19 @@ export function HierarchySurface({ model, definition, onGesture, onShortcut, sel
   );
   const drag = useDragEntry(index, move);
 
-  /** Delete on a selected node: at once when nothing concerns it, otherwise after the definition's question. */
+  /**
+   * Delete on a selected node: by the key, at once when nothing concerns it, otherwise after the definition's question;
+   * by the control on its box, always after a question that says what it takes.
+   */
   const remove = useCallback(
-    (node: HierarchySurfaceNode) => {
+    (node: HierarchySurfaceNode, ask = false) => {
       const count = deleteCount(model, index, node.id);
       if (count < definition.deletion.threshold) {
-        onGesture(definition.operations.delete, node.id, {});
+        if (!ask) {
+          onGesture(definition.operations.delete, node.id, {});
+          return;
+        }
+        setDeleting({ nodeId: node.id, question: `Delete ${node.number} ${node.title}? Nothing else concerns it.` });
         return;
       }
       setDeleting({ nodeId: node.id, question: definition.deletion.message(node.number, count) });
@@ -310,7 +325,13 @@ export function HierarchySurface({ model, definition, onGesture, onShortcut, sel
     }
   };
 
-  const roots = (focused === "" ? (index.children.get("") ?? []) : [index.byId.get(focused)!]).filter(narrowing.shows);
+  const roots = (
+    focused === ""
+      ? (index.children.get("") ?? [])
+      : inside
+        ? (index.children.get(focused) ?? []).filter((node) => node.role === "level")
+        : [index.byId.get(focused)!]
+  ).filter(narrowing.shows);
   const entries = model.nodes.filter((node) => node.role === "entry");
   const filters = definition.filters;
   const sortKeys = useMemo(
@@ -320,11 +341,13 @@ export function HierarchySurface({ model, definition, onGesture, onShortcut, sel
     ],
     [filters, definition.labels],
   );
-  const trail = focused === "" ? [] : [...ancestorsOf(index, focused), index.byId.get(focused)!];
+  // The trail follows the selection, and the focus while nothing is selected: the levels down to the one it stands in.
+  const anchor = index.byId.get(selected) ?? index.byId.get(focused);
+  const trail = anchor === undefined ? [] : anchor.role === "level" ? [...ancestorsOf(index, anchor.id), anchor] : ancestorsOf(index, anchor.id);
 
   return (
     <div className="hs-surface" aria-busy={pendingEdits > 0} onKeyDown={onKeyDown}>
-      {focused !== "" && <HierarchySurfaceTrail title={model.title} path={trail} onFocus={setFocus} />}
+      <HierarchySurfaceTrail title={model.title} path={trail} focused={inside ? null : focused} onFocus={setFocus} />
       {conflict && field !== null && <ConflictBar onShowFile={closeField} onKeepText={() => setConflict(false)} />}
       {field !== null && !index.byId.has(field.nodeId) && (
         // The file no longer has the node the field is open on, so its box is gone; the text is kept here instead,
@@ -359,35 +382,43 @@ export function HierarchySurface({ model, definition, onGesture, onShortcut, sel
           total={entries.length}
           canEdit={!readOnly}
           onGesture={onGesture}
+          labels={definition.labels}
+          optionLists={model.optionLists}
         />
       )}
       <FindingList findings={model.findings} onSelect={reveal} />
       <div className="hs-page" ref={pageRef} role="tree" aria-label={model.title} tabIndex={0}>
-        {roots.map((node) => (
-          <NodeView
-            key={node.id}
-            node={node}
-            depth={0}
-            fit={fit}
-            index={index}
-            model={model}
-            definition={definition}
-            selected={selected}
-            isCollapsed={isCollapsed}
-            onToggle={toggle}
-            onSelect={select}
-            onFocus={setFocus}
-            editingOf={editingOf}
-            onAdd={readOnly ? undefined : addTo}
-            drag={readOnly ? undefined : drag}
-            openNotes={openNotes}
-            onToggleNotes={(id) => setOpenNotes((current) => (current === id ? "" : id))}
-            onGesture={onGesture}
-            readOnly={readOnly}
-            onReveal={reveal}
-            narrowing={narrowing}
-          />
-        ))}
+        {withSlot(roots, focused === "" ? drag.hint : null, "").map((node) =>
+          node.id === SLOT_ID ? (
+            <DropSlot key={SLOT_ID} hint={drag.hint!} />
+          ) : (
+            <NodeView
+              key={node.id}
+              node={node}
+              depth={0}
+              fit={fit}
+              index={index}
+              model={model}
+              definition={definition}
+              selected={selected}
+              isCollapsed={isCollapsed}
+              onToggle={toggle}
+              onSelect={select}
+              onFocus={setFocus}
+              onShowHidden={showHidden}
+              onDelete={readOnly ? undefined : (target) => remove(target, true)}
+              editingOf={editingOf}
+              onAdd={readOnly ? undefined : addTo}
+              drag={readOnly ? undefined : drag}
+              openNotes={openNotes}
+              onToggleNotes={(id) => setOpenNotes((current) => (current === id ? "" : id))}
+              onGesture={onGesture}
+              readOnly={readOnly}
+              onReveal={reveal}
+              narrowing={narrowing}
+            />
+          ),
+        )}
         {!readOnly && focused === "" && <AddControl adds={[definition.operations.addTopLevel]} within="" onAdd={(what) => addTo("", what)} />}
       </div>
       <ConfirmDelete
@@ -417,6 +448,9 @@ interface NodeViewProps {
   onToggle: (node: HierarchySurfaceNode) => void;
   onSelect: (id: string) => void;
   onFocus: (id: string) => void;
+  onShowHidden: (id: string) => void;
+  /** Asks to delete a node by the control on its box; absent when the document cannot be changed. */
+  onDelete?: (node: HierarchySurfaceNode) => void;
   editingOf: (node: HierarchySurfaceNode) => EntryEditing | undefined;
   /** Adds into a level by one of its controls; absent when the document cannot be changed. */
   onAdd?: (levelId: string, what: HierarchySurfaceAdd) => void;
@@ -433,7 +467,7 @@ interface NodeViewProps {
 }
 
 function NodeView(props: NodeViewProps) {
-  const { node, depth, fit, index, model, definition, selected, isCollapsed, onToggle, onSelect, onFocus, editingOf, onAdd, drag, openNotes, onToggleNotes, onGesture, readOnly, onReveal, narrowing } = props;
+  const { node, depth, fit, index, model, definition, selected, isCollapsed, onToggle, onSelect, onFocus, onShowHidden, onDelete, editingOf, onAdd, drag, openNotes, onToggleNotes, onGesture, readOnly, onReveal, narrowing } = props;
   const collapsed = isCollapsed(node);
   const level = node.role === "level";
   // A collapsed level's mark counts every note inside it, since nothing inside it shows.
@@ -477,6 +511,8 @@ function NodeView(props: NodeViewProps) {
       onToggle={() => onToggle(node)}
       onSelect={() => onSelect(node.id)}
       onFocus={level ? () => onFocus(node.id) : undefined}
+      onShowHidden={level ? () => onShowHidden(node.id) : undefined}
+      onDelete={onDelete === undefined || isLineId(node.id) ? undefined : () => onDelete(node)}
       editing={editingOf(node)}
       grip={drag?.grip(node)}
       dropHint={drag?.hint?.nodeId === node.id ? drag.hint.kind : undefined}
@@ -487,23 +523,49 @@ function NodeView(props: NodeViewProps) {
     />
   );
 
+  const dragging = drag?.hint?.dragged.id === node.id ? " hs-dragging" : "";
   if (!level) {
-    return <div className="hs-entry">{box}</div>;
+    return <div className={`hs-entry${dragging}`}>{box}</div>;
   }
 
-  const content = collapsed ? [] : [...entries, ...(showsSubLevels ? subLevels : [])];
+  const content = withSlot(collapsed ? [] : [...entries, ...(showsSubLevels ? subLevels : [])], drag?.hint ?? null, node.id);
   const adds = onAdd === undefined || collapsed ? [] : [definition.operations.addEntry, definition.operations.addLevel];
   return (
-    <div className="hs-level">
+    <div className={`hs-level${dragging}`}>
       <div className="hs-level-box">{box}</div>
       {content.length + adds.length > 0 && (
         <div className="hs-level-content" role="group">
-          {content.map((child) => (
-            <NodeView key={child.id} {...props} node={child} depth={child.role === "level" ? depth + 1 : depth} />
-          ))}
+          {content.map((child) =>
+            child.id === SLOT_ID ? (
+              <DropSlot key={SLOT_ID} hint={drag!.hint!} />
+            ) : (
+              <NodeView key={child.id} {...props} node={child} depth={child.role === "level" ? depth + 1 : depth} />
+            ),
+          )}
           {adds.length > 0 && <AddControl adds={adds} within={node.number} onAdd={(what) => onAdd?.(node.id, what)} />}
         </div>
       )}
+    </div>
+  );
+}
+
+/** The id that stands in a level's children for the place a dragged node would be dropped at. */
+const SLOT_ID = "\u0000slot";
+
+/** `shown` with the place a drop into `levelId` shows, where the drop would put the dragged node among them. */
+function withSlot(shown: readonly HierarchySurfaceNode[], hint: DropHint | null, levelId: string): readonly HierarchySurfaceNode[] {
+  if (hint === null || hint.drop.into !== levelId) {
+    return shown;
+  }
+  const at = slotIndex(shown, hint);
+  return at < 0 ? shown : [...shown.slice(0, at), { ...hint.dragged, id: SLOT_ID }, ...shown.slice(at)];
+}
+
+/** The place a dragged node would stand once dropped: its number and title, where the drop puts it. */
+function DropSlot({ hint }: { hint: DropHint }) {
+  return (
+    <div className={`${DROP_SLOT} hs-drop-slot-${hint.dragged.role}`} aria-hidden="true">
+      <span className="hs-number">{hint.dragged.number}</span> <span className="hs-drop-slot-title">{hint.dragged.title}</span>
     </div>
   );
 }
