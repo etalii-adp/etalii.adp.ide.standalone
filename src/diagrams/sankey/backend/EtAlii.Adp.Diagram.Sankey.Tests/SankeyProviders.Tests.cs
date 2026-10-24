@@ -205,16 +205,18 @@ public sealed class SankeyProvidersTests : IDisposable
     }
 
     [Fact]
-    public async Task ABodyThatIsNotYaml_IsRefusedUpFront_AndWritesNothing()
+    public async Task ABodyThatIsNotYaml_OffersNothing_IsRefusedUpFront_AndWritesNothing()
     {
         // Arrange.
         const string broken = "sankey: 1\nnodes: []\nflows: \"never closed\n";
         await File.WriteAllTextAsync(_folder.Body, broken, TestContext.Current.CancellationToken);
 
         // Act.
+        var offered = await _actions.DiscoverAsync(Target(GestureIds.Placement(0, 0)), TestContext.Current.CancellationToken);
         var added = await _actions.ExecuteAsync(Target(GestureIds.Placement(0, 0)), SankeyContextActionProvider.AddActionId, TestContext.Current.CancellationToken);
 
         // Assert.
+        Assert.Empty(offered);
         Assert.Contains("could not be read", Assert.IsType<ContextExecutionFailed>(added).Message, StringComparison.Ordinal);
         Assert.Equal(broken, await File.ReadAllTextAsync(_folder.Body, TestContext.Current.CancellationToken));
         var entry = await _store.GetOrLoadAsync(_folder.Body, TestContext.Current.CancellationToken);
@@ -246,11 +248,11 @@ public sealed class SankeyProvidersTests : IDisposable
             remove => inner.Changed -= value;
         }
 
-        public async ValueTask<DocumentEntry<LineDocument, SankeyModel>> GetOrLoadAsync(string path, CancellationToken cancellationToken) => await inner.GetOrLoadAsync(path, cancellationToken) with { Unreadable = "it is locked" };
+        public async ValueTask<DocumentEntry<SankeyBody, SankeyModel>> GetOrLoadAsync(string path, CancellationToken cancellationToken) => await inner.GetOrLoadAsync(path, cancellationToken) with { Unreadable = "it is locked" };
 
-        public DocumentEntry<LineDocument, SankeyModel>? Get(string path) => inner.Get(path) is { } held ? held with { Unreadable = "it is locked" } : null;
+        public DocumentEntry<SankeyBody, SankeyModel>? Get(string path) => inner.Get(path) is { } held ? held with { Unreadable = "it is locked" } : null;
 
-        public Task<DocumentSaveResult> SaveAsync(string path, LineDocument document, CancellationToken cancellationToken) => inner.SaveAsync(path, document, cancellationToken);
+        public Task<DocumentSaveResult> SaveAsync(string path, SankeyBody document, CancellationToken cancellationToken) => inner.SaveAsync(path, document, cancellationToken);
 
         public Task ReloadAsync(string path, CancellationToken cancellationToken) => inner.ReloadAsync(path, cancellationToken);
 

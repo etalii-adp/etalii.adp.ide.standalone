@@ -26,7 +26,7 @@ namespace EtAlii.Adp.Diagram.Sankey;
 /// </para>
 /// </remarks>
 public sealed class SankeyContextPropertyProvider(IHistoryStackStore historyStacks, ISankeyDocumentStore documents)
-    : DiagramPropertyProvider<LineDocument, SankeyModel>(historyStacks, documents)
+    : DiagramPropertyProvider<SankeyBody, SankeyModel>(historyStacks, documents)
 {
     /// <summary>The name of a node.</summary>
     public const string NameProperty = "sankey.name";
@@ -68,7 +68,7 @@ public sealed class SankeyContextPropertyProvider(IHistoryStackStore historyStac
     protected override bool IsBody(string path) => Diagram.IsBody(path);
 
     /// <inheritdoc />
-    protected override IReadOnlyList<ContextPropertyDefinition> Describe(DocumentEntry<LineDocument, SankeyModel> entry, string elementId) =>
+    protected override IReadOnlyList<ContextPropertyDefinition> Describe(DocumentEntry<SankeyBody, SankeyModel> entry, string elementId) =>
         // Derived from the DISL definition: a node's or a flow's form.
         SankeyDefinition.Rows(entry, elementId);
 

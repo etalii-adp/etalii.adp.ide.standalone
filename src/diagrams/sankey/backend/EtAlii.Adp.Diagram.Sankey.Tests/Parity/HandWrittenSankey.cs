@@ -25,7 +25,7 @@ internal static class HandWrittenSankey
     ];
 
     /// <summary>The context menu of <paramref name="elementId"/>, as <c>SankeyContextActionProvider.Discover</c> answered it.</summary>
-    public static IReadOnlyList<ContextActionGroupDefinition> Menus(DocumentEntry<LineDocument, SankeyModel> entry, string elementId)
+    public static IReadOnlyList<ContextActionGroupDefinition> Menus(DocumentEntry<SankeyBody, SankeyModel> entry, string elementId)
     {
         var model = entry.Model;
         var thickness = Thickness(model);
@@ -76,7 +76,7 @@ internal static class HandWrittenSankey
     }
 
     /// <summary>The property rows of <paramref name="elementId"/>, as <c>SankeyContextPropertyProvider.Describe</c> answered them.</summary>
-    public static IReadOnlyList<ContextPropertyDefinition> Rows(DocumentEntry<LineDocument, SankeyModel> entry, string elementId)
+    public static IReadOnlyList<ContextPropertyDefinition> Rows(DocumentEntry<SankeyBody, SankeyModel> entry, string elementId)
     {
         var model = entry.Model;
 

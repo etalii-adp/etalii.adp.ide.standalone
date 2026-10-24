@@ -11,7 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Whether a body is YAML (SankeyBody.Refusal) only: every write is a splice through LineSplice. -->
+    <!-- Whether a body is YAML (SankeyBody.Refusal) only: every write is a model change the FBL binding plans as splices. -->
     <PackageReference Include="YamlDotNet" />
     <!-- Google.Protobuf is the runtime; Grpc.Tools compiles the .proto below at build. -->
     <PackageReference Include="Google.Protobuf" />
