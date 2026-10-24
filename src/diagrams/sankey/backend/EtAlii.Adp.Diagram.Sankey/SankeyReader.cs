@@ -41,7 +41,7 @@ namespace EtAlii.Adp.Diagram.Sankey;
 public static class SankeyReader
 {
     /// <summary>How the sentence for a text that is not YAML begins; the reason follows it.</summary>
-    internal const string NotYaml = "The document could not be read as YAML: ";
+    private const string NotYaml = "The document could not be read as YAML: ";
 
     private const string HeaderKey = "sankey";
     private const string Written = "written";
@@ -83,7 +83,7 @@ public static class SankeyReader
             .. model.Problems.Select(problem => DislReaderFinding.Unreadable(problem.Message, problem.Line + 1)),
             .. model.Nodes
                 .Where(node => node.Id.Length == 0)
-                .Select(node => new DislReaderFinding(Specification.Fbl.FindingCodes.MissingId, new Dictionary<string, object?>(StringComparer.Ordinal), node.Range.Start + 1)),
+                .Select(node => new DislReaderFinding(FindingCodes.MissingId, new Dictionary<string, object?>(StringComparer.Ordinal), node.Range.Start + 1)),
         ];
     }
 
@@ -378,8 +378,15 @@ public static class SankeyReader
     /// The text <paramref name="attribute"/> is written with: its slot's, or, for an entry written as a flow mapping,
     /// its member's under <paramref name="key"/>; null when it is not written or is no scalar.
     /// </summary>
-    private static string? Scalar(FblElement element, string attribute, string key) =>
-        element.Attributes.TryGetValue(attribute, out var value)
-            ? value as string
-            : element.Attributes.GetValueOrDefault(Written) is IReadOnlyDictionary<string, object?> members ? members.GetValueOrDefault(key) as string : null;
+    private static string? Scalar(FblElement element, string attribute, string key)
+    {
+        if (element.Attributes.TryGetValue(attribute, out var value))
+        {
+            return value as string;
+        }
+
+        return element.Attributes.GetValueOrDefault(Written) is IReadOnlyDictionary<string, object?> members
+            ? members.GetValueOrDefault(key) as string
+            : null;
+    }
 }

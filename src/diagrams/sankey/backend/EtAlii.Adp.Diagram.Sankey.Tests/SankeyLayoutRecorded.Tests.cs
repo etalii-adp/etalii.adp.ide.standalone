@@ -1,7 +1,6 @@
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
-using EtAlii.Adp.Documents;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.Sankey.Tests;

@@ -98,7 +98,7 @@ public class SankeyBindingTests
         // does not override, so a bad value is that text and costs neither its flow nor the root mapping's settings:
         // the module's reader converts it and reports it (finding B3, gap 2). Read with the types, FBL 7.4 would make the
         // root mapping an unreadable entry, so thickness: wide would cost every document-wide setting.
-        foreach (var (body, root) in new[] { untyped, typed }.Zip(roots))
+        foreach ((OpenBody body, FblElement root) in new[] { untyped, typed }.Zip(roots))
         {
             Assert.Equal("wide", root.Attributes["thickness"]);
             Assert.Equal("sideways", root.Attributes["flowColor"]);

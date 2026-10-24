@@ -66,7 +66,7 @@ public sealed class SankeyBody
     public string Text => Encoding.UTF8.GetString(_body.Bytes);
 
     /// <summary>The body's lines, each with its own ending.</summary>
-    public IReadOnlyList<Line> Lines => _lines.Of(_body.Bytes, () => LineDocument.Parse(Text).Lines);
+    private IReadOnlyList<Line> Lines => _lines.Of(_body.Bytes, () => LineDocument.Parse(Text).Lines);
 
     /// <summary>What the binding reads from the body.</summary>
     public FblModel Model => _model.Of(_body.Bytes, () => _body.Model);

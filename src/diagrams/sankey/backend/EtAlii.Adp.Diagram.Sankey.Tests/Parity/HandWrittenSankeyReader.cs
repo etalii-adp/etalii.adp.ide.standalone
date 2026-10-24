@@ -32,9 +32,6 @@ internal static class HandWrittenSankeyReader
 
     private static readonly string[] FlowKeys = ["id", "from", "to", "value", "step", "color", "description"];
 
-    /// <summary>Reads the document. <b>Never throws.</b></summary>
-    public static SankeyModel Parse(LineDocument document) => Outcome(document).Model;
-
     /// <summary>
     /// What the store keeps of <paramref name="document"/>: the model, its problems, and, for a text
     /// that is not YAML, why, so that nothing is edited or written until it is. <b>Never throws.</b>
