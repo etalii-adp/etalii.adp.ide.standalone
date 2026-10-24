@@ -26,7 +26,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- The DISL definition bundled from etalii-adp/etalii.adp (src/diagrams/tools/bundle-disl.sh), and its provenance. Nothing derives from it yet (sankey-disl-fbl task 5). -->
+    <!-- The DISL definition bundled from etalii-adp/etalii.adp (src/diagrams/tools/bundle-disl.sh), and its provenance. The palette, the menus and the rows are derived from it (SankeyDefinition). -->
     <EmbeddedResource Include="..\..\definition\sankey.dis" LogicalName="sankey.dis" />
     <EmbeddedResource Include="..\..\definition\provenance.json" LogicalName="sankey.provenance.json" />
   </ItemGroup>

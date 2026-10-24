@@ -1,14 +1,13 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Documents;
-using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.Sankey;
 
 /// <summary>
-/// The property rows of a selected node or flow, contributed as data the grid renders without
-/// understanding.
+/// The property rows of a selected node or flow, derived from the DISL definition
+/// (<see cref="SankeyDefinition.Rows"/>) and contributed as data the grid renders without understanding.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -65,51 +64,13 @@ public sealed class SankeyContextPropertyProvider(IHistoryStackStore historyStac
     /// <summary>The column choice that lets the flows decide.</summary>
     public const string AutoColumn = "auto";
 
-    private const string IdentityGroup = "Identity";
-    private const string LookGroup = "Look";
-    private const string AmountGroup = "Amount";
-
     /// <inheritdoc />
     protected override bool IsBody(string path) => Diagram.IsBody(path);
 
     /// <inheritdoc />
-    protected override IReadOnlyList<ContextPropertyDefinition> Describe(DocumentEntry<LineDocument, SankeyModel> entry, string elementId)
-    {
-        var model = entry.Model;
-
-        if (model.NodeOf(elementId) is { } node)
-        {
-            var layout = SankeyLayout.Of(model);
-            var value = layout.Values.GetValueOrDefault(node.Id);
-            var columns = layout.ColumnOrder.Count;
-            return
-            [
-                new ContextPropertyDefinition(NameProperty, "Name", node.Name, Group: IdentityGroup),
-                new ContextPropertyDefinition(DescriptionProperty, "Description", node.Description, ContextPropertyEditor.Text, Group: IdentityGroup),
-                new ContextPropertyDefinition(ColorProperty, "Colour", ColorChoice(node.Color), ContextPropertyEditor.Choice, Group: LookGroup, Candidates: ColorChoices(node.Color)),
-                new ContextPropertyDefinition(CustomColorProperty, "Custom colour", SankeyColors.IsHex(node.Color) ? node.Color : "", Group: LookGroup),
-                new ContextPropertyDefinition(ColumnProperty, "Column", node.Column is { } column ? DslNumber.Format(column) : AutoColumn, ContextPropertyEditor.Choice, Group: LookGroup,
-                    Candidates: [AutoColumn, .. Enumerable.Range(1, Math.Max(columns, node.Column ?? 0) + 1).Select(c => DslNumber.Format(c))]),
-                new ContextPropertyDefinition(ValueProperty, "Value", DslNumber.Format(value), ReadOnlyReason: "A node's value is what flows through it; change a flow's value instead.", Group: AmountGroup),
-                new ContextPropertyDefinition(NoteProperty, "Note", node.Note, Group: AmountGroup),
-                new ContextPropertyDefinition(FormatProperty, "Format", node.Format, Group: AmountGroup),
-            ];
-        }
-
-        if (model.FlowOf(elementId) is { } flow)
-        {
-            return
-            [
-                new ContextPropertyDefinition(DescriptionProperty, "Description", flow.Description, ContextPropertyEditor.Text, Group: IdentityGroup),
-                new ContextPropertyDefinition(ColorProperty, "Colour", ColorChoice(flow.Color), ContextPropertyEditor.Choice, Group: LookGroup, Candidates: ColorChoices(flow.Color)),
-                new ContextPropertyDefinition(CustomColorProperty, "Custom colour", SankeyColors.IsHex(flow.Color) ? flow.Color : "", Group: LookGroup),
-                new ContextPropertyDefinition(ValueProperty, "Value", DslNumber.Format(flow.Value), Group: AmountGroup),
-                new ContextPropertyDefinition(StepProperty, "Step", DslNumber.Format(flow.Step ?? StepSankeyValueCommandHandler.DefaultStep(flow.Value)), Group: AmountGroup),
-            ];
-        }
-
-        return [];
-    }
+    protected override IReadOnlyList<ContextPropertyDefinition> Describe(DocumentEntry<LineDocument, SankeyModel> entry, string elementId) =>
+        // Derived from the DISL definition: a node's or a flow's form.
+        SankeyDefinition.Rows(entry, elementId);
 
     /// <inheritdoc />
     protected override DiagramPropertyChange Change(ContextTarget target, SankeyModel model, string propertyId, string value)
@@ -150,13 +111,4 @@ public sealed class SankeyContextPropertyProvider(IHistoryStackStore historyStac
         return DiagramPropertyChange.By(new SetSankeyPropertyCommand(target.ResolvedFullPath, target.ElementId, key, value));
     }
 
-    private static string ColorChoice(string color) =>
-        color.Length == 0 ? DefaultColor : SankeyColors.IsHex(color) ? CustomColor : color;
-
-    private static IReadOnlyList<string> ColorChoices(string color) =>
-    [
-        DefaultColor,
-        .. SankeyColors.Palette,
-        .. SankeyColors.IsHex(color) ? new[] { CustomColor } : [],
-    ];
 }
