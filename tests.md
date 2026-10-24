@@ -4256,3 +4256,17 @@ lays out no text, so a fill, a centred Comment and a drag that writes a size are
 - **Observations, not failures of this task:**
   - In headless Chromium on Linux the right button's press opens a context menu as the drag starts, because Linux sends `contextmenu` on the press where Windows sends it on the release. The drag still completed and wrote its flow, and the menu was dismissed with Escape. This is the platform, not the definition: the hand-written definition declared the same `connectOnRightDrag` and `backgroundMenu`.
   - The examples, and `palette.skv`, are already arranged: *Arrange diagram* answers *This diagram is already arranged.* on them, so step 10 needs a document whose bands cross.
+
+## A requirement's title field is one line high and leaves its number in sight (hierarchical requirement designer, found in the app)
+
+**Found by Peter in the app, and invisible to every test.** #700 made the description field measure its height with its growth switched off, so that it can fill the box. The same field serves the title, whose growth along its line is what gives it its width: measured without it, the title field was 0 wide, so every character wrapped and the field was hundreds of pixels high. Its negative margin also let it start over the number's last pixel. jsdom lays nothing out, so only the running app shows it.
+
+- **Preconditions**: backend and client running; `src/examples/designers/hierarchical-requirement/web-shop` open as a project, `web-shop.md` open.
+- **Actions**:
+  1. Double-click the title of REQ-0003.
+  2. Press Escape, then double-click the title of ITEM-0002 Checkout.
+  3. Press Escape, then press *New requirement* under Checkout's requirements.
+- **Expected**: each time, the title field is one line high (24px) and starts to the right of the number, which stays fully visible.
+- **Result 2026-10-24, agent-1-requirement-item-layout, a developer build of `claude/project-thread-sh0t6x`, headless Chromium driven by Playwright at 1500 by 1100**:
+  - Before the fix, on `develop` at #705, step 1 failed: the field was 684px high and started 1px left of the number's right edge.
+  - After the fix, all three steps passed: the field was 24px high and started 4px right of the number's right edge, at REQ-0003, Checkout and the new REQ-0014 alike.

@@ -424,9 +424,11 @@
   resize: none;
 }
 
+/* A title typed in place starts after the number, whose space it keeps, and is one line high until its text wraps. */
 .hs-field-title {
   flex: 1 1 0;
   min-width: 0;
+  margin-inline-start: 0;
   font-weight: 600;
   overflow-wrap: break-word;
 }

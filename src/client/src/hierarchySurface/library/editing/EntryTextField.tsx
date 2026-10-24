@@ -45,17 +45,19 @@ export function EntryTextField({ text, multiline, label, onChange, onCommit, onC
     ref.current?.select();
   }, []);
 
-  // As high as the text wraps to, as the text it replaced was; where it stands in a column that leaves it more, it grows
-  // into that, so it is measured without growing.
+  // As high as the text wraps to, as the text it replaced was. A description stands in a column that may leave it more,
+  // which it grows into, so it is measured without growing; a title grows only along its line, which gives it its width.
   useLayoutEffect(() => {
     const field = ref.current;
     if (field !== null) {
-      field.style.flexGrow = "0";
+      if (multiline) {
+        field.style.flexGrow = "0";
+      }
       field.style.height = "auto";
       field.style.height = `${field.scrollHeight + field.offsetHeight - field.clientHeight}px`;
       field.style.flexGrow = "";
     }
-  }, [text]);
+  }, [text, multiline]);
 
   useEffect(() => {
     if (caret.current !== null && lookupAt === null) {
