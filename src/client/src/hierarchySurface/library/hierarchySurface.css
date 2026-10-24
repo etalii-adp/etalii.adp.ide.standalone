@@ -153,10 +153,13 @@
   flex: 1;
 }
 
+/* Its controls stand in a column at its right, first in its markup and last in the row, as high as its content. */
 .hs-box {
   position: relative;
-  display: flow-root;
+  display: flex;
   flex: 1;
+  flex-direction: row-reverse;
+  align-items: stretch;
   min-width: 0;
   padding: 6px;
   cursor: default;
@@ -180,14 +183,24 @@
   line-height: 20px;
 }
 
-/* The box's controls at its top right, two in a row from right to left with the notes' icon first, wrapping to a next
-   line rather than over the title; the header, the tags and the description flow beside them. */
+/* The box's controls in a column at its right, two in a row from right to left with the notes' icon first, wrapping to
+   a next line rather than over the title. The column is as high as the header, the tags and the description, which
+   stand to its left and never under it; a deletable box's padding keeps it above the delete. */
 .hs-box-icons {
   display: flex;
-  float: right;
+  flex: none;
   flex-flow: row-reverse wrap;
+  align-content: flex-start;
   max-width: 40px;
   margin-inline-start: 4px;
+}
+
+/* The header, the tags and the description, beside the controls; a description opened for typing takes what is left. */
+.hs-box-content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
 }
 
 .hs-toggle,
@@ -387,10 +400,26 @@
   overflow-wrap: break-word;
 }
 
-.hs-box > .hs-field-multiline {
-  width: calc(100% - 24px + 10px);
-  margin: 2px -5px -2px 19px;
+/* A description typed in place: its text where the description's stood, reaching down the box to a margin above its
+   bottom, and short of the controls at its right. Its reference lookup opens under it. */
+.hs-description-field {
+  position: relative;
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+}
+
+.hs-description-field > .hs-field-multiline {
+  flex: 1 0 auto;
+  width: auto;
+  min-height: 66px;
+  margin: 2px 0 4px 19px;
   white-space: pre-wrap;
+}
+
+.hs-description-field > .hs-reference-lookup {
+  top: calc(100% - 4px);
+  left: 16px;
 }
 
 /* The place a node is added, at the end of a level's content and of the page, as the table's new row (FR-012). */
