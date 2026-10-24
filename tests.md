@@ -3918,7 +3918,7 @@ lays out no text, so a fill, a centred Comment and a drag that writes a size are
      connection with it.
   7. **A right-click on empty canvas** opens the specification's menu: "Add ui element here", "Add
      data element here", "Add action here", "Add function here", "Add comment here". The hand-written
-     canvas opened nothing here; this addition is on a card for the user.
+     canvas opened nothing here; the user ruled that the menu is offered (chat ruling of 2026-10-24).
 - **Result 2026-10-22, agent-7 (Developer), branch `features/functional-decomposition-graph-disl-fbl-8`
   at `cace83f44`, macOS, light and dark via emulated `prefers-color-scheme`, in the IDE's built-in
   browser with its pane hidden: all seven rows pass. Every gesture was dispatched as pointer, drag and
