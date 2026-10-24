@@ -81,7 +81,7 @@ function colourOf(optionLists: readonly HierarchySurfaceOptionList[], label: str
  * the whole first line fits beside them they stand in a row at its end, from right to left; otherwise in a column at
  * the box's right, from the top down, as high as the title, the tags and the description together, which stand to its
  * left and never under it. The title wraps under the grip and the collapse control, and the tags and the description
- * start at the box's left, the same space from its border as the controls are from its right.
+ * start at the box's left, twice the space from its border that the controls are from its right.
  *
  * A box that can be deleted keeps a place for its delete at its bottom right, beside the description, which the
  * selected box fills: selecting a box changes its size nothing. A description opened for typing stands where its text
