@@ -38,7 +38,7 @@ internal static class DislActionReader
     private static DislAction Action(DislSpecification specification, JsonElement action, string at)
     {
         if (action.ValueKind != JsonValueKind.Object) return new DislAction.NotAnObject(at);
-        var when = action.TryGetProperty("when", out var condition) ? DislFieldReader.Expression(specification, condition, JsonPointer.Append(at, "when")) : null;
+        var when = DislFieldReader.OptionalExpression(specification, action, at, "when");
 
         var kind = Kinds.FirstOrDefault(name => action.TryGetProperty(name, out _));
         if (kind is null) return new DislAction.Unknown(at, when);

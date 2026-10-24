@@ -28,9 +28,9 @@ internal static class DislFormReader
             JsonProperties.StringOrStrings(form, "usage"),
             JsonProperties.StringOrStrings(form, "for"),
             Items(specification, form, pointer),
-            form.TryGetProperty("label", out var label) ? DislFieldReader.Message(specification, label, JsonPointer.Append(pointer, "label")) : null,
+            DislFieldReader.OptionalMessage(specification, form, pointer, "label"),
             JsonProperties.String(form, "icon"),
-            form.TryGetProperty("submitLabel", out var submit) ? DislFieldReader.Message(specification, submit, JsonPointer.Append(pointer, "submitLabel")) : null,
+            DislFieldReader.OptionalMessage(specification, form, pointer, "submitLabel"),
             null);
     }
 
@@ -58,23 +58,23 @@ internal static class DislFormReader
             Attribute = attribute,
             Id = id,
             Name = id ?? attribute ?? JsonProperties.String(item, "label"),
-            Visible = Expression(specification, item, pointer, "visible"),
-            Label = Message(specification, item, pointer, "label"),
-            Title = Message(specification, item, pointer, "title"),
+            Visible = DislFieldReader.OptionalExpression(specification, item, pointer, "visible"),
+            Label = DislFieldReader.OptionalMessage(specification, item, pointer, "label"),
+            Title = DislFieldReader.OptionalMessage(specification, item, pointer, "title"),
             Items = Items(specification, item, pointer),
             Tabs = Tabs(specification, item, pointer),
-            Display = Expression(specification, item, pointer, "display"),
+            Display = DislFieldReader.OptionalExpression(specification, item, pointer, "display"),
             ValueText = JsonProperties.String(item, "value"),
             Value = item.TryGetProperty("value", out var value) && value.ValueKind != JsonValueKind.String ? DislFieldReader.Expression(specification, value, JsonPointer.Append(pointer, "value")) : null,
             Options = item.TryGetProperty("options", out var options) ? Options(specification, options, JsonPointer.Append(pointer, "options")) : null,
-            OptionLabel = Expression(specification, item, pointer, "optionLabel"),
+            OptionLabel = DislFieldReader.OptionalExpression(specification, item, pointer, "optionLabel"),
             Marks = marks,
             MarksNotAnObject = marksNotAnObject,
             Widget = JsonProperties.String(item, "widget"),
             ReadOnlyReasons = item.TryGetProperty("readOnlyReasons", out var reasons) ? DislFieldReader.Reasons(specification, reasons, JsonPointer.Append(pointer, "readOnlyReasons")) : [],
             Validations = Validations(specification, item, pointer),
             Parse = item.TryGetProperty("parse", out var parse) ? Parse(specification, parse, JsonPointer.Append(pointer, "parse")) : null,
-            Initial = Expression(specification, item, pointer, "initial"),
+            Initial = DislFieldReader.OptionalExpression(specification, item, pointer, "initial"),
         };
     }
 
@@ -89,7 +89,7 @@ internal static class DislFormReader
             var at = JsonPointer.Append(tabsAt, index++);
             list.Add(DislFieldReader.NotAnObject(tab) is { } malformed
                 ? new DislFormTab(null, null, malformed)
-                : new DislFormTab(Message(specification, tab, at, "title"), Items(specification, tab, at), null));
+                : new DislFormTab(DislFieldReader.OptionalMessage(specification, tab, at, "title"), Items(specification, tab, at), null));
         }
         return list;
     }
@@ -136,7 +136,7 @@ internal static class DislFormReader
             var at = JsonPointer.Append(validateAt, index++);
             list.Add(DislFieldReader.NotAnObject(validation) is { } malformed
                 ? new DislFormValidation("error", null, null, malformed)
-                : new DislFormValidation(JsonProperties.String(validation, "severity") ?? "error", Expression(specification, validation, at, "rule"), Message(specification, validation, at, "message"), null));
+                : new DislFormValidation(JsonProperties.String(validation, "severity") ?? "error", DislFieldReader.OptionalExpression(specification, validation, at, "rule"), DislFieldReader.OptionalMessage(specification, validation, at, "message"), null));
         }
         return list;
     }
@@ -146,16 +146,8 @@ internal static class DislFormReader
         DislFieldReader.NotAnObject(parse) is { } malformed
             ? new DislFormParse(null, null, null, malformed)
             : new DislFormParse(
-                Expression(specification, parse, pointer, "accepts"),
-                Message(specification, parse, pointer, "refusal"),
+                DislFieldReader.OptionalExpression(specification, parse, pointer, "accepts"),
+                DislFieldReader.OptionalMessage(specification, parse, pointer, "refusal"),
                 parse.TryGetProperty("write", out var write) ? DislActionReader.List(specification, write, JsonPointer.Append(pointer, "write")) : null,
                 null);
-
-    /// <summary>The Expression member <paramref name="name"/> of <paramref name="owner"/>, or null when it has none.</summary>
-    private static DislExpressionField? Expression(DislSpecification specification, JsonElement owner, string pointer, string name) =>
-        owner.TryGetProperty(name, out var json) ? DislFieldReader.Expression(specification, json, JsonPointer.Append(pointer, name)) : null;
-
-    /// <summary>The Message member <paramref name="name"/> of <paramref name="owner"/>, or null when it has none.</summary>
-    private static DislMessage? Message(DislSpecification specification, JsonElement owner, string pointer, string name) =>
-        owner.TryGetProperty(name, out var json) ? DislFieldReader.Message(specification, json, JsonPointer.Append(pointer, name)) : null;
 }
