@@ -88,22 +88,17 @@ public sealed class HelmChartReader
 
     private static ChartMetadata ReadMetadata(YamlMappingNode root)
     {
-        var version = Scalar(root, "version");
+        var version = YamlAccess.ScalarNode(root, "version");
         return new ChartMetadata(
-            Scalar(root, "name")?.Value,
+            YamlAccess.ScalarNode(root, "name")?.Value,
             version?.Value,
-            Scalar(root, "appVersion")?.Value,
-            Scalar(root, "apiVersion")?.Value,
-            Scalar(root, "type")?.Value is { Length: > 0 } type ? type : "application",
-            Scalar(root, "description")?.Value ?? string.Empty,
-            bool.TryParse(Scalar(root, "deprecated")?.Value, out var deprecated) && deprecated,
+            YamlAccess.ScalarNode(root, "appVersion")?.Value,
+            YamlAccess.ScalarNode(root, "apiVersion")?.Value,
+            YamlAccess.ScalarNode(root, "type")?.Value is { Length: > 0 } type ? type : "application",
+            YamlAccess.ScalarNode(root, "description")?.Value ?? string.Empty,
+            bool.TryParse(YamlAccess.ScalarNode(root, "deprecated")?.Value, out var deprecated) && deprecated,
             Line(root),
             version is null ? 0 : Line(version));
-
-        static YamlScalarNode? Scalar(YamlMappingNode root, string key) =>
-            root.Children.TryGetValue(new YamlScalarNode(key), out var node) && node is YamlScalarNode scalar
-                ? scalar
-                : null;
     }
 
     private static (IReadOnlyList<ValuesFile> Values, YamlMappingNode? DefaultRoot) ReadValues(Handed handed)
@@ -255,30 +250,25 @@ public sealed class HelmChartReader
         var result = new List<DependencyDeclaration>();
         foreach (var entry in sequence.Children.OfType<YamlMappingNode>())
         {
-            var name = Scalar(entry, "name");
+            var name = YamlAccess.Scalar(entry, "name");
             if (name is not { Length: > 0 })
             {
                 // A nameless dependency entry declares nothing recognizable.
                 continue;
             }
 
-            var condition = Scalar(entry, "condition");
+            var condition = YamlAccess.Scalar(entry, "condition");
             result.Add(new DependencyDeclaration(
                 name,
-                Scalar(entry, "alias"),
-                Scalar(entry, "version"),
-                Scalar(entry, "repository"),
+                YamlAccess.Scalar(entry, "alias"),
+                YamlAccess.Scalar(entry, "version"),
+                YamlAccess.Scalar(entry, "repository"),
                 condition,
                 Resolve(condition, defaultValuesRoot),
                 Line(entry)));
         }
 
         return ([.. result.OrderBy(dependency => dependency.EffectiveName, StringComparer.Ordinal)], null);
-
-        static string? Scalar(YamlMappingNode entry, string key) =>
-            entry.Children.TryGetValue(new YamlScalarNode(key), out var node) && node is YamlScalarNode scalar
-                ? scalar.Value
-                : null;
     }
 
     /// <summary>Walks a dotted condition path into the default values (Requirement 5.5).</summary>
@@ -395,9 +385,9 @@ public sealed class HelmChartReader
                 var entries = new List<LockEntry>();
                 foreach (var entry in sequence.Children.OfType<YamlMappingNode>())
                 {
-                    if (Scalar(entry, "name") is { Length: > 0 } entryName)
+                    if (YamlAccess.Scalar(entry, "name") is { Length: > 0 } entryName)
                     {
-                        entries.Add(new LockEntry(entryName, Scalar(entry, "version"), Line(entry)));
+                        entries.Add(new LockEntry(entryName, YamlAccess.Scalar(entry, "version"), Line(entry)));
                     }
                 }
 
@@ -405,11 +395,6 @@ public sealed class HelmChartReader
             default:
                 return new LockFile(name, [], null);
         }
-
-        static string? Scalar(YamlMappingNode entry, string key) =>
-            entry.Children.TryGetValue(new YamlScalarNode(key), out var node) && node is YamlScalarNode scalar
-                ? scalar.Value
-                : null;
     }
 
     private static string FileName(string relativePath)
