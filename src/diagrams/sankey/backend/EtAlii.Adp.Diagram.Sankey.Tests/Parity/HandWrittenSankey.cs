@@ -18,7 +18,7 @@ internal static class HandWrittenSankey
     private const string LookGroup = "Look";
     private const string AmountGroup = "Amount";
 
-    /// <summary>The palette, as the hand-written <c>SankeyToolboxProvider.Items</c> listed it.</summary>
+    /// <summary>The palette, as the module's own <c>SankeyToolboxProvider.Items</c> listed it before core's <c>DislToolboxProvider</c> replaced that class.</summary>
     public static IReadOnlyList<ToolboxItemDefinition> Toolbox { get; } =
     [
         new("sankey.toolbox.node", "Node", "mdi-chart-sankey", "Something a quantity flows into, out of, or through. Drop it in the column it belongs to.", Actions.AddActionId),
