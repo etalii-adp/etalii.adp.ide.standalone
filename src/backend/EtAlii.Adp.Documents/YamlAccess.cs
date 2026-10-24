@@ -51,11 +51,13 @@ public static class YamlAccess
             ? sequence.Children
             : [];
 
+    /// <summary>The scalar node under <paramref name="key"/>, or null where there is none or it is not a scalar; for a reader that also needs where it stands.</summary>
+    public static YamlScalarNode? ScalarNode(YamlMappingNode mapping, string key) =>
+        mapping.Children.TryGetValue(new YamlScalarNode(key), out var node) ? node as YamlScalarNode : null;
+
     /// <summary>The scalar under <paramref name="key"/>, or null where there is none or it is not a scalar.</summary>
     public static string? Scalar(YamlMappingNode mapping, string key) =>
-        mapping.Children.TryGetValue(new YamlScalarNode(key), out var node) && node is YamlScalarNode scalar
-            ? scalar.Value ?? ""
-            : null;
+        ScalarNode(mapping, key) is { } scalar ? scalar.Value ?? "" : null;
 
     /// <summary>A boolean scalar read leniently: only a value that says so is true.</summary>
     public static bool Flag(YamlMappingNode mapping, string key) =>
