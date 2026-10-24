@@ -28,6 +28,8 @@ public static class RealFileCorpus
         new("structurizr", "structurizr.fbl", "workspace", 16, (path, _) => Extension(path, ".dsl")),
         new("databricks-job", "databricks-job.fbl", "job", 4, (path, bytes) => (Extension(path, ".yml") || Extension(path, ".yaml")) && Contains(bytes, "task_key")),
         new("databricks-pipeline", "databricks-pipeline.fbl", "settings", 2, (path, bytes) => Extension(path, ".json") && Contains(bytes, "\"libraries\"")),
+        // sankey-disl-fbl, task 2: the module's own binding, embedded and read by nothing but tests until the body is read through it.
+        new("sankey", "src/diagrams/sankey/backend/EtAlii.Adp.Diagram.Sankey/sankey.fbl", "skv", 34, (path, _) => Extension(path, ".skv")),
     ];
 
     /// <summary>Registrations: every <c>.adp</c> under <c>src/</c>.</summary>
