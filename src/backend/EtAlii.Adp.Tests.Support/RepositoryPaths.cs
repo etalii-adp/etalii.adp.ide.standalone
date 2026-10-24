@@ -18,8 +18,8 @@ public static class RepositoryPaths
     /// <summary>The repository root.</summary>
     public static string Root => _root.Value;
 
-    /// <summary><c>src/</c>.</summary>
-    private static string Source => IoPath.Combine(Root, "src");
+    /// <summary><c>src/</c>, which every parity corpus names its documents relative to.</summary>
+    public static string Source => IoPath.Combine(Root, "src");
 
     /// <summary><c>src/fixtures/</c>, the test data both suites read.</summary>
     public static string Fixtures => IoPath.Combine(Source, "fixtures");
@@ -35,6 +35,15 @@ public static class RepositoryPaths
             ? path
             : throw new DirectoryNotFoundException($"{string.Join('/', segments)} was not found under the repository root {Root}.");
     }
+
+    /// <summary><paramref name="path"/> as a parity transcript names it: relative to <c>src/</c>, with forward slashes on every platform.</summary>
+    public static string RelativeToSource(string path) => IoPath.GetRelativePath(Source, path).Replace('\\', '/');
+
+    /// <summary>
+    /// <paramref name="paths"/> relative to <c>src/</c> with forward slashes, in ordinal order: how every
+    /// parity corpus lists one of its parts, so a transcript reads the same on every machine.
+    /// </summary>
+    public static IEnumerable<string> SortedRelativeToSource(IEnumerable<string> paths) => paths.Select(RelativeToSource).Order(StringComparer.Ordinal);
 
     private static string Locate()
     {
