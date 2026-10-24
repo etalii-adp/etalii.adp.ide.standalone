@@ -55,7 +55,7 @@ public static class RdfProjection
         var nodes = new Dictionary<string, RdfProjectionNode>(StringComparer.Ordinal);
         var order = new List<string>();
         var edges = new List<RdfProjectionEdge>();
-        var edgeCounts = new Dictionary<string, int>(StringComparer.Ordinal);
+        var edgeIds = new RdfEdgeIds();
 
         foreach (var triple in model.Triples)
         {
@@ -166,10 +166,7 @@ public static class RdfProjection
 
         void Edge(string fromId, string toId, string predicate, string predicateIri)
         {
-            var key = $"{fromId}|{predicateIri}|{toId}";
-            edgeCounts.TryGetValue(key, out var count);
-            edgeCounts[key] = count + 1;
-            var id = count == 0 ? $"edge:{key}" : $"edge:{key}|{count}";
+            var id = edgeIds.Next(fromId, predicateIri, toId);
             edges.Add(new RdfProjectionEdge(id, fromId, toId, predicate, predicateIri));
         }
 
