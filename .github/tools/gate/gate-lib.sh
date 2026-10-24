@@ -169,7 +169,7 @@ gate_remove_legacy_flat_logs() {
 }
 
 # gate_undeleted_folders <dir> - summarises what one run's test processes reported as test folders
-# they could not delete. TestFolder (src/TestSupport) writes one <pid>.log per reporting process into
+# they could not delete. TestFolder (src/backend/EtAlii.Adp.Tests.Support) writes one <pid>.log per reporting process into
 # the directory named by ADP_UNDELETED_FOLDERS_DIR, one line per folder, and creates nothing when it
 # has nothing to report. Prints "none", or "<n> file(s), <m> line(s)".
 #

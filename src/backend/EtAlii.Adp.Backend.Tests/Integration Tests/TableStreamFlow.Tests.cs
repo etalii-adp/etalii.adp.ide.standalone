@@ -3,7 +3,6 @@ using EtAlii.Adp.Designer.TableModel;
 using EtAlii.Adp.Diagram.Wire;
 using EtAlii.Adp.Projects;
 using EtAlii.Adp.Sessions;
-using EtAlii.Adp.TestSupport.Host;
 using EtAlii.Adp.Workspace;
 using Grpc.Core;
 using Microsoft.Extensions.DependencyInjection;

@@ -15,7 +15,12 @@
   <ItemGroup>
     <ProjectReference Include="..\EtAlii.Adp.Editor.Json\EtAlii.Adp.Editor.Json.csproj" />
     <!-- The module's flows over the real host (code-structure T252). -->
-    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.TestSupport.Host\EtAlii.Adp.TestSupport.Host.csproj" />
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Backend.Tests.Support\EtAlii.Adp.Backend.Tests.Support.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Test support of the areas these tests use; see src/Directory.Build.targets. -->
+    <Using Include="EtAlii.Adp.Backend.Tests.Support" />
   </ItemGroup>
 
 </Project>

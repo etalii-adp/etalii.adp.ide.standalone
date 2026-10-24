@@ -5,7 +5,6 @@ using EtAlii.Adp.Documents;
 using EtAlii.Adp.Editor;
 using EtAlii.Adp.Editor.Wire;
 using EtAlii.Adp.Hierarchy;
-using EtAlii.Adp.TestSupport.Host;
 using Grpc.Core;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;

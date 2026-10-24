@@ -17,4 +17,12 @@
     <ProjectReference Include="..\EtAlii.Adp.Problems\EtAlii.Adp.Problems.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Test support of the areas these tests use; see src/Directory.Build.targets. -->
+    <ProjectReference Include="..\EtAlii.Adp.Diagram.Tests.Support\EtAlii.Adp.Diagram.Tests.Support.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Files.Tests.Support\EtAlii.Adp.Files.Tests.Support.csproj" />
+    <Using Include="EtAlii.Adp.Diagram.Tests.Support" />
+    <Using Include="EtAlii.Adp.Files.Tests.Support" />
+  </ItemGroup>
+
 </Project>

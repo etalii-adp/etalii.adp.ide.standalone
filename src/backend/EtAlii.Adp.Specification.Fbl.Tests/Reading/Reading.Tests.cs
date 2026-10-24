@@ -4,7 +4,6 @@ using EtAlii.Adp.Specification.Fbl.Expressions;
 using EtAlii.Adp.Specification.Fbl.History;
 using EtAlii.Adp.Specification.Fbl.Planning;
 using EtAlii.Adp.Specification.Fbl.Registration;
-using EtAlii.Adp.Specification.Fbl.Tests.Support;
 using Xunit;
 
 namespace EtAlii.Adp.Specification.Fbl.Tests.Reading;

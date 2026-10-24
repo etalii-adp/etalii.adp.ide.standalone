@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The real-file corpus of the FBL implementation and the module cross-checks over it
+    (code-structure T287): ModuleCrossCheck, RealFileCorpus, Divergences, NaturalIds and DerivedIds.
+  -->
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3.assert" />
+    <PackageReference Include="xunit.v3.extensibility.core" />
+    <ProjectReference Include="..\EtAlii.Adp.Specification.Fbl\EtAlii.Adp.Specification.Fbl.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Specification.Json\EtAlii.Adp.Specification.Json.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Tests.Support\EtAlii.Adp.Tests.Support.csproj" />
+  </ItemGroup>
+
+</Project>

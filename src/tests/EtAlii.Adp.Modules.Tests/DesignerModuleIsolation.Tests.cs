@@ -27,7 +27,7 @@ public sealed class DesignerModuleIsolationTests
 
     private static IEnumerable<string> CoreSources() =>
         Directory.EnumerateDirectories(RepositoryPaths.Under("src", "backend"))
-            .Where(project => !IoPath.GetFileName(project).EndsWith(".Tests", StringComparison.Ordinal) && IoPath.GetFileName(project) != "EtAlii.Adp.TestSupport")
+            .Where(project => !IoPath.GetFileName(project).EndsWith(".Tests", StringComparison.Ordinal) && !IoPath.GetFileName(project).EndsWith(".Tests.Support", StringComparison.Ordinal))
             .SelectMany(project => Directory.EnumerateFiles(project, "*", SearchOption.AllDirectories))
             .Where(file => IoPath.GetExtension(file) is ".cs" or ".csproj" or ".json" or ".props" or ".targets")
             .Where(file => !file.Contains($"{IoPath.DirectorySeparatorChar}obj{IoPath.DirectorySeparatorChar}", StringComparison.Ordinal)
