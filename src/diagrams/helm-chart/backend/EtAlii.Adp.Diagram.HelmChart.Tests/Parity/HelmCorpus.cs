@@ -23,14 +23,9 @@ internal static class HelmCorpus
     {
         return
         [
-            .. Folders(Path.Combine(ModuleFolder, "backend", TestProject, "Fixtures")),
-            .. Folders(Path.Combine(ModuleFolder, "examples")),
-            .. Folders(Path.Combine(SourceFolder, "examples", "diagrams", "helm-chart")),
+            .. RepositoryPaths.SortedRelativeToSource(Directory.GetDirectories(Path.Combine(ModuleFolder, "backend", TestProject, "Fixtures"))),
+            .. RepositoryPaths.SortedRelativeToSource(Directory.GetDirectories(Path.Combine(ModuleFolder, "examples"))),
+            .. RepositoryPaths.SortedRelativeToSource(Directory.GetDirectories(Path.Combine(SourceFolder, "examples", "diagrams", "helm-chart"))),
         ];
-
-        static IEnumerable<string> Folders(string folder) =>
-            Directory.GetDirectories(folder)
-                .Select(path => Path.GetRelativePath(SourceFolder, path).Replace('\\', '/'))
-                .Order(StringComparer.Ordinal);
     }
 }

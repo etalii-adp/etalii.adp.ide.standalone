@@ -74,8 +74,7 @@ public class PipelineRoundTripTests
         using var folder = Copy(path, out var body);
         var original = await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken);
         var model = (await new PipelineDocumentStore(new FileWriter()).GetOrLoadAsync(ProjectRoot.From(folder.Path), body, TestContext.Current.CancellationToken)).Model;
-        List<string> failures = [];
-        var applied = 0;
+        var roundTrip = new UndoRoundTrip(body, original, () => TestHistory.Dispatcher(s => s.AddAzurePipeline()), andRedo: true);
 
         // Act and assert.
         string[] ids =
@@ -87,47 +86,22 @@ public class PipelineRoundTripTests
         var other = model.Stages.Skip(1).FirstOrDefault()?.Name ?? "";
         foreach (var id in ids)
         {
-            await Check(new RenamePipelineElementCommand(ProjectRoot.From(folder.Path), body, id, "Round trip"));
-            await Check(new SetPipelineElementEnabledCommand(ProjectRoot.From(folder.Path), body, id, false));
-            await Check(new SetPipelineDependenciesCommand(ProjectRoot.From(folder.Path), body, id, [], Declared: false));
-            await Check(new SetPipelineDependenciesCommand(ProjectRoot.From(folder.Path), body, id, [], Declared: true));
-            await Check(new SetPipelineDependenciesCommand(ProjectRoot.From(folder.Path), body, id, [other], Declared: true));
-            await Check(new AddPipelineElementCommand(ProjectRoot.From(folder.Path), body, PipelineAddKind.Job, id));
-            await Check(new AddPipelineElementCommand(ProjectRoot.From(folder.Path), body, PipelineAddKind.DeploymentJob, id));
-            await Check(new AddPipelineElementCommand(ProjectRoot.From(folder.Path), body, PipelineAddKind.Step, id));
-            await Check(new RemovePipelineElementCommand(ProjectRoot.From(folder.Path), body, id));
-            await Check(new MovePipelineStepCommand(ProjectRoot.From(folder.Path), body, id, 0));
-            await Check(new MovePipelineStepCommand(ProjectRoot.From(folder.Path), body, id, int.MaxValue));
+            await roundTrip.CheckAsync(new RenamePipelineElementCommand(ProjectRoot.From(folder.Path), body, id, "Round trip"), TestContext.Current.CancellationToken);
+            await roundTrip.CheckAsync(new SetPipelineElementEnabledCommand(ProjectRoot.From(folder.Path), body, id, false), TestContext.Current.CancellationToken);
+            await roundTrip.CheckAsync(new SetPipelineDependenciesCommand(ProjectRoot.From(folder.Path), body, id, [], Declared: false), TestContext.Current.CancellationToken);
+            await roundTrip.CheckAsync(new SetPipelineDependenciesCommand(ProjectRoot.From(folder.Path), body, id, [], Declared: true), TestContext.Current.CancellationToken);
+            await roundTrip.CheckAsync(new SetPipelineDependenciesCommand(ProjectRoot.From(folder.Path), body, id, [other], Declared: true), TestContext.Current.CancellationToken);
+            await roundTrip.CheckAsync(new AddPipelineElementCommand(ProjectRoot.From(folder.Path), body, PipelineAddKind.Job, id), TestContext.Current.CancellationToken);
+            await roundTrip.CheckAsync(new AddPipelineElementCommand(ProjectRoot.From(folder.Path), body, PipelineAddKind.DeploymentJob, id), TestContext.Current.CancellationToken);
+            await roundTrip.CheckAsync(new AddPipelineElementCommand(ProjectRoot.From(folder.Path), body, PipelineAddKind.Step, id), TestContext.Current.CancellationToken);
+            await roundTrip.CheckAsync(new RemovePipelineElementCommand(ProjectRoot.From(folder.Path), body, id), TestContext.Current.CancellationToken);
+            await roundTrip.CheckAsync(new MovePipelineStepCommand(ProjectRoot.From(folder.Path), body, id, 0), TestContext.Current.CancellationToken);
+            await roundTrip.CheckAsync(new MovePipelineStepCommand(ProjectRoot.From(folder.Path), body, id, int.MaxValue), TestContext.Current.CancellationToken);
         }
 
-        await Check(new AddPipelineElementCommand(ProjectRoot.From(folder.Path), body, PipelineAddKind.Stage, ""));
-        Assert.True(failures.Count == 0, $"{path}: {failures.Count} of {applied} edits\n{string.Join("\n", failures)}");
-        if (model.Stages.Any(stage => stage is { IsImplicit: false, IsFromTemplate: false })) Assert.True(applied > 0, $"{path}: no edit applied, so nothing was undone.");
-        return;
-
-        async Task Check(IPipelineEditCommand command)
-        {
-            var cancellationToken = TestContext.Current.CancellationToken;
-            await File.WriteAllBytesAsync(body, original, cancellationToken);
-            var dispatcher = TestHistory.Dispatcher(s => s.AddAzurePipeline());
-            var done = await dispatcher.DispatchAsync(command, cancellationToken);
-            if (done is not { IsSuccess: true, Inverse: not null }) return;
-
-            applied++;
-            var edited = await File.ReadAllBytesAsync(body, cancellationToken);
-            var undone = await dispatcher.DispatchAsync(done.Inverse, cancellationToken);
-            var afterUndo = await File.ReadAllBytesAsync(body, cancellationToken);
-            var redone = undone.Inverse is { } redo ? await dispatcher.DispatchAsync(redo, cancellationToken) : null;
-            var afterRedo = await File.ReadAllBytesAsync(body, cancellationToken);
-            if (!undone.IsSuccess || !afterUndo.AsSpan().SequenceEqual(original))
-            {
-                failures.Add($"  {command}: the undo {(undone.IsSuccess ? "did not give the bytes back" : $"was refused: {undone.Error}")}");
-            }
-            else if (redone is not { IsSuccess: true } || !afterRedo.AsSpan().SequenceEqual(edited))
-            {
-                failures.Add($"  {command}: the redo {(redone is { IsSuccess: false } ? $"was refused: {redone.Error}" : "did not write the edit's bytes")}");
-            }
-        }
+        await roundTrip.CheckAsync(new AddPipelineElementCommand(ProjectRoot.From(folder.Path), body, PipelineAddKind.Stage, ""), TestContext.Current.CancellationToken);
+        Assert.True(roundTrip.Failures.Count == 0, $"{path}: {roundTrip.Failures.Count} of {roundTrip.Applied} edits\n{roundTrip}");
+        if (model.Stages.Any(stage => stage is { IsImplicit: false, IsFromTemplate: false })) Assert.True(roundTrip.Applied > 0, $"{path}: no edit applied, so nothing was undone.");
     }
 
     [Fact]

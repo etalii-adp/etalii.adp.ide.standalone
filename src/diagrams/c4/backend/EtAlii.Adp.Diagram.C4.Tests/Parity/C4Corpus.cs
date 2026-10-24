@@ -62,26 +62,26 @@ internal static class C4Corpus
     {
         var fixtures = Path.Combine(ModuleFolder, "backend", TestProject, "Fixtures");
         var documents = new List<Document>();
-        foreach (var body in Sorted(Directory.GetFiles(fixtures, "*.dsl")).Concat(Sorted(Directory.GetFiles(Path.Combine(fixtures, "findings"), "*.dsl"))))
+        foreach (var body in Directory.GetFiles(fixtures, "*.dsl").Order(StringComparer.Ordinal).Concat(Directory.GetFiles(Path.Combine(fixtures, "findings"), "*.dsl").Order(StringComparer.Ordinal)))
         {
             var sidecar = C4LayoutSidecar.PathFor(body);
             List<(string, byte[])> companions = File.Exists(sidecar) ? [(Path.GetFileName(sidecar), await File.ReadAllBytesAsync(sidecar, cancellationToken))] : [];
-            documents.Add(new Document(RelativeToSource(body), await File.ReadAllBytesAsync(body, cancellationToken), companions));
+            documents.Add(new Document(RepositoryPaths.RelativeToSource(body), await File.ReadAllBytesAsync(body, cancellationToken), companions));
         }
 
         var examples = Directory.GetDirectories(Path.Combine(ModuleFolder, "examples"))
             .Concat(Directory.GetDirectories(Path.Combine(SourceFolder, "examples", "diagrams", "c4")))
             .SelectMany(project => Directory.GetFiles(project, "*.dsl", SearchOption.AllDirectories));
-        foreach (var body in Sorted(examples))
+        foreach (var body in examples.Order(StringComparer.Ordinal))
         {
             var folder = Path.GetDirectoryName(body)!;
             var companions = new List<(string, byte[])>();
-            foreach (var file in Sorted(Directory.GetFiles(folder)).Where(file => !string.Equals(file, body, StringComparison.Ordinal)))
+            foreach (var file in Directory.GetFiles(folder).Order(StringComparer.Ordinal).Where(file => !string.Equals(file, body, StringComparison.Ordinal)))
             {
                 companions.Add((Path.GetFileName(file), await File.ReadAllBytesAsync(file, cancellationToken)));
             }
 
-            documents.Add(new Document(RelativeToSource(body), await File.ReadAllBytesAsync(body, cancellationToken), companions));
+            documents.Add(new Document(RepositoryPaths.RelativeToSource(body), await File.ReadAllBytesAsync(body, cancellationToken), companions));
         }
 
         await using var services = new ServiceCollection().AddC4().BuildServiceProvider();
@@ -93,8 +93,6 @@ internal static class C4Corpus
         }
 
         return documents;
-
-        static IEnumerable<string> Sorted(IEnumerable<string> paths) => paths.Order(StringComparer.Ordinal);
     }
 
     /// <summary>
@@ -174,7 +172,4 @@ internal static class C4Corpus
             }
         }
     }
-
-    /// <summary>A path as the transcript names it: relative to <c>src/</c>, with forward slashes.</summary>
-    private static string RelativeToSource(string path) => Path.GetRelativePath(SourceFolder, path).Replace('\\', '/');
 }

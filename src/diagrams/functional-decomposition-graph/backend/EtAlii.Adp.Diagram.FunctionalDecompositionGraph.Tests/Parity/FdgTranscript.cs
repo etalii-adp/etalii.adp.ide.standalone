@@ -69,9 +69,7 @@ internal static class FdgTranscript
         var fixtures = Directory.GetFiles(Path.Combine(ModuleFolder, "backend", TestProject, "Fixtures"), "*.fdg");
         var examples = Directory.GetDirectories(Path.Combine(ModuleFolder, "examples")).SelectMany(folder => Directory.GetFiles(folder, "*.fdg"));
         var shipped = Directory.GetDirectories(Path.Combine(SourceFolder, "examples", "diagrams", "functional-decomposition-graph")).SelectMany(folder => Directory.GetFiles(folder, "*.fdg"));
-        return [.. Sorted(fixtures), .. Sorted(examples), .. Sorted(shipped)];
-
-        static IEnumerable<string> Sorted(IEnumerable<string> paths) => paths.Select(path => Path.GetRelativePath(SourceFolder, path).Replace('\\', '/')).Order(StringComparer.Ordinal);
+        return [.. RepositoryPaths.SortedRelativeToSource(fixtures), .. RepositoryPaths.SortedRelativeToSource(examples), .. RepositoryPaths.SortedRelativeToSource(shipped)];
     }
 
     /// <summary>The whole transcript, as the bytes the checked-in file must hold.</summary>

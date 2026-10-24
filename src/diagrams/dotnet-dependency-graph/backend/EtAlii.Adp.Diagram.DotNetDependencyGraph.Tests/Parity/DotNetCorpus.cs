@@ -30,13 +30,11 @@ internal static class DotNetCorpus
             .. In(Path.Combine(ModuleFolder, "examples")),
             .. In(Path.Combine(SourceFolder, "examples", "diagrams", "dotnet-dependency-graph")),
         ];
-
-        static IEnumerable<string> In(string folder) =>
-            Directory.Exists(folder)
-                ? Directory.EnumerateFiles(folder, "*.*", SearchOption.AllDirectories)
-                    .Where(path => Path.GetExtension(path) is ".sln" or ".slnx")
-                    .Select(path => Path.GetRelativePath(SourceFolder, path).Replace('\\', '/'))
-                    .Order(StringComparer.Ordinal)
-                : [];
     }
+
+    /// <summary>The solutions under <paramref name="folder"/>, as the corpus lists them; none when it is not there.</summary>
+    private static IEnumerable<string> In(string folder) =>
+        Directory.Exists(folder)
+            ? RepositoryPaths.SortedRelativeToSource(Directory.EnumerateFiles(folder, "*.*", SearchOption.AllDirectories).Where(path => Path.GetExtension(path) is ".sln" or ".slnx"))
+            : [];
 }
