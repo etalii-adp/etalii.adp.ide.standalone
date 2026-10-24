@@ -53,18 +53,7 @@ public class TimelineToolboxTests : IDisposable
     public void EveryEntryCarriesOnlyData_AndAllOfIt()
     {
         // Assert.
-        Assert.All(_toolbox.Items, AssertAction);
-        return;
-
-        static void AssertAction(ToolboxItemDefinition item)
-        {
-            ArgumentNullException.ThrowIfNull(item);
-            Assert.NotEmpty(item.Id);
-            Assert.NotEmpty(item.Label);
-            Assert.NotEmpty(item.Icon);
-            Assert.NotEmpty(item.Description);
-            Assert.NotEmpty(item.DropActionId);
-        }
+        Assert.All(_toolbox.Items, ToolboxItems.AssertComplete);
     }
 
     [Fact]
