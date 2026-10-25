@@ -88,28 +88,15 @@ public sealed class MoveWardleyElementCommandHandler(IWardleyDocumentStore docum
             return null;
         }
 
+        // The holder at the entry's ordinal, where two elements carry one key (finding B9).
         if (entry.Kind == WardleyIdentityKind.Component)
         {
-            var component = map.Components.FirstOrDefault(candidate => WardleyIdentityKeys.Of(candidate) == entry.Key);
+            var component = WardleyIdentityKeys.Component(map, entry.Key);
             return component is null ? null : (component, null);
         }
 
-        if (entry.Kind != WardleyIdentityKind.PipelineChild)
-        {
-            return null;
-        }
-
-        foreach (var pipeline in map.Pipelines)
-        {
-            foreach (var child in pipeline.Children)
-            {
-                if (WardleyIdentityKeys.Of(pipeline, child) == entry.Key)
-                {
-                    return (null, child);
-                }
-            }
-        }
-
-        return null;
+        return entry.Kind == WardleyIdentityKind.PipelineChild && WardleyIdentityKeys.Child(map, entry.Key) is { } found
+            ? (null, found.Child)
+            : null;
     }
 }

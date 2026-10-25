@@ -575,7 +575,5 @@ public sealed class WardleyContextActionProviderTests : IDisposable
         public void Forget(string path) => inner.Forget(path);
 
         public IReadOnlyList<WardleyIdentityEntry> Identities(string path) => inner.Identities(path);
-
-        public void Rekey(string path, string kind, string oldKey, string newKey) => inner.Rekey(path, kind, oldKey, newKey);
     }
 }

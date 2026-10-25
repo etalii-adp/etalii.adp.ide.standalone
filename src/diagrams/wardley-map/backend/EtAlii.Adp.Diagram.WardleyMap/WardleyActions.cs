@@ -30,44 +30,45 @@ public sealed record WardleySubject(
     /// <summary>Whether the selection names an element the map no longer has.</summary>
     public bool IsGone => !IsMap && Entry is null;
 
-    /// <summary>The component the selection names, or null when it names something else.</summary>
+    /// <summary>
+    /// The component the selection names, or null when it names something else: the holder at
+    /// the entry's ordinal, where two components carry one name (finding B9).
+    /// </summary>
     public WardleyComponent? Component => Entry is { Kind: WardleyIdentityKind.Component } entry
-        ? Map.Components.FirstOrDefault(candidate => WardleyIdentityKeys.Of(candidate) == entry.Key)
+        ? WardleyIdentityKeys.Component(Map, entry.Key)
         : null;
+
+    /// <summary>
+    /// Whether the selection is the first component to carry its name: the one every link,
+    /// `evolve` and `pipeline` naming it attaches to (ruling 3). A later holder has none of them.
+    /// </summary>
+    public bool IsFirstHolder => Component is { } component && WardleyIdentityKeys.IsFirstHolder(Map, component);
 
     /// <summary>The pipeline child the selection names, with its pipeline, or null when it names something else.</summary>
     public (WardleyPipeline Pipeline, WardleyPipelineChild Child)? Child
     {
         get
         {
-            if (Entry is not { Kind: WardleyIdentityKind.PipelineChild } entry)
-            {
-                return null;
-            }
-
-            foreach (var pipeline in Map.Pipelines)
-            {
-                foreach (var child in pipeline.Children)
-                {
-                    if (WardleyIdentityKeys.Of(pipeline, child) == entry.Key)
-                    {
-                        return (pipeline, child);
-                    }
-                }
-            }
-
-            return null;
+            return Entry is { Kind: WardleyIdentityKind.PipelineChild } entry
+                ? WardleyIdentityKeys.Child(Map, entry.Key)
+                : null;
         }
     }
 
-    /// <summary>The `evolve` statement of the selected component, or null.</summary>
-    public WardleyEvolve? Evolve => Component is { } component
+    /// <summary>The `evolve` statement of the selected component, or null; a later holder has none.</summary>
+    public WardleyEvolve? Evolve => Component is { } component && IsFirstHolder
         ? Map.Evolves.FirstOrDefault(candidate => candidate.Name == component.Name)
         : null;
 
-    /// <summary>The id of the component called <paramref name="name"/>, or empty.</summary>
-    public string IdOf(string name) => Identities
-        .FirstOrDefault(entry => entry.Kind == WardleyIdentityKind.Component && entry.Key == name)?.Id ?? "";
+    /// <summary>
+    /// The id of the component called <paramref name="name"/>, or empty: the first holder's, which
+    /// is the one a statement naming it attaches to.
+    /// </summary>
+    public string IdOf(string name) => IdOfHolder(name);
+
+    /// <summary>The id of the component whose holder key is <paramref name="key"/>, or empty.</summary>
+    public string IdOfHolder(string key) => Identities
+        .FirstOrDefault(entry => entry.Kind == WardleyIdentityKind.Component && entry.Key == key)?.Id ?? "";
 
     /// <summary>The subject the selection of <paramref name="elementId"/> on the map at <paramref name="bodyPath"/> is.</summary>
     public static WardleySubject Of(string bodyPath, WardleyMap map, IWardleyDocumentStore documents, string elementId)
@@ -320,25 +321,35 @@ public static class WardleyActions
     private static ContextActionDefinition? Offered(WardleySubject subject, ContextActionDefinition definition) =>
         subject.Component is null ? null : definition;
 
+    /// <summary>The pipeline of the selected component, or null; a later holder has none (ruling 3).</summary>
     private static WardleyPipeline? PipelineOf(WardleySubject subject, WardleyComponent component) =>
-        subject.Map.Pipelines.FirstOrDefault(candidate => candidate.Parent == component.Name);
+        subject.IsFirstHolder
+            ? subject.Map.Pipelines.FirstOrDefault(candidate => candidate.Parent == component.Name)
+            : null;
 
-    /// <summary>Every other element on the map, as the options of a "link to" dialog.</summary>
+    /// <summary>
+    /// Every other element on the map, as the options of a "link to" dialog: each holder by its
+    /// own id, a holder of the selection's own name among them, since a link to a later holder
+    /// first gives it a name of its own (ruling 4).
+    /// </summary>
     private static IReadOnlyList<ContextOptionNode> Others(WardleySubject subject) =>
-        subject.Map.Components
-            .Where(candidate => candidate.Name != subject.Component!.Name)
-            .Select(candidate => new ContextOptionNode(subject.IdOf(candidate.Name), candidate.Name, Selectable: true))
-            .Where(option => option.Id.Length > 0)
+        WardleyIdentityKeys.Holders(subject.Map.Components, WardleyIdentityKeys.Of)
+            .Select(held => (Id: subject.IdOfHolder(held.Key), held.Item.Name))
+            .Where(option => option.Id.Length > 0 && option.Id != subject.ElementId)
+            .Select(option => new ContextOptionNode(option.Id, option.Name, Selectable: true))
             .OrderBy(option => option.Label, StringComparer.OrdinalIgnoreCase)
             .ToArray();
 
     /// <summary>The links the selection is, or is an end of, each labelled the way a human reads it.</summary>
     private static IReadOnlyList<WardleyLinkChoice> LinksOf(WardleySubject subject)
     {
+        // A later holder has no link: every link naming it attaches to the first holder (ruling 3).
         var name = subject.Component?.Name;
         var links = name is not null
-            ? subject.Map.Links.Where(link => link.Source == name || link.Target == name)
-            : subject.Map.Links.Where(link => WardleyIdentityKeys.Of(link) == subject.Entry?.Key);
+            ? subject.IsFirstHolder ? subject.Map.Links.Where(link => link.Source == name || link.Target == name) : []
+            : WardleyIdentityKeys.Holders(subject.Map.Links, WardleyIdentityKeys.Of)
+                .Where(held => held.Key == subject.Entry?.Key)
+                .Select(held => held.Item);
 
         return links
             .Select(link => new WardleyLinkChoice(

@@ -52,7 +52,7 @@ public static class WardleyElementDescriptions
 
     private static WardleyElementDescription? Component(WardleyMap map, string key)
     {
-        var component = map.Components.FirstOrDefault(candidate => WardleyIdentityKeys.Of(candidate) == key);
+        var component = WardleyIdentityKeys.Component(map, key);
         if (component is null)
         {
             return null;
@@ -60,8 +60,9 @@ public static class WardleyElementDescriptions
 
         // A component "has children" exactly when it is a pipeline parent. Nothing else in this
         // notation contains anything: a Wardley map is a flat space, and the containment the
-        // selection chain models is the one the pipeline introduces.
-        var hasChildren = map.Pipelines.Any(pipeline =>
+        // selection chain models is the one the pipeline introduces, and a pipeline naming a
+        // repeated name belongs to its first holder (ruling 3).
+        var hasChildren = WardleyIdentityKeys.IsFirstHolder(map, component) && map.Pipelines.Any(pipeline =>
             pipeline.Parent == component.Name && pipeline.Children.Count > 0);
 
         return new WardleyElementDescription(component.Name, [component.Name], hasChildren);
@@ -69,25 +70,16 @@ public static class WardleyElementDescriptions
 
     private static WardleyElementDescription? PipelineChild(WardleyMap map, string key)
     {
-        foreach (var pipeline in map.Pipelines)
-        {
-            foreach (var child in pipeline.Children)
-            {
-                if (WardleyIdentityKeys.Of(pipeline, child) == key)
-                {
-                    // The only two-segment path this notation produces: a child is named
-                    // beneath the component whose pipeline holds it.
-                    return new WardleyElementDescription(child.Name, [pipeline.Parent, child.Name], HasChildren: false);
-                }
-            }
-        }
-
-        return null;
+        // The only two-segment path this notation produces: a child is named beneath the
+        // component whose pipeline holds it.
+        return WardleyIdentityKeys.Child(map, key) is { } found
+            ? new WardleyElementDescription(found.Child.Name, [found.Pipeline.Parent, found.Child.Name], HasChildren: false)
+            : null;
     }
 
     private static WardleyElementDescription? Link(WardleyMap map, string key)
     {
-        var link = map.Links.FirstOrDefault(candidate => WardleyIdentityKeys.Of(candidate) == key);
+        var link = WardleyIdentityKeys.Find(map.Links, WardleyIdentityKeys.Of, key);
         if (link is null)
         {
             return null;
@@ -106,13 +98,13 @@ public static class WardleyElementDescriptions
 
     private static WardleyElementDescription? Note(WardleyMap map, string key)
     {
-        var note = map.Notes.FirstOrDefault(candidate => WardleyIdentityKeys.Of(candidate) == key);
+        var note = WardleyIdentityKeys.Find(map.Notes, WardleyIdentityKeys.Of, key);
         return note is null ? null : new WardleyElementDescription(note.Text, [note.Text], HasChildren: false);
     }
 
     private static WardleyElementDescription? Annotation(WardleyMap map, string key)
     {
-        var annotation = map.Annotations.FirstOrDefault(candidate => WardleyIdentityKeys.Of(candidate) == key);
+        var annotation = WardleyIdentityKeys.Find(map.Annotations, WardleyIdentityKeys.Of, key);
         if (annotation is null)
         {
             return null;
@@ -125,7 +117,7 @@ public static class WardleyElementDescriptions
 
     private static WardleyElementDescription? Accelerator(WardleyMap map, string key)
     {
-        var accelerator = map.Accelerators.FirstOrDefault(candidate => WardleyIdentityKeys.Of(candidate) == key);
+        var accelerator = WardleyIdentityKeys.Find(map.Accelerators, WardleyIdentityKeys.Of, key);
         if (accelerator is null)
         {
             return null;
@@ -139,7 +131,7 @@ public static class WardleyElementDescriptions
 
     private static WardleyElementDescription? Attitude(WardleyMap map, string key)
     {
-        var attitude = map.Attitudes.FirstOrDefault(candidate => WardleyIdentityKeys.Of(candidate) == key);
+        var attitude = WardleyIdentityKeys.Find(map.Attitudes, WardleyIdentityKeys.Of, key);
         if (attitude is null)
         {
             return null;

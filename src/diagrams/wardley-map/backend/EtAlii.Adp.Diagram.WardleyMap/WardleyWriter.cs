@@ -110,6 +110,47 @@ public static partial class WardleyWriter
             changed += RenameIn(document, component.Line, DeclarationNameExpression(), "name", newName) ? 1 : 0;
         }
 
+        return changed + RenameReferences(document, map, oldName, newName);
+    }
+
+    /// <summary>
+    /// Renames one holder of a name, which is how a repeated name is resolved (finding B9, ruling 5):
+    /// the first holder takes along every statement that names it, a later holder changes its own
+    /// declaration only, because nothing attaches to it, and the other holders keep the old name.
+    /// </summary>
+    /// <returns>How many lines were rewritten.</returns>
+    public static int Rename(LineDocument document, WardleyMap map, WardleyComponent holder, string newName)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        ArgumentNullException.ThrowIfNull(map);
+        ArgumentNullException.ThrowIfNull(holder);
+        ArgumentException.ThrowIfNullOrWhiteSpace(newName);
+
+        if (holder.Name == newName || !RenameDeclaration(document, holder, newName))
+        {
+            return 0;
+        }
+
+        return WardleyIdentityKeys.IsFirstHolder(map, holder)
+            ? 1 + RenameReferences(document, map, holder.Name, newName)
+            : 1;
+    }
+
+    /// <summary>Rewrites the name in <paramref name="component"/>'s own declaration, and nothing else.</summary>
+    public static bool RenameDeclaration(LineDocument document, WardleyComponent component, string newName)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        ArgumentNullException.ThrowIfNull(component);
+        ArgumentException.ThrowIfNullOrWhiteSpace(newName);
+
+        return RenameIn(document, component.Line, DeclarationNameExpression(), "name", newName);
+    }
+
+    /// <summary>Every link, `evolve`, pipeline parent and pipeline child naming <paramref name="oldName"/>.</summary>
+    private static int RenameReferences(LineDocument document, WardleyMap map, string oldName, string newName)
+    {
+        var changed = 0;
+
         foreach (var link in map.Links.Where(candidate => candidate.Source == oldName || candidate.Target == oldName))
         {
             changed += RenameLink(document, link, oldName, newName) ? 1 : 0;
