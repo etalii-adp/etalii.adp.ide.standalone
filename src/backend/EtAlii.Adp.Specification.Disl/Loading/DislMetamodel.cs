@@ -42,6 +42,12 @@ public sealed record DislAttribute(string Name, string Type, bool Many, JsonElem
     /// <summary>The refusal of a typed value out of range (<c>outOfRange.message</c>), set at load; null for the runtime's sentence.</summary>
     internal DislMessage? OutOfRangeMessage { get; set; }
 
+    /// <summary>
+    /// The fields of the struct data type (§4.4) it is typed by, in declaration order, each with the bounds of its own
+    /// declaration or of its type, read at load; none for any other type.
+    /// </summary>
+    internal IReadOnlyList<DislAttribute> Fields { get; init; } = [];
+
     /// <summary>Whether it is a <c>key</c> (§4.3), read at load: a part of its type's natural id.</summary>
     internal bool Key { get; } = JsonProperties.Bool(Json, "key");
 

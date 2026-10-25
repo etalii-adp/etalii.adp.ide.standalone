@@ -65,6 +65,17 @@ internal static class WardleyDefinition
     /// <summary>The palette.</summary>
     public static IReadOnlyList<ToolboxItemDefinition> Toolbox => Definition.Toolbox;
 
+    /// <summary>
+    /// Where a type's findings of one code come among the others' (the tool reports by rule and then by collection): the
+    /// positioned elements, the pipelines with their components, the evolutions, the notes, the accelerators, the
+    /// attitudes and the annotations. A pipeline and its components share a place, so by line a legacy pipeline's extent
+    /// and a component's maturity come pipeline by pipeline. A type it does not name comes last.
+    /// </summary>
+    private static readonly string[][] FindingTypes = [["Positioned"], ["Pipeline", "PipelineComponent"], ["Evolution"], ["Note"], ["Accelerator"], ["Attitude"], ["Annotation"]];
+
+    /// <summary>The one code reported where a map's elements cannot be located by line alone: at the first holder's id.</summary>
+    private const string DuplicateName = "wardley.duplicate-name";
+
     /// <summary>What <c>env</c> reads for a map whose file can be written: editable, in no viewpoint.</summary>
     internal static DislEnv Env { get; } = new();
 
@@ -239,6 +250,75 @@ internal static class WardleyDefinition
         return WardleyTransactionCommands.Of(bodyPath, diagram, transaction) is { } command
             ? DiagramPropertyChange.By(command)
             : DiagramPropertyChange.Refused(WardleyTransactionCommands.Unwritable($"row '{key}'"));
+    }
+
+    /// <summary>
+    /// The findings of <paramref name="map"/>, read from <paramref name="body"/> with <paramref name="passedOver"/> the
+    /// lines its reader passed over, and <paramref name="identities"/> the ids the store holds beside it (none for a text it
+    /// does not hold): the definition's constraints, in its <c>constraints.order</c> of codes, within a code by
+    /// <see cref="FindingTypes"/> and then by line. <paramref name="beforeReader"/> are the findings the module makes itself,
+    /// which the order puts before the reader's.
+    /// </summary>
+    /// <remarks>
+    /// A finding is located at its line, except <c>wardley.duplicate-name</c>, which is at the first holder's id when the
+    /// store holds one, and a finding about the whole map, which is nowhere. The reader's findings are the lines it passed
+    /// over (<c>std.unreadableEntry</c>), and nothing else: the reader raises no other finding the tool gives.
+    /// </remarks>
+    public static IReadOnlyList<DiagramProblem> Problems(
+        LineDocument body,
+        WardleyMap map,
+        IReadOnlyList<ParseProblem> passedOver,
+        IReadOnlyList<WardleyIdentityEntry> identities,
+        IReadOnlyList<DiagramProblem> beforeReader)
+    {
+        ArgumentNullException.ThrowIfNull(passedOver);
+        ArgumentNullException.ThrowIfNull(identities);
+        ArgumentNullException.ThrowIfNull(beforeReader);
+        var diagram = WardleyDisl.Of(body, map, identities);
+        var reader = passedOver.Select(problem => DislReaderFinding.Unreadable(problem.Message, problem.Line + 1)).ToList();
+        var findings = ConstraintEvaluator.Evaluate(Specification, diagram, new DislConstraintOptions(Env, reader));
+        var codes = CodeOrder();
+        var stored = identities.Select(entry => entry.Id).ToHashSet(StringComparer.Ordinal);
+
+        var ordered = findings
+            .Select((finding, arising) => (Finding: finding, Arising: arising))
+            .OrderBy(entry => codes.GetValueOrDefault(entry.Finding.Code, int.MaxValue))
+            .ThenBy(entry => TypeRank(diagram, entry.Finding))
+            .ThenBy(entry => entry.Finding.Line ?? int.MaxValue)
+            .ThenBy(entry => entry.Arising)
+            .Select(entry => entry.Finding)
+            .ToList();
+
+        // The module's own findings go where the order puts their code; a reader's finding is always last.
+        var readerFrom = ordered.FindIndex(finding => codes.GetValueOrDefault(finding.Code, int.MaxValue) > (beforeReader is [var first, ..] ? codes.GetValueOrDefault(first.RuleId, int.MaxValue) : int.MaxValue));
+        var problems = ordered.Select(finding => Problem(finding, stored)).ToList();
+        problems.InsertRange(readerFrom < 0 ? problems.Count : readerFrom, beforeReader);
+        return problems;
+    }
+
+    /// <summary>The position of each code in the definition's <c>constraints.order</c>.</summary>
+    private static Dictionary<string, int> CodeOrder() =>
+        Specification.Json.TryGetProperty("constraints", out var constraints) && constraints.TryGetProperty("order", out var order) && order.ValueKind == JsonValueKind.Array
+            ? order.EnumerateArray().Select((code, index) => (Code: code.GetString() ?? "", Index: index)).ToDictionary(entry => entry.Code, entry => entry.Index, StringComparer.Ordinal)
+            : new Dictionary<string, int>(StringComparer.Ordinal);
+
+    /// <summary>Where the type of the element <paramref name="finding"/> is about comes in <see cref="FindingTypes"/>.</summary>
+    private static int TypeRank(DislDiagram diagram, DislFinding finding)
+    {
+        if (finding.ElementIds is not [var id, ..] || diagram.ElementById(id) is not { } element) return FindingTypes.Length;
+        var rank = Array.FindIndex(FindingTypes, types => types.Any(element.IsA));
+        return rank < 0 ? FindingTypes.Length : rank;
+    }
+
+    private static DiagramProblem Problem(DislFinding finding, HashSet<string> stored)
+    {
+        DiagramProblemLocation? location = finding switch
+        {
+            { Code: DuplicateName, ElementIds: [var id, ..] } when stored.Contains(id) => new DiagramProblemElementLocation(id),
+            { Line: { } line } => new DiagramProblemLineLocation((uint)line),
+            _ => null,
+        };
+        return new DiagramProblem(DislDiagramDefinition.SeverityOf(finding), finding.Message, finding.Code, location);
     }
 
     private static DislEnv EnvOf(bool editable) => editable ? Env : ReadOnlyEnv;

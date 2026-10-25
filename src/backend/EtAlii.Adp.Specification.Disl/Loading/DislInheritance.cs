@@ -215,9 +215,34 @@ internal static class DislInheritance
                 Max = NumberBound(member.Value, "max") ?? known.Bound(type, "max"),
                 DefaultValue = literalDefault is { } literal ? DislLiterals.FromJson(literal, type ?? "json", many, known.DataTypes) : null,
                 FixedValue = member.Value.TryGetProperty("fixed", out var declaredFixed) ? DislLiterals.FromJson(declaredFixed, type ?? "json", many, known.DataTypes) : null,
+                Fields = Fields(type, declaredBy, known, new HashSet<string>(StringComparer.Ordinal)),
             };
         }
         return attributes;
+    }
+
+    /// <summary>
+    /// The fields of the struct data type (§4.4) <paramref name="type"/> names, each with its bounds and its own fields; none
+    /// for any other type. A struct already being expanded on the way here (<paramref name="expanding"/>) has none, so a
+    /// struct that holds itself does not expand forever.
+    /// </summary>
+    private static IReadOnlyList<DislAttribute> Fields(string? type, string declaredBy, TypeNames known, IReadOnlySet<string> expanding)
+    {
+        if (type is null || expanding.Contains(type) || known.DeclarationOf(type) is not { ValueKind: JsonValueKind.Object } declaration || !declaration.TryGetProperty("fields", out _)) return [];
+        var inner = new HashSet<string>(expanding, StringComparer.Ordinal) { type };
+        return
+        [
+            .. DislJson.Members(declaration, "fields").Select(member =>
+            {
+                var fieldType = JsonProperties.String(member.Value, "type");
+                return new DislAttribute(member.Name, fieldType ?? "json", JsonProperties.Bool(member.Value, "many"), null, declaredBy, member.Value)
+                {
+                    Min = NumberBound(member.Value, "min") ?? known.Bound(fieldType, "min"),
+                    Max = NumberBound(member.Value, "max") ?? known.Bound(fieldType, "max"),
+                    Fields = Fields(fieldType, declaredBy, known, inner),
+                };
+            }),
+        ];
     }
 
     /// <summary>A relation flag (§4.9): its name, its default, and what a relation type states of it.</summary>
@@ -315,6 +340,10 @@ internal sealed class TypeNames(IEnumerable<string> enums, IReadOnlySet<string> 
     public IReadOnlySet<string> DataTypes => dataTypes;
 
     public bool Contains(string name) => _names.Contains(name);
+
+    /// <summary>The declaration of the data type <paramref name="type"/> names; null for any other type.</summary>
+    public JsonElement? DeclarationOf(string type) =>
+        dataTypeDeclarations is not null && dataTypeDeclarations.TryGetValue(type, out var declaration) ? declaration : null;
 
     /// <summary>The <c>min</c> or <c>max</c> of the constrained primitive (§4.4) <paramref name="type"/> names; null for any other type or none stated.</summary>
     public double? Bound(string? type, string name) =>
