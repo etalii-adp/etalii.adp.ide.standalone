@@ -116,6 +116,7 @@ export function outlineOf(shape: BuiltInShape, bounds: ShapeBounds): readonly Sh
     ];
   }
 
+  // `circle` is met on its own round edge by the canvas, and a line has no inside: neither is sampled here.
   return [];
 }
 

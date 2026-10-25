@@ -30,6 +30,7 @@ const SHAPES: Readonly<Record<string, CatalogEntry>> = {
   text: { shape: "none", draws: {}, defaults: {} },
   rect: { shape: "box", draws: {}, defaults: {} },
   ellipse: { shape: "ellipse", draws: {}, defaults: {} },
+  circle: { shape: "circle", draws: {}, defaults: {} },
   pill: { shape: "pill", draws: {}, defaults: {} },
   diamond: { shape: "diamond", draws: {}, defaults: {} },
   hexagon: { shape: "hexagon", draws: { inset: 0.25, orientation: "flat" }, defaults: { inset: 0.25, orientation: "flat" } },
@@ -45,7 +46,26 @@ const SHAPES: Readonly<Record<string, CatalogEntry>> = {
 };
 
 /** The DISL built-in shape names this library can draw. */
-export const DISL_SHAPE_NAMES: readonly string[] = Object.keys(SHAPES);
+export const DISL_SHAPE_NAMES: readonly string[] = [...Object.keys(SHAPES), "line"];
+
+/**
+ * DISL's `line` (§6.7), which is two drawings rather than one with a parameter: across its box or down
+ * it, by its `orientation`. DISL gives that parameter no default, so a line that states none is refused.
+ */
+function lineOf(params: Readonly<Record<string, unknown>>): BuiltInShape {
+  for (const key of Object.keys(params)) {
+    if (key !== "orientation") {
+      throw new Error(`The library draws "line" with no "${key}" parameter; the specification sets one.`);
+    }
+  }
+  if (params.orientation === "horizontal") {
+    return "horizontal-line";
+  }
+  if (params.orientation === "vertical") {
+    return "vertical-line";
+  }
+  throw new Error(`The library draws "line" along its "orientation", horizontal or vertical; the specification asks for ${JSON.stringify(params.orientation)}.`);
+}
 
 /** The shape a reference names, split into its name and its parameters. */
 export function shapeNameOf(ref: DislShapeRef): { name: string; params: Readonly<Record<string, unknown>> } {
@@ -59,6 +79,10 @@ export function shapeNameOf(ref: DislShapeRef): { name: string; params: Readonly
  */
 export function libraryShapeOf(ref: DislShapeRef): BuiltInShape | undefined {
   const { name, params } = shapeNameOf(ref);
+  if (name === "line") {
+    return lineOf(params);
+  }
+
   const entry = SHAPES[name];
   if (entry === undefined) {
     return undefined;

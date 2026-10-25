@@ -881,6 +881,13 @@ export function DiagramCanvasCore({
         }
       }
 
+      // A circle is drawn within its box at half the shorter side, so a line meets that circle
+      // rather than the box; no shape drew as a circle before, so no existing drawing moves.
+      if (type !== undefined && !isCustomShape(type.shape) && shapeOf(type.shape, sourceOf(element)) === "circle" && (dx !== 0 || dy !== 0)) {
+        const scale = Math.min(bounds.width, bounds.height) / 2 / Math.hypot(dx, dy);
+        return { x: centre.x + dx * scale, y: centre.y + dy * scale };
+      }
+
       // A type drawn by edge is a small shape starting lines in every direction, where the box's
       // corner would leave a visible gap beside a round outline. Other ellipses keep the box answer
       // `outline.ts` explains, so no existing drawing moves.
@@ -3862,6 +3869,34 @@ function renderShapeBody(
           {centredText(element, label)}
         </g>
       );
+    case "circle":
+      // Always round, at the box's lesser side, as DISL's `circle` is however the box is sized.
+      return (
+        <g>
+          <circle className={shapeClass} cx={element.x} cy={element.y} r={Math.min(bounds.width, bounds.height) / 2} style={paint} />
+          {centredText(element, label)}
+        </g>
+      );
+    case "horizontal-line":
+    case "vertical-line": {
+      // A line through the box's middle, edge to edge, with the box as its press target where it can
+      // be picked: a stroke a few units thick is too thin to press.
+      const across = shape === "horizontal-line";
+      return (
+        <g>
+          {type.selectable === false ? null : <rect className="library-bodyless-hit" x={bounds.x} y={bounds.y} width={bounds.width} height={bounds.height} style={{ pointerEvents: "all" }} />}
+          <line
+            className={shapeClass}
+            x1={across ? bounds.x : element.x}
+            y1={across ? element.y : bounds.y}
+            x2={across ? bounds.x + bounds.width : element.x}
+            y2={across ? element.y : bounds.y + bounds.height}
+            style={paint}
+          />
+          {centredText(element, label)}
+        </g>
+      );
+    }
     case "person": {
       // The head first and the body over it, so the body covers the head's bottom. The body is
       // the outline: no polygon is stated for it, so the edge point and the text region are the box's.

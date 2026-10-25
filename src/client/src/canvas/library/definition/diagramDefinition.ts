@@ -94,7 +94,13 @@ export type BuiltInShape =
    * point depth `p = min(h/2, w/2)`. It reads as something moving forward in time, and it is the
    * one shape that can be cut into {@link SegmentDeclaration segments}, each ending in a chevron.
    */
-  | "arrow-banner";
+  | "arrow-banner"
+  /** A circle of the box's lesser side, centred in it: DISL's `circle`, always circular (§6.7). */
+  | "circle"
+  /** A line across the box's middle, from its left edge to its right: DISL's horizontal `line` (§6.7). */
+  | "horizontal-line"
+  /** A line down the box's middle, from its top edge to its bottom: DISL's vertical `line` (§6.7). */
+  | "vertical-line";
 
 /**
  * Every built-in shape, enumerable - <b>what the conformance guard walks</b>.
@@ -131,6 +137,9 @@ export const BUILT_IN_SHAPES: readonly BuiltInShape[] = [
   "moment",
   "double-ellipse",
   "arrow-banner",
+  "circle",
+  "horizontal-line",
+  "vertical-line",
 ];
 
 /**
@@ -591,6 +600,20 @@ export interface LabelDeclaration {
   align?: "start" | "middle" | "end";
   /** How far from the aligned edge the line sits. Only meaningful with {@link align}. */
   insetX?: number;
+  /**
+   * An offset the element carries rather than one stated: the path of its `[dx, dy]`, or of a value
+   * with `dx` and `dy`, measured from {@link anchorTo} as {@link offset} is. Where it resolves to
+   * neither, the label sits at its anchor. A stated {@link offset} wins.
+   *
+   * DISL lets a label's offset be bound (§6.9): a mark whose label a user has moved keeps where it was
+   * moved to, in the document.
+   */
+  offsetBinding?: { path: BindingPath };
+  /**
+   * Which end of the text sits at an offset's point, where the label is not {@link align}ed to an
+   * edge. Defaults to the middle: centred on the point.
+   */
+  textAnchor?: "start" | "middle" | "end";
   /**
    * Where the inline editor opens over this line, measured from the box's top.
    *
