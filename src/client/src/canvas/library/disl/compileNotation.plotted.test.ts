@@ -159,6 +159,13 @@ describe("compileNotation, for nodes plotted on a coordinate system", () => {
     expect(label).toMatchObject({ anchorTo: "centre", offset: { x: 15, y: 4 }, textAnchor: "start" });
   });
 
+  it("leaves a node the specification makes unselectable out of the selection, and others in it", () => {
+    const types = compileNotation(specOf({ Spot: { selectable: false } }), BINDINGS).elementTypes;
+
+    expect(types.find((type) => type.id === "spot")).toMatchObject({ selectable: false });
+    expect(types.find((type) => type.id === "target")).not.toHaveProperty("selectable");
+  });
+
   it("has a canvas menu wherever the diagram can be edited", () => {
     const spec = specOf();
     spec.toolbox = { contextMenus: [{ for: ["diagram"], when: "!env.readOnly", tools: [] }] } as never;

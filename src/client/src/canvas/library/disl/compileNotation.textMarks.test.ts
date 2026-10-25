@@ -90,4 +90,21 @@ describe("compileNotation, for text written as it is", () => {
     expect(note?.shape).toBe("none");
     expect(note?.labels?.[0]).toMatchObject({ text: { path: "payload.text" } });
   });
+
+  it("starts the text of a text shape placed by its left edge at that edge, and ends one placed by its right edge there", () => {
+    // The shape is only its text (Appendix B.2), so where the placement puts the node's edge is where
+    // the text starts or ends - exactly, whatever width the library estimates for it.
+    const spec = specOf();
+    const placed = (anchor: string) => ({ ...spec.notation.nodes.Note!, placement: { anchor } });
+    spec.notation.nodes = { Item: spec.notation.nodes.Item!, Note: placed("left") };
+    const left = compileNotation(spec, BINDINGS).elementTypes[1];
+    spec.notation.nodes = { Item: spec.notation.nodes.Item!, Note: placed("right") };
+    const right = compileNotation(spec, BINDINGS).elementTypes[1];
+    spec.notation.nodes = { Item: spec.notation.nodes.Item!, Note: placed("center") };
+    const centre = compileNotation(spec, BINDINGS).elementTypes[1];
+
+    expect(left?.labels?.[0]).toMatchObject({ anchorTo: "centre", align: "start", insetX: 0 });
+    expect(right?.labels?.[0]).toMatchObject({ anchorTo: "centre", align: "end", insetX: 0 });
+    expect(centre?.labels?.[0]?.align).toBeUndefined();
+  });
 });

@@ -97,6 +97,13 @@ export interface NotationBindings {
    */
   wireIds?: `x-${string}`;
   /**
+   * Where the canvas's type ids come from. By default a type is its wire id, as the backend sends
+   * it. `"specification"` names each type by the specification, in lower case, while actions and
+   * tools keep their wire ids: for a module whose wire block gives several types one wire type and
+   * which tells them apart itself as it builds the canvas's model. Two types with one id are refused.
+   */
+  typeIds?: "specification";
+  /**
    * The payload path the backend computes for each CEL expression the notation binds, keyed by the
    * expression as written. `self.<attribute>` needs no entry: it is `payload.<attribute>`.
    */
@@ -579,6 +586,8 @@ class Compiler {
 
   compile(): DiagramDefinition {
     const spec = this.spec;
+    this.distinctIds("node types", this.nodeNames);
+    this.distinctIds("edges", Object.keys(spec.notation.edges ?? {}));
     const elementTypes = this.nodeNames.map((name) => this.elementType(name, spec.notation.nodes[name]!));
     const relationTypes = Object.entries(spec.notation.edges ?? {}).map(([name]) => this.relationType(name));
     const acyclic = this.acyclicRules();
@@ -929,7 +938,20 @@ class Compiler {
   // ---- names --------------------------------------------------------------------------------
 
   private typeId(name: string): string {
-    return this.wire.types?.[name] ?? name.toLowerCase();
+    return (this.bindings.typeIds === "specification" ? undefined : this.wire.types?.[name]) ?? name.toLowerCase();
+  }
+
+  /** Refuses two of a kind of type under one id, which the canvas tells them apart by. */
+  private distinctIds(kind: string, names: readonly string[]): void {
+    const seen = new Map<string, string>();
+    for (const name of names) {
+      const id = this.typeId(name);
+      const first = seen.get(id);
+      if (first !== undefined) {
+        fail(`${kind} "${first}" and "${name}" are both "${id}" on the canvas, which tells its types apart by id; a module that builds its own model names them by the specification (typeIds).`);
+      }
+      seen.set(id, name);
+    }
   }
 
   /** The concrete node types a metamodel type name stands for: itself, or its descendants with a notation. */
@@ -1029,7 +1051,10 @@ class Compiler {
     const bodyless = shape === "none";
     const classNames = [...this.bindings.classNames(name, node), ...this.indexedColours(name, node)];
     const hint = this.showsDragValue() && this.movable(node) ? [this.dragHint()] : [];
-    const labels = [...(node.labels ?? []).map((label) => this.label(name, label, bodyless)), ...hint];
+    // A `text` shape is only its text (Appendix B.2): placed by an edge, its text starts or ends there.
+    const placedEdge = node.placement?.anchor === "left" ? "start" : node.placement?.anchor === "right" ? "end" : undefined;
+    const textEdge = shapeNameOf(node.shape).name === "text" ? placedEdge : undefined;
+    const labels = [...(node.labels ?? []).map((label) => this.label(name, label, bodyless, textEdge)), ...hint];
     const compartments = this.compartments(name, node);
     const { links, decorations: badges } = this.badges(name, node);
     const decorations = [...this.icon(name, node, bodyless), ...badges, ...(this.bindings.elementDecorations?.(name, node) ?? [])];
@@ -1060,6 +1085,8 @@ class Compiler {
       ...(this.movable(node) ? {} : { draggable: false }),
       ...(dragAxis !== undefined ? { dragAxis } : {}),
       ...(node.deletable === false ? { deletable: false } : {}),
+      // Not picked (DISL §6.9): a press on it is a press on what lies under it.
+      ...(node.selectable === false ? { selectable: false } : {}),
       // The background layer (DISL 6.16) is beneath the connections, so a container's arrows stay over it.
       ...(node.layer === "background" ? { beneathConnections: true } : {}),
       ...(editOnDrop ? { editOnDrop } : {}),
@@ -1267,13 +1294,18 @@ class Compiler {
     return segments !== undefined ? { shape: binding.shape, segments } : { shape: binding.shape };
   }
 
-  private label(type: string, label: DislLabel, bodyless = false): LabelDeclaration {
+  private label(type: string, label: DislLabel, bodyless = false, textEdge?: "start" | "end"): LabelDeclaration {
     const where = `node "${type}" label "${label.id}"`;
     // A label's text is a Bindable: a literal string is shown as it is written (DISL §2.5b).
     const declaration: Record<string, unknown> = { text: typeof label.text === "string" ? this.literal(label.text, where) : this.binding(label.text, where) };
 
     const position = label.position;
-    if (bodyless && position === "bottom") {
+    if (position === undefined && textEdge !== undefined) {
+      // The text of a text shape placed by its edge, from that edge: the library's aligned line, with no inset.
+      declaration.anchorTo = "centre";
+      declaration.align = textEdge;
+      declaration.insetX = 0;
+    } else if (bodyless && position === "bottom") {
       // A body-less node has no box to write at the bottom of: its last line is on its point, beneath its icon.
     } else if (position === "outside-left") {
       if (label.distance !== undefined && label.distance !== BEFORE_GAP) {

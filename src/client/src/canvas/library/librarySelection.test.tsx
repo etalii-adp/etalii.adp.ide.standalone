@@ -567,4 +567,24 @@ describe("inline rename, which the library owns once it owns the canvas", () => 
     });
     expect(channel.submitted).toEqual(["Alpha Prime"]);
   });
+
+  it("opens over a label the element places itself, where its text begins rather than over the element", () => {
+    // Arrange: the label starts 57 left of the centre and sits on a baseline 4 below it, as the
+    // element's own payload says; the element is 100 wide, so its box would start at -50.
+    channel.prompt = inlineEditFor("a");
+    const definition = definitionOf();
+    (definition.elementTypes[0] as { labels?: unknown }).labels = [
+      { text: { path: "payload.name" }, anchorTo: "centre", offsetBinding: { path: "payload.labelOffset" }, textAnchor: "start", editable: true },
+    ];
+    const plain = modelOf();
+    const model = { ...plain, elements: plain.elements.map((element) => (element.id === "a" ? { ...element, payload: { name: "Alpha", labelOffset: [-57, 4] } } : element)) };
+
+    // Act.
+    const { container } = mount({}, definition, model);
+
+    // Assert: the editor starts where the text starts, centred on the line the text is set on.
+    const editor = container.querySelector("foreignObject") as SVGForeignObjectElement;
+    expect(Number(editor.getAttribute("x"))).toBe(-57);
+    expect(Number(editor.getAttribute("y")) + Number(editor.getAttribute("height")) / 2).toBe(0);
+  });
 });

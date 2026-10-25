@@ -307,6 +307,8 @@ export interface DislNodeNotation extends Extensions {
   doubleClick?: string;
   connectable?: boolean;
   deletable?: boolean;
+  /** Whether a press picks the node; omitted, it does (DISL 6.7). */
+  selectable?: boolean;
   conditions?: readonly { when: string; style: string }[];
   compartments?: readonly DislCompartment[];
   badges?: readonly DislBadge[];

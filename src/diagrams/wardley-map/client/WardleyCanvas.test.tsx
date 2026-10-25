@@ -195,9 +195,9 @@ describe("WardleyCanvas chrome", () => {
     expect(container.querySelectorAll(".wardley-band")).toHaveLength(4);
   });
 
-  it("places each band at the boundaries the backend sent, not at constants of its own", () => {
-    // Arrange. Requirement 8.2 - the boundaries are not published in the DSL, so the client
-    // holds no copy. Sending deliberately different stages proves it is reading them.
+  it("places each band at the boundaries the specification states, whatever stages the backend sends", () => {
+    // Arrange. The bands are the definition's (Requirement 8.1): the stages the backend used to
+    // send are deliberately different here, so a canvas still drawing them shows.
     const payload = toBinary(
       WardleyEvolutionAxisPayloadSchema,
       create(WardleyEvolutionAxisPayloadSchema, {
@@ -213,11 +213,10 @@ describe("WardleyCanvas chrome", () => {
       applyDelta(emptyModel, addDelta("axis", "wardley/map+evolution-axis", payload)),
     );
 
-    // Assert. Drawn into a 1000-unit space, so 0.25 is x=250.
-    const bands = container.querySelectorAll(".wardley-band");
-    expect(bands).toHaveLength(2);
-    expect(bands[1].getAttribute("x")).toBe("250");
-    expect(bands[0].getAttribute("width")).toBe("250");
+    // Assert. Drawn into a 1000-unit space, so the specification's 17.5% is x=175.
+    const bands = [...container.querySelectorAll(".wardley-band")];
+    expect(bands.map((band) => band.getAttribute("x"))).toEqual(["0", "175", "400", "700"]);
+    expect(bands.map((band) => band.getAttribute("width"))).toEqual(["175", "225", "300", "300"]);
   });
 
   it("labels the four stages with the notation's own names", () => {
