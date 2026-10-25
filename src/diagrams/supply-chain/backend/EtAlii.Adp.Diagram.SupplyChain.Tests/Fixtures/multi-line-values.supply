@@ -1,0 +1,21 @@
+supply-chain: 1
+# Finding B13: a value that spans lines, with a line inside it that begins with a key's name.
+nodes:
+  - id: mine
+    type: source
+    description: |
+      A block that spans lines.
+      name: a line of the description, not a key
+      quantity: also not a key
+    name: Mine
+    quantity: 5
+  - id: plant
+    type: producer
+    name: Plant
+    description: >
+      Folded text
+      over two lines.
+flows:
+  - id: ore
+    from: mine
+    to: plant

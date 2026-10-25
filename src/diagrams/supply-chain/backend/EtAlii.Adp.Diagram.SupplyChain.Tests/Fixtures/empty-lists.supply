@@ -1,0 +1,5 @@
+supply-chain: 1
+# Finding B6: empty flow sequences, one written with a space and one followed by a comment.
+groups: [ ]
+nodes: []  # nothing here yet
+flows: []

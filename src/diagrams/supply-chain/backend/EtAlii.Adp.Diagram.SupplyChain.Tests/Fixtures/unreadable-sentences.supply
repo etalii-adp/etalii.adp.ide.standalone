@@ -1,0 +1,25 @@
+supply-chain: 1
+# Finding A11: every sentence the reader gives under supply-chain.unreadable, in each section.
+groups:
+  - id: north
+    name: North
+    colour: green
+    x: left
+  - just a group string
+nodes:
+  - id: mine
+    type: quarry
+    name: Mine
+    owner: nobody
+    quantity: lots
+    step: much
+    x: 10
+    y: up
+  - 42
+flows:
+  - id: ore
+    from: mine
+    to: mine-two
+    weight: heavy
+    volume: plenty
+  - - a nested list
