@@ -1,0 +1,11 @@
+supply-chain: 1
+# Finding B13: entries written as flow mappings.
+groups:
+  - { id: north, name: North }
+nodes:
+  - { id: mine, type: source, name: Mine, group: north }
+  - id: plant
+    type: producer
+    name: Plant
+flows:
+  - { id: ore, from: mine, to: plant, volume: 2 }

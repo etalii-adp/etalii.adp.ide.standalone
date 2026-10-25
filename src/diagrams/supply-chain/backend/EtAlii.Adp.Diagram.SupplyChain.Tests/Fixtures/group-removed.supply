@@ -1,0 +1,26 @@
+supply-chain: 1
+# Finding B12: removing a group removes the group key of every member, and leaves them where they are.
+groups:
+  - id: north
+    name: North
+  - id: south
+    name: South
+nodes:
+  - id: mine
+    type: source
+    name: Mine
+    group: north
+  - id: plant
+    type: producer
+    name: Plant
+    group: north
+    x: 400
+    y: 40
+  - id: shop
+    type: outlet
+    name: Shop
+    group: south
+flows:
+  - id: ore
+    from: mine
+    to: plant

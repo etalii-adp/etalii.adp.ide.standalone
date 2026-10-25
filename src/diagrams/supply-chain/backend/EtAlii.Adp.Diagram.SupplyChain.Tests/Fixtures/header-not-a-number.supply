@@ -1,0 +1,7 @@
+supply-chain: one
+groups: []
+nodes:
+  - id: mine
+    type: source
+    name: Mine
+flows: []
