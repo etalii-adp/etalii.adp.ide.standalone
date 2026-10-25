@@ -212,6 +212,9 @@ public sealed class DislElement : ICelObject
     public IReadOnlyList<DislElement> Outgoing => Diagram.OutgoingOf(this);
 
     /// <summary>The value of the type's label attribute (§4.6), as text; empty when it has none.</summary>
+    /// <summary>The element's <c>label()</c> (§12.2): its label attribute's value as text, or empty.</summary>
+    internal string LabelText => Label();
+
     private string Label() => Type.LabelAttribute is { } name && ValueOf(name) is { } value ? value as string ?? value.ToString() ?? "" : "";
 
     /// <summary>

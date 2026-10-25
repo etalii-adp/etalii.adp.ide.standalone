@@ -36,11 +36,15 @@ internal static class DislCelLibrary
         ("location", 0, 0),
     ];
 
-    /// <summary>Adds the library to <paramref name="environment"/>; <paramref name="enums"/> finds the enumerations <c>enumLabel</c> reads.</summary>
-    public static void Register(CelEnvironment environment, Func<string, DislEnum?> enums)
+    /// <summary>
+    /// Adds the library to <paramref name="environment"/>; <paramref name="enums"/> finds the enumerations <c>enumLabel</c>
+    /// reads, and <paramref name="axes"/> the axis ranges <c>axisRange</c> reads.
+    /// </summary>
+    public static void Register(CelEnvironment environment, Func<string, DislEnum?> enums, DislAxisRanges axes)
     {
         ArgumentNullException.ThrowIfNull(environment);
         ArgumentNullException.ThrowIfNull(enums);
+        ArgumentNullException.ThrowIfNull(axes);
 
         foreach ((string name, int min, int max) in Methods)
         {
@@ -52,6 +56,7 @@ internal static class DislCelLibrary
         environment.AddFunction(CelFunction.Receiver("knots", 1, Knots, KnotsCost));
         environment.AddFunction(new CelFunction("budget", CelCallStyle.Global, 0, 1, Budget, _ => 1));
         environment.AddFunction(CelFunction.Global("enumLabel", 2, arguments => EnumLabel(enums, arguments[0], arguments[1])));
+        environment.AddFunction(CelFunction.Global("axisRange", 2, arguments => AxisRange(axes, arguments[0], arguments[1])));
         environment.AddFunction(CelFunction.Receiver("avg", 0, arguments => Average(arguments[0]), arguments => arguments[0] is IReadOnlyList<object?> list ? list.Count : 1));
         environment.AddFunction(CelFunction.Receiver("sum", 0, arguments => Sum(arguments[0]), arguments => arguments[0] is IReadOnlyList<object?> list ? list.Count : 1));
         environment.AddFunction(CelFunction.Global("formatNumber", 2, arguments => FormatNumber(arguments[0], arguments[1])));
@@ -68,6 +73,13 @@ internal static class DislCelLibrary
             YearMonth.Parse(Text(arguments[0])) is { } index ? CelOptional.Of(index) : CelOptional.None));
         environment.AddFunction(CelFunction.Receiver("year", 0, arguments => YearMonth.YearOf(Int(arguments[0]))));
         environment.AddFunction(CelFunction.Receiver("month", 0, arguments => YearMonth.MonthOf(Int(arguments[0]))));
+    }
+
+    /// <summary><c>axisRange(axis, value)</c> (§12.4): the id of the range of the axis that holds the value, or <c>''</c>.</summary>
+    private static string AxisRange(DislAxisRanges axes, object? axis, object? value)
+    {
+        var name = Text(axis);
+        return axes.Holding(name, Number(value)) ?? throw new CelException($"'{name}' is not an axis of this specification (§5.3).");
     }
 
     /// <summary><c>diagram.knots(relType)</c> (§12.4), on the diagram that receives it.</summary>

@@ -73,7 +73,7 @@ public static class FormCommit
                 return DislTransaction.Refused(parse.Refusal?.Text(text, $"'{value}' cannot be written here.") ?? $"'{value}' cannot be written here.");
             }
 
-            var runner = new ActionRunner(specification, self.Diagram, DislIds.Fixed());
+            var runner = new ActionRunner(specification, self.Diagram, DislIds.Fixed()) { Typed = true };
             if (parse.Write is { } write) runner.Run(write, text);
             return runner.Transaction;
         }
@@ -88,7 +88,10 @@ public static class FormCommit
         {
             return DislTransaction.Refused($"'{value}' is not a value of {declared.Name}.");
         }
-        return new DislTransaction([new DislChange.Set(self.Id, self.Type.Name, new Dictionary<string, object?>(StringComparer.Ordinal) { [declared.Name] = DislWrite.StoredForm(specification, self.Type.Name, declared.Name, written) })], [], null);
+        var values = new Dictionary<string, object?>(StringComparer.Ordinal) { [declared.Name] = written };
+        var bounds = new ActionRunner(specification, self.Diagram, DislIds.Fixed()) { Typed = true };
+        if (!bounds.InRange(self, values, current)) return bounds.Transaction;
+        return new DislTransaction([new DislChange.Set(self.Id, self.Type.Name, new Dictionary<string, object?>(StringComparer.Ordinal) { [declared.Name] = DislWrite.StoredForm(specification, self.Type.Name, declared.Name, values[declared.Name]) })], [], null);
     }
 
     /// <summary>
@@ -176,7 +179,7 @@ public static class FormCommit
             return DislTransaction.Refused(parse.Refusal?.Text(variables, $"'{text}' cannot be written here.") ?? $"'{text}' cannot be written here.");
         }
 
-        var runner = new ActionRunner(specification, self.Diagram, DislIds.Fixed());
+        var runner = new ActionRunner(specification, self.Diagram, DislIds.Fixed()) { Typed = true };
         if (parse.Write is { } write) runner.Run(write, variables);
         return runner.Transaction;
     }

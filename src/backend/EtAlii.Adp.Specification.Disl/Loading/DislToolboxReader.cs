@@ -187,6 +187,11 @@ internal static class DislToolboxReader
             Shortcut = JsonProperties.String(tool, "shortcut"),
             Unavailable = tool.TryGetProperty("unavailable", out var unavailable) ? DislFieldReader.Reasons(specification, unavailable, JsonPointer.Append(pointer, "unavailable")) : [],
             Enabled = DislFieldReader.OptionalExpression(specification, tool, pointer, "enabled"),
+            Target = JsonProperties.String(tool, "target") ?? "drag",
+            Candidates = DislFieldReader.OptionalExpression(specification, tool, pointer, "candidates"),
+            CandidateLabel = DislFieldReader.OptionalMessage(specification, tool, pointer, "candidateLabel"),
+            PickerTitle = DislFieldReader.OptionalMessage(specification, tool, pointer, "pickerTitle"),
+            EmptyText = DislFieldReader.OptionalMessage(specification, tool, pointer, "emptyText"),
         };
     }
 }

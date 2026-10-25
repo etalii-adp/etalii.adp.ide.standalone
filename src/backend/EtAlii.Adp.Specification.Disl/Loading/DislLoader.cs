@@ -127,7 +127,7 @@ public static class DislLoader
         var functions = Functions(root, diagnostics);
         var environment = CelEnvironment.Standard();
         environment.Budget = CostLimit(root);
-        DislCelLibrary.Register(environment, name => metamodel.Enums.GetValueOrDefault(name));
+        DislCelLibrary.Register(environment, name => metamodel.Enums.GetValueOrDefault(name), DislAxisRanges.Read(root));
         PluginFunctions.Register(environment, root, plugins, diagnostics);
         UserFunctions.Compile(environment, functions, diagnostics);
         var programs = DislPrograms.Over(environment);
