@@ -191,6 +191,33 @@ public sealed class WardleyContextActionProviderTests : IDisposable
     }
 
     [Fact]
+    public async Task APlacementOnEmptyMap_IsOfferedWhatTheMapItselfIs()
+    {
+        // Act. A right-click on empty map names the point it was made at: the map is the subject.
+        var placed = await ActionIdsFor(GestureIds.Placement(300, 700));
+
+        // Assert. The specification's menu for the diagram, the same entries as with no element at all.
+        Assert.Equal(await ActionIdsFor(""), placed);
+        Assert.Contains(WardleyContextActionProvider.AddComponentActionId, placed);
+    }
+
+    [Fact]
+    public async Task AnAddFromAPlacement_AsksForTheName_AndAddsTheComponent()
+    {
+        // Arrange.
+        var target = Target(GestureIds.Placement(300, 700));
+
+        // Act.
+        var asked = await _provider.ExecuteAsync(target, WardleyContextActionProvider.AddComponentActionId, TestContext.Current.CancellationToken);
+        var committed = await _provider.CommitAsync(target, WardleyContextActionProvider.AddComponentActionId, "Water", "", TestContext.Current.CancellationToken);
+
+        // Assert. The entry asks what it asks with nothing selected, and writes the statement the map's add writes.
+        Assert.IsType<ContextExecutionRequiresInput>(asked);
+        Assert.True(committed.Completed, committed.Error);
+        Assert.Contains("component Water [", await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task AReadOnlyFileIsOfferedNothing()
     {
         // Arrange. Requirement 11.6 - an edit that would not reach disk is withheld rather than

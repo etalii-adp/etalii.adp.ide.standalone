@@ -23,6 +23,8 @@ namespace EtAlii.Adp.Diagram.WardleyMap;
 /// <para>
 /// The diagram element is on the element stream but is <b>not</b> selectable here: it is the map
 /// itself rather than a thing the map contains, and the map is already selected as its file.
+/// A placement on empty map (<c>new:{x},{y}</c>) resolves to the map, as the shared resolver resolves
+/// one, so the definition's menu for the diagram can be offered there.
 /// </para>
 /// <para>
 /// <b>It stays off the shared resolver</b> (code-structure FR-032): a Wardley element's id is the
@@ -77,9 +79,31 @@ public sealed class WardleyContextSourceResolver : IContextSourceResolver
             return Rejected("The selected file is not a Wardley map.");
         }
 
+        var elementId = id.ElementId.Value;
+
+        // A right-click on empty map names the point it was made at: the map itself is the subject,
+        // so its menu can be offered. Nothing is selected on it, tracked or written.
+        if (WardleySelection.IsPlacement(elementId))
+        {
+            return new ResolvedContextLevel(new ContextResolvedLevel(
+                id,
+                [WardleySelection.ThisMap],
+                ContextScope.DiagramElement,
+                new ContextTarget(
+                    ContextScope.DiagramElement,
+                    bodyPath,
+                    IsContainer: false,
+                    SourceId: default,
+                    root,
+                    watchId,
+                    elementId,
+                    routed.Definition.Origin),
+                new ContextLevelDetail { Element = new ElementDetail { Text = WardleySelection.ThisMap } },
+                this));
+        }
+
         var map = (await _documents.GetOrLoadAsync(bodyPath, cancellationToken)).Model;
         var identities = _documents.Identities(bodyPath);
-        var elementId = id.ElementId.Value;
 
         var description = WardleyElementDescriptions.Of(map, identities, elementId);
         if (description is null)
