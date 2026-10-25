@@ -206,7 +206,7 @@
       ],
       "findings": [],
       "payloads": [
-        "wardley-evolution-axis | wardley/map+evolution-axis | 0, 0 | WardleyEvolutionAxisPayload { \"stages\": [ { \"label\": \"Genesis\", \"end\": 0.175 }, { \"label\": \"Custom Built\", \"start\": 0.175, \"end\": 0.4 }, { \"label\": \"Product (+rental)\", \"start\": 0.4, \"end\": 0.7 }, { \"label\": \"Commodity (+utility)\", \"start\": 0.7, \"end\": 1 } ], \"title\": \"Annotations and labels\" }",
+        "wardley-diagram | wardley/map+diagram | 0, 0 | WardleyDiagramPayload { \"title\": \"Annotations and labels\", \"annotationsPosition\": { \"visibility\": 0.6, \"maturity\": 0.02 } }",
         "new-1 | wardley/map+element | 0.63, 0.050000000000000044 | WardleyElementPayload { \"name\": \"Customer\", \"kind\": \"WARDLEY_ELEMENT_KIND_ANCHOR\", \"visibility\": 0.95, \"maturity\": 0.63, \"evolutionStage\": \"Product (+rental)\" }",
         "new-2 | wardley/map+element | 0.61, 0.20999999999999996 | WardleyElementPayload { \"name\": \"Cup of Tea\", \"visibility\": 0.79, \"maturity\": 0.61, \"evolutionStage\": \"Product (+rental)\", \"labelOffset\": { \"x\": -30, \"y\": 12 } }",
         "new-3 | wardley/map+element | 0.35, 0.5700000000000001 | WardleyElementPayload { \"name\": \"Kettle\", \"visibility\": 0.43, \"maturity\": 0.35, \"evolutionStage\": \"Custom Built\", \"labelOffset\": { \"x\": -57, \"y\": 4 } }",
@@ -1065,7 +1065,7 @@
         "line 11 | Warning | wardley.line-passed-over | This line is not a statement of a Wardley map, so it was passed over."
       ],
       "payloads": [
-        "wardley-evolution-axis | wardley/map+evolution-axis | 0, 0 | WardleyEvolutionAxisPayload { \"stages\": [ { \"label\": \"Genesis\", \"end\": 0.175 }, { \"label\": \"Custom Built\", \"start\": 0.175, \"end\": 0.4 }, { \"label\": \"Product (+rental)\", \"start\": 0.4, \"end\": 0.7 }, { \"label\": \"Commodity (+utility)\", \"start\": 0.7, \"end\": 1 } ], \"title\": \"Awkward names\" }",
+        "wardley-diagram | wardley/map+diagram | 0, 0 | WardleyDiagramPayload { \"title\": \"Awkward names\" }",
         "new-1 | wardley/map+element | 0.5, 0.050000000000000044 | WardleyElementPayload { \"name\": \"User\", \"kind\": \"WARDLEY_ELEMENT_KIND_ANCHOR\", \"visibility\": 0.95, \"maturity\": 0.5, \"evolutionStage\": \"Product (+rental)\" }",
         "new-2 | wardley/map+element | 0.4, 0.19999999999999996 | WardleyElementPayload { \"name\": \"Self-service\", \"visibility\": 0.8, \"maturity\": 0.4, \"evolutionStage\": \"Product (+rental)\" }",
         "new-3 | wardley/map+element | 0.6, 0.4 | WardleyElementPayload { \"name\": \"CI/CD\", \"visibility\": 0.6, \"maturity\": 0.6, \"evolutionStage\": \"Product (+rental)\" }",
@@ -1903,7 +1903,7 @@
       ],
       "findings": [],
       "payloads": [
-        "wardley-evolution-axis | wardley/map+evolution-axis | 0, 0 | WardleyEvolutionAxisPayload { \"stages\": [ { \"label\": \"Genesis\", \"end\": 0.175 }, { \"label\": \"Custom Built\", \"start\": 0.175, \"end\": 0.4 }, { \"label\": \"Product (+rental)\", \"start\": 0.4, \"end\": 0.7 }, { \"label\": \"Commodity (+utility)\", \"start\": 0.7, \"end\": 1 } ], \"title\": \"Blank line runs\" }",
+        "wardley-diagram | wardley/map+diagram | 0, 0 | WardleyDiagramPayload { \"title\": \"Blank line runs\" }",
         "new-1 | wardley/map+element | 0.63, 0.050000000000000044 | WardleyElementPayload { \"name\": \"Customer\", \"kind\": \"WARDLEY_ELEMENT_KIND_ANCHOR\", \"visibility\": 0.95, \"maturity\": 0.63, \"evolutionStage\": \"Product (+rental)\" }",
         "new-2 | wardley/map+element | 0.61, 0.20999999999999996 | WardleyElementPayload { \"name\": \"Cup of Tea\", \"visibility\": 0.79, \"maturity\": 0.61, \"evolutionStage\": \"Product (+rental)\" }",
         "new-3 | wardley/map+link | 0, 0 | WardleyLinkPayload { \"sourceId\": \"new-1\", \"targetId\": \"new-2\", \"sourceName\": \"Customer\", \"targetName\": \"Cup of Tea\" }"
@@ -2674,7 +2674,7 @@
         "line 8 | Warning | wardley.line-passed-over | This line is not a statement of a Wardley map, so it was passed over."
       ],
       "payloads": [
-        "wardley-evolution-axis | wardley/map+evolution-axis | 0, 0 | WardleyEvolutionAxisPayload { \"stages\": [ { \"label\": \"Genesis\", \"end\": 0.175 }, { \"label\": \"Custom Built\", \"start\": 0.175, \"end\": 0.4 }, { \"label\": \"Product (+rental)\", \"start\": 0.4, \"end\": 0.7 }, { \"label\": \"Commodity (+utility)\", \"start\": 0.7, \"end\": 1 } ], \"title\": \"Brace ending {\" }",
+        "wardley-diagram | wardley/map+diagram | 0, 0 | WardleyDiagramPayload { \"title\": \"Brace ending {\" }",
         "new-1 | wardley/map+element | 0.5, 0.09999999999999998 | WardleyElementPayload { \"name\": \"User\", \"kind\": \"WARDLEY_ELEMENT_KIND_ANCHOR\", \"visibility\": 0.9, \"maturity\": 0.5, \"evolutionStage\": \"Product (+rental)\" }",
         "new-2 | wardley/map+element | 0.4, 0.5 | WardleyElementPayload { \"name\": \"Kettle\", \"visibility\": 0.5, \"maturity\": 0.4, \"evolutionStage\": \"Product (+rental)\" }",
         "new-3 | wardley/map+element | 0.7, 0.9 | WardleyElementPayload { \"name\": \"Power\", \"visibility\": 0.1, \"maturity\": 0.7, \"evolutionStage\": \"Commodity (+utility)\" }",
@@ -3447,7 +3447,7 @@
       ],
       "findings": [],
       "payloads": [
-        "wardley-evolution-axis | wardley/map+evolution-axis | 0, 0 | WardleyEvolutionAxisPayload { \"stages\": [ { \"label\": \"Genesis\", \"end\": 0.175 }, { \"label\": \"Custom Built\", \"start\": 0.175, \"end\": 0.4 }, { \"label\": \"Product (+rental)\", \"start\": 0.4, \"end\": 0.7 }, { \"label\": \"Commodity (+utility)\", \"start\": 0.7, \"end\": 1 } ], \"title\": \"Comments everywhere\" }",
+        "wardley-diagram | wardley/map+diagram | 0, 0 | WardleyDiagramPayload { \"title\": \"Comments everywhere\" }",
         "new-1 | wardley/map+element | 0.63, 0.050000000000000044 | WardleyElementPayload { \"name\": \"Customer\", \"kind\": \"WARDLEY_ELEMENT_KIND_ANCHOR\", \"visibility\": 0.95, \"maturity\": 0.63, \"evolutionStage\": \"Product (+rental)\" }",
         "new-2 | wardley/map+element | 0.61, 0.20999999999999996 | WardleyElementPayload { \"name\": \"Cup of Tea\", \"visibility\": 0.79, \"maturity\": 0.61, \"evolutionStage\": \"Product (+rental)\" }",
         "new-3 | wardley/map+element | 0.35, 0.5700000000000001 | WardleyElementPayload { \"name\": \"Kettle\", \"visibility\": 0.43, \"maturity\": 0.35, \"evolutionStage\": \"Custom Built\" }",
@@ -4252,7 +4252,7 @@
       ],
       "findings": [],
       "payloads": [
-        "wardley-evolution-axis | wardley/map+evolution-axis | 0, 0 | WardleyEvolutionAxisPayload { \"stages\": [ { \"label\": \"Genesis\", \"end\": 0.175 }, { \"label\": \"Custom Built\", \"start\": 0.175, \"end\": 0.4 }, { \"label\": \"Product (+rental)\", \"start\": 0.4, \"end\": 0.7 }, { \"label\": \"Commodity (+utility)\", \"start\": 0.7, \"end\": 1 } ], \"title\": \"Line ending pair\" }",
+        "wardley-diagram | wardley/map+diagram | 0, 0 | WardleyDiagramPayload { \"title\": \"Line ending pair\" }",
         "new-1 | wardley/map+element | 0.63, 0.050000000000000044 | WardleyElementPayload { \"name\": \"Customer\", \"kind\": \"WARDLEY_ELEMENT_KIND_ANCHOR\", \"visibility\": 0.95, \"maturity\": 0.63, \"evolutionStage\": \"Product (+rental)\" }",
         "new-2 | wardley/map+element | 0.61, 0.20999999999999996 | WardleyElementPayload { \"name\": \"Cup of Tea\", \"visibility\": 0.79, \"maturity\": 0.61, \"evolutionStage\": \"Product (+rental)\" }",
         "new-3 | wardley/map+element | 0.35, 0.5700000000000001 | WardleyElementPayload { \"name\": \"Kettle\", \"visibility\": 0.43, \"maturity\": 0.35, \"evolutionStage\": \"Custom Built\" }",
@@ -5133,7 +5133,7 @@
       ],
       "findings": [],
       "payloads": [
-        "wardley-evolution-axis | wardley/map+evolution-axis | 0, 0 | WardleyEvolutionAxisPayload { \"stages\": [ { \"label\": \"Genesis\", \"end\": 0.175 }, { \"label\": \"Custom Built\", \"start\": 0.175, \"end\": 0.4 }, { \"label\": \"Product (+rental)\", \"start\": 0.4, \"end\": 0.7 }, { \"label\": \"Commodity (+utility)\", \"start\": 0.7, \"end\": 1 } ], \"title\": \"Decorators\" }",
+        "wardley-diagram | wardley/map+diagram | 0, 0 | WardleyDiagramPayload { \"title\": \"Decorators\" }",
         "new-1 | wardley/map+element | 0.5, 0.050000000000000044 | WardleyElementPayload { \"name\": \"User\", \"kind\": \"WARDLEY_ELEMENT_KIND_ANCHOR\", \"visibility\": 0.95, \"maturity\": 0.5, \"evolutionStage\": \"Product (+rental)\" }",
         "new-2 | wardley/map+element | 0.5, 0.19999999999999996 | WardleyElementPayload { \"name\": \"Everything\", \"visibility\": 0.8, \"maturity\": 0.5, \"evolutionStage\": \"Product (+rental)\", \"decorators\": [ \"WARDLEY_DECORATOR_MARKET\", \"WARDLEY_DECORATOR_ECOSYSTEM\", \"WARDLEY_DECORATOR_BUILD\", \"WARDLEY_DECORATOR_BUY\", \"WARDLEY_DECORATOR_OUTSOURCE\" ] }",
         "new-3 | wardley/map+element | 0.4, 0.30000000000000004 | WardleyElementPayload { \"name\": \"Unknown\", \"visibility\": 0.7, \"maturity\": 0.4, \"evolutionStage\": \"Product (+rental)\" }",
@@ -6084,7 +6084,7 @@
         "element \"new-3\" | Error | wardley.duplicate-name | 'Power' is declared more than once (lines 4, 13), so every link, evolve and pipeline that names it is ambiguous."
       ],
       "payloads": [
-        "wardley-evolution-axis | wardley/map+evolution-axis | 0, 0 | WardleyEvolutionAxisPayload { \"stages\": [ { \"label\": \"Genesis\", \"end\": 0.175 }, { \"label\": \"Custom Built\", \"start\": 0.175, \"end\": 0.4 }, { \"label\": \"Product (+rental)\", \"start\": 0.4, \"end\": 0.7 }, { \"label\": \"Commodity (+utility)\", \"start\": 0.7, \"end\": 1 } ], \"title\": \"Duplicate names\" }",
+        "wardley-diagram | wardley/map+diagram | 0, 0 | WardleyDiagramPayload { \"title\": \"Duplicate names\" }",
         "new-1 | wardley/map+element | 0.63, 0.050000000000000044 | WardleyElementPayload { \"name\": \"Business\", \"kind\": \"WARDLEY_ELEMENT_KIND_ANCHOR\", \"visibility\": 0.95, \"maturity\": 0.63, \"evolutionStage\": \"Product (+rental)\" }",
         "new-2 | wardley/map+element | 0.35, 0.5700000000000001 | WardleyElementPayload { \"name\": \"Kettle\", \"visibility\": 0.43, \"maturity\": 0.35, \"evolutionStage\": \"Custom Built\", \"evolve\": { \"maturity\": 0.62, \"evolutionStage\": \"Product (+rental)\" } }",
         "new-3 | wardley/map+element | 0.7, 0.9 | WardleyElementPayload { \"name\": \"Power\", \"visibility\": 0.1, \"maturity\": 0.7, \"evolutionStage\": \"Commodity (+utility)\" }",
@@ -7028,7 +7028,7 @@
       ],
       "findings": [],
       "payloads": [
-        "wardley-evolution-axis | wardley/map+evolution-axis | 0, 0 | WardleyEvolutionAxisPayload { \"stages\": [ { \"label\": \"Genesis\", \"end\": 0.175 }, { \"label\": \"Custom Built\", \"start\": 0.175, \"end\": 0.4 }, { \"label\": \"Product (+rental)\", \"start\": 0.4, \"end\": 0.7 }, { \"label\": \"Commodity (+utility)\", \"start\": 0.7, \"end\": 1 } ], \"title\": \"Evolve twice\" }",
+        "wardley-diagram | wardley/map+diagram | 0, 0 | WardleyDiagramPayload { \"title\": \"Evolve twice\" }",
         "new-1 | wardley/map+element | 0.5, 0.050000000000000044 | WardleyElementPayload { \"name\": \"User\", \"kind\": \"WARDLEY_ELEMENT_KIND_ANCHOR\", \"visibility\": 0.95, \"maturity\": 0.5, \"evolutionStage\": \"Product (+rental)\" }",
         "new-2 | wardley/map+element | 0.3, 0.5 | WardleyElementPayload { \"name\": \"Kettle\", \"visibility\": 0.5, \"maturity\": 0.3, \"evolutionStage\": \"Custom Built\", \"evolve\": { \"maturity\": 0.6, \"evolutionStage\": \"Product (+rental)\" } }",
         "new-3 | wardley/map+link | 0, 0 | WardleyLinkPayload { \"sourceId\": \"new-1\", \"targetId\": \"new-2\", \"sourceName\": \"User\", \"targetName\": \"Kettle\" }"
@@ -8030,7 +8030,7 @@
         "line 10 | Warning | wardley.submap-missing | 'Linked' points at 'linked.owm', which is not in this project."
       ],
       "payloads": [
-        "wardley-evolution-axis | wardley/map+evolution-axis | 0, 0 | WardleyEvolutionAxisPayload { \"stages\": [ { \"label\": \"Genesis\", \"end\": 0.175 }, { \"label\": \"Custom Built\", \"start\": 0.175, \"end\": 0.4 }, { \"label\": \"Product (+rental)\", \"start\": 0.4, \"end\": 0.7 }, { \"label\": \"Commodity (+utility)\", \"start\": 0.7, \"end\": 1 } ], \"title\": \"Lenient trailer\" }",
+        "wardley-diagram | wardley/map+diagram | 0, 0 | WardleyDiagramPayload { \"title\": \"Lenient trailer\" }",
         "new-1 | wardley/map+element | 0.5, 0.050000000000000044 | WardleyElementPayload { \"name\": \"User\", \"kind\": \"WARDLEY_ELEMENT_KIND_ANCHOR\", \"visibility\": 0.95, \"maturity\": 0.5, \"evolutionStage\": \"Product (+rental)\" }",
         "new-2 | wardley/map+element | 0.3, 0.19999999999999996 | WardleyElementPayload { \"name\": \"Ordered\", \"visibility\": 0.8, \"maturity\": 0.3, \"evolutionStage\": \"Custom Built\", \"inertia\": true, \"decorators\": [ \"WARDLEY_DECORATOR_BUILD\" ], \"labelOffset\": { \"x\": -30, \"y\": 12 } }",
         "new-3 | wardley/map+element | 0.4, 0.30000000000000004 | WardleyElementPayload { \"name\": \"Spaced\", \"visibility\": 0.7, \"maturity\": 0.4, \"evolutionStage\": \"Product (+rental)\", \"decorators\": [ \"WARDLEY_DECORATOR_MARKET\" ], \"labelOffset\": { \"x\": 5, \"y\": -7 } }",
@@ -8869,7 +8869,7 @@
       ],
       "findings": [],
       "payloads": [
-        "wardley-evolution-axis | wardley/map+evolution-axis | 0, 0 | WardleyEvolutionAxisPayload { \"stages\": [ { \"label\": \"Genesis\", \"end\": 0.175 }, { \"label\": \"Custom Built\", \"start\": 0.175, \"end\": 0.4 }, { \"label\": \"Product (+rental)\", \"start\": 0.4, \"end\": 0.7 }, { \"label\": \"Commodity (+utility)\", \"start\": 0.7, \"end\": 1 } ], \"title\": \"Line ending pair\" }",
+        "wardley-diagram | wardley/map+diagram | 0, 0 | WardleyDiagramPayload { \"title\": \"Line ending pair\" }",
         "new-1 | wardley/map+element | 0.63, 0.050000000000000044 | WardleyElementPayload { \"name\": \"Customer\", \"kind\": \"WARDLEY_ELEMENT_KIND_ANCHOR\", \"visibility\": 0.95, \"maturity\": 0.63, \"evolutionStage\": \"Product (+rental)\" }",
         "new-2 | wardley/map+element | 0.61, 0.20999999999999996 | WardleyElementPayload { \"name\": \"Cup of Tea\", \"visibility\": 0.79, \"maturity\": 0.61, \"evolutionStage\": \"Product (+rental)\" }",
         "new-3 | wardley/map+element | 0.35, 0.5700000000000001 | WardleyElementPayload { \"name\": \"Kettle\", \"visibility\": 0.43, \"maturity\": 0.35, \"evolutionStage\": \"Custom Built\" }",
@@ -9601,7 +9601,7 @@
       ],
       "findings": [],
       "payloads": [
-        "wardley-evolution-axis | wardley/map+evolution-axis | 0, 0 | WardleyEvolutionAxisPayload { \"stages\": [ { \"label\": \"Genesis\", \"end\": 0.175 }, { \"label\": \"Custom Built\", \"start\": 0.175, \"end\": 0.4 }, { \"label\": \"Product (+rental)\", \"start\": 0.4, \"end\": 0.7 }, { \"label\": \"Commodity (+utility)\", \"start\": 0.7, \"end\": 1 } ], \"title\": \"Minimal map\" }",
+        "wardley-diagram | wardley/map+diagram | 0, 0 | WardleyDiagramPayload { \"title\": \"Minimal map\" }",
         "new-1 | wardley/map+element | 0.63, 0.050000000000000044 | WardleyElementPayload { \"name\": \"Customer\", \"kind\": \"WARDLEY_ELEMENT_KIND_ANCHOR\", \"visibility\": 0.95, \"maturity\": 0.63, \"evolutionStage\": \"Product (+rental)\" }",
         "new-2 | wardley/map+element | 0.61, 0.20999999999999996 | WardleyElementPayload { \"name\": \"Cup of Tea\", \"visibility\": 0.79, \"maturity\": 0.61, \"evolutionStage\": \"Product (+rental)\" }",
         "new-3 | wardley/map+link | 0, 0 | WardleyLinkPayload { \"sourceId\": \"new-1\", \"targetId\": \"new-2\", \"sourceName\": \"Customer\", \"targetName\": \"Cup of Tea\" }"
@@ -10365,7 +10365,7 @@
       ],
       "findings": [],
       "payloads": [
-        "wardley-evolution-axis | wardley/map+evolution-axis | 0, 0 | WardleyEvolutionAxisPayload { \"stages\": [ { \"label\": \"Genesis\", \"end\": 0.175 }, { \"label\": \"Custom Built\", \"start\": 0.175, \"end\": 0.4 }, { \"label\": \"Product (+rental)\", \"start\": 0.4, \"end\": 0.7 }, { \"label\": \"Commodity (+utility)\", \"start\": 0.7, \"end\": 1 } ], \"title\": \"Mixed line endings\" }",
+        "wardley-diagram | wardley/map+diagram | 0, 0 | WardleyDiagramPayload { \"title\": \"Mixed line endings\" }",
         "new-1 | wardley/map+element | 0.63, 0.050000000000000044 | WardleyElementPayload { \"name\": \"Customer\", \"kind\": \"WARDLEY_ELEMENT_KIND_ANCHOR\", \"visibility\": 0.95, \"maturity\": 0.63, \"evolutionStage\": \"Product (+rental)\" }",
         "new-2 | wardley/map+element | 0.61, 0.20999999999999996 | WardleyElementPayload { \"name\": \"Cup of Tea\", \"visibility\": 0.79, \"maturity\": 0.61, \"evolutionStage\": \"Product (+rental)\" }",
         "new-3 | wardley/map+element | 0.35, 0.5700000000000001 | WardleyElementPayload { \"name\": \"Kettle\", \"visibility\": 0.43, \"maturity\": 0.35, \"evolutionStage\": \"Custom Built\" }",
@@ -11097,7 +11097,7 @@
       ],
       "findings": [],
       "payloads": [
-        "wardley-evolution-axis | wardley/map+evolution-axis | 0, 0 | WardleyEvolutionAxisPayload { \"stages\": [ { \"label\": \"Genesis\", \"end\": 0.175 }, { \"label\": \"Custom Built\", \"start\": 0.175, \"end\": 0.4 }, { \"label\": \"Product (+rental)\", \"start\": 0.4, \"end\": 0.7 }, { \"label\": \"Commodity (+utility)\", \"start\": 0.7, \"end\": 1 } ], \"title\": \"No trailing newline\" }",
+        "wardley-diagram | wardley/map+diagram | 0, 0 | WardleyDiagramPayload { \"title\": \"No trailing newline\" }",
         "new-1 | wardley/map+element | 0.63, 0.050000000000000044 | WardleyElementPayload { \"name\": \"Customer\", \"kind\": \"WARDLEY_ELEMENT_KIND_ANCHOR\", \"visibility\": 0.95, \"maturity\": 0.63, \"evolutionStage\": \"Product (+rental)\" }",
         "new-2 | wardley/map+element | 0.61, 0.20999999999999996 | WardleyElementPayload { \"name\": \"Cup of Tea\", \"visibility\": 0.79, \"maturity\": 0.61, \"evolutionStage\": \"Product (+rental)\" }",
         "new-3 | wardley/map+link | 0, 0 | WardleyLinkPayload { \"sourceId\": \"new-1\", \"targetId\": \"new-2\", \"sourceName\": \"Customer\", \"targetName\": \"Cup of Tea\" }"
@@ -12024,7 +12024,7 @@
         "line 7 | Warning | wardley.line-passed-over | This component statement could not be read, so it was passed over."
       ],
       "payloads": [
-        "wardley-evolution-axis | wardley/map+evolution-axis | 0, 0 | WardleyEvolutionAxisPayload { \"stages\": [ { \"label\": \"Genesis\", \"end\": 0.175 }, { \"label\": \"Custom Built\", \"start\": 0.175, \"end\": 0.4 }, { \"label\": \"Product (+rental)\", \"start\": 0.4, \"end\": 0.7 }, { \"label\": \"Commodity (+utility)\", \"start\": 0.7, \"end\": 1 } ], \"title\": \"Out of range\" }",
+        "wardley-diagram | wardley/map+diagram | 0, 0 | WardleyDiagramPayload { \"title\": \"Out of range\" }",
         "new-1 | wardley/map+element | 0.5, -0.19999999999999996 | WardleyElementPayload { \"name\": \"User\", \"kind\": \"WARDLEY_ELEMENT_KIND_ANCHOR\", \"visibility\": 1.2, \"maturity\": 0.5, \"evolutionStage\": \"Product (+rental)\" }",
         "new-2 | wardley/map+element | 0.4, 1.25 | WardleyElementPayload { \"name\": \"Below\", \"visibility\": -0.25, \"maturity\": 0.4, \"evolutionStage\": \"Product (+rental)\", \"evolve\": { \"maturity\": 1.5, \"evolutionStage\": \"Commodity (+utility)\" } }",
         "new-3 | wardley/map+element | 1.00005, 0.5 | WardleyElementPayload { \"name\": \"Far\", \"visibility\": 0.5, \"maturity\": 1.00005, \"evolutionStage\": \"Commodity (+utility)\" }",
@@ -13029,7 +13029,7 @@
       ],
       "findings": [],
       "payloads": [
-        "wardley-evolution-axis | wardley/map+evolution-axis | 0, 0 | WardleyEvolutionAxisPayload { \"stages\": [ { \"label\": \"Genesis\", \"end\": 0.175 }, { \"label\": \"Custom Built\", \"start\": 0.175, \"end\": 0.4 }, { \"label\": \"Product (+rental)\", \"start\": 0.4, \"end\": 0.7 }, { \"label\": \"Commodity (+utility)\", \"start\": 0.7, \"end\": 1 } ], \"title\": \"Pipelines in both forms\" }",
+        "wardley-diagram | wardley/map+diagram | 0, 0 | WardleyDiagramPayload { \"title\": \"Pipelines in both forms\" }",
         "new-1 | wardley/map+element | 0.63, 0.050000000000000044 | WardleyElementPayload { \"name\": \"Customer\", \"kind\": \"WARDLEY_ELEMENT_KIND_ANCHOR\", \"visibility\": 0.95, \"maturity\": 0.63, \"evolutionStage\": \"Product (+rental)\" }",
         "new-2 | wardley/map+element | 0.35, 0.5700000000000001 | WardleyElementPayload { \"name\": \"Kettle\", \"visibility\": 0.43, \"maturity\": 0.35, \"evolutionStage\": \"Custom Built\" }",
         "new-3 | wardley/map+element | 0.7, 0.9 | WardleyElementPayload { \"name\": \"Power\", \"visibility\": 0.1, \"maturity\": 0.7, \"evolutionStage\": \"Commodity (+utility)\" }",
@@ -14044,7 +14044,7 @@
         "element \"new-2\" | Error | wardley.duplicate-name | 'Tea' is declared more than once (lines 3, 4, 5), so every link, evolve and pipeline that names it is ambiguous."
       ],
       "payloads": [
-        "wardley-evolution-axis | wardley/map+evolution-axis | 0, 0 | WardleyEvolutionAxisPayload { \"stages\": [ { \"label\": \"Genesis\", \"end\": 0.175 }, { \"label\": \"Custom Built\", \"start\": 0.175, \"end\": 0.4 }, { \"label\": \"Product (+rental)\", \"start\": 0.4, \"end\": 0.7 }, { \"label\": \"Commodity (+utility)\", \"start\": 0.7, \"end\": 1 } ], \"title\": \"Same key twice\" }",
+        "wardley-diagram | wardley/map+diagram | 0, 0 | WardleyDiagramPayload { \"title\": \"Same key twice\" }",
         "new-1 | wardley/map+element | 0.5, 0.050000000000000044 | WardleyElementPayload { \"name\": \"User\", \"kind\": \"WARDLEY_ELEMENT_KIND_ANCHOR\", \"visibility\": 0.95, \"maturity\": 0.5, \"evolutionStage\": \"Product (+rental)\" }",
         "new-2 | wardley/map+element | 0.3, 0.19999999999999996 | WardleyElementPayload { \"name\": \"Tea\", \"visibility\": 0.8, \"maturity\": 0.3, \"evolutionStage\": \"Custom Built\", \"evolve\": { \"maturity\": 0.8, \"evolutionStage\": \"Commodity (+utility)\" } }",
         "new-3 | wardley/map+element | 0.5, 0.4 | WardleyElementPayload { \"name\": \"Tea\", \"visibility\": 0.6, \"maturity\": 0.5, \"evolutionStage\": \"Product (+rental)\" }",
@@ -15333,7 +15333,7 @@
       ],
       "findings": [],
       "payloads": [
-        "wardley-evolution-axis | wardley/map+evolution-axis | 0, 0 | WardleyEvolutionAxisPayload { \"stages\": [ { \"label\": \"Genesis\", \"end\": 0.175 }, { \"label\": \"Custom Built\", \"start\": 0.175, \"end\": 0.4 }, { \"label\": \"Product (+rental)\", \"start\": 0.4, \"end\": 0.7 }, { \"label\": \"Commodity (+utility)\", \"start\": 0.7, \"end\": 1 } ], \"title\": \"Strategy vocabulary\", \"width\": 900, \"height\": 700 }",
+        "wardley-diagram | wardley/map+diagram | 0, 0 | WardleyDiagramPayload { \"title\": \"Strategy vocabulary\", \"width\": 900, \"height\": 700 }",
         "new-1 | wardley/map+element | 0.63, 0.050000000000000044 | WardleyElementPayload { \"name\": \"Customer\", \"kind\": \"WARDLEY_ELEMENT_KIND_ANCHOR\", \"visibility\": 0.95, \"maturity\": 0.63, \"evolutionStage\": \"Product (+rental)\" }",
         "new-2 | wardley/map+element | 0.42, 0.15000000000000002 | WardleyElementPayload { \"name\": \"Order Portal\", \"visibility\": 0.85, \"maturity\": 0.42, \"evolutionStage\": \"Product (+rental)\" }",
         "new-3 | wardley/map+element | 0.72, 0.30000000000000004 | WardleyElementPayload { \"name\": \"Payment\", \"visibility\": 0.7, \"maturity\": 0.72, \"evolutionStage\": \"Commodity (+utility)\", \"decorators\": [ \"WARDLEY_DECORATOR_BUY\" ] }",
@@ -16264,7 +16264,7 @@
         "line 14 | Warning | wardley.submap-missing | This map defines 'also-missing.owm', which is not in this project."
       ],
       "payloads": [
-        "wardley-evolution-axis | wardley/map+evolution-axis | 0, 0 | WardleyEvolutionAxisPayload { \"stages\": [ { \"label\": \"Genesis\", \"end\": 0.175 }, { \"label\": \"Custom Built\", \"start\": 0.175, \"end\": 0.4 }, { \"label\": \"Product (+rental)\", \"start\": 0.4, \"end\": 0.7 }, { \"label\": \"Commodity (+utility)\", \"start\": 0.7, \"end\": 1 } ], \"title\": \"Submap addresses\" }",
+        "wardley-diagram | wardley/map+diagram | 0, 0 | WardleyDiagramPayload { \"title\": \"Submap addresses\" }",
         "new-1 | wardley/map+element | 0.6, 0.050000000000000044 | WardleyElementPayload { \"name\": \"User\", \"kind\": \"WARDLEY_ELEMENT_KIND_ANCHOR\", \"visibility\": 0.95, \"maturity\": 0.6, \"evolutionStage\": \"Product (+rental)\" }",
         "new-2 | wardley/map+element | 0.4, 0.30000000000000004 | WardleyElementPayload { \"name\": \"Beside\", \"kind\": \"WARDLEY_ELEMENT_KIND_SUBMAP\", \"visibility\": 0.7, \"maturity\": 0.4, \"evolutionStage\": \"Product (+rental)\", \"urlName\": \"besideMap\", \"urlAddress\": \"beside.owm\" }",
         "new-3 | wardley/map+element | 0.5, 0.4 | WardleyElementPayload { \"name\": \"AtRoot\", \"kind\": \"WARDLEY_ELEMENT_KIND_SUBMAP\", \"visibility\": 0.6, \"maturity\": 0.5, \"evolutionStage\": \"Product (+rental)\", \"urlName\": \"rootMap\", \"urlAddress\": \"at-root.owm\" }",
@@ -17089,7 +17089,7 @@
       ],
       "findings": [],
       "payloads": [
-        "wardley-evolution-axis | wardley/map+evolution-axis | 0, 0 | WardleyEvolutionAxisPayload { \"stages\": [ { \"label\": \"Genesis\", \"end\": 0.175 }, { \"label\": \"Custom Built\", \"start\": 0.175, \"end\": 0.4 }, { \"label\": \"Product (+rental)\", \"start\": 0.4, \"end\": 0.7 }, { \"label\": \"Commodity (+utility)\", \"start\": 0.7, \"end\": 1 } ], \"title\": \"Submaps and urls\" }",
+        "wardley-diagram | wardley/map+diagram | 0, 0 | WardleyDiagramPayload { \"title\": \"Submaps and urls\" }",
         "new-1 | wardley/map+element | 0.63, 0.050000000000000044 | WardleyElementPayload { \"name\": \"Customer\", \"kind\": \"WARDLEY_ELEMENT_KIND_ANCHOR\", \"visibility\": 0.95, \"maturity\": 0.63, \"evolutionStage\": \"Product (+rental)\" }",
         "new-2 | wardley/map+element | 0.42, 0.15000000000000002 | WardleyElementPayload { \"name\": \"Ordering\", \"visibility\": 0.85, \"maturity\": 0.42, \"evolutionStage\": \"Product (+rental)\" }",
         "new-3 | wardley/map+element | 0.55, 0.4 | WardleyElementPayload { \"name\": \"Fulfilment\", \"kind\": \"WARDLEY_ELEMENT_KIND_SUBMAP\", \"visibility\": 0.6, \"maturity\": 0.55, \"evolutionStage\": \"Product (+rental)\", \"urlName\": \"fulfilmentMap\", \"urlAddress\": \"https://onlinewardleymaps.com/#clone:example-fulfilment\" }",
@@ -18096,7 +18096,7 @@
       ],
       "findings": [],
       "payloads": [
-        "wardley-evolution-axis | wardley/map+evolution-axis | 0, 0 | WardleyEvolutionAxisPayload { \"stages\": [ { \"label\": \"Genesis\", \"end\": 0.175 }, { \"label\": \"Custom Built\", \"start\": 0.175, \"end\": 0.4 }, { \"label\": \"Product (+rental)\", \"start\": 0.4, \"end\": 0.7 }, { \"label\": \"Commodity (+utility)\", \"start\": 0.7, \"end\": 1 } ], \"title\": \"Tea shop\" }",
+        "wardley-diagram | wardley/map+diagram | 0, 0 | WardleyDiagramPayload { \"title\": \"Tea shop\" }",
         "new-1 | wardley/map+element | 0.63, 0.050000000000000044 | WardleyElementPayload { \"name\": \"Business\", \"kind\": \"WARDLEY_ELEMENT_KIND_ANCHOR\", \"visibility\": 0.95, \"maturity\": 0.63, \"evolutionStage\": \"Product (+rental)\" }",
         "new-2 | wardley/map+element | 0.78, 0.050000000000000044 | WardleyElementPayload { \"name\": \"Public\", \"kind\": \"WARDLEY_ELEMENT_KIND_ANCHOR\", \"visibility\": 0.95, \"maturity\": 0.78, \"evolutionStage\": \"Commodity (+utility)\" }",
         "new-3 | wardley/map+element | 0.61, 0.20999999999999996 | WardleyElementPayload { \"name\": \"Cup of Tea\", \"visibility\": 0.79, \"maturity\": 0.61, \"evolutionStage\": \"Product (+rental)\" }",
@@ -19126,7 +19126,7 @@
       ],
       "findings": [],
       "payloads": [
-        "wardley-evolution-axis | wardley/map+evolution-axis | 0, 0 | WardleyEvolutionAxisPayload { \"stages\": [ { \"label\": \"Genesis\", \"end\": 0.175 }, { \"label\": \"Custom Built\", \"start\": 0.175, \"end\": 0.4 }, { \"label\": \"Product (+rental)\", \"start\": 0.4, \"end\": 0.7 }, { \"label\": \"Commodity (+utility)\", \"start\": 0.7, \"end\": 1 } ], \"title\": \"Trailing comments\" }",
+        "wardley-diagram | wardley/map+diagram | 0, 0 | WardleyDiagramPayload { \"title\": \"Trailing comments\" }",
         "new-1 | wardley/map+element | 0.5, 0.050000000000000044 | WardleyElementPayload { \"name\": \"User\", \"kind\": \"WARDLEY_ELEMENT_KIND_ANCHOR\", \"visibility\": 0.95, \"maturity\": 0.5, \"evolutionStage\": \"Product (+rental)\" }",
         "new-2 | wardley/map+element | 0.4, 0.5 | WardleyElementPayload { \"name\": \"Kettle\", \"visibility\": 0.5, \"maturity\": 0.4, \"evolutionStage\": \"Product (+rental)\", \"evolve\": { \"maturity\": 0.7, \"evolutionStage\": \"Commodity (+utility)\" }, \"inertia\": true }",
         "new-3 | wardley/map+element | 0.7, 0.9 | WardleyElementPayload { \"name\": \"Power\", \"visibility\": 0.1, \"maturity\": 0.7, \"evolutionStage\": \"Commodity (+utility)\", \"decorators\": [ \"WARDLEY_DECORATOR_BUILD\" ] }",
@@ -20022,7 +20022,7 @@
         "line 6 | Warning | wardley.line-passed-over | This line is not a statement of a Wardley map, so it was passed over."
       ],
       "payloads": [
-        "wardley-evolution-axis | wardley/map+evolution-axis | 0, 0 | WardleyEvolutionAxisPayload { \"stages\": [ { \"label\": \"Genesis\", \"end\": 0.175 }, { \"label\": \"Custom Built\", \"start\": 0.175, \"end\": 0.4 }, { \"label\": \"Product (+rental)\", \"start\": 0.4, \"end\": 0.7 }, { \"label\": \"Commodity (+utility)\", \"start\": 0.7, \"end\": 1 } ], \"title\": \"Second title\" }",
+        "wardley-diagram | wardley/map+diagram | 0, 0 | WardleyDiagramPayload { \"title\": \"Second title\" }",
         "new-1 | wardley/map+element | 0.5, 0.050000000000000044 | WardleyElementPayload { \"name\": \"User\", \"kind\": \"WARDLEY_ELEMENT_KIND_ANCHOR\", \"visibility\": 0.95, \"maturity\": 0.5, \"evolutionStage\": \"Product (+rental)\" }",
         "new-2 | wardley/map+element | 0.4, 0.5 | WardleyElementPayload { \"name\": \"Kettle\", \"visibility\": 0.5, \"maturity\": 0.4, \"evolutionStage\": \"Product (+rental)\" }",
         "new-3 | wardley/map+link | 0, 0 | WardleyLinkPayload { \"sourceId\": \"new-1\", \"targetId\": \"new-2\", \"sourceName\": \"User\", \"targetName\": \"Kettle\" }"
@@ -20823,7 +20823,7 @@
         "line 10 | Warning | wardley.line-passed-over | This line inside a pipeline is not a component of it, so it was passed over."
       ],
       "payloads": [
-        "wardley-evolution-axis | wardley/map+evolution-axis | 0, 0 | WardleyEvolutionAxisPayload { \"stages\": [ { \"label\": \"Genesis\", \"end\": 0.175 }, { \"label\": \"Custom Built\", \"start\": 0.175, \"end\": 0.4 }, { \"label\": \"Product (+rental)\", \"start\": 0.4, \"end\": 0.7 }, { \"label\": \"Commodity (+utility)\", \"start\": 0.7, \"end\": 1 } ], \"title\": \"Unclosed pipeline\" }",
+        "wardley-diagram | wardley/map+diagram | 0, 0 | WardleyDiagramPayload { \"title\": \"Unclosed pipeline\" }",
         "new-1 | wardley/map+element | 0.5, 0.09999999999999998 | WardleyElementPayload { \"name\": \"User\", \"kind\": \"WARDLEY_ELEMENT_KIND_ANCHOR\", \"visibility\": 0.9, \"maturity\": 0.5, \"evolutionStage\": \"Product (+rental)\" }",
         "new-2 | wardley/map+element | 0.4, 0.5 | WardleyElementPayload { \"name\": \"Kettle\", \"visibility\": 0.5, \"maturity\": 0.4, \"evolutionStage\": \"Product (+rental)\" }",
         "new-5 | wardley/map+element | 0.6, 0.5 | WardleyElementPayload { \"name\": \"Electric\", \"visibility\": 0.5, \"maturity\": 0.6, \"evolutionStage\": \"Product (+rental)\", \"pipelineParentId\": \"new-2\" }",
@@ -21656,7 +21656,7 @@
         "line 14 | Warning | wardley.line-passed-over | This line is not a statement of a Wardley map, so it was passed over."
       ],
       "payloads": [
-        "wardley-evolution-axis | wardley/map+evolution-axis | 0, 0 | WardleyEvolutionAxisPayload { \"stages\": [ { \"label\": \"Genesis\", \"end\": 0.175 }, { \"label\": \"Custom Built\", \"start\": 0.175, \"end\": 0.4 }, { \"label\": \"Product (+rental)\", \"start\": 0.4, \"end\": 0.7 }, { \"label\": \"Commodity (+utility)\", \"start\": 0.7, \"end\": 1 } ], \"title\": \"Unmodelled statements\", \"width\": 850, \"height\": 650 }",
+        "wardley-diagram | wardley/map+diagram | 0, 0 | WardleyDiagramPayload { \"title\": \"Unmodelled statements\", \"style\": \"handwritten\", \"width\": 850, \"height\": 650 }",
         "new-1 | wardley/map+element | 0.63, 0.050000000000000044 | WardleyElementPayload { \"name\": \"Customer\", \"kind\": \"WARDLEY_ELEMENT_KIND_ANCHOR\", \"visibility\": 0.95, \"maturity\": 0.63, \"evolutionStage\": \"Product (+rental)\" }",
         "new-2 | wardley/map+element | 0.61, 0.20999999999999996 | WardleyElementPayload { \"name\": \"Cup of Tea\", \"visibility\": 0.79, \"maturity\": 0.61, \"evolutionStage\": \"Product (+rental)\" }",
         "new-3 | wardley/map+element | 0.5, 0.5 | WardleyElementPayload { \"name\": \"Future Thing\", \"visibility\": 0.5, \"maturity\": 0.5, \"evolutionStage\": \"Product (+rental)\" }",
@@ -22669,7 +22669,7 @@
         "line 12 | Warning | wardley.line-passed-over | This evolve statement could not be read, so it was passed over."
       ],
       "payloads": [
-        "wardley-evolution-axis | wardley/map+evolution-axis | 0, 0 | WardleyEvolutionAxisPayload { \"stages\": [ { \"label\": \"Genesis\", \"end\": 0.175 }, { \"label\": \"Custom Built\", \"start\": 0.175, \"end\": 0.4 }, { \"label\": \"Product (+rental)\", \"start\": 0.4, \"end\": 0.7 }, { \"label\": \"Commodity (+utility)\", \"start\": 0.7, \"end\": 1 } ], \"title\": \"Tea Shop\" }",
+        "wardley-diagram | wardley/map+diagram | 0, 0 | WardleyDiagramPayload { \"title\": \"Tea Shop\", \"style\": \"wardley\", \"annotationsPosition\": { \"visibility\": 0.74, \"maturity\": 0.04 } }",
         "new-1 | wardley/map+element | 0.63, 0.050000000000000044 | WardleyElementPayload { \"name\": \"Business\", \"kind\": \"WARDLEY_ELEMENT_KIND_ANCHOR\", \"visibility\": 0.95, \"maturity\": 0.63, \"evolutionStage\": \"Product (+rental)\" }",
         "new-2 | wardley/map+element | 0.78, 0.050000000000000044 | WardleyElementPayload { \"name\": \"Public\", \"kind\": \"WARDLEY_ELEMENT_KIND_ANCHOR\", \"visibility\": 0.95, \"maturity\": 0.78, \"evolutionStage\": \"Commodity (+utility)\" }",
         "new-3 | wardley/map+element | 0.61, 0.20999999999999996 | WardleyElementPayload { \"name\": \"Cup of Tea\", \"visibility\": 0.79, \"maturity\": 0.61, \"evolutionStage\": \"Product (+rental)\", \"labelOffset\": { \"x\": -85.48, \"y\": 3.78 } }",
@@ -23527,7 +23527,7 @@
       ],
       "findings": [],
       "payloads": [
-        "wardley-evolution-axis | wardley/map+evolution-axis | 0, 0 | WardleyEvolutionAxisPayload { \"stages\": [ { \"label\": \"Genesis\", \"end\": 0.175 }, { \"label\": \"Custom Built\", \"start\": 0.175, \"end\": 0.4 }, { \"label\": \"Product (+rental)\", \"start\": 0.4, \"end\": 0.7 }, { \"label\": \"Commodity (+utility)\", \"start\": 0.7, \"end\": 1 } ], \"title\": \"Annotations and labels\" }",
+        "wardley-diagram | wardley/map+diagram | 0, 0 | WardleyDiagramPayload { \"title\": \"Annotations and labels\", \"annotationsPosition\": { \"visibility\": 0.6, \"maturity\": 0.02 } }",
         "bet6u4ixymtzkcwnfa3cetm62 | wardley/map+element | 0.63, 0.050000000000000044 | WardleyElementPayload { \"name\": \"Customer\", \"kind\": \"WARDLEY_ELEMENT_KIND_ANCHOR\", \"visibility\": 0.95, \"maturity\": 0.63, \"evolutionStage\": \"Product (+rental)\" }",
         "3idacjcg9p73xw1abwn25s76t | wardley/map+element | 0.61, 0.20999999999999996 | WardleyElementPayload { \"name\": \"Cup of Tea\", \"visibility\": 0.79, \"maturity\": 0.61, \"evolutionStage\": \"Product (+rental)\", \"labelOffset\": { \"x\": -30, \"y\": 12 } }",
         "avuvz18xgys3ql9t62tp3rghb | wardley/map+element | 0.2928, 0.5709 | WardleyElementPayload { \"name\": \"Kettle\", \"visibility\": 0.4291, \"maturity\": 0.2928, \"evolutionStage\": \"Custom Built\", \"labelOffset\": { \"x\": -57, \"y\": 4 } }",
@@ -24666,7 +24666,7 @@
       ],
       "findings": [],
       "payloads": [
-        "wardley-evolution-axis | wardley/map+evolution-axis | 0, 0 | WardleyEvolutionAxisPayload { \"stages\": [ { \"label\": \"Genesis\", \"end\": 0.175 }, { \"label\": \"Custom Built\", \"start\": 0.175, \"end\": 0.4 }, { \"label\": \"Product (+rental)\", \"start\": 0.4, \"end\": 0.7 }, { \"label\": \"Commodity (+utility)\", \"start\": 0.7, \"end\": 1 } ], \"title\": \"Strategy vocabulary\", \"width\": 900, \"height\": 700 }",
+        "wardley-diagram | wardley/map+diagram | 0, 0 | WardleyDiagramPayload { \"title\": \"Strategy vocabulary\", \"width\": 900, \"height\": 700 }",
         "esqtv1tg6r31atziq717uebs2 | wardley/map+element | 0.63, 0.050000000000000044 | WardleyElementPayload { \"name\": \"Customer\", \"kind\": \"WARDLEY_ELEMENT_KIND_ANCHOR\", \"visibility\": 0.95, \"maturity\": 0.63, \"evolutionStage\": \"Product (+rental)\" }",
         "28aq8skvp5n22fbrkdpr7w6eu | wardley/map+element | 0.42, 0.15000000000000002 | WardleyElementPayload { \"name\": \"Order Portal\", \"visibility\": 0.85, \"maturity\": 0.42, \"evolutionStage\": \"Product (+rental)\" }",
         "et0fqurcgd3ri1az051jupyvf | wardley/map+element | 0.72, 0.30000000000000004 | WardleyElementPayload { \"name\": \"Payment\", \"visibility\": 0.7, \"maturity\": 0.72, \"evolutionStage\": \"Commodity (+utility)\", \"decorators\": [ \"WARDLEY_DECORATOR_BUY\" ] }",
@@ -25442,7 +25442,7 @@
       "rows": [],
       "findings": [],
       "payloads": [
-        "wardley-evolution-axis | wardley/map+evolution-axis | 0, 0 | WardleyEvolutionAxisPayload { \"stages\": [ { \"label\": \"Genesis\", \"end\": 0.175 }, { \"label\": \"Custom Built\", \"start\": 0.175, \"end\": 0.4 }, { \"label\": \"Product (+rental)\", \"start\": 0.4, \"end\": 0.7 }, { \"label\": \"Commodity (+utility)\", \"start\": 0.7, \"end\": 1 } ], \"title\": \"map2\" }"
+        "wardley-diagram | wardley/map+diagram | 0, 0 | WardleyDiagramPayload { \"title\": \"map2\" }"
       ],
       "edits": [
         {

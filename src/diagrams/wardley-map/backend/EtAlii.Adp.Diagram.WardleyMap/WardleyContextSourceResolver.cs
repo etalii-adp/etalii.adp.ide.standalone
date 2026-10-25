@@ -21,9 +21,8 @@ namespace EtAlii.Adp.Diagram.WardleyMap;
 /// resolver, which is what makes several element resolvers able to coexist.
 /// </para>
 /// <para>
-/// The evolution axis is on the element stream but is <b>not</b> selectable: it is the chrome
-/// the map is drawn against rather than a thing the map contains, and offering it would put a
-/// row of band boundaries in the property grid.
+/// The diagram element is on the element stream but is <b>not</b> selectable here: it is the map
+/// itself rather than a thing the map contains, and the map is already selected as its file.
 /// </para>
 /// <para>
 /// <b>It stays off the shared resolver</b> (code-structure FR-032): a Wardley element's id is the

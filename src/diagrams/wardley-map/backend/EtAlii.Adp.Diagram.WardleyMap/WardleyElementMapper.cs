@@ -41,7 +41,7 @@ public sealed class WardleyElementMapper
         ArgumentNullException.ThrowIfNull(identities);
 
         var ids = new Ids(map, identities);
-        var elements = new List<DiagramElement> { EvolutionAxisElement(map) };
+        var elements = new List<DiagramElement> { DiagramElementOf(map) };
 
         // Pipeline children first, so a component that is also a pipeline parent is emitted
         // with its children already known - and so a child's own element carries its parent.
@@ -142,7 +142,7 @@ public sealed class WardleyElementMapper
         }
 
         var ids = new Ids(map, identities);
-        var kept = new HashSet<string>(StringComparer.Ordinal) { WardleyElementTypes.EvolutionAxisId };
+        var kept = new HashSet<string>(StringComparer.Ordinal) { WardleyElementTypes.DiagramId };
 
         // The components in view, and then the ones they link to, so no link dangles.
         var inView = map.Components
@@ -188,7 +188,7 @@ public sealed class WardleyElementMapper
     /// kind added later at (0, 0) cannot slip into being filtered by a position it does not have.
     /// </remarks>
     private static bool IsPointInView(DiagramElement element, DiagramViewport viewport) =>
-        element.Type is not (WardleyElementTypes.Link or WardleyElementTypes.EvolutionAxis)
+        element.Type is not (WardleyElementTypes.Link or WardleyElementTypes.Diagram)
         && Contains(viewport, (element.X, element.Y));
 
     private static bool Contains(DiagramViewport viewport, (double X, double Y) point) =>
@@ -436,26 +436,21 @@ public sealed class WardleyElementMapper
             });
     }
 
-    private static DiagramElement EvolutionAxisElement(WardleyMap map)
+    /// <summary>The map itself, carrying what the definition's `metamodel.diagram` declares, as the document states it.</summary>
+    private static DiagramElement DiagramElementOf(WardleyMap map)
     {
-        var payload = new WardleyEvolutionAxisPayload
+        var payload = new WardleyDiagramPayload
         {
             Title = map.Title,
+            Style = map.Style,
             Width = map.Size?.Width ?? 0d,
             Height = map.Size?.Height ?? 0d,
+            AnnotationsPosition = map.AnnotationsPosition is { } position
+                ? new WardleyPositionPayload { Visibility = position.Visibility, Maturity = position.Maturity }
+                : null,
         };
 
-        foreach (var stage in WardleyEvolution.Stages)
-        {
-            payload.Stages.Add(new WardleyEvolutionStagePayload
-            {
-                Label = stage.Label,
-                Start = stage.Start,
-                End = stage.End,
-            });
-        }
-
-        return Element(WardleyElementTypes.EvolutionAxisId, 0d, 0d, WardleyElementTypes.EvolutionAxis, payload);
+        return Element(WardleyElementTypes.DiagramId, 0d, 0d, WardleyElementTypes.Diagram, payload);
     }
 
     /// <summary>The address a `url(name)` reference resolves to, or empty when nothing defines it.</summary>

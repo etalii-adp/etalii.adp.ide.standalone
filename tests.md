@@ -945,7 +945,8 @@ clipping, and that is only visible on screen.
   10. **A drag clamped at an edge.** Drag `Water` far past the right and bottom edges. The file says `component Water [0, 1]`, and one Undo puts it back byte for byte.
   11. **A pipeline component dragged along its row only.** Drag `Campfire Kettle` right and down. It moves right only, the file gives it its one new maturity, and one Undo puts the file back.
   12. **The eight toolbox entries.** Component, Anchor, Market, Ecosystem, Submap, Pipeline, Note and Annotation are listed. Drag each onto the map (Pipeline onto `Water`): what happens is the same on both builds.
-- **Result 2026-10-25 (agent-10-wardley-map-disl-fbl)**: **rows 1 to 12 pass in both themes, the same on both builds but for the differences below.**
+  13. **The map's name.** Open a second map, `title.owm`, holding only `title Tea shop` and one component. The canvas is named *Wardley map: Tea shop* (`aria-label`), from the `wardley/map+diagram` element the backend sends for the map itself. `pass.owm` is named by its own title.
+- **Result 2026-10-25 (agent-10-wardley-map-disl-fbl)**: **rows 1 to 12 pass in both themes, the same on both builds but for the differences below; row 13 passes on the branch build.**
   - **Setup.** Branch `features/wardley-map-disl-fbl-9` with this task's changes uncommitted, the definition bundled from etalii.adp `9df6b8edc`, beside a build of `0139f28f2`. A developer build of each: backend on 5391 and 5381, Vite on 5390 and 5380. Headless Chromium 1194, driven by Playwright 1.56.1 at 1600 by 1000, with real mouse and keyboard input and `colorScheme` set per theme.
   - **How it was read.** From the DOM, its computed styles and the file on disk. Every drawn primitive's screen box, stroke, fill, dash, opacity and font was compared between the builds. Screenshots `<build>-<theme>-<step>.png` are in `/tmp/claude-0/wm9/pw`.
   1. Band fills: `rgba(0, 0, 0, 0.06)` light and `rgba(255, 255, 255, 0.06)` dark, at opacity 0.35, 0.5, 0.65 and 0.8. Boundaries `rgb(226, 232, 240)`, dashed `6px, 6px`, at x 527, 731 and 1003 on the screen. Axes `rgb(100, 116, 139)` at 2px. The axis titles and stage labels are 20px. The same on both builds.
@@ -956,6 +957,7 @@ clipping, and that is only visible on screen.
   10. `component Water [0, 1]` on both; Undo gave a byte-identical file.
   11. `component Campfire Kettle [0.2823]`, the screen y unchanged at 478, on both; Undo gave a byte-identical file.
   12. All eight listed, and a drop of each changed nothing on either build. The Wardley canvas has never answered a toolbox drop.
+  13. Run on the branch build only, after the diagram element replaced the evolution axis element and the definition was bundled from etalii.adp `113dccd7d`. `title.owm` reads *Wardley map: Tea shop* and `pass.owm` *Wardley map: Task nine pass*, on the canvas's frame and its `svg` alike.
 - **Differences from the build before this task, each named in `wardleyCompiledDefinition.test.tsx`:**
   - *buy · inertia* starts under the name instead of being centred under the mark.
   - An evolution's new name sits on the line of every other name, 2 higher on the screen.

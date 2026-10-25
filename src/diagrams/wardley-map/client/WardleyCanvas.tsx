@@ -250,7 +250,7 @@ export function WardleyCanvas({ projectId, entryId, path }: WardleyCanvasProps) 
     ready: !loading && !failed && viewport !== null,
   });
 
-  const name = model.axis?.title ? `Wardley map: ${model.axis.title}` : "Wardley map";
+  const name = model.diagram?.title ? `Wardley map: ${model.diagram.title}` : "Wardley map";
 
   // Opening, reconnecting and unavailable are the library's to say, in the frame around this canvas.
   return (

@@ -2407,10 +2407,10 @@
       "Accelerator": "wardley/map+accelerator",
       "Attitude": "wardley/map+attitude"
     },
-    "evolutionAxis": {
-      "id": "wardley-evolution-axis",
-      "type": "wardley/map+evolution-axis",
-      "doc": "The one element the standalone backend sends for the evolution axis, which goes once the client draws the maturity axis's ranges (finding A10)."
+    "diagram": {
+      "id": "wardley-diagram",
+      "type": "wardley/map+diagram",
+      "doc": "The one element the standalone backend sends for the map itself, carrying the attributes metamodel.diagram declares (title, style, size and the annotations' position); the canvas names the map by its title. It replaced the evolution axis element once the client drew the maturity axis's ranges (finding A10)."
     }
   },
   "x-adp": {
