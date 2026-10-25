@@ -1934,13 +1934,13 @@
       {
         "id": "duplicateName",
         "code": "wardley.duplicate-name",
-        "scope": "Positioned",
-        "when": "isFirstHolder(self)",
-        "rule": "holdersOf(self).size() == 1",
+        "scope": "diagram",
+        "forEach": "cel.bind(holders, diagram.nodesOfType('Positioned'), holders.map(n, n.name).distinct().size() == holders.size() ? [] : holders.filter(n, isFirstHolder(n)))",
+        "rule": "holdersOf(item).size() == 1",
         "message": {
-          "cel": "\"'\" + self.name + \"' is declared more than once (lines \" + holdersOf(self).map(n, string(n.location().orValue({'line': 0})['line'])).join(', ') + \"), so every link, evolve and pipeline that names it is ambiguous.\""
+          "cel": "\"'\" + item.name + \"' is declared more than once (lines \" + holdersOf(item).map(n, string(n.location().orValue({'line': 0})['line'])).join(', ') + \"), so every link, evolve and pipeline that names it is ambiguous.\""
         },
-        "doc": "Once per repeated name, at the first holder, with the lines of every holder. Adding or renaming to a name the map has is refused, so a repeated name only comes from a file written elsewhere."
+        "doc": "Once per repeated name, at the first holder, with the lines of every holder. Adding or renaming to a name the map has is refused, so a repeated name only comes from a file written elsewhere. The first holders are looked for only when a name is repeated, so a map without one is checked in one pass over its names rather than once per element."
       },
       {
         "id": "danglingSource",

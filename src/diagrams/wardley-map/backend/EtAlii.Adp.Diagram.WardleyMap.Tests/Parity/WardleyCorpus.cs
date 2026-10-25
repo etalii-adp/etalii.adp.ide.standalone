@@ -68,6 +68,9 @@ internal sealed class WardleyCorpusSession : IDisposable
 
     public string Body { get; }
 
+    /// <summary>The scratch project's root, which a validation request carries.</summary>
+    public string Folder => _folder.Path;
+
     public IWardleyDocumentStore Store { get; }
 
     public WardleyContextActionProvider Actions { get; }
