@@ -44,6 +44,12 @@ internal sealed class ActionRunner(DislSpecification specification, DislDiagram 
     /// </summary>
     public Dictionary<DislElement, DislElement>? Before { get; set; }
 
+    /// <summary>
+    /// Whether the values set are typed by the user, in a form or an inline label (DISL 0.3 §4.3): a number past its
+    /// attribute's <c>min</c> or <c>max</c> is then refused, or stopped at the bound under <c>outOfRange.typed: "clamp"</c>.
+    /// </summary>
+    public bool Typed { get; init; }
+
     /// <summary>Why the transaction was refused, or null while it stands.</summary>
     private string? Refusal { get; set; }
 
@@ -102,6 +108,7 @@ internal sealed class ActionRunner(DislSpecification specification, DislDiagram 
             if (!Value(declared, variables, out var value)) return false;
             values[name] = Stored(value);
         }
+        if (Typed && !InRange(target, values, variables)) return false;
         return Store(target, values);
     }
 
@@ -338,6 +345,40 @@ internal sealed class ActionRunner(DislSpecification specification, DislDiagram 
         element.Retype(specification.Metamodel.TypeOf(type)!, change.Attributes);
         _changes.Add(change);
         return true;
+    }
+
+    /// <summary>
+    /// Holds each typed number of <paramref name="values"/> to its attribute's bounds (§4.3): stopped at the bound under
+    /// <c>typed: "clamp"</c>, else the transaction is refused with <c>outOfRange.message</c> in the context
+    /// <c>gesture:change</c> plus <c>min</c> and <c>max</c>, or with the runtime's sentence.
+    /// </summary>
+    internal bool InRange(DislElement target, Dictionary<string, object?> values, Dictionary<string, object?> variables)
+    {
+        foreach ((string name, object? value) in values.ToList())
+        {
+            if (target.Type.Attributes.GetValueOrDefault(name) is not { } attribute) continue;
+            if (value is not (double or long)) continue;
+            var number = Convert.ToDouble(value, System.Globalization.CultureInfo.InvariantCulture);
+            var below = attribute.Min is { } min && number < min;
+            var bound = below ? attribute.Min : attribute.Max is { } max && number > max ? max : null;
+            if (bound is not { } limit) continue;
+            if (attribute.TypedOutOfRange == "clamp")
+            {
+                values[name] = value is long && double.IsInteger(limit) ? (long)limit : limit;
+                continue;
+            }
+            var context = new Dictionary<string, object?>(variables)
+            {
+                ["self"] = target, ["attribute"] = name, ["oldValue"] = target.ValueOf(name), ["newValue"] = value,
+                ["min"] = attribute.Min, ["max"] = attribute.Max,
+            };
+            var noun = below ? "minimum" : "maximum";
+            var sentence = $"'{target.Id}' cannot have {name} {Invariant(number)}; the {noun} is {Invariant(limit)}.";
+            return Refuse(attribute.OutOfRangeMessage?.Text(context, sentence) ?? sentence);
+        }
+        return true;
+
+        static string Invariant(double number) => number.ToString(System.Globalization.CultureInfo.InvariantCulture);
     }
 
     /// <summary>Stores <paramref name="values"/> on <paramref name="target"/>, as one change.</summary>

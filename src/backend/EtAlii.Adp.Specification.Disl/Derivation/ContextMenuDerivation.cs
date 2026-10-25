@@ -86,6 +86,7 @@ public sealed record DerivedShortcut(string Text, string Key, bool Ctrl, bool Sh
 /// <param name="Operation">The operation it runs, or null.</param>
 /// <param name="UnavailableReason">Why it cannot run now; empty when <paramref name="Available"/>.</param>
 /// <param name="Arguments">Its <c>args</c>, evaluated, and the name a <c>forEach</c> binds; empty for most entries.</param>
+/// <param name="Picker">The list the other end is chosen from, for an entry whose <c>target</c> is <c>pick</c> or <c>either</c> (§7.3); null otherwise.</param>
 public sealed record DerivedMenuEntry(
     string Id,
     string Kind,
@@ -95,7 +96,14 @@ public sealed record DerivedMenuEntry(
     DerivedShortcut? Shortcut,
     bool Available,
     string UnavailableReason,
-    IReadOnlyDictionary<string, object?> Arguments);
+    IReadOnlyDictionary<string, object?> Arguments,
+    DerivedPicker? Picker = null);
+
+/// <summary>The list a <c>pick</c> entry chooses its other end from (DISL 0.3 §7.3): its title and its rows, in order.</summary>
+public sealed record DerivedPicker(string Title, IReadOnlyList<DerivedPickCandidate> Candidates);
+
+/// <summary>One row of a <see cref="DerivedPicker"/>: the element it chooses and the text it shows.</summary>
+public sealed record DerivedPickCandidate(string ElementId, string Label);
 
 /// <summary>One group of a context menu: consecutive entries with one <c>group</c> name (null when they state none).</summary>
 public sealed record DerivedMenuGroup(string? Name, IReadOnlyList<DerivedMenuEntry> Entries);
@@ -144,7 +152,7 @@ public static class ContextMenuDerivation
             if (!Applies(set, target)) continue;
             matched = true;
             if (set.When is { } when && !when.Holds(variables)) continue;
-            Set(specification, set, variables, types, target, ids, groups);
+            Set(specification, set, variables, types, target, env, ids, groups);
         }
 
         if (!matched && target is DislMenuTarget.OnConnection { RelationType: { } relation } pending)
@@ -172,6 +180,7 @@ public static class ContextMenuDerivation
         Dictionary<string, object?> variables,
         IReadOnlyList<string> types,
         DislMenuTarget target,
+        DislEnv env,
         WireIdMap ids,
         List<DerivedMenuGroup> groups)
     {
@@ -185,7 +194,7 @@ public static class ContextMenuDerivation
                 current = [];
                 currentName = tool.Group;
             }
-            current.AddRange(Entries(specification, tool, variables, types, target, ids));
+            current.AddRange(Entries(specification, tool, variables, types, target, env, ids));
         }
         if (current is { Count: > 0 }) groups.Add(new DerivedMenuGroup(currentName, current));
     }
@@ -196,12 +205,13 @@ public static class ContextMenuDerivation
         Dictionary<string, object?> variables,
         IReadOnlyList<string> types,
         DislMenuTarget target,
+        DislEnv env,
         WireIdMap ids)
     {
         if (tool.NotAnObject is { } malformed) throw new InvalidOperationException(malformed);
         if (tool.ForEach is not { } forEach)
         {
-            if (Entry(specification, tool, variables, new Dictionary<string, object?>(), types, target, ids) is { } entry) yield return entry;
+            if (Entry(specification, tool, variables, new Dictionary<string, object?>(), types, target, env, ids) is { } entry) yield return entry;
             yield break;
         }
 
@@ -211,7 +221,7 @@ public static class ContextMenuDerivation
         {
             var bindings = new Dictionary<string, object?>(StringComparer.Ordinal) { ["item"] = items[index], ["index"] = (long)index };
             if (tool.As is { } named) bindings[named] = items[index];
-            if (Entry(specification, tool, variables, bindings, types, target, ids) is { } entry) yield return entry;
+            if (Entry(specification, tool, variables, bindings, types, target, env, ids) is { } entry) yield return entry;
         }
     }
 
@@ -222,6 +232,7 @@ public static class ContextMenuDerivation
         Dictionary<string, object?> bindings,
         IReadOnlyList<string> types,
         DislMenuTarget target,
+        DislEnv env,
         WireIdMap ids)
     {
         var variables = bindings.Count == 0 ? outer : new Dictionary<string, object?>(outer).Also(bindings);
@@ -243,6 +254,13 @@ public static class ContextMenuDerivation
         var shortcut = tool.Shortcut ?? operation?.Shortcut;
 
         var reason = Unavailable(specification, tool, variables, operation, target, arguments);
+        var picker = tool.Target is "pick" or "either" && target is DislMenuTarget.OnElement { Self: { } self }
+            ? Picker(specification, tool, variables, self, env, label)
+            : null;
+        if (reason is null && picker is { Candidates.Count: 0 })
+        {
+            reason = tool.EmptyText?.Text(variables, NothingToChoose) ?? NothingToChoose;
+        }
         var available = reason is null && (tool.Enabled is not { } enabled || enabled.Holds(variables));
 
         return new DerivedMenuEntry(
@@ -254,7 +272,38 @@ public static class ContextMenuDerivation
             shortcut is null ? null : DerivedShortcut.Parse(shortcut),
             available,
             reason ?? "",
-            arguments);
+            arguments,
+            picker);
+    }
+
+    /// <summary>The runtime's sentence for a picker with no candidate, when the entry states no <c>emptyText</c> (§7.3).</summary>
+    private const string NothingToChoose = "There is nothing to choose from.";
+
+    /// <summary>
+    /// The picker of an entry that chooses its other end from a list (§7.3): the <c>candidates</c> in the order the
+    /// expression gives them, else every other node, less those the <c>connect</c> checks refuse for the entry's
+    /// relation type (8.4); each labelled by <c>candidateLabel</c> with <c>item</c> bound, else by its <c>label()</c>;
+    /// titled by <c>pickerTitle</c>, else by the entry's label.
+    /// </summary>
+    private static DerivedPicker Picker(DislSpecification specification, DislMenuTool tool, Dictionary<string, object?> variables, DislElement self, DislEnv env, string label)
+    {
+        IEnumerable<DislElement> offered = tool.Candidates is { } candidates
+            ? candidates.Evaluate(variables) is IReadOnlyList<object?> listed ? listed.OfType<DislElement>() : []
+            : self.Diagram.Nodes.Where(node => !ReferenceEquals(node, self));
+        if (tool.Via is { } via && specification.Metamodel.TypeOf(via) is { IsRelation: true })
+        {
+            offered = offered.Where(candidate => GestureConstraintEvaluator.Connect(specification, self.Diagram, via, self, candidate, env: env) is null);
+        }
+
+        var rows = new List<DerivedPickCandidate>();
+        foreach (var candidate in offered)
+        {
+            var text = tool.CandidateLabel is { } candidateLabel
+                ? candidateLabel.Text(new Dictionary<string, object?>(variables) { ["item"] = candidate }, candidate.LabelText)
+                : candidate.LabelText;
+            rows.Add(new DerivedPickCandidate(candidate.Id, text));
+        }
+        return new DerivedPicker(tool.PickerTitle?.Text(variables, label) ?? label, rows);
     }
 
     private static string? Unavailable(

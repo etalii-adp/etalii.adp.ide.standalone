@@ -26,10 +26,21 @@ public sealed record DislAttribute(string Name, string Type, bool Many, JsonElem
     internal string? Label { get; } = JsonProperties.String(Json, "label");
 
     /// <summary>Its <c>min</c> (§4.3), read at load: the least number it may hold; null when it states none or one that is not a number.</summary>
-    internal double? Min { get; } = Bound(Json, "min");
+    internal double? Min { get; init; } = Bound(Json, "min");
 
     /// <summary>Its <c>max</c> (§4.3), read at load: the greatest number it may hold; null when it states none or one that is not a number.</summary>
-    internal double? Max { get; } = Bound(Json, "max");
+    internal double? Max { get; init; } = Bound(Json, "max");
+
+    /// <summary>
+    /// What a value typed into a form or an inline label does past <see cref="Min"/> or <see cref="Max"/> (DISL 0.3 §4.3,
+    /// <c>outOfRange.typed</c>): <c>refuse</c>, the default, or <c>clamp</c>.
+    /// </summary>
+    internal string TypedOutOfRange { get; } = Json.ValueKind == JsonValueKind.Object && Json.TryGetProperty("outOfRange", out var outOfRange)
+        ? JsonProperties.String(outOfRange, "typed") ?? "refuse"
+        : "refuse";
+
+    /// <summary>The refusal of a typed value out of range (<c>outOfRange.message</c>), set at load; null for the runtime's sentence.</summary>
+    internal DislMessage? OutOfRangeMessage { get; set; }
 
     /// <summary>Whether it is a <c>key</c> (§4.3), read at load: a part of its type's natural id.</summary>
     internal bool Key { get; } = JsonProperties.Bool(Json, "key");

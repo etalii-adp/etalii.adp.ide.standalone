@@ -30,6 +30,8 @@
       real OnlineWardleyMaps parser (see Fixtures/readme.md), not an input to any test.
     -->
     <Content Include="Fixtures\**" Exclude="Fixtures\certify.mjs" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The definition at DISL 0.1, which LegacyDefinition.Tests holds findings A1 to A3 to. -->
+    <Content Include="Legacy\wardley-map.dis" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

@@ -33,6 +33,10 @@ internal static class DislDerivedReader
                 {
                     attribute.ReadOnlyReasons = DislFieldReader.Reasons(specification, reasons, JsonPointer.Append(at, "readOnlyReasons"));
                 }
+                if (attribute.Json.ValueKind == JsonValueKind.Object && attribute.Json.TryGetProperty("outOfRange", out var outOfRange))
+                {
+                    attribute.OutOfRangeMessage = DislFieldReader.OptionalMessage(specification, outOfRange, JsonPointer.Append(at, "outOfRange"), "message");
+                }
             }
         }
         foreach (var type in metamodel.Types.Values)

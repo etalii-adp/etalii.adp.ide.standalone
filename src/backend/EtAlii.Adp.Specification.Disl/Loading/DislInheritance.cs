@@ -31,7 +31,8 @@ internal static class DislInheritance
         Linearise(relations, "/metamodel/relations", diagnostics);
 
         var all = types.Values.Concat(relations.Values).ToDictionary(type => type.Name, StringComparer.Ordinal);
-        var known = new TypeNames(enums.Keys, dataTypes, all.Keys);
+        var dataTypeDeclarations = DislJson.Members(metamodel, "dataTypes").ToDictionary(member => member.Name, member => member.Value, StringComparer.Ordinal);
+        var known = new TypeNames(enums.Keys, dataTypes, all.Keys, dataTypeDeclarations);
         foreach (var type in all.Values)
         {
             var section = type.IsRelation ? "/metamodel/relations" : "/metamodel/types";
@@ -171,6 +172,9 @@ internal static class DislInheritance
             ?? merged.Values.FirstOrDefault(attribute => attribute.Type == "string")?.Name;
     }
 
+    private static double? NumberBound(JsonElement json, string name) =>
+        json.ValueKind == JsonValueKind.Object && json.TryGetProperty(name, out var bound) && bound.ValueKind == JsonValueKind.Number ? bound.GetDouble() : null;
+
     private static bool DeclaresOwn(DislType type, string attribute) =>
         DislJson.Members(type.Json, "attributes").Any(member => member.Name == attribute);
 
@@ -206,6 +210,9 @@ internal static class DislInheritance
             var many = JsonProperties.Bool(member.Value, "many");
             attributes[member.Name] = new DislAttribute(member.Name, type ?? "json", many, literalDefault, declaredBy, member.Value)
             {
+                // A constrained primitive's bounds (§4.4) are the attribute's where it states none of its own.
+                Min = NumberBound(member.Value, "min") ?? known.Bound(type, "min"),
+                Max = NumberBound(member.Value, "max") ?? known.Bound(type, "max"),
                 DefaultValue = literalDefault is { } literal ? DislLiterals.FromJson(literal, type ?? "json", many, known.DataTypes) : null,
                 FixedValue = member.Value.TryGetProperty("fixed", out var declaredFixed) ? DislLiterals.FromJson(declaredFixed, type ?? "json", many, known.DataTypes) : null,
             };
@@ -300,7 +307,7 @@ internal static class DislInheritance
 }
 
 /// <summary>The names an attribute's type may be: a primitive, an enum, a data type, or a node or relation type (DISL §4.3).</summary>
-internal sealed class TypeNames(IEnumerable<string> enums, IReadOnlySet<string> dataTypes, IEnumerable<string> types)
+internal sealed class TypeNames(IEnumerable<string> enums, IReadOnlySet<string> dataTypes, IEnumerable<string> types, IReadOnlyDictionary<string, JsonElement>? dataTypeDeclarations = null)
 {
     private readonly HashSet<string> _names = [.. DislAttribute.Primitives, .. enums, .. dataTypes, .. types];
 
@@ -308,4 +315,12 @@ internal sealed class TypeNames(IEnumerable<string> enums, IReadOnlySet<string> 
     public IReadOnlySet<string> DataTypes => dataTypes;
 
     public bool Contains(string name) => _names.Contains(name);
+
+    /// <summary>The <c>min</c> or <c>max</c> of the constrained primitive (§4.4) <paramref name="type"/> names; null for any other type or none stated.</summary>
+    public double? Bound(string? type, string name) =>
+        type is not null && dataTypeDeclarations is not null && dataTypeDeclarations.TryGetValue(type, out var declaration)
+            && declaration.ValueKind == JsonValueKind.Object && declaration.TryGetProperty("base", out _)
+            && declaration.TryGetProperty(name, out var bound) && bound.ValueKind == JsonValueKind.Number
+            ? bound.GetDouble()
+            : null;
 }

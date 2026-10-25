@@ -48,6 +48,21 @@ internal sealed record DislMenuTool
 
     public DislExpressionField? Enabled { get; init; }
 
+    /// <summary>How a <c>connect</c> or <c>create-connected</c> entry chooses its other end: <c>drag</c> (default), <c>pick</c> or <c>either</c>.</summary>
+    public string Target { get; init; } = "drag";
+
+    /// <summary>The elements a picker offers, or null for every element the relation and the connect checks admit.</summary>
+    public DislExpressionField? Candidates { get; init; }
+
+    /// <summary>The text of each picker row, context <c>element</c> plus <c>item</c>, or null for <c>item.label()</c>.</summary>
+    public DislMessage? CandidateLabel { get; init; }
+
+    /// <summary>The picker's title, or null for the entry's label.</summary>
+    public DislMessage? PickerTitle { get; init; }
+
+    /// <summary>Why the entry is unavailable when no candidate remains, or null for the runtime's sentence.</summary>
+    public DislMessage? EmptyText { get; init; }
+
     /// <summary>
     /// The message System.Text.Json threw when the runtime read an entry that is not an object, null for one that is;
     /// such an entry still throws it where it was read.
