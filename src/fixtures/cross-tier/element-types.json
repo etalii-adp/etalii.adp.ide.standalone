@@ -227,8 +227,8 @@
         "wardley/map+accelerator",
         "wardley/map+annotation",
         "wardley/map+attitude",
+        "wardley/map+diagram",
         "wardley/map+element",
-        "wardley/map+evolution-axis",
         "wardley/map+note"
       ],
       "relations": [
