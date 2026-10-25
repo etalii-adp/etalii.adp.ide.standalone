@@ -42,6 +42,21 @@ public class FormatNumberTests
         Assert.Equal(value.ToString(pattern, CultureInfo.InvariantCulture),
             Evaluate($"formatNumber({value.ToString("R", CultureInfo.InvariantCulture)}{(value % 1 == 0 && Math.Abs(value) < 1e15 ? ".0" : "")}, '{pattern}')"));
 
+    /// <summary>
+    /// Amounts as a property row shows them with <c>'0.####'</c>: at most four decimals, none when whole, no grouping.
+    /// The values are those a host's rows hold over its corpus, small fractions and thousands alike.
+    /// </summary>
+    [Theory]
+    [InlineData("formatNumber(0.01, '0.####')", "0.01")]
+    [InlineData("formatNumber(0.16, '0.####')", "0.16")]
+    [InlineData("formatNumber(1.0, '0.####')", "1")]
+    [InlineData("formatNumber(1.1, '0.####')", "1.1")]
+    [InlineData("formatNumber(12.5, '0.####')", "12.5")]
+    [InlineData("formatNumber(170.0, '0.####')", "170")]
+    [InlineData("formatNumber(5500.0, '0.####')", "5500")]
+    public void AnAmount_IsWrittenWithoutGroupingOrTrailingZeros(string expression, string expected) =>
+        Assert.Equal(expected, Evaluate(expression));
+
     [Theory]
     [InlineData("formatNumber('a', '0')", "formatNumber() takes a number and a pattern.")]
     [InlineData("formatNumber(1, '0.00 €')", "'0.00 €' is not a number pattern this runtime writes: digits '0' and '#', grouping ',' and one decimal point '.'.")]
