@@ -1,3 +1,4 @@
+using EtAlii.Adp.Specification.Cel;
 using Xunit;
 
 namespace EtAlii.Adp.Specification.Disl.Tests;
@@ -37,4 +38,24 @@ public class DataTypeFacetsTests
     [Fact]
     public void TheAttributesOwnBound_WinsOverItsDataTypes() =>
         Assert.Equal(["2 | 'b' has up 2.5; the maximum is 2."], Facets(("a", 0, 1.5), ("b", 0, 2.5)));
+
+    private static readonly DislSpecification Structs = Specifications.Loaded(Specifications.With("""
+        "disl": "0.3",
+        "metamodel": {
+          "dataTypes": {
+            "Fraction": { "base": "number", "min": 0, "max": 1 },
+            "Extent": { "fields": { "across": { "type": "Fraction" }, "up": { "type": "Fraction", "max": 2 }, "name": { "type": "string" } } } },
+          "types": { "Box": { "attributes": { "extent": { "type": "Extent" } } } }
+        }
+        """));
+
+    [Fact]
+    public void ANumberOutsideItsBounds_InAStructField_IsReportedByItsDottedPath()
+    {
+        var diagram = new DislDiagram(Structs);
+        var extent = new CelMap { ["across"] = 1.2, ["up"] = 2.5, ["name"] = "x" };
+        diagram.Add(new DislElement(diagram, Structs.Metamodel.TypeOf("Box")!, "a", new Dictionary<string, object?> { ["extent"] = extent }) { Line = 1 });
+        var findings = ConstraintEvaluator.Evaluate(Structs, diagram).Where(finding => finding.ConstraintId == "std.facets").ToList();
+        Assert.Equal(["1 | 'a' has extent.across 1.2; the maximum is 1.", "1 | 'a' has extent.up 2.5; the maximum is 2."], findings.Select(finding => $"{finding.Line} | {finding.Message}"));
+    }
 }

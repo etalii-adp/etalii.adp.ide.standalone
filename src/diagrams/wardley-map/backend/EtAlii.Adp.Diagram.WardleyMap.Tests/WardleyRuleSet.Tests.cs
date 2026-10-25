@@ -1,3 +1,4 @@
+using EtAlii.Adp.Diagram.WardleyMap.Tests.Parity;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.Hierarchy;
@@ -9,13 +10,18 @@ using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would othe
 namespace EtAlii.Adp.Diagram.WardleyMap.Tests;
 
 /// <summary>
-/// One test per rule, each from a plain `.owm` string - which is the whole point of the rules
-/// being a pure function from a model to problems (Requirement 14.9).
+/// One test per rule, each from a plain `.owm` string, of the findings the definition derives (wardley-map-disl-fbl
+/// task 7), which were the hand-written rule set's (Requirement 14.9): the rules are still a function from a model to
+/// problems.
 /// </summary>
 public sealed class WardleyRuleSetTests
 {
-    private static IReadOnlyList<DiagramProblem> Validate(string text) =>
-        WardleyRuleSet.Validate(WardleyParser.Parse(LineDocument.Parse(text)));
+    private static IReadOnlyList<DiagramProblem> Validate(string text)
+    {
+        var body = LineDocument.Parse(text);
+        var outcome = WardleyParser.Outcome(body);
+        return WardleyDefinition.Problems(body, outcome.Model, outcome.Problems, [], []);
+    }
 
     private static DiagramProblem Single(IReadOnlyList<DiagramProblem> problems, string ruleId) =>
         problems.Single(problem => problem.RuleId == ruleId);
@@ -49,7 +55,7 @@ public sealed class WardleyRuleSetTests
 
         // Assert. The line is where the fix is made: the name is either a typo to correct or a
         // component to add, and both happen in that statement.
-        var problem = Single(problems, WardleyRuleSet.LinkTargetMissingRuleId);
+        var problem = Single(problems, HandWrittenWardleyRuleSet.LinkTargetMissingRuleId);
         Assert.Equal(DiagramProblemSeverity.Error, problem.Severity);
         Assert.Contains("Electricity", problem.Message, StringComparison.Ordinal);
         Assert.Contains("Kettle->Electricity", problem.Message, StringComparison.Ordinal);
@@ -63,7 +69,7 @@ public sealed class WardleyRuleSetTests
         var problems = Validate("anchor Business [0.95, 0.63]\nAlpha->Beta\n");
 
         // Assert.
-        Assert.Equal(2, problems.Count(problem => problem.RuleId == WardleyRuleSet.LinkTargetMissingRuleId));
+        Assert.Equal(2, problems.Count(problem => problem.RuleId == HandWrittenWardleyRuleSet.LinkTargetMissingRuleId));
     }
 
     [Fact]
@@ -73,7 +79,7 @@ public sealed class WardleyRuleSetTests
         var problems = Validate("anchor Business [0.95, 0.63]\nevolve Kettle 0.62\n");
 
         // Assert.
-        var problem = Single(problems, WardleyRuleSet.EvolveTargetMissingRuleId);
+        var problem = Single(problems, HandWrittenWardleyRuleSet.EvolveTargetMissingRuleId);
         Assert.Equal(DiagramProblemSeverity.Error, problem.Severity);
         Assert.Equal(2u, Assert.IsType<DiagramProblemLineLocation>(problem.Location).Number);
     }
@@ -92,7 +98,7 @@ public sealed class WardleyRuleSetTests
             """);
 
         // Assert.
-        var problem = Single(problems, WardleyRuleSet.PipelineParentMissingRuleId);
+        var problem = Single(problems, HandWrittenWardleyRuleSet.PipelineParentMissingRuleId);
         Assert.Equal(DiagramProblemSeverity.Error, problem.Severity);
         Assert.Contains("Kettle", problem.Message, StringComparison.Ordinal);
     }
@@ -107,7 +113,7 @@ public sealed class WardleyRuleSetTests
         var problems = Validate($"anchor Business [0.95, 0.63]\n{statement}\n");
 
         // Assert.
-        var problem = Single(problems, WardleyRuleSet.CoordinateOutOfRangeRuleId);
+        var problem = Single(problems, HandWrittenWardleyRuleSet.CoordinateOutOfRangeRuleId);
         Assert.Equal(DiagramProblemSeverity.Error, problem.Severity);
         Assert.Contains(axis, problem.Message, StringComparison.Ordinal);
         Assert.Equal(2u, Assert.IsType<DiagramProblemLineLocation>(problem.Location).Number);
@@ -134,7 +140,7 @@ public sealed class WardleyRuleSetTests
             """);
 
         // Assert.
-        Assert.Equal(6, problems.Count(problem => problem.RuleId == WardleyRuleSet.CoordinateOutOfRangeRuleId));
+        Assert.Equal(6, problems.Count(problem => problem.RuleId == HandWrittenWardleyRuleSet.CoordinateOutOfRangeRuleId));
     }
 
     [Fact]
@@ -150,7 +156,7 @@ public sealed class WardleyRuleSetTests
 
         // Assert. Reported once, at the first holder; with no identities to hand that is its
         // line (finding A7). The message names both.
-        var problem = Single(problems, WardleyRuleSet.DuplicateNameRuleId);
+        var problem = Single(problems, HandWrittenWardleyRuleSet.DuplicateNameRuleId);
         Assert.Equal(DiagramProblemSeverity.Error, problem.Severity);
         Assert.Equal(2u, Assert.IsType<DiagramProblemLineLocation>(problem.Location).Number);
         Assert.Contains("lines 2, 3", problem.Message, StringComparison.Ordinal);
@@ -176,7 +182,7 @@ public sealed class WardleyRuleSetTests
             TestContext.Current.CancellationToken);
 
         // Assert.
-        var problem = Single(problems, WardleyRuleSet.DuplicateNameRuleId);
+        var problem = Single(problems, HandWrittenWardleyRuleSet.DuplicateNameRuleId);
         Assert.Equal(first.Id, Assert.IsType<DiagramProblemElementLocation>(problem.Location).Id);
     }
 
@@ -188,7 +194,7 @@ public sealed class WardleyRuleSetTests
         var problems = Validate("component Kettle [0.43, 0.35]\n");
 
         // Assert.
-        var problem = Single(problems, WardleyRuleSet.AnchorMissingRuleId);
+        var problem = Single(problems, HandWrittenWardleyRuleSet.AnchorMissingRuleId);
         Assert.Equal(DiagramProblemSeverity.Warning, problem.Severity);
         Assert.Null(problem.Location);
     }
@@ -215,7 +221,7 @@ public sealed class WardleyRuleSetTests
             """);
 
         // Assert.
-        var problem = Single(problems, WardleyRuleSet.UrlUndefinedRuleId);
+        var problem = Single(problems, HandWrittenWardleyRuleSet.UrlUndefinedRuleId);
         Assert.Equal(DiagramProblemSeverity.Warning, problem.Severity);
         Assert.Contains("handbook", problem.Message, StringComparison.Ordinal);
     }
@@ -233,7 +239,7 @@ public sealed class WardleyRuleSetTests
         var map = WardleyParser.Parse(LineDocument.Parse(text));
 
         // Assert.
-        Assert.NotEmpty(WardleyRuleSet.Validate(map));
+        Assert.NotEmpty(Validate(text));
         Assert.Equal(2, map.Components.Count);
         Assert.Single(map.Links);
     }
@@ -268,11 +274,9 @@ public sealed class WardleyRuleSetTests
                 .Concat(Enumerable.Range(0, 1000).Select(index => $"component C{index} [0.5, 0.5]"))
                 .Concat(Enumerable.Range(0, 999).Select(index => $"C{index}->C{index + 1}")));
 
-        var map = WardleyParser.Parse(LineDocument.Parse(text + "\n"));
-
         // Act.
         var started = DateTime.UtcNow;
-        var problems = WardleyRuleSet.Validate(map);
+        var problems = Validate(text + "\n");
         var took = DateTime.UtcNow - started;
 
         // Assert. Generous on purpose: this is a guard against an accidental quadratic, not a
@@ -397,8 +401,8 @@ public sealed class WardleyValidatorTests : IDisposable
         var problems = await Validate("component Kettle [0.43, 0.35]\nKettle->Nothing\n");
 
         // Assert.
-        Assert.Contains(problems, problem => problem.RuleId == WardleyRuleSet.LinkTargetMissingRuleId);
-        Assert.Contains(problems, problem => problem.RuleId == WardleyRuleSet.AnchorMissingRuleId);
+        Assert.Contains(problems, problem => problem.RuleId == HandWrittenWardleyRuleSet.LinkTargetMissingRuleId);
+        Assert.Contains(problems, problem => problem.RuleId == HandWrittenWardleyRuleSet.AnchorMissingRuleId);
     }
 
     [Fact]

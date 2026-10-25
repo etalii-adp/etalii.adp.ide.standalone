@@ -277,8 +277,9 @@ public static class ConstraintEvaluator
         /// <c>std.facets</c> from an attribute's <c>min</c> and <c>max</c> (§4.3): per stored element in model
         /// order, and per <c>int</c> or <c>number</c> attribute it holds in its type's attribute order, a value
         /// below <c>min</c> or above <c>max</c>, binding <c>detail</c> with <c>attribute</c>, <c>facet</c>
-        /// (<c>min</c> or <c>max</c>) and <c>limit</c>. The value is kept as stored: a facet reports, it does not
-        /// correct (§4.3's <c>outOfRange</c> applies to an edit only).
+        /// (<c>min</c> or <c>max</c>) and <c>limit</c>. A struct's fields (§4.4) are checked in its place, in field
+        /// order, with <c>attribute</c> their dotted path (<c>extent.across</c>). The value is kept as stored: a facet
+        /// reports, it does not correct (§4.3's <c>outOfRange</c> applies to an edit only).
         /// </summary>
         public void Facets()
         {
@@ -286,20 +287,33 @@ public static class ConstraintEvaluator
             if (!setting.Enabled) return;
             foreach (var element in diagram.Elements.Where(element => !element.IsDerived))
             {
-                foreach (var attribute in element.Type.Attributes.Values.Where(attribute => attribute.Min is not null || attribute.Max is not null))
+                foreach (var attribute in element.Type.Attributes.Values)
                 {
-                    if (!element.Attributes.TryGetValue(attribute.Name, out var stored) || stored is not (double or long)) continue;
-                    var value = Convert.ToDouble(stored, CultureInfo.InvariantCulture);
-                    if (attribute.Min is { } min && value < min) Facet(element, attribute, "min", min, value, "minimum");
-                    if (attribute.Max is { } max && value > max) Facet(element, attribute, "max", max, value, "maximum");
+                    if (element.Attributes.TryGetValue(attribute.Name, out var stored)) Check(element, attribute, attribute.Name, stored);
                 }
             }
 
-            void Facet(DislElement element, DislAttribute attribute, string facet, double limit, double value, string noun)
+            void Check(DislElement element, DislAttribute attribute, string path, object? stored)
             {
-                var detail = new CelMap { ["attribute"] = attribute.Name, ["facet"] = facet, ["limit"] = limit };
+                if (stored is CelMap fields)
+                {
+                    foreach (var field in attribute.Fields)
+                    {
+                        if (fields.TryGetValue(field.Name, out var held)) Check(element, field, path + "." + field.Name, held);
+                    }
+                    return;
+                }
+                if (stored is not (double or long)) return;
+                var value = Convert.ToDouble(stored, CultureInfo.InvariantCulture);
+                if (attribute.Min is { } min && value < min) Facet(element, path, "min", min, value, "minimum");
+                if (attribute.Max is { } max && value > max) Facet(element, path, "max", max, value, "maximum");
+            }
+
+            void Facet(DislElement element, string path, string facet, double limit, double value, string noun)
+            {
+                var detail = new CelMap { ["attribute"] = path, ["facet"] = facet, ["limit"] = limit };
                 var text = value.ToString(CultureInfo.InvariantCulture);
-                Add(setting, "std.facets", element, detail, $"'{WrittenId(element)}' has {attribute.Name} {text}; the {noun} is {limit.ToString(CultureInfo.InvariantCulture)}.", element);
+                Add(setting, "std.facets", element, detail, $"'{WrittenId(element)}' has {path} {text}; the {noun} is {limit.ToString(CultureInfo.InvariantCulture)}.", element);
             }
         }
 

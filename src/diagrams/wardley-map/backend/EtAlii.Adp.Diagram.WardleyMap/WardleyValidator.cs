@@ -1,32 +1,28 @@
 using EtAlii.Adp.Documents;
-using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
 namespace EtAlii.Adp.Diagram.WardleyMap;
 
 /// <summary>
-/// Carries <see cref="WardleyRuleSet"/> to the Errors &amp; Warnings panel, and adds the one
-/// rule that cannot be a pure function (Requirement 14.1).
+/// Carries the findings the definition derives (<see cref="WardleyDefinition.Problems"/>) to the Errors &amp; Warnings
+/// panel, with the one rule that cannot be stated in it, <see cref="WardleySubmapRule"/> (Requirement 14.1).
 /// </summary>
 /// <remarks>
 /// <para>
-/// The rules themselves stay a pure function over a parsed map. This class parses, forwards,
-/// and then judges the one thing a model cannot answer: whether a `url` that looks like a file
-/// path is a file that is actually in the project (Requirement 14.6). That check needs the
-/// project root, which arrives on the request - so it lives here rather than making the rule
-/// set take a filesystem.
+/// This class parses, asks the definition, and adds the one thing a model cannot answer: whether a `url` that looks like
+/// a file path is a file that is actually in the project (Requirement 14.6). That check needs the project root, which
+/// arrives on the request (wardley-map.md, gap 9).
 /// </para>
 /// <para>
-/// Core neither interprets, ranks nor rewrites what comes back (Requirement 14.1); it routes it
-/// by origin and shows it.
+/// Core neither interprets, ranks nor rewrites what comes back (Requirement 14.1); it routes it by origin and shows it.
 /// </para>
 /// </remarks>
 /// <param name="documents">
-/// The store, for the ids of the map's elements: a problem about an element is located at its id
-/// (finding A7), and the ids are those the store holds beside the document it was asked about.
+/// The store, for the ids of the map's elements: a problem about an element is located at its id (finding A7), and the
+/// ids are those the store holds beside the document it was asked about.
 /// </param>
 public sealed class WardleyValidator(IWardleyDocumentStore documents) : IDiagramValidator
 {
-    public const string SubmapMissingRuleId = "wardley.submap-missing";
+    public const string SubmapMissingRuleId = WardleySubmapRule.RuleId;
 
     /// <summary>The rule reported for a line the parser passed over, at that line (code-structure B-25).</summary>
     public const string LinePassedOverRuleId = "wardley.line-passed-over";
@@ -40,20 +36,15 @@ public sealed class WardleyValidator(IWardleyDocumentStore documents) : IDiagram
         ArgumentNullException.ThrowIfNull(request);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var outcome = WardleyParser.Outcome(LineDocument.Parse(request.Document));
+        var body = LineDocument.Parse(request.Document);
+        var outcome = WardleyParser.Outcome(body);
         var map = outcome.Model;
-        var problems = new List<DiagramProblem>(WardleyRuleSet.Validate(map, IdentitiesOf(request)));
-        problems.AddRange(UnresolvedReferences(map, request));
-
-        // A line that does not draw says why (B-25): a warning, because the rest of the map still
-        // reads and draws without it.
-        problems.AddRange(outcome.Problems.Select(problem => new DiagramProblem(
-            DiagramProblemSeverity.Warning,
-            problem.Message,
-            LinePassedOverRuleId,
-            new DiagramProblemLineLocation((uint)problem.Line + 1))));
-
-        return ValueTask.FromResult<IReadOnlyList<DiagramProblem>>(problems);
+        return ValueTask.FromResult(WardleyDefinition.Problems(
+            body,
+            map,
+            outcome.Problems,
+            IdentitiesOf(request),
+            [.. WardleySubmapRule.UnresolvedReferences(map, request)]));
     }
 
     /// <summary>
@@ -64,58 +55,4 @@ public sealed class WardleyValidator(IWardleyDocumentStore documents) : IDiagram
         request.BodyPath.Length > 0 && documents.Get(request.BodyPath) is { IsUsable: true } entry && entry.Document.Text == request.Document
             ? documents.Identities(request.BodyPath)
             : [];
-
-    /// <summary>
-    /// A `url` whose address looks like a file in this project, and is not (Requirement 14.6).
-    /// </summary>
-    /// <remarks>
-    /// <b>A warning, never an error, and only for an address that looks local.</b> An
-    /// `https://` address may legitimately point outside the workspace, and reporting every one
-    /// of those would make the panel useless for the case that matters - a submap naming a map
-    /// that is genuinely not there.
-    /// </remarks>
-    private static IEnumerable<DiagramProblem> UnresolvedReferences(WardleyMap map, DiagramValidationRequest request)
-    {
-        foreach (var url in map.Urls)
-        {
-            if (!LooksLikeAFile(url.Address))
-            {
-                continue;
-            }
-
-            // Containment is the project root's to judge: a `..` walking out of the project is
-            // not a reference this reports on, it is one it refuses to go looking for. Nor is the
-            // root itself, which no address names as a file.
-            if (request.Root.Resolve(url.Address.Replace('/', IoPath.DirectorySeparatorChar)) is not { RelativePath: not "." } target
-                || File.Exists(target.FullPath))
-            {
-                continue;
-            }
-
-            var referrers = map.Components
-                .Where(component => component.Url == url.Name)
-                .Select(component => component.Name)
-                .ToArray();
-
-            var named = referrers.Length > 0 ? $"'{referrers[0]}' points at" : "This map defines";
-
-            yield return new DiagramProblem(
-                DiagramProblemSeverity.Warning,
-                $"{named} '{url.Address}', which is not in this project.",
-                SubmapMissingRuleId,
-                new DiagramProblemLineLocation(url.Line));
-        }
-    }
-
-    /// <summary>
-    /// Whether an address is a path in this project rather than somewhere on the internet.
-    /// </summary>
-    /// <remarks>
-    /// Deliberately conservative: anything carrying a scheme is left alone. Guessing that
-    /// `mailto:` or `obsidian://` is a missing file would produce a warning nobody can act on.
-    /// </remarks>
-    private static bool LooksLikeAFile(string address) =>
-        address.Length > 0 &&
-        !address.Contains("://", StringComparison.Ordinal) &&
-        !address.Contains(':', StringComparison.Ordinal);
 }
