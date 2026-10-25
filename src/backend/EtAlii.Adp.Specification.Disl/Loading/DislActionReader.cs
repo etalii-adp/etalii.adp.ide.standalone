@@ -86,6 +86,11 @@ internal static class DislActionReader
             "view" => new DislAction.View(at, when, Target(specification, action, at), View(specification, body, bodyAt), DislFieldReader.NotAnObject(body)),
             "plugin" => Plugin(specification, action, at, when, body),
             "abort" => new DislAction.Abort(at, when, Member(specification, body, bodyAt, "message")),
+            "call" when body.ValueKind == JsonValueKind.String => new DislAction.Call(
+                at,
+                when,
+                body.GetString()!,
+                [.. DislJson.Members(action, "args").Select(argument => (argument.Name, DislFieldReader.Value(specification, argument.Value, JsonPointer.Append(JsonPointer.Append(at, "args"), argument.Name))))]),
             _ => new DislAction.Unsupported(at, when, kind),
         };
     }

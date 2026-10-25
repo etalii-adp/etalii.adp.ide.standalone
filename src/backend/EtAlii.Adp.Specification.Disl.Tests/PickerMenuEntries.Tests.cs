@@ -40,6 +40,7 @@ public class PickerMenuEntriesTests
         var entry = Entries(Things("c", "a", "b"), "a")[0];
 
         Assert.True(entry.Available);
+        Assert.Equal("Link", entry.Via);
         Assert.NotNull(entry.Picker);
         Assert.Equal("Link to", entry.Picker.Title);
         Assert.Equal(["b", "c"], entry.Picker.Candidates.Select(candidate => candidate.ElementId));
@@ -64,6 +65,16 @@ public class PickerMenuEntriesTests
         Assert.Equal("Link", entry.Picker!.Title);
         Assert.Equal(["b"], entry.Picker.Candidates.Select(candidate => candidate.ElementId));
         Assert.Equal(["b"], entry.Picker.Candidates.Select(candidate => candidate.Label));
+    }
+
+    [Fact]
+    public void ThePicker_CarriesItsEmptyText_WhileItHasCandidates_AndTheRuntimesSentenceWithoutOne()
+    {
+        var entries = Entries(Things("a", "b"), "a");
+
+        // A host shows the sentence when the list is emptied under it, so it travels with every picker.
+        Assert.Equal("There is nothing else to link to.", entries[0].Picker!.EmptyText);
+        Assert.Equal("There is nothing to choose from.", entries[1].Picker!.EmptyText);
     }
 
     [Fact]

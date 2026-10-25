@@ -93,6 +93,7 @@ internal sealed class ActionRunner(DislSpecification specification, DislDiagram 
         DislAction.View view => View(view, variables),
         DislAction.Plugin plugin => Plugin(plugin, variables),
         DislAction.Abort abort => Abort(abort, variables),
+        DislAction.Call call => Call(call, variables),
         DislAction.Unsupported unsupported => Refuse($"This runtime cannot run a `{unsupported.Kind}` action yet ({unsupported.At})."),
         _ => Refuse($"The action at {action.At} is none this runtime knows."),
     };
@@ -247,6 +248,51 @@ internal sealed class ActionRunner(DislSpecification specification, DislDiagram 
         Malformed(plugin.Malformed);
         _host.Add(new HostAction.Plugin(plugin.Name, arguments));
         return true;
+    }
+
+    /// <summary>How deep one <c>call</c> may run another, so that an operation that calls itself is refused rather than run forever.</summary>
+    private const int CallDepth = 16;
+
+    private int _calls;
+
+    /// <summary>
+    /// A <c>call</c> (§9.4): the operation it names, refused as that operation is when it is not available on the caller's
+    /// <c>self</c>, then its actions run in this transaction with its <c>args</c> as <c>p</c>; its plugin, if it is one, handed back.
+    /// </summary>
+    private bool Call(DislAction.Call call, Dictionary<string, object?> variables)
+    {
+        if (specification.Operations.Find(call.Operation) is not { } operation) return Refuse($"There is no operation '{call.Operation}'.");
+        if (_calls >= CallDepth) return Refuse($"The call of '{call.Operation}' at {call.At} goes deeper than {CallDepth} calls.");
+        if (!Values(call.Arguments, variables, out var arguments)) return false;
+
+        var p = new CelMap();
+        foreach ((string name, object? value) in arguments) p[name] = value;
+        var self = variables.GetValueOrDefault("self");
+        var called = new Dictionary<string, object?>(variables, StringComparer.Ordinal)
+        {
+            ["p"] = p,
+            ["selection"] = variables.GetValueOrDefault("selection") ?? (self is DislElement ? new List<object?> { self } : new List<object?>()),
+            ["position"] = variables.GetValueOrDefault("position"),
+        };
+        if (OperationInterpreter.Unavailable(specification, operation, diagram, self is DislElement element ? element.IsA : null, called) is { } reason) return Refuse(reason);
+
+        if (operation.Plugin is { } plugin)
+        {
+            var handed = new Dictionary<string, object?>(StringComparer.Ordinal);
+            foreach ((string name, DislActionValue.Literal value) in plugin.Arguments) handed[name] = value.Evaluate(called);
+            _host.Add(new HostAction.Plugin(plugin.Name, handed));
+            return true;
+        }
+
+        _calls++;
+        try
+        {
+            return Run(operation.Actions, called);
+        }
+        finally
+        {
+            _calls--;
+        }
     }
 
     /// <summary>An <c>abort</c>: the transaction refused with its <c>message</c>, or the runtime's own.</summary>

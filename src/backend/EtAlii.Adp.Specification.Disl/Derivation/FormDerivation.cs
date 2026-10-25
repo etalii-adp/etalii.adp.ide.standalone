@@ -40,6 +40,10 @@ public sealed record DerivedRow(string Id, string Label, string Value, string? W
 /// is the host's to accept or refuse a value for, as its <c>parse</c> says.
 /// </para>
 /// <para>
+/// <b>A field whose <c>showAbsent</c> is false has no row while its attribute is absent</b> (§7.5): not stored, or
+/// stored as null.
+/// </para>
+/// <para>
 /// <b>A row's id</b> is the map's for the item's <c>id</c> (DISL 0.3 §7.5), else its attribute, else its label.
 /// </para>
 /// <para>
@@ -152,11 +156,17 @@ public static class FormDerivation
                         Items(tab.Items, tab.Title?.Text(variables, group) ?? group);
                     }
                     return;
+                case "field" when !item.ShowAbsent && Absent(attribute):
+                    return;
                 case "field" or "computed" or "type":
                     rows.Add(Row(item, group, variables));
                     return;
             }
         }
+
+        /// <summary>Whether <paramref name="attribute"/> is one the subject declares and holds no value for.</summary>
+        private bool Absent(string? attribute) =>
+            attribute is not null && self.Declared.ContainsKey(attribute) && (!self.Stored.TryGetValue(attribute, out var stored) || stored is null);
 
         private DerivedRow Row(DislFormItem item, string group, Dictionary<string, object?> variables)
         {

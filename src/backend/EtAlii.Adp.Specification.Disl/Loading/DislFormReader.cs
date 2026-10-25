@@ -64,6 +64,7 @@ internal static class DislFormReader
             Items = Items(specification, item, pointer),
             Tabs = Tabs(specification, item, pointer),
             Display = DislFieldReader.OptionalExpression(specification, item, pointer, "display"),
+            ShowAbsent = !(item.TryGetProperty("showAbsent", out var showAbsent) && showAbsent.ValueKind == JsonValueKind.False),
             ValueText = JsonProperties.String(item, "value"),
             Value = item.TryGetProperty("value", out var value) && value.ValueKind != JsonValueKind.String ? DislFieldReader.Expression(specification, value, JsonPointer.Append(pointer, "value")) : null,
             Options = item.TryGetProperty("options", out var options) ? Options(specification, options, JsonPointer.Append(pointer, "options")) : null,

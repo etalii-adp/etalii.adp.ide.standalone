@@ -12,11 +12,10 @@ namespace EtAlii.Adp.Diagram.WardleyMap;
 /// </summary>
 /// <remarks>
 /// <para>
-/// On the shared frame (code-structure FR-034), with every action one record of
-/// <see cref="WardleyActions"/>: what is offered, what is asked, and the command each makes. Every
-/// action dispatches one of the module's commands through the project's history, so the menu, the
-/// canvas and the property grid are three routes to one implementation with one inverse
-/// (Requirement 9.8). The provider never touches the document.
+/// <b>The menus, the dialogs, what they refuse and what each entry writes are the definition's</b>
+/// (wardley-map-disl-fbl Requirement 3.1): derived by <see cref="WardleyDefinition"/> from the bundled
+/// DISL definition, and written by today's commands (<see cref="WardleyTransactionCommands"/>) through
+/// the project's history. This provider computes none of it.
 /// </para>
 /// <para>
 /// <b>It answers from the target, not the model alone</b>: an element's id is the store's identity
@@ -48,8 +47,6 @@ public sealed class WardleyContextActionProvider(IHistoryStackStore historyStack
     public static string DecoratorActionIdFor(WardleyDecorator decorator) =>
         $"wardley.toggle-{decorator.ToString().ToLowerInvariant()}";
 
-    private const string Gone = "That element is no longer on this map.";
-
     /// <inheritdoc />
     protected override bool IsBody(string path) => Diagram.IsBody(path);
 
@@ -65,40 +62,40 @@ public sealed class WardleyContextActionProvider(IHistoryStackStore historyStack
     protected override IReadOnlyList<ContextActionGroupDefinition> Discover(ContextTarget target, DocumentEntry<LineDocument, WardleyMap> entry)
     {
         ArgumentNullException.ThrowIfNull(target);
-        ArgumentNullException.ThrowIfNull(entry);
-
-        // A map that could not be read offers nothing: every action on it would be refused.
-        return entry.IsUsable ? WardleyActions.All.Offered(Subject(target, entry.Model)) : [];
+        return WardleyDefinition.Menus(entry, documents.Identities(target.ResolvedFullPath), target.ElementId, editable: true);
     }
 
     /// <inheritdoc />
-    protected override ValueTask<ContextExecutionResult> RunAsync(
+    protected override async ValueTask<ContextExecutionResult> RunAsync(
         ContextTarget target,
         DocumentEntry<LineDocument, WardleyMap> entry,
         string actionId,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(target);
-        ArgumentNullException.ThrowIfNull(entry);
 
-        var subject = Subject(target, entry.Model);
-        return WardleyActions.All.Applying(actionId, subject) is { } action
-            ? RunActionAsync(target, action, subject, cancellationToken)
-            : ValueTask.FromResult<ContextExecutionResult>(new ContextExecutionFailed(
-                subject.IsGone ? Gone : $"'{actionId}' does not apply to this selection."));
+        var step = WardleyDefinition.Execute(entry, documents.Identities(target.ResolvedFullPath), target.ResolvedFullPath, target.ElementId, actionId);
+        return step switch
+        {
+            { Answer: { } answer } => answer,
+            { Command: { } command } => await RemoveAsync(target, command, step.Confirmation, cancellationToken),
+            _ => new ContextExecutionFailed($"'{actionId}' does not apply to this selection."),
+        };
     }
 
     /// <inheritdoc />
-    protected override ContextValidationResult Validate(string actionId, string value) =>
-        WardleyActions.All.Named(actionId)?.Validate(value) ?? ContextValidationResult.Accepted;
-
-    /// <inheritdoc />
-    protected override ICommand? CommitCommand(ContextTarget target, WardleyMap model, string actionId, string value)
+    protected override ContextValidationResult Validate(ContextTarget target, DocumentEntry<LineDocument, WardleyMap> entry, string actionId, string value)
     {
-        var subject = Subject(target, model);
-        return WardleyActions.All.Applying(actionId, subject)?.Command(subject, value);
+        ArgumentNullException.ThrowIfNull(target);
+        return WardleyDefinition.Validate(entry, documents.Identities(target.ResolvedFullPath), target.ElementId, actionId, value) is { } refusal
+            ? ContextValidationResult.Rejected(refusal)
+            : ContextValidationResult.Accepted;
     }
 
-    private WardleySubject Subject(ContextTarget target, WardleyMap model) =>
-        WardleySubject.Of(target.ResolvedFullPath, model, documents, target.ElementId);
+    /// <inheritdoc />
+    protected override DiagramPropertyChange Commit(ContextTarget target, DocumentEntry<LineDocument, WardleyMap> entry, string actionId, string value)
+    {
+        ArgumentNullException.ThrowIfNull(target);
+        return WardleyDefinition.Commit(entry, documents.Identities(target.ResolvedFullPath), target.ResolvedFullPath, target.ElementId, actionId, value);
+    }
 }

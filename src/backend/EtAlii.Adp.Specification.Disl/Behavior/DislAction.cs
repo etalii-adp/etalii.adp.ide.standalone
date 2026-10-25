@@ -105,6 +105,9 @@ internal abstract record DislAction(string At, DislExpressionField? When)
     /// <summary>A <c>plugin</c> call of the plugin it names with its <c>args</c>, handed to the host.</summary>
     public sealed record Plugin(string At, DislExpressionField? When, IReadOnlyList<(string Name, DislActionValue Value)> Arguments, string Name, string? Malformed) : DislAction(At, When);
 
+    /// <summary>A <c>call</c> of the operation it names, with its <c>args</c> as that operation's parameters, in the same transaction.</summary>
+    public sealed record Call(string At, DislExpressionField? When, string Operation, IReadOnlyList<(string Name, DislActionValue Value)> Arguments) : DislAction(At, When);
+
     /// <summary>An <c>abort</c>: the transaction refused with its <c>message</c>, or the runtime's own.</summary>
     public sealed record Abort(string At, DislExpressionField? When, DislActionValue? Message) : DislAction(At, When);
 }
