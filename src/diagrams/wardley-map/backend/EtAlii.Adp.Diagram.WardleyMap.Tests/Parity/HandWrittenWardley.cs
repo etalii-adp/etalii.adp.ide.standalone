@@ -1034,9 +1034,6 @@ public static class HandWrittenWardleyRuleSet
     public const string AnchorMissingRuleId = "wardley.anchor-missing";
     public const string UrlUndefinedRuleId = "wardley.url-undefined";
 
-    /// <summary>Every problem in <paramref name="map"/>, in document order where it has one.</summary>
-    public static IReadOnlyList<DiagramProblem> Validate(WardleyMap map) => Validate(map, []);
-
     /// <summary>
     /// Every problem in <paramref name="map"/>, in document order where it has one, with
     /// <paramref name="identities"/> to locate a problem at the element it is about.
