@@ -68,11 +68,8 @@ public sealed class WardleyContextPropertyProvider(IHistoryStackStore historySta
             return DiagramPropertyChange.Refused("That element is not on a Wardley map.");
         }
 
-        if (!WardleyEditability.Editable(target.ResolvedFullPath))
-        {
-            return DiagramPropertyChange.Refused(WardleyEditability.Reason);
-        }
-
-        return WardleyDefinition.Change(entry, documents.Identities(target.ResolvedFullPath), target.ResolvedFullPath, target.ElementId, propertyId, value);
+        return !WardleyEditability.Editable(target.ResolvedFullPath)
+            ? DiagramPropertyChange.Refused(WardleyEditability.Reason)
+            : WardleyDefinition.Change(entry, documents.Identities(target.ResolvedFullPath), target.ResolvedFullPath, target.ElementId, propertyId, value);
     }
 }
