@@ -1,4 +1,4 @@
-import { create, fromBinary } from "@bufbuild/protobuf";
+import { fromBinary } from "@bufbuild/protobuf";
 import type { Delta } from "@client/generated/deltas_pb";
 import type { Element } from "@client/generated/elements_pb";
 import {
@@ -6,7 +6,7 @@ import {
   WardleyAnnotationPayloadSchema,
   WardleyAttitudePayloadSchema,
   WardleyElementPayloadSchema,
-  WardleyEvolutionAxisPayloadSchema,
+  WardleyDiagramPayloadSchema,
   WardleyLinkPayloadSchema,
   WardleyNotePayloadSchema,
   type WardleyAttitudeKind,
@@ -21,7 +21,7 @@ const NOTE = "wardley/map+note";
 const ANNOTATION = "wardley/map+annotation";
 const ACCELERATOR = "wardley/map+accelerator";
 const ATTITUDE = "wardley/map+attitude";
-const EVOLUTION_AXIS = "wardley/map+evolution-axis";
+const DIAGRAM = "wardley/map+diagram";
 
 export interface WardleyPoint {
   x: number;
@@ -84,24 +84,18 @@ export interface WardleyAttitude extends WardleyPoint {
   opposite: WardleyPoint;
 }
 
-export interface WardleyEvolutionStage {
-  label: string;
-  start: number;
-  end: number;
-}
-
 /**
- * The evolution axis, as the backend describes it.
- *
- * The client holds NO copy of the stage boundaries. They are not published in the DSL and are
- * derived from the reference renderer's own offsets; keeping one copy, backend-side, is what
- * stops the two drifting into disagreement (Requirement 8.2).
+ * The map itself: the attributes the definition declares on the diagram (`metamodel.diagram`), as the
+ * document states them. The stages are the definition's, so nothing here says where they lie.
  */
-export interface WardleyAxis {
-  stages: WardleyEvolutionStage[];
+export interface WardleyDiagram {
   title: string;
+  style: string;
+  /** The `size [w, h]` the document asks to be drawn at, or 0 and 0. */
   width: number;
   height: number;
+  /** The `annotations [visibility, maturity]` statement, when the document has one. */
+  annotationsPosition?: { visibility: number; maturity: number };
 }
 
 export interface WardleyModel {
@@ -111,7 +105,7 @@ export interface WardleyModel {
   annotations: Map<string, WardleyAnnotation>;
   accelerators: Map<string, WardleyAccelerator>;
   attitudes: Map<string, WardleyAttitude>;
-  axis?: WardleyAxis;
+  diagram?: WardleyDiagram;
 }
 
 export const emptyModel: WardleyModel = {
@@ -151,7 +145,7 @@ function added(model: WardleyModel, elements: readonly Element[]): WardleyModel 
     annotations: new Map(model.annotations),
     accelerators: new Map(model.accelerators),
     attitudes: new Map(model.attitudes),
-    axis: model.axis,
+    diagram: model.diagram,
   };
 
   for (const element of elements) {
@@ -246,17 +240,15 @@ function added(model: WardleyModel, elements: readonly Element[]): WardleyModel 
         });
         break;
       }
-      case EVOLUTION_AXIS: {
-        const payload = fromBinary(WardleyEvolutionAxisPayloadSchema, bytes);
-        next.axis = {
-          stages: payload.stages.map((stage) => ({
-            label: stage.label,
-            start: stage.start,
-            end: stage.end,
-          })),
+      case DIAGRAM: {
+        const payload = fromBinary(WardleyDiagramPayloadSchema, bytes);
+        const position = payload.annotationsPosition;
+        next.diagram = {
           title: payload.title,
+          style: payload.style,
           width: payload.width,
           height: payload.height,
+          ...(position !== undefined ? { annotationsPosition: { visibility: position.visibility, maturity: position.maturity } } : {}),
         };
         break;
       }
@@ -278,7 +270,7 @@ function removed(model: WardleyModel, ids: readonly { value: string }[]): Wardle
     annotations: new Map(model.annotations),
     accelerators: new Map(model.accelerators),
     attitudes: new Map(model.attitudes),
-    axis: model.axis,
+    diagram: model.diagram,
   };
 
   for (const id of ids) {
@@ -297,9 +289,4 @@ function removed(model: WardleyModel, ids: readonly { value: string }[]): Wardle
 /** Every element a pipeline holds, by its parent's id. */
 export function pipelineChildrenOf(model: WardleyModel, parentId: string): WardleyElement[] {
   return [...model.elements.values()].filter((element) => element.pipelineParentId === parentId);
-}
-
-/** A placeholder axis for a map whose baseline has not arrived, so the canvas can draw something. */
-export function createEmptyAxis(): WardleyAxis {
-  return create(WardleyEvolutionAxisPayloadSchema, {}) as unknown as WardleyAxis;
 }

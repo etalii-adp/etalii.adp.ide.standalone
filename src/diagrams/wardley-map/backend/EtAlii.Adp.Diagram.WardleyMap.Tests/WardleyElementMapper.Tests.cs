@@ -174,28 +174,36 @@ public class WardleyElementMapperTests
     }
 
     [Fact]
-    public void Elements_AlwaysIncludesExactlyOneEvolutionAxis()
+    public void Elements_AlwaysIncludesExactlyOneDiagram_CarryingTheAttributesTheDefinitionDeclaresOnIt()
     {
-        // Act.
-        var elements = Map(Fixture("tea-shop.owm"));
+        // Arrange. Every one of the four statements `metamodel.diagram` declares.
+        var map = ParseText("title Tea shop\nstyle wardley\nsize [900, 700]\nannotations [0.6, 0.02]\ncomponent A [0.9, 0.1]\n");
 
-        // Assert. Requirement 8.2 - sent as data so the client holds no constants.
-        var axis = Assert.Single(elements, element => element.Type == WardleyElementTypes.EvolutionAxis);
-        var payload = WardleyEvolutionAxisPayload.Parser.ParseFrom(axis.Payload.Span);
-        Assert.Equal(4, payload.Stages.Count);
-        Assert.Equal("Genesis", payload.Stages[0].Label);
-        Assert.Equal(WardleyEvolution.CustomBuilt, payload.Stages[0].End);
+        // Act.
+        var elements = Map(map);
+
+        // Assert.
+        var diagram = Assert.Single(elements, element => element.Type == WardleyElementTypes.Diagram);
+        Assert.Equal(WardleyElementTypes.DiagramId, diagram.Id);
+        var payload = WardleyDiagramPayload.Parser.ParseFrom(diagram.Payload.Span);
         Assert.Equal("Tea shop", payload.Title);
+        Assert.Equal("wardley", payload.Style);
+        Assert.Equal((900d, 700d), (payload.Width, payload.Height));
+        Assert.Equal((0.6d, 0.02d), (payload.AnnotationsPosition.Visibility, payload.AnnotationsPosition.Maturity));
     }
 
     [Fact]
-    public void Elements_IncludesTheAxisEvenForAnEmptyMap()
+    public void Elements_IncludesTheDiagramEvenForAnEmptyMap_WithNothingItDoesNotState()
     {
         // Act. An empty map opens showing its axes and nothing else (Requirement 1.4).
         var elements = Map(WardleyMap.Empty);
 
         // Assert.
-        Assert.Equal(WardleyElementTypes.EvolutionAxis, Assert.Single(elements).Type);
+        var diagram = Assert.Single(elements);
+        Assert.Equal(WardleyElementTypes.Diagram, diagram.Type);
+        var payload = WardleyDiagramPayload.Parser.ParseFrom(diagram.Payload.Span);
+        Assert.Equal(("", "", 0d, 0d), (payload.Title, payload.Style, payload.Width, payload.Height));
+        Assert.Null(payload.AnnotationsPosition);
     }
 
     [Fact]

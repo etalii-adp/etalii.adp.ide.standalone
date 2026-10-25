@@ -13,7 +13,7 @@ import {
   WardleyDecorator,
   WardleyElementKind,
   WardleyElementPayloadSchema,
-  WardleyEvolutionAxisPayloadSchema,
+  WardleyDiagramPayloadSchema,
   WardleyLinkPayloadSchema,
 } from "@client/generated/wardley-map_pb";
 import { applyDelta, emptyModel, type WardleyModel } from "./wardleyModel";
@@ -89,14 +89,6 @@ vi.mock("@client/shell/panels/useToolboxItems", () => ({
 
 const { WardleyCanvas } = await import("./WardleyCanvas");
 
-/** The four stages exactly as the backend derives them, which is the only place they exist. */
-const STAGES = [
-  { label: "Genesis", start: 0, end: 0.175 },
-  { label: "Custom Built", start: 0.175, end: 0.4 },
-  { label: "Product (+rental)", start: 0.4, end: 0.7 },
-  { label: "Commodity (+utility)", start: 0.7, end: 1 },
-];
-
 function addDelta(id: string, type: string, payload: Uint8Array, x = 0, y = 0) {
   return create(DeltaSchema, {
     action: {
@@ -115,13 +107,10 @@ function addDelta(id: string, type: string, payload: Uint8Array, x = 0, y = 0) {
   });
 }
 
-/** A model carrying the axis, as every real baseline does. */
-function withAxis(title = "Tea shop"): WardleyModel {
-  const payload = toBinary(
-    WardleyEvolutionAxisPayloadSchema,
-    create(WardleyEvolutionAxisPayloadSchema, { title, stages: STAGES }),
-  );
-  return applyDelta(emptyModel, addDelta("axis", "wardley/map+evolution-axis", payload));
+/** A model carrying the diagram element, as every real baseline does. */
+function withDiagram(title = "Tea shop"): WardleyModel {
+  const payload = toBinary(WardleyDiagramPayloadSchema, create(WardleyDiagramPayloadSchema, { title }));
+  return applyDelta(emptyModel, addDelta("wardley-diagram", "wardley/map+diagram", payload));
 }
 
 function renderCanvas(model: WardleyModel, options?: { loading?: boolean; failed?: boolean }) {
@@ -168,7 +157,7 @@ describe("WardleyCanvas chrome", () => {
     };
 
     try {
-      const { container } = renderCanvas(withAxis());
+      const { container } = renderCanvas(withDiagram());
       const surface = container.querySelector("svg.library-canvas-surface")!;
       const [, , width, height] = (surface.getAttribute("viewBox") ?? "").split(" ").map(Number);
 
@@ -189,40 +178,25 @@ describe("WardleyCanvas chrome", () => {
 
   it("draws a band for every stage the backend sent", () => {
     // Act.
-    const { container } = renderCanvas(withAxis());
+    const { container } = renderCanvas(withDiagram());
 
     // Assert.
     expect(container.querySelectorAll(".wardley-band")).toHaveLength(4);
   });
 
-  it("places each band at the boundaries the backend sent, not at constants of its own", () => {
-    // Arrange. Requirement 8.2 - the boundaries are not published in the DSL, so the client
-    // holds no copy. Sending deliberately different stages proves it is reading them.
-    const payload = toBinary(
-      WardleyEvolutionAxisPayloadSchema,
-      create(WardleyEvolutionAxisPayloadSchema, {
-        stages: [
-          { label: "First", start: 0, end: 0.25 },
-          { label: "Second", start: 0.25, end: 1 },
-        ],
-      }),
-    );
+  it("places each band at the boundaries the specification states, with no stages from the backend", () => {
+    // Act. The bands are the definition's (Requirement 8.1); the backend sends none.
+    const { container } = renderCanvas(withDiagram());
 
-    // Act.
-    const { container } = renderCanvas(
-      applyDelta(emptyModel, addDelta("axis", "wardley/map+evolution-axis", payload)),
-    );
-
-    // Assert. Drawn into a 1000-unit space, so 0.25 is x=250.
-    const bands = container.querySelectorAll(".wardley-band");
-    expect(bands).toHaveLength(2);
-    expect(bands[1].getAttribute("x")).toBe("250");
-    expect(bands[0].getAttribute("width")).toBe("250");
+    // Assert. Drawn into a 1000-unit space, so the specification's 17.5% is x=175.
+    const bands = [...container.querySelectorAll(".wardley-band")];
+    expect(bands.map((band) => band.getAttribute("x"))).toEqual(["0", "175", "400", "700"]);
+    expect(bands.map((band) => band.getAttribute("width"))).toEqual(["175", "225", "300", "300"]);
   });
 
   it("labels the four stages with the notation's own names", () => {
     // Act.
-    const { container } = renderCanvas(withAxis());
+    const { container } = renderCanvas(withDiagram());
 
     // Assert. "Product" without "(+rental)" is a different claim about the stage.
     const labels = [...container.querySelectorAll(".wardley-band-label")].map((node) => node.textContent);
@@ -231,7 +205,7 @@ describe("WardleyCanvas chrome", () => {
 
   it("draws a boundary line between stages but not before the first", () => {
     // Act.
-    const { container } = renderCanvas(withAxis());
+    const { container } = renderCanvas(withDiagram());
 
     // Assert. Three boundaries for four bands; a line at x=0 would be the axis, not a boundary.
     expect(container.querySelectorAll(".wardley-band-edge")).toHaveLength(3);
@@ -239,7 +213,7 @@ describe("WardleyCanvas chrome", () => {
 
   it("names both axes and both ends of the value chain", () => {
     // Act.
-    const { container } = renderCanvas(withAxis());
+    const { container } = renderCanvas(withDiagram());
 
     // Assert. A component's position means nothing without them.
     const text = container.textContent ?? "";
@@ -252,7 +226,7 @@ describe("WardleyCanvas chrome", () => {
   it("draws the chrome before the elements, so nothing is hidden behind a band", () => {
     // Arrange. Requirement 8.4 - the axis chrome is what this module draws first.
     const payload = toBinary(WardleyElementPayloadSchema, create(WardleyElementPayloadSchema, { name: "Alpha" }));
-    const model = applyDelta(withAxis(), addDelta("a", "wardley/map+element", payload, 0.5, 0.5));
+    const model = applyDelta(withDiagram(), addDelta("a", "wardley/map+element", payload, 0.5, 0.5));
 
     // Act.
     const { container } = renderCanvas(model);
@@ -268,7 +242,7 @@ describe("WardleyCanvas chrome", () => {
 
   it("shows the axes and nothing else for an empty map", () => {
     // Act. Requirement 1.4 - a map with no components is a valid map.
-    const { container } = renderCanvas(withAxis("Empty"));
+    const { container } = renderCanvas(withDiagram("Empty"));
 
     // Assert.
     expect(container.querySelectorAll(".wardley-band")).toHaveLength(4);
@@ -298,7 +272,7 @@ describe("WardleyCanvas chrome", () => {
 
   it("names the map for a screen reader when the document gave it a title", () => {
     // Act.
-    const { container } = renderCanvas(withAxis("Tea shop"));
+    const { container } = renderCanvas(withDiagram("Tea shop"));
 
     // Assert.
     expect(container.querySelector("svg")?.getAttribute("aria-label")).toBe("Wardley map: Tea shop");
@@ -332,7 +306,7 @@ describe("WardleyCanvas scrollbars", () => {
 
   it("pans the view when a thumb is dragged - catches an unwired onPan", () => {
     // Arrange.
-    const { container } = renderCanvas(withAxis());
+    const { container } = renderCanvas(withDiagram());
     const [xBefore] = viewBoxOf(container);
 
     // Act.
@@ -350,7 +324,7 @@ describe("WardleyCanvas scrollbars", () => {
     // so the pan produces Infinity and never moves the view under test. Giving the surface a
     // real rectangle makes its existing arithmetic run as it does in a browser - the wiring
     // under test is the bars reading the same view state, not the canvas's pan maths.
-    const { container } = renderCanvas(withAxis());
+    const { container } = renderCanvas(withDiagram());
     const surface = container.querySelector("svg")!;
     surface.getBoundingClientRect = () =>
       ({ width: 800, height: 600, x: 0, y: 0, top: 0, left: 0, right: 800, bottom: 600, toJSON: () => ({}) }) as DOMRect;
@@ -374,7 +348,7 @@ describe("WardleyCanvas scrollbars", () => {
     // The requirement this canvas exists to prove: a map carrying one component still has the
     // whole 0..1 space to show, so the thumb must not fill the track as it would if the extent
     // were derived from that single element's bounds.
-    const { container } = renderCanvas(withAxis());
+    const { container } = renderCanvas(withDiagram());
 
     // Assert.
     const size = Number.parseFloat(thumbOf(container, "horizontal").style.width);
@@ -400,7 +374,7 @@ describe("WardleyCanvas view reporting", () => {
     // report left in canvas units would be a thousand times too large and cull nothing, ever -
     // a bug that looks exactly like a working loop from the client side.
     vi.useFakeTimers();
-    const { container } = renderCanvas(withAxis());
+    const { container } = renderCanvas(withDiagram());
     const surface = container.querySelector("svg")!;
     surface.getBoundingClientRect = () =>
       ({ width: 800, height: 800, x: 0, y: 0, top: 0, left: 0, right: 800, bottom: 800, toJSON: () => ({}) }) as DOMRect;
@@ -419,7 +393,7 @@ describe("WardleyCanvas view reporting", () => {
   it("reports again when the view changes - catches a report wired to a gesture instead of the view", () => {
     // Arrange.
     vi.useFakeTimers();
-    const { container } = renderCanvas(withAxis());
+    const { container } = renderCanvas(withDiagram());
     const surface = container.querySelector("svg")!;
     surface.getBoundingClientRect = () =>
       ({ width: 800, height: 800, x: 0, y: 0, top: 0, left: 0, right: 800, bottom: 800, toJSON: () => ({}) }) as DOMRect;
@@ -441,7 +415,7 @@ describe("WardleyCanvas elements", () => {
   it("places a component where the document put it", () => {
     // Arrange. The backend already converted [visibility, maturity] into a canvas point, so a
     // highly visible genesis component arrives at (0.1, 0.1) and belongs top-left.
-    const model = withElement(withAxis(), "a", "wardley/map+element", element({ name: "Alpha" }), 0.1, 0.1);
+    const model = withElement(withDiagram(), "a", "wardley/map+element", element({ name: "Alpha" }), 0.1, 0.1);
 
     // Act.
     const { container } = renderCanvas(model);
@@ -454,7 +428,7 @@ describe("WardleyCanvas elements", () => {
 
   it("tells the three kinds apart by shape rather than by colour", () => {
     // Arrange. Requirement 8.3 - a map printed in grey still has to say which is which.
-    let model = withElement(withAxis(), "c", "wardley/map+element", element({ name: "C", kind: WardleyElementKind.COMPONENT }));
+    let model = withElement(withDiagram(), "c", "wardley/map+element", element({ name: "C", kind: WardleyElementKind.COMPONENT }));
     model = withElement(model, "a", "wardley/map+element", element({ name: "A", kind: WardleyElementKind.ANCHOR }), 0.2, 0.2);
     model = withElement(model, "s", "wardley/map+element", element({ name: "S", kind: WardleyElementKind.SUBMAP }), 0.3, 0.3);
 
@@ -471,7 +445,7 @@ describe("WardleyCanvas elements", () => {
     // Arrange. Requirement 6.9 - legible without entering an edit mode, and a symbol the reader
     // has to learn is not legible.
     const model = withElement(
-      withAxis(),
+      withDiagram(),
       "p",
       "wardley/map+element",
       element({ name: "Payment", decorators: [WardleyDecorator.BUY], inertia: true }),
@@ -488,7 +462,7 @@ describe("WardleyCanvas elements", () => {
   it("draws an evolving component at both positions, joined", () => {
     // Arrange. Requirement 6.1 - the pair is the point of the statement.
     const model = withElement(
-      withAxis(),
+      withDiagram(),
       "d",
       "wardley/map+element",
       element({
@@ -510,7 +484,7 @@ describe("WardleyCanvas elements", () => {
 
   it("draws a link between two elements and marks a flow link differently", () => {
     // Arrange.
-    let model = withElement(withAxis(), "a", "wardley/map+element", element({ name: "A" }), 0.2, 0.2);
+    let model = withElement(withDiagram(), "a", "wardley/map+element", element({ name: "A" }), 0.2, 0.2);
     model = withElement(model, "b", "wardley/map+element", element({ name: "B" }), 0.8, 0.8);
     const link = toBinary(
       WardleyLinkPayloadSchema,
@@ -529,7 +503,7 @@ describe("WardleyCanvas elements", () => {
   it("does not draw a link whose endpoint does not resolve", () => {
     // Arrange. Requirement 3.5 - the map still opens; there is simply nowhere to draw the line
     // to, and the validator reports the dangling name.
-    let model = withElement(withAxis(), "a", "wardley/map+element", element({ name: "A" }), 0.2, 0.2);
+    let model = withElement(withDiagram(), "a", "wardley/map+element", element({ name: "A" }), 0.2, 0.2);
     const link = toBinary(
       WardleyLinkPayloadSchema,
       create(WardleyLinkPayloadSchema, { sourceId: "a", targetId: "", targetName: "Nowhere" }),
@@ -548,7 +522,7 @@ describe("WardleyCanvas elements", () => {
     // Arrange. Requirement 5.5 - the offset is a property of the format, reproduced rather than
     // corrected. At a 1000-unit space, a -57px offset must not be read as -57 units of map.
     const model = withElement(
-      withAxis(),
+      withDiagram(),
       "k",
       "wardley/map+element",
       element({ name: "Kettle", labelOffset: { x: -57, y: 4 } }),
@@ -578,7 +552,7 @@ describe("WardleyCanvas elements", () => {
         ],
       }),
     );
-    const model = applyDelta(withAxis(), addDelta("n", "wardley/map+annotation", payload, 0.49, 0.57));
+    const model = applyDelta(withDiagram(), addDelta("n", "wardley/map+annotation", payload, 0.49, 0.57));
 
     // Act.
     const { container } = renderCanvas(model);
@@ -598,7 +572,7 @@ describe("WardleyCanvas elements", () => {
         opposite: { x: 0.55, y: 0.8 },
       }),
     );
-    let model = applyDelta(withAxis(), addDelta("att", "wardley/map+attitude", payload, 0.2, 0.3));
+    let model = applyDelta(withDiagram(), addDelta("att", "wardley/map+attitude", payload, 0.2, 0.3));
     model = withElement(model, "a", "wardley/map+element", element({ name: "A" }), 0.3, 0.4);
 
     // Act.
@@ -629,7 +603,7 @@ describe("WardleyCanvas dragging", () => {
   }
 
   function renderDraggable() {
-    const model = withElement(withAxis(), "a", "wardley/map+element", element({ name: "Alpha" }), 0.5, 0.5);
+    const model = withElement(withDiagram(), "a", "wardley/map+element", element({ name: "Alpha" }), 0.5, 0.5);
     const rendered = renderCanvas(model);
     sizeSurface(rendered.container.querySelector("svg")!);
     return rendered;
@@ -687,7 +661,7 @@ describe("WardleyCanvas dragging", () => {
     // Recorded unification: the hand-built canvas substituted the dragged position into its
     // links mid-gesture; the library redraws connections when the MODEL changes, as every
     // migrated canvas does, so the line follows on commit rather than under the pointer.
-    let model = withElement(withAxis(), "a", "wardley/map+element", element({ name: "A" }), 0.5, 0.5);
+    let model = withElement(withDiagram(), "a", "wardley/map+element", element({ name: "A" }), 0.5, 0.5);
     model = withElement(model, "b", "wardley/map+element", element({ name: "B" }), 0.9, 0.9);
     const link = toBinary(
       WardleyLinkPayloadSchema,
@@ -770,7 +744,7 @@ describe("WardleyCanvas toolbox", () => {
     // Arrange. The Toolbox panel shows its placeholder until a mounted canvas registers -
     // which an open wardley map must therefore do (tests.md, documentation task 9: this
     // palette stayed on the placeholder while c4 and mindmap filled theirs on the same flow).
-    currentModel = withAxis();
+    currentModel = withDiagram();
     currentToolboxItems = [
       create(ToolboxItemSchema, { id: "wardley.toolbox.component", label: "Component", dropActionId: "wardley.add-component" }),
       create(ToolboxItemSchema, { id: "wardley.toolbox.anchor", label: "Anchor", dropActionId: "wardley.add-anchor" }),
@@ -803,7 +777,7 @@ describe("WardleyCanvas selection", () => {
   });
 
   function withOneComponent() {
-    return withElement(withAxis(), "aaa", "wardley/map+element", element({ name: "Kettle" }), 0.4, 0.4);
+    return withElement(withDiagram(), "aaa", "wardley/map+element", element({ name: "Kettle" }), 0.4, 0.4);
   }
 
   function shapeOf(container: HTMLElement, id: string): SVGGElement {
@@ -909,7 +883,7 @@ describe("WardleyCanvas selection", () => {
     // so an editor at the default right-hand offset would open over empty map. The element
     // sits away from the origin so a broken offset cannot hide there.
     currentPrompt = labelPromptFor("aaa", "Kettle");
-    const model = withElement(withAxis(), "aaa", "wardley/map+element", element({ name: "Kettle", labelOffset: { x: -57, y: 4 } }), 0.4, 0.4);
+    const model = withElement(withDiagram(), "aaa", "wardley/map+element", element({ name: "Kettle", labelOffset: { x: -57, y: 4 } }), 0.4, 0.4);
     const { container } = renderCanvas(model);
 
     // Assert: start-anchored at scale(0.4) - 57, exactly where the drawn text begins.
@@ -956,7 +930,7 @@ describe("selection, as every canvas has it", () => {
 
   /** Two components joined by a link - the link is what this notation deliberately does not select. */
   function linkedPair(): WardleyModel {
-    let model = withElement(withAxis(), "a", "wardley/map+element", element({ name: "A" }), 0.2, 0.2);
+    let model = withElement(withDiagram(), "a", "wardley/map+element", element({ name: "A" }), 0.2, 0.2);
     model = withElement(model, "b", "wardley/map+element", element({ name: "B" }), 0.8, 0.8);
     const link = toBinary(WardleyLinkPayloadSchema, create(WardleyLinkPayloadSchema, { sourceId: "a", targetId: "b", isFlow: false }));
     return applyDelta(model, addDelta("l", "wardley/map+link", link));

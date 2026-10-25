@@ -31,12 +31,12 @@ public static class WardleyElementTypes
     public const string Attitude = "wardley/map+attitude";
 
     /// <summary>
-    /// The map-level element carrying the evolution axis: the four stages and their boundaries,
-    /// so the client draws bands it is told about rather than constants it holds
-    /// (Requirement 8.2).
+    /// The map-level element carrying the attributes the definition declares on the diagram itself:
+    /// its title, style, size and the annotations' position. The stages are the definition's own
+    /// and are not sent.
     /// </summary>
-    public const string EvolutionAxis = "wardley/map+evolution-axis";
+    public const string Diagram = "wardley/map+diagram";
 
-    /// <summary>The id of the single evolution-axis element. Fixed, because there is exactly one per map.</summary>
-    public const string EvolutionAxisId = "wardley-evolution-axis";
+    /// <summary>The id of the single diagram element. Fixed, because there is exactly one per map.</summary>
+    public const string DiagramId = "wardley-diagram";
 }

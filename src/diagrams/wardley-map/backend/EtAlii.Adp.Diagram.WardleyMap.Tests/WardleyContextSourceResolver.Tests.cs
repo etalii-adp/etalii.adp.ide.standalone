@@ -219,11 +219,11 @@ public sealed class WardleyContextSourceResolverTests : IDisposable
     }
 
     [Fact]
-    public async Task TheEvolutionAxis_IsNotSelectable()
+    public async Task TheDiagramElement_IsNotSelectable()
     {
-        // Act. It is on the element stream, but it is the chrome the map is drawn against
-        // rather than a thing the map contains.
-        var resolution = await Resolve(WardleyElementTypes.EvolutionAxisId);
+        // Act. It is on the element stream, but it is the map itself rather than a thing the
+        // map contains.
+        var resolution = await Resolve(WardleyElementTypes.DiagramId);
 
         // Assert.
         Assert.IsType<RejectedContextLevel>(resolution);

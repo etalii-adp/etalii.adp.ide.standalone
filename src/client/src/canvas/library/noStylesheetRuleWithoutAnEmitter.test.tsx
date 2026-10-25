@@ -332,12 +332,8 @@ const DRAWN_BUT_UNRULED: readonly Listed[] = [
     ],
   },
   {
-    reason: "a per-item name the library composes for a background band, attitude, accelerator or note; its paint comes from the ruled class on it or on its group (wardley-band, wardley-attitude, wardley-accelerator-forward and -back, wardley-note) or from the definition's typography",
+    reason: "a per-item name the library composes for a background band, attitude, accelerator or note; its paint comes from the ruled class on it or on its group (wardley-band, wardley-attitude, wardley-note) or from the definition's typography",
     classes: [
-      "wardley-accelerator-back-glyph",
-      "wardley-accelerator-back-label",
-      "wardley-accelerator-forward-glyph",
-      "wardley-accelerator-forward-label",
       "wardley-attitude-pioneers",
       "wardley-attitude-pioneers-label",
       "wardley-attitude-settlers",

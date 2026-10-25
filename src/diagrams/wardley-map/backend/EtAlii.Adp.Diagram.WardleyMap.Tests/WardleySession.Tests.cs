@@ -81,7 +81,7 @@ public sealed class WardleySessionTests : IDisposable
         var elements = AddedBy(await Editable(path).BaselineAsync(TestContext.Current.CancellationToken));
 
         // Assert.
-        Assert.Equal(WardleyElementTypes.EvolutionAxis, Assert.Single(elements).Type);
+        Assert.Equal(WardleyElementTypes.Diagram, Assert.Single(elements).Type);
     }
 
     [Fact]
@@ -189,10 +189,10 @@ public sealed class WardleySessionTests : IDisposable
         var deltas = session.UpdateView(corner);
         var held = await VisibleAsync(path, corner);
 
-        // Assert. Nothing was culled: the axis and the link are still held, and so is Alpha, pulled
+        // Assert. Nothing was culled: the diagram and the link are still held, and so is Alpha, pulled
         // in as the link's other endpoint - a link delivered with one end missing draws to nothing.
         Assert.Empty(deltas.OfType<DiagramRemoveDelta>());
-        Assert.Contains(held, element => element.Type == WardleyElementTypes.EvolutionAxis);
+        Assert.Contains(held, element => element.Type == WardleyElementTypes.Diagram);
         Assert.Contains(held, element => element.Type == WardleyElementTypes.Link);
         Assert.Equal(2, held.Count(element => element.Type == WardleyElementTypes.Element));
     }

@@ -908,6 +908,66 @@ clipping, and that is only visible on screen.
   instead - one or two lines, not a paragraph that pushes the rest of the panel down.
 - **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **FAILED — a real defect found by running the app.** Clicking `Kettle` on the canvas (tried repeatedly, including a precise click on the zoomed-in dot) does **not** fill the Property Grid: the backend logs *Selected …/tea.adp … as Activate* and *Described 0 properties for …/tea.adp* — the innermost selection resolves to the `.adp` **file**, never the element, so the heading stays the file and Kettle's Identity/Position/Strategy rows never appear. Root cause, confirmed in source: **`WardleyCanvas.tsx` reports no element context-selection.** The working modules do — e.g. causal-loop wires `onSelect → select(elementSelectionOf(entryId, path, id, gesture))` to each element's `onClick` and imports `useContextSelection`/`useElementContextMenu`; `WardleyCanvas` has none of these, its element `<g>` carries only an `onMouseDown` drag handler, and a comment in it admits the `.adp` entry *“a selection reports as its outer level … task 19's context resolver needs and nothing here does.”* The backend `WardleyContextSourceResolver` and `WardleyContextPropertyProvider` exist and are unit-tested, but the client never hands them an element. This is the same class of bug as the already-fixed causal-loop *“context surface is reachable”* entry, and it wants the same fix — wire element-selection reporting into `WardleyCanvas`, with a guard. Flagged to the Scrum master.
 
+## The compiled Wardley map canvas, in a browser (wardley-map-disl-fbl, task 9, Requirement 8.3)
+
+**Why this is a browser pass and not only tests:** the canvas definition is now compiled from the bundled `wardley-map.dis` (`compileNotation(parseDisl(text), WARDLEY_BINDINGS)`), and `wardleyCompiledDefinition.test.tsx` holds its markup to the hand-written definition's on a corpus. Markup is not a picture. Only a browser shows what a band, a mark, an attitude or an accelerator computes to in each theme, where a label at its offset and its editor land, and whether a drag is clamped and a pipeline component kept on its row.
+
+- **Preconditions**:
+  - A build from the branch beside a build of the commit before this task, each with its backend and Vite on ports of their own. Pass the ports on the command line (`ASPNETCORE_URLS`, `Client__DevServerUrl`, `vite --port`) so no file changes. Sign in with the developer session.
+  - A project per build, holding `pass.owm` with the registration `wardley/map`. The map holds:
+    - an anchor `Customer`;
+    - `Cup of Tea` `(buy) inertia`;
+    - `Kettle` with `label [-57, 4]` and a pipeline of `Campfire Kettle` and `Electric Kettle`;
+    - a submap `Power` with a url;
+    - `Water`;
+    - a dependency `Cup of Tea->Kettle` and a flow `Cup of Tea+>Water`;
+    - `evolve Kettle->Smart Kettle 0.62` and `evolve Power 0.85`;
+    - a `settlers` attitude;
+    - an accelerator and a deaccelerator;
+    - `annotation 1` pinned at two places;
+    - a note.
+  - Run every row in the light theme and again in the dark one, from a fresh copy.
+- **Rows**:
+  1. **The bands and both axes.** Four stage bands span the map, from Genesis to Commodity (+utility), each labelled under the evolution axis. Dashed boundaries sit between them, and there is none before the first. The value-chain axis runs up the left edge, with *Visible* at the top and *Invisible* at the bottom; the evolution axis runs along the bottom, with its title under it.
+  2. **Each of the three marks.**
+     - A component is an open circle.
+     - The anchor is a filled square with sharp corners.
+     - The submap is a double ring.
+     - Each mark's name starts 15 to its right.
+     - `Cup of Tea` carries its inertia bar and *buy · inertia* under its name.
+  3. **A label at its offset.** `Kettle`'s name ends left of its mark (offset -57). F2 on `Kettle` opens the editor where that text starts, holding *Kettle*. Typing *Urn* and Enter renames it in every statement that names it, and one Undo puts the file back byte for byte.
+  4. **A dependency and a flow.** The dependency is a thin line in the muted colour; the flow is a thicker one in the text colour. Both run between the marks.
+  5. **An evolution.** `Kettle` and `Power` each have a dashed line to an evolved mark drawn dashed. `Kettle`'s evolved mark is named *Smart Kettle*.
+  6. **An attitude region.** `settlers` is a faint region with a dashed border, its name in its top-left corner.
+  7. **An accelerator and a deaccelerator.** Each is a short heavy rule centred on its point, with its name to the right; the deaccelerator's rule is dashed.
+  8. **A note.** Its text starts at its position.
+  9. **An annotation pinned twice.** A circled *1* is drawn at both places.
+  10. **A drag clamped at an edge.** Drag `Water` far past the right and bottom edges. The file says `component Water [0, 1]`, and one Undo puts it back byte for byte.
+  11. **A pipeline component dragged along its row only.** Drag `Campfire Kettle` right and down. It moves right only, the file gives it its one new maturity, and one Undo puts the file back.
+  12. **The eight toolbox entries.** Component, Anchor, Market, Ecosystem, Submap, Pipeline, Note and Annotation are listed. Drag each onto the map (Pipeline onto `Water`): what happens is the same on both builds.
+  13. **The map's name.** Open a second map, `title.owm`, holding only `title Tea shop` and one component. The canvas is named *Wardley map: Tea shop* (`aria-label`), from the `wardley/map+diagram` element the backend sends for the map itself. `pass.owm` is named by its own title.
+- **Result 2026-10-25 (agent-10-wardley-map-disl-fbl)**: **rows 1 to 12 pass in both themes, the same on both builds but for the differences below; row 13 passes on the branch build.**
+  - **Setup.** Branch `features/wardley-map-disl-fbl-9` with this task's changes uncommitted, the definition bundled from etalii.adp `9df6b8edc`, beside a build of `0139f28f2`. A developer build of each: backend on 5391 and 5381, Vite on 5390 and 5380. Headless Chromium 1194, driven by Playwright 1.56.1 at 1600 by 1000, with real mouse and keyboard input and `colorScheme` set per theme.
+  - **How it was read.** From the DOM, its computed styles and the file on disk. Every drawn primitive's screen box, stroke, fill, dash, opacity and font was compared between the builds. Screenshots `<build>-<theme>-<step>.png` are in `/tmp/claude-0/wm9/pw`.
+  1. Band fills: `rgba(0, 0, 0, 0.06)` light and `rgba(255, 255, 255, 0.06)` dark, at opacity 0.35, 0.5, 0.65 and 0.8. Boundaries `rgb(226, 232, 240)`, dashed `6px, 6px`, at x 527, 731 and 1003 on the screen. Axes `rgb(100, 116, 139)` at 2px. The axis titles and stage labels are 20px. The same on both builds.
+  2. The marks were the same on both builds. Squares and the attitude are drawn without the canvas's rounded corner (`rx: 0` in `wardley.css`).
+  3. The editor opened over the name at x 658 on the screen, where the text starts, on both builds. The rename wrote the five statements that name `Kettle`, and Undo put the file back byte for byte.
+  4.-7., 9. Identical on both builds, except that a line now ends on its mark's circle rather than its box (a point or two at this zoom), and the accelerators' names (see below).
+  8. The note's text starts at x 640 on the screen on both builds, and is set 2 lower.
+  10. `component Water [0, 1]` on both; Undo gave a byte-identical file.
+  11. `component Campfire Kettle [0.2823]`, the screen y unchanged at 478, on both; Undo gave a byte-identical file.
+  12. All eight listed, and a drop of each changed nothing on either build. The Wardley canvas has never answered a toolbox drop.
+  13. Run on the branch build only, after the diagram element replaced the evolution axis element and the definition was bundled from etalii.adp `113dccd7d`. `title.owm` reads *Wardley map: Tea shop* and `pass.owm` *Wardley map: Task nine pass*, on the canvas's frame and its `svg` alike.
+- **Differences from the build before this task, each named in `wardleyCompiledDefinition.test.tsx`:**
+  - *buy · inertia* starts under the name instead of being centred under the mark.
+  - An evolution's new name sits on the line of every other name, 2 higher on the screen.
+  - The attitude's label is inset 1 more and set 2 lower.
+  - An accelerator's name is text in the text colour. The hand-written canvas stroked it 3 wide with the rule's dash, which drew it smeared.
+  - **Delete on a selected component** now asks *Remove 'Water', and every link and evolution that names it?* and removes it, and one Undo puts the file back. Before this task, Delete did nothing (ruled 2026-10-25, option a).
+- **Observations, not failures of this task:**
+  - A right-click on empty map sends the backend a placement, which the Wardley backend does not resolve, so no menu opens, as before this task. The specification declares a menu there.
+  - `Smart Kettle` overlaps `Electric Kettle` on both builds, because the corpus places them at nearly one point.
+
 ## The ruler stays fixed to the view while its labels slide with the content (timeline-diagram, task 31)
 
 - **Preconditions**: a project holding a `.tml` with several elements spanning a few months

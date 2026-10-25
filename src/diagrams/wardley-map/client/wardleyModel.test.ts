@@ -6,7 +6,7 @@ import {
   WardleyAnnotationPayloadSchema,
   WardleyElementKind,
   WardleyElementPayloadSchema,
-  WardleyEvolutionAxisPayloadSchema,
+  WardleyDiagramPayloadSchema,
   WardleyLinkPayloadSchema,
   WardleyDecorator,
 } from "@client/generated/wardley-map_pb";
@@ -159,28 +159,27 @@ describe("applyDelta", () => {
     expect(model.annotations.get("n")?.occurrences[1].x).toBe(0.79);
   });
 
-  it("takes the evolution axis from the backend rather than holding its own constants", () => {
-    // Arrange. Requirement 8.2 - the boundaries are not published in the DSL, so one copy.
+  it("takes the map's own attributes from the diagram element", () => {
+    // Arrange. What the definition declares on the diagram: title, style, size and where the annotations are listed.
     const payload = toBinary(
-      WardleyEvolutionAxisPayloadSchema,
-      create(WardleyEvolutionAxisPayloadSchema, {
-        title: "Tea shop",
-        stages: [
-          { label: "Genesis", start: 0, end: 0.175 },
-          { label: "Custom Built", start: 0.175, end: 0.4 },
-          { label: "Product (+rental)", start: 0.4, end: 0.7 },
-          { label: "Commodity (+utility)", start: 0.7, end: 1 },
-        ],
-      }),
+      WardleyDiagramPayloadSchema,
+      create(WardleyDiagramPayloadSchema, { title: "Tea shop", style: "wardley", width: 900, height: 700, annotationsPosition: { visibility: 0.6, maturity: 0.02 } }),
     );
 
     // Act.
-    const model = applyDelta(emptyModel, addDelta("axis", "wardley/map+evolution-axis", payload));
+    const model = applyDelta(emptyModel, addDelta("wardley-diagram", "wardley/map+diagram", payload));
 
     // Assert.
-    expect(model.axis?.stages).toHaveLength(4);
-    expect(model.axis?.stages[0].end).toBe(0.175);
-    expect(model.axis?.title).toBe("Tea shop");
+    expect(model.diagram).toEqual({ title: "Tea shop", style: "wardley", width: 900, height: 700, annotationsPosition: { visibility: 0.6, maturity: 0.02 } });
+  });
+
+  it("leaves out the annotations' position of a map that states none", () => {
+    // Act.
+    const payload = toBinary(WardleyDiagramPayloadSchema, create(WardleyDiagramPayloadSchema, { title: "Tea shop" }));
+    const model = applyDelta(emptyModel, addDelta("wardley-diagram", "wardley/map+diagram", payload));
+
+    // Assert.
+    expect(model.diagram).toEqual({ title: "Tea shop", style: "", width: 0, height: 0 });
   });
 
   it("removes an element by id", () => {

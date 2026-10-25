@@ -1982,6 +1982,19 @@ export function DiagramCanvasCore({
             return beforeLabelPlacement({ x: bounds.x, y: bounds.y + bounds.height / 2 }, BEFORE_GAP, text);
           }
 
+          // A LABEL THE ELEMENT PLACES ITSELF OPENS OVER ITS TEXT: its offset is the element's own,
+          // left of the mark included, so the editor starts or ends where the drawn line does,
+          // centred on the line - 4 above the baseline of a 12px text. A centred one opens as below.
+          if (declared.offsetBinding !== undefined) {
+            const line = layoutLabels([declared], sourceOf(element), bounds, 1, shape).find((candidate) => candidate.editable);
+            if (line !== undefined && line.anchor === "start") {
+              return asideLabelPlacement({ x: line.x, y: line.y - 4 }, 0, text);
+            }
+            if (line !== undefined && line.anchor === "end") {
+              return beforeLabelPlacement({ x: line.x, y: line.y - 4 }, 0, text);
+            }
+          }
+
           // A PLAIN CENTRED LABEL OPENS OVER THE ELEMENT, which is what `placement: "inside"`
           // meant and what a single-label type wants: the editor is the box. A label that
           // states an offset or an editor box is one line of a composite card, and opens over
