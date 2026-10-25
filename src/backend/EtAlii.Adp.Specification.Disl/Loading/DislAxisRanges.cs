@@ -53,7 +53,8 @@ internal sealed class DislAxisRanges
         if (!_axes.TryGetValue(axis, out var declared)) return null;
         foreach (var range in declared.Ranges)
         {
-            if (value >= range.From && (value < range.To || (value == range.To && declared.Max is { } max && range.To == max))) return range.Id;
+            // A value not below to and not above it is at to, which only a range ending at the axis maximum holds.
+            if (value >= range.From && (value < range.To || (value <= range.To && declared.Max is { } max && range.To >= max))) return range.Id;
         }
         return "";
     }

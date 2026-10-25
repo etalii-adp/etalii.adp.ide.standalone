@@ -23,7 +23,7 @@ public class DataTypeFacetsTests
     {
         var diagram = new DislDiagram(Specification);
         var line = 1;
-        foreach (var (id, across, up) in dots)
+        foreach ((string id, double across, double up) in dots)
         {
             diagram.Add(new DislElement(diagram, Specification.Metamodel.TypeOf("Dot")!, id, new Dictionary<string, object?> { ["across"] = across, ["up"] = up }) { Line = line++ });
         }

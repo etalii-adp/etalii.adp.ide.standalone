@@ -359,11 +359,12 @@ internal sealed class ActionRunner(DislSpecification specification, DislDiagram 
             if (target.Type.Attributes.GetValueOrDefault(name) is not { } attribute) continue;
             if (value is not (double or long)) continue;
             var number = Convert.ToDouble(value, System.Globalization.CultureInfo.InvariantCulture);
-            var bound = attribute.Min is { } min && number < min ? min : attribute.Max is { } max && number > max ? max : (double?)null;
+            var below = attribute.Min is { } min && number < min;
+            var bound = below ? attribute.Min : attribute.Max is { } max && number > max ? max : null;
             if (bound is not { } limit) continue;
             if (attribute.TypedOutOfRange == "clamp")
             {
-                values[name] = value is long && limit == Math.Floor(limit) ? (long)limit : limit;
+                values[name] = value is long && double.IsInteger(limit) ? (long)limit : limit;
                 continue;
             }
             var context = new Dictionary<string, object?>(variables)
@@ -371,7 +372,7 @@ internal sealed class ActionRunner(DislSpecification specification, DislDiagram 
                 ["self"] = target, ["attribute"] = name, ["oldValue"] = target.ValueOf(name), ["newValue"] = value,
                 ["min"] = attribute.Min, ["max"] = attribute.Max,
             };
-            var noun = limit == attribute.Min ? "minimum" : "maximum";
+            var noun = below ? "minimum" : "maximum";
             var sentence = $"'{target.Id}' cannot have {name} {Invariant(number)}; the {noun} is {Invariant(limit)}.";
             return Refuse(attribute.OutOfRangeMessage?.Text(context, sentence) ?? sentence);
         }
