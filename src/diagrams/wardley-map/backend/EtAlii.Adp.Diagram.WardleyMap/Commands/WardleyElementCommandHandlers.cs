@@ -213,12 +213,9 @@ public sealed class RenameWardleyElementCommandHandler(IWardleyDocumentStore doc
         // restores them together if they moved together. Only the selected holder of a repeated
         // name is renamed (ruling 5). The identities follow by line when the store saves it, the
         // links, pipeline and pipeline components naming it included (finding B10).
-        if (WardleyWriter.Rename(body, model, component, command.NewName) == 0)
-        {
-            return EditOutcome.Refused("That element could not be renamed.");
-        }
-
-        return EditOutcome.Applied;
+        return WardleyWriter.Rename(body, model, component, command.NewName) == 0
+            ? EditOutcome.Refused("That element could not be renamed.")
+            : EditOutcome.Applied;
     }
 }
 
