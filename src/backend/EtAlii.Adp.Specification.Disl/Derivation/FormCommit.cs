@@ -109,8 +109,9 @@ public static class FormCommit
         }
         var values = new Dictionary<string, object?>(StringComparer.Ordinal) { [declared.Name] = written };
         var bounds = new ActionRunner(specification, self.Diagram, DislIds.Fixed()) { Typed = true };
-        if (!bounds.InRange(self, values, current)) return bounds.Transaction;
-        return new DislTransaction([new DislChange.Set(self.Id, self.Type.Name, new Dictionary<string, object?>(StringComparer.Ordinal) { [declared.Name] = DislWrite.StoredForm(specification, self.Type.Name, declared.Name, values[declared.Name]) })], [], null);
+        return !bounds.InRange(self, values, current)
+            ? bounds.Transaction
+            : new DislTransaction([new DislChange.Set(self.Id, self.Type.Name, new Dictionary<string, object?>(StringComparer.Ordinal) { [declared.Name] = DislWrite.StoredForm(specification, self.Type.Name, declared.Name, values[declared.Name]) })], [], null);
     }
 
     /// <summary>
