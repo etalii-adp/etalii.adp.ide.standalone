@@ -29,6 +29,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The DISL definition bundled from etalii-adp/etalii.adp (src/diagrams/tools/bundle-disl.sh), and its provenance. Nothing derives from it yet. -->
+    <EmbeddedResource Include="..\..\definition\wardley-map.dis" LogicalName="wardley-map.dis" />
+    <EmbeddedResource Include="..\..\definition\provenance.json" LogicalName="wardley-map.provenance.json" />
+  </ItemGroup>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="EtAlii.Adp.Diagram.WardleyMap.Tests" />
   </ItemGroup>
 
