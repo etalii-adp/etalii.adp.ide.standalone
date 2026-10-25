@@ -1,5 +1,6 @@
 import type { ActionDeclaration, ActionInvocation } from "../definition/actions";
 import type { Binding, Condition } from "../definition/binding";
+import type { AxisDeclaration, BandDeclaration, BackgroundDeclaration } from "../definition/background";
 import type { CompartmentDeclaration } from "../definition/compartments";
 import type { CalendarStep, ChromeBandDeclaration, ChromeLegendDeclaration, ChromeNoticeDeclaration, ChromeTextDeclaration, RulerDeclaration, RulerRung, SwitchDeclaration } from "../definition/chrome";
 import type {
@@ -27,6 +28,7 @@ import type {
   RelationTypeDefinition,
   RouteLabelRule,
   SegmentDeclaration,
+  ShapeBounds,
   SideFraction,
   SnapAxis,
   SnapDeclaration,
@@ -42,6 +44,7 @@ import {
   typeList,
   type Bindable,
   type DislAxis,
+  type DislAxisRange,
   type DislBadge,
   type DislBadgeLayout,
   type DislCompartment,
@@ -60,6 +63,7 @@ import {
   type DislViewpoint,
 } from "./disTypes";
 import { libraryMarkerOf, libraryRouteOf, libraryShapeOf, shapeNameOf, type CustomShapeBinding } from "./shapeCatalog";
+import { drawingArea, type DrawingArea } from "./drawingArea";
 
 /**
  * A DISL notation compiled into the library's {@link DiagramDefinition}: DISL 0.3, and of DISL 0.4
@@ -253,11 +257,28 @@ export interface NotationBindings {
     notices?: Readonly<Record<string, { className?: string; when?: Condition; data?: Readonly<Record<string, string>> }>>;
     legend?: { entries: string; className?: string; titleClassName?: string; entryClassName?: string; swatchClassName?: string; data?: Readonly<Record<string, string>> };
   };
+  /**
+   * How a bounded canvas's axes are drawn along its edges (DISL §5.3 `ranges`, `endLabels`, `label`): the
+   * backdrop's class, an axis's, a range's band's by its axis, the range and its place among that axis's
+   * ranges, and the type the titles, end labels and range labels are set in. DISL paints a range by its
+   * style, which the module's stylesheet stands for here, and states no size for those labels.
+   */
+  axisChrome?: {
+    className?: string;
+    axisClassName?: string;
+    rangeClassName?: (axis: string, range: DislAxisRange, index: number) => string | undefined;
+    typography?: LabelTypography;
+  };
 }
 
 export interface CompileOptions {
   /** The diagram attributes the notation binds (`{ attribute: "unit" }`), when not their default. */
   diagram?: Readonly<Record<string, string>>;
+  /**
+   * The pane the canvas is drawn in, for a canvas stretched to it (DISL §6.13 `fit: "stretch"`): the
+   * drawing area follows the pane's proportions, so a module compiles again when they change.
+   */
+  pane?: { width: number; height: number };
 }
 
 interface WireIds {
@@ -529,7 +550,9 @@ class Compiler {
   private readonly wire: WireIds;
   private readonly nodeNames: readonly string[];
   private readonly system: DislCoordinateSystem | undefined;
+  private readonly systemName: string | undefined;
   private readonly defaultViewpoint: [string, DislViewpoint] | undefined;
+  private readonly area: DrawingArea | undefined;
 
   constructor(
     private readonly spec: DislDocument,
@@ -545,7 +568,13 @@ class Compiler {
     this.nodeNames = Object.keys(spec.notation.nodes);
     const viewpoints = Object.entries(spec.viewpoints ?? {});
     this.defaultViewpoint = viewpoints.find(([, viewpoint]) => viewpoint.default === true) ?? viewpoints[0];
-    this.system = this.systemNamed(this.defaultViewpoint?.[1].coordinateSystem ?? spec.coordinates?.default);
+    this.systemName = this.defaultViewpoint?.[1].coordinateSystem ?? spec.coordinates?.default;
+    this.system = this.systemNamed(this.systemName);
+    try {
+      this.area = drawingArea(spec, options.pane, this.systemName);
+    } catch (error) {
+      fail((error as Error).message);
+    }
   }
 
   compile(): DiagramDefinition {
@@ -574,6 +603,8 @@ class Compiler {
     };
     const backgroundMenu = this.backgroundMenu(this.defaultViewpoint?.[0]);
     const dragging = this.dragging(elementTypes);
+    const background = this.axisBackground();
+    const dragBounds = this.dragBounds();
     const drops = this.bindings.toolboxDrops === "module" ? [] : this.toolboxDrops();
 
     const definition: DiagramDefinition = {
@@ -589,9 +620,110 @@ class Compiler {
       ...(backgroundMenu ? { backgroundMenu } : {}),
       ...(drops.length > 0 ? { toolbox: { drops } } : {}),
       ...(this.connectsOnRightDrag() ? { connectOnRightDrag: true } : {}),
+      ...(this.area !== undefined ? { extent: this.area.extent } : {}),
+      ...(dragBounds !== undefined ? { dragBounds } : {}),
+      ...(background !== undefined ? { background } : {}),
     };
 
     return { ...definition, ...this.bindings.extras?.(spec) };
+  }
+
+  /** The default system's x and y axes, by name where they are named. */
+  private systemAxes(): { name: string; axis: DislAxis; across: boolean }[] {
+    const system = this.system;
+    if (system === undefined) {
+      return [];
+    }
+    return (["x", "y"] as const).flatMap((end) => {
+      const axis = system[end];
+      return axis === undefined ? [] : [{ name: typeof axis === "string" ? axis : end, axis: this.axis(axis), across: end === "x" }];
+    });
+  }
+
+  /**
+   * A bounded canvas's axes along its edges (DISL §5.3): each axis's named ranges as bands across the
+   * extent, from its `from` to its `to`, with a rule at a range's start where it states a separator; and
+   * each axis with a title or end labels drawn along its edge, the vertical one first, its labels by the
+   * end of the domain they stand at. Ranges need the bounds to be drawn in; an axis along no bounds is the
+   * rulers' to draw, and is left to them.
+   */
+  private axisBackground(): BackgroundDeclaration | undefined {
+    const chrome = this.bindings.axisChrome;
+    const area = this.area;
+    const typography = chrome?.typography;
+    const bands: BandDeclaration[] = [];
+    for (const { name, axis, across } of this.systemAxes()) {
+      const ranges = axis.ranges ?? [];
+      if (ranges.length > 0 && area === undefined) {
+        fail(`axis "${name}" names ranges, and the canvas states no bounds to draw them in.`);
+      }
+      ranges.forEach((range, index) => {
+        if (range.labelPosition !== undefined && range.labelPosition !== "center") {
+          fail(`range "${range.id}" of axis "${name}" puts its label at the ${range.labelPosition}; the library centres a range's label in its band.`);
+        }
+        const at = (value: number) =>
+          across ? (area!.toCanvas(value, 0).x - area!.extent.x) / area!.extent.width : (area!.toCanvas(0, value).y - area!.extent.y) / area!.extent.height;
+        const [start, end] = [at(range.from), at(range.to)].sort((one, other) => one - other) as [number, number];
+        const className = chrome?.rangeClassName?.(name, range, index);
+        bands.push({
+          orientation: across ? "vertical" : "horizontal",
+          start,
+          end,
+          ...(range.label !== undefined ? { label: this.literal(range.label, `range "${range.id}" of axis "${name}" label`) } : {}),
+          ...(range.separator !== undefined ? { edge: true } : {}),
+          ...(className !== undefined ? { className } : {}),
+          ...(typography !== undefined ? { typography } : {}),
+        });
+      });
+    }
+
+    const axes: AxisDeclaration[] = area === undefined ? [] : [...this.systemAxes()].reverse().flatMap(({ name, axis, across }) => {
+      if (axis.label === undefined && axis.endLabels === undefined) {
+        return [];
+      }
+      // The end the axis starts from - the left, or the top - is its minimum unless it runs the other way.
+      const flipped = across ? axis.reversed === true : (axis.reversed === true) !== (this.system?.orientation === "y-up");
+      const [first, last] = flipped ? [axis.endLabels?.max, axis.endLabels?.min] : [axis.endLabels?.min, axis.endLabels?.max];
+      const where = `axis "${name}"`;
+      return [{
+        orientation: across ? "horizontal" as const : "vertical" as const,
+        ...(axis.label !== undefined ? { title: this.literal(axis.label, `${where} label`) } : {}),
+        ...(first !== undefined ? { startLabel: this.literal(first, `${where} end label`) } : {}),
+        ...(last !== undefined ? { endLabel: this.literal(last, `${where} end label`) } : {}),
+        ...(chrome?.axisClassName !== undefined ? { className: chrome.axisClassName } : {}),
+        ...(typography !== undefined ? { typography } : {}),
+      }];
+    });
+
+    if (bands.length === 0 && axes.length === 0) {
+      return undefined;
+    }
+    return {
+      ...(chrome?.className !== undefined ? { className: chrome.className } : {}),
+      ...(bands.length > 0 ? { bands } : {}),
+      ...(axes.length > 0 ? { axes } : {}),
+    };
+  }
+
+  /**
+   * Where a drag stops (DISL §5.3 `outOfRange.drag: "clamp"`): at the bounds, which the axes span from their
+   * minimum to their maximum, where both axes clamp a drag. One axis alone is refused: the library stops a
+   * drag at a box.
+   */
+  private dragBounds(): ShapeBounds | undefined {
+    const axes = this.systemAxes();
+    const clamps = axes.map(({ axis }) => axis.outOfRange?.drag === "clamp");
+    if (!clamps.some(Boolean)) {
+      return undefined;
+    }
+    if (axes.length < 2 || !clamps.every(Boolean)) {
+      const [clamped, free] = clamps[0] ? ["x", "y"] : ["y", "x"];
+      fail(`the coordinate system "${this.systemName}" clamps a drag on its ${clamped} axis and not on its ${free} axis; the library clamps a drag at the bounds on both or neither.`);
+    }
+    if (this.area === undefined) {
+      fail(`the coordinate system "${this.systemName}" clamps a drag at its axes' bounds, and the canvas states no bounds to clamp it in.`);
+    }
+    return this.area.area;
   }
 
   /**
@@ -1049,9 +1181,16 @@ class Compiler {
     }
 
     // A position the backend computes arrives as the element's own, where the module's celPaths say so.
-    const own = (value: unknown, axis: "x" | "y") => isObject(value) && typeof value.cel === "string" && this.bindings.celPaths[value.cel] === `element.${axis}`;
+    // So does a coordinate an attribute holds, which the model carries as the element's own as well.
+    const byAttribute = (value: unknown) => isObject(value) && typeof value.attribute === "string";
+    const own = (value: unknown, axis: "x" | "y") => byAttribute(value) || (isObject(value) && typeof value.cel === "string" && this.bindings.celPaths[value.cel] === `element.${axis}`);
     if (own(x, "x") && own(y, "y")) {
       return undefined;
+    }
+    for (const [value, other, axis] of [[x, y, "x"], [y, x, "y"]] as const) {
+      if (byAttribute(other) && !own(value, axis)) {
+        fail(`node "${name}" places its ${axis} at "${String((value as { cel?: unknown }).cel)}", which has no entry element.${axis} in the module's celPaths; beside an attribute the library draws a coordinate the backend computes.`);
+      }
     }
 
     const memberList = (value: unknown, index: number): string | null => {
@@ -1091,9 +1230,13 @@ class Compiler {
   }
 
   /** A `visible` as a condition, or none where it is always drawn. */
-  private visibility(visible: boolean | string | { cel: string } | undefined, where: string): Condition | undefined {
+  private visibility(visible: boolean | string | { cel: string } | { attribute: string } | undefined, where: string): Condition | undefined {
     if (visible === undefined || visible === true) {
       return undefined;
+    }
+    if (isObject(visible) && "attribute" in visible) {
+      // A bool attribute of the element itself: shown while it is true (DISL §6.9).
+      return { path: `payload.${visible.attribute}`, is: "true" };
     }
 
     const expression = typeof visible === "string" ? visible : isObject(visible) ? visible.cel : undefined;
@@ -1166,7 +1309,20 @@ class Compiler {
         fail(`${where} anchors at its ${edge === "start" ? "left" : "right"} edge ${position.align === undefined ? "with no align" : `aligned "${position.align}"`}; the library aligns such a line "${edge}", or "${across}" beyond the edge of a node of a stated width.`);
       }
       declaration.anchorTo = anchorTo;
-      const offset = position.offset as readonly [number, number] | undefined;
+      const stated = position.offset;
+      // An offset the element carries (DISL §6.9 Point, bindable): its [dx, dy] read from the payload at draw time.
+      const bound = isObject(stated) && !Array.isArray(stated) ? (stated as { cel?: string; attribute?: string }) : undefined;
+      if (bound !== undefined && edge !== undefined) {
+        fail(`${where} anchors at its ${edge === "start" ? "left" : "right"} edge at an offset its element binds; the library binds the offset of a label anchored in the middle.`);
+      }
+      const offset = bound === undefined ? (stated as readonly [number, number] | undefined) : undefined;
+      if (bound !== undefined) {
+        declaration.offsetBinding = typeof bound.attribute === "string" ? { path: `payload.${bound.attribute}` } : { path: this.bindings.celPaths[bound.cel ?? ""] ?? fail(`${where} is offset by "${String(bound.cel)}", which has no payload path in the module's celPaths.`) };
+      }
+      if (edge === undefined && (position.align === "start" || position.align === "end")) {
+        // Aligned from its point rather than centred on it: the text starts, or ends, at the anchor moved by the offset.
+        declaration.textAnchor = position.align;
+      }
       if (edge !== undefined && width !== undefined) {
         declaration.align = across;
         declaration.insetX = width + (edge === "end" ? (offset?.[0] ?? 0) : -(offset?.[0] ?? 0));
@@ -1182,6 +1338,12 @@ class Compiler {
       // Inside, on the first or the last line of the node (DISL 0.4 §6.9).
       declaration.anchorTo = position;
       declaration.offset = { x: 0, y: position === "top" ? LABEL_LINE : -LABEL_LINE / 2 };
+    } else if (typeof position === "string" && /^(top|bottom)-(left|right)$/.test(position)) {
+      // Inside, at a corner: on the first or the last line, aligned to that side at the library's inset.
+      const [vertical, side] = position.split("-") as ["top" | "bottom", "left" | "right"];
+      declaration.anchorTo = vertical;
+      declaration.align = side === "left" ? "start" : "end";
+      declaration.offset = { x: 0, y: vertical === "top" ? LABEL_LINE : -LABEL_LINE / 2 };
     } else if (position !== undefined && position !== "center") {
       fail(`${where} is positioned "${String(position)}", which the library has no placement for.`);
     }
@@ -1517,6 +1679,10 @@ class Compiler {
    */
   private relation(name: string): DislRelation {
     const relations = this.spec.metamodel.relations ?? {};
+    const reference = relations[name] === undefined ? this.referenceRelation(name) : undefined;
+    if (reference !== undefined) {
+      return reference;
+    }
     const own = relations[name] ?? fail(`edge "${name}" has no relation in the metamodel.`);
     this.checkRelationFlags(name);
     const merged: Record<string, unknown> = { ...own };
@@ -1529,6 +1695,30 @@ class Compiler {
       }
     }
     return merged as unknown as DislRelation;
+  }
+
+  /**
+   * The edge a `Type.attribute` key draws for a reference attribute (DISL §4.5, §6.10): from the node that
+   * holds the attribute to the node it names, one per holder. None for a key of no such shape, which is then
+   * a relation type's name; a reference attribute whose type is no node type is refused.
+   */
+  private referenceRelation(name: string): DislRelation | undefined {
+    const key = /^([A-Za-z_][A-Za-z0-9_]*)\.([A-Za-z_][A-Za-z0-9_]*)$/.exec(name);
+    const types = this.spec.metamodel.types;
+    if (key === null || types[key[1]!] === undefined) {
+      return undefined;
+    }
+
+    const [, holder, attribute] = key as unknown as [string, string, string];
+    const declared = linearisation(holder, types).map((type) => types[type]?.attributes?.[attribute]).find((each) => each !== undefined);
+    if (declared === undefined) {
+      return fail(`edge "${name}" draws the attribute "${attribute}", which "${holder}" does not have.`);
+    }
+    if (types[declared.type] === undefined) {
+      return fail(`edge "${name}" draws the attribute "${attribute}" of "${holder}", which names no node type.`);
+    }
+
+    return { source: holder, target: declared.type, directed: true };
   }
 
   /** A relation type's flag as DISL 0.6 reads it (§4.7): the nearest stating type of its linearisation, else the default. */
@@ -1973,6 +2163,12 @@ class Compiler {
         continue;
       }
 
+      const line = this.lineBadge(name, badge, where);
+      if (line !== undefined) {
+        decorations.push(line);
+        continue;
+      }
+
       const right = badge.position === "top-right";
       if (!right && badge.position !== "top-left") {
         fail(`${where} sits "${String(badge.position)}"; the library places a badge at the top left or the top right.`);
@@ -1989,8 +2185,13 @@ class Compiler {
         continue;
       }
 
-      const visible = typeof badge.visible === "string" ? badge.visible : isObject(badge.visible) ? badge.visible.cel : undefined;
-      const when = visible === undefined ? undefined : this.bindings.celConditions?.[visible] ?? fail(`${where} shows when "${visible}", which has no condition in the module's celConditions.`);
+      const visible = typeof badge.visible === "string" ? badge.visible : isObject(badge.visible) && "cel" in badge.visible ? badge.visible.cel : undefined;
+      const when =
+        isObject(badge.visible) && "attribute" in badge.visible
+          ? this.visibility(badge.visible, where)
+          : visible === undefined
+            ? undefined
+            : this.bindings.celConditions?.[visible] ?? fail(`${where} shows when "${visible}", which has no condition in the module's celConditions.`);
       const className = this.bindings.badgeClassName?.(name, badge);
       const tooltip = badge.tooltip === undefined ? undefined : typeof badge.tooltip === "string" ? { template: badge.tooltip } : this.binding(badge.tooltip, `${where} tooltip`);
       if (badge.text !== undefined) {
@@ -2026,6 +2227,49 @@ class Compiler {
     }
 
     return { links, decorations };
+  }
+
+  /**
+   * A badge drawn as a `line` at a side of its node (DISL §6.9): centred on that side's middle, moved by
+   * its offset, and `size` long along its orientation; none for a badge that is no line at a side.
+   */
+  private lineBadge(name: string, badge: DislBadge, where: string): DecorationDeclaration | undefined {
+    const side = typeof badge.position === "string" && /^(left|right|top|bottom)$/.test(badge.position) ? badge.position : undefined;
+    const shape = badge.shape;
+    if (side === undefined || shape === undefined || (typeof shape === "string" ? shape : shape.type) !== "line") {
+      return undefined;
+    }
+
+    const orientation = typeof shape === "string" ? undefined : shape.params?.orientation;
+    if (orientation !== "horizontal" && orientation !== "vertical") {
+      return fail(`${where} is a line along ${JSON.stringify(orientation)}; the library draws a line badge horizontal or vertical.`);
+    }
+    if (typeof badge.size !== "number") {
+      return fail(`${where} is a line of no stated size.`);
+    }
+
+    const [dx, dy] = badge.offset ?? [0, 0];
+    const across = side === "left" || side === "right";
+    const x = across ? `bounds.${side}` : "bounds.centreX";
+    const y = across ? "bounds.centreY" : `bounds.${side}`;
+    const half = badge.size / 2;
+    const end = (sign: number) => ({
+      x: { path: x, number: { plus: dx + (orientation === "horizontal" ? sign * half : 0) } },
+      y: { path: y, number: { plus: dy + (orientation === "vertical" ? sign * half : 0) } },
+    });
+    const className = this.bindings.badgeClassName?.(name, badge);
+    const tooltip = badge.tooltip === undefined ? undefined : typeof badge.tooltip === "string" ? this.literal(badge.tooltip, `${where} tooltip`) : this.binding(badge.tooltip, `${where} tooltip`);
+    const when = this.visibility(badge.visible, where);
+
+    return {
+      glyph: "line",
+      anchor: "canvas",
+      from: end(-1),
+      to: end(1),
+      ...(className !== undefined ? { className } : {}),
+      ...(tooltip !== undefined ? { tooltip } : {}),
+      ...(when !== undefined ? { when } : {}),
+    };
   }
 
   /**
@@ -2497,7 +2741,11 @@ class Compiler {
       });
   }
 
-  /** Whether the canvas background has a menu in a viewpoint: a set for `diagram` whose `when` holds there. */
+  /**
+   * Whether the canvas background has a menu in a viewpoint: a set for `diagram` whose `when` holds there.
+   * The canvas has no read-only state of its own, so a menu there "wherever the diagram can be edited"
+   * (`!env.readOnly`) is there, and its entries are the backend's answer for the diagram as it is.
+   */
   private backgroundMenu(viewpoint: string | undefined): boolean {
     return (this.spec.toolbox?.contextMenus ?? []).some((menu) => {
       if (!menu.for.includes("diagram")) {
@@ -2505,6 +2753,10 @@ class Compiler {
       }
       if (menu.when === undefined) {
         return true;
+      }
+      const readOnly = /^(!?)\s*env\.readOnly$/.exec(menu.when.trim());
+      if (readOnly !== null) {
+        return readOnly[1] === "!";
       }
       const match = /^env\.viewpoint\s*==\s*'([^']+)'$/.exec(menu.when.trim());
       return match !== null ? match[1] === viewpoint : fail(`the canvas menu's when "${menu.when}" is not a viewpoint test.`);

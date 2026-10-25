@@ -282,7 +282,8 @@ ${mindmap}`;
 
     const element = container.querySelector('[data-element-id="b"]');
     expect(element, `a selected ${shape} rendered no element at all`).not.toBeNull();
-    const drawn = [...element!.querySelectorAll<SVGElement>("rect, ellipse, path, polygon, circle")].filter(
+    // A `line` too, which is all a horizontal-line or vertical-line draws besides its unpainted press target.
+    const drawn = [...element!.querySelectorAll<SVGElement>("rect, ellipse, path, polygon, circle, line")].filter(
       (node) => !node.hasAttribute("data-anchor") && !(node.getAttribute("class") ?? "").includes("library-resize-handle"),
     );
     expect(drawn.length, `a selected ${shape} drew no shape to paint`).toBeGreaterThan(0);

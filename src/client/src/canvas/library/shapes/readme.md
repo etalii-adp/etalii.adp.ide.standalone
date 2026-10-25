@@ -22,6 +22,8 @@ This readme is about mechanism. **What a module may declare** — the `BuiltInSh
 
 **`person`** has no outline either: its outline is its body, the rounded box over the bounds, and its head - a circle of radius 10 centred 8 above the top edge - stands outside the bounds as a part, as DISL's composite shapes draw one that is not marked `outline: true`. Its geometry is stated once, in [`person.ts`](person.ts), as DISL 0.5 §6.7 gives it: the body's corner is 8 or half the smaller side if that is less, and the head is part of the element for a point (a drop on it lands on the element) and for the drawing's extent (the fitted view), though not for the edge point. A `styled-box` of the `Person` silhouette draws from the same file.
 
+**`circle`, `horizontal-line` and `vertical-line` have no outline here either.** A circle is exactly round at half its box's shorter side, so the canvas meets it on that circle directly rather than on a sampled polygon, and a line has no inside to put text in or a connection on: the canvas meets it at its box, as it meets a `box`.
+
 **Every other shape has no outline here, deliberately.** `outlineOf` returns an **empty list** for `box`, `pill`, `ellipse` and the rest. It does not return their bounding box. The empty list means "no polygon outline; use the rectangle": those shapes keep the geometry they already had, because replacing a working circle with a 64-gon would move drawings nobody asked to move.
 
 ## The text region

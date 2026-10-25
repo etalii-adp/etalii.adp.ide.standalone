@@ -476,3 +476,14 @@ describe("a source whose drawn end attaches by edge", () => {
     expect(handlesOf(false)).toEqual([]);
   });
 });
+
+describe("a connector meets a circle drawn in a box that is not square", () => {
+  it("lands on the circle the box is drawn as, its radius half the shorter side", () => {
+    // Arrange, act: the 160 by 48 element is drawn as a circle of radius 24 about its centre.
+    const point = attachmentFor("circle");
+
+    // Assert: on that circle, where the box would put it about 81 out on its left side.
+    expect(Math.hypot(point.x, point.y)).toBeCloseTo(24, 1);
+    expect(point.x).toBeLessThan(0);
+  });
+});

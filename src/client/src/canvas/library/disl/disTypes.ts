@@ -98,6 +98,32 @@ export interface DislAxis {
   unit?: string;
   scale?: number | { unit: Bindable<string>; size: number };
   ruler?: DislRuler;
+  /** The axis's title (DISL §5.3). */
+  label?: string;
+  /** The domain's bounds (DISL §5.3). */
+  min?: number;
+  max?: number;
+  /** Whether the domain increases towards the negative canvas direction (DISL §5.3). */
+  reversed?: boolean;
+  /** What a gesture or a typed value past `min` or `max` does (DISL §5.3, §4.3). */
+  outOfRange?: { drag?: "clamp" | "refuse"; typed?: "clamp" | "refuse"; message?: string };
+  /** Named ranges of the domain, drawn as bands (DISL §5.3). */
+  ranges?: readonly DislAxisRange[];
+  /** The labels at the two ends of the axis, by domain end (DISL §5.3). */
+  endLabels?: { min?: string; max?: string };
+}
+
+/** A named part of an axis's domain (DISL §5.3 `$defs/AxisRange`), drawn as a band. */
+export interface DislAxisRange {
+  id: string;
+  label?: string;
+  from: number;
+  to: number;
+  fill?: unknown;
+  style?: string | Readonly<Record<string, unknown>>;
+  /** The line drawn at `from`. */
+  separator?: unknown;
+  labelPosition?: "start" | "center" | "end";
 }
 
 export interface DislRuler extends Extensions {
@@ -111,6 +137,8 @@ export interface DislRuler extends Extensions {
 
 export interface DislCoordinateSystem {
   kind: string;
+  /** The direction of the positive y axis on screen (DISL §5.7). Default `y-down`. */
+  orientation?: "y-down" | "y-up";
   /** An axis name, or an inline axis; a system may declare none (DISL §5). */
   x?: string | DislAxis;
   y?: string | DislAxis;
@@ -177,7 +205,7 @@ export type DislShapeRef = string | { type: string; params?: Readonly<Record<str
 export interface DislLabel extends Extensions {
   id: string;
   text: Bindable<string>;
-  position?: string | { anchor: readonly [number, number]; offset?: readonly [number, number]; align?: "start" | "center" | "end" };
+  position?: string | { anchor: readonly [number, number]; offset?: readonly [number, number] | { cel: string } | { attribute: string }; align?: "start" | "center" | "end" };
   distance?: number;
   editable?: boolean | "inline" | "multiline";
   wrap?: "none" | "word";
@@ -241,7 +269,11 @@ export interface DislBadge extends Extensions {
   id: string;
   icon?: string;
   position?: string;
-  visible?: boolean | string | { cel: string };
+  /** What it is drawn as: a `line` beside its node at a side (DISL §6.9). */
+  shape?: DislShapeRef;
+  /** How long a line badge is, along its orientation. */
+  size?: number;
+  visible?: boolean | string | { cel: string } | { attribute: string };
   tooltip?: Bindable<string>;
   /** The operation a press runs. */
   onClick?: string;
@@ -410,6 +442,12 @@ export interface DislFilter {
 }
 
 export interface DislCanvas {
+  /** A fixed drawing area, in canvas units (DISL §6.13). */
+  bounds?: { x: number; y: number; w: number; h: number };
+  /** Whether the drawing area is stretched to the pane (DISL §6.13). Default `none`. */
+  fit?: "none" | "stretch";
+  /** Space kept around the bounds (DISL §6.13 Insets): one number for every side, or each side's own. */
+  margin?: number | { top?: number; right?: number; bottom?: number; left?: number };
   /** What the canvas says once its document is read and holds nothing to draw (DISL §6.13). */
   empty?: { text: string; when?: string };
   filters?: Readonly<Record<string, DislFilter>>;

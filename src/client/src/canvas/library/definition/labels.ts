@@ -1,4 +1,4 @@
-import { holds, resolveEntries, resolveMany, resolveNumber, resolveOneAt, type Binding, type BindingSource } from "./binding";
+import { holds, resolveEntries, resolveMany, resolveNumber, resolveOneAt, valueAtPath, type Binding, type BindingSource } from "./binding";
 import type { BuiltInShape, DeclaredNumber, LabelDeclaration, LabelFit, LabelSlot, LabelTypography, ShapeBounds } from "./diagramDefinition";
 import { outlineOf, textRegionOf } from "../shapes/outline";
 import { capacityOf, continuedWithin, fitToCapacity, fitToWidth, LABEL_FONT_SIZE } from "../../label/textMetrics";
@@ -231,9 +231,9 @@ function numberOf(value: DeclaredNumber | undefined, source: BindingSource, fall
 function baselineOf(
   declaration: LabelDeclaration,
   bounds: ShapeBounds,
-  element: { labelAt?: { x: number; y: number } },
+  source: BindingSource,
 ): { x: number; y: number; anchor: "start" | "middle" | "end" } {
-  const placed = placementOf(declaration, bounds, element);
+  const placed = placementOf(declaration, bounds, source);
   // ALIGNMENT SETS X, AND AN OFFSET SETS Y. They were conflated - an offset suppressed the
   // alignment entirely - so azure-pipeline's stage name, which states both, drew CENTRED over
   // a card whose name has sat at the top left since the module was written. Found in a browser;
@@ -272,20 +272,33 @@ function roomOf(align: "start" | "middle" | "end" | undefined, bounds: ShapeBoun
   return align === "start" || align === "end" ? bounds.width - insetX : bounds.width;
 }
 
+/** The offset an element carries for a label: `[dx, dy]` or `{ dx, dy }` at the declared path, else none. */
+function boundOffsetOf(declaration: LabelDeclaration, source: BindingSource): { x: number; y: number } | undefined {
+  if (declaration.offsetBinding === undefined) {
+    return undefined;
+  }
+
+  const value = valueAtPath(declaration.offsetBinding.path, source);
+  const [x, y] = Array.isArray(value) ? value : typeof value === "object" && value !== null ? [(value as { dx?: unknown }).dx, (value as { dy?: unknown }).dy] : [];
+  return typeof x === "number" && typeof y === "number" ? { x, y } : { x: 0, y: 0 };
+}
+
 function placementOf(
   declaration: LabelDeclaration,
   bounds: ShapeBounds,
-  element: { labelAt?: { x: number; y: number } },
+  source: BindingSource,
 ): { x: number; y: number; anchor: "start" | "middle" | "end" } {
+  const element: { labelAt?: { x: number; y: number } } = source.element;
   const centreX = bounds.x + bounds.width / 2;
   const centreY = bounds.y + bounds.height / 2;
 
-  if (declaration.offset) {
+  const offset = declaration.offset ?? boundOffsetOf(declaration, source);
+  if (offset) {
     // Measured from the edge the declaration names, so a line pinned below a card's top stays
     // there however tall the card is.
     const originY =
       declaration.anchorTo === "top" ? bounds.y : declaration.anchorTo === "bottom" ? bounds.y + bounds.height : centreY;
-    return { x: centreX + declaration.offset.x, y: originY + declaration.offset.y, anchor: "middle" };
+    return { x: centreX + offset.x, y: originY + offset.y, anchor: declaration.textAnchor ?? "middle" };
   }
 
   switch (declaration.placement ?? "inside") {
@@ -420,7 +433,7 @@ export function layoutLabels(
       const typography = scaledTypography(declaration.typography, viewScale);
       const fit = declaration.fit ?? { fontSize: typography?.fontSize ?? LABEL_FONT_SIZE, inset: DEFAULT_FIT_INSET };
       const lineHeight = declaration.stack?.lineHeight ?? Math.round(fit.fontSize * 1.4);
-      const base = baselineOf(declaration, bounds, source.element);
+      const base = baselineOf(declaration, bounds, source);
       const block = blockLines(lines.join("\n"), fittedCapacity(fit, bounds));
       const tooltip = declaration.tooltip ? (resolveMany(declaration.tooltip, source)[0] ?? undefined) : undefined;
       block.forEach((line, lineIndex) => {
@@ -475,7 +488,7 @@ export function layoutLabels(
       return;
     }
 
-    const base = baselineOf(declaration, bounds, source.element);
+    const base = baselineOf(declaration, bounds, source);
     const typography = scaledTypography(declaration.typography, viewScale);
     // A declared fit says how the line is fitted; the shape's region answers only where none does.
     const region = declaration.fit !== undefined ? null : fittedRegionOf(declaration, bounds, shape, declaration.stack?.lineHeight ?? Math.round((typography?.fontSize ?? 12) * 1.4));
