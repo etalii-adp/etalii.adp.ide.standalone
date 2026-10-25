@@ -1,0 +1,23 @@
+supply-chain: 1
+# Finding A12: positions with halves, read as written; every write rounds a half to the even neighbour.
+groups:
+  - id: empty-placed
+    name: Placed and empty
+    x: 10.5
+    y: 11.5
+nodes:
+  - id: a
+    type: source
+    name: A
+    x: 100.5
+    y: 40.5
+  - id: b
+    type: consumer
+    name: B
+    x: 501.5
+    y: 41.5
+flows:
+  - id: a-to-b
+    from: a
+    to: b
+    volume: 1

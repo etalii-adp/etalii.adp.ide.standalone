@@ -1,0 +1,19 @@
+supply-chain: 1
+# Finding B11: values that hold a colon, a hash, a word YAML 1.1 reads as a boolean, and a date.
+groups:
+  - id: north
+    name: "North: the cold part"
+nodes:
+  - id: mine
+    type: source
+    name: "Mine #1"
+    unit: on
+  - id: plant
+    type: producer
+    name: Plant
+    description: 2026-10-11
+flows:
+  - id: ore
+    from: mine
+    to: plant
+    product: "Ore: crushed"
