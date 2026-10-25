@@ -211,7 +211,7 @@ public sealed class WardleyContextPropertyProvider(IHistoryStackStore historySta
         }
 
         static WardleyLink? LinkOf(WardleySubject subject) =>
-            subject.Map.Links.FirstOrDefault(candidate => WardleyIdentityKeys.Of(candidate) == subject.Entry!.Key);
+            WardleyIdentityKeys.Find(subject.Map.Links, WardleyIdentityKeys.Of, subject.Entry!.Key);
     }
 
     /// <summary>The change the action <paramref name="actionId"/> makes of <paramref name="value"/>, refused as the action refuses it.</summary>
@@ -240,14 +240,18 @@ public sealed class WardleyContextPropertyProvider(IHistoryStackStore historySta
 
     private static IReadOnlyList<ContextPropertyDefinition> ForComponent(WardleyMap map, WardleyIdentityEntry entry)
     {
-        var component = map.Components.FirstOrDefault(candidate => WardleyIdentityKeys.Of(candidate) == entry.Key);
+        var component = WardleyIdentityKeys.Component(map, entry.Key);
         if (component is null)
         {
             return [];
         }
 
+        // A later holder of a repeated name has no evolution: an `evolve` naming it attaches to
+        // the first holder (ruling 3).
         var stage = WardleyEvolution.StageOf(component.Position.Maturity);
-        var evolve = map.Evolves.FirstOrDefault(candidate => candidate.Name == component.Name);
+        var evolve = WardleyIdentityKeys.IsFirstHolder(map, component)
+            ? map.Evolves.FirstOrDefault(candidate => candidate.Name == component.Name)
+            : null;
 
         var rows = new List<ContextPropertyDefinition>
         {
@@ -348,7 +352,7 @@ public sealed class WardleyContextPropertyProvider(IHistoryStackStore historySta
 
     private static IReadOnlyList<ContextPropertyDefinition> ForLink(WardleyMap map, WardleyIdentityEntry entry)
     {
-        var link = map.Links.FirstOrDefault(candidate => WardleyIdentityKeys.Of(candidate) == entry.Key);
+        var link = WardleyIdentityKeys.Find(map.Links, WardleyIdentityKeys.Of, entry.Key);
         if (link is null)
         {
             return [];
@@ -378,7 +382,7 @@ public sealed class WardleyContextPropertyProvider(IHistoryStackStore historySta
 
     private static IReadOnlyList<ContextPropertyDefinition> ForPipeline(WardleyMap map, WardleyIdentityEntry entry)
     {
-        var pipeline = map.Pipelines.FirstOrDefault(candidate => WardleyIdentityKeys.Of(candidate) == entry.Key);
+        var pipeline = WardleyIdentityKeys.Find(map.Pipelines, WardleyIdentityKeys.Of, entry.Key);
         if (pipeline is null)
         {
             return [];
@@ -415,23 +419,9 @@ public sealed class WardleyContextPropertyProvider(IHistoryStackStore historySta
 
     private static (WardleyPipeline Pipeline, WardleyPipelineChild Child)? FindChild(WardleyMap map, WardleyIdentityEntry entry)
     {
-        if (entry.Kind != WardleyIdentityKind.PipelineChild)
-        {
-            return null;
-        }
-
-        foreach (var pipeline in map.Pipelines)
-        {
-            foreach (var child in pipeline.Children)
-            {
-                if (WardleyIdentityKeys.Of(pipeline, child) == entry.Key)
-                {
-                    return (pipeline, child);
-                }
-            }
-        }
-
-        return null;
+        return entry.Kind == WardleyIdentityKind.PipelineChild
+            ? WardleyIdentityKeys.Child(map, entry.Key)
+            : null;
     }
 
     /// <summary>

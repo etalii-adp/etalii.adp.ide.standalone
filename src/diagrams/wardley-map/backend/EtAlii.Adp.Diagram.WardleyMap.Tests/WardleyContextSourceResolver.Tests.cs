@@ -287,7 +287,6 @@ public sealed class WardleyContextSourceResolverTests : IDisposable
         // Act.
         var document = (await _documents.GetOrLoadAsync(_body, TestContext.Current.CancellationToken)).Document;
         WardleyWriter.Rename(document, WardleyParser.Parse(document), "Power", "Mains Power");
-        _documents.Rekey(_body, WardleyIdentityKind.Component, "Power", "Mains Power");
         await _documents.SaveAsync(_body, document, TestContext.Current.CancellationToken);
 
         // Assert.

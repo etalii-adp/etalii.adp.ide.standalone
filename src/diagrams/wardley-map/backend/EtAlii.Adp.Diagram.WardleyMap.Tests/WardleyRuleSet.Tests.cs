@@ -1,4 +1,8 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
+using EtAlii.Adp.Hierarchy;
+using EtAlii.Adp.History;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
@@ -134,7 +138,7 @@ public sealed class WardleyRuleSetTests
     }
 
     [Fact]
-    public void TwoComponentsSharingAName_IsAnError_AtTheElementTheyBothClaim()
+    public void TwoComponentsSharingAName_IsAnError_AtTheFirstHoldersLine_WithoutIdentities()
     {
         // Act. Requirement 14.4.
         var problems = Validate("""
@@ -144,13 +148,36 @@ public sealed class WardleyRuleSetTests
 
             """);
 
-        // Assert. An element location rather than a line, and not arbitrarily: identity is keyed
-        // by name, so two statements with one name reconcile to ONE element and no single line
-        // is "the" line. The message names both.
+        // Assert. Reported once, at the first holder; with no identities to hand that is its
+        // line (finding A7). The message names both.
         var problem = Single(problems, WardleyRuleSet.DuplicateNameRuleId);
         Assert.Equal(DiagramProblemSeverity.Error, problem.Severity);
-        Assert.Equal("Kettle", Assert.IsType<DiagramProblemElementLocation>(problem.Location).Id);
+        Assert.Equal(2u, Assert.IsType<DiagramProblemLineLocation>(problem.Location).Number);
         Assert.Contains("lines 2, 3", problem.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task TwoComponentsSharingAName_IsLocatedAtTheIdOfTheFirstHolder()
+    {
+        // Arrange. Finding A7: the location is an element id, so a name there points at nothing.
+        using var folder = TestFolder.Create("wardley-duplicate-name-location");
+        await using var services = new ServiceCollection().AddCommands().AddHierarchyCommandHandlers().AddWardleyMap().BuildServiceProvider();
+        var documents = services.GetRequiredService<IWardleyDocumentStore>();
+        var validator = services.GetServices<IDiagramValidator>().OfType<WardleyValidator>().Single();
+        var path = IoPath.Combine(folder.Path, "map.owm");
+        const string text = "anchor Business [0.95, 0.63]\ncomponent Kettle [0.43, 0.35]\ncomponent Kettle [0.10, 0.70]\n";
+        await File.WriteAllTextAsync(path, text, TestContext.Current.CancellationToken);
+        await documents.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
+        var first = documents.Identities(path).First(entry => entry is { Kind: WardleyIdentityKind.Component, Key: "Kettle" });
+
+        // Act.
+        var problems = await validator.ValidateAsync(
+            new DiagramValidationRequest(text, "map", ProjectRoot.From(folder.Path), path, null),
+            TestContext.Current.CancellationToken);
+
+        // Assert.
+        var problem = Single(problems, WardleyRuleSet.DuplicateNameRuleId);
+        Assert.Equal(first.Id, Assert.IsType<DiagramProblemElementLocation>(problem.Location).Id);
     }
 
     [Fact]
@@ -263,7 +290,7 @@ public sealed class WardleyValidatorTests : IDisposable
 {
     private readonly TestFolder _testFolder = TestFolder.Create("wardley-validator");
     private readonly string _root;
-    private readonly WardleyValidator _validator = new();
+    private readonly WardleyValidator _validator = new(new WardleyDocumentStore(new FileWriter()));
 
     public WardleyValidatorTests() => _root = _testFolder.Path;
 

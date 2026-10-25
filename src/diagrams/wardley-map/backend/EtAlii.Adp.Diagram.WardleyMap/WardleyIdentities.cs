@@ -137,6 +137,20 @@ public sealed class WardleyIdentities(IFileWriter writer)
     /// <c>ShortGuid</c> to anything unmatched and discarding any entry whose element is gone
     /// (Requirements 4.3, 4.5).
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>One id per kind, key and ordinal</b> (finding B9, Requirement 6.4). The n-th holder of a
+    /// kind and key takes the entry stored under the key with its ordinal, which
+    /// <see cref="WardleyIdentityKeys.Numbered"/> builds, so after an edit made outside ADP the ids
+    /// follow the order of the holders (ruling 7). A file written before this held the first
+    /// holder's entry once per holder; the first is read as the first holder's and the repeats are
+    /// dropped, so no stored id of a first holder changes.
+    /// </para>
+    /// <para>
+    /// No two elements share an id: an id already given is not given again, so a file that names
+    /// one id under two keys gives the second a fresh one.
+    /// </para>
+    /// </remarks>
     /// <returns>
     /// The complete current set, in a stable order, ready to persist on the next save. Nothing
     /// is written here: a map opened and not edited must produce no write at all.
@@ -156,59 +170,42 @@ public sealed class WardleyIdentities(IFileWriter writer)
             known.TryAdd((entry.Kind, entry.Key), entry.Id);
         }
 
-        var reconciled = new List<WardleyIdentityEntry>();
+        return Assign(WardleyIdentityKeys.All(map), holder => known.GetValueOrDefault((holder.Kind, holder.Key)));
+    }
 
-        foreach (var component in map.Components)
-        {
-            Take(WardleyIdentityKind.Component, WardleyIdentityKeys.Of(component));
-        }
-
-        foreach (var link in map.Links)
-        {
-            Take(WardleyIdentityKind.Link, WardleyIdentityKeys.Of(link));
-        }
-
-        foreach (var pipeline in map.Pipelines)
-        {
-            Take(WardleyIdentityKind.Pipeline, WardleyIdentityKeys.Of(pipeline));
-            foreach (var child in pipeline.Children)
-            {
-                Take(WardleyIdentityKind.PipelineChild, WardleyIdentityKeys.Of(pipeline, child));
-            }
-        }
-
-        foreach (var note in map.Notes)
-        {
-            Take(WardleyIdentityKind.Note, WardleyIdentityKeys.Of(note));
-        }
-
-        foreach (var annotation in map.Annotations)
-        {
-            Take(WardleyIdentityKind.Annotation, WardleyIdentityKeys.Of(annotation));
-        }
-
-        foreach (var accelerator in map.Accelerators)
-        {
-            Take(WardleyIdentityKind.Accelerator, WardleyIdentityKeys.Of(accelerator));
-        }
-
-        foreach (var attitude in map.Attitudes)
-        {
-            Take(WardleyIdentityKind.Attitude, WardleyIdentityKeys.Of(attitude));
-        }
-
-        return reconciled.ToArray();
+    /// <summary>
+    /// The entries of <paramref name="holders"/>, each with the id <paramref name="idOf"/> gives
+    /// it, or a fresh one where it gives none or one already given.
+    /// </summary>
+    internal static IReadOnlyList<WardleyIdentityEntry> Assign(IEnumerable<WardleyHolder> holders, Func<WardleyHolder, string?> idOf)
+    {
+        var given = new HashSet<string>(StringComparer.Ordinal);
+        var assigned = new List<WardleyIdentityEntry>();
 
         // An element the sidecar knows keeps its id; one it does not gets a fresh one. An entry
         // no element claimed is simply never taken, which is how a stale one is discarded.
-        void Take(string kind, string key)
+        foreach (var holder in holders)
         {
-            var id = known.TryGetValue((kind, key), out var existing)
+            var id = idOf(holder) is { Length: > 0 } existing && given.Add(existing)
                 ? existing
-                : ShortGuid.NewShortGuid().ToString();
+                : Fresh(given);
 
-            reconciled.Add(new WardleyIdentityEntry(id, kind, key));
+            assigned.Add(new WardleyIdentityEntry(id, holder.Kind, holder.Key));
         }
+
+        return assigned.ToArray();
+    }
+
+    private static string Fresh(HashSet<string> given)
+    {
+        string id;
+        do
+        {
+            id = ShortGuid.NewShortGuid().ToString();
+        }
+        while (!given.Add(id));
+
+        return id;
     }
 
     /// <summary>Deletes the sidecar, if there is one. Used when a map has no identities left to keep.</summary>

@@ -59,7 +59,5 @@ public sealed class WardleyCommandHandlersTests : EditHandlerContract<IWardleyDo
         : WarningDocumentStore<LineDocument, WardleyMap>(inner, warning), IWardleyDocumentStore
     {
         public IReadOnlyList<WardleyIdentityEntry> Identities(string path) => inner.Identities(path);
-
-        public void Rekey(string path, string kind, string oldKey, string newKey) => inner.Rekey(path, kind, oldKey, newKey);
     }
 }

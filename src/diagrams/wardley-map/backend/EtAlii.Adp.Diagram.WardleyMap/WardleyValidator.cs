@@ -20,7 +20,11 @@ namespace EtAlii.Adp.Diagram.WardleyMap;
 /// by origin and shows it.
 /// </para>
 /// </remarks>
-public sealed class WardleyValidator : IDiagramValidator
+/// <param name="documents">
+/// The store, for the ids of the map's elements: a problem about an element is located at its id
+/// (finding A7), and the ids are those the store holds beside the document it was asked about.
+/// </param>
+public sealed class WardleyValidator(IWardleyDocumentStore documents) : IDiagramValidator
 {
     public const string SubmapMissingRuleId = "wardley.submap-missing";
 
@@ -38,7 +42,7 @@ public sealed class WardleyValidator : IDiagramValidator
 
         var outcome = WardleyParser.Outcome(LineDocument.Parse(request.Document));
         var map = outcome.Model;
-        var problems = new List<DiagramProblem>(WardleyRuleSet.Validate(map));
+        var problems = new List<DiagramProblem>(WardleyRuleSet.Validate(map, IdentitiesOf(request)));
         problems.AddRange(UnresolvedReferences(map, request));
 
         // A line that does not draw says why (B-25): a warning, because the rest of the map still
@@ -51,6 +55,15 @@ public sealed class WardleyValidator : IDiagramValidator
 
         return ValueTask.FromResult<IReadOnlyList<DiagramProblem>>(problems);
     }
+
+    /// <summary>
+    /// The ids the store holds for the map, when the text judged is the text it holds; none
+    /// otherwise, because ids of another text could name other elements.
+    /// </summary>
+    private IReadOnlyList<WardleyIdentityEntry> IdentitiesOf(DiagramValidationRequest request) =>
+        request.BodyPath.Length > 0 && documents.Get(request.BodyPath) is { IsUsable: true } entry && entry.Document.Text == request.Document
+            ? documents.Identities(request.BodyPath)
+            : [];
 
     /// <summary>
     /// A `url` whose address looks like a file in this project, and is not (Requirement 14.6).
