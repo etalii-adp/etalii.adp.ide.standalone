@@ -31,7 +31,7 @@ internal static class WardleyDisl
     /// The host attribute holding a link as the menus choose it: its source, target and kind as written, joined by
     /// <see cref="WardleyIdentityKeys.Separator"/>, which every repeat of one link shares.
     /// </summary>
-    public const string ChoiceKey = "choiceKey";
+    private const string ChoiceKey = "choiceKey";
 
     private static readonly ConditionalWeakTable<WardleyMap, Built> _built = new();
 

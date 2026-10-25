@@ -144,7 +144,7 @@ public class WardleyDerivedOperationsTests
             IReadOnlyList<string> types = self?.Type.Linearisation ?? ["diagram"];
             foreach (var operation in Operations().Where(operation => OperationInterpreter.AppliesTo(specification, operation, self)))
             {
-                foreach (var (parameters, value) in Values(diagram, operation, self))
+                foreach ((IReadOnlyDictionary<string, object?> parameters, string value) in Values(diagram, operation, self))
                 {
                     var bindings = operation == "toggleDecorator" ? parameters : new Dictionary<string, object?>(StringComparer.Ordinal);
                     yield return new Step(operation, self?.Id, WardleyDefinition.Definition.Ids.ActionId(types, "operation", operation, bindings), parameters, value);
@@ -161,7 +161,7 @@ public class WardleyDerivedOperationsTests
             case "toggleDecorator":
                 foreach (var decorator in Decorators)
                 {
-                    yield return (Parameters(("decorator", decorator)), "");
+                    yield return (With(("decorator", decorator)), "");
                 }
 
                 break;
@@ -169,26 +169,26 @@ public class WardleyDerivedOperationsTests
             case "unlink" when self is not null:
                 foreach (var link in diagram.Elements.Where(element => element.IsA("Link") && (element.Source?.Id == self.Id || element.Target?.Id == self.Id)))
                 {
-                    yield return (Parameters(("link", link)), WardleyDisl.ChoiceIdOf(link));
+                    yield return (With(("link", link)), WardleyDisl.ChoiceIdOf(link));
                 }
 
                 break;
 
             case "evolve":
-                yield return (Parameters(("maturity", Maturity)), Maturity);
+                yield return (With(("maturity", Maturity)), Maturity);
                 break;
 
             case "stopEvolving" or "toggleInertia":
-                yield return (Parameters(), "");
+                yield return (With(), "");
                 break;
 
             default:
-                yield return (Parameters(("name", Name)), Name);
+                yield return (With(("name", Name)), Name);
                 break;
         }
     }
 
-    private static Dictionary<string, object?> Parameters(params (string Name, object? Value)[] parameters) =>
+    private static Dictionary<string, object?> With(params (string Name, object? Value)[] parameters) =>
         parameters.ToDictionary(parameter => parameter.Name, parameter => parameter.Value, StringComparer.Ordinal);
 
     private static IEnumerable<string> Operations() =>

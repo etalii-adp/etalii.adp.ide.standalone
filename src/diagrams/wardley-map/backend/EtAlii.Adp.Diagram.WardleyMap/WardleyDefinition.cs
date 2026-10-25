@@ -62,9 +62,6 @@ internal static class WardleyDefinition
     /// <summary>The definition.</summary>
     public static DislSpecification Specification => Definition.Specification;
 
-    /// <summary>What the runtime had to say about the definition as it loaded it.</summary>
-    public static IReadOnlyList<LoadDiagnostic> Diagnostics => Definition.Diagnostics;
-
     /// <summary>The palette.</summary>
     public static IReadOnlyList<ToolboxItemDefinition> Toolbox => Definition.Toolbox;
 
@@ -95,15 +92,6 @@ internal static class WardleyDefinition
         return WardleyDisl.ElementOf(WardleyDisl.Of(entry.Document, entry.Model, identities), elementId) is { } element
             ? Definition.Rows(element, EnvOf(editable))
             : [];
-    }
-
-    /// <summary>What removing <paramref name="elementId"/> asks first, the definition's <c>behavior.deletion</c>; null when it asks nothing.</summary>
-    public static RemovalConfirmation? RemovalConfirmation(DocumentEntry<LineDocument, WardleyMap> entry, IReadOnlyList<WardleyIdentityEntry> identities, string elementId)
-    {
-        ArgumentNullException.ThrowIfNull(entry);
-        return WardleyDisl.ElementOf(WardleyDisl.Of(entry.Document, entry.Model, identities), elementId) is { } element
-            ? ConfirmationOf(element)
-            : null;
     }
 
     /// <summary>

@@ -78,7 +78,7 @@ internal static class WardleyTransactionCommands
                 {
                     // A new annotation has one occurrence; its number is the handler's to give, as the definition's
                     // nextAnnotationNumber() gives it.
-                    return WardleyFunctions.Positions(Text(attributes, "positions")) is [List<object?> { Count: 2 } pair] && pair[0] is double visibility && pair[1] is double maturity
+                    return WardleyFunctions.Positions(Text(attributes, "positions")) is [List<object?> and [double visibility, double maturity]]
                         ? new AddWardleyAnnotationCommand(bodyPath, Text(attributes, "text"), visibility, maturity)
                         : null;
                 }
@@ -110,10 +110,10 @@ internal static class WardleyTransactionCommands
 
         if (element.IsA("Positioned"))
         {
-            var decorators = WardleyDecorators.All.Where(decorator => attributes.ContainsKey(WardleyDecorators.Spell(decorator))).ToList();
+            var decorators = WardleyDecorators.All.Where(candidate => attributes.ContainsKey(WardleyDecorators.Spell(candidate))).ToList();
             if (decorators.Count == WardleyDecorators.All.Count && attributes.Count == decorators.Count)
             {
-                return new SetWardleyDecoratorsCommand(bodyPath, element.Id, [.. decorators.Where(decorator => attributes[WardleyDecorators.Spell(decorator)] is true)]);
+                return new SetWardleyDecoratorsCommand(bodyPath, element.Id, [.. decorators.Where(candidate => attributes[WardleyDecorators.Spell(candidate)] is true)]);
             }
 
             if (attributes.Count != 1) return null;
@@ -150,7 +150,7 @@ internal static class WardleyTransactionCommands
         var attributes = new Dictionary<string, object?>(StringComparer.Ordinal);
         foreach (var set in sets)
         {
-            foreach (var (name, value) in set.Attributes) attributes[name] = value;
+            foreach ((string name, object? value) in set.Attributes) attributes[name] = value;
         }
         return first with { Attributes = attributes };
     }

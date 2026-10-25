@@ -65,8 +65,8 @@ public partial class WardleyFunctionsTests
             List<object?> expected = [.. annotation.Occurrences.Select(occurrence => (object?)new List<object?> { occurrence.Visibility, occurrence.Maturity })];
             var written = Bracketed(lines[annotation.Line - 1]);
 
-            Assert.Equal(expected, WardleyFunctions.Positions(written), PairComparer.Instance);
-            Assert.Equal(expected, WardleyFunctions.Positions(WardleyFunctions.PositionsText(annotation.Occurrences)), PairComparer.Instance);
+            Assert.Equal(Text(expected), Text(WardleyFunctions.Positions(written)));
+            Assert.Equal(Text(expected), Text(WardleyFunctions.Positions(WardleyFunctions.PositionsText(annotation.Occurrences))));
         }
     }
 
@@ -123,12 +123,9 @@ public partial class WardleyFunctionsTests
     [GeneratedRegex(@"\((?<words>[^()]*)\)")]
     private static partial Regex Decorated();
 
-    private sealed class PairComparer : IEqualityComparer<object?>
-    {
-        public static PairComparer Instance { get; } = new();
-
-        public new bool Equals(object? x, object? y) => x is List<object?> left && y is List<object?> right && left.SequenceEqual(right);
-
-        public int GetHashCode(object? obj) => 0;
-    }
+    /// <summary>Positions as text, each pair at full precision, so two readings compare by value.</summary>
+    private static string Text(List<object?> positions) =>
+        string.Join("; ", positions.Select(pair => pair is List<object?> numbers
+            ? string.Join(", ", numbers.Select(number => Convert.ToString(number, CultureInfo.InvariantCulture)))
+            : $"not a pair: {pair}"));
 }

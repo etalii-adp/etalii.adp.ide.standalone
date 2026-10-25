@@ -59,7 +59,7 @@ internal static partial class WardleyFunctions
             : throw new CelException("writtenDecorators() takes an element of this map.");
 
     /// <summary>The name <paramref name="element"/>'s end <paramref name="end"/> is written with; empty when nothing is written.</summary>
-    public static string WrittenEnd(object? element, object? end)
+    private static string WrittenEnd(object? element, object? end)
     {
         var host = end switch
         {
