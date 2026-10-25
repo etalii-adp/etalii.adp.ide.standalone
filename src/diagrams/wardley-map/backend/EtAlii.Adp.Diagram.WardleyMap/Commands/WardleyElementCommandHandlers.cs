@@ -540,7 +540,7 @@ public sealed class SetWardleyPipelineMembershipCommandHandler(IWardleyDocumentS
     /// lines, comments and statements this module does not model - all of which Requirement 3.3
     /// says survive untouched, and any of which may sit after the last child.
     /// </remarks>
-    private static uint? ClosingBraceOf(LineDocument document, WardleyPipeline pipeline)
+    internal static uint? ClosingBraceOf(LineDocument document, WardleyPipeline pipeline)
     {
         for (var number = pipeline.Line; number <= document.Lines.Count; number++)
         {

@@ -47,7 +47,17 @@ public class FormCommitTests
               ] },
               { "attribute": "note", "label": "Note", "widget": "text" },
               { "attribute": "code", "label": "Code", "widget": "text", "readOnlyReasons": ["The code is fixed."] },
-              { "kind": "computed", "label": "Summary", "widget": "text", "value": { "cel": "self.note" } }
+              { "kind": "computed", "label": "Summary", "widget": "text", "value": { "cel": "self.note" } },
+              { "kind": "computed", "id": "spawn", "label": "Spawn", "widget": "text", "value": { "cel": "''" },
+                "parse": { "write": [ { "create": { "type": "'Gauge'", "attributes": { "note": "value" } } } ] } }
+            ]
+          },
+          "choose": {
+            "for": "Gauge",
+            "label": "Choose a mode",
+            "items": [
+              { "attribute": "mode", "label": "Mode", "widget": "select",
+                "options": { "cel": "[{'value': self, 'label': 'This one'}, {'value': 's', 'label': 'Slow'}, 'plain']" } }
             ]
           },
           "pick": {
@@ -149,6 +159,31 @@ public class FormCommitTests
     }
 
     [Fact]
+    public void HasRow_FindsEveryItemOfTheForm_NestedOrComputed_AndNoOther()
+    {
+        // Arrange.
+        var gauge = Gauge();
+
+        // Act & Assert.
+        Assert.True(FormCommit.HasRow(Specification, gauge, "level"));
+        Assert.True(FormCommit.HasRow(Specification, gauge, "code"));
+        Assert.True(FormCommit.HasRow(Specification, gauge, "Summary"));
+        Assert.False(FormCommit.HasRow(Specification, gauge, "nothing"));
+        Assert.False(FormCommit.HasRow(Specification, gauge, "level", "elsewhere"));
+    }
+
+    [Fact]
+    public void AParseThatCreates_TakesTheNewElementsIdFromTheIdsGiven()
+    {
+        // Act.
+        var transaction = FormCommit.Row(Specification, Gauge(), "spawn", "second", Editable, ids: DislIds.Fixed("g2"));
+
+        // Assert.
+        var created = Assert.IsType<DislChange.Create>(Assert.Single(transaction.Changes));
+        Assert.Equal("g2", created.Id);
+    }
+
+    [Fact]
     public void AComputedItemWithoutAParse_IsRefused()
     {
         // Act.
@@ -180,6 +215,24 @@ public class FormCommitTests
         Assert.Equal(("Pick a gauge", "mdi-target", "Go"), (request.Label, request.Icon, request.SubmitLabel));
         var field = Assert.Single(request.Fields);
         Assert.Equal(("target", "Target", "text", (object?)"G2"), (field.Attribute, field.Label, field.Widget, field.Initial));
+    }
+
+    [Fact]
+    public void AParamsFormsSelect_OffersItsOptions_EachAsItsValueAndLabel()
+    {
+        // Arrange.
+        var gauge = Gauge();
+
+        // Act.
+        var request = FormCommit.Request(Specification, "choose", gauge, Editable);
+
+        // Assert: a {value, label} map offers its value under its label; any other option is both.
+        var options = request!.Fields[0].Options!;
+        Assert.Equal(["This one", "Slow", "plain"], options.Select(option => option.Label));
+        Assert.Same(gauge, options[0].Value);
+        Assert.Equal("s", options[1].Value);
+        Assert.Equal("plain", options[2].Value);
+        Assert.Null(FormCommit.Request(Specification, "pick", gauge, Editable)!.Fields[0].Options);
     }
 
     [Fact]

@@ -10,7 +10,11 @@ namespace EtAlii.Adp.Specification.Disl;
 public sealed record FormRequest(string Label, string? Icon, string? SubmitLabel, IReadOnlyList<FormRequestField> Fields);
 
 /// <summary>One field of a <see cref="FormRequest"/>: the parameter it answers, its label, its widget and the value it opens with.</summary>
-public sealed record FormRequestField(string Attribute, string Label, string? Widget, object? Initial);
+/// <param name="Options">The values a field with <c>options</c> offers, each with the label it is shown by, in order; null for a field without.</param>
+public sealed record FormRequestField(string Attribute, string Label, string? Widget, object? Initial, IReadOnlyList<FormRequestOption>? Options = null);
+
+/// <summary>One value a <see cref="FormRequestField"/> offers, and the label a host shows it by.</summary>
+public sealed record FormRequestOption(object? Value, string Label);
 
 /// <summary>
 /// A form item at commit (DISL 0.3 §7.5): what an inspector row does with the value typed into it, and what a params
@@ -38,11 +42,26 @@ public sealed record FormRequestField(string Attribute, string Label, string? Wi
 public static class FormCommit
 {
     /// <summary>
+    /// Whether <paramref name="self"/>'s form has the row <paramref name="row"/>, named as <see cref="Row"/> names it,
+    /// whether or not it is shown: a row hidden by its <c>visible</c> or its <c>showAbsent</c> is still one the form
+    /// declares, and a commit to it meets the definition's own refusals rather than being unknown.
+    /// </summary>
+    public static bool HasRow(DislSpecification specification, DislElement self, string row, string usage = "inspector")
+    {
+        ArgumentNullException.ThrowIfNull(specification);
+        ArgumentNullException.ThrowIfNull(self);
+        ArgumentNullException.ThrowIfNull(row);
+        return specification.Forms.For(self, usage) is { } form && Find(form.Items, row) is not null;
+    }
+
+    /// <summary>
     /// What committing <paramref name="value"/> to the row <paramref name="row"/> of <paramref name="self"/>'s form does:
     /// refused with the sentence the definition gives, or the transaction to write. The row is named as
-    /// <see cref="FormDerivation"/> names it: by its item's <c>id</c>, else its attribute, else its label.
+    /// <see cref="FormDerivation"/> names it: by its item's <c>id</c>, else its attribute, else its label. An element a
+    /// <c>parse</c>'s <c>write</c> creates takes its id from <paramref name="ids"/>, which a host gives when it has a
+    /// row that creates; without it, such a write has none to take.
     /// </summary>
-    public static DislTransaction Row(DislSpecification specification, DislElement self, string row, string value, DislEnv env, string usage = "inspector")
+    public static DislTransaction Row(DislSpecification specification, DislElement self, string row, string value, DislEnv env, string usage = "inspector", IIdSource? ids = null)
     {
         ArgumentNullException.ThrowIfNull(specification);
         ArgumentNullException.ThrowIfNull(self);
@@ -73,7 +92,7 @@ public static class FormCommit
                 return DislTransaction.Refused(parse.Refusal?.Text(text, $"'{value}' cannot be written here.") ?? $"'{value}' cannot be written here.");
             }
 
-            var runner = new ActionRunner(specification, self.Diagram, DislIds.Fixed()) { Typed = true };
+            var runner = new ActionRunner(specification, self.Diagram, ids ?? DislIds.Fixed()) { Typed = true };
             if (parse.Write is { } write) runner.Run(write, text);
             return runner.Transaction;
         }
@@ -116,7 +135,7 @@ public static class FormCommit
             if (item.NotAnObject is { } notAnObject) throw new InvalidOperationException(notAnObject);
             var label = item.Label?.Text(variables, attribute) ?? attribute;
             var initial = item.Initial?.Evaluate(variables);
-            fields.Add(new FormRequestField(attribute, label, item.Widget, initial is CelError ? null : initial));
+            fields.Add(new FormRequestField(attribute, label, item.Widget, initial is CelError ? null : initial, Offered(item, variables)));
         }
 
         return new FormRequest(
@@ -219,6 +238,24 @@ public static class FormCommit
             return validation.Message?.Text(variables, fallback) ?? fallback;
         }
         return null;
+    }
+
+    /// <summary>
+    /// The options <paramref name="item"/> offers in a params form, in order: a <c>{value, label}</c> map as its value under
+    /// its label, any other value as itself under its text; null for an item without <c>options</c>, or with an enum's.
+    /// </summary>
+    private static List<FormRequestOption>? Offered(DislFormItem item, Dictionary<string, object?> variables)
+    {
+        IReadOnlyList<object?>? list = item.Options switch
+        {
+            DislFormOptions.Listed listed => listed.Values.Evaluate(variables) as IReadOnlyList<object?> ?? [],
+            DislFormOptions.Computed { DeclaresEnum: false } computed => computed.Expression.Evaluate(variables) as IReadOnlyList<object?> ?? [],
+            _ => null,
+        };
+        return list?.Select(option => option is CelMap map && map.TryGetValue("label", out var label) && label is string shown
+                ? new FormRequestOption(map.TryGetValue("value", out var value) ? value : shown, shown)
+                : new FormRequestOption(option, DislEvaluation.TextOf(option)))
+            .ToList();
     }
 
     /// <summary>The value of the option labelled <paramref name="text"/> in <paramref name="item"/>'s <c>options</c>, else the text itself.</summary>

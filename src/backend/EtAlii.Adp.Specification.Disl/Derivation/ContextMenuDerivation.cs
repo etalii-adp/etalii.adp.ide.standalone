@@ -87,6 +87,7 @@ public sealed record DerivedShortcut(string Text, string Key, bool Ctrl, bool Sh
 /// <param name="UnavailableReason">Why it cannot run now; empty when <paramref name="Available"/>.</param>
 /// <param name="Arguments">Its <c>args</c>, evaluated, and the name a <c>forEach</c> binds; empty for most entries.</param>
 /// <param name="Picker">The list the other end is chosen from, for an entry whose <c>target</c> is <c>pick</c> or <c>either</c> (§7.3); null otherwise.</param>
+/// <param name="Via">The relation type a <c>connect</c> entry draws (its <c>via</c>); null for an entry that names none.</param>
 public sealed record DerivedMenuEntry(
     string Id,
     string Kind,
@@ -97,10 +98,14 @@ public sealed record DerivedMenuEntry(
     bool Available,
     string UnavailableReason,
     IReadOnlyDictionary<string, object?> Arguments,
-    DerivedPicker? Picker = null);
+    DerivedPicker? Picker = null,
+    string? Via = null);
 
 /// <summary>The list a <c>pick</c> entry chooses its other end from (DISL 0.3 §7.3): its title and its rows, in order.</summary>
-public sealed record DerivedPicker(string Title, IReadOnlyList<DerivedPickCandidate> Candidates);
+/// <param name="Title">Its <c>pickerTitle</c>, else the entry's label.</param>
+/// <param name="Candidates">Its rows, in order.</param>
+/// <param name="EmptyText">What a host says when there is nothing to choose: the entry's <c>emptyText</c>, else the runtime's sentence.</param>
+public sealed record DerivedPicker(string Title, IReadOnlyList<DerivedPickCandidate> Candidates, string? EmptyText = null);
 
 /// <summary>One row of a <see cref="DerivedPicker"/>: the element it chooses and the text it shows.</summary>
 public sealed record DerivedPickCandidate(string ElementId, string Label);
@@ -273,7 +278,8 @@ public static class ContextMenuDerivation
             available,
             reason ?? "",
             arguments,
-            picker);
+            picker,
+            tool.Via);
     }
 
     /// <summary>The runtime's sentence for a picker with no candidate, when the entry states no <c>emptyText</c> (§7.3).</summary>
@@ -303,7 +309,7 @@ public static class ContextMenuDerivation
                 : candidate.LabelText;
             rows.Add(new DerivedPickCandidate(candidate.Id, text));
         }
-        return new DerivedPicker(tool.PickerTitle?.Text(variables, label) ?? label, rows);
+        return new DerivedPicker(tool.PickerTitle?.Text(variables, label) ?? label, rows, tool.EmptyText?.Text(variables, NothingToChoose) ?? NothingToChoose);
     }
 
     private static string? Unavailable(

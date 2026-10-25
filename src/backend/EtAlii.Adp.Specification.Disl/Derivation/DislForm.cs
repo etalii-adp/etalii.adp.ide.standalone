@@ -68,6 +68,9 @@ internal sealed record DislFormItem
 
     public DislExpressionField? Display { get; init; }
 
+    /// <summary>Its <c>showAbsent</c>: whether the field is shown while its value is absent; true unless it says false.</summary>
+    public bool ShowAbsent { get; init; } = true;
+
     /// <summary>A computed item's <c>value</c> when it is a string, which is shown as it is written.</summary>
     public string? ValueText { get; init; }
 

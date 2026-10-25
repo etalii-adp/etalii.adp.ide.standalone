@@ -259,4 +259,31 @@ public class FormDerivationTests
         Assert.Equal("test.label", Assert.Single(FormDerivation.Derive(TypeKeyedRows, note, new DislEnv(), ids)).Id);
         Assert.Equal("test.diagram.label", Assert.Single(FormDerivation.Derive(TypeKeyedRows, diagram, new DislEnv(), ids)).Id);
     }
+
+    private static readonly DislSpecification AbsentRows = Specifications.Loaded(Specifications.With("""
+        "disl": "0.3",
+        "metamodel": { "types": { "Mark": { "attributes": {
+          "offset": { "type": "number" },
+          "note": { "type": "string" } } } } },
+        "forms": { "mark": { "for": ["Mark"], "items": [
+          { "attribute": "offset", "label": "Offset", "showAbsent": false },
+          { "attribute": "note", "label": "Note" } ] } }
+        """));
+
+    [Fact]
+    public void AFieldThatShowsNoAbsentValue_HasNoRowWhileItsValueIsAbsent_AndOneOnceItIsStored()
+    {
+        // Arrange.
+        var diagram = new DislDiagram(AbsentRows);
+        var bare = diagram.AddNode("Mark", "bare", new Dictionary<string, object?>());
+        var placed = diagram.AddNode("Mark", "placed", new Dictionary<string, object?> { ["offset"] = 2.0 });
+
+        // Act.
+        var bareRows = FormDerivation.Derive(AbsentRows, bare, new DislEnv(), WireIdMap.None);
+        var placedRows = FormDerivation.Derive(AbsentRows, placed, new DislEnv(), WireIdMap.None);
+
+        // Assert: showAbsent false hides the row of an absent value only (DISL 7.5); a field without it is shown empty.
+        Assert.Equal(["note"], bareRows.Select(row => row.Id));
+        Assert.Equal(["offset", "note"], placedRows.Select(row => row.Id));
+    }
 }

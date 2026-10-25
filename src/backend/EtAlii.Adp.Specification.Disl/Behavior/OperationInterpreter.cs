@@ -260,7 +260,7 @@ public static class OperationInterpreter
     }
 
     /// <param name="isA">Whether the operation's target is of a type, or null when it runs on the diagram.</param>
-    private static string? Unavailable(DislSpecification specification, DislOperation operation, DislDiagram diagram, Func<string, bool>? isA, Dictionary<string, object?> variables)
+    internal static string? Unavailable(DislSpecification specification, DislOperation operation, DislDiagram diagram, Func<string, bool>? isA, Dictionary<string, object?> variables)
     {
         if (!operation.AppliesTo(isA)) return NotApplicable(specification, diagram, operation.Id);
 

@@ -292,6 +292,22 @@ public sealed class WardleyContextActionProviderTests : IDisposable
     }
 
     [Fact]
+    public async Task ACommitTheDefinitionRefuses_IsRefusedInTheDefinitionsSentence_AndWritesNothing()
+    {
+        // Arrange.
+        var before = await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken);
+
+        // Act. The definition's rename refuses a name another element carries before any command is made.
+        var committed = await _provider.CommitAsync(
+            Target(await IdOfAsync("Kettle")), WardleyContextActionProvider.RenameActionId, "Cup of Tea", "", TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.False(committed.Completed);
+        Assert.Equal("This map already has an element called 'Cup of Tea'.", committed.Error);
+        Assert.Equal(before, await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
     public async Task Remove_AsksForConfirmationBecauseItTakesMoreThanTheStatementInFrontOfTheUser()
     {
         // Act.

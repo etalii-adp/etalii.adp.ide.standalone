@@ -35,59 +35,6 @@ public sealed class WardleyToolboxProvider : IDiagramToolboxProvider
 {
     public ToolOrigin Origin => Diagram.WardleyMap.Origin;
 
-    /// <summary>
-    /// The entries, in the order the palette shows them: the two that make a value chain first,
-    /// then the two decorated components, then the structures, then the two kinds of writing.
-    /// </summary>
-    public IReadOnlyList<ToolboxItemDefinition> Items { get; } =
-    [
-        new(
-            "wardley.toolbox.component",
-            "Component",
-            "mdi-shape-outline",
-            "Something the value chain is made of. Where you put it is what you are claiming about it.",
-            WardleyContextActionProvider.AddComponentActionId),
-        new(
-            "wardley.toolbox.anchor",
-            "Anchor",
-            "mdi-anchor",
-            "The user need the whole chain hangs from. A map usually has one.",
-            WardleyContextActionProvider.AddAnchorActionId),
-        new(
-            "wardley.toolbox.market",
-            "Market",
-            "mdi-store-outline",
-            "A component supplied by a market rather than by one supplier.",
-            WardleyContextActionProvider.AddMarketActionId),
-        new(
-            "wardley.toolbox.ecosystem",
-            "Ecosystem",
-            "mdi-graph-outline",
-            "A component with an ecosystem of others built around it.",
-            WardleyContextActionProvider.AddEcosystemActionId),
-        new(
-            "wardley.toolbox.submap",
-            "Submap",
-            "mdi-map-outline",
-            "A reference to another map, which activating opens.",
-            WardleyContextActionProvider.AddSubmapActionId),
-        new(
-            "wardley.toolbox.pipeline",
-            "Pipeline",
-            "mdi-pipe",
-            "A set of choices behind one component. Drop it on the component it belongs to.",
-            WardleyContextActionProvider.AddToPipelineActionId),
-        new(
-            "wardley.toolbox.note",
-            "Note",
-            "mdi-note-outline",
-            "Free text pinned to a place on the map.",
-            WardleyContextActionProvider.AddNoteActionId),
-        new(
-            "wardley.toolbox.annotation",
-            "Annotation",
-            "mdi-comment-text-outline",
-            "A numbered remark, shown on the map and listed in its own block.",
-            WardleyContextActionProvider.AddAnnotationActionId),
-    ];
+    /// <summary>The entries, in the order the palette shows them: the definition's toolbox (<see cref="WardleyDefinition.Toolbox"/>).</summary>
+    public IReadOnlyList<ToolboxItemDefinition> Items => WardleyDefinition.Toolbox;
 }

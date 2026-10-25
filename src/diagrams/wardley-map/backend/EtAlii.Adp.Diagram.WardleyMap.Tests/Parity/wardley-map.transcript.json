@@ -6321,12 +6321,12 @@
         },
         {
           "do": "set new-9 (pipeline-child \"Kettle\\u001FElectric Kettle\") wardley.visibility = \"0.5\"",
-          "answer": "refused: A pipeline child takes its visibility from its parent, so it is not its own. Change it on the parent.",
+          "answer": "refused: A pipeline child takes its visibility from its parent, so it is not its own. Change it on 'Kettle'.",
           "unchanged": true
         },
         {
           "do": "set new-9 (pipeline-child \"Kettle\\u001FElectric Kettle\") wardley.name = \"Renamed child\"",
-          "answer": "refused: 'wardley.name' is not a property of this element.",
+          "answer": "refused: A pipeline component's name is also the only handle the map has on it, and nothing renames one yet. Remove it from the pipeline and add it under the name you want.",
           "unchanged": true
         },
         {
@@ -6336,7 +6336,7 @@
         },
         {
           "do": "set new-8 (pipeline \"Kettle\") wardley.name = \"x\"",
-          "answer": "refused: 'wardley.name' is not a property of this element.",
+          "answer": "refused: The kind is which statement declares the element, so changing it is a different statement rather than a different value. Remove it and add the kind you want.",
           "unchanged": true
         },
         {
@@ -12264,12 +12264,12 @@
         },
         {
           "do": "set new-8 (pipeline-child \"Piped\\u001FToo evolved\") wardley.visibility = \"0.5\"",
-          "answer": "refused: A pipeline child takes its visibility from its parent, so it is not its own. Change it on the parent.",
+          "answer": "refused: A pipeline child takes its visibility from its parent, so it is not its own. Change it on 'Piped'.",
           "unchanged": true
         },
         {
           "do": "set new-8 (pipeline-child \"Piped\\u001FToo evolved\") wardley.name = \"Renamed child\"",
-          "answer": "refused: 'wardley.name' is not a property of this element.",
+          "answer": "refused: A pipeline component's name is also the only handle the map has on it, and nothing renames one yet. Remove it from the pipeline and add it under the name you want.",
           "unchanged": true
         },
         {
@@ -12279,7 +12279,7 @@
         },
         {
           "do": "set new-7 (pipeline \"Piped\") wardley.name = \"x\"",
-          "answer": "refused: 'wardley.name' is not a property of this element.",
+          "answer": "refused: The kind is which statement declares the element, so changing it is a different statement rather than a different value. Remove it and add the kind you want.",
           "unchanged": true
         },
         {
@@ -13267,12 +13267,12 @@
         },
         {
           "do": "set new-9 (pipeline-child \"Kettle\\u001FCampfire Kettle\") wardley.visibility = \"0.5\"",
-          "answer": "refused: A pipeline child takes its visibility from its parent, so it is not its own. Change it on the parent.",
+          "answer": "refused: A pipeline child takes its visibility from its parent, so it is not its own. Change it on 'Kettle'.",
           "unchanged": true
         },
         {
           "do": "set new-9 (pipeline-child \"Kettle\\u001FCampfire Kettle\") wardley.name = \"Renamed child\"",
-          "answer": "refused: 'wardley.name' is not a property of this element.",
+          "answer": "refused: A pipeline component's name is also the only handle the map has on it, and nothing renames one yet. Remove it from the pipeline and add it under the name you want.",
           "unchanged": true
         },
         {
@@ -13282,7 +13282,7 @@
         },
         {
           "do": "set new-8 (pipeline \"Kettle\") wardley.name = \"x\"",
-          "answer": "refused: 'wardley.name' is not a property of this element.",
+          "answer": "refused: The kind is which statement declares the element, so changing it is a different statement rather than a different value. Remove it and add the kind you want.",
           "unchanged": true
         },
         {
@@ -14285,12 +14285,12 @@
         },
         {
           "do": "set new-9 (pipeline-child \"Tea\\u001FLeaf\") wardley.visibility = \"0.5\"",
-          "answer": "refused: A pipeline child takes its visibility from its parent, so it is not its own. Change it on the parent.",
+          "answer": "refused: A pipeline child takes its visibility from its parent, so it is not its own. Change it on 'Tea'.",
           "unchanged": true
         },
         {
           "do": "set new-9 (pipeline-child \"Tea\\u001FLeaf\") wardley.name = \"Renamed child\"",
-          "answer": "refused: 'wardley.name' is not a property of this element.",
+          "answer": "refused: A pipeline component's name is also the only handle the map has on it, and nothing renames one yet. Remove it from the pipeline and add it under the name you want.",
           "unchanged": true
         },
         {
@@ -14300,7 +14300,7 @@
         },
         {
           "do": "set new-8 (pipeline \"Tea\") wardley.name = \"x\"",
-          "answer": "refused: 'wardley.name' is not a property of this element.",
+          "answer": "refused: The kind is which statement declares the element, so changing it is a different statement rather than a different value. Remove it and add the kind you want.",
           "unchanged": true
         },
         {
@@ -19363,12 +19363,12 @@
         },
         {
           "do": "set new-8 (pipeline-child \"Kettle\\u001FElectric\") wardley.visibility = \"0.5\"",
-          "answer": "refused: A pipeline child takes its visibility from its parent, so it is not its own. Change it on the parent.",
+          "answer": "refused: A pipeline child takes its visibility from its parent, so it is not its own. Change it on 'Kettle'.",
           "unchanged": true
         },
         {
           "do": "set new-8 (pipeline-child \"Kettle\\u001FElectric\") wardley.name = \"Renamed child\"",
-          "answer": "refused: 'wardley.name' is not a property of this element.",
+          "answer": "refused: A pipeline component's name is also the only handle the map has on it, and nothing renames one yet. Remove it from the pipeline and add it under the name you want.",
           "unchanged": true
         },
         {
@@ -19378,7 +19378,7 @@
         },
         {
           "do": "set new-7 (pipeline \"Kettle\") wardley.name = \"x\"",
-          "answer": "refused: 'wardley.name' is not a property of this element.",
+          "answer": "refused: The kind is which statement declares the element, so changing it is a different statement rather than a different value. Remove it and add the kind you want.",
           "unchanged": true
         },
         {
@@ -21048,12 +21048,12 @@
         },
         {
           "do": "set new-5 (pipeline-child \"Kettle\\u001FElectric\") wardley.visibility = \"0.5\"",
-          "answer": "refused: A pipeline child takes its visibility from its parent, so it is not its own. Change it on the parent.",
+          "answer": "refused: A pipeline child takes its visibility from its parent, so it is not its own. Change it on 'Kettle'.",
           "unchanged": true
         },
         {
           "do": "set new-5 (pipeline-child \"Kettle\\u001FElectric\") wardley.name = \"Renamed child\"",
-          "answer": "refused: 'wardley.name' is not a property of this element.",
+          "answer": "refused: A pipeline component's name is also the only handle the map has on it, and nothing renames one yet. Remove it from the pipeline and add it under the name you want.",
           "unchanged": true
         },
         {
@@ -21063,7 +21063,7 @@
         },
         {
           "do": "set new-4 (pipeline \"Kettle\") wardley.name = \"x\"",
-          "answer": "refused: 'wardley.name' is not a property of this element.",
+          "answer": "refused: The kind is which statement declares the element, so changing it is a different statement rather than a different value. Remove it and add the kind you want.",
           "unchanged": true
         },
         {
