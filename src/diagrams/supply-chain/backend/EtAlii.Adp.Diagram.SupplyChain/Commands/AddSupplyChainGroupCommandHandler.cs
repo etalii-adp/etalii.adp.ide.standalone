@@ -12,7 +12,7 @@ public sealed class AddSupplyChainGroupCommandHandler(ISupplyChainDocumentStore 
         await base.RunAsync(command.GroupId.Length > 0 ? command : command with { GroupId = ShortGuid.NewShortGuid().ToString() }, cancellationToken);
 
     /// <inheritdoc />
-    protected override EditOutcome Apply(LineDocument document, SupplyChainModel model, AddSupplyChainGroupCommand command)
+    protected override EditOutcome Apply(SupplyChainBody document, SupplyChainModel model, AddSupplyChainGroupCommand command)
     {
         // The id is the host's, minted or asked for, so whether it is free is the host's to say.
         return model.IsTaken(command.GroupId)

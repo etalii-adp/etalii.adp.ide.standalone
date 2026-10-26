@@ -18,7 +18,7 @@ namespace EtAlii.Adp.Diagram.SupplyChain;
 /// distance, because its frame is theirs.
 /// </para>
 /// </remarks>
-public sealed class SupplyChainSession : DocumentDiagramSession<LineDocument, SupplyChainModel>
+public sealed class SupplyChainSession : DocumentDiagramSession<SupplyChainBody, SupplyChainModel>
 {
     private readonly ShortGuid _watchId;
     private readonly SupplyChainElementMapper _mapper;

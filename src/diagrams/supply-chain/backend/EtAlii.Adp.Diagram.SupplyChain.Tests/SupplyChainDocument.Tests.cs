@@ -1,17 +1,18 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Specification.Disl;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.SupplyChain.Tests;
 
 /// <summary>
-/// The format: what the parser reads, what it reports instead of throwing, and that every write is
+/// The format: what the reading reads, what it reports instead of throwing, and that every write is
 /// a splice which leaves every line it did not mean to touch exactly as it was.
 /// </summary>
 public sealed class SupplyChainDocumentTests
 {
     private static string Fixture(string name) => Path.Combine(AppContext.BaseDirectory, "Fixtures", name);
 
-    private static LineDocument Load(string name) => LineDocument.Parse(File.ReadAllText(Fixture(name)));
+    private static SupplyChainBody Load(string name) => SupplyChainBody.Parse(File.ReadAllText(Fixture(name)));
 
     public static TheoryData<string> LineEndings => ["crlf-line-endings.supply", "lf-line-endings.supply", "no-trailing-newline.supply"];
 
@@ -23,8 +24,8 @@ public sealed class SupplyChainDocumentTests
         var bytes = await File.ReadAllBytesAsync(Fixture(fixture), TestContext.Current.CancellationToken);
 
         // Act.
-        var document = LineDocument.Parse(await File.ReadAllTextAsync(Fixture(fixture), TestContext.Current.CancellationToken));
-        SupplyChainReading.Parse(document.Text);
+        var document = SupplyChainBody.Parse(await File.ReadAllTextAsync(Fixture(fixture), TestContext.Current.CancellationToken));
+        _ = document.Reading;
 
         // Assert.
         Assert.Equal(bytes, System.Text.Encoding.UTF8.GetBytes(document.Text));
@@ -103,56 +104,54 @@ public sealed class SupplyChainDocumentTests
     public void SettingANumber_ChangesThatLineOnly()
     {
         // Arrange.
-        var document = Load("lf-line-endings.supply");
-        var before = document.Lines.Select(line => line.Text).ToList();
-        var mine = SupplyChainReading.Parse(document.Text).Nodes[0];
+        var body = Load("lf-line-endings.supply");
+        var before = Lines(body);
 
         // Act.
-        Assert.True(SupplyChainWriter.SetNumber(document, mine.Range, "quantity", 12.5).WasApplied);
+        Assert.True(SupplyChainDefinition.Set(body, body.Reading.Model, "mine", "quantity", "12.5")?.WasApplied == true);
 
         // Assert.
-        var changed = Enumerable.Range(0, before.Count).Where(index => before[index] != document.Lines[index].Text).ToList();
-        Assert.Equal("    quantity: 12.5", document.Lines[Assert.Single(changed)].Text);
-        Assert.Equal(12.5, SupplyChainReading.Parse(document.Text).Nodes[0].Quantity);
+        var after = Lines(body);
+        var changed = Enumerable.Range(0, before.Count).Where(index => before[index] != after[index]).ToList();
+        Assert.Equal("    quantity: 12.5", after[Assert.Single(changed)]);
+        Assert.Equal(12.5, SupplyChainReading.Parse(body.Text).Nodes[0].Quantity);
     }
 
     [Fact]
     public void PlacingAnUnplacedNode_WritesXBeforeY_AndKeepsEveryOtherLine()
     {
         // Arrange.
-        var document = Load("lf-line-endings.supply");
-        var model = SupplyChainReading.Parse(document.Text);
+        var body = Load("lf-line-endings.supply");
 
         // Act.
-        Assert.True(SupplyChainWriter.Place(document, model, new Dictionary<string, (double X, double Y)> { ["mine"] = (100.4, 200.6), ["shop"] = (900, 50) }).WasApplied);
+        Assert.True(SupplyChainDefinition.Place(body, body.Reading.Model, new Dictionary<string, (double X, double Y)> { ["mine"] = (100.4, 200.6), ["shop"] = (900, 50) }).WasApplied);
 
         // Assert.
-        var reread = SupplyChainReading.Parse(document.Text);
+        var reread = SupplyChainReading.Parse(body.Text);
         Assert.Empty(reread.Problems);
         Assert.Equal((100d, 201d), (reread.Nodes[0].X!.Value, reread.Nodes[0].Y!.Value));
         Assert.Equal((900d, 50d), (reread.Nodes[2].X!.Value, reread.Nodes[2].Y!.Value));
-        var x = document.Lines.Select(line => line.Text).ToList().IndexOf("    x: 100");
+        var lines = Lines(body);
+        var x = lines.IndexOf("    x: 100");
         Assert.True(x > 0);
-        Assert.Equal("    y: 201", document.Lines[x + 1].Text);
-        Assert.Contains(document.Lines, line => line.Text.Contains("# a comment the writer must keep", StringComparison.Ordinal));
+        Assert.Equal("    y: 201", lines[x + 1]);
+        Assert.Contains(lines, line => line.Contains("# a comment the writer must keep", StringComparison.Ordinal));
     }
 
     [Fact]
     public void AddingANode_ToADocumentWithoutTheSection_BringsTheSection()
     {
         // Arrange.
-        var document = LineDocument.Parse("supply-chain: 1\n");
-        var model = SupplyChainReading.Parse(document.Text);
+        var body = SupplyChainBody.Parse("supply-chain: 1\n");
 
         // Act.
-        var node = new SupplyChainNode("n1", SupplyChainNodeTypes.Processor, "Acme", "", "", 3, "", null, 10, 20, default);
-        Assert.True(SupplyChainWriter.AddNode(document, model, node).WasApplied);
+        Assert.True(SupplyChainDefinition.Run(body, body.Reading.Model, "addProcessorHere", null, DislIds.Fixed("n1"), SupplyChainDefinition.At(10 + (SupplyChainGeometry.NodeWidth / 2), 20 + (SupplyChainGeometry.NodeHeight / 2))).WasApplied);
 
         // Assert.
-        var reread = SupplyChainReading.Parse(document.Text);
+        var reread = SupplyChainReading.Parse(body.Text);
         Assert.Empty(reread.Problems);
         var added = Assert.Single(reread.Nodes);
-        Assert.Equal(("n1", "Acme", 3d, 10d, 20d), (added.Id, added.Name, added.Quantity!.Value, added.X!.Value, added.Y!.Value));
+        Assert.Equal(("n1", SupplyChainNodeTypes.Processor, 10d, 20d), (added.Id, added.Type, added.X!.Value, added.Y!.Value));
     }
 
     [Theory]
@@ -165,14 +164,13 @@ public sealed class SupplyChainDocumentTests
     public void AName_ThatYamlWouldReadAsSomethingElse_ReadsBackAsWritten(string name)
     {
         // Arrange.
-        var document = Load("lf-line-endings.supply");
-        var mine = SupplyChainReading.Parse(document.Text).Nodes[0];
+        var body = Load("lf-line-endings.supply");
 
         // Act.
-        SupplyChainWriter.SetText(document, mine.Range, "name", name, removeWhenEmpty: false);
+        Assert.True(SupplyChainDefinition.Set(body, body.Reading.Model, "mine", "name", name)?.WasApplied == true);
 
         // Assert.
-        var reread = SupplyChainReading.Parse(document.Text);
+        var reread = SupplyChainReading.Parse(body.Text);
         Assert.Empty(reread.Problems);
         Assert.Equal(name, reread.Nodes[0].Name);
     }
@@ -181,14 +179,14 @@ public sealed class SupplyChainDocumentTests
     public void RemovingAGroup_UngroupsItsMembers()
     {
         // Arrange.
-        var document = Load("lf-line-endings.supply");
-        var model = SupplyChainReading.Parse(document.Text);
+        var body = Load("lf-line-endings.supply");
+        var model = body.Reading.Model;
 
         // Act.
-        SupplyChainWriter.RemoveGroup(document, model, model.Groups[0]);
+        Assert.True(SupplyChainDefinition.Remove(body, model, model.Groups[0].Id)?.WasApplied == true);
 
         // Assert.
-        var reread = SupplyChainReading.Parse(document.Text);
+        var reread = SupplyChainReading.Parse(body.Text);
         Assert.Empty(reread.Problems);
         Assert.Empty(reread.Groups);
         Assert.All(reread.Nodes, node => Assert.Equal("", node.Group));
@@ -198,15 +196,17 @@ public sealed class SupplyChainDocumentTests
     public void RemovingANode_RemovesItsFlows()
     {
         // Arrange.
-        var document = Load("lf-line-endings.supply");
-        var model = SupplyChainReading.Parse(document.Text);
+        var body = Load("lf-line-endings.supply");
+        var model = body.Reading.Model;
 
         // Act.
-        SupplyChainWriter.RemoveNode(document, model, model.Nodes[1]);
+        Assert.True(SupplyChainDefinition.Remove(body, model, model.Nodes[1].Id)?.WasApplied == true);
 
         // Assert.
-        var reread = SupplyChainReading.Parse(document.Text);
+        var reread = SupplyChainReading.Parse(body.Text);
         Assert.Equal(["mine", "shop"], reread.Nodes.Select(node => node.Id));
         Assert.Empty(reread.Flows);
     }
+
+    private static List<string> Lines(SupplyChainBody body) => [.. body.Text.Split('\n').Select(line => line.TrimEnd('\r'))];
 }

@@ -14,6 +14,6 @@ namespace EtAlii.Adp.Diagram.SupplyChain;
 public sealed class ArrangeSupplyChainCommandHandler(ISupplyChainDocumentStore documents) : SupplyChainEditHandler<ArrangeSupplyChainCommand>(documents)
 {
     /// <inheritdoc />
-    protected override EditOutcome Apply(LineDocument document, SupplyChainModel model, ArrangeSupplyChainCommand command) =>
+    protected override EditOutcome Apply(SupplyChainBody document, SupplyChainModel model, ArrangeSupplyChainCommand command) =>
         SupplyChainDefinition.Arrange(document, model);
 }

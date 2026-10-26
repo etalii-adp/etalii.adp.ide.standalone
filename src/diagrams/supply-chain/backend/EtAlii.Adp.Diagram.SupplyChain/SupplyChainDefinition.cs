@@ -88,7 +88,7 @@ internal static class SupplyChainDefinition
     /// null) over a model of <paramref name="model"/> of its own, and writes what it changes into
     /// <paramref name="document"/>; or its refusal.
     /// </summary>
-    public static EditOutcome Run(LineDocument document, SupplyChainModel model, string operation, string? selfId, IIdSource ids, DislInvocation? invocation = null)
+    public static EditOutcome Run(SupplyChainBody document, SupplyChainModel model, string operation, string? selfId, IIdSource ids, DislInvocation? invocation = null)
     {
         ArgumentNullException.ThrowIfNull(model);
         var working = SupplyChainReading.BodyOf(model).Working().Diagram;
@@ -101,7 +101,7 @@ internal static class SupplyChainDefinition
     /// over a model of <paramref name="model"/> of its own, and writes what it changes into <paramref name="document"/>;
     /// or its refusal.
     /// </summary>
-    private static EditOutcome Commit(LineDocument document, SupplyChainModel model, DislElement self, string row, string value)
+    private static EditOutcome Commit(SupplyChainBody document, SupplyChainModel model, DislElement self, string row, string value)
     {
         ArgumentNullException.ThrowIfNull(model);
         ArgumentNullException.ThrowIfNull(self);
@@ -121,7 +121,7 @@ internal static class SupplyChainDefinition
     /// A gesture's constraints read both ends as elements, so an end that names nothing is refused here, in the sentence
     /// of the constraint that a flow runs between nodes (supply-chain.md, "Interaction DISL cannot state").
     /// </remarks>
-    public static EditOutcome Connect(LineDocument document, SupplyChainModel model, string from, string to, string flowId)
+    public static EditOutcome Connect(SupplyChainBody document, SupplyChainModel model, string from, string to, string flowId)
     {
         ArgumentNullException.ThrowIfNull(model);
         var diagram = Diagram(model);
@@ -142,7 +142,7 @@ internal static class SupplyChainDefinition
     }
 
     /// <summary>Removes the entry written as <paramref name="id"/> as the definition's deletion policy says; null when there is none.</summary>
-    public static EditOutcome? Remove(LineDocument document, SupplyChainModel model, string id)
+    public static EditOutcome? Remove(SupplyChainBody document, SupplyChainModel model, string id)
     {
         ArgumentNullException.ThrowIfNull(model);
         return ElementOf(Diagram(model), id) is { } element ? Apply(document, model, DeletionPolicy.Changes(Specification, element)) : null;
@@ -152,7 +152,7 @@ internal static class SupplyChainDefinition
     /// Commits <paramref name="value"/>, trimmed, to the row of the entry written as <paramref name="id"/> that writes
     /// <paramref name="key"/>; null when there is no such entry.
     /// </summary>
-    public static EditOutcome? Set(LineDocument document, SupplyChainModel model, string id, string key, string value)
+    public static EditOutcome? Set(SupplyChainBody document, SupplyChainModel model, string id, string key, string value)
     {
         ArgumentNullException.ThrowIfNull(model);
         ArgumentNullException.ThrowIfNull(value);
@@ -180,7 +180,7 @@ internal static class SupplyChainDefinition
     /// <paramref name="steps"/>: the definition's increase or decrease, once per step, stopping at zero; null when there
     /// is no such entry.
     /// </summary>
-    public static EditOutcome? Step(LineDocument document, SupplyChainModel model, string id, int steps)
+    public static EditOutcome? Step(SupplyChainBody document, SupplyChainModel model, string id, int steps)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(model);
@@ -223,7 +223,7 @@ internal static class SupplyChainDefinition
     }
 
     /// <summary>Places the nodes written as the keys of <paramref name="places"/>, each at its point, in one edit; or why not.</summary>
-    public static EditOutcome Place(LineDocument document, SupplyChainModel model, IReadOnlyDictionary<string, (double X, double Y)> places)
+    public static EditOutcome Place(SupplyChainBody document, SupplyChainModel model, IReadOnlyDictionary<string, (double X, double Y)> places)
     {
         ArgumentNullException.ThrowIfNull(model);
         ArgumentNullException.ThrowIfNull(places);
@@ -244,7 +244,7 @@ internal static class SupplyChainDefinition
     /// The definition's <c>arrange</c>: refused as it refuses, and its <c>chain</c> layout run by the host as
     /// <see cref="SupplyChainLayout"/>, every node written where that layout draws it.
     /// </summary>
-    public static EditOutcome Arrange(LineDocument document, SupplyChainModel model)
+    public static EditOutcome Arrange(SupplyChainBody document, SupplyChainModel model)
     {
         ArgumentNullException.ThrowIfNull(model);
         var transaction = OperationInterpreter.Run(Specification, "arrange", SupplyChainReading.BodyOf(model).Working().Diagram, null, DislIds.Fixed(), env: Env);
@@ -265,8 +265,8 @@ internal static class SupplyChainDefinition
         new Dictionary<string, object?>(StringComparer.Ordinal) { ["x"] = x, ["y"] = y };
 
     /// <summary>Writes <paramref name="transaction"/>, run over the DISL model of <paramref name="model"/>, into <paramref name="document"/>; or its refusal.</summary>
-    public static EditOutcome Apply(LineDocument document, SupplyChainModel model, DislTransaction transaction) =>
-        SupplyChainApply.Apply(document, model, Diagram(model), transaction);
+    public static EditOutcome Apply(SupplyChainBody document, SupplyChainModel model, DislTransaction transaction) =>
+        SupplyChainEdits.Apply(document, Diagram(model), transaction);
 
     /// <summary>The DISL model of <paramref name="model"/>, as every derivation reads it. Read it, never change it.</summary>
     public static DislDiagram Diagram(SupplyChainModel model) => SupplyChainReading.BodyOf(model).Disl.Diagram;

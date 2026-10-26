@@ -7,6 +7,6 @@ namespace EtAlii.Adp.Diagram.SupplyChain;
 public sealed class RemoveSupplyChainEntryCommandHandler(ISupplyChainDocumentStore documents) : SupplyChainEditHandler<RemoveSupplyChainEntryCommand>(documents)
 {
     /// <inheritdoc />
-    protected override EditOutcome Apply(LineDocument document, SupplyChainModel model, RemoveSupplyChainEntryCommand command) =>
+    protected override EditOutcome Apply(SupplyChainBody document, SupplyChainModel model, RemoveSupplyChainEntryCommand command) =>
         SupplyChainDefinition.Remove(document, model, command.EntryId) ?? Gone;
 }

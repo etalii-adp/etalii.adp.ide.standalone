@@ -7,6 +7,6 @@ namespace EtAlii.Adp.Diagram.SupplyChain;
 public sealed class PlaceSupplyChainNodesCommandHandler(ISupplyChainDocumentStore documents) : SupplyChainEditHandler<PlaceSupplyChainNodesCommand>(documents)
 {
     /// <inheritdoc />
-    protected override EditOutcome Apply(LineDocument document, SupplyChainModel model, PlaceSupplyChainNodesCommand command) =>
+    protected override EditOutcome Apply(SupplyChainBody document, SupplyChainModel model, PlaceSupplyChainNodesCommand command) =>
         SupplyChainDefinition.Place(document, model, command.Places);
 }

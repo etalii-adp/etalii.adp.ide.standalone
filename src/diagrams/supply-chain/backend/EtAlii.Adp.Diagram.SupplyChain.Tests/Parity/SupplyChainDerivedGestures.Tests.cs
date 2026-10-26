@@ -40,7 +40,7 @@ public class SupplyChainDerivedGesturesTests
         {
             foreach (var to in ids)
             {
-                var handled = await new HandWrittenSupplyChainEdits.ConnectSupplyChainNodes(new SupplyChainParityStore(text))
+                var handled = await new HandWrittenSupplyChainEdits.ConnectSupplyChainNodes(new HandWrittenParityStore(text))
                     .ExecuteAsync(new ConnectSupplyChainNodesCommand(Body, from, to, NewId), TestContext.Current.CancellationToken);
                 var expected = handled.IsSuccess ? "allowed" : $"refused: {handled.Error}";
                 var actual = outcome.IsUsable ? Derived(diagram, from, to) : await HandledAsync(text, from, to);

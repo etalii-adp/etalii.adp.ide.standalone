@@ -16,7 +16,7 @@ public sealed class AddSupplyChainNodeCommandHandler(ISupplyChainDocumentStore d
     }
 
     /// <inheritdoc />
-    protected override EditOutcome Apply(LineDocument document, SupplyChainModel model, AddSupplyChainNodeCommand command)
+    protected override EditOutcome Apply(SupplyChainBody document, SupplyChainModel model, AddSupplyChainNodeCommand command)
     {
         // The id is the host's, minted or asked for, so whether it is free is the host's to say.
         if (model.IsTaken(command.NodeId))

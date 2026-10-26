@@ -1,10 +1,12 @@
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
-namespace EtAlii.Adp.Diagram.SupplyChain;
+namespace EtAlii.Adp.Diagram.SupplyChain.Tests.Parity;
 
 /// <summary>
-/// Turns an edit into a splice of the lines that edit affects, and nothing else.
+/// The supply chain module's line writer as it was before every command wrote through the binding (supply-chain-disl-fbl
+/// task 11): the oracle <see cref="HandWrittenSupplyChainEdits"/> writes with, and what the three defects of finding B13
+/// are measured against.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -17,7 +19,7 @@ namespace EtAlii.Adp.Diagram.SupplyChain;
 /// caller making several edits applies them bottom-up or re-parses between them.
 /// </para>
 /// </remarks>
-public static class SupplyChainWriter
+internal static class SupplyChainWriter
 {
     private const string GroupsSection = "groups:";
     private const string NodesSection = "nodes:";

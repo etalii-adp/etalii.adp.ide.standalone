@@ -150,6 +150,23 @@ public static class SupplyChainReading
     internal static FblModel Values(SupplyChainBody body)
     {
         ArgumentNullException.ThrowIfNull(body);
+        return new FblModel([.. Pairs(body).Select(pair => pair.Read)], [], false);
+    }
+
+    /// <summary>
+    /// The entry the binding reads each group, node and flow as, by the id the DISL model reads it with: the ids differ for
+    /// a later holder of an id and an entry without one, which the model reads with an ephemeral id and the binding by its
+    /// place.
+    /// </summary>
+    internal static IReadOnlyDictionary<string, FblElement> BindingEntries(SupplyChainBody body)
+    {
+        ArgumentNullException.ThrowIfNull(body);
+        return Pairs(body).ToDictionary(pair => pair.Read.Id, pair => pair.Entry, StringComparer.Ordinal);
+    }
+
+    /// <summary>Every group, node and flow the binding read, beside the element the DISL model reads it as.</summary>
+    private static List<(FblElement Entry, FblElement Read)> Pairs(SupplyChainBody body)
+    {
         var model = body.Reading.Model;
         var entries = body.Model.Elements.OrderBy(element => element.OwnSpan.Start).ToList();
         var groupEntries = new Queue<FblElement>(entries.Where(element => element.Rule == GroupRule));
@@ -158,7 +175,7 @@ public static class SupplyChainReading
 
         var ids = new Ids();
         var groups = model.Groups.Where(group => group.Id.Length > 0).Select(group => group.Id).ToHashSet(StringComparer.Ordinal);
-        var elements = new List<FblElement>();
+        var elements = new List<(FblElement Entry, FblElement Read)>();
         foreach (var group in model.Groups)
         {
             elements.Add(Entry(ids, groupEntries.Dequeue(), group.Id, false, group.Range, new Dictionary<string, object?>(StringComparer.Ordinal)
@@ -186,7 +203,7 @@ public static class SupplyChainReading
                 ["x"] = node.X,
                 ["y"] = node.Y,
             });
-            nodes.TryAdd(node.Id, element.Id);
+            nodes.TryAdd(node.Id, element.Read.Id);
             elements.Add(element);
         }
 
@@ -206,14 +223,14 @@ public static class SupplyChainReading
             }));
         }
 
-        return new FblModel(elements, [], false);
+        return elements;
     }
 
     /// <summary>
     /// <paramref name="entry"/> as the DISL model reads it: the id the module finds it by, the values that are set, the
     /// id as written, and whether an earlier entry holds that id.
     /// </summary>
-    private static FblElement Entry(Ids ids, FblElement entry, string written, bool isRelation, LineRange range, Dictionary<string, object?> values)
+    private static (FblElement Entry, FblElement Read) Entry(Ids ids, FblElement entry, string written, bool isRelation, LineRange range, Dictionary<string, object?> values)
     {
         var stated = values.Where(value => value.Value is not null).ToDictionary(value => value.Key, value => value.Value, StringComparer.Ordinal);
         stated[SupplyChainWritten.StoredId] = written;
@@ -223,7 +240,7 @@ public static class SupplyChainReading
             stated[SupplyChainWritten.LaterHolder] = true;
         }
 
-        return entry with { Id = id, IdIsStored = written.Length > 0, IsRelation = isRelation, Attributes = stated, Source = null, Target = null, Line = range.Start + 1 };
+        return (entry, entry with { Id = id, IdIsStored = written.Length > 0, IsRelation = isRelation, Attributes = stated, Source = null, Target = null, Line = range.Start + 1 });
     }
 
     /// <summary>

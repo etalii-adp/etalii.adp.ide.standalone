@@ -11,6 +11,6 @@ public sealed class ConnectSupplyChainNodesCommandHandler(ISupplyChainDocumentSt
         await base.RunAsync(command.FlowId.Length > 0 ? command : command with { FlowId = ShortGuid.NewShortGuid().ToString() }, cancellationToken);
 
     /// <inheritdoc />
-    protected override EditOutcome Apply(LineDocument document, SupplyChainModel model, ConnectSupplyChainNodesCommand command) =>
+    protected override EditOutcome Apply(SupplyChainBody document, SupplyChainModel model, ConnectSupplyChainNodesCommand command) =>
         SupplyChainDefinition.Connect(document, model, command.From, command.To, command.FlowId);
 }

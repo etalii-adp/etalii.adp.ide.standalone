@@ -32,7 +32,7 @@ namespace EtAlii.Adp.Diagram.SupplyChain;
 public sealed class MoveSupplyChainEntryCommandHandler(ISupplyChainDocumentStore documents) : SupplyChainEditHandler<MoveSupplyChainEntryCommand>(documents)
 {
     /// <inheritdoc />
-    protected override EditOutcome Apply(LineDocument document, SupplyChainModel model, MoveSupplyChainEntryCommand command)
+    protected override EditOutcome Apply(SupplyChainBody document, SupplyChainModel model, MoveSupplyChainEntryCommand command)
     {
         var layout = SupplyChainLayout.Of(model);
         var diagram = SupplyChainDefinition.Diagram(model);
