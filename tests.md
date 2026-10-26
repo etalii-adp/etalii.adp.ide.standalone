@@ -4351,3 +4351,63 @@ lays out no text, so a fill, a centred Comment and a drag that writes a size are
 - **Result 2026-10-24, agent-1-requirement-item-layout, a developer build of `claude/project-thread-sh0t6x`, headless Chromium driven by Playwright at 1500 by 1100**:
   - Before the fix, on `develop` at #705, step 1 failed: the field was 684px high and started 1px left of the number's right edge.
   - After the fix, all three steps passed: the field was 24px high and started 4px right of the number's right edge, at REQ-0003, Checkout and the new REQ-0014 alike.
+
+## The compiled supply chain canvas, in a browser (supply-chain-disl-fbl, task 8, Requirement 8.4)
+
+**Why this is a browser pass and not only tests:** `supplyChainCompiledDefinition.test.tsx` proves that the definition compiled from `supply-chain.dis` draws the same markup as the hand-written one it replaces. `supplyChainShapeGeometry.test.ts` proves that the card's ornaments are the specification's parts, and `supplyChainTheme.test.ts` that its theme tokens are the custom properties the canvas paints with. However, jsdom computes no style, runs no animation, lays nothing out and runs no backend. What each stage's header is painted in, whether the goods move, where the lanes take a band, and what the file holds after a gesture and its undo are only decided in a browser.
+
+- **Preconditions**: a build from the branch, signed in with `admin`/`changeme` (or the developer session), and a scratch folder added as a project holding a copy of `src/examples/diagrams/supply-chain/` (`automotive/` and `gpu-memory/`). Keep a copy of `automotive.supply` to compare against.
+- **Steps**, in the light theme and again in the dark, on `automotive.supply`, pressing *Fit to View* after opening it:
+  1. Read each stage's header band, both of its parts, its share bar and its title, and each card's fill and outline.
+  2. Read each band's stroke width against its flow's volume, among flows of one unit.
+  3. Read the goods line along a band: its animation, its dash and its colour, and its dash offset at two moments. Then select a node and read the same of a band that is dimmed.
+  4. Read the path of a flow the layout routes through lanes.
+  5. Select the node *Lithium hydroxide refinery*, then the flow *Lithium carbonate*, then the frame *China*, and read the trace's marks after each. Click the empty canvas.
+  6. Select the node again. Press its + stepper, then its −. Press `+`, `=`, Shift with `+`, `-` and Shift with `_`, reading `quantity:` and what is selected after each. Undo all seven. Do the same for the flow's steppers and keys, reading `volume:`.
+  7. Drag each of the toolbox's eight entries onto empty canvas. Read the file, then press *Undo*.
+  8. Drag *Pilbara iron ore* (Australia) inside the frame of *China*. Read the file.
+  9. Right-click the empty canvas, run *Arrange diagram*, read the file, then press *Undo* twice.
+  10. Drag *Kolwezi cobalt mines*, the only member of *Central Africa*, to empty canvas, read the file and press *Undo*. Then drag it inside the frame of *China*, read the file and the frame of *Central Africa*, and press *Undo*.
+  11. Double-click the node's name, type a new one and press Enter. Read the file and press *Undo*. Do the same for the frame's name. For the flow's product, first double-click the flow, then select it and press F2.
+- **Expected**:
+  1. The seven headers are the seven stage colours in both themes, the title white on them, and a bar in its stage's colour. A card is the surface colour, outlined in the border colour.
+  2. Of one unit, a band is as broad as its share of the heaviest flow.
+  3. The goods move while their band is lit, and stand still on a dimmed band.
+  4. A laned flow is a chain of curves.
+  5. A node and a flow light what supplies them and what they supply, and dim the rest. A frame lights the chain through its members.
+  6. Each press steps the value by the entry's `step` while the selection stays. *Undo* restores the file byte for byte.
+  7. Each drop writes a node of its stage, or a group, at the drop point. *Undo* restores the file byte for byte.
+  8. The node joins `china` and is written where it was dropped.
+  9. *Arrange diagram* writes every node's position. The first *Undo* takes that back, and the second the drag.
+  10. Dropped on empty canvas, the node stays in its group, which follows it. Dropped inside another frame, it joins that group, and the group it left is written where its frame was, drawn empty.
+  11. Each rename writes the new name, and *Undo* restores the file byte for byte. F2 renames the product.
+- **Result 2026-10-26, agent-11-supply-chain-disl-fbl, `features/supply-chain-disl-fbl-8` as this entry's commit holds it (the definition bundled from etalii.adp `cf5131e`): all eleven steps pass in both themes.** The build was a developer build: backend on 5595 with `Client__DevServerUrl` and `--urls`, and Vite on 5594 with `--port`, so no file was changed for the ports. It ran in headless Chromium 141 driven by Playwright at 1600 by 1000, with real mouse and keyboard input and `colorScheme` set per theme. The developer environment opened the developer session, which showed no sign-in form. The values below come from the page's DOM and computed styles and from the file on disk. Screenshots are `<theme>-*.png` in the session's scratchpad.
+  - Step 1: headers, measured as each header's two parts, its bar, and the same in both themes:
+    - source `rgb(124, 74, 30)`
+    - processor `rgb(185, 28, 28)`
+    - producer `rgb(29, 78, 216)`
+    - integrator `rgb(15, 118, 110)`
+    - hub `rgb(71, 85, 105)`
+    - outlet `rgb(21, 128, 61)`
+    - consumer `rgb(190, 24, 93)`
+
+    Every title was `rgb(255, 255, 255)`. Cards were `rgb(255, 255, 255)` outlined `rgb(226, 232, 240)` in light, and `rgb(30, 41, 59)` outlined `rgb(51, 65, 85)` in dark. The name was 13px at weight 600 and the amount 20px, both `start`-anchored and in the text colour. The unit was 11px in the muted colour: `rgb(100, 116, 139)` light, `rgb(148, 163, 184)` dark.
+  - Step 2: in `kt LCE`, volumes 40, 80 and 100 drew 9, 15 and 18 wide. Stepping the first to 60 drew it 12 wide unselected. A selected band is drawn one wider.
+  - Step 3: the goods ran `supply-chain-goods-move` over 1.4s, dashed `1px, 13px`, at 0.4 of the band. They were `rgb(255, 255, 255)` light and `rgb(30, 41, 59)` dark, and their offset moved from -4.3px to -9.5px in half a second. On the dimmed band *Pilbara iron ore* to *Flat steel mill* the animation was `none` and the offset 0px, while a lit band kept moving.
+  - Step 4: 10 of the 25 flows are laned. *Tier-1 seating* to *Vehicle assembly plant* is a chain of 7 curves, and *Kolwezi cobalt mines* to *NMC cathode plant* one of 3, straight across each lane.
+  - Step 5, the same in both themes:
+    - The node marked 2 elements and 2 flows upstream, 10 and 11 downstream, 5 frames related, and 13 elements and 12 flows dimmed. Upstream were *Atacama lithium brine*, *Pilbara spodumene* and their two flows. Downstream ran *NMC cathode plant* through to *Private buyers* and *Company fleets*.
+    - The flow marked itself selected, 1 upstream, 11 downstream and 15 dimmed.
+    - The frame selected itself and its 3 members, each member with its steppers.
+    - A click on the empty canvas cleared every mark.
+  - Step 6:
+    - The node's `quantity:` went 120, 125 (+ stepper), 120 (−), then 125, 130, 135, 130, 125 for the five keys. *Lithium hydroxide refinery* stayed the one selection throughout, and seven undos left the file byte-identical.
+    - The flow's `volume:` went 40, 45 (+ stepper), 50 (`+`), 45, 40 (`-` twice), still selected, and was byte-identical after undo.
+  - Step 7: each of Source, Processor, Producer, Integrator, Hub, Outlet and Consumer wrote a node of that `type:`, named `New <stage>`, with `quantity: 0` and the drop point's `x` and `y`. Group wrote `name: New group` with its `x` and `y`. After each *Undo* the file was byte-identical.
+  - Step 8: `group: australia` became `group: china`, and `x: 640`, `y: 265` were written.
+  - Step 9: the background menu offered the seven *Add … here* entries, *Add group here* and *Arrange diagram*. *Arrange diagram* wrote an `x` and a `y` for every node. The first *Undo* left only the drag's three lines, and the second made the file byte-identical.
+  - Step 10: on empty canvas the node gained `x` and `y` and kept `group: central-africa`. Inside *China* it took `group: china` and its `x` and `y`, and *Central Africa* gained `x: -20`, `y: 0`, its frame still drawn and labelled `0 nodes`. Each *Undo* made the file byte-identical.
+  - Step 11: the inline editor opened on the name of *Lithium hydroxide refinery* and of *China*. Each rename wrote its line, and *Undo* made the file byte-identical. A double-click on the flow opened no editor and changed nothing. F2 on the selected flow opened it on `Lithium carbonate`, wrote `product: Renamed product`, and *Undo* made the file byte-identical.
+- **Observations, not failures of this task:**
+  - A double-click on a flow never renamed it, before this task or after. The hand-written definition declared an `activate` gesture for the flow's rename, but the library raises `activate` on an element alone. The compiled definition does not declare it, and its test names the difference. F2 and *Rename product…* rename the product.
+  - Selecting a frame selects its members as well, and each selected member draws its steppers.

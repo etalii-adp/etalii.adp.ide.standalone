@@ -1,6 +1,6 @@
 import type { Binding } from "../definition/binding";
-import type { BuiltInRoute, BuiltInShape, MarkerKind, SegmentDeclaration } from "../definition/diagramDefinition";
-import type { DislCustomShape, DislShapeRef } from "./disTypes";
+import type { BuiltInRoute, BuiltInShape, DecorationDeclaration, MarkerKind, SegmentDeclaration } from "../definition/diagramDefinition";
+import type { DislCustomShape, DislNodeNotation, DislShapeRef } from "./disTypes";
 
 /**
  * What DISL's built-in shapes, markers and routings are called in this library.
@@ -154,4 +154,17 @@ export interface CustomShapeBinding {
    * Bindable as a library binding.
    */
   segments?: (context: { shape: DislCustomShape; params: Readonly<Record<string, unknown>>; bind: (value: unknown) => Binding }) => SegmentDeclaration;
+  /**
+   * The ornaments the library shape is drawn with for the custom shape's parts beside its body (DISL §6.8
+   * `parts`): a band across a card, a bar along its foot. Given the custom shape, the parameters the node
+   * binds it with, the compiler's reading of a Bindable, and the node's notation, whose fixed size the
+   * parts' boxes are measured in and whose `partStyles` name each part's style. The module's geometry
+   * test evaluates the parts and compares them with what this returns.
+   */
+  decorations?: (context: {
+    shape: DislCustomShape;
+    params: Readonly<Record<string, unknown>>;
+    bind: (value: unknown) => Binding;
+    node: DislNodeNotation;
+  }) => readonly DecorationDeclaration[];
 }
