@@ -325,6 +325,7 @@ public sealed class DislElement : ICelObject
             ("incomingOf", 1) when !Type.IsRelation => List(Incoming.Where(relation => relation.IsA(Text(arguments[0])))),
             ("outgoingOf", 1) when !Type.IsRelation => List(Outgoing.Where(relation => relation.IsA(Text(arguments[0])))),
             ("reachable", 1) when !Type.IsRelation => List(Reachable(Text(arguments[0]))),
+            ("predecessors", 1) when !Type.IsRelation => List(Predecessors(Text(arguments[0]))),
             ("inCycle", 1) when !Type.IsRelation => Reachable(Text(arguments[0])).Contains(this),
             ("other", 1) when Type.IsRelation => Other(arguments[0]),
             ("location", 0) => LocationMap(),
@@ -369,6 +370,13 @@ public sealed class DislElement : ICelObject
         : throw new CelException($"other() was given an element that is not an end of {this}.");
 
     private static List<object?> List(IEnumerable<DislElement> elements) => [.. elements];
+
+    /// <summary>
+    /// The elements a relation of <paramref name="relationType"/> or one of its subtypes leads from to this one (DISL §12.2),
+    /// each once, in the order of those relations in the model. A relation whose source is unset leads from nothing.
+    /// </summary>
+    private IEnumerable<DislElement> Predecessors(string relationType) =>
+        Incoming.Where(relation => relation.IsA(relationType)).Select(relation => relation.Source).OfType<DislElement>().Distinct(ReferenceEqualityComparer.Instance).Cast<DislElement>();
 
     /// <summary>
     /// The elements reached from this one over relations of <paramref name="relationType"/> and its subtypes (DISL §12.4), in the

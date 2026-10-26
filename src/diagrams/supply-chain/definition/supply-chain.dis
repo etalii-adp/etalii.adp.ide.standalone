@@ -172,8 +172,8 @@
       "params": [{ "name": "n", "type": "Element" }, { "name": "s", "type": "Element" }],
       "returns": "string",
       "uses": ["diagram"],
-      "cel": "n == s || (!s.isA('Flow') && n in upFrom(s)) ? 'selected' : (upFrom(s).exists(u, u in n.reachable('Flow')) || (s.isA('Flow') && n in upFrom(s)) ? 'upstream' : (downFrom(s).exists(d, n in d.reachable('Flow')) || (s.isA('Flow') && n in downFrom(s)) ? 'downstream' : 'dimmed'))",
-      "doc": "A node's mark while `s` is selected: selected when it is what the walks start from (a selected node, a selected group's members); upstream when it supplies a start, directly or not, and a selected flow's supplier; downstream when a start supplies it, and a selected flow's consumer; dimmed otherwise. A node reached both ways keeps upstream, the walk that runs first."
+      "cel": "n == s || (!s.isA('Flow') && n in upFrom(s)) ? 'selected' : (s.isA('Flow') && n in downFrom(s) ? 'downstream' : (s.isA('Flow') && n in upFrom(s) ? 'upstream' : (upFrom(s).exists(u, u in n.reachable('Flow')) ? 'upstream' : (downFrom(s).exists(d, n in d.reachable('Flow')) ? 'downstream' : 'dimmed'))))",
+      "doc": "A node's mark while `s` is selected: selected when it is what the walks start from (a selected node, a selected group's members); a selected flow's consumer downstream and its supplier upstream, whatever the walks find, so that on a cycle the consumer is downstream though it also supplies the supplier; otherwise upstream when it supplies a start, directly or not, downstream when a start supplies it, and dimmed when neither. A node reached both ways keeps upstream, the walk that runs first."
     },
     "traceOf": {
       "params": [{ "name": "e", "type": "Element" }],

@@ -92,7 +92,7 @@ The specification names the layout `plugin:net.etalii.adp.etalii.supplyChainLaye
 
 ## Language gaps
 
-Each gap is a candidate change to DISL or FBL, found by the standalone conversion. None is worked around in the specification by stating something the tool does not do. The nine of the requirements' section C come first, and the two the design added after them.
+Each gap is a candidate change to DISL or FBL, found by the standalone conversion. None is worked around in the specification by stating something the tool does not do. The nine of the requirements' section C come first, then the two the design added, then the two the standalone host found when it derived the trace from this definition and compiled its canvas from it.
 
 | # | Gap | Construct | Evidence | Would resolve it |
 | --- | --- | --- | --- | --- |
@@ -107,6 +107,8 @@ Each gap is a candidate change to DISL or FBL, found by the standalone conversio
 | 9 | The parser's own message in the sentence of `std.unparseable`, and the reader's sentences for an entry that is still read (A11) | DISL 8.7 `std.unparseable` and `std.unreadableEntry` (kept and not drawn), 11.2 host attributes (invisible to constraints) | `not-yaml.supply`, `unreadable-sentences.supply`, `no-header.supply`, `header-not-a-number.supply`, `header-other-version.supply` | A `detail.reason` whose text is the same in every host, and a built-in for a reader finding on a read entry, worded by the definition from what the reader saw |
 | 10 | What a reference or a relation end was written with, once it names nothing | DISL 12.2: CEL reads an unset reference or end as absent | `dangling-flows.supply` ("The flow `to-nowhere` names `nowhere`, which is not a node here; it is not drawn."), `rules-broken.supply` (the unknown group `south`) | A member of an element that answers the text a reference or an end was written with, also when it names nothing; the plugin function `written` stands in for it |
 | 11 | A finding on the line of a key rather than of its element | DISL 8.6 locations (an element and an attribute) | `unreadable-sentences.supply` (`quantity: lots` on line 14, its node starting on line 10) | A finding located at the key's line, or an attribute location that a host maps to the key's line |
+| 12 | A walk over the flows that are drawn | DISL 12.4 `reachable`, 11.5.4 (an entry kept and not drawn, gap 3) | `findings-order.supply` (the flow from `a` to `c` has no id and is not drawn, yet the definition's trace lights `c` while `a` is selected); the standalone test `Parity/SupplyChainDerivedTrace.Tests.cs` | A `reachable` that leaves out what is not drawn (ephemeral, 11.5.4), or one over a list of relations the definition filters |
+| 13 | More than one key for one entry | DISL 7.3 ContextTool `shortcut`, one string | The standalone `tests.md` pass of the compiled canvas (`+`, `=` and Shift with `+` each increase); `supplyChainCompiledDefinition.test.tsx` (the keys the canvas offers equal the hand-written definition's) | A `shortcut` that takes a list |
 
 ### 1. FBL: a scalar read as written (closed)
 
@@ -128,6 +130,62 @@ The tool lists every finding by the line of its entry, whatever its code, ties i
 
 `supply-chain.unreadable` carries the reader's sentences: "The document does not begin with `supply-chain: 1`.", "The version `one` is not a number.", "This document states version 2; this module reads version 1.", "`colour` is not a key this module reads on a group; the line is kept.", "`quarry` is not a stage this module knows.", "`quantity: lots` is not a number and was ignored.", "A node entry is not a mapping and was passed over." and, for a body that is not YAML, "The document could not be read as YAML: " followed by the parser's own message (`While parsing a flow sequence, did not find expected ',' or ']'.`), which no second host will word the same. Only the entry that is not a mapping is kept and not drawn, which is what `std.unreadableEntry` means; the definition sets `std.unreadableEntry` and `std.unparseable` to give `supply-chain.unreadable` as a warning, and the sentences are the reader's, handed in as reader findings.
 
+### 12. DISL: a walk over what is drawn
+
+The tool's trace walks the flows it draws: a flow without an id, a second holder of an id, or one with an end that is not drawn takes no part, so what is reached only through such a flow stays dimmed. `reachable('Flow')` walks every flow the model holds, including the ones gap 3 keeps undrawn, so the definition lights it. In `findings-order.supply`, with `a` selected the definition marks `c` downstream, through the flow from `a` to `c` written without an id, where the tool dims it, and with `c` selected it marks `a` upstream. The standalone host therefore keeps its own trace (`SupplyChainTrace`) and holds the definition's marks to it over the whole corpus, every drawn element selected in turn, with this the only difference. On every other document of the corpus the two are the same.
+
+### 13. DISL: one key for one entry
+
+The tool steps a value up with `+`, with Shift and `+` (whose key differs by keyboard layout) and with `=`, and down with `-` and with Shift and `_`. A ContextTool's `shortcut` is one string, so the definition states `+` and `-` on the menu entries. The standalone host adds the other keys to the actions it compiles from them.
+
+### Not a gap: the amount's text
+
+The definition writes an amount with `formatNumber` (DISL 12.4) under three patterns. On the canvas it uses `#,##0.##`, with `#,##0.###` below one; in a property row it uses `0.####`. The standalone host found the function already in its runtime when it took up this definition, and its tests pin those patterns against the digits the tool writes in the invariant culture, among them the amounts its rows hold (`FormatNumber.Tests.cs`). They found no difference, so nothing is recorded.
+
+## What the standalone host keeps in code
+
+### Drawn by its client
+
+The standalone canvas is compiled from this definition. The library cannot draw what *Notation DISL cannot state* lists, so the module's client draws it in place of what the definition states, each part named to the compiler as drawn by the module:
+
+- **The flow's path through its lanes**, from the lane centres on the payload: a route of the module's own (gap 8).
+- **Along a band**, all from the module's own adornment of the line (gap 8):
+  - the goods moving;
+  - the arrowhead square to the consumer's side;
+  - the volume pill under the product's name, placed by the name's width.
+
+  The definition's dots along the band, its second label and its target marker are left out.
+- **The unit just after the quantity's number**, placed by the number's width, where the definition joins the two in one label (gap 8).
+- **The steppers** beside a selected node's quantity and under a selected flow's volume, which a context tool's position cannot place there (gap 8).
+- **The second keys** of each step (gap 13).
+
+What it states in code besides is the host's own concern rather than a gap:
+- the payload path each CEL expression of the notation is computed into, since the client runs no CEL;
+- the classes that tie the drawing to its stylesheet;
+- the card's header band and share bar, drawn as ornaments of the library's rounded rectangle and held by a test to this definition's `supplyCard` parts.
+
+### Its classes
+
+Each class the standalone module keeps, as it stands once its edits are decided by this definition, with what keeps it.
+
+| Class | Kept because |
+| --- | --- |
+| `SupplyChainLayout`, `ArrangeSupplyChainCommand`, `PlaceSupplyChainNodesCommand` and their handlers | The layout plugin this definition names, and Arrange writing what it computed (*Layout*) |
+| `SupplyChainElementMapper` | The host's wire: the payloads and the viewport filter |
+| `SupplyChainModel` | The layout's and the mapper's input |
+| `SupplyChainSession`, `SupplyChainDocumentStore`, `ISupplyChainDocumentStore`, `SupplyChainContextSourceResolver` | The host's shared document lifecycle |
+| `SupplyChainSelections` | The host's record of what each viewer selected, bound as `view` |
+| `SupplyChainTrace` | Gap 12 |
+| `SupplyChainDefinition` | The host's loading of the bundled definition and its derivations |
+| `SupplyChainContextActionProvider`, `SupplyChainContextPropertyProvider`, `SupplyChainValidator` | The host's services, each handing over what the definition derives: menus, rows and findings |
+| `SupplyChainWritten` | Gaps 3 and 10 (`written` and `laterHolder`) |
+| `SupplyChainFindings` | Gap 4 |
+| `SupplyChainReaderFindings` | Gaps 9 and 11 |
+| `MoveSupplyChainEntryCommand` and its handler | Gap 8 (finding A13) |
+| The commands that add, connect, group, remove, set and step, their handlers and `SupplyChainEditHandler` | The host's history: each runs the operation this definition decides |
+| `SupplyChainParser`, `SupplyChainWriter`, `SupplyChainDisl`, `SupplyChainApply` | Until the module reads and writes the body through its binding, by gap 1's construct |
+| `Diagram`, `ServiceCollection.AddSupplyChain` | The host's registration of the tool type |
+
 ## Definition defects repaired
 
 The draft of this definition was written against DISL 0.1, before the standalone conversion; these are the defects the conversion's findings named, and how each was repaired.
@@ -139,6 +197,12 @@ The draft of this definition was written against DISL 0.1, before the standalone
 - **A5.** The seven stages are one node type, `Stage`, with a `stage` attribute whose enumeration `StageKind` carries each stage's colour, by Q2's default; a change of stage is a changed value, as the tool writes it, where the draft retyped. Each of the seven tools creates the one type with `initial` setting the stage, a quantity of zero and the name, because a `create` hook is not run; the draft named a new node in such a hook. The Stage row offers the seven words, as the tool does, rather than the enumeration's labels.
 - **A6.** Membership is the reference attribute `group`, by Q5's default (gap 2), where the draft stated containment.
 - **A11, B3, B4.** The codes are the tool's: every finding compares what is written, through the plugin functions `written` and `laterHolder`, as the hype cycle graph and the timeline do. A dangling flow is reported by rules over its written ends rather than by `std.references`, which would report a flow from a missing node to itself twice more (ruled 2026-10-11); `std.duplicateId`, `std.references`, `std.endpoints` and `std.facets` are switched off, so that no finding appears that the tool does not give (Q4).
+
+Three more were found when the standalone host compiled its canvas from this definition and derived its trace from it. In each the definition said something the tool does not do, and the tool's behaviour was taken:
+
+- **The card's header band** was a path with corners of 8. The tool draws a rounded rectangle of radius 10, with a strip of the same colour over its lower 10 that squares it where it meets the body, so the band is now those two parts.
+- **The labels set from a corner of the card and the frame** were centred on their point. The tool starts their text there, so they say `"align": "start"`.
+- **The trace of a selected flow on a cycle.** The tool marks the flow's consumer downstream and its supplier upstream before it walks. The definition asked first what the walks reached, and on a cycle, where the consumer also supplies the supplier, it marked the consumer upstream (`mixed-indentation.supply`). `nodeTrace` now asks about the flow's ends first.
 
 ## The examples
 
