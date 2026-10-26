@@ -1,7 +1,6 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Documents;
-using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.SupplyChain;
@@ -54,55 +53,13 @@ public sealed class SupplyChainContextPropertyProvider(IHistoryStackStore histor
     /// <summary>The choice that takes a node out of every group.</summary>
     public const string NoGroup = "(none)";
 
-    private const string IdentityGroup = "Identity";
-    private const string AmountGroup = "Amount";
-
     /// <inheritdoc />
     protected override bool IsBody(string path) => Diagram.IsBody(path);
 
     /// <inheritdoc />
-    protected override IReadOnlyList<ContextPropertyDefinition> Describe(DocumentEntry<LineDocument, SupplyChainModel> entry, string elementId)
-    {
-        var model = entry.Model;
-
-        if (model.NodeOf(elementId) is { } node)
-        {
-            var group = model.GroupOf(node.Group);
-            return
-            [
-                new ContextPropertyDefinition(NameProperty, "Name", node.Name, Group: IdentityGroup),
-                new ContextPropertyDefinition(StageProperty, "Stage", node.Type, ContextPropertyEditor.Choice, Group: IdentityGroup, Candidates: SupplyChainNodeTypes.All),
-                new ContextPropertyDefinition(GroupProperty, "Group", group is null ? NoGroup : NameOf(group), ContextPropertyEditor.Choice, Group: IdentityGroup, Candidates: GroupChoices(model)),
-                new ContextPropertyDefinition(DescriptionProperty, "Description", node.Description, ContextPropertyEditor.Text, Group: IdentityGroup),
-                new ContextPropertyDefinition(QuantityProperty, "Quantity", DslNumber.Format(node.Quantity), Group: AmountGroup),
-                new ContextPropertyDefinition(UnitProperty, "Unit", node.Unit, Group: AmountGroup),
-                new ContextPropertyDefinition(StepProperty, "Step", DslNumber.Format(node.Step ?? SupplyChainGeometry.DefaultStep), Group: AmountGroup),
-            ];
-        }
-
-        if (model.FlowOf(elementId) is { } flow)
-        {
-            return
-            [
-                new ContextPropertyDefinition(ProductProperty, "Product", flow.Product, Group: IdentityGroup),
-                new ContextPropertyDefinition(DescriptionProperty, "Description", flow.Description, ContextPropertyEditor.Text, Group: IdentityGroup),
-                new ContextPropertyDefinition(VolumeProperty, "Volume", DslNumber.Format(flow.Volume), Group: AmountGroup),
-                new ContextPropertyDefinition(UnitProperty, "Unit", flow.Unit, Group: AmountGroup),
-                new ContextPropertyDefinition(StepProperty, "Step", DslNumber.Format(flow.Step ?? SupplyChainGeometry.DefaultStep), Group: AmountGroup),
-            ];
-        }
-
-        if (model.GroupOf(elementId) is { } frame)
-        {
-            return
-            [
-                new ContextPropertyDefinition(NameProperty, "Name", frame.Name, Group: IdentityGroup),
-                new ContextPropertyDefinition(DescriptionProperty, "Description", frame.Description, ContextPropertyEditor.Text, Group: IdentityGroup),
-            ];
-        }
-
-        return [];
-    }
+    protected override IReadOnlyList<ContextPropertyDefinition> Describe(DocumentEntry<LineDocument, SupplyChainModel> entry, string elementId) =>
+        // Derived from the DISL definition: a node's, a flow's or a group's form.
+        SupplyChainDefinition.Rows(entry.Model, elementId);
 
     /// <inheritdoc />
     protected override DiagramPropertyChange Change(ContextTarget target, SupplyChainModel model, string propertyId, string value)
@@ -138,10 +95,4 @@ public sealed class SupplyChainContextPropertyProvider(IHistoryStackStore histor
     }
 
     private static string NameOf(SupplyChainGroup group) => group.Name.Length > 0 ? group.Name : group.Id;
-
-    private static IReadOnlyList<string> GroupChoices(SupplyChainModel model) =>
-    [
-        NoGroup,
-        .. model.Groups.Where(group => group.Id.Length > 0).Select(NameOf).Distinct(StringComparer.Ordinal),
-    ];
 }

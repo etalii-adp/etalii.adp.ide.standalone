@@ -186,7 +186,7 @@ public sealed class SupplyChainProvidersTests : IDisposable
     public void ThePalette_OffersEveryStageAndAGroup_AddedByItsOwnAction()
     {
         // Act.
-        var items = new SupplyChainToolboxProvider().Items;
+        var items = SupplyChainDefinition.Toolbox;
 
         // Assert.
         Assert.Equal(
@@ -204,7 +204,7 @@ public sealed class SupplyChainProvidersTests : IDisposable
             .ToDictionary(action => action.Id, action => action.Icon);
 
         // Assert: one icon per entry, each its palette entry's, and no two alike.
-        var palette = new SupplyChainToolboxProvider().Items;
+        var palette = SupplyChainDefinition.Toolbox;
         Assert.Equal(palette.ToDictionary(item => item.DropActionId, item => item.Icon), adds);
         Assert.Equal(palette.Count, palette.Select(item => item.Icon).Distinct(StringComparer.Ordinal).Count());
     }

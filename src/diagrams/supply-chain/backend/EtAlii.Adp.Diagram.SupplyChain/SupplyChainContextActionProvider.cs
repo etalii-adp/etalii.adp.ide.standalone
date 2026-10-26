@@ -56,81 +56,11 @@ public sealed class SupplyChainContextActionProvider(IHistoryStackStore historyS
     protected override bool IsBody(string path) => Diagram.IsBody(path);
 
     /// <inheritdoc />
-    protected override IReadOnlyList<ContextActionGroupDefinition> Discover(DocumentEntry<LineDocument, SupplyChainModel> entry, string elementId)
-    {
-        var model = entry.Model;
-        var arrange = new ContextActionDefinition(
-            ArrangeActionId, "Arrange diagram", "mdi-sitemap-outline", null,
-            model.Nodes.Count > 0, "There is nothing to arrange until this diagram has a node.");
-
-        if (model.NodeOf(elementId) is { } node)
-        {
-            var atZero = (node.Quantity ?? 0) <= 0;
-            return
-            [
-                new ContextActionGroupDefinition(
-                [
-                    new ContextActionDefinition(IncreaseActionId, "Increase quantity", "mdi-plus-circle-outline", new ContextShortcutDefinition("+")),
-                    new ContextActionDefinition(DecreaseActionId, "Decrease quantity", "mdi-minus-circle-outline", new ContextShortcutDefinition("-"), !atZero, "The quantity is already zero."),
-                ]),
-                new ContextActionGroupDefinition(
-                [
-                    new ContextActionDefinition(RenameActionId, "Rename…", "mdi-pencil-outline", new ContextShortcutDefinition("F2")),
-                    new ContextActionDefinition(GroupActionId, "Put in a new group…", "mdi-group"),
-                    new ContextActionDefinition(RemoveActionId, "Remove", "mdi-delete-outline", new ContextShortcutDefinition("Delete")),
-                ]),
-                new ContextActionGroupDefinition([arrange]),
-            ];
-        }
-
-        if (model.FlowOf(elementId) is { } flow)
-        {
-            var atZero = (flow.Volume ?? 0) <= 0;
-            return
-            [
-                new ContextActionGroupDefinition(
-                [
-                    new ContextActionDefinition(IncreaseActionId, "Increase volume", "mdi-plus-circle-outline", new ContextShortcutDefinition("+")),
-                    new ContextActionDefinition(DecreaseActionId, "Decrease volume", "mdi-minus-circle-outline", new ContextShortcutDefinition("-"), !atZero, "The volume is already zero."),
-                ]),
-                new ContextActionGroupDefinition(
-                [
-                    new ContextActionDefinition(RenameActionId, "Rename product…", "mdi-pencil-outline", new ContextShortcutDefinition("F2")),
-                    new ContextActionDefinition(RemoveActionId, "Remove flow", "mdi-vector-polyline-remove", new ContextShortcutDefinition("Delete")),
-                ]),
-            ];
-        }
-
-        if (model.GroupOf(elementId) is not null)
-        {
-            return
-            [
-                new ContextActionGroupDefinition(
-                [
-                    new ContextActionDefinition(RenameActionId, "Rename…", "mdi-pencil-outline", new ContextShortcutDefinition("F2")),
-                    new ContextActionDefinition(RemoveActionId, "Remove group", "mdi-ungroup", new ContextShortcutDefinition("Delete")),
-                ]),
-                new ContextActionGroupDefinition([arrange]),
-            ];
-        }
-
-        // A drop, a background menu and a finished gesture each discover what may be executed
-        // against them, because executing an action by id only finds actions its target discovers.
-        if (GestureIds.TryParsePlacement(elementId, out _, out _))
-        {
-            return
-            [
-                new ContextActionGroupDefinition(
-                    [.. SupplyChainNodeTypes.All.Select(stage => new ContextActionDefinition(AddActionId(stage), $"Add {SupplyChainNodeTypes.Display(stage).ToLowerInvariant()} here", SupplyChainStageIcons.Of(stage)))]),
-                new ContextActionGroupDefinition([new ContextActionDefinition(AddGroupActionId, "Add group here", SupplyChainStageIcons.Group)]),
-                new ContextActionGroupDefinition([arrange]),
-            ];
-        }
-
-        return GestureIds.TryParseRelation(elementId, out _, out _)
-            ? [new ContextActionGroupDefinition([new ContextActionDefinition(ConnectActionId, "Add flow", "mdi-arrow-right-thin")])]
-            : [];
-    }
+    protected override IReadOnlyList<ContextActionGroupDefinition> Discover(DocumentEntry<LineDocument, SupplyChainModel> entry, string elementId) =>
+        // Derived from the DISL definition: the element's, the empty canvas's or the connect gesture's menu. Executing
+        // an action by id only finds actions its target discovers, so a drop and a finished gesture each discover
+        // what may be executed against them.
+        SupplyChainDefinition.Menus(entry.Model, elementId);
 
     /// <inheritdoc />
     protected override async ValueTask<ContextExecutionResult> RunAsync(
@@ -188,15 +118,8 @@ public sealed class SupplyChainContextActionProvider(IHistoryStackStore historyS
 
             case RemoveActionId when node is not null:
             {
-                var going = model.Flows.Count(candidate => candidate.From == node.Id || candidate.To == node.Id);
-                var confirmation = going == 0
-                    ? null
-                    : new RemovalConfirmation(
-                        "Remove",
-                        going == 1
-                            ? "Removing this node also removes the 1 flow to or from it."
-                            : $"Removing this node also removes the {going} flows to or from it.",
-                        "Remove");
+                // Asked first when the definition's deletion behaviour asks: a node with a flow to or from it.
+                var confirmation = SupplyChainDefinition.RemovalConfirmation(model, id);
                 return await RemoveAsync(target, new RemoveSupplyChainEntryCommand(body, id), confirmation, cancellationToken);
             }
 

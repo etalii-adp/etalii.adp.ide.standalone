@@ -1081,13 +1081,13 @@
       "Stage": {
         "relations": "delete",
         "confirm": {
-          "count": "diagram.relationsOfType('Flow').filter(f, written(self, 'id') != '' && (written(f, 'from') == written(self, 'id') || written(f, 'to') == written(self, 'id'))).size()",
+          "count": "diagram.relationsOfType('Flow').filter(f, written(f, 'from') == written(self, 'id') || written(f, 'to') == written(self, 'id')).size()",
           "threshold": 1,
           "title": "Remove",
           "message": { "cel": "'Removing this node also removes the ' + string(count) + (count == 1 ? ' flow' : ' flows') + ' to or from it.'" },
           "confirmLabel": "Remove",
           "danger": true,
-          "doc": "Every flow the file writes to or from the node's id, drawn or not, is removed with it in the same undoable step. With none it happens at once."
+          "doc": "Every flow the file writes to or from the node's id, drawn or not, is removed with it in the same undoable step; a node written without an id counts the flows written without that end. With none it happens at once."
         }
       },
       "Group": {

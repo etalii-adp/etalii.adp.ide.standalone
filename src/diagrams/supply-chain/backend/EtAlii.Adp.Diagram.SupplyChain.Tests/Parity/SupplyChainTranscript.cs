@@ -58,7 +58,7 @@ public sealed partial class SupplyChainTranscript() : TranscriptAdapter("supply-
 
     public override string Origin => Diagram.SupplyChain.Origin.Key;
 
-    protected override IReadOnlyList<ToolboxItemDefinition> Toolbox => new SupplyChainToolboxProvider().Items;
+    protected override IReadOnlyList<ToolboxItemDefinition> Toolbox => SupplyChainDefinition.Toolbox;
 
     /// <summary>The corpus, in the order it is recorded.</summary>
     public override IReadOnlyList<TranscriptDocument> Corpus() => [.. Files().Select(OnDisk)];
@@ -76,7 +76,7 @@ public sealed partial class SupplyChainTranscript() : TranscriptAdapter("supply-
     private static string Placement => GestureIds.Placement(PlacementX, PlacementY);
 
     /// <summary>The targets the transcript records: every group, node and flow id, the empty id, a placement, a connect gesture and an unknown id.</summary>
-    private static IReadOnlyList<string> Targets(SupplyChainModel model)
+    internal static IReadOnlyList<string> Targets(SupplyChainModel model)
     {
         var nodeIds = NodeIds(model);
         var relation = nodeIds.Count >= 2 ? GestureIds.Relation(nodeIds[0], nodeIds[1]) : GestureIds.Relation("a", "b");
