@@ -26,6 +26,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The DISL definition, bundled from etalii-adp/etalii.adp by src/diagrams/tools/bundle-disl.sh and never edited here. -->
+    <EmbeddedResource Include="..\..\definition\supply-chain.dis" LogicalName="supply-chain.dis" />
+    <EmbeddedResource Include="..\..\definition\provenance.json" LogicalName="supply-chain.provenance.json" />
+  </ItemGroup>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="EtAlii.Adp.Diagram.SupplyChain.Tests" />
   </ItemGroup>
 
