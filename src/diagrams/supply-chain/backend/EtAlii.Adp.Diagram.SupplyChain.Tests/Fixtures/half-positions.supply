@@ -1,5 +1,5 @@
 supply-chain: 1
-# Finding A12: positions with halves, read as written; every write rounds a half to the even neighbour.
+# Finding A12: positions with halves, read as written; every write rounds a half away from zero, as FBL rounds (Q1).
 groups:
   - id: empty-placed
     name: Placed and empty

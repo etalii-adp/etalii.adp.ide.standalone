@@ -7459,7 +7459,7 @@
     },
     {
       "document": "diagrams/supply-chain/backend/EtAlii.Adp.Diagram.SupplyChain.Tests/Fixtures/half-positions.supply",
-      "sha256": "de04316dfa9439594f22790d3eaca3029ac8d37f99993cb4dfc6f0ea12c578cb",
+      "sha256": "59375ff7698186f60fec01e3de0a8d8532c0a5dd0930976ceb00df7994fc24bf",
       "menus": [
         [
           "g1 supply-chain.rename | Rename… | mdi-pencil-outline | F2 | on",
@@ -7607,7 +7607,7 @@
           "hunks": [
             "@12 -2 +\"    group: empty-placed\\n    x: 111\\n    y: 61\\n\""
           ],
-          "sha256": "a934c541f18f6741ec827923694fa51b4d2b50ae3366f69d936432f54515c935"
+          "sha256": "2b989bf29d5c2fa3f355ec240eefc5b913b84532da83dfa7ffb0d5d70b2b4aa2"
         },
         {
           "do": "drag a into another group",
@@ -7620,7 +7620,7 @@
           "hunks": [
             "@11 -1 +\"    name: \\\"Parity: name #1\\\"\\n\""
           ],
-          "sha256": "bc64de937eac425767c608c207c9872907974a75d72d1e13213d81bf6daaec7f"
+          "sha256": "5a061ca34d39385b48f535454be8b74795844f185dd3be3aa1e7615548620854"
         },
         {
           "do": "set a supply-chain.name = \"on\"",
@@ -7628,7 +7628,7 @@
           "hunks": [
             "@11 -1 +\"    name: \\\"on\\\"\\n\""
           ],
-          "sha256": "bad50aea3d9019ef221b810a15912f05827c19335da11c549ff69c132669ac52"
+          "sha256": "5f9ab4a26fe78ae8cdff615b74ac641662438012dbac045b5d1d08718af41fa5"
         },
         {
           "do": "set a supply-chain.name = \"Line one\\nline two\"",
@@ -7636,7 +7636,7 @@
           "hunks": [
             "@11 -1 +\"    name: \\\"Line one\\\\nline two\\\"\\n\""
           ],
-          "sha256": "294fad9285d732182e6f644d6b9dbc5e4432acaa3c14c047d675fb3134360500"
+          "sha256": "dae1cae486737d75f7a37555b8c4473349ef2a8ec6908f5978d385037a904680"
         },
         {
           "do": "set a supply-chain.name = \"\"",
@@ -7644,7 +7644,7 @@
           "hunks": [
             "@11 -1 +\"    name: \\\"\\\"\\n\""
           ],
-          "sha256": "a7adcc49edc1475d840c4bfb6776315ea953893c9bb44b495f86aa604b8e600c"
+          "sha256": "f4afb4014f008a826b33ea245987644a0a62f0e6667fc09b310a33ed6d8109c1"
         },
         {
           "do": "set a supply-chain.stage = \"producer\"",
@@ -7652,7 +7652,7 @@
           "hunks": [
             "@10 -1 +\"    type: producer\\n\""
           ],
-          "sha256": "796dd8c3680a6eb92de377f389b467297987e1e1e1541b4f1b4448b210a5f1b5"
+          "sha256": "1b8bee07ff3c64a99e2fa36526526fb65c0bb3b797a08cf321296511d72c0f7b"
         },
         {
           "do": "set a supply-chain.stage = \"supplier\"",
@@ -7660,7 +7660,7 @@
           "hunks": [
             "@10 -1 +\"    type: processor\\n\""
           ],
-          "sha256": "c5572fe0d72df763d4d8067b888e7e802e66c2f287c8ec060fed405e3e411190"
+          "sha256": "33835909d20227f4dcb0f2cd0c0a4b169574720444638ac40ebfdadf75a59e1e"
         },
         {
           "do": "set a supply-chain.stage = \"quarry\"",
@@ -7683,7 +7683,7 @@
           "hunks": [
             "@12 -1 +\"\""
           ],
-          "sha256": "3d228fbe468550187260a21528997a0829b4c42ad85ec43f49d6f5aaff496da5"
+          "sha256": "e4495be23871b46216dd171385674d73f2d000e527c8cef71130e4a8a8c7bd7d"
         },
         {
           "do": "set a supply-chain.description = \"2026-10-11\"",
@@ -7691,7 +7691,7 @@
           "hunks": [
             "@12 -0 +\"    description: \\\"2026-10-11\\\"\\n\""
           ],
-          "sha256": "9cdc34937d37e90b64d65a8430cadda271257e1bce5fc9bef20eb05d940765ec"
+          "sha256": "e0add503eaf7e7bfa11f140bd2ae7aba5ca2d3bffa02dea6b046d8eb0a4639ef"
         },
         {
           "do": "set a supply-chain.description = \"y\"",
@@ -7699,7 +7699,7 @@
           "hunks": [
             "@12 -1 +\"    description: \\\"y\\\"\\n\""
           ],
-          "sha256": "8917b18029ec9301e7e7444d08d0df3179af13a26f24bbf54770159131009340"
+          "sha256": "595f3a441d8d148048b95851066010bcbfabc3d562f79de313717bfdca81e31b"
         },
         {
           "do": "set a supply-chain.description = \"\"",
@@ -7707,7 +7707,7 @@
           "hunks": [
             "@12 -1 +\"\""
           ],
-          "sha256": "3d228fbe468550187260a21528997a0829b4c42ad85ec43f49d6f5aaff496da5"
+          "sha256": "e4495be23871b46216dd171385674d73f2d000e527c8cef71130e4a8a8c7bd7d"
         },
         {
           "do": "set a supply-chain.quantity = \"12.5\"",
@@ -7715,7 +7715,7 @@
           "hunks": [
             "@12 -0 +\"    quantity: 12.5\\n\""
           ],
-          "sha256": "bfab44b53f134c48618e30d15fd0dd1b09bc498695b0c7383a4e64fd5cec7cec"
+          "sha256": "ee95cefa6eb08e888b3440a4db22d962353464bc95bd19fe0926cd947f409b04"
         },
         {
           "do": "set a supply-chain.quantity = \"-1\"",
@@ -7733,7 +7733,7 @@
           "hunks": [
             "@12 -1 +\"\""
           ],
-          "sha256": "3d228fbe468550187260a21528997a0829b4c42ad85ec43f49d6f5aaff496da5"
+          "sha256": "e4495be23871b46216dd171385674d73f2d000e527c8cef71130e4a8a8c7bd7d"
         },
         {
           "do": "set a supply-chain.unit = \"t: metric\"",
@@ -7741,7 +7741,7 @@
           "hunks": [
             "@12 -0 +\"    unit: \\\"t: metric\\\"\\n\""
           ],
-          "sha256": "889a5718acf0a36c83a537bbfaa5160812fc9ae8178922ba1137e890885f30d0"
+          "sha256": "7eb419927bc63557640c7ef551f7ab3727c02308e82d7bc0072b81f6382d864d"
         },
         {
           "do": "set a supply-chain.unit = \"\"",
@@ -7749,7 +7749,7 @@
           "hunks": [
             "@12 -1 +\"\""
           ],
-          "sha256": "3d228fbe468550187260a21528997a0829b4c42ad85ec43f49d6f5aaff496da5"
+          "sha256": "e4495be23871b46216dd171385674d73f2d000e527c8cef71130e4a8a8c7bd7d"
         },
         {
           "do": "set a supply-chain.step = \"0\"",
@@ -7762,7 +7762,7 @@
           "hunks": [
             "@12 -0 +\"    step: 0.25\\n\""
           ],
-          "sha256": "7200e4beabf007b30501341590dd95565c2d081506e96b7a57cf6b3ead32461a"
+          "sha256": "16191dd080922437009b372e120b7b52accb28128f9b4ce6de657fb34b222fbc"
         },
         {
           "do": "set a supply-chain.product = \"Not for a node\"",
@@ -7785,7 +7785,7 @@
           "hunks": [
             "@12 -0 +\"    quantity: 0.25\\n\""
           ],
-          "sha256": "76f7e0ea3bf4e24ead0335da4918b9ae0e6390c6de5329fce86ccf6c74ff8652"
+          "sha256": "dcdd141a5a1f6adcf128a4d87f809a0542a8e6866b58d4c212a14ac62e16ab61"
         },
         {
           "do": "execute supply-chain.increase on a",
@@ -7793,7 +7793,7 @@
           "hunks": [
             "@12 -1 +\"    quantity: 0.5\\n\""
           ],
-          "sha256": "69b9e83f8526d10f69dd967e407339eecc44e8460de87c63c7b4178958c97cfe"
+          "sha256": "b27d49ecb170d798b00ae6dede11731b17ce8fd2a4e4c297b5259a34dd2b0a37"
         },
         {
           "do": "execute supply-chain.decrease on a",
@@ -7801,7 +7801,7 @@
           "hunks": [
             "@12 -1 +\"    quantity: 0.25\\n\""
           ],
-          "sha256": "76f7e0ea3bf4e24ead0335da4918b9ae0e6390c6de5329fce86ccf6c74ff8652"
+          "sha256": "dcdd141a5a1f6adcf128a4d87f809a0542a8e6866b58d4c212a14ac62e16ab61"
         },
         {
           "do": "set a supply-chain.step = \"\"",
@@ -7809,7 +7809,7 @@
           "hunks": [
             "@13 -1 +\"\""
           ],
-          "sha256": "cae27db815547bcc9c7f59ec1eb1c38194c3aa6c190ffb88eef01a56edaaf961"
+          "sha256": "c2baa424070377a5a8c44da01024908c9adccbdb14bf4d87dbc052ff6656d284"
         },
         {
           "do": "execute supply-chain.increase on a",
@@ -7817,7 +7817,7 @@
           "hunks": [
             "@12 -1 +\"    quantity: 1.25\\n\""
           ],
-          "sha256": "83c325f14411c25649b52e66d212e529a18e2625659384faf2f5a39438ae275b"
+          "sha256": "883426efdc48321dce5023b78a4b2f02f16a65ffd63cb7eef170e06d75d9fb28"
         },
         {
           "do": "execute supply-chain.rename on a",
@@ -7830,7 +7830,7 @@
           "hunks": [
             "@11 -1 +\"    name: \\\"Parity renamed\\\"\\n\""
           ],
-          "sha256": "4d940ae64456b6a54dc5771fbdd5777515501aa4e864f3adcd001158552f18b2"
+          "sha256": "458c679e7da31bfa72ad62b6bf999bb2ddbf28780f5718462091c8847f31baa0"
         },
         {
           "do": "execute supply-chain.group on a",
@@ -7854,7 +7854,7 @@
             "@8 -0 +\"  - id: {minted-1}\\n    name: Parity group\\n\"",
             "@12 -0 +\"    group: {minted-1}\\n\""
           ],
-          "sha256": "0c25d07709721a16d3ddfdcd897cb97687ff92066fe532469a8bd6a71a15a7a8"
+          "sha256": "6dceb67d5b640042753dd31550d21ec3596ad6b00c177b9306afaf7eaf5a3d5d"
         },
         {
           "do": "execute supply-chain.connect on a",
@@ -7868,7 +7868,7 @@
             "@16 -2 +\"    x: 320\\n    y: 40\\n\"",
             "@21 -2 +\"    x: 1920\\n    y: 0\\n\""
           ],
-          "sha256": "244aa070165791818358e575c2de53530010a375f6057b998bbc2e7ba70e03c6"
+          "sha256": "749573f9f2b157e60ffb8e568308c1e98dccda74f224b35ab4461be7d23d3570"
         },
         {
           "do": "drag empty-placed by (30, 40.5) to (40.5, 52)",
@@ -7876,7 +7876,7 @@
           "hunks": [
             "@6 -2 +\"    x: 41\\n    y: 52\\n\""
           ],
-          "sha256": "7657771934c978aa81ca4dbd984a4cfa01af3e182f0de3fd0c81c36d3b3c520c"
+          "sha256": "532adcba61a3e27de84c4265ae14a1897d4fa91026c10c51f3da4a46e4a2cdd9"
         },
         {
           "do": "set empty-placed supply-chain.name = \"Parity region\"",
@@ -7884,7 +7884,7 @@
           "hunks": [
             "@5 -1 +\"    name: Parity region\\n\""
           ],
-          "sha256": "b54be8eb2ed8f0b77de5401801649061bc3573618660b8b463dcd59b8255b5b5"
+          "sha256": "265f9049236a6bb5933d4d85fc2522c4a81f18466c97ab535ba0f7df9da8ab96"
         },
         {
           "do": "set empty-placed supply-chain.description = \"Parity: a region #2\"",
@@ -7892,7 +7892,7 @@
           "hunks": [
             "@6 -0 +\"    description: \\\"Parity: a region #2\\\"\\n\""
           ],
-          "sha256": "ea8fc98ee13b22815fdd7d599c74a67787ba64859b914d4edfdf7af0070fe3c0"
+          "sha256": "4b0d06438f87dbcfddb0c4d2903372eea1d56892bc36b6a61f27cd7292e26d2d"
         },
         {
           "do": "set empty-placed supply-chain.description = \"\"",
@@ -7900,7 +7900,7 @@
           "hunks": [
             "@6 -1 +\"\""
           ],
-          "sha256": "b54be8eb2ed8f0b77de5401801649061bc3573618660b8b463dcd59b8255b5b5"
+          "sha256": "265f9049236a6bb5933d4d85fc2522c4a81f18466c97ab535ba0f7df9da8ab96"
         },
         {
           "do": "set empty-placed supply-chain.quantity = \"3\"",
@@ -7923,7 +7923,7 @@
           "hunks": [
             "@5 -1 +\"    name: Parity renamed region\\n\""
           ],
-          "sha256": "c0db2fd9acd1387d751a6d820ae04867222ddeb327b4f642de9bb6c266174d13"
+          "sha256": "accf40918f3e9d0cc5621cf41ec437de70ac1693967675d5b0dd184f3bc78510"
         },
         {
           "do": "execute supply-chain.increase on empty-placed",
@@ -7946,7 +7946,7 @@
           "hunks": [
             "@27 -0 +\"    product: \\\"Parity: product #3\\\"\\n\""
           ],
-          "sha256": "b9da392ab3cb2b92ba22e8ab50dc3611fe8e4117336bc726652fc82ac19c17d0"
+          "sha256": "cd4cc6339dd53065b506bcf14415ce611e14961b8d7929304550358ffd5571e3"
         },
         {
           "do": "set a-to-b supply-chain.description = \"off\"",
@@ -7954,7 +7954,7 @@
           "hunks": [
             "@28 -0 +\"    description: \\\"off\\\"\\n\""
           ],
-          "sha256": "33f8cc1f8deaae25dc2f9171ac801b77f5abe83c3c6da03fdc39640599c7416a"
+          "sha256": "d9197f971bf4a6fffe3e4153c6aa51e019b7429b9a2edf3e789ddb9539e9c0fd"
         },
         {
           "do": "set a-to-b supply-chain.description = \"\"",
@@ -7962,7 +7962,7 @@
           "hunks": [
             "@28 -1 +\"\""
           ],
-          "sha256": "b9da392ab3cb2b92ba22e8ab50dc3611fe8e4117336bc726652fc82ac19c17d0"
+          "sha256": "cd4cc6339dd53065b506bcf14415ce611e14961b8d7929304550358ffd5571e3"
         },
         {
           "do": "set a-to-b supply-chain.volume = \"3\"",
@@ -7970,7 +7970,7 @@
           "hunks": [
             "@28 -1 +\"    volume: 3\\n\""
           ],
-          "sha256": "7a0ecb5a183367875855aaf06096b31bf1f1c2670842105c3d098bbfffbf2f3a"
+          "sha256": "61254edcd8a52f9bb2208e572f9fcea3eaabbcd602d47bd3fb944da4d055dcc9"
         },
         {
           "do": "set a-to-b supply-chain.unit = \"kt\"",
@@ -7978,7 +7978,7 @@
           "hunks": [
             "@29 -0 +\"    unit: kt\\n\""
           ],
-          "sha256": "d6b50603c785fd6c18962df2ff003f6dc8834a8431905b968b83b60bc40bdf60"
+          "sha256": "e5a22eeaf3a59fe7c877995aeaa98cfe977e317f7807ed619b560ffab7bf6415"
         },
         {
           "do": "set a-to-b supply-chain.step = \"0.5\"",
@@ -7986,7 +7986,7 @@
           "hunks": [
             "@30 -0 +\"    step: 0.5\\n\""
           ],
-          "sha256": "4d50b1742f43b12ca7effe0827a0dd076dc5c7838ea0ba997daa11e7844de6ad"
+          "sha256": "7c1f27c32e92716592a71b24dfc869aa78e236a422b4d453cb7a24cf36e94509"
         },
         {
           "do": "execute supply-chain.increase on a-to-b",
@@ -7994,7 +7994,7 @@
           "hunks": [
             "@28 -1 +\"    volume: 3.5\\n\""
           ],
-          "sha256": "c4827f5aa7d2670e93d9a07a0e4ad48f7e9e477f12cd21707c9b681cfa192df4"
+          "sha256": "2f2dd76e739e5532c5d6f9d1aee7453a0cf195b8e9637e6b771155319afa5217"
         },
         {
           "do": "execute supply-chain.decrease on a-to-b",
@@ -8002,7 +8002,7 @@
           "hunks": [
             "@28 -1 +\"    volume: 3\\n\""
           ],
-          "sha256": "4d50b1742f43b12ca7effe0827a0dd076dc5c7838ea0ba997daa11e7844de6ad"
+          "sha256": "7c1f27c32e92716592a71b24dfc869aa78e236a422b4d453cb7a24cf36e94509"
         },
         {
           "do": "set a-to-b supply-chain.volume = \"0\"",
@@ -8010,7 +8010,7 @@
           "hunks": [
             "@28 -1 +\"    volume: 0\\n\""
           ],
-          "sha256": "ee3e6d34109cc149f941244bc6d4594a4bfb3763ef26c0318be1b4716d5a7ed6"
+          "sha256": "190d8f71dc6b59b8e998f742747d684361d3da094c08de59190f83e6836fc447"
         },
         {
           "do": "execute supply-chain.decrease on a-to-b",
@@ -8023,7 +8023,7 @@
           "hunks": [
             "@28 -1 +\"\""
           ],
-          "sha256": "0d06eb75400423f74eec00aac1e7daf29ad6fbaf7476f6bad5e5f875eab6f1dc"
+          "sha256": "901b04c0733a1cfecb85615fc6048792a449d3a75bc271f373d15027b44bfd69"
         },
         {
           "do": "set a-to-b supply-chain.name = \"Not for a flow\"",
@@ -8051,7 +8051,7 @@
           "hunks": [
             "@27 -1 +\"    product: \\\"Parity product\\\"\\n\""
           ],
-          "sha256": "fdd00f93716ce93916a8b6aaa92cbc788eaf208e6efbcb0f0d10e4a4bf4a4185"
+          "sha256": "df39f7fae215535bfdbd1d1e7fb372253b8446d3bebf33684ca7fd9b93578cd8"
         },
         {
           "do": "execute supply-chain.group on a-to-b",
@@ -8064,7 +8064,7 @@
           "hunks": [
             "@23 -0 +\"  - id: {minted-2}\\n    type: source\\n    name: New source\\n    quantity: 0\\n    x: 305\\n    y: 253\\n\""
           ],
-          "sha256": "b96bd7fb4dfb2539cc7444b22ad1645daf74e9b7ab4db25982aa7cb04d3ae09c"
+          "sha256": "32e8016932c03bf6705ddbd661a29dff390567583080bde73790daf3f7a3337f"
         },
         {
           "do": "execute supply-chain.add-group on new:1400.5,300.5",
@@ -8072,7 +8072,7 @@
           "hunks": [
             "@10 -0 +\"  - id: {minted-3}\\n    name: New group\\n    x: 1285\\n    y: 223\\n\""
           ],
-          "sha256": "5abbf2294f7e792a95b96613f85044c878f3afc3a9f4864b9c2455df157e6466"
+          "sha256": "49f13ee4e376499c0a8f330a31335a3f87f0f817707609f3c03fee9287663241"
         },
         {
           "do": "execute supply-chain.add.quarry on new:400.5,300.5",
@@ -8105,7 +8105,7 @@
           "hunks": [
             "@40 -0 +\"  - id: {minted-4}\\n    from: {minted-2}\\n    to: a\\n\""
           ],
-          "sha256": "9be3d187edc1091889035a392009aba7d25e1609f03bcdc8f9188915271bc13f"
+          "sha256": "1511ea2a7847dd6758c89b0e49208fdd568cb663e1570d82cba9809c31c4586e"
         },
         {
           "do": "execute supply-chain.connect on rel:a->a",
@@ -8213,7 +8213,7 @@
           "hunks": [
             "@20 -2 +\"    x: 11\\n    y: 22\\n\""
           ],
-          "sha256": "b1f4725526ce6a45cbef3300b3c573490434edfb57e37381639e6f70fc588ba7"
+          "sha256": "8c8b3329987a601daf5c6117a45c9543ea466c8055bb947d8db62c9e4928075c"
         },
         {
           "do": "dispatch place parity:unknown",
@@ -8226,7 +8226,7 @@
           "hunks": [
             "@34 -6 +\"\""
           ],
-          "sha256": "142fe7666df4da8c3b167cbd68a0a5fec878dca8dce09c7f369dd5d20136f95b"
+          "sha256": "f6aa3ca0061f1bb07a68d864f773c6e729410633f76ccf18de60b6793fbf4b0f"
         },
         {
           "do": "execute supply-chain.remove on empty-placed",
@@ -8234,7 +8234,7 @@
           "hunks": [
             "@4 -4 +\"\""
           ],
-          "sha256": "1abdc1e9fe577288109ef9d08d0b42145b1a050a78b080c7226490cdf83be7cb"
+          "sha256": "a1922dcc96979f999e309c043c5f60e51924a6781868a5233f47e6f5fcfbbd74"
         },
         {
           "do": "execute supply-chain.remove on b",
@@ -8242,7 +8242,7 @@
           "hunks": [
             "@18 -5 +\"\""
           ],
-          "sha256": "fe83dfad472c8d4e4cd476cce4533b714f1b7a7e5da0d768e06a6e2517de727b"
+          "sha256": "2a7f234cae46b83a9ec588404f1a474ee2c66578d66353f4ce2e7c6198845f14"
         },
         {
           "do": "execute supply-chain.remove on a",
@@ -8256,7 +8256,7 @@
             "@11 -7 +\"\"",
             "@25 -3 +\"\""
           ],
-          "sha256": "77bc493affb79eee3281f6a2fce0b8347b3f3c63f097ef304e1188bebbd48e48"
+          "sha256": "3c52d1c90ad615a6f0bab3e6d6f58cc2efa002b70bbaba78e8533979d3be0c7d"
         },
         {
           "do": "execute supply-chain.arrange on ",
@@ -8264,7 +8264,7 @@
           "hunks": [
             "@15 -2 +\"    x: 0\\n    y: 0\\n\""
           ],
-          "sha256": "b144197b9df5a4fdef06b8e918d8414c15bc7c006452f063397bfd8557505824"
+          "sha256": "53d06dc5d52a5306d485b865b5a49ba22cd65c42a06b7f69bdb557a4b2966a43"
         }
       ],
       "undoAll": "50 undone; the original text is back"
