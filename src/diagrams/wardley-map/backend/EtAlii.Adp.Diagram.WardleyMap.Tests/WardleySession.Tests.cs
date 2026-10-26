@@ -66,7 +66,7 @@ public sealed class WardleySessionTests : IDisposable
         // Act.
         var deltas = await Editable(path).BaselineAsync(TestContext.Current.CancellationToken);
 
-        // Assert. Two elements plus the evolution axis.
+        // Assert. Two elements plus the diagram element.
         Assert.Single(deltas.OfType<DiagramAddDelta>());
         Assert.Equal(3, AddedBy(deltas).Count);
     }
@@ -173,11 +173,11 @@ public sealed class WardleySessionTests : IDisposable
     }
 
     [Fact]
-    public async Task UpdateView_KeepsTheAxisAndALinkWhoseEndpointIsInView()
+    public async Task UpdateView_KeepsTheDiagramAndALinkWhoseEndpointIsInView()
     {
         // Arrange. Both carry a placeholder position: a link is emitted at (0, 0) because it is
-        // drawn between its endpoints, and the evolution axis at (0, 0) because it is the map's
-        // frame rather than a thing on the map. A filter judging either by that point would keep
+        // drawn between its endpoints, and the diagram element at (0, 0) because it is the map
+        // itself rather than a thing on the map. A filter judging either by that point would keep
         // them only while the reader happened to be looking at the top-left corner, and cull every
         // relationship everywhere else.
         var path = Write("component Alpha [0.9, 0.1]\ncomponent Beta [0.1, 0.9]\nAlpha->Beta\n");

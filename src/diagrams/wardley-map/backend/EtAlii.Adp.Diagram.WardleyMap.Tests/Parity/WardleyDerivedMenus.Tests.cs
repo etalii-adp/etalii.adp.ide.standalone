@@ -13,7 +13,7 @@ public class WardleyDerivedMenusTests
     public static TheoryData<string> Documents() => WardleyCorpus.Names();
 
     [Fact]
-    public void ThePalette_IsTheHandWrittenOne() => Assert.Equal(new HandWrittenWardleyToolbox().Items, new WardleyToolboxProvider().Items);
+    public void ThePalette_IsTheHandWrittenOne() => Assert.Equal(new HandWrittenWardleyToolbox().Items, WardleyDefinition.Toolbox);
 
     [Theory]
     [MemberData(nameof(Documents))]

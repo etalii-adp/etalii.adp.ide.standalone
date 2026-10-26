@@ -11,22 +11,23 @@ namespace EtAlii.Adp.Diagram.WardleyMap.Tests;
 /// The palette: what it offers, what it deliberately does not, and that every entry's drop
 /// really creates something (Requirement 13).
 /// </summary>
-public sealed class WardleyToolboxProviderTests : IDisposable
+public sealed class WardleyToolboxTests : IDisposable
 {
     private readonly TestFolder _testFolder = TestFolder.Create("wardley-toolbox");
     private readonly string _root;
     private readonly ServiceProvider _services;
     private readonly IWardleyDocumentStore _documents;
-    private readonly WardleyToolboxProvider _toolbox = new();
+    private readonly IDiagramToolboxProvider _toolbox;
     private readonly WardleyContextActionProvider _actions;
     private readonly string _path;
 
-    public WardleyToolboxProviderTests()
+    public WardleyToolboxTests()
     {
         _root = _testFolder.Path;
         _services = new ServiceCollection().AddCommands().AddHierarchyCommandHandlers().AddWardleyMap().BuildServiceProvider();
         _documents = _services.GetRequiredService<IWardleyDocumentStore>();
         _actions = _services.GetServices<IContextActionProvider>().OfType<WardleyContextActionProvider>().Single();
+        _toolbox = _services.GetServices<IDiagramToolboxProvider>().Single(toolbox => toolbox.Origin == Diagram.WardleyMap.Origin);
         _path = IoPath.Combine(_root, "map.owm");
         File.WriteAllText(_path, "title Empty\n");
 
