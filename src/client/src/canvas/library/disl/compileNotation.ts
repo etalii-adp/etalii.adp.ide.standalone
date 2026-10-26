@@ -141,6 +141,12 @@ export interface NotationBindings {
   relationLineClassName?: (relation: string) => string | undefined;
   /** A relation's wide, invisible hit line's class, where the stylesheet dresses it. */
   relationHitClassName?: (relation: string) => string | undefined;
+  /**
+   * Whether a node whose anchors are in DISL's `sides` mode offers a handle at the midpoint of each side it
+   * allows, which is what the mode states (§6.9: the midpoint of the nearest allowed side), rather than the
+   * library's edge rule along those sides. A handle is drawn as a dot and starts a connection from it.
+   */
+  sideHandles?: (type: string) => boolean;
   /** An endpoint's anchor rule, where the module states one. */
   endpointAnchors?: (relation: string, end: "source" | "target") => EndpointConstraint["anchors"] | undefined;
   /** What each custom shape of the specification is drawn as. */
@@ -166,8 +172,24 @@ export interface NotationBindings {
   ownRulers?: boolean;
   /** The class a legend swatch takes for one enum value. */
   legendSwatchClass?: (enumName: string, value: string) => string;
-  /** Library declarations the specification states only under a module's `x-` key, which DISL has no construct for. */
+  /**
+   * Library declarations the specification states only under a module's `x-` key, which DISL has no construct
+   * for. Its `elementTypes` are added after the compiled ones; every other key replaces the compiled one.
+   */
   extras?: (spec: DislDocument) => Partial<DiagramDefinition>;
+  /**
+   * What the module draws itself in place of what the specification states, where the notation can only
+   * approximate the drawing: a text set just after another label's text, a second line moving along an edge,
+   * an arrowhead square to the side it arrives at rather than to the line. Each is named by where it is
+   * stated - `<Node>/labels/<id>`, `<Edge>/labels/<id>`, `<Edge>/midMarkers` or `<Edge>/targetMarker` - and
+   * the compiler leaves it out: the module draws it through {@link elementLabels}, {@link elementDecorations}
+   * and {@link edgeAdornments}. A name the specification does not state is refused.
+   */
+  drawnByModule?: readonly string[];
+  /** Labels drawn after the ones the specification states, for what {@link drawnByModule} leaves to the module. */
+  elementLabels?: (type: string, node: DislNodeNotation) => readonly LabelDeclaration[];
+  /** What rides on an edge's line, drawn by the module, keyed by the edge: for what {@link drawnByModule} leaves to it. */
+  edgeAdornments?: Readonly<Record<string, NonNullable<RelationTypeDefinition["adorn"]>>>;
   /**
    * The condition each CEL `visible` of a label stands for, keyed by the expression as written, as
    * {@link celPaths} does for a value: the library has no CEL, so the payload carries what it tests.
@@ -354,6 +376,9 @@ function samePress(a: ShortcutInvocation, b: ShortcutInvocation): boolean {
 const COMPASS: Readonly<Record<CompassPosition, readonly [number, number]>> = {
   n: [0.5, 0], ne: [1, 0], e: [1, 0.5], se: [1, 1], s: [0.5, 1], sw: [0, 1], w: [0, 0.5], nw: [0, 0],
 };
+
+/** Each side's midpoint as the compass position the library draws a handle at, in the compass's order. */
+const SIDE_MIDPOINTS: readonly (readonly [string, CompassPosition])[] = [["top", "n"], ["right", "e"], ["bottom", "s"], ["left", "w"]];
 
 /** Where the first line of text inside a node sits beneath its top, and half of it above its bottom. */
 const LABEL_LINE = 20;
@@ -634,7 +659,8 @@ class Compiler {
       ...(background !== undefined ? { background } : {}),
     };
 
-    return { ...definition, ...this.bindings.extras?.(spec) };
+    const extras = this.bindings.extras?.(spec) ?? {};
+    return { ...definition, ...extras, ...(extras.elementTypes !== undefined ? { elementTypes: [...elementTypes, ...extras.elementTypes] } : {}) };
   }
 
   /** The default system's x and y axes, by name where they are named. */
@@ -1047,17 +1073,17 @@ class Compiler {
 
   private elementType(name: string, node: DislNodeNotation): ElementTypeDefinition {
     const where = `node "${name}"`;
-    const { shape, segments, cornerRadius } = this.shape(name, node);
+    const { shape, segments, cornerRadius, parts } = this.shape(name, node);
     const bodyless = shape === "none";
     const classNames = [...this.bindings.classNames(name, node), ...this.indexedColours(name, node)];
     const hint = this.showsDragValue() && this.movable(node) ? [this.dragHint()] : [];
     // A `text` shape is only its text (Appendix B.2): placed by an edge, its text starts or ends there.
     const placedEdge = node.placement?.anchor === "left" ? "start" : node.placement?.anchor === "right" ? "end" : undefined;
     const textEdge = shapeNameOf(node.shape).name === "text" ? placedEdge : undefined;
-    const labels = [...(node.labels ?? []).map((label) => this.label(name, label, bodyless, textEdge)), ...hint];
+    const labels = [...(node.labels ?? []).map((label) => this.label(name, label, bodyless, textEdge)), ...hint, ...(this.bindings.elementLabels?.(name, node) ?? [])];
     const compartments = this.compartments(name, node);
     const { links, decorations: badges } = this.badges(name, node);
-    const decorations = [...this.icon(name, node, bodyless), ...badges, ...(this.bindings.elementDecorations?.(name, node) ?? [])];
+    const decorations = [...(parts ?? []), ...this.icon(name, node, bodyless), ...badges, ...(this.bindings.elementDecorations?.(name, node) ?? [])];
     const data = this.bindings.elementData?.(name, node);
     const centreOf = this.centreOf(name, node);
     const { sizing, resize } = this.sizing(node);
@@ -1270,7 +1296,7 @@ class Compiler {
     return expression === undefined ? fail(`${where} is never visible.`) : this.condition(expression.trim(), `${where} visible`);
   }
 
-  private shape(name: string, node: DislNodeNotation): { shape: BuiltInShape; segments?: SegmentDeclaration; cornerRadius?: number } {
+  private shape(name: string, node: DislNodeNotation): { shape: BuiltInShape; segments?: SegmentDeclaration; cornerRadius?: number; parts?: readonly DecorationDeclaration[] } {
     const { name: shapeName, params } = shapeNameOf(node.shape);
     const custom: DislCustomShape | undefined = this.spec.notation.shapes?.[shapeName];
     const drawnAs = custom === undefined ? this.bindings.builtInShapes?.[shapeName] : undefined;
@@ -1290,8 +1316,10 @@ class Compiler {
       return fail(`node "${name}" is drawn as "${shapeName}", which is no built-in the library draws and no custom shape the module binds.`);
     }
 
-    const segments = binding.segments?.({ shape: custom, params, bind: (value) => this.binding(value, `node "${name}" shape parameter`) });
-    return segments !== undefined ? { shape: binding.shape, segments } : { shape: binding.shape };
+    const bind = (value: unknown) => this.binding(value, `node "${name}" shape parameter`);
+    const segments = binding.segments?.({ shape: custom, params, bind });
+    const parts = binding.decorations?.({ shape: custom, params, bind, node });
+    return { shape: binding.shape, ...(segments !== undefined ? { segments } : {}), ...(parts !== undefined && parts.length > 0 ? { parts } : {}) };
   }
 
   private label(type: string, label: DislLabel, bodyless = false, textEdge?: "start" | "end"): LabelDeclaration {
@@ -1557,6 +1585,12 @@ class Compiler {
       return { kind: "along", edges: [...(anchors.sides ?? ["top", "right", "bottom", "left"])], visible: false };
     }
 
+    if (anchors?.mode === "sides" && this.bindings.sideHandles?.(name) === true) {
+      // A handle at the middle of each allowed side, in the library's compass order.
+      const allowed = new Set<string>(anchors.sides ?? ["top", "right", "bottom", "left"]);
+      return { kind: "compass", positions: SIDE_MIDPOINTS.filter(([side]) => allowed.has(side)).map(([, position]) => position) };
+    }
+
     if (anchors?.mode === "sides") {
       const sides = [...(anchors.sides ?? ["top", "right", "bottom", "left"])].sort().join(",");
       const edgeSides = sides === "bottom,top" ? "vertical" : sides === "left,right" ? "horizontal" : sides === "bottom,left,right,top" ? undefined : fail(`node "${name}" attaches on ${sides}, which the library's edge anchors cannot narrow to.`);
@@ -1801,6 +1835,10 @@ class Compiler {
     if (ribbon !== undefined && along !== undefined) {
       fail(`edge "${name}" is a ribbon and a bowed arc; the library draws one or the other.`);
     }
+    const adornment = this.bindings.edgeAdornments?.[name];
+    if (adornment !== undefined && (ribbon !== undefined || along !== undefined)) {
+      fail(`edge "${name}" is adorned by the module and drawn as a ${ribbon !== undefined ? "ribbon" : "bowed arc"}; the library draws one adornment on a line.`);
+    }
 
     // Only a type that may hold children can be the parent end of a relation derived from containment.
     const derivedFromParent = isObject(relation.derived) && relation.derived.source === "item.parent";
@@ -1826,6 +1864,7 @@ class Compiler {
       ...(dashWhen !== undefined ? { dashWhen } : {}),
       ...(along !== undefined && ((along.bars?.length ?? 0) > 0 || (along.marks?.length ?? 0) > 0) ? { adorn: bowedArcAdornment(along) } : {}),
       ...(ribbon !== undefined ? { adorn: ribbonAdornment(ribbon, customRoute!) } : {}),
+      ...(adornment !== undefined ? { adorn: adornment } : {}),
       ...(strokeLadder !== undefined ? { strokeLadder } : {}),
       ...(stub !== undefined ? { stub } : {}),
       ...(className !== undefined ? { className } : {}),
@@ -2987,6 +3026,38 @@ function inheritedNotation(spec: DislDocument): DislDocument {
   return { ...spec, notation: { ...spec.notation, nodes, ...(edges !== undefined ? { edges } : {}) } };
 }
 
+/**
+ * The specification without what the module draws itself ({@link NotationBindings.drawnByModule}): each
+ * named label, an edge's mid-markers, an edge's target marker, which is then none. A name that states
+ * nothing is refused, so a binding cannot outlive the notation it stands in for.
+ */
+function withoutModuleDrawn(spec: DislDocument, names: readonly string[]): DislDocument {
+  if (names.length === 0) {
+    return spec;
+  }
+
+  const nodes: Record<string, DislNodeNotation> = { ...spec.notation.nodes };
+  const edges: Record<string, DislEdgeNotation> = { ...spec.notation.edges };
+  for (const name of names) {
+    const [owner = "", part = "", id] = name.split("/");
+    const node = nodes[owner];
+    const edge = edges[owner];
+    if (part === "labels" && node?.labels?.some((label) => label.id === id) === true) {
+      nodes[owner] = { ...node, labels: node.labels.filter((label) => label.id !== id) };
+    } else if (part === "labels" && edge?.labels?.some((label) => label.id === id) === true) {
+      edges[owner] = { ...edge, labels: edge.labels.filter((label) => label.id !== id) };
+    } else if (part === "midMarkers" && id === undefined && (edge?.midMarkers?.length ?? 0) > 0) {
+      edges[owner] = { ...edge!, midMarkers: [] };
+    } else if (part === "targetMarker" && id === undefined && edge?.targetMarker !== undefined) {
+      edges[owner] = { ...edge, targetMarker: "none" };
+    } else {
+      fail(`the module draws "${name}" itself, which the specification does not state.`);
+    }
+  }
+
+  return { ...spec, notation: { ...spec.notation, nodes, ...(spec.notation.edges !== undefined ? { edges } : {}) } };
+}
+
 /** A DISL notation as the library's diagram definition. See this file's opening comment. */
 /** A theme token as its CSS custom property: `color.text.muted` is `--color-text-muted`. */
 function tokenProperty(token: string): string {
@@ -2994,5 +3065,5 @@ function tokenProperty(token: string): string {
 }
 
 export function compileNotation(spec: DislDocument, bindings: NotationBindings, options: CompileOptions = {}): DiagramDefinition {
-  return new Compiler(inheritedNotation(spec), bindings, options).compile();
+  return new Compiler(withoutModuleDrawn(inheritedNotation(spec), bindings.drawnByModule ?? []), bindings, options).compile();
 }
