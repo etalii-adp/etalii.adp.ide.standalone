@@ -56,7 +56,7 @@ public sealed class SupplyChainRoundTripTests : IDisposable
             var store = new SupplyChainDocumentStore(new FileWriter());
             var dispatcher = TestHistory.Dispatcher(s => { s.AddSupplyChain(); s.AddSingleton<ISupplyChainDocumentStore>(store); });
             var result = await dispatcher.DispatchAsync(command, TestContext.Current.CancellationToken);
-            if (!result.IsSuccess || result.Inverse is not ICommand inverse)
+            if (!result.IsSuccess || result.Inverse is not { } inverse)
             {
                 continue;
             }

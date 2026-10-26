@@ -133,7 +133,7 @@ internal static class SupplyChainEdits
     /// <summary><paramref name="change"/> as the change the binding writes: every element by the id the binding reads it with, every reference by the id it is written with.</summary>
     private static ModelChange ForBinding(Dictionary<string, string> ids, DislDiagram before, DislChange change) => DislWrite.ToFbl(SupplyChainDefinition.Specification, change) switch
     {
-        ModelChange.Set set => set with { Id = ids.GetValueOrDefault(set.Id, set.Id), Attributes = Written(before, set.Attributes) },
+        ModelChange.Set set => new ModelChange.Set(ids.GetValueOrDefault(set.Id, set.Id), Written(before, set.Attributes)),
         ModelChange.Remove remove => new ModelChange.Remove(ids.GetValueOrDefault(remove.Id, remove.Id)),
         ModelChange.Add add => add with { Attributes = Written(before, add.Attributes) },
         var other => other,

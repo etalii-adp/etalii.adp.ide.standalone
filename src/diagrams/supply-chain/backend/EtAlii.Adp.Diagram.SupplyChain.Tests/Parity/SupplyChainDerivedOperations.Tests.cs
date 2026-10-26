@@ -208,7 +208,7 @@ public class SupplyChainDerivedOperationsTests
                 return actual.Reading.IsUsable;
             }
 
-            var (before, after) = (expected.Reading.Model, actual.Reading.Model);
+            (SupplyChainModel before, SupplyChainModel after) = (expected.Reading.Model, actual.Reading.Model);
             return expected.Reading.Unreadable == actual.Reading.Unreadable
                 && before.Version == after.Version
                 && before.Problems.Select(problem => problem.Message).SequenceEqual(after.Problems.Select(problem => problem.Message))
@@ -227,9 +227,17 @@ public class SupplyChainDerivedOperationsTests
         /// Whether a whole number the definition wrote is the one the oracle wrote, or the half the oracle rounded to even
         /// rounded away from zero instead: one further from zero, in the same direction. <c>-0</c> and <c>0</c> are the same.
         /// </summary>
-        private static bool Halves(double? handWritten, double? definition) =>
-            handWritten == definition
-            || (handWritten is { } before && definition is { } after && Math.Abs(after) == Math.Abs(before) + 1 && (before == 0 || Math.Sign(after) == Math.Sign(before)));
+        private static bool Halves(double? handWritten, double? definition)
+        {
+            if (handWritten is not { } before || definition is not { } after)
+            {
+                return handWritten is null && definition is null;
+            }
+
+            return Math.Abs(after - before) < double.Tolerance
+                || (Math.Abs(Math.Abs(after) - Math.Abs(before) - 1) < double.Tolerance
+                    && (Math.Abs(before) < double.Tolerance || Math.Sign(after) == Math.Sign(before)));
+        }
 
         private static async Task<Outcome> OutcomeOf<TCommand>(ICommandHandler<TCommand> handler, Func<string?> saved, TCommand command)
             where TCommand : ICommand
@@ -237,9 +245,14 @@ public class SupplyChainDerivedOperationsTests
             try
             {
                 var result = await handler.ExecuteAsync(command, TestContext.Current.CancellationToken);
-                return !result.IsSuccess
-                    ? new Outcome($"refused: {result.Error}", null)
-                    : saved() is { } written ? new Outcome(written, SupplyChainReading.Outcome(written)) : new Outcome("(nothing saved)", null);
+                if (!result.IsSuccess)
+                {
+                    return new Outcome($"refused: {result.Error}", null);
+                }
+
+                return saved() is { } written
+                    ? new Outcome(written, SupplyChainReading.Outcome(written))
+                    : new Outcome("(nothing saved)", null);
             }
             catch (Exception exception) when (exception is InvalidOperationException or ArgumentException or KeyNotFoundException or NullReferenceException)
             {
