@@ -32,6 +32,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The FBL binding of the .supply body (supply-chain-disl-fbl), through which SupplyChainBody reads it. -->
+    <EmbeddedResource Include="supply-chain.fbl" LogicalName="supply-chain.fbl" />
+  </ItemGroup>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="EtAlii.Adp.Diagram.SupplyChain.Tests" />
   </ItemGroup>
 

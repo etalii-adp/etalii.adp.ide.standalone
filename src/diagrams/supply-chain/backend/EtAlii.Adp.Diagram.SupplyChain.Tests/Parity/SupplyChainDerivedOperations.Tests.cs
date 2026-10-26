@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 using Xunit;
 
@@ -39,7 +38,7 @@ public class SupplyChainDerivedOperationsTests
     {
         // Arrange.
         var text = await SupplyChainCorpus.TextAsync(name, TestContext.Current.CancellationToken);
-        var model = SupplyChainParser.Parse(LineDocument.Parse(text));
+        var model = SupplyChainReading.Parse(text);
         var run = new EditComparison(text);
 
         // Act.

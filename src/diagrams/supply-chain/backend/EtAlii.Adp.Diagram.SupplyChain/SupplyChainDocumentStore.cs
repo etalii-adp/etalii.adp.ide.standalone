@@ -16,5 +16,5 @@ public sealed class SupplyChainDocumentStore(IFileWriter writer) : LifecycleDocu
 
 
     /// <inheritdoc />
-    protected override ParseOutcome<SupplyChainModel> Parse(LineDocument body) => SupplyChainParser.Outcome(body);
+    protected override ParseOutcome<SupplyChainModel> Parse(LineDocument body) => SupplyChainReading.Outcome(body.Text);
 }

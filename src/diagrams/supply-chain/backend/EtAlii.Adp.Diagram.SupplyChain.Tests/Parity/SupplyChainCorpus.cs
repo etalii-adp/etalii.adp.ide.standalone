@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.SupplyChain.Tests.Parity;
@@ -13,7 +12,7 @@ internal static class SupplyChainCorpus
 
     /// <summary>The document <paramref name="name"/>, parsed.</summary>
     public static async Task<SupplyChainModel> ReadAsync(string name, CancellationToken cancellationToken) =>
-        SupplyChainParser.Parse(LineDocument.Parse(await TextAsync(name, cancellationToken)));
+        SupplyChainReading.Parse(await TextAsync(name, cancellationToken));
 
     /// <summary>The text of the document <paramref name="name"/>, decoded as the module decodes it.</summary>
     public static async Task<string> TextAsync(string name, CancellationToken cancellationToken)

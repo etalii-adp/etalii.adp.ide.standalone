@@ -8,7 +8,7 @@ namespace EtAlii.Adp.Diagram.SupplyChain;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Nothing serialises a model back to a file.</b> Every write splices a range the parser
+/// <b>Nothing serialises a model back to a file.</b> Every write splices a range the reading
 /// recorded, so a line nobody splices is a line nobody can damage - an unknown key, a comment and
 /// the author's own indentation all survive by construction.
 /// </para>
@@ -19,9 +19,9 @@ namespace EtAlii.Adp.Diagram.SupplyChain;
 /// </remarks>
 public static class SupplyChainWriter
 {
-    private const string GroupsSection = SupplyChainParser.GroupsKey + ":";
-    private const string NodesSection = SupplyChainParser.NodesKey + ":";
-    private const string FlowsSection = SupplyChainParser.FlowsKey + ":";
+    private const string GroupsSection = "groups:";
+    private const string NodesSection = "nodes:";
+    private const string FlowsSection = "flows:";
 
     /// <summary>Writes a text key, removing it instead when <paramref name="removeWhenEmpty"/> and the value is blank.</summary>
     public static EditOutcome SetText(LineDocument document, LineRange range, string key, string value, bool removeWhenEmpty)

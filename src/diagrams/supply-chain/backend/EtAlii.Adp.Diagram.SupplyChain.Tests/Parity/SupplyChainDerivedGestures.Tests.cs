@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Specification.Disl;
 using Xunit;
 
@@ -30,7 +29,7 @@ public class SupplyChainDerivedGesturesTests
     {
         // Arrange.
         var text = await SupplyChainCorpus.TextAsync(name, TestContext.Current.CancellationToken);
-        var outcome = SupplyChainParser.Outcome(LineDocument.Parse(text));
+        var outcome = SupplyChainReading.Outcome(text);
         var model = outcome.Model;
         var diagram = SupplyChainDefinition.Diagram(model);
         var ids = Ids(model);
@@ -66,7 +65,7 @@ public class SupplyChainDerivedGesturesTests
         // Act.
         foreach (var row in SupplyChainCorpus.Names())
         {
-            var model = SupplyChainParser.Parse(LineDocument.Parse(await SupplyChainCorpus.TextAsync(row.Data, TestContext.Current.CancellationToken)));
+            var model = SupplyChainReading.Parse(await SupplyChainCorpus.TextAsync(row.Data, TestContext.Current.CancellationToken));
             var diagram = SupplyChainDefinition.Diagram(model);
             var ids = Ids(model);
             answers.UnionWith(ids.SelectMany(from => ids.Select(to => Derived(diagram, from, to))));

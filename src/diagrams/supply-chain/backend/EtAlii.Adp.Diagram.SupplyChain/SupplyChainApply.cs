@@ -8,8 +8,7 @@ namespace EtAlii.Adp.Diagram.SupplyChain;
 /// <summary>
 /// Writes what a transaction of the definition says (DISL §9.4) through today's <see cref="SupplyChainWriter"/>, so
 /// the bytes an edit writes do not change while the edit is decided by the definition. It stands in for FBL's splices
-/// until the module reads and writes its file through its binding (supply-chain-disl-fbl, tasks 10 to 12), and goes
-/// with <see cref="SupplyChainDisl"/>.
+/// until every command writes through <see cref="SupplyChainBody"/> (supply-chain-disl-fbl, task 11), which removes it.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -211,7 +210,7 @@ internal static class SupplyChainApply
 
     private static EditOutcome Create(LineDocument document, DislDiagram before, DislChange change)
     {
-        var model = SupplyChainParser.Parse(document);
+        var model = SupplyChainReading.Parse(document.Text);
         switch (change)
         {
             case DislChange.Create { Type: "Stage" } create:

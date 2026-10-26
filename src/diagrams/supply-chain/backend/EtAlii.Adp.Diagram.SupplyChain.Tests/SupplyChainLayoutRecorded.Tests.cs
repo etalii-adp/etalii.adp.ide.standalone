@@ -1,7 +1,6 @@
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
-using EtAlii.Adp.Documents;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.SupplyChain.Tests;
@@ -28,7 +27,7 @@ public sealed class SupplyChainLayoutRecordedTests
     public void AnExample_IsLaidOutAsRecorded(string path, string digest)
     {
         // Act.
-        var layout = SupplyChainLayout.Of(SupplyChainParser.Parse(LineDocument.Parse(File.ReadAllText(path))));
+        var layout = SupplyChainLayout.Of(SupplyChainReading.Parse(File.ReadAllText(path)));
         var described = Describe(layout);
 
         // Assert.

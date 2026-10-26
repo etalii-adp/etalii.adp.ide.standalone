@@ -4,7 +4,7 @@ namespace EtAlii.Adp.Diagram.SupplyChain;
 
 /// <summary>
 /// Everything one <c>.supply</c> document declares: its groups, its nodes, its flows, and what the
-/// parser could not read.
+/// reading could not read.
 /// </summary>
 /// <remarks>
 /// <b>The problems travel with the model rather than being thrown.</b> A document with one bad entry
@@ -17,7 +17,7 @@ public sealed record SupplyChainModel(
     IReadOnlyList<ParseProblem> Problems,
     int? Version)
 {
-    /// <summary>A document that declares nothing - the parser's answer to text it could not read at all.</summary>
+    /// <summary>A document that declares nothing - the reading's answer to text it could not read at all.</summary>
     public static SupplyChainModel Empty { get; } = new([], [], [], [], null);
 
     /// <summary>The node with <paramref name="id"/>: the first entry with it, as the canvas draws it.</summary>
@@ -108,7 +108,7 @@ public sealed record SupplyChainFlow(
 /// </summary>
 /// <remarks>
 /// <para>
-/// Strings rather than an enum, because <b>the parser must keep a stage it does not recognise</b>:
+/// Strings rather than an enum, because <b>the reading must keep a stage it does not recognise</b>:
 /// the entry survives the round trip, draws nothing, and is reported.
 /// </para>
 /// <para>

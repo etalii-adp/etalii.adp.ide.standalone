@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Specification.Disl;
 
 namespace EtAlii.Adp.Diagram.SupplyChain;
@@ -25,7 +24,7 @@ public static class SupplyChainRuleIds
 /// <remarks>
 /// <para>
 /// <b>The findings are the DISL definition's</b> (<see cref="ConstraintEvaluator"/>): its constraints over the
-/// document's DISL model, with what the parser could not read handed in as the reader's findings
+/// document's DISL model, with what the reading could not read handed in as the reader's findings
 /// (<see cref="SupplyChainReaderFindings"/>), in one list by line (<see cref="SupplyChainFindings"/>).
 /// </para>
 /// <para>
@@ -46,7 +45,7 @@ public sealed class SupplyChainValidator : IDiagramValidator
         cancellationToken.ThrowIfCancellationRequested();
 
         IReadOnlyList<DiagramProblem> problems =
-            [.. SupplyChainDefinition.Findings(SupplyChainParser.Parse(LineDocument.Parse(request.Document))).Select(SupplyChainFindings.ToProblem)];
+            [.. SupplyChainDefinition.Findings(SupplyChainReading.Parse(request.Document)).Select(SupplyChainFindings.ToProblem)];
         return ValueTask.FromResult(problems);
     }
 

@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.SupplyChain.Tests;
@@ -7,7 +6,7 @@ namespace EtAlii.Adp.Diagram.SupplyChain.Tests;
 public sealed class SupplyChainTraceTests
 {
     private static SupplyChainLayout Automotive() =>
-        SupplyChainLayout.Of(SupplyChainParser.Parse(LineDocument.Parse(File.ReadAllText(SupplyChainExamples.Automotive))));
+        SupplyChainLayout.Of(SupplyChainReading.Parse(File.ReadAllText(SupplyChainExamples.Automotive)));
 
     [Fact]
     public void NothingSelected_MarksNothing()

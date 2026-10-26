@@ -30,6 +30,8 @@ public static class RealFileCorpus
         new("databricks-pipeline", "databricks-pipeline.fbl", "settings", 2, (path, bytes) => Extension(path, ".json") && Contains(bytes, "\"libraries\"")),
         // sankey-disl-fbl, task 2: the module's own binding, embedded and read by nothing but tests until the body is read through it.
         new("sankey", "src/diagrams/sankey/backend/EtAlii.Adp.Diagram.Sankey/sankey.fbl", "skv", 34, (path, _) => Extension(path, ".skv")),
+        // supply-chain-disl-fbl, task 10: the module's own binding, through which the module reads every .supply.
+        new("supply-chain", "src/diagrams/supply-chain/backend/EtAlii.Adp.Diagram.SupplyChain/supply-chain.fbl", "supply", 34, (path, _) => Extension(path, ".supply")),
     ];
 
     /// <summary>Registrations: every <c>.adp</c> under <c>src/</c>.</summary>
