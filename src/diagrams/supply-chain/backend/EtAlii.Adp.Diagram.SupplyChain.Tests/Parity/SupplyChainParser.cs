@@ -3,11 +3,12 @@ using EtAlii.Adp.Documents;
 using YamlDotNet.Core;
 using YamlDotNet.RepresentationModel;
 
-namespace EtAlii.Adp.Diagram.SupplyChain;
+namespace EtAlii.Adp.Diagram.SupplyChain.Tests.Parity;
 
 /// <summary>
 /// Reads a <see cref="LineDocument"/> into a <see cref="SupplyChainModel"/>, recording which lines
-/// declare what.
+/// declare what: the module's own reader until supply-chain-disl-fbl task 10, kept beside the hand-written
+/// oracle so that every document of the corpus is seen to read through the binding as it read here.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -21,28 +22,12 @@ namespace EtAlii.Adp.Diagram.SupplyChain;
 /// half-typed document must open and keep every byte its author wrote.
 /// </para>
 /// </remarks>
-public static class SupplyChainParser
+internal static class SupplyChainParser
 {
     private const string HeaderKey = "supply-chain";
-    internal const string GroupsKey = "groups";
-    internal const string NodesKey = "nodes";
-    internal const string FlowsKey = "flows";
-
-    /// <summary>The text of a new, empty <c>.supply</c> document.</summary>
-    /// <remarks>
-    /// <para>
-    /// The header and the three sections written flow-empty - <c>groups: []</c> and so on - because a
-    /// bare <c>nodes:</c> parses as a null rather than an empty sequence. The first added entry opens
-    /// the flow form into a block one, which <c>LineSplice.InsertionPointFor</c> does.
-    /// </para>
-    /// <para>CRLF, the repository's house style, because a new file has no style of its own to keep.</para>
-    /// </remarks>
-    internal static string EmptyDocument { get; } = string.Join(
-        "\r\n",
-        $"{HeaderKey}: {SupplyChainModel.CurrentVersion}",
-        $"{GroupsKey}: []",
-        $"{NodesKey}: []",
-        $"{FlowsKey}: []") + "\r\n";
+    private const string GroupsKey = "groups";
+    private const string NodesKey = "nodes";
+    private const string FlowsKey = "flows";
 
     private static readonly string[] GroupKeys = ["id", "name", "description", "x", "y"];
 

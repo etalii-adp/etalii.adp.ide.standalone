@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Files;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -22,7 +21,7 @@ public sealed class SupplyChainSessionTests : IDisposable
     public async Task AFreshSession_DeliversEveryGroupNodeAndFlow_GroupsFirst()
     {
         // Arrange.
-        var model = SupplyChainParser.Parse(LineDocument.Parse(await File.ReadAllTextAsync(_folder.Body, TestContext.Current.CancellationToken)));
+        var model = SupplyChainReading.Parse(await File.ReadAllTextAsync(_folder.Body, TestContext.Current.CancellationToken));
         await using var session = Open();
 
         // Act.
@@ -120,7 +119,7 @@ public sealed class SupplyChainSessionTests : IDisposable
 
         // Assert.
         Assert.Equal("", refusal);
-        var after = SupplyChainParser.Parse(LineDocument.Parse(await File.ReadAllTextAsync(_folder.Body, TestContext.Current.CancellationToken)));
+        var after = SupplyChainReading.Parse(await File.ReadAllTextAsync(_folder.Body, TestContext.Current.CancellationToken));
         var cobalt = after.Nodes.Single(node => node.Id == "kolwezi-cobalt");
         Assert.Equal(before.NodeBoxes["kolwezi-cobalt"].X + 40, cobalt.X);
         Assert.Equal(before.NodeBoxes["kolwezi-cobalt"].Y - 30, cobalt.Y);

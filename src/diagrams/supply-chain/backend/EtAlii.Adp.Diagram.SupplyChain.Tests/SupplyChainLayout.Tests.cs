@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Layout;
 using Xunit;
 
@@ -9,7 +8,7 @@ public sealed class SupplyChainLayoutTests
 {
     public static TheoryData<string> Examples => [SupplyChainExamples.Automotive, SupplyChainExamples.GpuMemory];
 
-    private static SupplyChainModel Read(string path) => SupplyChainParser.Parse(LineDocument.Parse(File.ReadAllText(path)));
+    private static SupplyChainModel Read(string path) => SupplyChainReading.Parse(File.ReadAllText(path));
 
     [Theory]
     [MemberData(nameof(Examples))]
@@ -134,7 +133,7 @@ public sealed class SupplyChainLayoutTests
     public void ACycle_IsLaidOut_RatherThanLoopingForever()
     {
         // Arrange.
-        var model = SupplyChainParser.Parse(LineDocument.Parse("""
+        var model = SupplyChainReading.Parse("""
             supply-chain: 1
             nodes:
               - id: a
@@ -153,7 +152,7 @@ public sealed class SupplyChainLayoutTests
               - id: ca
                 from: c
                 to: a
-            """));
+            """);
 
         // Act.
         var layout = SupplyChainLayout.Of(model);
@@ -168,7 +167,7 @@ public sealed class SupplyChainLayoutTests
     public void AnAuthoredPosition_WinsOverTheArrangedOne()
     {
         // Arrange.
-        var model = SupplyChainParser.Parse(LineDocument.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", "lf-line-endings.supply"))));
+        var model = SupplyChainReading.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", "lf-line-endings.supply")));
 
         // Act.
         var layout = SupplyChainLayout.Of(model);

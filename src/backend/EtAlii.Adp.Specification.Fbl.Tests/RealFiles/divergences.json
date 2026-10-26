@@ -539,6 +539,27 @@
       "file": "src/diagrams/sankey/backend/EtAlii.Adp.Diagram.Sankey.Tests/Fixtures/flow-mapping-entry.skv",
       "observed": "Flow: the binding lacks 1 (a->b); the binding adds 1 (->) | Node: the binding lacks 2 (a, b)",
       "reason": "The fixture is one of the Sankey module's parity corpus (sankey-disl-fbl task 1), written with its nodes and its flow as flow mappings (- {id: a, name: A}), the second shape of finding B16. YamlDotNet reads them as mappings like any other; to FBL's YAML family a flow mapping is one value whose members CEL sees and no key slot binds (FBL section 4.3), so the binding's slots read no id and neither end. The module reads such an entry's values from the binding's computed written attribute, the written text of every member (SankeyReader, sankey-disl-fbl task 10), so it draws them as before. That FBL binds no member of a flow mapping is gap 11 of the definition's companion, definition/sankey.md, a candidate change for etalii.adp."
+    },
+    {
+      "property": "cross-check",
+      "binding": "supply-chain",
+      "file": "src/diagrams/supply-chain/backend/EtAlii.Adp.Diagram.SupplyChain.Tests/Fixtures/duplicate-key.supply",
+      "observed": "Node: the binding adds 2 (mine, plant)",
+      "reason": "The fixture is one of the supply chain module's parity corpus (supply-chain-disl-fbl task 1), written to hold a key written twice in one mapping (finding B5). YamlDotNet refuses the document, and the module asks it whether a body is YAML before it reads the binding's reading (SupplyChainBody), so the module reads nothing of it; FBL section 7.4 binds the first of the two and reports fbl.duplicate-key, so the binding reads every node. Q4 keeps the module's answer for this conversion: a duplicated key still makes the document unreadable."
+    },
+    {
+      "property": "cross-check",
+      "binding": "supply-chain",
+      "file": "src/diagrams/supply-chain/backend/EtAlii.Adp.Diagram.SupplyChain.Tests/Fixtures/flow-mapping-entry.supply",
+      "observed": "Flow: the binding lacks 1 (ore) | Group: the binding lacks 1 (north) | Node: the binding lacks 1 (mine)",
+      "reason": "The fixture is one of the supply chain module's parity corpus (supply-chain-disl-fbl task 1), written with a group, a node and a flow as flow mappings (- {id: north, name: North}), a shape of finding B13. YamlDotNet reads them as mappings like any other; to FBL's YAML family a flow mapping is one value whose members CEL sees and no key slot binds (FBL section 4.3), so the binding's slots read no id. The module reads such an entry's values from the binding's computed written attribute, the written text of every member (SupplyChainReading, supply-chain-disl-fbl task 10), so it draws them as before. That FBL binds no member of a flow mapping is the language gap the Sankey diagram's companion records as its gap 11, a candidate change for etalii.adp."
+    },
+    {
+      "property": "unreadable",
+      "binding": "supply-chain",
+      "file": "src/diagrams/supply-chain/backend/EtAlii.Adp.Diagram.SupplyChain.Tests/Fixtures/not-yaml.supply",
+      "observed": "offset 39: The body is not well-formed YAML: While parsing a flow sequence, did not find expected ',' or ']'.",
+      "reason": "The fixture is one of the supply chain module's parity corpus, written to be text that is not YAML. FBL section 7.5 opens such a body empty and read-only and reports std.unparseable, as the module's reader reports it under supply-chain.unreadable; the binding is not wrong here, the body is (supply-chain-disl-fbl, Requirement 4.6)."
     }
   ]
 }

@@ -19,7 +19,7 @@ internal sealed class SupplyChainParityStore(string text) : ISupplyChainDocument
     public DocumentEntry<LineDocument, SupplyChainModel> Get(string path)
     {
         var body = LineDocument.Parse(text);
-        return new DocumentEntry<LineDocument, SupplyChainModel>(body, SupplyChainParser.Outcome(body));
+        return new DocumentEntry<LineDocument, SupplyChainModel>(body, SupplyChainReading.Outcome(body.Text));
     }
 
     public Task<DocumentSaveResult> SaveAsync(string path, LineDocument document, CancellationToken cancellationToken)

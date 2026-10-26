@@ -97,7 +97,7 @@ public class SupplyChainDerivedTraceTests
     {
         private static readonly CelProgram TraceOf = SupplyChainDefinition.Specification.Environment(DislContext.Element).Compile("traceOf(self)");
 
-        private readonly DislDiagram _diagram = SupplyChainDisl.Build(model).Diagram;
+        private readonly DislDiagram _diagram = SupplyChainReading.BodyOf(model).Working().Diagram;
 
         /// <summary>Each drawn element's mark, by the id it is written with, while <paramref name="selectedId"/> is selected.</summary>
         public Dictionary<string, string> Through(string? selectedId)

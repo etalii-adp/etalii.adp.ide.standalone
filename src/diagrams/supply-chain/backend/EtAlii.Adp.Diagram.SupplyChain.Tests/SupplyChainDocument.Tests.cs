@@ -24,7 +24,7 @@ public sealed class SupplyChainDocumentTests
 
         // Act.
         var document = LineDocument.Parse(await File.ReadAllTextAsync(Fixture(fixture), TestContext.Current.CancellationToken));
-        SupplyChainParser.Parse(document);
+        SupplyChainReading.Parse(document.Text);
 
         // Assert.
         Assert.Equal(bytes, System.Text.Encoding.UTF8.GetBytes(document.Text));
@@ -35,7 +35,7 @@ public sealed class SupplyChainDocumentTests
     public void TheSmallChain_ReadsEveryEntry(string fixture)
     {
         // Act.
-        var model = SupplyChainParser.Parse(Load(fixture));
+        var model = SupplyChainReading.Parse(Load(fixture).Text);
 
         // Assert.
         Assert.Empty(model.Problems);
@@ -65,7 +65,7 @@ public sealed class SupplyChainDocumentTests
     public void MalformedEntries_AreReported_AndTheRestStillReads()
     {
         // Act.
-        var model = SupplyChainParser.Parse(Load("malformed-entries.supply"));
+        var model = SupplyChainReading.Parse(Load("malformed-entries.supply").Text);
 
         // Assert: the unknown stage, the unknown key, the number that is not one and the entry that
         // is not a mapping - each reported, none of them fatal.
@@ -82,7 +82,7 @@ public sealed class SupplyChainDocumentTests
     public void TextThatIsNotYaml_IsOneProblem_AndAnEmptyModel()
     {
         // Act.
-        var model = SupplyChainParser.Parse(Load("not-yaml.supply"));
+        var model = SupplyChainReading.Parse(Load("not-yaml.supply").Text);
 
         // Assert.
         Assert.Contains("could not be read as YAML", Assert.Single(model.Problems).Message, StringComparison.Ordinal);
@@ -93,7 +93,7 @@ public sealed class SupplyChainDocumentTests
     public void AMissingHeader_IsReported()
     {
         // Act.
-        var model = SupplyChainParser.Parse(LineDocument.Parse("nodes: []\n"));
+        var model = SupplyChainReading.Parse("nodes: []\n");
 
         // Assert.
         Assert.Contains(model.Problems, problem => problem.Message.Contains("does not begin with", StringComparison.Ordinal));
@@ -105,7 +105,7 @@ public sealed class SupplyChainDocumentTests
         // Arrange.
         var document = Load("lf-line-endings.supply");
         var before = document.Lines.Select(line => line.Text).ToList();
-        var mine = SupplyChainParser.Parse(document).Nodes[0];
+        var mine = SupplyChainReading.Parse(document.Text).Nodes[0];
 
         // Act.
         Assert.True(SupplyChainWriter.SetNumber(document, mine.Range, "quantity", 12.5).WasApplied);
@@ -113,7 +113,7 @@ public sealed class SupplyChainDocumentTests
         // Assert.
         var changed = Enumerable.Range(0, before.Count).Where(index => before[index] != document.Lines[index].Text).ToList();
         Assert.Equal("    quantity: 12.5", document.Lines[Assert.Single(changed)].Text);
-        Assert.Equal(12.5, SupplyChainParser.Parse(document).Nodes[0].Quantity);
+        Assert.Equal(12.5, SupplyChainReading.Parse(document.Text).Nodes[0].Quantity);
     }
 
     [Fact]
@@ -121,13 +121,13 @@ public sealed class SupplyChainDocumentTests
     {
         // Arrange.
         var document = Load("lf-line-endings.supply");
-        var model = SupplyChainParser.Parse(document);
+        var model = SupplyChainReading.Parse(document.Text);
 
         // Act.
         Assert.True(SupplyChainWriter.Place(document, model, new Dictionary<string, (double X, double Y)> { ["mine"] = (100.4, 200.6), ["shop"] = (900, 50) }).WasApplied);
 
         // Assert.
-        var reread = SupplyChainParser.Parse(document);
+        var reread = SupplyChainReading.Parse(document.Text);
         Assert.Empty(reread.Problems);
         Assert.Equal((100d, 201d), (reread.Nodes[0].X!.Value, reread.Nodes[0].Y!.Value));
         Assert.Equal((900d, 50d), (reread.Nodes[2].X!.Value, reread.Nodes[2].Y!.Value));
@@ -142,14 +142,14 @@ public sealed class SupplyChainDocumentTests
     {
         // Arrange.
         var document = LineDocument.Parse("supply-chain: 1\n");
-        var model = SupplyChainParser.Parse(document);
+        var model = SupplyChainReading.Parse(document.Text);
 
         // Act.
         var node = new SupplyChainNode("n1", SupplyChainNodeTypes.Processor, "Acme", "", "", 3, "", null, 10, 20, default);
         Assert.True(SupplyChainWriter.AddNode(document, model, node).WasApplied);
 
         // Assert.
-        var reread = SupplyChainParser.Parse(document);
+        var reread = SupplyChainReading.Parse(document.Text);
         Assert.Empty(reread.Problems);
         var added = Assert.Single(reread.Nodes);
         Assert.Equal(("n1", "Acme", 3d, 10d, 20d), (added.Id, added.Name, added.Quantity!.Value, added.X!.Value, added.Y!.Value));
@@ -166,13 +166,13 @@ public sealed class SupplyChainDocumentTests
     {
         // Arrange.
         var document = Load("lf-line-endings.supply");
-        var mine = SupplyChainParser.Parse(document).Nodes[0];
+        var mine = SupplyChainReading.Parse(document.Text).Nodes[0];
 
         // Act.
         SupplyChainWriter.SetText(document, mine.Range, "name", name, removeWhenEmpty: false);
 
         // Assert.
-        var reread = SupplyChainParser.Parse(document);
+        var reread = SupplyChainReading.Parse(document.Text);
         Assert.Empty(reread.Problems);
         Assert.Equal(name, reread.Nodes[0].Name);
     }
@@ -182,13 +182,13 @@ public sealed class SupplyChainDocumentTests
     {
         // Arrange.
         var document = Load("lf-line-endings.supply");
-        var model = SupplyChainParser.Parse(document);
+        var model = SupplyChainReading.Parse(document.Text);
 
         // Act.
         SupplyChainWriter.RemoveGroup(document, model, model.Groups[0]);
 
         // Assert.
-        var reread = SupplyChainParser.Parse(document);
+        var reread = SupplyChainReading.Parse(document.Text);
         Assert.Empty(reread.Problems);
         Assert.Empty(reread.Groups);
         Assert.All(reread.Nodes, node => Assert.Equal("", node.Group));
@@ -199,13 +199,13 @@ public sealed class SupplyChainDocumentTests
     {
         // Arrange.
         var document = Load("lf-line-endings.supply");
-        var model = SupplyChainParser.Parse(document);
+        var model = SupplyChainReading.Parse(document.Text);
 
         // Act.
         SupplyChainWriter.RemoveNode(document, model, model.Nodes[1]);
 
         // Assert.
-        var reread = SupplyChainParser.Parse(document);
+        var reread = SupplyChainReading.Parse(document.Text);
         Assert.Equal(["mine", "shop"], reread.Nodes.Select(node => node.Id));
         Assert.Empty(reread.Flows);
     }

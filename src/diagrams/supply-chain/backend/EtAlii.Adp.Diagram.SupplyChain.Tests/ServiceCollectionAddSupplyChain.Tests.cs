@@ -24,7 +24,7 @@ public sealed class ServiceCollectionAddSupplyChainTests
             .CreateEmptyDocument("flows");
 
         // Assert.
-        var model = SupplyChainParser.Parse(LineDocument.Parse(text));
+        var model = SupplyChainReading.Parse(text);
         Assert.Empty(model.Problems);
         Assert.Empty(model.Groups);
         Assert.Empty(model.Nodes);

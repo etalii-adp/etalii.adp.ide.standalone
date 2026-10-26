@@ -6,7 +6,7 @@ namespace EtAlii.Adp.Diagram.SupplyChain;
 /// <summary>
 /// The CEL functions of the definition's plugin <c>net.etalii.adp.etalii.supplyChainWritten</c> (DISL §13.1.1):
 /// <c>written</c>, the text a key of an entry is written with, and <c>laterHolder</c>, whether an earlier entry holds
-/// the id an entry is written with, answered from the reading <see cref="SupplyChainDisl"/> builds.
+/// the id an entry is written with, answered from the model <see cref="SupplyChainReading"/> builds.
 /// </summary>
 /// <remarks>
 /// <para>

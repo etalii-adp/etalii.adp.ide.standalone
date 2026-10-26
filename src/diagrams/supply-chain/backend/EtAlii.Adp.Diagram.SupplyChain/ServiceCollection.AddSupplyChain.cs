@@ -19,7 +19,7 @@ public static class ServiceCollectionAddSupplyChainExtension
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        services.AddEmptyDocument(Diagram.SupplyChain.Origin, SupplyChainParser.EmptyDocument);
+        services.AddEmptyDocument(Diagram.SupplyChain.Origin, SupplyChainBody.Template);
         services.AddSingleton<SupplyChainElementMapper>();
 
         // One document per path, shared by every connection viewing it; TryAdd so a test keeps its own.

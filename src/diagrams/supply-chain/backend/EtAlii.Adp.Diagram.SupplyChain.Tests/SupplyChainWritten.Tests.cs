@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Specification.Cel;
 using EtAlii.Adp.Specification.Disl;
 using Xunit;
@@ -23,7 +22,7 @@ public sealed class SupplyChainWrittenTests
         + "flows:\r\n"
         + "  - id: ore\r\n    from: mine\r\n    to: elsewhere\r\n";
 
-    private static readonly DislDiagram _diagram = SupplyChainDisl.Of(SupplyChainParser.Parse(LineDocument.Parse(Document))).Diagram;
+    private static readonly DislDiagram _diagram = SupplyChainDefinition.Diagram(SupplyChainReading.Parse(Document));
 
     [Theory]
     [InlineData(0, "written(self, 'id')", "mine")]

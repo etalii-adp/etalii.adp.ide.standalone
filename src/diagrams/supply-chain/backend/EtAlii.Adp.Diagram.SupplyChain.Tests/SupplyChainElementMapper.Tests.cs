@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.SupplyChain.Tests;
@@ -10,7 +9,7 @@ public sealed class SupplyChainElementMapperTests
     public void ACardsShare_IsOfTheWholeDocument_NotOfWhatTheViewHolds()
     {
         // Arrange: a small mine in view, and one four times its size far outside it.
-        var model = SupplyChainParser.Parse(LineDocument.Parse("""
+        var model = SupplyChainReading.Parse("""
             supply-chain: 1
             nodes:
               - id: small
@@ -25,7 +24,7 @@ public sealed class SupplyChainElementMapperTests
                 unit: t
                 x: 5000
                 y: 5000
-            """));
+            """);
 
         // Act.
         var delivered = new SupplyChainElementMapper().Visible(model, new DiagramViewport(-10, -10, 300, 200), SupplyChainTrace.None);

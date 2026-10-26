@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Specification.Disl;
 using Xunit;
 
@@ -34,7 +33,7 @@ public sealed class SupplyChainFindingsTests
             + "  - id: a\r\n    type: source\r\n    colour: red\r\n";
 
         // Act.
-        var lines = SupplyChainValidator.Validate(SupplyChainParser.Parse(LineDocument.Parse(text))).Select(breach => (breach.Line, breach.RuleId));
+        var lines = SupplyChainValidator.Validate(SupplyChainReading.Parse(text)).Select(breach => (breach.Line, breach.RuleId));
 
         // Assert.
         Assert.Equal(

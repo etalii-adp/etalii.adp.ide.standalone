@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.SupplyChain.Tests;
@@ -10,7 +9,7 @@ public sealed class SupplyChainReaderFindingsTests
     public void AnUnknownKey_IsHandedOnWithItsSentenceAndLine()
     {
         // Arrange.
-        var model = SupplyChainParser.Parse(LineDocument.Parse("supply-chain: 1\r\nnodes:\r\n  - id: a\r\n    type: source\r\n    colour: red\r\n"));
+        var model = SupplyChainReading.Parse("supply-chain: 1\r\nnodes:\r\n  - id: a\r\n    type: source\r\n    colour: red\r\n");
         var problem = Assert.Single(model.Problems);
 
         // Act.
@@ -25,7 +24,7 @@ public sealed class SupplyChainReaderFindingsTests
     public void AnUnknownKey_IsReportedAsUnreadable()
     {
         // Act.
-        var breach = Assert.Single(SupplyChainValidator.Validate(SupplyChainParser.Parse(LineDocument.Parse("supply-chain: 1\r\nnodes:\r\n  - id: a\r\n    type: source\r\n    colour: red\r\n"))));
+        var breach = Assert.Single(SupplyChainValidator.Validate(SupplyChainReading.Parse("supply-chain: 1\r\nnodes:\r\n  - id: a\r\n    type: source\r\n    colour: red\r\n")));
 
         // Assert.
         Assert.Equal((SupplyChainRuleIds.UnreadableEntry, 4, true), (breach.RuleId, breach.Line, breach.IsWarning));

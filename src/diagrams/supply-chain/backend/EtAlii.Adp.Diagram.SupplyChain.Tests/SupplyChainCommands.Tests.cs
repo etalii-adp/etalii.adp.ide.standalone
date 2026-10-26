@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
@@ -305,5 +304,5 @@ public sealed class SupplyChainCommandsTests : IDisposable
         Assert.True(result.IsSuccess, result.Error);
     }
 
-    private SupplyChainModel Parse() => SupplyChainParser.Parse(LineDocument.Parse(File.ReadAllText(Body)));
+    private SupplyChainModel Parse() => SupplyChainReading.Parse(File.ReadAllText(Body));
 }

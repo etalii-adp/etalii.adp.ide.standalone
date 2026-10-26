@@ -44,7 +44,7 @@ internal static class SupplyChainDefinition
     public static IReadOnlyList<ContextActionGroupDefinition> Menus(SupplyChainModel model, string elementId)
     {
         ArgumentNullException.ThrowIfNull(model);
-        var diagram = SupplyChainDisl.Of(model).Diagram;
+        var diagram = Diagram(model);
         DislMenuTarget? target = ElementOf(diagram, elementId) is { } element
             ? DislMenuTarget.Element(element)
             : GestureIds.TryParsePlacement(elementId, out _, out _)
@@ -59,28 +59,28 @@ internal static class SupplyChainDefinition
     public static IReadOnlyList<ContextPropertyDefinition> Rows(SupplyChainModel model, string elementId)
     {
         ArgumentNullException.ThrowIfNull(model);
-        return ElementOf(SupplyChainDisl.Of(model).Diagram, elementId) is { } element ? Definition.Rows(element, Env) : [];
+        return ElementOf(Diagram(model), elementId) is { } element ? Definition.Rows(element, Env) : [];
     }
 
     /// <summary>What removing <paramref name="elementId"/> asks first, the definition's <c>behavior.deletion</c>: a node with a flow written to or from it; none otherwise.</summary>
     public static RemovalConfirmation? RemovalConfirmation(SupplyChainModel model, string elementId)
     {
         ArgumentNullException.ThrowIfNull(model);
-        return ElementOf(SupplyChainDisl.Of(model).Diagram, elementId) is { } element && DeletionPolicy.Confirmation(Specification, element, env: Env) is { } asked
+        return ElementOf(Diagram(model), elementId) is { } element && DeletionPolicy.Confirmation(Specification, element, env: Env) is { } asked
             ? new RemovalConfirmation(asked.Title, asked.Message, asked.ConfirmLabel, asked.Danger)
             : null;
     }
 
     /// <summary>
     /// The findings of <paramref name="model"/>: the definition's constraints (<see cref="ConstraintEvaluator"/>) with what the
-    /// parser could not read handed in as the reader's findings, an element named by the id it is written with, in one list
+    /// reading could not read handed in as the reader's findings, an element named by the id it is written with, in one list
     /// by line.
     /// </summary>
     public static IReadOnlyList<DislFinding> Findings(SupplyChainModel model)
     {
         ArgumentNullException.ThrowIfNull(model);
         var options = new DislConstraintOptions(Env, SupplyChainReaderFindings.Of(model), SupplyChainWritten.IdOf);
-        return SupplyChainFindings.ByLine(ConstraintEvaluator.Evaluate(Specification, SupplyChainDisl.Of(model).Diagram, options));
+        return SupplyChainFindings.ByLine(ConstraintEvaluator.Evaluate(Specification, Diagram(model), options));
     }
 
     /// <summary>
@@ -91,7 +91,7 @@ internal static class SupplyChainDefinition
     public static EditOutcome Run(LineDocument document, SupplyChainModel model, string operation, string? selfId, IIdSource ids, DislInvocation? invocation = null)
     {
         ArgumentNullException.ThrowIfNull(model);
-        var working = SupplyChainDisl.Build(model).Diagram;
+        var working = SupplyChainReading.BodyOf(model).Working().Diagram;
         var self = selfId is null ? null : ElementOf(working, selfId);
         return Apply(document, model, OperationInterpreter.Run(Specification, operation, working, self, ids, invocation, Env));
     }
@@ -105,7 +105,7 @@ internal static class SupplyChainDefinition
     {
         ArgumentNullException.ThrowIfNull(model);
         ArgumentNullException.ThrowIfNull(self);
-        var working = SupplyChainDisl.Build(model).Diagram;
+        var working = SupplyChainReading.BodyOf(model).Working().Diagram;
         return Apply(document, model, FormCommit.Row(Specification, working.ElementById(self.Id)!, row, value, Env));
     }
 
@@ -198,7 +198,7 @@ internal static class SupplyChainDefinition
         // Every step runs over the one model, which each run changes, and the steps are written as one edit: a
         // document read again between steps would need to be readable after the first.
         var operation = (steps > 0 ? "increase" : "decrease") + what;
-        var working = SupplyChainDisl.Build(model).Diagram;
+        var working = SupplyChainReading.BodyOf(model).Working().Diagram;
         var self = ElementOf(working, id);
         var first = OperationInterpreter.Run(Specification, operation, working, self, DislIds.Fixed(), null, Env);
         if (!first.WasApplied)
@@ -247,7 +247,7 @@ internal static class SupplyChainDefinition
     public static EditOutcome Arrange(LineDocument document, SupplyChainModel model)
     {
         ArgumentNullException.ThrowIfNull(model);
-        var transaction = OperationInterpreter.Run(Specification, "arrange", SupplyChainDisl.Build(model).Diagram, null, DislIds.Fixed(), env: Env);
+        var transaction = OperationInterpreter.Run(Specification, "arrange", SupplyChainReading.BodyOf(model).Working().Diagram, null, DislIds.Fixed(), env: Env);
         if (!transaction.WasApplied)
         {
             return EditOutcome.Refused(transaction.Refusal!);
@@ -269,7 +269,7 @@ internal static class SupplyChainDefinition
         SupplyChainApply.Apply(document, model, Diagram(model), transaction);
 
     /// <summary>The DISL model of <paramref name="model"/>, as every derivation reads it. Read it, never change it.</summary>
-    public static DislDiagram Diagram(SupplyChainModel model) => SupplyChainDisl.Of(model).Diagram;
+    public static DislDiagram Diagram(SupplyChainModel model) => SupplyChainReading.BodyOf(model).Disl.Diagram;
 
     /// <summary>The element <paramref name="id"/> names, as <see cref="SupplyChainModel"/> finds it: the first node written with it, else the first flow, else the first group; null for none.</summary>
     public static DislElement? ElementOf(DislDiagram diagram, string? id)
