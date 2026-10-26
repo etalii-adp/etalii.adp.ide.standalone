@@ -22,8 +22,10 @@ namespace EtAlii.Adp.Diagram.SupplyChain;
 /// </para>
 /// <para>
 /// <b>A node's group is the reference only when a group has that id</b>, so <c>has(self.group)</c> means the node is
-/// drawn inside one; the group as written is kept as <see cref="SupplyChainWritten.WrittenGroup"/>. A flow's ends are
-/// written as read, and resolve to the first entry with that id.
+/// drawn inside one; the group as written is kept as <see cref="SupplyChainWritten.WrittenGroup"/>. A flow's end is the
+/// first node written with its id, as the tool finds it, also where a group or an earlier node holds the id; an end that
+/// names no node resolves to nothing. The ends as written are kept as <see cref="SupplyChainWritten.WrittenFrom"/> and
+/// <see cref="SupplyChainWritten.WrittenTo"/>.
 /// </para>
 /// </remarks>
 internal static class SupplyChainDisl
@@ -31,13 +33,23 @@ internal static class SupplyChainDisl
     /// <summary>What no written id can begin with: the start of an ephemeral id.</summary>
     private const char Ephemeral = '\u0001';
 
+    /// <summary>What no read id begins with: the start of a flow end that names no node.</summary>
+    private const char Nowhere = '\u0002';
+
     private static readonly ConditionalWeakTable<SupplyChainModel, DislModel> _models = new();
 
     /// <summary>The model of <paramref name="model"/>, built once per parsed document. Read it, never change it.</summary>
     public static DislModel Of(SupplyChainModel model)
     {
         ArgumentNullException.ThrowIfNull(model);
-        return _models.GetValue(model, read => DislModelBuilder.From(new FblModel(Elements(read), [], false), SupplyChainDefinition.Specification, new DislEnv()));
+        return _models.GetValue(model, Build);
+    }
+
+    /// <summary>A model of <paramref name="model"/> of its own, for an edit to run over and change.</summary>
+    public static DislModel Build(SupplyChainModel model)
+    {
+        ArgumentNullException.ThrowIfNull(model);
+        return DislModelBuilder.From(new FblModel(Elements(model), [], false), SupplyChainDefinition.Specification, new DislEnv());
     }
 
     private static List<FblElement> Elements(SupplyChainModel model)
@@ -56,9 +68,10 @@ internal static class SupplyChainDisl
             }));
         }
 
+        var nodes = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var node in model.Nodes)
         {
-            elements.Add(Entry(ids, node.Id, "Node", false, node.Range, new Dictionary<string, object?>(StringComparer.Ordinal)
+            var element = Entry(ids, node.Id, "Node", false, node.Range, new Dictionary<string, object?>(StringComparer.Ordinal)
             {
                 ["type"] = Present(node.Type),
                 ["name"] = Present(node.Name),
@@ -70,15 +83,19 @@ internal static class SupplyChainDisl
                 ["step"] = node.Step,
                 ["x"] = node.X,
                 ["y"] = node.Y,
-            }));
+            });
+            nodes.TryAdd(node.Id, element.Id);
+            elements.Add(element);
         }
 
         foreach (var flow in model.Flows)
         {
             elements.Add(Entry(ids, flow.Id, "Flow", true, flow.Range, new Dictionary<string, object?>(StringComparer.Ordinal)
             {
-                ["from"] = Present(flow.From),
-                ["to"] = Present(flow.To),
+                ["from"] = EndOf(nodes, flow.From),
+                ["to"] = EndOf(nodes, flow.To),
+                [SupplyChainWritten.WrittenFrom] = flow.From,
+                [SupplyChainWritten.WrittenTo] = flow.To,
                 ["product"] = Present(flow.Product),
                 ["description"] = Present(flow.Description),
                 ["volume"] = flow.Volume,
@@ -102,6 +119,14 @@ internal static class SupplyChainDisl
 
         return new FblElement(id, written.Length > 0, type, type, isRelation, stated, null, null, null, null, default, range.Start + 1);
     }
+
+    /// <summary>
+    /// The end a flow written with <paramref name="written"/> reads: the first node written with that id, as the tool
+    /// finds it, whichever entry holds the id first, so an end not written is the first node written without an id; an
+    /// id no node is written with names nothing, and no end, with no such node, is absent.
+    /// </summary>
+    private static string? EndOf(Dictionary<string, string> nodes, string written) =>
+        nodes.TryGetValue(written, out var read) ? read : written.Length == 0 ? null : $"{Nowhere}{written}";
 
     /// <summary>A value the parser read as empty text is not written: absent, as the file does not state it.</summary>
     private static string? Present(string value) => value.Length > 0 ? value : null;

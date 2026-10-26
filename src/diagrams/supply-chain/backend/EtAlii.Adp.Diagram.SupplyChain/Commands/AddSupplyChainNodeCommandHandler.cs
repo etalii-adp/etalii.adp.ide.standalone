@@ -1,9 +1,10 @@
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Specification.Disl;
 
 namespace EtAlii.Adp.Diagram.SupplyChain;
 
-/// <summary>Adds a node where it was dropped, named after its stage.</summary>
+/// <summary>Adds a node where it was dropped, named after its stage: the definition's <c>add…Here</c> of that stage.</summary>
 public sealed class AddSupplyChainNodeCommandHandler(ISupplyChainDocumentStore documents) : SupplyChainEditHandler<AddSupplyChainNodeCommand>(documents)
 {
     /// <inheritdoc />
@@ -17,25 +18,19 @@ public sealed class AddSupplyChainNodeCommandHandler(ISupplyChainDocumentStore d
     /// <inheritdoc />
     protected override EditOutcome Apply(LineDocument document, SupplyChainModel model, AddSupplyChainNodeCommand command)
     {
+        // The id is the host's, minted or asked for, so whether it is free is the host's to say.
         if (model.IsTaken(command.NodeId))
         {
             return EditOutcome.Refused("That id is already used in this diagram.");
         }
 
-        // The drop is the centre; the document holds the top-left.
-        var node = new SupplyChainNode(
-            command.NodeId,
-            SupplyChainNodeTypes.Normalize(command.NodeType),
-            UniqueName.Of(model.Nodes.Select(existing => existing.Name), $"New {SupplyChainNodeTypes.Display(command.NodeType).ToLowerInvariant()}"),
-            Description: "",
-            Group: "",
-            Quantity: 0,
-            Unit: "",
-            Step: null,
-            X: command.X - (SupplyChainGeometry.NodeWidth / 2),
-            Y: command.Y - (SupplyChainGeometry.NodeHeight / 2),
-            Range: new LineRange(0, 0));
-
-        return SupplyChainWriter.AddNode(document, model, node);
+        var stage = SupplyChainNodeTypes.Normalize(command.NodeType);
+        return SupplyChainDefinition.Run(
+            document,
+            model,
+            $"add{char.ToUpperInvariant(stage[0])}{stage[1..]}Here",
+            null,
+            DislIds.Fixed(command.NodeId),
+            SupplyChainDefinition.At(command.X, command.Y));
     }
 }
