@@ -13,8 +13,7 @@ namespace EtAlii.Adp.Diagram.SupplyChain;
 /// <b>What is written is kept beside the model</b>, because the model only knows what resolves: a reference to a
 /// group that is not there is unset, an end that names no node is unset, and a later holder of an id has an
 /// ephemeral one. The id as written is the host attribute <see cref="StoredId"/>, a node's group as written is
-/// <see cref="WrittenGroup"/>, a flow's ends as written are <see cref="DislElement.SourceId"/> and
-/// <see cref="DislElement.TargetId"/>.
+/// <see cref="WrittenGroup"/>, a flow's ends as written are <see cref="WrittenFrom"/> and <see cref="WrittenTo"/>.
 /// </para>
 /// </remarks>
 internal static class SupplyChainWritten
@@ -24,6 +23,12 @@ internal static class SupplyChainWritten
 
     /// <summary>The host attribute holding the group a node is written in, also when no group has that id.</summary>
     public const string WrittenGroup = "writtenGroup";
+
+    /// <summary>The host attribute holding the id a flow's <c>from</c> is written with, empty for none.</summary>
+    public const string WrittenFrom = "writtenFrom";
+
+    /// <summary>The host attribute holding the id a flow's <c>to</c> is written with, empty for none.</summary>
+    public const string WrittenTo = "writtenTo";
 
     /// <summary>The host attribute set on an entry whose id an earlier entry holds.</summary>
     public const string LaterHolder = "laterHolder";
@@ -51,8 +56,8 @@ internal static class SupplyChainWritten
         {
             "id" => Host(element, StoredId),
             "group" => Host(element, WrittenGroup),
-            "from" => element.SourceId ?? "",
-            "to" => element.TargetId ?? "",
+            "from" => Host(element, WrittenFrom),
+            "to" => Host(element, WrittenTo),
             "type" => element.Attributes.TryGetValue("stage", out var stage) && stage is string text ? text : "",
             _ => throw new CelException($"written() reads id, group, from, to or type, and not '{name}'."),
         };

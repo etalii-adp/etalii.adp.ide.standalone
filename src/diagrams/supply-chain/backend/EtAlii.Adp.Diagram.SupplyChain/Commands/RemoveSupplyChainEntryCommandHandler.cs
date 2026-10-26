@@ -3,24 +3,10 @@ using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.SupplyChain;
 
-/// <summary>Removes whatever the id names.</summary>
+/// <summary>Removes whatever the id names, as the definition's deletion policy says: a node with its flows, a group from its members.</summary>
 public sealed class RemoveSupplyChainEntryCommandHandler(ISupplyChainDocumentStore documents) : SupplyChainEditHandler<RemoveSupplyChainEntryCommand>(documents)
 {
     /// <inheritdoc />
-    protected override EditOutcome Apply(LineDocument document, SupplyChainModel model, RemoveSupplyChainEntryCommand command)
-    {
-        if (model.NodeOf(command.EntryId) is { } node)
-        {
-            return SupplyChainWriter.RemoveNode(document, model, node);
-        }
-
-        if (model.FlowOf(command.EntryId) is { } flow)
-        {
-            return SupplyChainWriter.Remove(document, flow.Range);
-        }
-
-        return model.GroupOf(command.EntryId) is { } group
-            ? SupplyChainWriter.RemoveGroup(document, model, group)
-            : Gone;
-    }
+    protected override EditOutcome Apply(LineDocument document, SupplyChainModel model, RemoveSupplyChainEntryCommand command) =>
+        SupplyChainDefinition.Remove(document, model, command.EntryId) ?? Gone;
 }

@@ -12,10 +12,14 @@ internal static class SupplyChainCorpus
     public static TheoryData<string> Names() => [.. _transcript.Corpus().Select(document => document.Name)];
 
     /// <summary>The document <paramref name="name"/>, parsed.</summary>
-    public static async Task<SupplyChainModel> ReadAsync(string name, CancellationToken cancellationToken)
+    public static async Task<SupplyChainModel> ReadAsync(string name, CancellationToken cancellationToken) =>
+        SupplyChainParser.Parse(LineDocument.Parse(await TextAsync(name, cancellationToken)));
+
+    /// <summary>The text of the document <paramref name="name"/>, decoded as the module decodes it.</summary>
+    public static async Task<string> TextAsync(string name, CancellationToken cancellationToken)
     {
         var bytes = await _transcript.Corpus().Single(document => document.Name == name).Read(cancellationToken);
-        return SupplyChainParser.Parse(LineDocument.Parse(TranscriptText.Decode(bytes)));
+        return TranscriptText.Decode(bytes);
     }
 
     /// <summary>The targets the transcript records menus and rows for.</summary>

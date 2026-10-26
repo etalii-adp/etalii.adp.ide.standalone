@@ -1,6 +1,7 @@
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Layout;
+using EtAlii.Adp.Specification.Disl;
 
 namespace EtAlii.Adp.Diagram.SupplyChain;
 
@@ -22,6 +23,11 @@ namespace EtAlii.Adp.Diagram.SupplyChain;
 /// <b>A group moves its members by the distance its frame moved</b>, and its own place with them,
 /// so it is still where it was left if its members later go.
 /// </para>
+/// <para>
+/// <b>A move stays the host's to decide</b>, because DISL cannot state that a node dropped in a frame joins its group
+/// (finding A13, gap 8): it builds one transaction of the definition's attributes, the position, the group the node
+/// joins and the place of a group it leaves empty, and writes it as every other edit is written.
+/// </para>
 /// </remarks>
 public sealed class MoveSupplyChainEntryCommandHandler(ISupplyChainDocumentStore documents) : SupplyChainEditHandler<MoveSupplyChainEntryCommand>(documents)
 {
@@ -29,41 +35,35 @@ public sealed class MoveSupplyChainEntryCommandHandler(ISupplyChainDocumentStore
     protected override EditOutcome Apply(LineDocument document, SupplyChainModel model, MoveSupplyChainEntryCommand command)
     {
         var layout = SupplyChainLayout.Of(model);
+        var diagram = SupplyChainDefinition.Diagram(model);
         if (layout.NodeBoxes.ContainsKey(command.EntryId))
         {
-            return MoveNode(document, model, layout, command);
+            return SupplyChainDefinition.Apply(document, model, MoveNode(diagram, layout, command));
         }
 
         return layout.GroupBoxes.TryGetValue(command.EntryId, out var frame)
-            ? MoveGroup(document, model, layout, frame, command)
+            ? SupplyChainDefinition.Apply(document, model, MoveGroup(diagram, layout, frame, command))
             : EditOutcome.Refused("That is not something this diagram can move.");
     }
 
-    private static EditOutcome MoveNode(LineDocument document, SupplyChainModel model, SupplyChainLayout layout, MoveSupplyChainEntryCommand command)
+    private static DislTransaction MoveNode(DislDiagram diagram, SupplyChainLayout layout, MoveSupplyChainEntryCommand command)
     {
         var node = layout.Nodes.First(candidate => candidate.Id == command.EntryId);
         var current = layout.GroupBoxes.ContainsKey(node.Group) ? node.Group : "";
         var joins = GroupAt(layout, current, command.X + (SupplyChainGeometry.NodeWidth / 2), command.Y + (SupplyChainGeometry.NodeHeight / 2));
 
-        SupplyChainWriter.Place(document, model, new Dictionary<string, (double X, double Y)>(StringComparer.Ordinal) { [node.Id] = (command.X, command.Y) });
-        if (joins is null)
+        List<DislChange> changes = [Placed(diagram, node.Id, "Stage", command.X, command.Y)];
+        if (joins is not null)
         {
-            return EditOutcome.Applied;
+            changes.Add(new DislChange.Set(IdOf(diagram, node.Id, "Stage"), "Stage", new Dictionary<string, object?>(StringComparer.Ordinal) { ["group"] = IdOf(diagram, joins, "Group") }));
+            if (current.Length > 0 && !layout.Nodes.Any(other => other.Id != node.Id && other.Group == current))
+            {
+                var frame = layout.GroupBoxes[current];
+                changes.Add(Placed(diagram, current, "Group", frame.X, frame.Y));
+            }
         }
 
-        // Every splice moves lines, so each next edit locates its entry in the document as it now is.
-        var placed = SupplyChainParser.Parse(document);
-        SupplyChainWriter.SetText(document, placed.NodeOf(node.Id)!.Range, SupplyChainKeys.Group, joins, removeWhenEmpty: false);
-
-        var left = current.Length > 0 && !layout.Nodes.Any(other => other.Id != node.Id && other.Group == current);
-        if (left)
-        {
-            var frame = layout.GroupBoxes[current];
-            var regrouped = SupplyChainParser.Parse(document);
-            SupplyChainWriter.PlaceGroup(document, regrouped.GroupOf(current)!, frame.X, frame.Y);
-        }
-
-        return EditOutcome.Applied;
+        return new DislTransaction(changes, [], null);
     }
 
     /// <summary>
@@ -82,32 +82,39 @@ public sealed class MoveSupplyChainEntryCommandHandler(ISupplyChainDocumentStore
             .OrderBy(group => layout.GroupBoxes[group.Id].Width * layout.GroupBoxes[group.Id].Height)
             .Select(group => group.Id)
             .FirstOrDefault();
-
-        static bool Holds(Rect box, double x, double y) => x >= box.X && x <= box.Right && y >= box.Y && y <= box.Bottom;
     }
 
-    private static EditOutcome MoveGroup(LineDocument document, SupplyChainModel model, SupplyChainLayout layout, Rect frame, MoveSupplyChainEntryCommand command)
+    private static bool Holds(Rect box, double x, double y) => x >= box.X && x <= box.Right && y >= box.Y && y <= box.Bottom;
+
+    private static DislTransaction MoveGroup(DislDiagram diagram, SupplyChainLayout layout, Rect frame, MoveSupplyChainEntryCommand command)
     {
         var group = layout.Groups.First(candidate => candidate.Id == command.EntryId);
         (double dx, double dy) = (command.X - frame.X, command.Y - frame.Y);
 
-        var places = layout.Nodes
-            .Where(node => node.Group == group.Id)
-            .ToDictionary(node => node.Id, node => (layout.NodeBoxes[node.Id].X + dx, layout.NodeBoxes[node.Id].Y + dy), StringComparer.Ordinal);
-
-        if (places.Count > 0)
-        {
-            SupplyChainWriter.Place(document, model, places);
-        }
+        List<DislChange> changes =
+        [
+            .. layout.Nodes
+                .Where(node => node.Group == group.Id)
+                .DistinctBy(node => node.Id, StringComparer.Ordinal)
+                .Select(node => Placed(diagram, node.Id, "Stage", layout.NodeBoxes[node.Id].X + dx, layout.NodeBoxes[node.Id].Y + dy)),
+        ];
 
         // An empty group is placed where it was dropped; a placed group with members keeps its own
         // place the same distance from its frame, for when they go.
-        if (places.Count == 0 || group.IsPlaced)
+        if (changes.Count == 0 || group.IsPlaced)
         {
-            (double x, double y) = places.Count == 0 ? (command.X, command.Y) : (group.X!.Value + dx, group.Y!.Value + dy);
-            SupplyChainWriter.PlaceGroup(document, SupplyChainParser.Parse(document).GroupOf(group.Id)!, x, y);
+            (double x, double y) = changes.Count == 0 ? (command.X, command.Y) : (group.X!.Value + dx, group.Y!.Value + dy);
+            changes.Add(Placed(diagram, group.Id, "Group", x, y));
         }
 
-        return EditOutcome.Applied;
+        return new DislTransaction(changes, [], null);
     }
+
+    /// <summary>The entry written as <paramref name="id"/> placed at (<paramref name="x"/>, <paramref name="y"/>).</summary>
+    private static DislChange.Set Placed(DislDiagram diagram, string id, string type, double x, double y) =>
+        new(IdOf(diagram, id, type), type, SupplyChainDefinition.Position(x, y));
+
+    /// <summary>The model id of the first entry of <paramref name="type"/> written as <paramref name="id"/>, as the layout draws it.</summary>
+    private static string IdOf(DislDiagram diagram, string id, string type) =>
+        diagram.NodesOfType(type).First(element => SupplyChainWritten.IdOf(element) == id).Id;
 }
