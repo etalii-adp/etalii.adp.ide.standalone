@@ -21,6 +21,10 @@ namespace EtAlii.Adp.Diagram.WardleyMap;
 /// <b>It answers from the target, not the model alone</b>: an element's id is the store's identity
 /// for it, kept beside each map, so what an element offers is read with its map's identities.
 /// </para>
+/// <para>
+/// A placement on empty map is answered as the map itself (<see cref="WardleySelection.SubjectOf"/>), so
+/// a right-click there offers the definition's menu for the diagram.
+/// </para>
 /// </remarks>
 public sealed class WardleyContextActionProvider(IHistoryStackStore historyStacks, IWardleyDocumentStore documents)
     : DiagramActionProvider<LineDocument, WardleyMap>(historyStacks, documents)
@@ -62,7 +66,7 @@ public sealed class WardleyContextActionProvider(IHistoryStackStore historyStack
     protected override IReadOnlyList<ContextActionGroupDefinition> Discover(ContextTarget target, DocumentEntry<LineDocument, WardleyMap> entry)
     {
         ArgumentNullException.ThrowIfNull(target);
-        return WardleyDefinition.Menus(entry, documents.Identities(target.ResolvedFullPath), target.ElementId, editable: true);
+        return WardleyDefinition.Menus(entry, documents.Identities(target.ResolvedFullPath), WardleySelection.SubjectOf(target.ElementId), editable: true);
     }
 
     /// <inheritdoc />
@@ -74,7 +78,7 @@ public sealed class WardleyContextActionProvider(IHistoryStackStore historyStack
     {
         ArgumentNullException.ThrowIfNull(target);
 
-        var step = WardleyDefinition.Execute(entry, documents.Identities(target.ResolvedFullPath), target.ResolvedFullPath, target.ElementId, actionId);
+        var step = WardleyDefinition.Execute(entry, documents.Identities(target.ResolvedFullPath), target.ResolvedFullPath, WardleySelection.SubjectOf(target.ElementId), actionId);
         return step switch
         {
             { Answer: { } answer } => answer,
@@ -87,7 +91,7 @@ public sealed class WardleyContextActionProvider(IHistoryStackStore historyStack
     protected override ContextValidationResult Validate(ContextTarget target, DocumentEntry<LineDocument, WardleyMap> entry, string actionId, string value)
     {
         ArgumentNullException.ThrowIfNull(target);
-        return WardleyDefinition.Validate(entry, documents.Identities(target.ResolvedFullPath), target.ElementId, actionId, value) is { } refusal
+        return WardleyDefinition.Validate(entry, documents.Identities(target.ResolvedFullPath), WardleySelection.SubjectOf(target.ElementId), actionId, value) is { } refusal
             ? ContextValidationResult.Rejected(refusal)
             : ContextValidationResult.Accepted;
     }
@@ -96,6 +100,6 @@ public sealed class WardleyContextActionProvider(IHistoryStackStore historyStack
     protected override DiagramPropertyChange Commit(ContextTarget target, DocumentEntry<LineDocument, WardleyMap> entry, string actionId, string value)
     {
         ArgumentNullException.ThrowIfNull(target);
-        return WardleyDefinition.Commit(entry, documents.Identities(target.ResolvedFullPath), target.ResolvedFullPath, target.ElementId, actionId, value);
+        return WardleyDefinition.Commit(entry, documents.Identities(target.ResolvedFullPath), target.ResolvedFullPath, WardleySelection.SubjectOf(target.ElementId), actionId, value);
     }
 }

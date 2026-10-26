@@ -965,8 +965,29 @@ clipping, and that is only visible on screen.
   - An accelerator's name is text in the text colour. The hand-written canvas stroked it 3 wide with the rule's dash, which drew it smeared.
   - **Delete on a selected component** now asks *Remove 'Water', and every link and evolution that names it?* and removes it, and one Undo puts the file back. Before this task, Delete did nothing (ruled 2026-10-25, option a).
 - **Observations, not failures of this task:**
-  - A right-click on empty map sends the backend a placement, which the Wardley backend does not resolve, so no menu opens, as before this task. The specification declares a menu there.
+  - A right-click on empty map sends the backend a placement, which the Wardley backend does not resolve, so no menu opens, as before this task. The specification declares a menu there. Answered by the next entry.
   - `Smart Kettle` overlaps `Electric Kettle` on both builds, because the corpus places them at nearly one point.
+
+## A right-click on empty Wardley map opens the map's menu (wardley-map-disl-fbl, after task 9)
+
+**Why this is a browser pass and not only tests:** the backend tests prove that a placement `new:x,y` resolves to the map and is offered the definition's menu for the diagram. Only a running client shows that the canvas's right-click sends that placement, that the shared menu opens on it, and that an entry's dialog reaches the file.
+
+- **Preconditions**:
+  - A build from the branch, with its backend and Vite on ports of their own (`ASPNETCORE_URLS`, `Client__DevServerUrl`, `vite --port`).
+  - A project holding `pass.owm` with the registration `wardley/map`, holding the map of the entry above.
+  - Run in the light theme and again in the dark one, from a fresh copy.
+- **Rows**:
+  1. **The menu.** Right-click empty map, away from every mark and line. A menu opens listing *Add component…*, *Add anchor…*, *Add submap…*, *Add market…*, *Add ecosystem…*, *Add note…* and *Add annotation…*, in that order.
+  2. **An entry from it.** Choose *Add component…*. A dialog *Add component* asks for a *Name*. Type *Water Tank* and press *Add*. The file gains `component Water Tank [0.5, 0.5]`: the middle of the map, as the definition says, not the point clicked.
+  3. **Undo.** One Undo puts the file back byte for byte.
+- **Result 2026-10-25 (agent-10-wardley-map-disl-fbl)**: **rows 1 to 3 pass; row 1 in both themes.**
+  - **Setup.** Branch `features/wardley-map-disl-fbl-9-menu` with this change uncommitted on `02d255944`. A developer build: backend on 5391, Vite on 5390. Headless Chromium 1194 driven by Playwright 1.56.1 at 1600 by 1000, with a real right-click at (450, 250) and `colorScheme` set per theme.
+  - **Rows.**
+    1. The seven entries were listed in the order above, in both themes.
+    2. The dialog asked for *Name*. *Add* wrote `component Water Tank [0.5, 0.5]`.
+    3. The file was byte-identical after one Undo.
+  - **Before this change**, the same right-click opened no menu on either build of the entry above (its *Observations*).
+  - **Seen besides.** While the map is the subject, the ribbon lists the same seven adds. Enter in the dialog's field did not submit it; *Add* did. That is the shared dialog's behaviour, not this change's.
 
 ## The ruler stays fixed to the view while its labels slide with the content (timeline-diagram, task 31)
 

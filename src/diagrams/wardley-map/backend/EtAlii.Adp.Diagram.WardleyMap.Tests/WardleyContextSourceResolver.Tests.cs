@@ -1,4 +1,5 @@
 using EtAlii.Adp.Context;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.Hierarchy;
@@ -227,6 +228,21 @@ public sealed class WardleyContextSourceResolverTests : IDisposable
 
         // Assert.
         Assert.IsType<RejectedContextLevel>(resolution);
+    }
+
+    [Fact]
+    public async Task APlacement_ResolvesToTheMapItself()
+    {
+        // Arrange. A right-click on empty map names the point it was made at, not an element.
+        var placement = GestureIds.Placement(300, 700);
+
+        // Act.
+        var level = Assert.IsType<ResolvedContextLevel>(await Resolve(placement)).Level;
+
+        // Assert. The map is the subject, so its own menu can be offered; nothing is selected on it.
+        Assert.Equal(["This map"], level.RelativePath);
+        Assert.Equal((placement, _body), (level.Target.ElementId, level.Target.ResolvedFullPath));
+        Assert.Equal("This map", level.Detail.Element.Text);
     }
 
     [Fact]
