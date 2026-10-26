@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Specification.Disl;
 using EtAlii.Adp.Specification.Fbl;
 
 namespace EtAlii.Adp.Diagram.SupplyChain;
@@ -142,7 +143,7 @@ public static class SupplyChainReading
 
     /// <summary>
     /// The binding's reading of <paramref name="body"/> with every value as the module reads it, for
-    /// <see cref="Specification.Disl.DislModelBuilder"/>: a number as a number, a value that will not read or is empty
+    /// <see cref="DislModelBuilder"/>: a number as a number, a value that will not read or is empty
     /// left out, a stage as the binding's <c>map</c> reads it, the ids as the module finds them, and what is written
     /// kept beside what resolves. The library's own findings and the entries that are not a mapping are left out: the
     /// definition's rules report what they would (Q4).
