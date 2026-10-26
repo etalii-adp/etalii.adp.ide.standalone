@@ -1,9 +1,10 @@
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Specification.Disl;
 
 namespace EtAlii.Adp.Diagram.SupplyChain;
 
-/// <summary>Adds an empty group where it was dropped, placed so it draws before anything is moved into it.</summary>
+/// <summary>Adds an empty group where it was dropped, placed so it draws before anything is moved into it: the definition's <c>addGroupHere</c>.</summary>
 public sealed class AddSupplyChainGroupCommandHandler(ISupplyChainDocumentStore documents) : SupplyChainEditHandler<AddSupplyChainGroupCommand>(documents)
 {
     /// <inheritdoc />
@@ -13,20 +14,9 @@ public sealed class AddSupplyChainGroupCommandHandler(ISupplyChainDocumentStore 
     /// <inheritdoc />
     protected override EditOutcome Apply(LineDocument document, SupplyChainModel model, AddSupplyChainGroupCommand command)
     {
-        if (model.IsTaken(command.GroupId))
-        {
-            return EditOutcome.Refused("That id is already used in this diagram.");
-        }
-
-        // The drop is the centre; the document holds the top-left.
-        var group = new SupplyChainGroup(
-            command.GroupId,
-            UniqueName.Of(model.Groups.Select(existing => existing.Name), "New group"),
-            Description: "",
-            new LineRange(0, 0),
-            X: command.X - (SupplyChainGeometry.EmptyGroupWidth / 2),
-            Y: command.Y - (SupplyChainGeometry.EmptyGroupHeight / 2));
-
-        return SupplyChainWriter.AddGroup(document, model, group);
+        // The id is the host's, minted or asked for, so whether it is free is the host's to say.
+        return model.IsTaken(command.GroupId)
+            ? EditOutcome.Refused("That id is already used in this diagram.")
+            : SupplyChainDefinition.Run(document, model, "addGroupHere", null, DislIds.Fixed(command.GroupId), SupplyChainDefinition.At(command.X, command.Y));
     }
 }

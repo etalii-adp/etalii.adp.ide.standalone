@@ -155,17 +155,20 @@ public sealed class SupplyChainCommandsTests : IDisposable
     }
 
     [Fact]
-    public void TenStepsOfAFraction_ComeBackToAWholeNumber()
+    public async Task TenStepsOfAFraction_ComeBackToAWholeNumber()
     {
+        // Arrange.
+        await Dispatch(new SetSupplyChainPropertyCommand(Body, "plant", SupplyChainKeys.Quantity, "0"));
+        await Dispatch(new SetSupplyChainPropertyCommand(Body, "plant", SupplyChainKeys.Step, "0.1"));
+
         // Act.
-        double? value = 0;
         for (var i = 0; i < 10; i++)
         {
-            value = StepSupplyChainValueCommandHandler.Stepped(value, 0.1, 1, "quantity");
+            await Dispatch(new StepSupplyChainValueCommand(Body, "plant", 1));
         }
 
         // Assert.
-        Assert.Equal(1, value);
+        Assert.Equal(1, Parse().Nodes.Single(node => node.Id == "plant").Quantity);
     }
 
     [Fact]

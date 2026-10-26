@@ -8,5 +8,5 @@ public sealed class PlaceSupplyChainNodesCommandHandler(ISupplyChainDocumentStor
 {
     /// <inheritdoc />
     protected override EditOutcome Apply(LineDocument document, SupplyChainModel model, PlaceSupplyChainNodesCommand command) =>
-        SupplyChainWriter.Place(document, model, command.Places);
+        SupplyChainDefinition.Place(document, model, command.Places);
 }
