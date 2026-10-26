@@ -118,10 +118,10 @@ internal static class SupplyChainApply
     /// added or took. Entries are edited bottom-up, so every line the document gained or lost is this entry's, and the
     /// document need not be read again, which a document the writer leaves unreadable could not be.
     /// </summary>
-    private static LineRange Tracked(LineDocument document, LineRange range, Action write)
+    private static LineRange Tracked(LineDocument document, LineRange range, Action<LineRange> write)
     {
         var lines = document.Lines.Count;
-        write();
+        write(range);
         return new LineRange(range.Start, range.End + (document.Lines.Count - lines));
     }
 
@@ -159,13 +159,13 @@ internal static class SupplyChainApply
             {
                 // y first: inserting a missing key lands it after the entry's first line, so writing y and then x
                 // reads `x` before `y` in a newly placed entry, as SupplyChainWriter.Place writes them.
-                range = Tracked(document, range, () => Place(document, range, "y", value));
-                range = Tracked(document, range, () => Place(document, range, "x", x));
+                range = Tracked(document, range, at => Place(document, at, "y", value));
+                range = Tracked(document, range, at => Place(document, at, "x", x));
                 continue;
             }
 
             var key = KeyOf(kind, attribute)!;
-            range = Tracked(document, range, () => Write(document, before, range, key, value));
+            range = Tracked(document, range, at => Write(document, before, at, key, value));
         }
 
         return range;

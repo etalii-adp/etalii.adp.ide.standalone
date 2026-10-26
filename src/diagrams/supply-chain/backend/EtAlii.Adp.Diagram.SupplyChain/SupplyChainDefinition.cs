@@ -101,7 +101,7 @@ internal static class SupplyChainDefinition
     /// over a model of <paramref name="model"/> of its own, and writes what it changes into <paramref name="document"/>;
     /// or its refusal.
     /// </summary>
-    public static EditOutcome Commit(LineDocument document, SupplyChainModel model, DislElement self, string row, string value)
+    private static EditOutcome Commit(LineDocument document, SupplyChainModel model, DislElement self, string row, string value)
     {
         ArgumentNullException.ThrowIfNull(model);
         ArgumentNullException.ThrowIfNull(self);

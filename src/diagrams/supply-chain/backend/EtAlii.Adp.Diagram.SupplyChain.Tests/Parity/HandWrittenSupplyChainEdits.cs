@@ -244,7 +244,7 @@ internal static class HandWrittenSupplyChainEdits
         }
 
         /// <summary>The new value, or <c>null</c> when it is already zero and asked to go lower.</summary>
-        internal static double? Stepped(double? current, double? step, int steps, string what)
+        private static double? Stepped(double? current, double? step, int steps, string what)
         {
             _ = what;
             var from = current ?? 0;
