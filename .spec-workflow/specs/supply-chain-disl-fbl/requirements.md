@@ -263,7 +263,7 @@ The product direction (2026-09-26) is that every tool is a markup definition int
 
 ## Appendix: the binding, as drafted
 
-A draft against FBL 0.2, `yaml` family, after the hype cycle's. One thing in it is **not valid FBL 0.2**: `"as": "text"`, which marks every slot that needs the construct of findings B1 and B2 and stands for gap 1. Everything else is meant to be valid. Flows are elements with reference attributes (finding B3), every entry carries `storedId` and `unknownKeys` (findings B4 and A11), one rule reads all seven stages through `map` (Q2), and `group` is a reference and not a `parent` (Q5).
+A draft against FBL 0.2, `yaml` family, after the hype cycle's. One thing in it is **not valid FBL 0.2**: `"as": "text"`, which marks every slot that needs the construct of findings B1 and B2 and stands for gap 1. [Amended by small amendment, user ruling in chat 2026-10-26: FBL 0.5 closed gap 1 and names the key `read`, so the draft below now spells it `"read": "text"`.] Everything else is meant to be valid. Flows are elements with reference attributes (finding B3), every entry carries `storedId` and `unknownKeys` (findings B4 and A11), one rule reads all seven stages through `map` (Q2), and `group` is a reference and not a `parent` (Q5).
 
 ```json
 {
@@ -279,18 +279,18 @@ A draft against FBL 0.2, `yaml` family, after the hype cycle's. One thing in it 
         {
           "name": "document", "type": "Document", "at": "/",
           "readOnly": "The document's version is changed in the file itself.",
-          "attributes": { "version": { "key": "supply-chain", "as": "text" } }
+          "attributes": { "version": { "key": "supply-chain", "read": "text" } }
         },
         {
           "name": "group", "type": "Group", "at": "/groups/*", "when": "entry.all(k, true)",
           "id": { "from": { "key": "id" } },
           "attributes": {
-            "storedId": { "key": "id", "as": "text", "readOnly": true },
+            "storedId": { "key": "id", "read": "text", "readOnly": true },
             "unknownKeys": { "value": "entry.filter(k, !(k in ['id', 'name', 'description', 'x', 'y']))" },
-            "name": { "key": "name", "as": "text", "empty": "keep" },
-            "description": { "key": "description", "as": "text", "empty": "remove" },
-            "x": { "key": "x", "as": "text", "number": { "decimals": 0 }, "empty": "remove" },
-            "y": { "key": "y", "as": "text", "number": { "decimals": 0 }, "empty": "remove" }
+            "name": { "key": "name", "read": "text", "empty": "keep" },
+            "description": { "key": "description", "read": "text", "empty": "remove" },
+            "x": { "key": "x", "read": "text", "number": { "decimals": 0 }, "empty": "remove" },
+            "y": { "key": "y", "read": "text", "number": { "decimals": 0 }, "empty": "remove" }
           },
           "insert": { "place": "after-last", "container": "/groups", "create": { "at": "end-of-document" }, "keys": ["id", "name", "description", "x", "y"] },
           "remove": {}
@@ -299,17 +299,17 @@ A draft against FBL 0.2, `yaml` family, after the hype cycle's. One thing in it 
           "name": "node", "type": "Node", "at": "/nodes/*", "when": "entry.all(k, true)",
           "id": { "from": { "key": "id" } },
           "attributes": {
-            "storedId": { "key": "id", "as": "text", "readOnly": true },
+            "storedId": { "key": "id", "read": "text", "readOnly": true },
             "unknownKeys": { "value": "entry.filter(k, !(k in ['id', 'type', 'name', 'description', 'group', 'quantity', 'unit', 'step', 'x', 'y']))" },
-            "stage": { "key": "type", "as": "text", "map": { "source": "source", "processor": "processor", "producer": "producer", "integrator": "integrator", "hub": "hub", "outlet": "outlet", "consumer": "consumer", "raw-material": "source", "supplier": "processor", "manufacturer": "producer", "assembler": "integrator", "distributor": "hub", "retailer": "outlet" } },
-            "name": { "key": "name", "as": "text", "empty": "keep" },
-            "description": { "key": "description", "as": "text", "empty": "remove" },
-            "group": { "key": "group", "as": "text", "empty": "remove", "reference": { "to": ["group"], "by": "storedId" } },
-            "quantity": { "key": "quantity", "as": "text", "number": { "decimals": 4 }, "empty": "remove" },
-            "unit": { "key": "unit", "as": "text", "empty": "remove" },
-            "step": { "key": "step", "as": "text", "number": { "decimals": 4 }, "empty": "remove" },
-            "x": { "key": "x", "as": "text", "number": { "decimals": 0 }, "empty": "remove" },
-            "y": { "key": "y", "as": "text", "number": { "decimals": 0 }, "empty": "remove" }
+            "stage": { "key": "type", "read": "text", "map": { "source": "source", "processor": "processor", "producer": "producer", "integrator": "integrator", "hub": "hub", "outlet": "outlet", "consumer": "consumer", "raw-material": "source", "supplier": "processor", "manufacturer": "producer", "assembler": "integrator", "distributor": "hub", "retailer": "outlet" } },
+            "name": { "key": "name", "read": "text", "empty": "keep" },
+            "description": { "key": "description", "read": "text", "empty": "remove" },
+            "group": { "key": "group", "read": "text", "empty": "remove", "reference": { "to": ["group"], "by": "storedId" } },
+            "quantity": { "key": "quantity", "read": "text", "number": { "decimals": 4 }, "empty": "remove" },
+            "unit": { "key": "unit", "read": "text", "empty": "remove" },
+            "step": { "key": "step", "read": "text", "number": { "decimals": 4 }, "empty": "remove" },
+            "x": { "key": "x", "read": "text", "number": { "decimals": 0 }, "empty": "remove" },
+            "y": { "key": "y", "read": "text", "number": { "decimals": 0 }, "empty": "remove" }
           },
           "insert": { "place": "after-last", "container": "/nodes", "create": { "at": "end-of-document" }, "keys": ["id", "type", "name", "description", "group", "quantity", "unit", "step", "x", "y"] },
           "remove": { "cascade": ["flow"] }
@@ -318,15 +318,15 @@ A draft against FBL 0.2, `yaml` family, after the hype cycle's. One thing in it 
           "name": "flow", "type": "Flow", "at": "/flows/*", "when": "entry.all(k, true)",
           "id": { "from": { "key": "id" } },
           "attributes": {
-            "storedId": { "key": "id", "as": "text", "readOnly": true },
+            "storedId": { "key": "id", "read": "text", "readOnly": true },
             "unknownKeys": { "value": "entry.filter(k, !(k in ['id', 'from', 'to', 'product', 'description', 'volume', 'unit', 'step']))" },
-            "from": { "key": "from", "as": "text", "reference": { "to": ["node"], "by": "storedId" } },
-            "to": { "key": "to", "as": "text", "reference": { "to": ["node"], "by": "storedId" } },
-            "product": { "key": "product", "as": "text", "empty": "remove" },
-            "description": { "key": "description", "as": "text", "empty": "remove" },
-            "volume": { "key": "volume", "as": "text", "number": { "decimals": 4 }, "empty": "remove" },
-            "unit": { "key": "unit", "as": "text", "empty": "remove" },
-            "step": { "key": "step", "as": "text", "number": { "decimals": 4 }, "empty": "remove" }
+            "from": { "key": "from", "read": "text", "reference": { "to": ["node"], "by": "storedId" } },
+            "to": { "key": "to", "read": "text", "reference": { "to": ["node"], "by": "storedId" } },
+            "product": { "key": "product", "read": "text", "empty": "remove" },
+            "description": { "key": "description", "read": "text", "empty": "remove" },
+            "volume": { "key": "volume", "read": "text", "number": { "decimals": 4 }, "empty": "remove" },
+            "unit": { "key": "unit", "read": "text", "empty": "remove" },
+            "step": { "key": "step", "read": "text", "number": { "decimals": 4 }, "empty": "remove" }
           },
           "insert": { "place": "after-last", "container": "/flows", "create": { "at": "end-of-document" }, "keys": ["id", "from", "to", "product", "description", "volume", "unit", "step"] },
           "remove": {}
