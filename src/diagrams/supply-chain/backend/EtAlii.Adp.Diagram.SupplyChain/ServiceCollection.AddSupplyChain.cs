@@ -1,4 +1,5 @@
 using EtAlii.Adp.Context;
+using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Sessions;
 using Microsoft.Extensions.DependencyInjection;
@@ -38,7 +39,7 @@ public static class ServiceCollectionAddSupplyChainExtension
         services.AddDiagramDocumentReloader<ISupplyChainDocumentStore>(Diagram.SupplyChain.Origin);
         services.AddSingleton<IContextSourceResolver, SupplyChainContextSourceResolver>();
 
-        services.AddSingleton<IDiagramToolboxProvider, SupplyChainToolboxProvider>();
+        services.AddSingleton<IDiagramToolboxProvider>(new DislToolboxProvider(Diagram.SupplyChain.Origin, SupplyChainDefinition.Definition));
         services.AddSingleton<IContextActionProvider, SupplyChainContextActionProvider>();
         services.AddSingleton<IContextPropertyProvider, SupplyChainContextPropertyProvider>();
 
