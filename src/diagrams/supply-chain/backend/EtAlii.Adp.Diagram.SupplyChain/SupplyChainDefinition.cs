@@ -8,7 +8,7 @@ namespace EtAlii.Adp.Diagram.SupplyChain;
 /// <summary>
 /// The supply chain diagram's bundled DISL definition (<c>definition/supply-chain.dis</c>, from etalii-adp/etalii.adp),
 /// loaded once as a <see cref="DislDiagramDefinition"/> with <see cref="SupplyChainWritten"/>, and what the providers
-/// derive from it: the palette, the context menus, the property rows and what removing a node asks first.
+/// derive from it: the palette, the context menus, the property rows, what removing a node asks first and the findings.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -68,6 +68,18 @@ internal static class SupplyChainDefinition
         return ElementOf(SupplyChainDisl.Of(model).Diagram, elementId) is { } element && DeletionPolicy.Confirmation(Specification, element, env: Env) is { } asked
             ? new RemovalConfirmation(asked.Title, asked.Message, asked.ConfirmLabel, asked.Danger)
             : null;
+    }
+
+    /// <summary>
+    /// The findings of <paramref name="model"/>: the definition's constraints (<see cref="ConstraintEvaluator"/>) with what the
+    /// parser could not read handed in as the reader's findings, an element named by the id it is written with, in one list
+    /// by line.
+    /// </summary>
+    public static IReadOnlyList<DislFinding> Findings(SupplyChainModel model)
+    {
+        ArgumentNullException.ThrowIfNull(model);
+        var options = new DislConstraintOptions(Env, SupplyChainReaderFindings.Of(model), SupplyChainWritten.IdOf);
+        return SupplyChainFindings.ByLine(ConstraintEvaluator.Evaluate(Specification, SupplyChainDisl.Of(model).Diagram, options));
     }
 
     /// <summary>The element <paramref name="id"/> names, as <see cref="SupplyChainModel"/> finds it: the first node written with it, else the first flow, else the first group; null for none.</summary>
