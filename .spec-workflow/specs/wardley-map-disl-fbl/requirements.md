@@ -45,7 +45,7 @@ The three kinds are those of `causal-loop-disl-fbl`: a **definition defect** is 
 | A7 | `wardley.duplicate-name` is reported once per name, at the first holder, with the lines of all holders in its sentence ("'X' is declared more than once (lines 3, 7), so every link, evolve and pipeline that names it is ambiguous."). DISL's `oncePerGroup` reports at the second or the last holder, never the first. The module's location is also built from the element's **name** where an element id is expected (`new DiagramProblemElementLocation(WardleyIdentityKeys.Of(group.First()))`), so today it points at nothing. | Language gap (minor), and a module defect | Read |
 | A8 | `wardley.coordinate-out-of-range` writes the value with the invariant pattern `0.####` ("The maturity of 'X' is 1.2, and a Wardley map's axes run from 0 to 1."). DISL's `formatNumber` is ICU formatting in `env.locale`, so the sentence would follow the user's locale. | Language gap (minor) | Read |
 | A9 | An evolution is a node type in the definition and a property of its component in the tool: the rows `wardley.evolve` ("Evolves to") and `wardley.evolve-name` ("Becomes") sit on the component and add, rewrite or remove an `evolve` statement, and only the first `evolve` of a component is used. DISL can state rows that write another element (a form item's `parse.write` actions). The draft also adds a warning for a second `evolve`, which the tool does not give. | Definition defect, to confirm in design; the warning is a behaviour change (Q4) | Read |
-| A10 | The element mapper and its viewport filter, the session, the document store with its reload rules, and the `.proto` payloads are the host's and stay code. The synthetic element `wardley/map+evolution-axis` goes once the client reads `axis.ranges`. This is not a gap. | None | Read |
+| A10 | The element mapper and its viewport filter, the session, the document store with its reload rules, and the `.proto` payloads are the host's and stay code. ~~The synthetic element `wardley/map+evolution-axis` goes once the client reads `axis.ranges`.~~ [Amended by small amendment, user ruling in chat 2026-10-25: the axis payload is replaced by a diagram payload `wardley/map+diagram`, which carries the title, style, size and annotationsPosition the definition declares]. This is not a gap. | None | Read |
 
 ### B. The FBL binding against the module's parser and writer
 
@@ -400,13 +400,13 @@ Left out for length, and each the shape of a rule shown: `anchor` and `submap` (
       "components": "wardley.pipeline.children"
     },
     "elementTypes": {
-      "Positioned": "wardley/map+element", "Link": "wardley/map+link", "Note": "wardley/map+note", "Annotation": "wardley/map+annotation", "Accelerator": "wardley/map+accelerator", "Attitude": "wardley/map+attitude", "evolutionAxis": "wardley/map+evolution-axis"
+      "Positioned": "wardley/map+element", "Link": "wardley/map+link", "Note": "wardley/map+note", "Annotation": "wardley/map+annotation", "Accelerator": "wardley/map+accelerator", "Attitude": "wardley/map+attitude", "Diagram": "wardley/map+diagram"
     }
   }
 }
 ```
 
-The ids are those of the three providers and of `WardleyElementTypes`. An evolution has no identity kind in the tool and no element on the wire, so the binding gives it no `id` and it takes the one DISL derives.
+The ids are those of the three providers and of `WardleyElementTypes`. (Small amendment, user ruling in chat 2026-10-25: the sketch's ~~`"evolutionAxis": "wardley/map+evolution-axis"`~~ is now `"Diagram": "wardley/map+diagram"`.) An evolution has no identity kind in the tool and no element on the wire, so the binding gives it no `id` and it takes the one DISL derives.
 
 ## Sources
 
