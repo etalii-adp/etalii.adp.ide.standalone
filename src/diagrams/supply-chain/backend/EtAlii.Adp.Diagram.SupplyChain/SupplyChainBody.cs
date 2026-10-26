@@ -1,10 +1,12 @@
 using System.Text;
 using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.History;
 using EtAlii.Adp.Specification.Disl;
 using EtAlii.Adp.Specification.Fbl;
 using EtAlii.Adp.Specification.Fbl.Documents;
 using EtAlii.Adp.Specification.Fbl.History;
+using EtAlii.Adp.Specification.Fbl.Planning;
 using YamlDotNet.Core;
 using YamlDotNet.RepresentationModel;
 
@@ -24,8 +26,13 @@ namespace EtAlii.Adp.Diagram.SupplyChain;
 /// with those values.
 /// </para>
 /// <para>
-/// <b>Writing is still the module's writer's</b> until every command plans its edit as model changes the library
-/// writes as splices (supply-chain-disl-fbl task 11).
+/// <b>Every write is a <see cref="ModelChange"/></b> the library plans as splices in the body's own conventions (FBL
+/// section 6): a value's own span in its own style, a new key where the binding orders it, an entry removed with the
+/// comments above it (Q1). Nothing in the module builds a line of YAML; <see cref="SupplyChainEdits"/> writes what a
+/// transaction of the definition changes, in the binding's names.
+/// </para>
+/// <para>
+/// <b>Undo stays the host's</b>: the shared restore command puts the text back.
 /// </para>
 /// <para>
 /// <b>A body that is not YAML is read-only</b> (<see cref="Refusal"/>): FBL opens it empty and never writes it.
@@ -52,6 +59,7 @@ public sealed class SupplyChainBody : ITextBody<SupplyChainBody>
     private readonly TextMemo<(string Message, int Line)?> _refusal = new();
     private readonly TextMemo<ParseOutcome<SupplyChainModel>> _reading = new();
     private readonly TextMemo<DislModel> _disl = new();
+    private readonly TextMemo<IReadOnlyDictionary<string, FblElement>> _bindingEntries = new();
 
     private SupplyChainBody(OpenBody body)
     {
@@ -104,6 +112,23 @@ public sealed class SupplyChainBody : ITextBody<SupplyChainBody>
 
     /// <summary>The 0-based lines <paramref name="span"/> covers.</summary>
     internal LineRange LinesOf(Span span) => _edits.LinesOf(span);
+
+    /// <summary>
+    /// The entry the binding reads each group, node and flow as, by the id the DISL model reads it with: its id is the
+    /// same but for a later holder of an id and an entry without one, which the model reads with an ephemeral id and the
+    /// binding addresses by its place.
+    /// </summary>
+    internal IReadOnlyDictionary<string, FblElement> BindingEntries => _bindingEntries.Of(_body.Bytes, () => SupplyChainReading.BindingEntries(this));
+
+    /// <summary>The spans <paramref name="change"/> would write, planned against the body as it is; none when it is refused.</summary>
+    internal IReadOnlyList<Span> Planned(ModelChange change) =>
+        _body.Plan(change) is PlanResult.Planned { Edit: var edit } ? [.. edit.Splices.Select(splice => new Span(splice.Start, splice.End))] : [];
+
+    /// <summary>Plans and applies one change; the refusal's sentence when the library refuses it.</summary>
+    internal EditOutcome Change(ModelChange change) => _edits.Change(change);
+
+    /// <inheritdoc cref="FblBodyEdits.Batch"/>
+    internal void Batch(Action writes) => _edits.Batch(writes);
 
     /// <summary>
     /// The 0-based line of <paramref name="key"/> in the mapping on <paramref name="range"/>: the line that starts

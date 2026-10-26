@@ -10,10 +10,26 @@ namespace EtAlii.Adp.Diagram.SupplyChain.Tests.Parity;
 /// (supply-chain-disl-fbl, task 7), kept verbatim as the oracle the derived handlers are compared with, edit for edit:
 /// the same bytes written, or the same refusal.
 /// </summary>
+/// <remarks>
+/// They edit the lines of a <see cref="LineDocument"/> through <see cref="SupplyChainWriter"/>, as the module did before
+/// every command wrote through the binding (supply-chain-disl-fbl task 11), so their bytes are what the module wrote then.
+/// </remarks>
 internal static class HandWrittenSupplyChainEdits
 {
+    /// <summary>The refusal for an entry that is not there, in one wording.</summary>
+    private static EditOutcome Gone => EditOutcome.Refused("That is no longer in this diagram.");
+
+    /// <summary>What every hand-written handler shares: the lines of a body, read as the module reads them.</summary>
+    public abstract class Handler<TCommand>(HandWrittenParityStore documents)
+        : DocumentEditHandler<TCommand, HandWrittenParityStore, LineDocument, SupplyChainModel>(documents)
+        where TCommand : IDocumentEditCommand
+    {
+        /// <inheritdoc />
+        protected sealed override SupplyChainModel Parse(LineDocument body) => SupplyChainReading.Parse(body.Text);
+    }
+
     /// <summary>Adds a node where it was dropped, named after its stage.</summary>
-    public sealed class AddSupplyChainNode(ISupplyChainDocumentStore documents) : SupplyChainEditHandler<AddSupplyChainNodeCommand>(documents)
+    public sealed class AddSupplyChainNode(HandWrittenParityStore documents) : Handler<AddSupplyChainNodeCommand>(documents)
     {
         /// <inheritdoc />
         protected override async Task<CommandResult> RunAsync(AddSupplyChainNodeCommand command, CancellationToken cancellationToken)
@@ -50,7 +66,7 @@ internal static class HandWrittenSupplyChainEdits
     }
 
     /// <summary>Adds an empty group where it was dropped, placed so it draws before anything is moved into it.</summary>
-    public sealed class AddSupplyChainGroup(ISupplyChainDocumentStore documents) : SupplyChainEditHandler<AddSupplyChainGroupCommand>(documents)
+    public sealed class AddSupplyChainGroup(HandWrittenParityStore documents) : Handler<AddSupplyChainGroupCommand>(documents)
     {
         /// <inheritdoc />
         protected override async Task<CommandResult> RunAsync(AddSupplyChainGroupCommand command, CancellationToken cancellationToken) =>
@@ -78,7 +94,7 @@ internal static class HandWrittenSupplyChainEdits
     }
 
     /// <summary>Adds a flow between two nodes, refusing one to itself or one that already exists.</summary>
-    public sealed class ConnectSupplyChainNodes(ISupplyChainDocumentStore documents) : SupplyChainEditHandler<ConnectSupplyChainNodesCommand>(documents)
+    public sealed class ConnectSupplyChainNodes(HandWrittenParityStore documents) : Handler<ConnectSupplyChainNodesCommand>(documents)
     {
         /// <inheritdoc />
         protected override async Task<CommandResult> RunAsync(ConnectSupplyChainNodesCommand command, CancellationToken cancellationToken) =>
@@ -113,7 +129,7 @@ internal static class HandWrittenSupplyChainEdits
     }
 
     /// <summary>Removes whatever the id names.</summary>
-    public sealed class RemoveSupplyChainEntry(ISupplyChainDocumentStore documents) : SupplyChainEditHandler<RemoveSupplyChainEntryCommand>(documents)
+    public sealed class RemoveSupplyChainEntry(HandWrittenParityStore documents) : Handler<RemoveSupplyChainEntryCommand>(documents)
     {
         /// <inheritdoc />
         protected override EditOutcome Apply(LineDocument document, SupplyChainModel model, RemoveSupplyChainEntryCommand command)
@@ -135,7 +151,7 @@ internal static class HandWrittenSupplyChainEdits
     }
 
     /// <summary>Checks the value against the key and the entry, then writes it.</summary>
-    public sealed class SetSupplyChainProperty(ISupplyChainDocumentStore documents) : SupplyChainEditHandler<SetSupplyChainPropertyCommand>(documents)
+    public sealed class SetSupplyChainProperty(HandWrittenParityStore documents) : Handler<SetSupplyChainPropertyCommand>(documents)
     {
         /// <inheritdoc />
         protected override async Task<CommandResult> RunAsync(SetSupplyChainPropertyCommand command, CancellationToken cancellationToken) =>
@@ -215,7 +231,7 @@ internal static class HandWrittenSupplyChainEdits
     /// The + and − of a node or a flow. The value never goes below zero: a decrement at zero is refused
     /// with a sentence rather than written as a negative stock nobody can have.
     /// </summary>
-    public sealed class StepSupplyChainValue(ISupplyChainDocumentStore documents) : SupplyChainEditHandler<StepSupplyChainValueCommand>(documents)
+    public sealed class StepSupplyChainValue(HandWrittenParityStore documents) : Handler<StepSupplyChainValueCommand>(documents)
     {
         /// <inheritdoc />
         protected override async Task<CommandResult> RunAsync(StepSupplyChainValueCommand command, CancellationToken cancellationToken) =>
@@ -261,7 +277,7 @@ internal static class HandWrittenSupplyChainEdits
     }
 
     /// <summary>A new group around one node - the way a group comes into being, since an empty one draws nothing.</summary>
-    public sealed class GroupSupplyChainNode(ISupplyChainDocumentStore documents) : SupplyChainEditHandler<GroupSupplyChainNodeCommand>(documents)
+    public sealed class GroupSupplyChainNode(HandWrittenParityStore documents) : Handler<GroupSupplyChainNodeCommand>(documents)
     {
         /// <inheritdoc />
         protected override async Task<CommandResult> RunAsync(GroupSupplyChainNodeCommand command, CancellationToken cancellationToken)
@@ -311,7 +327,7 @@ internal static class HandWrittenSupplyChainEdits
     /// so it is still where it was left if its members later go.
     /// </para>
     /// </remarks>
-    public sealed class MoveSupplyChainEntry(ISupplyChainDocumentStore documents) : SupplyChainEditHandler<MoveSupplyChainEntryCommand>(documents)
+    public sealed class MoveSupplyChainEntry(HandWrittenParityStore documents) : Handler<MoveSupplyChainEntryCommand>(documents)
     {
         /// <inheritdoc />
         protected override EditOutcome Apply(LineDocument document, SupplyChainModel model, MoveSupplyChainEntryCommand command)
@@ -401,7 +417,7 @@ internal static class HandWrittenSupplyChainEdits
     }
 
     /// <summary>Writes the placements, in one edit and so in one undo.</summary>
-    public sealed class PlaceSupplyChainNodes(ISupplyChainDocumentStore documents) : SupplyChainEditHandler<PlaceSupplyChainNodesCommand>(documents)
+    public sealed class PlaceSupplyChainNodes(HandWrittenParityStore documents) : Handler<PlaceSupplyChainNodesCommand>(documents)
     {
         /// <inheritdoc />
         protected override EditOutcome Apply(LineDocument document, SupplyChainModel model, PlaceSupplyChainNodesCommand command) =>
@@ -416,7 +432,7 @@ internal static class HandWrittenSupplyChainEdits
     /// Written rather than cleared: a document whose nodes carry no coordinates is already drawn by
     /// this layout, so arranging it writes them all, and from then on dragging one moves only that one.
     /// </remarks>
-    public sealed class ArrangeSupplyChain(ISupplyChainDocumentStore documents) : SupplyChainEditHandler<ArrangeSupplyChainCommand>(documents)
+    public sealed class ArrangeSupplyChain(HandWrittenParityStore documents) : Handler<ArrangeSupplyChainCommand>(documents)
     {
         /// <inheritdoc />
         protected override EditOutcome Apply(LineDocument document, SupplyChainModel model, ArrangeSupplyChainCommand command)

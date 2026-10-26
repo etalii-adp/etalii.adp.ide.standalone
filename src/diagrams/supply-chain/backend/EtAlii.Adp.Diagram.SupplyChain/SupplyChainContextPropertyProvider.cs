@@ -21,7 +21,7 @@ namespace EtAlii.Adp.Diagram.SupplyChain;
 /// </para>
 /// </remarks>
 public sealed class SupplyChainContextPropertyProvider(IHistoryStackStore historyStacks, ISupplyChainDocumentStore documents)
-    : DiagramPropertyProvider<LineDocument, SupplyChainModel>(historyStacks, documents)
+    : DiagramPropertyProvider<SupplyChainBody, SupplyChainModel>(historyStacks, documents)
 {
     /// <summary>The name of a node or a group.</summary>
     public const string NameProperty = "supply-chain.name";
@@ -57,7 +57,7 @@ public sealed class SupplyChainContextPropertyProvider(IHistoryStackStore histor
     protected override bool IsBody(string path) => Diagram.IsBody(path);
 
     /// <inheritdoc />
-    protected override IReadOnlyList<ContextPropertyDefinition> Describe(DocumentEntry<LineDocument, SupplyChainModel> entry, string elementId) =>
+    protected override IReadOnlyList<ContextPropertyDefinition> Describe(DocumentEntry<SupplyChainBody, SupplyChainModel> entry, string elementId) =>
         // Derived from the DISL definition: a node's, a flow's or a group's form.
         SupplyChainDefinition.Rows(entry.Model, elementId);
 

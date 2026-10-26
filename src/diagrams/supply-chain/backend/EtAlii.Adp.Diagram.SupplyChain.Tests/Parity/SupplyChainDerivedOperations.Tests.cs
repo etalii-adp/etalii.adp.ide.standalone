@@ -1,14 +1,31 @@
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.SupplyChain.Tests.Parity;
 
 /// <summary>
-/// The edits decided by the DISL definition write exactly what the hand-written handlers wrote (supply-chain-disl-fbl,
-/// task 7): for every document of the parity corpus, every command at the entries it is sampled at (see
-/// <see cref="IdsOf"/>), the empty id and an id nothing holds, gives byte-identical bodies, or the same refusal, through
-/// today's handlers and through <see cref="HandWrittenSupplyChainEdits"/>.
+/// The edits decided by the DISL definition write what the hand-written handlers wrote (supply-chain-disl-fbl, tasks 7
+/// and 11): for every document of the parity corpus, every command at the entries it is sampled at (see
+/// <see cref="IdsOf"/>), the empty id and an id nothing holds, gives a body that reads as the same groups, nodes, flows,
+/// problems and version, or the same refusal, through today's handlers and through
+/// <see cref="HandWrittenSupplyChainEdits"/>.
 /// </summary>
+/// <remarks>
+/// <para>
+/// <b>What is read is compared, not the bytes.</b> Since task 11 the handlers write through the binding and the oracle
+/// through the line writer, so a value keeps its own style and a key goes where the binding orders it (Q1): the bytes
+/// differ by design, and the transcript's regenerated edit hunks are where they are reviewed.
+/// </para>
+/// <para>
+/// <b>Three differences are expected, and nothing else is</b> (<see cref="EditComparison.Expected"/>): a position or a
+/// size the oracle rounded to even from a half, which the binding rounds away from zero (Q1); an edit after which the
+/// oracle's body no longer reads, which the binding writes readably or refuses (finding B13 for an entry written as a flow
+/// mapping, B6 for a list written <c>[ ]</c> or with a comment after it); and every edit of
+/// <see cref="DamagedByTheOracle"/>, where the oracle writes inside a value that spans lines (B13, Q6), which
+/// <see cref="SupplyChainWriterDefectsTests"/> guards.
+/// </para>
+/// </remarks>
 public class SupplyChainDerivedOperationsTests
 {
     private const string Body = "parity.supply";
@@ -17,6 +34,9 @@ public class SupplyChainDerivedOperationsTests
 
     /// <summary>How many entries of each list a document is edited at; every handler call reads the whole document again.</summary>
     private const int Sample = 4;
+
+    /// <summary>The documents the oracle damages wherever it edits an entry holding a value that spans lines (finding B13).</summary>
+    private static readonly HashSet<string> DamagedByTheOracle = new(StringComparer.Ordinal) { "multi-line-values.supply" };
 
     /// <summary>Points on the canvas: the origin, a fraction, a half that rounds to even, far out and below zero.</summary>
     private static readonly (double X, double Y)[] _points = [(0, 0), (10.5, 21.5), (333.25, 47.75), (2000, 900), (-40, -30)];
@@ -34,12 +54,12 @@ public class SupplyChainDerivedOperationsTests
 
     [Theory]
     [MemberData(nameof(Documents))]
-    public async Task EveryEdit_WritesTheHandWrittenBytes(string name)
+    public async Task EveryEdit_WritesWhatTheHandWrittenEditWrote(string name)
     {
         // Arrange.
         var text = await SupplyChainCorpus.TextAsync(name, TestContext.Current.CancellationToken);
         var model = SupplyChainReading.Parse(text);
-        var run = new EditComparison(text);
+        var run = new EditComparison(text, DamagedByTheOracle.Contains(Path.GetFileName(name)));
 
         // Act.
         await Adds(run);
@@ -152,37 +172,125 @@ public class SupplyChainDerivedOperationsTests
             .ToDictionary(entry => entry.id, entry => (100.0 + (entry.index * 37.5), 50.5), StringComparer.Ordinal);
 
     /// <summary>The comparisons of one document: how many were made and what differed.</summary>
-    private sealed class EditComparison(string text)
+    private sealed class EditComparison(string text, bool damagedByTheOracle)
     {
         public int Compared { get; private set; }
 
         public List<string> Mismatches { get; } = [];
 
-        public async Task Compare<TCommand>(string edit, Func<SupplyChainParityStore, ICommandHandler<TCommand>> derived, TCommand command, Func<SupplyChainParityStore, ICommandHandler<TCommand>> handWritten)
+        public async Task Compare<TCommand>(string edit, Func<SupplyChainParityStore, ICommandHandler<TCommand>> derived, TCommand command, Func<HandWrittenParityStore, ICommandHandler<TCommand>> handWritten)
             where TCommand : ICommand
         {
             Compared++;
-            var expected = await Outcome(handWritten, command);
-            var actual = await Outcome(derived, command);
-            if (!string.Equals(expected, actual, StringComparison.Ordinal))
+            var handWrittenStore = new HandWrittenParityStore(text);
+            var expected = await OutcomeOf(handWritten(handWrittenStore), () => handWrittenStore.Saved, command);
+            var derivedStore = new SupplyChainParityStore(text);
+            var actual = await OutcomeOf(derived(derivedStore), () => derivedStore.Saved, command);
+            if (!Expected(expected, actual))
             {
-                Mismatches.Add($"{edit}\n  hand-written {expected.ReplaceLineEndings("\\n")}\n  definition   {actual.ReplaceLineEndings("\\n")}");
+                Mismatches.Add($"{edit}\n{Difference(expected.ToString(), actual.ToString())}");
             }
         }
 
-        private async Task<string> Outcome<TCommand>(Func<SupplyChainParityStore, ICommandHandler<TCommand>> handler, TCommand command)
+        /// <summary>
+        /// Whether <paramref name="actual"/> is what the definition is expected to write where the oracle wrote
+        /// <paramref name="expected"/>: the same, but for the three differences the class remarks name.
+        /// </summary>
+        private bool Expected(Outcome expected, Outcome actual)
+        {
+            if (expected.Reading is null || actual.Reading is null)
+            {
+                return expected.Text == actual.Text || (Damaged(expected) && actual.Reading is not { IsUsable: false });
+            }
+
+            if (Damaged(expected) || damagedByTheOracle)
+            {
+                return actual.Reading.IsUsable;
+            }
+
+            (SupplyChainModel before, SupplyChainModel after) = (expected.Reading.Model, actual.Reading.Model);
+            return expected.Reading.Unreadable == actual.Reading.Unreadable
+                && before.Version == after.Version
+                && before.Problems.Select(problem => problem.Message).SequenceEqual(after.Problems.Select(problem => problem.Message))
+                && before.Groups.Count == after.Groups.Count
+                && before.Groups.Zip(after.Groups).All(pair => Halves(pair.First.X, pair.Second.X) && Halves(pair.First.Y, pair.Second.Y) && pair.First with { Range = default, X = pair.Second.X, Y = pair.Second.Y } == pair.Second with { Range = default })
+                && before.Nodes.Count == after.Nodes.Count
+                && before.Nodes.Zip(after.Nodes).All(pair => Halves(pair.First.X, pair.Second.X) && Halves(pair.First.Y, pair.Second.Y) && pair.First with { Range = default, X = pair.Second.X, Y = pair.Second.Y } == pair.Second with { Range = default })
+                && before.Flows.Count == after.Flows.Count
+                && before.Flows.Zip(after.Flows).All(pair => pair.First with { Range = default } == pair.Second with { Range = default });
+        }
+
+        /// <summary>Whether the oracle's edit left a body that no longer reads, which the body it edited did.</summary>
+        private bool Damaged(Outcome outcome) => outcome.Reading is { IsUsable: false } && SupplyChainReading.Outcome(text).IsUsable;
+
+        /// <summary>
+        /// Whether a whole number the definition wrote is the one the oracle wrote, or the half the oracle rounded to even
+        /// rounded away from zero instead: one further from zero, in the same direction. <c>-0</c> and <c>0</c> are the same.
+        /// </summary>
+        private static bool Halves(double? handWritten, double? definition)
+        {
+            if (handWritten is not { } before || definition is not { } after)
+            {
+                return handWritten is null && definition is null;
+            }
+
+            return Math.Abs(after - before) < double.Tolerance
+                || (Math.Abs(Math.Abs(after) - Math.Abs(before) - 1) < double.Tolerance
+                    && (Math.Abs(before) < double.Tolerance || Math.Sign(after) == Math.Sign(before)));
+        }
+
+        private static async Task<Outcome> OutcomeOf<TCommand>(ICommandHandler<TCommand> handler, Func<string?> saved, TCommand command)
             where TCommand : ICommand
         {
-            var store = new SupplyChainParityStore(text);
             try
             {
-                var result = await handler(store).ExecuteAsync(command, TestContext.Current.CancellationToken);
-                return result.IsSuccess ? store.Saved ?? "(nothing saved)" : $"refused: {result.Error}";
+                var result = await handler.ExecuteAsync(command, TestContext.Current.CancellationToken);
+                if (!result.IsSuccess)
+                {
+                    return new Outcome($"refused: {result.Error}", null);
+                }
+
+                return saved() is { } written
+                    ? new Outcome(written, SupplyChainReading.Outcome(written))
+                    : new Outcome("(nothing saved)", null);
             }
             catch (Exception exception) when (exception is InvalidOperationException or ArgumentException or KeyNotFoundException or NullReferenceException)
             {
-                return $"throws {exception.GetType().Name}: {exception.Message}";
+                return new Outcome($"throws {exception.GetType().Name}: {exception.Message}", null);
             }
+        }
+
+        /// <summary>The lines of two outcomes that differ.</summary>
+        private static string Difference(string expected, string actual)
+        {
+            var left = expected.Split('\n');
+            var right = actual.Split('\n');
+            return string.Join("\n", left.Except(right).Select(line => $"  hand-written {line}").Concat(right.Except(left).Select(line => $"  definition   {line}")));
+        }
+    }
+
+    /// <summary>What an edit gave: its refusal or the text it saved, and what that text reads as.</summary>
+    private sealed record Outcome(string Text, ParseOutcome<SupplyChainModel>? Reading)
+    {
+        /// <summary>What the edit gave, without the lines it is read from: every entry, problem and the version, or the refusal.</summary>
+        public override string ToString()
+        {
+            if (Reading is null)
+            {
+                return Text;
+            }
+
+            var model = Reading.Model;
+            return string.Join(
+                "\n",
+                [
+                    $"unreadable {Reading.Unreadable}",
+                    $"version {model.Version}",
+                    .. model.Groups.Select(group => (group with { Range = default }).ToString()),
+                    .. model.Nodes.Select(node => (node with { Range = default }).ToString()),
+                    .. model.Flows.Select(flow => (flow with { Range = default }).ToString()),
+                    .. model.Problems.Select(problem => problem.Message),
+                ]).ReplaceLineEndings("\n");
         }
     }
 }

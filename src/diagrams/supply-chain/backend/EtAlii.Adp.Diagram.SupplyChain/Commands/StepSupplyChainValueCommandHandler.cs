@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.SupplyChain;
@@ -14,6 +13,6 @@ public sealed class StepSupplyChainValueCommandHandler(ISupplyChainDocumentStore
         command.Steps == 0 ? CommandResult.Failure("A step of nothing changes nothing.") : await base.RunAsync(command, cancellationToken);
 
     /// <inheritdoc />
-    protected override EditOutcome Apply(LineDocument document, SupplyChainModel model, StepSupplyChainValueCommand command) =>
+    protected override EditOutcome Apply(SupplyChainBody document, SupplyChainModel model, StepSupplyChainValueCommand command) =>
         SupplyChainDefinition.Step(document, model, command.EntryId, command.Steps) ?? Gone;
 }

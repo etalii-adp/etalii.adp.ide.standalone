@@ -21,7 +21,7 @@ namespace EtAlii.Adp.Diagram.SupplyChain;
 /// </para>
 /// </remarks>
 public sealed class SupplyChainContextActionProvider(IHistoryStackStore historyStacks, ISupplyChainDocumentStore documents)
-    : DiagramActionProvider<LineDocument, SupplyChainModel>(historyStacks, documents)
+    : DiagramActionProvider<SupplyChainBody, SupplyChainModel>(historyStacks, documents)
 {
     /// <summary>Rename a node or a group in place, or a flow's product.</summary>
     private const string RenameActionId = "supply-chain.rename";
@@ -56,7 +56,7 @@ public sealed class SupplyChainContextActionProvider(IHistoryStackStore historyS
     protected override bool IsBody(string path) => Diagram.IsBody(path);
 
     /// <inheritdoc />
-    protected override IReadOnlyList<ContextActionGroupDefinition> Discover(DocumentEntry<LineDocument, SupplyChainModel> entry, string elementId) =>
+    protected override IReadOnlyList<ContextActionGroupDefinition> Discover(DocumentEntry<SupplyChainBody, SupplyChainModel> entry, string elementId) =>
         // Derived from the DISL definition: the element's, the empty canvas's or the connect gesture's menu. Executing
         // an action by id only finds actions its target discovers, so a drop and a finished gesture each discover
         // what may be executed against them.
@@ -65,7 +65,7 @@ public sealed class SupplyChainContextActionProvider(IHistoryStackStore historyS
     /// <inheritdoc />
     protected override async ValueTask<ContextExecutionResult> RunAsync(
         ContextTarget target,
-        DocumentEntry<LineDocument, SupplyChainModel> entry,
+        DocumentEntry<SupplyChainBody, SupplyChainModel> entry,
         string actionId,
         CancellationToken cancellationToken)
     {

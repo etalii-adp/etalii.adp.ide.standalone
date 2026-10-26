@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.SupplyChain;
@@ -9,12 +8,12 @@ namespace EtAlii.Adp.Diagram.SupplyChain;
 /// <see cref="DocumentEditRun"/>'s.
 /// </summary>
 public abstract class SupplyChainEditHandler<TCommand>(ISupplyChainDocumentStore documents)
-    : DocumentEditHandler<TCommand, ISupplyChainDocumentStore, LineDocument, SupplyChainModel>(documents)
+    : DocumentEditHandler<TCommand, ISupplyChainDocumentStore, SupplyChainBody, SupplyChainModel>(documents)
     where TCommand : IDocumentEditCommand
 {
     /// <summary>The refusal for an entry that is not there, in one wording.</summary>
     protected static EditOutcome Gone => EditOutcome.Refused("That is no longer in this diagram.");
 
     /// <inheritdoc />
-    protected sealed override SupplyChainModel Parse(LineDocument body) => SupplyChainReading.Parse(body.Text);
+    protected sealed override SupplyChainModel Parse(SupplyChainBody body) => body.Reading.Model;
 }

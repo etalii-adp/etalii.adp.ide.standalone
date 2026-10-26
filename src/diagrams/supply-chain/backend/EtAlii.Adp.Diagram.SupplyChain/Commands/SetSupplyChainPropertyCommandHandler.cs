@@ -1,5 +1,4 @@
 using System.Globalization;
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.SupplyChain;
@@ -16,7 +15,7 @@ public sealed class SetSupplyChainPropertyCommandHandler(ISupplyChainDocumentSto
         Refusal(command) is { } refusal ? CommandResult.Failure(refusal) : await base.RunAsync(command, cancellationToken);
 
     /// <inheritdoc />
-    protected override EditOutcome Apply(LineDocument document, SupplyChainModel model, SetSupplyChainPropertyCommand command) =>
+    protected override EditOutcome Apply(SupplyChainBody document, SupplyChainModel model, SetSupplyChainPropertyCommand command) =>
         SupplyChainDefinition.Set(document, model, command.EntryId, command.Key, command.Value) ?? Gone;
 
     /// <summary>Why the value of <paramref name="command"/> cannot be set to any entry; null when it can be tried.</summary>

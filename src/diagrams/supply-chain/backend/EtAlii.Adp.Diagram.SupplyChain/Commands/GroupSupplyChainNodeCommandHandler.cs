@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Specification.Disl;
 
@@ -21,7 +20,7 @@ public sealed class GroupSupplyChainNodeCommandHandler(ISupplyChainDocumentStore
     }
 
     /// <inheritdoc />
-    protected override EditOutcome Apply(LineDocument document, SupplyChainModel model, GroupSupplyChainNodeCommand command)
+    protected override EditOutcome Apply(SupplyChainBody document, SupplyChainModel model, GroupSupplyChainNodeCommand command)
     {
         if (model.NodeOf(command.NodeId) is null)
         {
