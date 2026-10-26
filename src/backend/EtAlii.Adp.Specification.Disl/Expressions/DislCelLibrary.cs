@@ -26,6 +26,7 @@ internal static class DislCelLibrary
         ("incomingOf", 1, 1),
         ("outgoingOf", 1, 1),
         ("reachable", 1, 1),
+        ("predecessors", 1, 1),
         ("inCycle", 1, 1),
         ("positionIn", 1, 1),
         ("nodesOfType", 1, 2),
