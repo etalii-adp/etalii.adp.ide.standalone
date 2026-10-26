@@ -1,4 +1,5 @@
 using EtAlii.Adp.Context;
+using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Sessions;
 using Microsoft.Extensions.DependencyInjection;
@@ -61,8 +62,8 @@ public static class ServiceCollectionAddWardleyMapExtension
         services.AddSingleton<IContextActionProvider, WardleyContextActionProvider>();
 
         // The palette, static per type and assertable without the panel that shows it
-        // (Requirement 13.7).
-        services.AddSingleton<IDiagramToolboxProvider, WardleyToolboxProvider>();
+        // (Requirement 13.7): the bundled definition's toolbox, handed out by core.
+        services.AddSingleton<IDiagramToolboxProvider>(new DislToolboxProvider(Diagram.WardleyMap.Origin, WardleyDefinition.Definition));
 
         // The values, and correcting one (Requirement 15.1).
         services.AddSingleton<IContextPropertyProvider, WardleyContextPropertyProvider>();

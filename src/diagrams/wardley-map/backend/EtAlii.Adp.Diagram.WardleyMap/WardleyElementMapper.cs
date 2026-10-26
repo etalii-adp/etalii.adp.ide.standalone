@@ -109,11 +109,11 @@ public sealed class WardleyElementMapper
     /// <para>
     /// <b>Two kinds carry a placeholder position and must never be judged by it.</b> A link is
     /// emitted at (0, 0) because it has no position of its own - it is drawn between its
-    /// endpoints - and the evolution axis is emitted at (0, 0) because it is the map frame
+    /// endpoints - and the diagram element is emitted at (0, 0) because it is the map itself
     /// rather than a thing on the map. A plain "is the point inside the rectangle" filter would
-    /// therefore keep every link and the axis only while the reader happens to be looking at the
-    /// top-left corner, and cull them everywhere else. The axis is always kept; a link is kept
-    /// when an endpoint is kept.
+    /// therefore keep every link and the diagram element only while the reader happens to be
+    /// looking at the top-left corner, and cull them everywhere else. The diagram element is
+    /// always kept; a link is kept when an endpoint is kept.
     /// </para>
     /// <para>
     /// A visible component pulls in the components it links to, the way the mindmap mapper pulls

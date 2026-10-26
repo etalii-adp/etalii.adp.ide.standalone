@@ -1,5 +1,6 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Designer;
+using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Editor;
 using EtAlii.Adp.Hierarchy;
@@ -43,7 +44,7 @@ public sealed class AddWardleyMapTests : IDisposable
         Assert.Single(_services.GetServices<IDiagramSessionFactory>(), factory => factory.Origin == Diagram.WardleyMap.Origin);
         Assert.Single(_services.GetServices<IContextSourceResolver>().OfType<WardleyContextSourceResolver>());
         Assert.Single(_services.GetServices<IContextActionProvider>().OfType<WardleyContextActionProvider>());
-        Assert.Single(_services.GetServices<IDiagramToolboxProvider>().OfType<WardleyToolboxProvider>());
+        Assert.Single(_services.GetServices<IDiagramToolboxProvider>().OfType<DislToolboxProvider>(), toolbox => toolbox.Origin == Diagram.WardleyMap.Origin);
         Assert.Single(_services.GetServices<IContextPropertyProvider>().OfType<WardleyContextPropertyProvider>());
         Assert.Single(_services.GetServices<IDiagramValidator>().OfType<WardleyValidator>());
         Assert.NotNull(_services.GetService<ICommandHandler<MoveWardleyElementCommand>>());
@@ -55,8 +56,19 @@ public sealed class AddWardleyMapTests : IDisposable
         // Act and assert. Core resolves each of these BY ORIGIN, so a seam answering for the
         // wrong one - or for none - is a module core cannot find.
         Assert.Single(_services.GetServices<IDiagramDocumentReloader>(), reloader => reloader.Origin == Diagram.WardleyMap.Origin);
-        Assert.Equal(Diagram.WardleyMap.Origin, _services.GetServices<IDiagramToolboxProvider>().OfType<WardleyToolboxProvider>().Single().Origin);
+        Assert.Single(_services.GetServices<IDiagramToolboxProvider>(), toolbox => toolbox.Origin == Diagram.WardleyMap.Origin);
         Assert.Equal(Diagram.WardleyMap.Origin, _services.GetServices<IDiagramValidator>().OfType<WardleyValidator>().Single().Origin);
+    }
+
+    [Fact]
+    public void ThePalette_IsCoresPaletteOfTheBundledDefinition()
+    {
+        // Act. A bundled definition's palette is handed out by core, so the module has no class of its own for it.
+        var toolbox = Assert.Single(_services.GetServices<IDiagramToolboxProvider>(), candidate => candidate.Origin == Diagram.WardleyMap.Origin);
+
+        // Assert.
+        Assert.IsType<DislToolboxProvider>(toolbox);
+        Assert.Equal(WardleyDefinition.Toolbox, toolbox.Items);
     }
 
     [Fact]

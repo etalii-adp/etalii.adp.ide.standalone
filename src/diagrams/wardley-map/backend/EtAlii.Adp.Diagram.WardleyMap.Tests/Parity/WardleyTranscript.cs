@@ -54,7 +54,7 @@ public sealed partial class WardleyTranscript() : TranscriptAdapter("wardley-map
 
     private static ToolOrigin MapOrigin => Diagram.WardleyMap.Origin;
 
-    protected override IReadOnlyList<ToolboxItemDefinition> Toolbox => new WardleyToolboxProvider().Items;
+    protected override IReadOnlyList<ToolboxItemDefinition> Toolbox => WardleyDefinition.Toolbox;
 
     /// <summary>The corpus, in the order it is recorded.</summary>
     public override IReadOnlyList<TranscriptDocument> Corpus() => [.. Files().Select(OnDisk)];
