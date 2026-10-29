@@ -66,6 +66,7 @@ public class ExamplesTests
     [InlineData("reference")]
     [InlineData("on-call")]
     [InlineData("business-philosophy")]
+    [InlineData("mental-health")]
     public void AnExample_SitsBesideItsOwnRegistration(string name)
     {
         // Act.
@@ -88,13 +89,14 @@ public class ExamplesTests
     {
         // Act & assert.
         // So that an example added without a test is a failure rather than a silent gap.
-        Assert.Equal(["business-philosophy", "on-call", "reference"], [.. Names().OrderBy(name => name, StringComparer.Ordinal)]);
+        Assert.Equal(["business-philosophy", "mental-health", "on-call", "reference"], [.. Names().OrderBy(name => name, StringComparer.Ordinal)]);
     }
 
     [Theory]
     [InlineData("reference")]
     [InlineData("on-call")]
     [InlineData("business-philosophy")]
+    [InlineData("mental-health")]
     public void AnExample_Parses_AndEveryLinkAndLoopNamesADeclaredVariable(string name)
     {
         // Act.
@@ -243,6 +245,29 @@ public class ExamplesTests
         Assert.All(model.Loops, loop => Assert.False(loop.Disagrees, $"{loop.Identifier} disagrees with its arithmetic."));
     }
 
+    /// <summary>
+    /// The mental health example, like the business philosophy one, claims every cycle its links form
+    /// with the label its arithmetic gives, so it opens with no finding at all. Its norm and its three
+    /// constraints of the system sit outside every loop on purpose, and one added link back into them
+    /// would quietly make a cycle nobody named; this holds the readme's claim that there is none.
+    /// </summary>
+    [Fact]
+    public async Task TheMentalHealthExample_NamesEveryCycle_AndOpensWithNoFinding()
+    {
+        // Arrange.
+        var model = Load("mental-health");
+
+        // Act.
+        var findings = await Judge("mental-health");
+
+        // Assert.
+        Assert.Empty(findings);
+        Assert.Equal(8, model.Loops.Count);
+        Assert.Equal(6, model.Loops.Count(loop => loop.Computed == LoopPolarityResult.Reinforcing));
+        Assert.Equal(2, model.Loops.Count(loop => loop.Computed == LoopPolarityResult.Balancing));
+        Assert.All(model.Loops, loop => Assert.False(loop.Disagrees, $"{loop.Identifier} disagrees with its arithmetic."));
+    }
+
     // ---- the layout the reader will actually see ------------------------------------------------
 
     /// <summary>
@@ -254,6 +279,7 @@ public class ExamplesTests
     [InlineData("reference")]
     [InlineData("on-call")]
     [InlineData("business-philosophy")]
+    [InlineData("mental-health")]
     public void AnExample_ArrangesWithoutOverlap(string name)
     {
         // Act.

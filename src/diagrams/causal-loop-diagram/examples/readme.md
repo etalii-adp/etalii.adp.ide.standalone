@@ -1,6 +1,6 @@
 # Causal loop examples
 
-Three ADP projects you can open and click around in. They are not fixtures — the fixtures under
+Four ADP projects you can open and click around in. They are not fixtures — the fixtures under
 `../backend/EtAlii.Adp.Diagram.CausalLoop.Tests/` exist to pin parser behaviour one construct at
 a time, and read like it. These read like systems.
 
@@ -9,6 +9,7 @@ a time, and read like it. These read like systems.
 | [`reference/`](reference/) | Every construct ADP's causal loop support understands, in one diagram. Read it to find out what is supported and how to write it — and to see a loop whose label the arithmetic disagrees with. |
 | [`on-call/`](on-call/) | Why an on-call rotation gets worse on its own. Read it to see the notation carrying a problem you probably recognise. |
 | [`business-philosophy/`](business-philosophy/) | Whether a Business Philosophy study is applicable at a university of applied sciences: experts, philosophers, practical tools, core values, latent wisdom, stories, wicked problems, insight over solutions, and art as expression. Read it to see a larger model - eighteen variables, ten loops - where every cycle is named and the arrangement is authored. |
+| [`mental-health/`](mental-health/) | Why mental health at work stays out of sight: self-direction, emotion suppression and meaning, the norm "don't make a fuss", the constraints of the system, and the loops that keep complaints invisible. Read it to see a wicked problem drawn as structure alone - thirty variables, eight loops, no solutions. |
 
 ## Opening one
 
@@ -17,7 +18,7 @@ what appears in the explorer as a diagram. Nothing needs configuring first.
 
 ## Authored for this repository
 
-**All three examples were written for ADP.** None is derived from, nor attributed to, any external
+**All four examples were written for ADP.** None is derived from, nor attributed to, any external
 source. That is the honest-fallback path Requirement 11 leads with, and it is where this task
 landed after checking five candidate sources and rejecting every one on licence grounds:
 
@@ -65,3 +66,7 @@ balancing. So it opens with no finding at all - not an unlabelled cycle, not a d
 a test holds it there, because in a model this dense one added link quietly creates a cycle
 nobody named. Its one variable outside every loop, the weight of wicked problems, is outside on
 purpose: the study does not claim to solve them, only to understand them better.
+
+## Structure without solutions
+
+`mental-health/` is drawn from a Dutch set of notes on mental health in working life, and it keeps their limits: no person in them is named, and no solution is offered - the diagram shows only the structure of the problem. Its labels are in English like the other examples, with the notes' own Dutch phrases kept in link notes and comments. Its three core variables - experienced self-direction, emotion suppression and experienced meaning - are tied together by two bridges, goal orientation and the willingness to sacrifice, and its eight loops are all named and all agree with their arithmetic: six reinforcing, two balancing. A test holds it there. The norm "don't make a fuss" and the three constraints of the system - the legal limits on discussing mental health, the dependence on insurers and premiums, and an ageing population - sit outside every loop on purpose: they press on the system, and nothing in it presses back.
