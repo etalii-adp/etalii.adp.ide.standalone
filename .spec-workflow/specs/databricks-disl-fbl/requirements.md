@@ -264,7 +264,7 @@ The product direction (2026-09-26) is one definition per tool, interpreted by a 
 
 ## Appendix: the binding, as drafted
 
-A draft against FBL 0.2, one binding for the three readings, trimmed to the rules that carry a finding; the targets, includes, variables and unmodelled keys follow the same shapes. Three things in it are **not valid FBL 0.2** and mark gaps: `registration.resource.capture` as a map from origin to capture (gap 2), `"as": "text"` (gap 3), and `"fallback"` (gap 7).
+[Amended by small amendment, user ruling in chat 2026-10-29: the binding now exists in etalii-adp/etalii.adp as [`specifications/fbl/databricks.fbl`](https://github.com/etalii-adp/etalii.adp/blob/develop/specifications/fbl/databricks.fbl) (`#configuration`), written from this draft in the constructs of FBL 0.10, etalii.adp #618 (merge `5795b37`, spec 066 User Story 2), with 21 `databricks-*` conformance fixtures beside it. That file, not this draft, is what tasks 10 and 11 implement and vendor; the draft is kept as the record of the gaps it marked.] A draft against FBL 0.2, one binding for the three readings, trimmed to the rules that carry a finding; the targets, includes, variables and unmodelled keys follow the same shapes. Three things in it are **not valid FBL 0.2** and mark gaps: `registration.resource.capture` as a map from origin to capture (gap 2), `"as": "text"` (gap 3), and `"fallback"` (gap 7).
 
 ```json
 {
