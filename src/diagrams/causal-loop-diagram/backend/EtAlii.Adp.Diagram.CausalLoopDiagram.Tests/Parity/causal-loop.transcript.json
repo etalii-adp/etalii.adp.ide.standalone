@@ -6460,6 +6460,1517 @@
       "undoAll": "27 undone; the original text is back"
     },
     {
+      "document": "diagrams/causal-loop-diagram/examples/mental-health/mental-health.cld",
+      "sha256": "3ce83274402681e40dd135787ddf65d4636944ac9a92fab86067dbcf060a5506",
+      "registration": "mental-health.adp, sha256 5a33260d6ecb4e78330f18c1be256c52be04cb23dca59dd1e094c35cbe1d4272",
+      "menus": [
+        [
+          "g1 causal-loop.add-link | Add link from here… | mdi-arrow-right-thin | - | on",
+          "g1 causal-loop.add-loop | Claim a loop from here… | mdi-sync | - | on",
+          "g1 causal-loop.rename-variable | Rename… | mdi-rename-outline | - | on",
+          "g1 causal-loop.remove-variable | Remove variable (with 7 references) | mdi-delete-outline | Delete | on"
+        ],
+        [],
+        [
+          "g1 causal-loop.add-link | Add link from here… | mdi-arrow-right-thin | - | on",
+          "g1 causal-loop.add-loop | Claim a loop from here… | mdi-sync | - | on",
+          "g1 causal-loop.rename-variable | Rename… | mdi-rename-outline | - | on",
+          "g1 causal-loop.remove-variable | Remove variable (with 5 references) | mdi-delete-outline | Delete | on"
+        ],
+        [
+          "g1 causal-loop.add-link | Add link from here… | mdi-arrow-right-thin | - | on",
+          "g1 causal-loop.add-loop | Claim a loop from here… | mdi-sync | - | on",
+          "g1 causal-loop.rename-variable | Rename… | mdi-rename-outline | - | on",
+          "g1 causal-loop.remove-variable | Remove variable (with 3 references) | mdi-delete-outline | Delete | on"
+        ],
+        [
+          "g1 causal-loop.add-link | Add link from here… | mdi-arrow-right-thin | - | on",
+          "g1 causal-loop.add-loop | Claim a loop from here… | mdi-sync | - | on",
+          "g1 causal-loop.rename-variable | Rename… | mdi-rename-outline | - | on",
+          "g1 causal-loop.remove-variable | Remove variable (with 4 references) | mdi-delete-outline | Delete | on"
+        ],
+        [
+          "g1 causal-loop.add-link | Add link from here… | mdi-arrow-right-thin | - | on",
+          "g1 causal-loop.add-loop | Claim a loop from here… | mdi-sync | - | on",
+          "g1 causal-loop.rename-variable | Rename… | mdi-rename-outline | - | on",
+          "g1 causal-loop.remove-variable | Remove variable (with 2 references) | mdi-delete-outline | Delete | on"
+        ],
+        [
+          "g1 causal-loop.add-link | Add link from here… | mdi-arrow-right-thin | - | on",
+          "g1 causal-loop.add-loop | Claim a loop from here… | mdi-sync | - | on",
+          "g1 causal-loop.rename-variable | Rename… | mdi-rename-outline | - | on",
+          "g1 causal-loop.remove-variable | Remove variable (with 1 references) | mdi-delete-outline | Delete | on"
+        ],
+        [
+          "g1 causal-loop.make-positive | Same direction (+) | mdi-plus | - | off (This link already states +.)",
+          "g1 causal-loop.make-negative | Opposite direction (−) | mdi-minus | - | on (This link already states −.)",
+          "g1 causal-loop.toggle-delay | Delayed | mdi-timer-sand | - | on",
+          "g1 causal-loop.flip-curvature | Flip the curve | mdi-vector-curve | - | on",
+          "g1 causal-loop.remove-link | Remove link | mdi-delete-outline | Delete | on"
+        ],
+        [
+          "g1 causal-loop.make-positive | Same direction (+) | mdi-plus | - | off (This link already states +.)",
+          "g1 causal-loop.make-negative | Opposite direction (−) | mdi-minus | - | on (This link already states −.)",
+          "g1 causal-loop.toggle-delay | Not delayed | mdi-timer-sand | - | on",
+          "g1 causal-loop.flip-curvature | Flip the curve | mdi-vector-curve | - | on",
+          "g1 causal-loop.remove-link | Remove link | mdi-delete-outline | Delete | on"
+        ],
+        [
+          "g1 causal-loop.make-positive | Same direction (+) | mdi-plus | - | on (This link already states +.)",
+          "g1 causal-loop.make-negative | Opposite direction (−) | mdi-minus | - | off (This link already states −.)",
+          "g1 causal-loop.toggle-delay | Not delayed | mdi-timer-sand | - | on",
+          "g1 causal-loop.flip-curvature | Flip the curve | mdi-vector-curve | - | on",
+          "g1 causal-loop.remove-link | Remove link | mdi-delete-outline | Delete | on"
+        ],
+        [
+          "g1 causal-loop.make-positive | Same direction (+) | mdi-plus | - | on (This link already states +.)",
+          "g1 causal-loop.make-negative | Opposite direction (−) | mdi-minus | - | off (This link already states −.)",
+          "g1 causal-loop.toggle-delay | Delayed | mdi-timer-sand | - | on",
+          "g1 causal-loop.flip-curvature | Flip the curve | mdi-vector-curve | - | on",
+          "g1 causal-loop.remove-link | Remove link | mdi-delete-outline | Delete | on"
+        ],
+        [
+          "g1 causal-loop.rename-loop | Rename loop… | mdi-rename-outline | - | on",
+          "g1 causal-loop.remove-loop | Remove loop | mdi-delete-outline | Delete | on"
+        ],
+        [
+          "g1 causal-loop.add-variable | Add variable | mdi-plus-circle-outline | - | on",
+          "g1 causal-loop.arrange | Arrange diagram | mdi-graph-outline | - | on (There is nothing to arrange until this diagram has two variables.)"
+        ],
+        [
+          "g1 causal-loop.connect | Add link | mdi-arrow-right-thin | - | on"
+        ]
+      ],
+      "choices": [
+        [
+          "positive",
+          "negative",
+          "unstated"
+        ],
+        [
+          "emotionSuppression → shortTermFunctioning → copingConfirmation"
+        ],
+        [
+          "emotionSuppression → exhaustion → shortTermFunctioning → copingConfirmation"
+        ],
+        [
+          "meaning → sacrifice → progress → confidence → selfDirection"
+        ],
+        [
+          "goalOrientation → goalsAchieved → satisfaction"
+        ],
+        [
+          "selfDirection → goalOrientation → bigPicture → meaning → sacrifice → progress → confidence"
+        ],
+        [
+          "conversationalSafety → openness → visibleComplaints → preventionUrgency → systemChange"
+        ],
+        [
+          "preventionInvestment → dropout → premiumPressure"
+        ],
+        [
+          "generationalLabels → youthSelfImage → withdrawal"
+        ]
+      ],
+      "targets": [
+        "\"variable:selfDirection\" => menu #0, read-only #1",
+        "\"variable:emotionSuppression\" => menu #0, read-only #1",
+        "\"variable:meaning\" => menu #2, read-only #1",
+        "\"variable:goalOrientation\" => menu #0, read-only #1",
+        "\"variable:goalsAchieved\" => menu #3, read-only #1",
+        "\"variable:satisfaction\" => menu #3, read-only #1",
+        "\"variable:bigPicture\" => menu #3, read-only #1",
+        "\"variable:sacrifice\" => menu #4, read-only #1",
+        "\"variable:progress\" => menu #4, read-only #1",
+        "\"variable:confidence\" => menu #4, read-only #1",
+        "\"variable:shortTermFunctioning\" => menu #2, read-only #1",
+        "\"variable:copingConfirmation\" => menu #4, read-only #1",
+        "\"variable:exhaustion\" => menu #4, read-only #1",
+        "\"variable:dropout\" => menu #4, read-only #1",
+        "\"variable:toughNorm\" => menu #5, read-only #1",
+        "\"variable:emotionExpression\" => menu #3, read-only #1",
+        "\"variable:legalFrame\" => menu #6, read-only #1",
+        "\"variable:insurerDependence\" => menu #5, read-only #1",
+        "\"variable:ageing\" => menu #6, read-only #1",
+        "\"variable:conversationalSafety\" => menu #2, read-only #1",
+        "\"variable:openness\" => menu #4, read-only #1",
+        "\"variable:visibleComplaints\" => menu #2, read-only #1",
+        "\"variable:preventionUrgency\" => menu #4, read-only #1",
+        "\"variable:systemChange\" => menu #3, read-only #1",
+        "\"variable:preventionInvestment\" => menu #4, read-only #1",
+        "\"variable:premiumPressure\" => menu #3, read-only #1",
+        "\"variable:generationalLabels\" => menu #4, read-only #1",
+        "\"variable:youthSelfImage\" => menu #3, read-only #1",
+        "\"variable:withdrawal\" => menu #3, read-only #1",
+        "\"variable:vulnerability\" => menu #5, read-only #1",
+        "\"link:emotionSuppression|shortTermFunctioning\" => menu #7, read-only #1",
+        "\"link:shortTermFunctioning|copingConfirmation\" => menu #7, read-only #1",
+        "\"link:copingConfirmation|emotionSuppression\" => menu #7, read-only #1",
+        "\"link:emotionSuppression|exhaustion\" => menu #8, read-only #1",
+        "\"link:exhaustion|shortTermFunctioning\" => menu #9, read-only #1",
+        "\"link:exhaustion|dropout\" => menu #8, read-only #1",
+        "\"link:meaning|sacrifice\" => menu #7, read-only #1",
+        "\"link:sacrifice|progress\" => menu #7, read-only #1",
+        "\"link:progress|confidence\" => menu #7, read-only #1",
+        "\"link:confidence|selfDirection\" => menu #7, read-only #1",
+        "\"link:selfDirection|meaning\" => menu #7, read-only #1",
+        "\"link:selfDirection|goalOrientation\" => menu #7, read-only #1",
+        "\"link:goalOrientation|emotionSuppression\" => menu #7, read-only #1",
+        "\"link:goalOrientation|goalsAchieved\" => menu #7, read-only #1",
+        "\"link:goalsAchieved|satisfaction\" => menu #7, read-only #1",
+        "\"link:satisfaction|goalOrientation\" => menu #7, read-only #1",
+        "\"link:goalOrientation|bigPicture\" => menu #10, read-only #1",
+        "\"link:bigPicture|meaning\" => menu #7, read-only #1",
+        "\"link:toughNorm|emotionExpression\" => menu #10, read-only #1",
+        "\"link:toughNorm|visibleComplaints\" => menu #10, read-only #1",
+        "\"link:emotionSuppression|emotionExpression\" => menu #10, read-only #1",
+        "\"link:emotionExpression|visibleComplaints\" => menu #7, read-only #1",
+        "\"link:legalFrame|conversationalSafety\" => menu #10, read-only #1",
+        "\"link:insurerDependence|selfDirection\" => menu #10, read-only #1",
+        "\"link:insurerDependence|conversationalSafety\" => menu #10, read-only #1",
+        "\"link:ageing|selfDirection\" => menu #10, read-only #1",
+        "\"link:conversationalSafety|openness\" => menu #7, read-only #1",
+        "\"link:openness|visibleComplaints\" => menu #7, read-only #1",
+        "\"link:visibleComplaints|preventionUrgency\" => menu #7, read-only #1",
+        "\"link:preventionUrgency|systemChange\" => menu #7, read-only #1",
+        "\"link:systemChange|conversationalSafety\" => menu #8, read-only #1",
+        "\"link:preventionUrgency|preventionInvestment\" => menu #7, read-only #1",
+        "\"link:preventionInvestment|dropout\" => menu #9, read-only #1",
+        "\"link:dropout|premiumPressure\" => menu #7, read-only #1",
+        "\"link:premiumPressure|preventionInvestment\" => menu #10, read-only #1",
+        "\"link:generationalLabels|youthSelfImage\" => menu #10, read-only #1",
+        "\"link:youthSelfImage|withdrawal\" => menu #10, read-only #1",
+        "\"link:withdrawal|generationalLabels\" => menu #7, read-only #1",
+        "\"link:openness|vulnerability\" => menu #7, read-only #1",
+        "\"link:vulnerability|generationalLabels\" => menu #10, read-only #1",
+        "\"loop:R1\" => menu #11, read-only #1",
+        "\"loop:B1\" => menu #11, read-only #1",
+        "\"loop:R2\" => menu #11, read-only #1",
+        "\"loop:R3\" => menu #11, read-only #1",
+        "\"loop:B2\" => menu #11, read-only #1",
+        "\"loop:R4\" => menu #11, read-only #1",
+        "\"loop:R5\" => menu #11, read-only #1",
+        "\"loop:R6\" => menu #11, read-only #1",
+        "\"\" => menu #1, read-only #1",
+        "\"new:240,160\" => menu #12, read-only #1",
+        "\"rel:emotionSuppression->selfDirection\" => menu #13, read-only #1",
+        "\"parity:unknown\" => menu #1, read-only #1"
+      ],
+      "rows": [
+        {
+          "target": "variable:selfDirection",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Experienced self-direction\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"selfDirection\" | Line | editable | group Identity"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:emotionSuppression",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Emotion suppression (downplaying as coping)\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"emotionSuppression\" | Line | editable | group Identity"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:meaning",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Experienced meaning and perspective\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"meaning\" | Line | editable | group Identity"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:goalOrientation",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Goal orientation\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"goalOrientation\" | Line | editable | group Identity"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:goalsAchieved",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Goals achieved\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"goalsAchieved\" | Line | editable | group Identity"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:satisfaction",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Satisfaction\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"satisfaction\" | Line | editable | group Identity"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:bigPicture",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Sight of the bigger picture\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"bigPicture\" | Line | editable | group Identity"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:sacrifice",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Willingness to sacrifice\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"sacrifice\" | Line | editable | group Identity"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:progress",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Progress\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"progress\" | Line | editable | group Identity"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:confidence",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Confidence\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"confidence\" | Line | editable | group Identity"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:shortTermFunctioning",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Functioning in the short term\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"shortTermFunctioning\" | Line | editable | group Identity"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:copingConfirmation",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Confirmation of the coping strategy\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"copingConfirmation\" | Line | editable | group Identity"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:exhaustion",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Exhaustion\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"exhaustion\" | Line | editable | group Identity"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:dropout",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Mental health dropout\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"dropout\" | Line | editable | group Identity"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:toughNorm",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Norm: don't make a fuss\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"toughNorm\" | Line | editable | group Identity"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:emotionExpression",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Expression of emotion\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"emotionExpression\" | Line | editable | group Identity"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:legalFrame",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Legal limits on discussing mental health\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"legalFrame\" | Line | editable | group Identity"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:insurerDependence",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Dependence on insurers and premiums\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"insurerDependence\" | Line | editable | group Identity"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:ageing",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Ageing population\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"ageing\" | Line | editable | group Identity"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:conversationalSafety",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Safety to talk\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"conversationalSafety\" | Line | editable | group Identity"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:openness",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Openness and vulnerability\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"openness\" | Line | editable | group Identity"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:visibleComplaints",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Visible mental health complaints\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"visibleComplaints\" | Line | editable | group Identity"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:preventionUrgency",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Perceived need for prevention\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"preventionUrgency\" | Line | editable | group Identity"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:systemChange",
+          "rows": [
+            "causal-loop.variable-label | Label | \"System change\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"systemChange\" | Line | editable | group Identity"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:preventionInvestment",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Investment in prevention\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"preventionInvestment\" | Line | editable | group Identity"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:premiumPressure",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Costs and premium pressure\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"premiumPressure\" | Line | editable | group Identity"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:generationalLabels",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Limiting stories and labels of older generations\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"generationalLabels\" | Line | editable | group Identity"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:youthSelfImage",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Self-image of young people\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"youthSelfImage\" | Line | editable | group Identity"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:withdrawal",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Withdrawal and behaviour\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"withdrawal\" | Line | editable | group Identity"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:vulnerability",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Showing vulnerability\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"vulnerability\" | Line | editable | group Identity"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:emotionSuppression|shortTermFunctioning",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"emotionSuppression\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"shortTermFunctioning\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"relativeren als coping\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:shortTermFunctioning|copingConfirmation",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"shortTermFunctioning\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"copingConfirmation\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:copingConfirmation|emotionSuppression",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"copingConfirmation\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"emotionSuppression\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:emotionSuppression|exhaustion",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"emotionSuppression\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"exhaustion\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"keeping up an untrue story is tiring\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"true\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:exhaustion|shortTermFunctioning",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"exhaustion\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"shortTermFunctioning\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"negative\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"true\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:exhaustion|dropout",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"exhaustion\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"dropout\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"uitval\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"true\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:meaning|sacrifice",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"meaning\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"sacrifice\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"a clear way out\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:sacrifice|progress",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"sacrifice\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"progress\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:progress|confidence",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"progress\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"confidence\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:confidence|selfDirection",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"confidence\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"selfDirection\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:selfDirection|meaning",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"selfDirection\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"meaning\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"back to the perspective\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:selfDirection|goalOrientation",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"selfDirection\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"goalOrientation\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"the bridge to suppression\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:goalOrientation|emotionSuppression",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"goalOrientation\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"emotionSuppression\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"flight into goals\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:goalOrientation|goalsAchieved",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"goalOrientation\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"goalsAchieved\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:goalsAchieved|satisfaction",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"goalsAchieved\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"satisfaction\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:satisfaction|goalOrientation",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"satisfaction\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"goalOrientation\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:goalOrientation|bigPicture",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"goalOrientation\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"bigPicture\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"eyes on the next target\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"negative\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:bigPicture|meaning",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"bigPicture\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"meaning\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"the bridge to the bigger picture\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:toughNorm|emotionExpression",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"toughNorm\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"emotionExpression\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"niet aanstellen, niet zeiken\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"negative\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:toughNorm|visibleComplaints",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"toughNorm\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"visibleComplaints\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"negative\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:emotionSuppression|emotionExpression",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"emotionSuppression\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"emotionExpression\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"negative\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:emotionExpression|visibleComplaints",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"emotionExpression\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"visibleComplaints\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:legalFrame|conversationalSafety",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"legalFrame\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"conversationalSafety\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"employers may not discuss complaints\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"negative\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:insurerDependence|selfDirection",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"insurerDependence\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"selfDirection\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"negative\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:insurerDependence|conversationalSafety",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"insurerDependence\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"conversationalSafety\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"negative\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:ageing|selfDirection",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"ageing\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"selfDirection\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"negative\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:conversationalSafety|openness",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"conversationalSafety\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"openness\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:openness|visibleComplaints",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"openness\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"visibleComplaints\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:visibleComplaints|preventionUrgency",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"visibleComplaints\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"preventionUrgency\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:preventionUrgency|systemChange",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"preventionUrgency\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"systemChange\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:systemChange|conversationalSafety",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"systemChange\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"conversationalSafety\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"true\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:preventionUrgency|preventionInvestment",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"preventionUrgency\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"preventionInvestment\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:preventionInvestment|dropout",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"preventionInvestment\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"dropout\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"negative\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"true\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:dropout|premiumPressure",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"dropout\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"premiumPressure\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:premiumPressure|preventionInvestment",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"premiumPressure\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"preventionInvestment\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"no room left for prevention\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"negative\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:generationalLabels|youthSelfImage",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"generationalLabels\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"youthSelfImage\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"negative\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:youthSelfImage|withdrawal",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"youthSelfImage\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"withdrawal\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"negative\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:withdrawal|generationalLabels",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"withdrawal\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"generationalLabels\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"the label confirmed\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:openness|vulnerability",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"openness\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"vulnerability\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:vulnerability|generationalLabels",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"vulnerability\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"generationalLabels\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"kwetsbaarheid inzetten\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"negative\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "loop:R1",
+          "rows": [
+            "causal-loop.loop-identifier | Identifier | \"R1\" | Line | editable | group Identity",
+            "causal-loop.loop-name | Name | \"Coping that confirms itself\" | Line | editable | group Identity",
+            "causal-loop.loop-computed | Computed polarity | \"reinforcing\" | Line | read-only (Counted from the polarity of the links around the cycle. Change an arrow to change this.) | group Feedback",
+            "causal-loop.loop-variables | Runs through | \"emotionSuppression → shortTermFunctioning → copingConfirmation\" | Choice | editable | group Feedback | choices #1"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "loop:B1",
+          "rows": [
+            "causal-loop.loop-identifier | Identifier | \"B1\" | Line | editable | group Identity",
+            "causal-loop.loop-name | Name | \"An untrue story wears out\" | Line | editable | group Identity",
+            "causal-loop.loop-computed | Computed polarity | \"balancing\" | Line | read-only (Counted from the polarity of the links around the cycle. Change an arrow to change this.) | group Feedback",
+            "causal-loop.loop-variables | Runs through | \"emotionSuppression → exhaustion → shortTermFunctioning → copingConfirmation\" | Choice | editable | group Feedback | choices #2"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "loop:R2",
+          "rows": [
+            "causal-loop.loop-identifier | Identifier | \"R2\" | Line | editable | group Identity",
+            "causal-loop.loop-name | Name | \"Perspective carries the cost\" | Line | editable | group Identity",
+            "causal-loop.loop-computed | Computed polarity | \"reinforcing\" | Line | read-only (Counted from the polarity of the links around the cycle. Change an arrow to change this.) | group Feedback",
+            "causal-loop.loop-variables | Runs through | \"meaning → sacrifice → progress → confidence → selfDirection\" | Choice | editable | group Feedback | choices #3"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "loop:R3",
+          "rows": [
+            "causal-loop.loop-identifier | Identifier | \"R3\" | Line | editable | group Identity",
+            "causal-loop.loop-name | Name | \"Goals feed goals\" | Line | editable | group Identity",
+            "causal-loop.loop-computed | Computed polarity | \"reinforcing\" | Line | read-only (Counted from the polarity of the links around the cycle. Change an arrow to change this.) | group Feedback",
+            "causal-loop.loop-variables | Runs through | \"goalOrientation → goalsAchieved → satisfaction\" | Choice | editable | group Feedback | choices #4"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "loop:B2",
+          "rows": [
+            "causal-loop.loop-identifier | Identifier | \"B2\" | Line | editable | group Identity",
+            "causal-loop.loop-name | Name | \"Goals narrow the view\" | Line | editable | group Identity",
+            "causal-loop.loop-computed | Computed polarity | \"balancing\" | Line | read-only (Counted from the polarity of the links around the cycle. Change an arrow to change this.) | group Feedback",
+            "causal-loop.loop-variables | Runs through | \"selfDirection → goalOrientation → bigPicture → meaning → sacrifice → progress → confidence\" | Choice | editable | group Feedback | choices #5"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "loop:R4",
+          "rows": [
+            "causal-loop.loop-identifier | Identifier | \"R4\" | Line | editable | group Identity",
+            "causal-loop.loop-name | Name | \"What is not seen does not change\" | Line | editable | group Identity",
+            "causal-loop.loop-computed | Computed polarity | \"reinforcing\" | Line | read-only (Counted from the polarity of the links around the cycle. Change an arrow to change this.) | group Feedback",
+            "causal-loop.loop-variables | Runs through | \"conversationalSafety → openness → visibleComplaints → preventionUrgency → systemChange\" | Choice | editable | group Feedback | choices #6"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "loop:R5",
+          "rows": [
+            "causal-loop.loop-identifier | Identifier | \"R5\" | Line | editable | group Identity",
+            "causal-loop.loop-name | Name | \"Prevention pays for prevention\" | Line | editable | group Identity",
+            "causal-loop.loop-computed | Computed polarity | \"reinforcing\" | Line | read-only (Counted from the polarity of the links around the cycle. Change an arrow to change this.) | group Feedback",
+            "causal-loop.loop-variables | Runs through | \"preventionInvestment → dropout → premiumPressure\" | Choice | editable | group Feedback | choices #7"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "loop:R6",
+          "rows": [
+            "causal-loop.loop-identifier | Identifier | \"R6\" | Line | editable | group Identity",
+            "causal-loop.loop-name | Name | \"Labels that confirm themselves\" | Line | editable | group Identity",
+            "causal-loop.loop-computed | Computed polarity | \"reinforcing\" | Line | read-only (Counted from the polarity of the links around the cycle. Change an arrow to change this.) | group Feedback",
+            "causal-loop.loop-variables | Runs through | \"generationalLabels → youthSelfImage → withdrawal\" | Choice | editable | group Feedback | choices #8"
+          ],
+          "rowsReadOnly": []
+        }
+      ],
+      "readOnlySet": "set variable:selfDirection causal-loop.variable-label => refused: mental-health.cld could not be read, so it cannot be edited.",
+      "findings": [],
+      "payloads": [
+        "variable:selfDirection | systems/causal-loop+variable | 0, 0 | CausalLoopVariablePayload { \"display\": \"Experienced self-direction\", \"id\": \"selfDirection\", \"width\": 228.20000000000002, \"height\": 39.599999999999994 }",
+        "variable:emotionSuppression | systems/causal-loop+variable | -349.99999999999994, 450 | CausalLoopVariablePayload { \"display\": \"Emotion suppression (downplaying as coping)\", \"id\": \"emotionSuppression\", \"width\": 359.1, \"height\": 39.599999999999994 }",
+        "variable:meaning | systems/causal-loop+variable | 400, -150 | CausalLoopVariablePayload { \"display\": \"Experienced meaning and perspective\", \"id\": \"meaning\", \"width\": 297.5, \"height\": 39.599999999999994 }",
+        "variable:goalOrientation | systems/causal-loop+variable | -400, 150 | CausalLoopVariablePayload { \"display\": \"Goal orientation\", \"id\": \"goalOrientation\", \"width\": 151.20000000000002, \"height\": 39.599999999999994 }",
+        "variable:goalsAchieved | systems/causal-loop+variable | -800, 0 | CausalLoopVariablePayload { \"display\": \"Goals achieved\", \"id\": \"goalsAchieved\", \"width\": 135.8, \"height\": 39.599999999999994 }",
+        "variable:satisfaction | systems/causal-loop+variable | -800, 300 | CausalLoopVariablePayload { \"display\": \"Satisfaction\", \"id\": \"satisfaction\", \"width\": 120.4, \"height\": 39.599999999999994 }",
+        "variable:bigPicture | systems/causal-loop+variable | 0, -300 | CausalLoopVariablePayload { \"display\": \"Sight of the bigger picture\", \"id\": \"bigPicture\", \"width\": 235.9, \"height\": 39.599999999999994 }",
+        "variable:sacrifice | systems/causal-loop+variable | 800, -150 | CausalLoopVariablePayload { \"display\": \"Willingness to sacrifice\", \"id\": \"sacrifice\", \"width\": 212.8, \"height\": 39.599999999999994 }",
+        "variable:progress | systems/causal-loop+variable | 800, 100 | CausalLoopVariablePayload { \"display\": \"Progress\", \"id\": \"progress\", \"width\": 90, \"height\": 39.599999999999994 }",
+        "variable:confidence | systems/causal-loop+variable | 400, 200 | CausalLoopVariablePayload { \"display\": \"Confidence\", \"id\": \"confidence\", \"width\": 105, \"height\": 39.599999999999994 }",
+        "variable:shortTermFunctioning | systems/causal-loop+variable | -800, 650 | CausalLoopVariablePayload { \"display\": \"Functioning in the short term\", \"id\": \"shortTermFunctioning\", \"width\": 251.3, \"height\": 39.599999999999994 }",
+        "variable:copingConfirmation | systems/causal-loop+variable | -350, 800 | CausalLoopVariablePayload { \"display\": \"Confirmation of the coping strategy\", \"id\": \"copingConfirmation\", \"width\": 297.5, \"height\": 39.599999999999994 }",
+        "variable:exhaustion | systems/causal-loop+variable | 0, 700 | CausalLoopVariablePayload { \"display\": \"Exhaustion\", \"id\": \"exhaustion\", \"width\": 105, \"height\": 39.599999999999994 }",
+        "variable:dropout | systems/causal-loop+variable | 400, 950 | CausalLoopVariablePayload { \"display\": \"Mental health dropout\", \"id\": \"dropout\", \"width\": 189.70000000000002, \"height\": 39.599999999999994 }",
+        "variable:toughNorm | systems/causal-loop+variable | 800, 450 | CausalLoopVariablePayload { \"display\": \"Norm: don't make a fuss\", \"id\": \"toughNorm\", \"width\": 205.10000000000002, \"height\": 39.599999999999994 }",
+        "variable:emotionExpression | systems/causal-loop+variable | 400, 500 | CausalLoopVariablePayload { \"display\": \"Expression of emotion\", \"id\": \"emotionExpression\", \"width\": 189.70000000000002, \"height\": 39.599999999999994 }",
+        "variable:legalFrame | systems/causal-loop+variable | 1250, 0 | CausalLoopVariablePayload { \"display\": \"Legal limits on discussing mental health\", \"id\": \"legalFrame\", \"width\": 336, \"height\": 39.599999999999994 }",
+        "variable:insurerDependence | systems/causal-loop+variable | 350, -499.99999999999994 | CausalLoopVariablePayload { \"display\": \"Dependence on insurers and premiums\", \"id\": \"insurerDependence\", \"width\": 297.5, \"height\": 39.599999999999994 }",
+        "variable:ageing | systems/causal-loop+variable | -350, -450 | CausalLoopVariablePayload { \"display\": \"Ageing population\", \"id\": \"ageing\", \"width\": 158.9, \"height\": 39.599999999999994 }",
+        "variable:conversationalSafety | systems/causal-loop+variable | 1150, 350 | CausalLoopVariablePayload { \"display\": \"Safety to talk\", \"id\": \"conversationalSafety\", \"width\": 135.8, \"height\": 39.599999999999994 }",
+        "variable:openness | systems/causal-loop+variable | 1550, 300 | CausalLoopVariablePayload { \"display\": \"Openness and vulnerability\", \"id\": \"openness\", \"width\": 228.20000000000002, \"height\": 39.599999999999994 }",
+        "variable:visibleComplaints | systems/causal-loop+variable | 1700, 600 | CausalLoopVariablePayload { \"display\": \"Visible mental health complaints\", \"id\": \"visibleComplaints\", \"width\": 274.40000000000003, \"height\": 39.599999999999994 }",
+        "variable:preventionUrgency | systems/causal-loop+variable | 1450, 800 | CausalLoopVariablePayload { \"display\": \"Perceived need for prevention\", \"id\": \"preventionUrgency\", \"width\": 251.3, \"height\": 39.599999999999994 }",
+        "variable:systemChange | systems/causal-loop+variable | 1150, 650 | CausalLoopVariablePayload { \"display\": \"System change\", \"id\": \"systemChange\", \"width\": 128.10000000000002, \"height\": 39.599999999999994 }",
+        "variable:preventionInvestment | systems/causal-loop+variable | 1000, 1000 | CausalLoopVariablePayload { \"display\": \"Investment in prevention\", \"id\": \"preventionInvestment\", \"width\": 212.8, \"height\": 39.599999999999994 }",
+        "variable:premiumPressure | systems/causal-loop+variable | 700, 1200 | CausalLoopVariablePayload { \"display\": \"Costs and premium pressure\", \"id\": \"premiumPressure\", \"width\": 228.20000000000002, \"height\": 39.599999999999994 }",
+        "variable:generationalLabels | systems/causal-loop+variable | 2050, 950 | CausalLoopVariablePayload { \"display\": \"Limiting stories and labels of older generations\", \"id\": \"generationalLabels\", \"width\": 397.6, \"height\": 39.599999999999994 }",
+        "variable:youthSelfImage | systems/causal-loop+variable | 1800, 1200 | CausalLoopVariablePayload { \"display\": \"Self-image of young people\", \"id\": \"youthSelfImage\", \"width\": 228.20000000000002, \"height\": 39.599999999999994 }",
+        "variable:withdrawal | systems/causal-loop+variable | 2200, 1250 | CausalLoopVariablePayload { \"display\": \"Withdrawal and behaviour\", \"id\": \"withdrawal\", \"width\": 212.8, \"height\": 39.599999999999994 }",
+        "variable:vulnerability | systems/causal-loop+variable | 2050, 450 | CausalLoopVariablePayload { \"display\": \"Showing vulnerability\", \"id\": \"vulnerability\", \"width\": 189.70000000000002, \"height\": 39.599999999999994 }",
+        "link:emotionSuppression|shortTermFunctioning | systems/causal-loop+link | -575, 550 | CausalLoopLinkPayload { \"fromElementId\": \"variable:emotionSuppression\", \"toElementId\": \"variable:shortTermFunctioning\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"label\": \"relativeren als coping\" }",
+        "link:shortTermFunctioning|copingConfirmation | systems/causal-loop+link | -575, 725 | CausalLoopLinkPayload { \"fromElementId\": \"variable:shortTermFunctioning\", \"toElementId\": \"variable:copingConfirmation\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
+        "link:copingConfirmation|emotionSuppression | systems/causal-loop+link | -350, 625 | CausalLoopLinkPayload { \"fromElementId\": \"variable:copingConfirmation\", \"toElementId\": \"variable:emotionSuppression\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
+        "link:emotionSuppression|exhaustion | systems/causal-loop+link | -174.99999999999997, 575 | CausalLoopLinkPayload { \"fromElementId\": \"variable:emotionSuppression\", \"toElementId\": \"variable:exhaustion\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"delayed\": true, \"label\": \"keeping up an untrue story is tiring\" }",
+        "link:exhaustion|shortTermFunctioning | systems/causal-loop+link | -400, 675 | CausalLoopLinkPayload { \"fromElementId\": \"variable:exhaustion\", \"toElementId\": \"variable:shortTermFunctioning\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\", \"delayed\": true }",
+        "link:exhaustion|dropout | systems/causal-loop+link | 200, 825 | CausalLoopLinkPayload { \"fromElementId\": \"variable:exhaustion\", \"toElementId\": \"variable:dropout\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"delayed\": true, \"label\": \"uitval\" }",
+        "link:meaning|sacrifice | systems/causal-loop+link | 600, -150 | CausalLoopLinkPayload { \"fromElementId\": \"variable:meaning\", \"toElementId\": \"variable:sacrifice\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"label\": \"a clear way out\" }",
+        "link:sacrifice|progress | systems/causal-loop+link | 800, -25 | CausalLoopLinkPayload { \"fromElementId\": \"variable:sacrifice\", \"toElementId\": \"variable:progress\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
+        "link:progress|confidence | systems/causal-loop+link | 600, 150 | CausalLoopLinkPayload { \"fromElementId\": \"variable:progress\", \"toElementId\": \"variable:confidence\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
+        "link:confidence|selfDirection | systems/causal-loop+link | 200, 100 | CausalLoopLinkPayload { \"fromElementId\": \"variable:confidence\", \"toElementId\": \"variable:selfDirection\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
+        "link:selfDirection|meaning | systems/causal-loop+link | 200, -75 | CausalLoopLinkPayload { \"fromElementId\": \"variable:selfDirection\", \"toElementId\": \"variable:meaning\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"label\": \"back to the perspective\" }",
+        "link:selfDirection|goalOrientation | systems/causal-loop+link | -200, 75 | CausalLoopLinkPayload { \"fromElementId\": \"variable:selfDirection\", \"toElementId\": \"variable:goalOrientation\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"label\": \"the bridge to suppression\" }",
+        "link:goalOrientation|emotionSuppression | systems/causal-loop+link | -375, 300 | CausalLoopLinkPayload { \"fromElementId\": \"variable:goalOrientation\", \"toElementId\": \"variable:emotionSuppression\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"label\": \"flight into goals\" }",
+        "link:goalOrientation|goalsAchieved | systems/causal-loop+link | -600, 75 | CausalLoopLinkPayload { \"fromElementId\": \"variable:goalOrientation\", \"toElementId\": \"variable:goalsAchieved\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
+        "link:goalsAchieved|satisfaction | systems/causal-loop+link | -800, 150 | CausalLoopLinkPayload { \"fromElementId\": \"variable:goalsAchieved\", \"toElementId\": \"variable:satisfaction\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
+        "link:satisfaction|goalOrientation | systems/causal-loop+link | -600, 225 | CausalLoopLinkPayload { \"fromElementId\": \"variable:satisfaction\", \"toElementId\": \"variable:goalOrientation\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
+        "link:goalOrientation|bigPicture | systems/causal-loop+link | -200, -75 | CausalLoopLinkPayload { \"fromElementId\": \"variable:goalOrientation\", \"toElementId\": \"variable:bigPicture\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\", \"label\": \"eyes on the next target\" }",
+        "link:bigPicture|meaning | systems/causal-loop+link | 200, -225 | CausalLoopLinkPayload { \"fromElementId\": \"variable:bigPicture\", \"toElementId\": \"variable:meaning\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"label\": \"the bridge to the bigger picture\" }",
+        "link:toughNorm|emotionExpression | systems/causal-loop+link | 600, 475 | CausalLoopLinkPayload { \"fromElementId\": \"variable:toughNorm\", \"toElementId\": \"variable:emotionExpression\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\", \"label\": \"niet aanstellen, niet zeiken\" }",
+        "link:toughNorm|visibleComplaints | systems/causal-loop+link | 1250, 525 | CausalLoopLinkPayload { \"fromElementId\": \"variable:toughNorm\", \"toElementId\": \"variable:visibleComplaints\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\" }",
+        "link:emotionSuppression|emotionExpression | systems/causal-loop+link | 25.00000000000003, 475 | CausalLoopLinkPayload { \"fromElementId\": \"variable:emotionSuppression\", \"toElementId\": \"variable:emotionExpression\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\" }",
+        "link:emotionExpression|visibleComplaints | systems/causal-loop+link | 1050, 550 | CausalLoopLinkPayload { \"fromElementId\": \"variable:emotionExpression\", \"toElementId\": \"variable:visibleComplaints\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
+        "link:legalFrame|conversationalSafety | systems/causal-loop+link | 1200, 175 | CausalLoopLinkPayload { \"fromElementId\": \"variable:legalFrame\", \"toElementId\": \"variable:conversationalSafety\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\", \"label\": \"employers may not discuss complaints\" }",
+        "link:insurerDependence|selfDirection | systems/causal-loop+link | 175, -249.99999999999997 | CausalLoopLinkPayload { \"fromElementId\": \"variable:insurerDependence\", \"toElementId\": \"variable:selfDirection\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\" }",
+        "link:insurerDependence|conversationalSafety | systems/causal-loop+link | 750, -74.99999999999997 | CausalLoopLinkPayload { \"fromElementId\": \"variable:insurerDependence\", \"toElementId\": \"variable:conversationalSafety\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\" }",
+        "link:ageing|selfDirection | systems/causal-loop+link | -175, -225 | CausalLoopLinkPayload { \"fromElementId\": \"variable:ageing\", \"toElementId\": \"variable:selfDirection\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\" }",
+        "link:conversationalSafety|openness | systems/causal-loop+link | 1350, 325 | CausalLoopLinkPayload { \"fromElementId\": \"variable:conversationalSafety\", \"toElementId\": \"variable:openness\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
+        "link:openness|visibleComplaints | systems/causal-loop+link | 1625, 450 | CausalLoopLinkPayload { \"fromElementId\": \"variable:openness\", \"toElementId\": \"variable:visibleComplaints\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
+        "link:visibleComplaints|preventionUrgency | systems/causal-loop+link | 1575, 700 | CausalLoopLinkPayload { \"fromElementId\": \"variable:visibleComplaints\", \"toElementId\": \"variable:preventionUrgency\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
+        "link:preventionUrgency|systemChange | systems/causal-loop+link | 1300, 725 | CausalLoopLinkPayload { \"fromElementId\": \"variable:preventionUrgency\", \"toElementId\": \"variable:systemChange\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
+        "link:systemChange|conversationalSafety | systems/causal-loop+link | 1150, 500 | CausalLoopLinkPayload { \"fromElementId\": \"variable:systemChange\", \"toElementId\": \"variable:conversationalSafety\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"delayed\": true }",
+        "link:preventionUrgency|preventionInvestment | systems/causal-loop+link | 1225, 900 | CausalLoopLinkPayload { \"fromElementId\": \"variable:preventionUrgency\", \"toElementId\": \"variable:preventionInvestment\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
+        "link:preventionInvestment|dropout | systems/causal-loop+link | 700, 975 | CausalLoopLinkPayload { \"fromElementId\": \"variable:preventionInvestment\", \"toElementId\": \"variable:dropout\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\", \"delayed\": true }",
+        "link:dropout|premiumPressure | systems/causal-loop+link | 550, 1075 | CausalLoopLinkPayload { \"fromElementId\": \"variable:dropout\", \"toElementId\": \"variable:premiumPressure\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
+        "link:premiumPressure|preventionInvestment | systems/causal-loop+link | 850, 1100 | CausalLoopLinkPayload { \"fromElementId\": \"variable:premiumPressure\", \"toElementId\": \"variable:preventionInvestment\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\", \"label\": \"no room left for prevention\" }",
+        "link:generationalLabels|youthSelfImage | systems/causal-loop+link | 1925, 1075 | CausalLoopLinkPayload { \"fromElementId\": \"variable:generationalLabels\", \"toElementId\": \"variable:youthSelfImage\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\" }",
+        "link:youthSelfImage|withdrawal | systems/causal-loop+link | 2000, 1225 | CausalLoopLinkPayload { \"fromElementId\": \"variable:youthSelfImage\", \"toElementId\": \"variable:withdrawal\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\" }",
+        "link:withdrawal|generationalLabels | systems/causal-loop+link | 2125, 1100 | CausalLoopLinkPayload { \"fromElementId\": \"variable:withdrawal\", \"toElementId\": \"variable:generationalLabels\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"label\": \"the label confirmed\" }",
+        "link:openness|vulnerability | systems/causal-loop+link | 1800, 375 | CausalLoopLinkPayload { \"fromElementId\": \"variable:openness\", \"toElementId\": \"variable:vulnerability\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
+        "link:vulnerability|generationalLabels | systems/causal-loop+link | 2050, 700 | CausalLoopLinkPayload { \"fromElementId\": \"variable:vulnerability\", \"toElementId\": \"variable:generationalLabels\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\", \"label\": \"kwetsbaarheid inzetten\" }",
+        "loop:R1 | systems/causal-loop+loop | -500, 633.3333333333334 | CausalLoopLoopPayload { \"identifier\": \"R1\", \"name\": \"Coping that confirms itself\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:emotionSuppression\", \"variable:shortTermFunctioning\", \"variable:copingConfirmation\" ] }",
+        "loop:B1 | systems/causal-loop+loop | -375, 650 | CausalLoopLoopPayload { \"identifier\": \"B1\", \"name\": \"An untrue story wears out\", \"computed\": \"LOOP_POLARITY_PROTO_BALANCING\", \"memberElementIds\": [ \"variable:emotionSuppression\", \"variable:exhaustion\", \"variable:shortTermFunctioning\", \"variable:copingConfirmation\" ] }",
+        "loop:R2 | systems/causal-loop+loop | 480, 0 | CausalLoopLoopPayload { \"identifier\": \"R2\", \"name\": \"Perspective carries the cost\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:meaning\", \"variable:sacrifice\", \"variable:progress\", \"variable:confidence\", \"variable:selfDirection\" ] }",
+        "loop:R3 | systems/causal-loop+loop | -666.6666666666666, 150 | CausalLoopLoopPayload { \"identifier\": \"R3\", \"name\": \"Goals feed goals\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:goalOrientation\", \"variable:goalsAchieved\", \"variable:satisfaction\" ] }",
+        "loop:B2 | systems/causal-loop+loop | 285.7142857142857, -21.428571428571427 | CausalLoopLoopPayload { \"identifier\": \"B2\", \"name\": \"Goals narrow the view\", \"computed\": \"LOOP_POLARITY_PROTO_BALANCING\", \"memberElementIds\": [ \"variable:selfDirection\", \"variable:goalOrientation\", \"variable:bigPicture\", \"variable:meaning\", \"variable:sacrifice\", \"variable:progress\", \"variable:confidence\" ] }",
+        "loop:R4 | systems/causal-loop+loop | 1400, 540 | CausalLoopLoopPayload { \"identifier\": \"R4\", \"name\": \"What is not seen does not change\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:conversationalSafety\", \"variable:openness\", \"variable:visibleComplaints\", \"variable:preventionUrgency\", \"variable:systemChange\" ] }",
+        "loop:R5 | systems/causal-loop+loop | 700, 1050 | CausalLoopLoopPayload { \"identifier\": \"R5\", \"name\": \"Prevention pays for prevention\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:preventionInvestment\", \"variable:dropout\", \"variable:premiumPressure\" ] }",
+        "loop:R6 | systems/causal-loop+loop | 2016.6666666666667, 1133.3333333333333 | CausalLoopLoopPayload { \"identifier\": \"R6\", \"name\": \"Labels that confirm themselves\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:generationalLabels\", \"variable:youthSelfImage\", \"variable:withdrawal\" ] }"
+      ],
+      "edits": [
+        {
+          "do": "execute causal-loop.toggle-delay on link:emotionSuppression|shortTermFunctioning",
+          "answer": "ok",
+          "hunks": [
+            "@71 -1 +\"link emotionSuppression -> shortTermFunctioning + delayed \\\"relativeren als coping\\\"\\r\\n\""
+          ],
+          "sha256": "efb223b63e0de1d1a5be579add30837d27cda8d839d3725052c475848b6087c8"
+        },
+        {
+          "do": "execute causal-loop.flip-curvature on link:emotionSuppression|shortTermFunctioning",
+          "answer": "ok",
+          "hunks": [
+            "@71 -1 +\"link emotionSuppression -> shortTermFunctioning + delayed flipped \\\"relativeren als coping\\\"\\r\\n\""
+          ],
+          "sha256": "334588bb2cfebe87ad7d4dac021fb1a05788bc96e294b61f79da11e824d42553"
+        },
+        {
+          "do": "set link:emotionSuppression|shortTermFunctioning causal-loop.link-label = \"Parity note\"",
+          "answer": "ok",
+          "hunks": [
+            "@71 -1 +\"link emotionSuppression -> shortTermFunctioning + delayed flipped \\\"Parity note\\\"\\r\\n\""
+          ],
+          "sha256": "705218b8a958ab980f8f1d75570c600986c43bef23296e12428c633709ba2f91"
+        },
+        {
+          "do": "set link:emotionSuppression|shortTermFunctioning causal-loop.link-weight = \"heavy\"",
+          "answer": "refused: 'heavy' is not a number. A weight is an annotation this diagram records and never evaluates; leave it empty to remove it.",
+          "unchanged": true
+        },
+        {
+          "do": "set link:emotionSuppression|shortTermFunctioning causal-loop.link-weight = \"1e21\"",
+          "answer": "ok",
+          "hunks": [
+            "@71 -1 +\"link emotionSuppression -> shortTermFunctioning + delayed flipped weight=1e+21 \\\"Parity note\\\"\\r\\n\""
+          ],
+          "sha256": "03ee7965b3b7ce2fbcb8b5ffab933603a1f18257a53c753fb31c8a2693760cd0"
+        },
+        {
+          "do": "describe link:emotionSuppression|shortTermFunctioning",
+          "answer": "causal-loop.link-from | Cause (from) | \"emotionSuppression\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity || causal-loop.link-to | Effect (to) | \"shortTermFunctioning\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity || causal-loop.link-label | Note | \"Parity note\" | Line | editable | group Identity || causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices [\"positive\", \"negative\", \"unstated\"] || causal-loop.link-delayed | Delayed | \"true\" | Toggle | editable | group Causality || causal-loop.link-weight | Weight | \"1E+21\" | Line | editable | group Causality",
+          "unchanged": true
+        },
+        {
+          "do": "set link:emotionSuppression|shortTermFunctioning causal-loop.link-weight = \"0.000001\"",
+          "answer": "ok",
+          "hunks": [
+            "@71 -1 +\"link emotionSuppression -> shortTermFunctioning + delayed flipped weight=0.000001 \\\"Parity note\\\"\\r\\n\""
+          ],
+          "sha256": "0159d28af947c200e52fdad0ef68f8f70246e0e0602e6819c59254814c1e8dba"
+        },
+        {
+          "do": "set link:emotionSuppression|shortTermFunctioning causal-loop.link-weight = \"\"",
+          "answer": "ok",
+          "hunks": [
+            "@71 -1 +\"link emotionSuppression -> shortTermFunctioning + delayed flipped \\\"Parity note\\\"\\r\\n\""
+          ],
+          "sha256": "705218b8a958ab980f8f1d75570c600986c43bef23296e12428c633709ba2f91"
+        },
+        {
+          "do": "set link:emotionSuppression|shortTermFunctioning causal-loop.link-polarity = \"sideways\"",
+          "answer": "refused: 'sideways' is not a polarity a link can state.",
+          "unchanged": true
+        },
+        {
+          "do": "set link:emotionSuppression|shortTermFunctioning causal-loop.link-polarity = \"unstated\"",
+          "answer": "ok",
+          "hunks": [
+            "@71 -1 +\"link emotionSuppression -> shortTermFunctioning delayed flipped \\\"Parity note\\\"\\r\\n\""
+          ],
+          "sha256": "c5020a8033b8d6e1830aed7a5c563ea71c904ea81b20b6b0d9a1ffeed040cacd"
+        },
+        {
+          "do": "set link:emotionSuppression|shortTermFunctioning causal-loop.link-delayed = \"true\"",
+          "answer": "ok",
+          "unchanged": true
+        },
+        {
+          "do": "set link:emotionSuppression|shortTermFunctioning causal-loop.link-from = \"nobody\"",
+          "answer": "refused: 'causal-loop.link-from' cannot be edited on this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute causal-loop.make-positive on link:emotionSuppression|shortTermFunctioning",
+          "answer": "ok",
+          "hunks": [
+            "@71 -1 +\"link emotionSuppression -> shortTermFunctioning + delayed flipped \\\"Parity note\\\"\\r\\n\""
+          ],
+          "sha256": "705218b8a958ab980f8f1d75570c600986c43bef23296e12428c633709ba2f91"
+        },
+        {
+          "do": "execute causal-loop.make-negative on link:emotionSuppression|shortTermFunctioning",
+          "answer": "ok",
+          "hunks": [
+            "@71 -1 +\"link emotionSuppression -> shortTermFunctioning - delayed flipped \\\"Parity note\\\"\\r\\n\""
+          ],
+          "sha256": "8639e2bc4dc022df6528dae1ec5695375170e8d65859015e358c5d60ed0fab64"
+        },
+        {
+          "do": "execute causal-loop.make-negative on link:emotionSuppression|shortTermFunctioning",
+          "answer": "ok",
+          "unchanged": true
+        },
+        {
+          "do": "execute causal-loop.rename-loop on loop:R1",
+          "answer": "asks: ContextInputRequest { Title = Rename loop, Icon = mdi-rename-outline, FieldLabel = Name, InitialValue = Coping that confirms itself, ConfirmLabel = Apply, InlineLabelElementId = , CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "commit causal-loop.rename-loop on loop:R1 = \"Parity loop\"",
+          "answer": "ok",
+          "hunks": [
+            "@75 -1 +\"loop R1 \\\"Parity loop\\\" emotionSuppression shortTermFunctioning copingConfirmation\\r\\n\""
+          ],
+          "sha256": "70e4ae0afc9ef23bd6c9c42d2882b770a34343a630ee3e0f3c35b6f9b61b9657"
+        },
+        {
+          "do": "set loop:R1 causal-loop.loop-name = \"Parity name\"",
+          "answer": "ok",
+          "hunks": [
+            "@75 -1 +\"loop R1 \\\"Parity name\\\" emotionSuppression shortTermFunctioning copingConfirmation\\r\\n\""
+          ],
+          "sha256": "cae62aa7baf0f0b30bb984627447cd51407a29b41fd15af6ab284ab4d9603391"
+        },
+        {
+          "do": "set loop:R1 causal-loop.loop-name = \"Has \\\"quote\\\"\"",
+          "answer": "refused: A label or loop name cannot hold a double quote, because it is written between double quotes.",
+          "unchanged": true
+        },
+        {
+          "do": "set loop:R1 causal-loop.loop-variables = \"emotionSuppression → shortTermFunctioning → copingConfirmation\"",
+          "answer": "ok",
+          "unchanged": true
+        },
+        {
+          "do": "set loop:R1 causal-loop.loop-variables = \"nobody → nowhere\"",
+          "answer": "refused: 'nobody → nowhere' is not a cycle this loop can run through: choose one the arrows form through its variables that no other loop claims.",
+          "unchanged": true
+        },
+        {
+          "do": "set loop:R1 causal-loop.loop-identifier = \"B1\"",
+          "answer": "refused: A loop of that identifier is already stated in this diagram.",
+          "unchanged": true
+        },
+        {
+          "do": "set loop:R1 causal-loop.loop-identifier = \"\"",
+          "answer": "refused: A name needs at least one character and no whitespace, because a statement is read as words on one line.",
+          "unchanged": true
+        },
+        {
+          "do": "set loop:R1 causal-loop.loop-identifier = \"B99\"",
+          "answer": "ok",
+          "hunks": [
+            "@75 -1 +\"loop B99 \\\"Parity name\\\" emotionSuppression shortTermFunctioning copingConfirmation\\r\\n\""
+          ],
+          "sha256": "d6b833890dd53e0e203ccc0f27e4843e6f6590cf14370b2b2e4fb42a1818d7d4"
+        },
+        {
+          "do": "execute causal-loop.rename-variable on variable:selfDirection",
+          "answer": "asks: ContextInputRequest { Title = Rename variable, Icon = mdi-rename-outline, FieldLabel = Name, InitialValue = Experienced self-direction, ConfirmLabel = Apply, InlineLabelElementId = variable:selfDirection, CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "validate causal-loop.rename-variable on variable:selfDirection = \"Say \\\"hi\\\"\"",
+          "answer": "rejected: A name needs at least one character, and cannot contain a quote or a line break.",
+          "unchanged": true
+        },
+        {
+          "do": "validate causal-loop.rename-variable on variable:selfDirection = \"\"",
+          "answer": "rejected: A name needs at least one character, and cannot contain a quote or a line break.",
+          "unchanged": true
+        },
+        {
+          "do": "commit causal-loop.rename-variable on variable:selfDirection = \"Parity renamed\"",
+          "answer": "ok",
+          "hunks": [
+            "@19 -1 +\"variable selfDirection \\\"Parity renamed\\\"\\r\\n\""
+          ],
+          "sha256": "2000f21c84eb4bafd5fb1ab2d88ee5fff45400ad1f3e345eb490d7b9d792fce5"
+        },
+        {
+          "do": "set variable:selfDirection causal-loop.variable-label = \"Say \\\"hi\\\"\"",
+          "answer": "refused: A label or loop name cannot hold a double quote, because it is written between double quotes.",
+          "unchanged": true
+        },
+        {
+          "do": "describe variable:selfDirection",
+          "answer": "causal-loop.variable-label | Label | \"Parity renamed\" | Line | editable | group Identity || causal-loop.variable-id | Identifier | \"selfDirection\" | Line | editable | group Identity",
+          "unchanged": true
+        },
+        {
+          "do": "set variable:selfDirection causal-loop.variable-label = \"Parity label\"",
+          "answer": "ok",
+          "hunks": [
+            "@19 -1 +\"variable selfDirection \\\"Parity label\\\"\\r\\n\""
+          ],
+          "sha256": "b52c03b4a81fdfec717c5d4280086fb6a24a8a11383559aabccbcf78caf0cf3f"
+        },
+        {
+          "do": "validate causal-loop.add-link on variable:selfDirection = \"nobody\"",
+          "answer": "rejected: 'nobody' is not a variable in this diagram.",
+          "unchanged": true
+        },
+        {
+          "do": "validate causal-loop.add-link on variable:selfDirection = \"emotionSuppression\"",
+          "answer": "accepted",
+          "unchanged": true
+        },
+        {
+          "do": "execute causal-loop.add-link on variable:selfDirection",
+          "answer": "asks: ContextInputRequest { Title = Add link, Icon = mdi-arrow-right-thin, FieldLabel = To variable, InitialValue = , ConfirmLabel = Apply, InlineLabelElementId = , CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "commit causal-loop.add-link on variable:selfDirection = \"emotionSuppression\"",
+          "answer": "ok",
+          "hunks": [
+            "@184 -0 +\"link selfDirection -> emotionSuppression +\\r\\n\""
+          ],
+          "sha256": "549bbe51234f9bc33b633ab2cd87c43c423feceb43f8f08351f2f02b3f1f9011"
+        },
+        {
+          "do": "commit causal-loop.add-link on variable:selfDirection = \"nobody\"",
+          "answer": "refused: No variable of that name is in this diagram, so there is nothing to change.",
+          "unchanged": true
+        },
+        {
+          "do": "execute causal-loop.add-loop on variable:selfDirection",
+          "answer": "asks: ContextInputRequest { Title = Claim a loop, Icon = mdi-sync, FieldLabel = Identifier, InitialValue = R1, ConfirmLabel = Apply, InlineLabelElementId = , CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "validate causal-loop.add-loop on variable:selfDirection = \"B99\"",
+          "answer": "rejected: A loop of that identifier is already stated in this diagram.",
+          "unchanged": true
+        },
+        {
+          "do": "commit causal-loop.add-loop on variable:selfDirection = \"R99\"",
+          "answer": "ok",
+          "hunks": [
+            "@187 -0 +\"loop R99 \\\"R99\\\" selfDirection meaning sacrifice progress confidence\\r\\n\""
+          ],
+          "sha256": "e5d67c83003f18ebacfefe824b4397cdd5fd24d48ed3adf1e05065717abb3d5a"
+        },
+        {
+          "do": "set variable:selfDirection causal-loop.variable-id = \"emotionSuppression\"",
+          "answer": "refused: A variable of that name is already declared in this diagram.",
+          "unchanged": true
+        },
+        {
+          "do": "set variable:selfDirection causal-loop.variable-id = \"has space\"",
+          "answer": "refused: A name needs at least one character and no whitespace, because a statement is read as words on one line.",
+          "unchanged": true
+        },
+        {
+          "do": "set variable:selfDirection causal-loop.variable-id = \"\"",
+          "answer": "refused: A name needs at least one character and no whitespace, because a statement is read as words on one line.",
+          "unchanged": true
+        },
+        {
+          "do": "set variable:selfDirection causal-loop.variable-id = \"parityId\"",
+          "answer": "ok",
+          "hunks": [
+            "@19 -1 +\"variable parityId \\\"Parity label\\\"\\r\\n\"",
+            "@96 -2 +\"link confidence -> parityId +\\r\\nlink parityId -> meaning + \\\"back to the perspective\\\"\\r\\n\"",
+            "@99 -1 +\"loop R2 \\\"Perspective carries the cost\\\" meaning sacrifice progress confidence parityId\\r\\n\"",
+            "@108 -1 +\"link parityId -> goalOrientation + \\\"the bridge to suppression\\\"\\r\\n\"",
+            "@122 -1 +\"loop B2 \\\"Goals narrow the view\\\" parityId goalOrientation bigPicture meaning sacrifice progress confidence\\r\\n\"",
+            "@141 -1 +\"link insurerDependence -> parityId -\\r\\n\"",
+            "@143 -1 +\"link ageing -> parityId -\\r\\n\"",
+            "@184 -1 +\"link parityId -> emotionSuppression +\\r\\n\"",
+            "@187 -1 +\"loop R99 \\\"R99\\\" parityId meaning sacrifice progress confidence\\r\\n\""
+          ],
+          "sha256": "3f9426dcb9ca781909dfd9a2ae1119a9757d54e4f9175c9891e6aa9d07fc3ebe"
+        },
+        {
+          "do": "execute causal-loop.connect on rel:emotionSuppression->parityId",
+          "answer": "ok",
+          "hunks": [
+            "@185 -0 +\"link emotionSuppression -> parityId +\\r\\n\"",
+            "@188 -0 +\"loop R100 \\\"\\\" parityId goalOrientation emotionSuppression\\r\\nloop R101 \\\"\\\" parityId emotionSuppression\\r\\n\""
+          ],
+          "sha256": "b74926692f82e29a4e22eac78d18547995ba455a51da7a5041c41d72c5d38ffc"
+        },
+        {
+          "do": "execute causal-loop.connect on rel:emotionSuppression->parityId",
+          "answer": "refused: That link is already stated in this diagram.",
+          "unchanged": true
+        },
+        {
+          "do": "execute causal-loop.connect on rel:parityId->parityId",
+          "answer": "ok",
+          "hunks": [
+            "@186 -0 +\"link parityId -> parityId +\\r\\n\"",
+            "@191 -0 +\"loop R102 \\\"\\\" parityId\\r\\n\""
+          ],
+          "sha256": "7511778c82f2d23fa67dc8397b5f53a966f62f78b6f0e6c39bd7788d742e0b28"
+        },
+        {
+          "do": "execute causal-loop.connect on rel:parityId->nobody",
+          "answer": "refused: No variable of that name is in this diagram, so there is nothing to change.",
+          "unchanged": true
+        },
+        {
+          "do": "execute causal-loop.add-variable on new:240,160",
+          "answer": "ok",
+          "hunks": [
+            "@65 -0 +\"variable variable1 \\\"Variable 1\\\"\\r\\n\""
+          ],
+          "sha256": "b116f53f0e417c45cb3e7afe02e66bfaff9c5838f225ef1bad7349bcfe1fca2d",
+          "registration": {
+            "hunks": [
+              "@19 -0 +\"  variable:premiumPressure: 700 1200\\r\\n\"",
+              "@21 -1 +\"\"",
+              "@29 -0 +\"  variable:variable1: 240 160\\r\\n\""
+            ],
+            "sha256": "2bb615ef425e68c1e6a0f129f86f77064e7b4a199f66d7e2f8ff4338039499ff"
+          }
+        },
+        {
+          "do": "execute causal-loop.add-variable on ",
+          "answer": "ok",
+          "hunks": [
+            "@66 -0 +\"variable variable2 \\\"Variable 2\\\"\\r\\n\""
+          ],
+          "sha256": "42b277147b5d1e9d7e59869a6c397977964f2ef44305f5f71b7dd68e4989e0e3"
+        },
+        {
+          "do": "move variable:emotionSuppression to (100, 200)",
+          "answer": "ok",
+          "unchanged": true,
+          "registration": {
+            "hunks": [
+              "@10 -1 +\"  variable:emotionSuppression: 100 200\\r\\n\""
+            ],
+            "sha256": "7a9c559db97d28d8dc91b667fa04bf81c4c6777c8cda41f1810749788641b897"
+          }
+        },
+        {
+          "do": "move link:emotionSuppression|shortTermFunctioning to (100, 200)",
+          "answer": "refused: Only a variable can be moved; a link is drawn between its ends and a loop label among its members.",
+          "unchanged": true
+        },
+        {
+          "do": "execute causal-loop.arrange on new:240,160",
+          "answer": "ok",
+          "unchanged": true,
+          "registration": {
+            "hunks": [
+              "@3 -22 +\"  variable:ageing: -598.932 -204.035\\r\\n  variable:bigPicture: -1276.894 -899.466\\r\\n  variable:confidence: -999.538 92.458\\r\\n  variable:conversationalSafety: -104.137 672.566\\r\\n  variable:copingConfirmation: -434.709 -690.66\\r\\n  variable:dropout: 275.197 -1061.847\\r\\n  variable:emotionExpression: 46.151 -263.962\\r\\n  variable:emotionSuppression: -371.708 -610.06\\r\\n  variable:exhaustion: -100.271 -1038.044\\r\\n  variable:generationalLabels: 948.036 889.624\\r\\n  variable:goalOrientation: -896.777 -890.588\\r\\n  variable:goalsAchieved: -852.344 -1100.844\\r\\n  variable:insurerDependence: -437.436 324.512\\r\\n  variable:legalFrame: -215.419 1097.262\\r\\n  variable:meaning: -1183.857 -520.982\\r\\n  variable:openness: 348.283 641.147\\r\\n  variable:parityId: -779.582 -211.797\\r\\n  variable:premiumPressure: 525.147 -1119.959\\r\\n  variable:preventionInvestment: 598.741 -706.005\\r\\n  variable:preventionUrgency: 811.557 -187.915\\r\\n  variable:progress: -1284.697 172.975\\r\\n  variable:sacrifice: -1324.359 -167.238\\r\\n  variable:satisfaction: -907.97 -1252.452\\r\\n\"",
+              "@26 -8 +\"  variable:shortTermFunctioning: -293.901 -852.304\\r\\n  variable:systemChange: 379.58 196.078\\r\\n  variable:toughNorm: 221.576 -88.795\\r\\n  variable:variable1: -1150.859 1048.778\\r\\n  variable:variable2: 1202.968 -958.027\\r\\n  variable:visibleComplaints: 502.326 -12.449\\r\\n  variable:vulnerability: 584.85 992.272\\r\\n  variable:withdrawal: 1154.657 616.434\\r\\n  variable:youthSelfImage: 1174.949 970.224\\r\\n\""
+            ],
+            "sha256": "720525ce110b10981b473ff7bb09708aa68d4514954206683fa4f5ceadc5820a"
+          }
+        },
+        {
+          "do": "execute causal-loop.make-positive on parity:unknown",
+          "answer": "refused: That action does not apply to this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute causal-loop.remove-variable on parity:unknown",
+          "answer": "confirms: ContextConfirmationRequest { Title = Remove variable, Icon = mdi-delete-outline, Message = Remove ''?, ConfirmLabel = Remove, Danger = True }",
+          "unchanged": true
+        },
+        {
+          "do": "commit causal-loop.rename-variable on parity:unknown = \"Nobody\"",
+          "answer": "refused: 'causal-loop.rename-variable' does not apply to this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "set parity:unknown causal-loop.variable-label = \"Nobody\"",
+          "answer": "refused: 'causal-loop.variable-label' cannot be edited on this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.not-ours on parity:unknown",
+          "answer": "refused: That action is not this diagram's.",
+          "unchanged": true
+        },
+        {
+          "do": "execute causal-loop.remove-link on link:emotionSuppression|shortTermFunctioning",
+          "answer": "ok",
+          "hunks": [
+            "@73 -1 +\"\""
+          ],
+          "sha256": "b7541ed5efa68abf9efff407081937881bbbf98fd90652348ba107b54e11aedb"
+        },
+        {
+          "do": "execute causal-loop.remove-loop on loop:B99",
+          "answer": "ok",
+          "hunks": [
+            "@76 -1 +\"\""
+          ],
+          "sha256": "f81b6fae0c7b154bfda3bda49248953ae55bd98d708e6e97d14a9fa01bb668a2"
+        },
+        {
+          "do": "execute causal-loop.remove-variable on variable:parityId",
+          "answer": "confirms: ContextConfirmationRequest { Title = Remove variable, Icon = mdi-delete-outline, Message = Removing 'parityId' also removes the 14 links and loops that name it., ConfirmLabel = Remove, Danger = True }",
+          "unchanged": true
+        },
+        {
+          "do": "commit causal-loop.remove-variable on variable:parityId = \"\"",
+          "answer": "ok",
+          "hunks": [
+            "@18 -2 +\"\"",
+            "@96 -2 +\"\"",
+            "@99 -1 +\"\"",
+            "@108 -1 +\"\"",
+            "@122 -1 +\"\"",
+            "@141 -1 +\"\"",
+            "@143 -1 +\"\"",
+            "@184 -3 +\"\"",
+            "@189 -4 +\"\""
+          ],
+          "sha256": "aa83d3a0382d692a5f8dc953fceb9ccd491841c1e77f1dc7d2dbe11bcb223bd1"
+        }
+      ],
+      "undoAll": "28 undone; the original text is NOT back",
+      "undoAllLeaves": {
+        "unchanged": true
+      },
+      "undoAllLeavesRegistration": {
+        "hunks": [
+          "@19 -0 +\"  variable:premiumPressure: 700 1200\\r\\n\"",
+          "@21 -1 +\"\""
+        ],
+        "sha256": "193354eb900fb32e32bbba3081748b679fdcd270667954f9da6bd0943d459305"
+      }
+    },
+    {
       "document": "diagrams/causal-loop-diagram/examples/on-call/on-call.cld",
       "sha256": "a0118790fc7215f60c4fd77c7c8d4f852bce2adffce3502692d1e7863e6b0a17",
       "registration": "on-call.adp, sha256 f6c908bd06eff3006fa4bbcf12bf7d1f3be39c8be859884c6cac9a78f581284a",
@@ -7966,6 +9477,11 @@
       "document": "examples/diagrams/causal-loop-diagram/business-philosophy/business-philosophy.cld",
       "sha256": "1a18451e1b893c40de31a9f85f6f7bf1f56b60ed276592996503156f57c221c6",
       "sameAs": "diagrams/causal-loop-diagram/examples/business-philosophy/business-philosophy.cld"
+    },
+    {
+      "document": "examples/diagrams/causal-loop-diagram/mental-health/mental-health.cld",
+      "sha256": "3ce83274402681e40dd135787ddf65d4636944ac9a92fab86067dbcf060a5506",
+      "sameAs": "diagrams/causal-loop-diagram/examples/mental-health/mental-health.cld"
     },
     {
       "document": "examples/diagrams/causal-loop-diagram/on-call/on-call.cld",
