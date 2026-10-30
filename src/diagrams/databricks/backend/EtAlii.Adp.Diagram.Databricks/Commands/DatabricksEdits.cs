@@ -26,13 +26,13 @@ namespace EtAlii.Adp.Diagram.Databricks;
 internal static class DatabricksEdits
 {
     /// <summary>The refusal of an edit the line store could not keep as the library planned it; never expected.</summary>
-    internal const string NotStored = "This edit could not be written as it was planned, so nothing was written.";
+    private const string NotStored = "This edit could not be written as it was planned, so nothing was written.";
 
     /// <summary>The binding's sentence for a task type that no rule of the binding adds (<c>databricks.fbl</c>).</summary>
     private const string UnknownTaskType = "A task of that type cannot be added to a job.";
 
     /// <summary>The sentence ruled on 2026-10-19 for an edit of a list written on one line that cannot be made.</summary>
-    internal const string OneLineListRefusal = "This list is written on one line, which this diagram cannot change yet; edit it in the text editor.";
+    private const string OneLineListRefusal = "This list is written on one line, which this diagram cannot change yet; edit it in the text editor.";
 
     /// <summary>Makes <paramref name="change"/> in the reading of the job <paramref name="job"/> and stores the result in <paramref name="document"/>.</summary>
     public static EditOutcome Job(LineDocument document, JobModel job, Func<FblModel, ModelChange> change, string? value = null)
