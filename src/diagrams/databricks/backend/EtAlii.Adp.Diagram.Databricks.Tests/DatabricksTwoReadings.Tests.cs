@@ -126,8 +126,11 @@ public sealed class DatabricksTwoReadingsTests : IDisposable
     private static async Task<byte[][]> BytesAsync(params string[] paths) =>
         await Task.WhenAll(paths.Select(path => File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken)));
 
-    private static (double X, double Y) Position(IReadOnlyList<DiagramElement> elements, string id) =>
-        Assert.Single(elements, element => element.Id == id) is var element ? (element.X, element.Y) : default;
+    private static (double X, double Y) Position(IReadOnlyList<DiagramElement> elements, string id)
+    {
+        var found = Assert.Single(elements, element => element.Id == id);
+        return (found.X, found.Y);
+    }
 
     private async Task<DatabricksModel> ReadAsync() =>
         DatabricksModel.Read(LineDocument.Parse(await File.ReadAllTextAsync(_body, TestContext.Current.CancellationToken)));

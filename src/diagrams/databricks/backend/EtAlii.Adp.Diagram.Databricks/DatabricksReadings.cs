@@ -223,7 +223,7 @@ internal static class DatabricksReadings
         elements.AddRange(reading.Elements.Where(element => element.Type == "Task").Select(Stated));
         elements.AddRange(reading.Elements.Where(element => element.Type == "JobCluster").Select(Stated));
         elements.AddRange(reading.Elements
-            .Where(element => element.Type == "Dependency" && element.ParentId is { } parent && keyed.Contains(parent))
+            .Where(element => element is { Type: "Dependency", ParentId: { } parent } && keyed.Contains(parent))
             .Select(Downstream));
         return elements;
     }
