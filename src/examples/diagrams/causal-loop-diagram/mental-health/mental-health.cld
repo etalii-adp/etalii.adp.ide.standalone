@@ -69,8 +69,8 @@ variable vulnerability "Showing vulnerability"
 # negative, so it compounds.
 
 link emotionSuppression -> shortTermFunctioning + "relativeren als coping"
-link shortTermFunctioning -> copingConfirmation +
-link copingConfirmation -> emotionSuppression +
+link shortTermFunctioning -> copingConfirmation + flipped
+link copingConfirmation -> emotionSuppression + flipped
 
 loop R1 "Coping that confirms itself" emotionSuppression shortTermFunctioning copingConfirmation
 
@@ -79,8 +79,8 @@ loop R1 "Coping that confirms itself" emotionSuppression shortTermFunctioning co
 # negative link: balancing, and delayed, which is why the strategy looks sound
 # for so long.
 
-link emotionSuppression -> exhaustion + delayed "keeping up an untrue story is tiring"
-link exhaustion -> shortTermFunctioning - delayed
+link emotionSuppression -> exhaustion + delayed flipped "keeping up an untrue story is tiring"
+link exhaustion -> shortTermFunctioning - delayed flipped
 link exhaustion -> dropout + delayed "uitval"
 
 loop B1 "An untrue story wears out" emotionSuppression exhaustion shortTermFunctioning copingConfirmation
@@ -90,10 +90,10 @@ loop B1 "An untrue story wears out" emotionSuppression exhaustion shortTermFunct
 # clear way out. Sacrifice buys progress, progress builds confidence and
 # self-direction, and self-direction keeps the perspective in view.
 
-link meaning -> sacrifice + "a clear way out"
-link sacrifice -> progress +
-link progress -> confidence +
-link confidence -> selfDirection +
+link meaning -> sacrifice + flipped "a clear way out"
+link sacrifice -> progress + flipped
+link progress -> confidence + flipped
+link confidence -> selfDirection + flipped
 link selfDirection -> meaning + "back to the perspective"
 
 loop R2 "Perspective carries the cost" meaning sacrifice progress confidence selfDirection
@@ -107,17 +107,17 @@ loop R2 "Perspective carries the cost" meaning sacrifice progress confidence sel
 
 link selfDirection -> goalOrientation + "the bridge to suppression"
 link goalOrientation -> emotionSuppression + "flight into goals"
-link goalOrientation -> goalsAchieved +
-link goalsAchieved -> satisfaction +
-link satisfaction -> goalOrientation +
-link goalOrientation -> bigPicture - "eyes on the next target"
+link goalOrientation -> goalsAchieved + flipped
+link goalsAchieved -> satisfaction + flipped
+link satisfaction -> goalOrientation + flipped
+link goalOrientation -> bigPicture - flipped "eyes on the next target"
 
 loop R3 "Goals feed goals" goalOrientation goalsAchieved satisfaction
 
 # The two bridges meet. Self-direction drives goal orientation, which narrows
 # the bigger picture that meaning is drawn from. One negative link: balancing.
 
-link bigPicture -> meaning + "the bridge to the bigger picture"
+link bigPicture -> meaning + flipped "the bridge to the bigger picture"
 
 loop B2 "Goals narrow the view" selfDirection goalOrientation bigPicture meaning sacrifice progress confidence
 
@@ -127,7 +127,7 @@ loop B2 "Goals narrow the view" selfDirection goalOrientation bigPicture meaning
 # outside every loop, and presses on them all.
 
 link toughNorm -> emotionExpression - "niet aanstellen, niet zeiken"
-link toughNorm -> visibleComplaints -
+link toughNorm -> visibleComplaints - flipped
 link emotionSuppression -> emotionExpression -
 link emotionExpression -> visibleComplaints +
 
@@ -148,7 +148,7 @@ link ageing -> selfDirection -
 # need the system does not change, so talking stays unsafe. No negative link:
 # reinforcing, in whichever direction it runs.
 
-link conversationalSafety -> openness +
+link conversationalSafety -> openness + flipped
 link openness -> visibleComplaints +
 link visibleComplaints -> preventionUrgency +
 link preventionUrgency -> systemChange +
@@ -161,7 +161,7 @@ loop R4 "What is not seen does not change" conversationalSafety openness visible
 # and premium pressure, and lower pressure leaves room to invest. Two negative
 # links: reinforcing, as a virtuous circle or a vicious one.
 
-link preventionUrgency -> preventionInvestment +
+link preventionUrgency -> preventionInvestment + flipped
 link preventionInvestment -> dropout - delayed
 link dropout -> premiumPressure +
 link premiumPressure -> preventionInvestment - "no room left for prevention"
@@ -176,9 +176,9 @@ loop R5 "Prevention pays for prevention" preventionInvestment dropout premiumPre
 # Showing vulnerability works against the labels. It is a counterforce in the
 # structure, not a remedy this diagram proposes.
 
-link generationalLabels -> youthSelfImage -
-link youthSelfImage -> withdrawal -
-link withdrawal -> generationalLabels + "the label confirmed"
+link generationalLabels -> youthSelfImage - flipped
+link youthSelfImage -> withdrawal - flipped
+link withdrawal -> generationalLabels + flipped "the label confirmed"
 link openness -> vulnerability +
 link vulnerability -> generationalLabels - "kwetsbaarheid inzetten"
 
