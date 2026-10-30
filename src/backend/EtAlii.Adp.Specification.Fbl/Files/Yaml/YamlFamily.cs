@@ -45,7 +45,8 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
         {
             Report(FindingCodes.DuplicateKey, FindingSeverity.Warning, $"The key '{name}' appears again in this mapping; only the first is read.", span);
         }
-        foreach (var entry in AllEntries.OfType<TreeEntry>().Where(e => !e.IsRoot)) entry.LineSpan = LineSpanOf(entry);
+        // An entry inside a flow collection has no line span of its own, whatever lines it stands on (FBL 0.10 §4.3).
+        foreach (var entry in AllEntries.OfType<TreeEntry>().Where(e => e is { IsRoot: false, InFlow: false })) entry.LineSpan = LineSpanOf(entry);
     }
 
     /// <summary>Between leaves there is only whitespace, comments, indicators, anchors, tags and document markers.</summary>
@@ -296,6 +297,11 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
             return;
         }
         var value = container.Value;
+        if (value.Style is ValueStyle.FlowSequence or ValueStyle.FlowMapping && !(value is { Style: ValueStyle.FlowSequence, Flow: List<object?> { Count: 0 } } && container.KeySpan is not null))
+        {
+            InsertIntoFlow(plan, request, container, selector);
+            return;
+        }
         if (value.Kind == ValueKind.Sequence)
         {
             var siblings = value.Entries;
@@ -333,6 +339,31 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
         Plan.Refuse($"The {selector} of this file is not a list a {rule.Type} can be added to.");
     }
 
+    /// <summary>
+    /// An insert into a flow collection that holds something (FBL 0.10 §6.2, Flow sequences): a one-line flow sequence
+    /// takes the new item inside it, after its last item and a <c>, </c>, written in flow form; a flow sequence over
+    /// several lines and a flow mapping take no insert, and the add is refused with a reason.
+    /// </summary>
+    private void InsertIntoFlow(Plan plan, InsertRequest request, TreeEntry container, string selector)
+    {
+        var value = container.Value;
+        var name = selector.TrimEnd('/')[(selector.TrimEnd('/').LastIndexOf('/') + 1)..];
+        if (value.Style == ValueStyle.FlowMapping) Plan.Refuse($"The {name} are written as a flow mapping, which takes no insert.");
+        if (Text.LineIndexAt(value.Span.Start) != Text.LineIndexAt(value.Span.End - 1)) Plan.Refuse($"The {name} list is written over several lines, so nothing can be added inside it.");
+        if (request.Rule.Insert!.Skeleton is not null) Plan.Refuse($"A new {request.Rule.Type} has a skeleton, which cannot be written inside the one-line {name} list.");
+        var item = "{" + string.Join(", ", InsertValues(request).Select(FlowMember)) + "}";
+        var offset = value.Entries[^1].Own.End;
+        plan.Add(SpliceOperation.InsertEntry, offset, offset, ", " + item);
+    }
+
+    /// <summary>A key of a new item of a flow sequence and its value in flow form: a level of child as a flow mapping of its members.</summary>
+    private string FlowMember(InsertedValue inserted)
+    {
+        if (inserted.Members is { } members) return $"{FlowItem(inserted.Key)}: {{{string.Join(", ", members.Select(FlowMember))}}}";
+        var value = inserted.Binding is null ? inserted.Value : NewText.Wire(inserted.Binding, inserted.Value, null) ?? inserted.Value;
+        return $"{FlowItem(inserted.Key)}: {(value is string text ? FlowItem(text) : Scalar(value, null, inserted.Binding, 0))}";
+    }
+
     private static string ContainerOf(string? at)
     {
         if (at is null) return "/";
@@ -354,7 +385,7 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
     {
         if (insert.Create is not { } create)
         {
-            Plan.Refuse($"The file has no {selector.TrimStart('/')} to add to.");
+            Plan.Refuse(insert.ContainerRefusal ?? $"The file has no {selector.TrimStart('/')} to add to.");
             return;
         }
         var name = selector.TrimEnd('/')[(selector.TrimEnd('/').LastIndexOf('/') + 1)..];
@@ -511,10 +542,7 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
     {
         var rule = request.Rule;
         var lines = new List<string>();
-        foreach ((string key, object? value, AttributeBinding? binding) in InsertValues(request))
-        {
-            lines.Add($"{key}: {Scalar(binding is null ? value : NewText.Wire(binding, value, null) ?? value, null, binding, 0)}");
-        }
+        foreach (var inserted in InsertValues(request)) AddLines(lines, inserted, 0);
         if (rule.Insert!.Skeleton is { } skeleton)
         {
             var rendered = NewText.Render(skeleton, name => request.Values.TryGetValue(name, out var v) && v is not null ? NewText.Plain(v, rule.Attribute(name)) : name == "id" ? request.Id : null);
@@ -523,12 +551,34 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
         return lines;
     }
 
+    /// <summary>
+    /// The lines of one key of a new entry, <paramref name="depth"/> steps under the entry's keys: a key with its value,
+    /// or a level of child (FBL 0.10 §6.2), its key with what its mapping holds one step deeper below it.
+    /// </summary>
+    private void AddLines(List<string> lines, InsertedValue inserted, int depth)
+    {
+        var indent = Indentation(depth * Step);
+        if (inserted.Members is { } members)
+        {
+            lines.Add($"{indent}{inserted.Key}:");
+            foreach (var member in members) AddLines(lines, member, depth + 1);
+            return;
+        }
+        var value = inserted.Binding is null ? inserted.Value : NewText.Wire(inserted.Binding, inserted.Value, null) ?? inserted.Value;
+        lines.Add($"{indent}{inserted.Key}: {Scalar(value, null, inserted.Binding, depth * Step)}");
+    }
+
     public override void Remove(Plan plan, ReadElement element, IReadOnlySet<ReadElement> removed)
     {
         var entry = (TreeEntry)element.Entry;
         if (entry.IsRoot)
         {
             Plan.Refuse($"The whole {Binding.Name} file cannot be removed.");
+            return;
+        }
+        if (entry.InFlow)
+        {
+            RemoveFromFlow(plan, element, entry);
             return;
         }
         var span = entry.LineSpan ?? entry.Own;
@@ -548,6 +598,39 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
                 removed.Any(r => r.Entry == other) || (other.Value.Entries.Count > 0 && other.Value.Entries.All(gone.Contains)));
         }
         plan.Add(SpliceOperation.RemoveEntry, WithoutFinalNewline(span, removed), "");
+    }
+
+    /// <summary>
+    /// A removal of an item of a flow sequence (FBL 0.10 §6.2, Flow sequences): the item and one separator, the
+    /// <c>,</c> after it and the whitespace up to the next item, or, for the last item, the <c>,</c> before it and the
+    /// whitespace between. The only item is removed alone, leaving <c>[]</c>, and under <c>remove-when-empty</c> its
+    /// container goes with it, as the key's line before the item and after it, around the item's removal.
+    /// </summary>
+    private void RemoveFromFlow(Plan plan, ReadElement element, TreeEntry entry)
+    {
+        if (entry.Parent is not TreeEntry { Value.Style: ValueStyle.FlowSequence } container)
+        {
+            Plan.Refuse($"This {element.Rule.Type} is written inside a flow collection it cannot be taken out of.");
+            return;
+        }
+        var siblings = container.Value.Entries;
+        var index = siblings.IndexOf(entry);
+        if (siblings.Count == 1)
+        {
+            if (element.Rule.Remove is { RemoveContainerWhenEmpty: true } && container.LineSpan is { } line)
+            {
+                plan.Add(SpliceOperation.RemoveContainer, line.Start, entry.Own.Start, "");
+                plan.Add(SpliceOperation.RemoveEntry, entry.Own, "");
+                plan.Add(SpliceOperation.RemoveContainer, entry.Own.End, line.End, "");
+                return;
+            }
+            plan.Add(SpliceOperation.RemoveEntry, entry.Own, "");
+            return;
+        }
+        var span = index == siblings.Count - 1
+            ? entry.Own with { Start = siblings[index - 1].Separator }
+            : entry.Own with { End = siblings[index + 1].Own.Start };
+        plan.Add(SpliceOperation.RemoveEntry, span, "");
     }
 
     /// <summary>

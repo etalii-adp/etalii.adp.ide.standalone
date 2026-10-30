@@ -102,6 +102,8 @@ internal sealed class BodyReading
 
     public static BodyReading Read(byte[] bytes, FblBinding binding, FblOptions options)
     {
+        // A reading of an origin is read by the rules that origin admits, with its own resource capture (FBL 0.10 §5.1, §8.2).
+        binding = binding.ForOrigin(options.Origin);
         var text = new BodyText(bytes);
         var family = CreateFamily(text, binding, options);
         var reading = new BodyReading(text, binding, options, family);
@@ -129,6 +131,7 @@ internal sealed class BodyReading
         reading.Claim();
         reading._isClaiming = false;
         reading._claiming = null;
+        reading.EmptyWhenTheResourceIsMissing();
         reading.Resolve();
         if (options.ReportUnboundKeys) reading.ReportUnboundKeys();
         family.AfterRead(reading.ClaimedBy);
@@ -205,7 +208,7 @@ internal sealed class BodyReading
         {
             if (rule.At == at)
             {
-                foreach (var slot in rule.Attributes.Select(Slot? (attribute) => attribute.Value).Append(rule.Id?.From).OfType<Slot>())
+                foreach (var slot in rule.Attributes.SelectMany(attribute => new[] { attribute.Value, attribute.Value.Secondary }).Append(rule.Id?.From).OfType<Slot>())
                 {
                     if (slot.Child is { } child) Step(child);
                     else if (slot.Kind is SlotKind.Key(var key)) keys.Add(key);
@@ -344,6 +347,31 @@ internal sealed class BodyReading
         _resource ??= Options.Resource ?? value;
         return value == _resource;
     }
+
+    /// <summary>
+    /// A <c>resource</c> header naming a resource the body does not hold opens the reading empty (FBL 0.10 §8.2): the
+    /// body is not unreadable, and the finding <c>fbl.missing-resource</c> is the registration's, at its header's line.
+    /// </summary>
+    private void EmptyWhenTheResourceIsMissing()
+    {
+        if (Binding.Registration.ResourceCapture is null || Options.Resource is not { } named || Resources.Contains(named)) return;
+        foreach (var element in Elements)
+        {
+            _claims.Remove(element.Entry);
+            _byEntry.Remove(element.Entry);
+        }
+        Elements.Clear();
+    }
+
+    /// <summary>
+    /// The value the reading's resource capture is bound to (FBL §8.2), by the capture's name: the resource the
+    /// registration names, else the first in document order; empty when the reading selects none. A container of a
+    /// new entry resolves its <c>{capture}</c> segment by it when no element of the reading bound it.
+    /// </summary>
+    public IReadOnlyDictionary<string, string> ResourceCaptures =>
+        Binding.Registration.ResourceCapture is { } capture && (Options.Resource ?? _resource) is { } selected
+            ? new Dictionary<string, string>(StringComparer.Ordinal) { [capture] = selected }
+            : new Dictionary<string, string>(StringComparer.Ordinal);
 
     // ---- CEL ----
 
@@ -560,8 +588,18 @@ internal sealed class BodyReading
             });
             if (overriding.Present) return overriding with { Node = new OverrideNode(overriding.Node) };
         }
+        if (slot is AttributeBinding { Secondary: { } secondary } && Family.Read(candidate, slot) is { Present: false } own)
+        {
+            // FBL 0.10 §5.2: the secondary is read only when the attribute's own slot is absent.
+            var second = Family.Read(candidate, SecondarySlot(secondary));
+            return second.Present ? second with { Own = own } : own;
+        }
         return Family.Read(candidate, slot);
     }
+
+    /// <summary>An attribute's <c>secondary</c> as a slot of its own (FBL 0.10 §5.2), read as it is written, and removed, never given a value, when the attribute is written.</summary>
+    internal static AttributeBinding SecondarySlot(Slot secondary) =>
+        new() { Kind = secondary.Kind, Child = secondary.Child, Word = secondary.Word, Empty = EmptyRule.Remove };
 
     // ---- ids, references, containment (FBL §5.3 to §5.5) ----
 

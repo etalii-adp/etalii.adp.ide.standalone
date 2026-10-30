@@ -17,7 +17,7 @@ namespace EtAlii.Adp.Specification.Fbl.Tests.Conformance;
 public class ConformanceFixturesTests
 {
     /// <summary>The number of fixtures vendored: fewer means the enumeration broke.</summary>
-    private const int MinimumFixtures = 23;
+    private const int MinimumFixtures = 47;
 
     /// <summary>The fixtures copied in etalii.adp's own layout, beside the Knowledge designer's.</summary>
     private const string AdpFixtures = "etalii.adp/specifications/fbl/fixtures";
@@ -71,14 +71,17 @@ public class ConformanceFixturesTests
     /// A fixture's binding reference, as this corpus holds it. A fixture of a tool type names its
     /// binding where etalii.adp keeps it, under <c>definitions/</c>, a folder this corpus does not
     /// have: the binding is vendored beside the others, and a reference whose file is not where it
-    /// points is read as naming the file of that name here. The fixture itself is never edited.
+    /// points is read as naming the file of that name here, at the corpus's root. The fixture itself is
+    /// never edited. The fixtures of FBL 0.10's Databricks readings, one folder deeper than their
+    /// binding, name it one <c>..</c> too far, and are read so too.
     /// </summary>
     private static string BindingReference(string reference, string folder)
     {
         var hash = reference.LastIndexOf('#');
         var file = reference[..hash];
         if (file.Length == 0 || File.Exists(Path.GetFullPath(Path.Combine(folder, file)))) return reference;
-        return $"../../{Path.GetFileName(file)}{reference[hash..]}";
+        var vendored = Path.Combine(Repository.Conformance, Path.GetFileName(file));
+        return Path.GetRelativePath(folder, vendored).Replace('\\', '/') + reference[hash..];
     }
 
     [Theory]
@@ -125,12 +128,13 @@ public class ConformanceFixturesTests
         Assert.DoesNotContain(problems, p => p.Severity == LoadSeverity.Error);
         var inputName = root.GetProperty("input").GetString()!;
         var input = File.ReadAllBytes(Path.Combine(folder, inputName));
-        var subject = Subject.Open(input, inputName, binding, folder);
+        var origin = Template(root, binding, input, name);
+        var subject = Subject.Open(input, inputName, binding, folder, origin);
         var reference = BindingReference(root.GetProperty("binding").GetString()!, folder);
         var bindingText = File.ReadAllText(Path.GetFullPath(Path.Combine(folder, reference[..reference.LastIndexOf('#')])));
 
         // Act and assert: the reading.
-        if (root.TryGetProperty("read", out var read)) AssertRead(subject, read, name);
+        if (root.TryGetProperty("read", out var read)) AssertRead(subject, read, name, binding);
 
         // Act and assert: every step.
         var index = 0;
@@ -141,6 +145,7 @@ public class ConformanceFixturesTests
             var before = subject.Bytes;
             var expected = FixtureEdits.Splices(step);
             IReadOnlyList<Splice> actual;
+            subject.Expect(step, label);
             if (step.TryGetProperty("undo", out var undo) && undo.GetBoolean())
             {
                 actual = subject.Undo(label);
@@ -172,8 +177,12 @@ public class ConformanceFixturesTests
             }
             Assert.True(expected.SequenceEqual(actual), $"{label}: expected splices\n  {string.Join("\n  ", expected)}\nbut planned\n  {string.Join("\n  ", actual)}");
 
-            // A refused step may leave out the document it leaves, which is the one before it, as compared above.
-            if (step.TryGetProperty("refused", out _) && !step.TryGetProperty("expect", out _) && !step.TryGetProperty("expectFile", out _)) continue;
+            // FBL 0.10: the bytes after the step of each file beside the input that its splices name.
+            if (step.TryGetProperty("expectFiles", out var files)) subject.AssertFiles(files, label);
+
+            // A refused step may leave out the document it leaves, which is the one before it, as compared above; and a
+            // step whose splices are the body's a registration opens states that body's bytes in expectFiles alone.
+            if (!step.TryGetProperty("expect", out _) && !step.TryGetProperty("expectFile", out _)) continue;
             var expect = step.TryGetProperty("expect", out var text)
                 ? Encoding.UTF8.GetBytes(text.GetString()!)
                 : File.ReadAllBytes(Path.Combine(folder, step.GetProperty("expectFile").GetString()!));
@@ -223,12 +232,40 @@ public class ConformanceFixturesTests
         Assert.Equal(input, subject.Bytes);
     }
 
-    private static void AssertRead(Subject subject, JsonElement read, string name)
+    /// <summary>
+    /// A fixture's <c>template</c> (FBL 0.10 §15.3): its input is the new document the binding's template gives for that
+    /// file name and origin, written by the library and compared byte for byte, and it is read as that origin's reading.
+    /// Null, the binding's every rule, for a fixture without one.
+    /// </summary>
+    private static string? Template(JsonElement root, FblBinding binding, byte[] input, string name)
+    {
+        if (!root.TryGetProperty("template", out var template)) return null;
+        var origin = template.GetProperty("origin").GetString()!;
+        var written = Fbl.Routing.TemplateWriter.Produce(binding, origin, template.GetProperty("name").GetString()!, rule => throw new InvalidOperationException($"{name}: a template stated by a fixture makes no id ({rule})."));
+        Assert.True(written is not null && written.AsSpan().SequenceEqual(input), $"{name}: the input is not what the binding's template writes for {template.GetRawText()}.");
+        return origin;
+    }
+
+    private static void AssertRead(Subject subject, JsonElement read, string name, FblBinding binding)
     {
         var model = subject.Model!;
+        var documentType = NaturalIds.DocumentType(binding.Name);
         if (read.TryGetProperty("unreadable", out var unreadable)) Assert.Equal(unreadable.GetBoolean(), model.Unreadable);
+        if (documentType is not null && read.TryGetProperty("document", out var document))
+        {
+            // FBL 0.7 §15.3: the attributes of the document, the element of the type the tool type maps as the diagram.
+            var diagram = model.Elements.FirstOrDefault(element => element.Type == documentType);
+            Assert.True(diagram is not null, $"{name}: no {documentType} was read as the document.");
+            if (document.TryGetProperty("attributes", out var attributes)) AssertAttributes(diagram, attributes, name);
+        }
         if (read.TryGetProperty("elements", out var elements))
         {
+            // A fixture that lists no element says the reading has none but the document (FBL 0.7 §15.3).
+            if (elements.GetArrayLength() == 0)
+            {
+                var read0 = model.Elements.Where(element => element.Type != documentType).ToList();
+                Assert.True(read0.Count == 0, $"{name}: the fixture expects no element; read: {string.Join(", ", read0.Select(e => $"{e.Id} ({e.Type})"))}.");
+            }
             foreach (var element in elements.EnumerateArray())
             {
                 var id = element.GetProperty("id").GetString()!;
@@ -339,33 +376,63 @@ public class ConformanceFixturesTests
             siblings.IndexOf(sibling) is var at and >= 0 ? at : throw new InvalidOperationException($"The position names '{sibling}', which is no sibling here.");
     }
 
-    /// <summary>A fixture's subject: a body read through its binding, or a registration (an <c>.adp</c> input).</summary>
+    /// <summary>
+    /// A fixture's subject: a body read through its binding, or a registration (an <c>.adp</c> input). A registration whose
+    /// body is beside it opens that body as the reading of its origin, selecting its <c>resource</c> (FBL 0.10 §8.2, §15.3):
+    /// a change of the model is that body's, and a placement or a setting the registration's.
+    /// </summary>
     private sealed class Subject
     {
         private OpenBody? _body;
         private OpenRegistration? _registration;
         private FblBinding? _binding;
 
+        /// <summary>The path of the body a registration opens, as a step's splices name it in <c>file</c>; null for a body input or a registration alone.</summary>
+        private string? _bodyName;
+
+        /// <summary>The input's folder, which the names of <c>expectFiles</c> are relative to.</summary>
+        private string _folder = "";
+
+        /// <summary>Which file each edit that can be undone wrote, and each that can be redone: true for the body a registration opens.</summary>
+        private readonly Stack<bool> _done = new();
+        private readonly Stack<bool> _undone = new();
+
         /// <summary>A registration's reading: the elements of its body and the findings of both (FBL §8.1, §8.5).</summary>
         private FblModel? Read { get; set; }
 
-        public static Subject Open(byte[] input, string name, FblBinding binding, string folder) =>
+        public static Subject Open(byte[] input, string name, FblBinding binding, string folder, string? origin = null) =>
             name.EndsWith(".adp", StringComparison.OrdinalIgnoreCase)
                 ? Registration(input, name, binding, folder)
-                : new Subject { _binding = binding, _body = OpenBody.Open(input, binding, new FblOptions { FileName = name, DeriveId = NaturalIds.For(binding.Name), TimeAttributes = NaturalIds.TimeAttributes(binding.Name), AttributeType = AttributeTypes(binding.Name) }) };
+                : new Subject { _binding = binding, _folder = folder, _body = OpenBody.Open(input, binding, Options(binding, name, origin, null)) };
+
+        /// <summary>The options a fixture's body is read with: the ids, times and types of its tool type, which a binding does not carry, and its reading.</summary>
+        private static FblOptions Options(FblBinding binding, string name, string? origin, string? resource) => new()
+        {
+            FileName = name,
+            DeriveId = NaturalIds.For(binding.Name),
+            TimeAttributes = NaturalIds.TimeAttributes(binding.Name),
+            AttributeType = AttributeTypes(binding.Name),
+            Origin = origin,
+            Resource = resource,
+        };
 
         /// <summary>
         /// A registration opened through its binding (FBL 0.7 §8.1). When its body is beside it, the body is read too, as
-        /// the document the registration opens: its elements are the reading's, and the ids the registration's stale
-        /// entries are told by (FBL §8.5); the findings are the body's and the registration's.
+        /// the document the registration opens, the reading of the registration's origin that selects its resource (FBL
+        /// 0.10 §8.2): its elements are the reading's, and the ids the registration's stale entries are told by (FBL §8.5);
+        /// the findings are the body's and the registration's, a resource the body does not hold among them.
         /// </summary>
         private static Subject Registration(byte[] input, string name, FblBinding binding, string folder)
         {
             var registration = OpenRegistration.Open(input, binding);
-            var subject = new Subject { _registration = registration };
+            var subject = new Subject { _registration = registration, _binding = binding, _folder = folder };
             if (registration.Document.Body is not { } bodyName || !File.Exists(Path.Combine(folder, bodyName))) return subject;
-            var body = OpenBody.Open(File.ReadAllBytes(Path.Combine(folder, bodyName)), binding, new FblOptions { FileName = bodyName });
+            var origin = binding.Claims.Origins.Contains(registration.Document.Origin) ? registration.Document.Origin : null;
+            var body = OpenBody.Open(File.ReadAllBytes(Path.Combine(folder, bodyName)), binding, Options(binding, bodyName, origin, registration.Document.Resource));
             registration.KnownIds = body.Model.Elements.Select(element => element.Id).ToHashSet(StringComparer.Ordinal);
+            if (binding.ForOrigin(origin).Registration.ResourceCapture is not null) registration.KnownResources = body.Model.Resources;
+            subject._body = body;
+            subject._bodyName = bodyName;
             subject.Read = body.Model with { Findings = [.. body.Model.Findings, .. registration.Findings(name)] };
             return subject;
         }
@@ -373,14 +440,55 @@ public class ConformanceFixturesTests
         /// <summary>The attribute types of a binding's tool type, which a binding does not carry (FBL 0.5 section 5.2): the timeline's, from its specification.</summary>
         private static Func<string, string, string?>? AttributeTypes(string binding) => binding == "timeline" ? TimelineTypes.Of : null;
 
-        public byte[] Bytes => _body?.Bytes ?? _registration!.Bytes;
+        /// <summary>Whether the input is a registration that opened its body, whose model edits go to that body.</summary>
+        private bool OpensItsBody => _registration is not null && _body is not null;
 
-        public FblModel? Model => _body?.Model ?? Read;
+        /// <summary>The input's bytes: the body, or the registration.</summary>
+        public byte[] Bytes => _registration?.Bytes ?? _body!.Bytes;
+
+        public FblModel? Model => _registration is null ? _body?.Model : Read is null ? null : _body!.Model with { Findings = Read.Findings };
+
+        /// <summary>
+        /// That every splice a step lists names the file the step writes (FBL 0.10 §15.3): the body a registration opens by
+        /// its <c>file</c>, and the input by none.
+        /// </summary>
+        public void Expect(JsonElement step, string label)
+        {
+            var writesBody = step.TryGetProperty("undo", out var undo) && undo.GetBoolean() ? _done.Count > 0 && _done.Peek()
+                : step.TryGetProperty("redo", out var redo) && redo.GetBoolean() ? _undone.Count > 0 && _undone.Peek()
+                : OpensItsBody && step.TryGetProperty("edit", out var edit) && IsBodyEdit(edit);
+            foreach (var splice in step.GetProperty("splices").EnumerateArray())
+            {
+                var file = splice.TryGetProperty("file", out var named) ? named.GetString() : null;
+                Assert.True(writesBody ? file == _bodyName : file is null, $"{label}: a splice names the file '{file}', where the step writes {(writesBody ? $"'{_bodyName}'" : "the input")}.");
+            }
+        }
+
+        /// <summary>The bytes of each file <c>expectFiles</c> names after a step: the body a registration opens is the one file beside it this runner writes.</summary>
+        public void AssertFiles(JsonElement files, string label)
+        {
+            foreach (var file in files.EnumerateObject())
+            {
+                Assert.True(_bodyName is not null && Path.GetFullPath(Path.Combine(_folder, file.Name)) == Path.GetFullPath(Path.Combine(_folder, _bodyName)), $"{label}: expectFiles names '{file.Name}', which is not the body the input opens.");
+                var expected = Encoding.UTF8.GetBytes(file.Value.GetString()!);
+                Assert.True(expected.AsSpan().SequenceEqual(_body!.Bytes), $"{label}: '{file.Name}' differs from expectFiles.\nExpected:\n{file.Value.GetString()}\nActual:\n{Encoding.UTF8.GetString(_body.Bytes)}");
+            }
+        }
+
+        /// <summary>A change of the model, which a registration that opened its body hands that body; a placement and a setting are the registration's.</summary>
+        private static bool IsBodyEdit(JsonElement edit) => !edit.TryGetProperty("place", out _) && !edit.TryGetProperty("setting", out _);
 
         public PlanResult Change(ModelChange change)
         {
-            if (_body is null) return _registration!.Change(change);
-            return change is ModelChange.Remove remove && Unsets(remove.Id) is { Count: > 0 } unsets ? RemoveWith(remove, unsets) : _body.Change(change);
+            var toBody = _registration is null || (OpensItsBody && change is not (ModelChange.Place or ModelChange.Setting or ModelChange.Identify));
+            var result = !toBody ? _registration!.Change(change)
+                : change is ModelChange.Remove remove && Unsets(remove.Id) is { Count: > 0 } unsets ? RemoveWith(remove, unsets) : _body!.Change(change);
+            if (result is PlanResult.Planned { Edit.Splices.Count: > 0 })
+            {
+                _done.Push(toBody && _registration is not null);
+                _undone.Clear();
+            }
+            return result;
         }
 
         /// <summary>
@@ -422,9 +530,19 @@ public class ConformanceFixturesTests
             return new PlanResult.Planned(edit);
         }
 
-        public IReadOnlyList<Splice> Undo(string label) => Done(_body is not null ? _body.Undo() : _registration!.Undo(), label);
+        public IReadOnlyList<Splice> Undo(string label)
+        {
+            var toBody = _done.Count > 0 ? _done.Pop() : _registration is null;
+            _undone.Push(toBody);
+            return Done(toBody || _registration is null ? _body!.Undo() : _registration.Undo(), label);
+        }
 
-        public IReadOnlyList<Splice> Redo(string label) => Done(_body is not null ? _body.Redo() : _registration!.Redo(), label);
+        public IReadOnlyList<Splice> Redo(string label)
+        {
+            var toBody = _undone.Count > 0 ? _undone.Pop() : _registration is null;
+            _done.Push(toBody);
+            return Done(toBody || _registration is null ? _body!.Redo() : _registration.Redo(), label);
+        }
 
         private static IReadOnlyList<Splice> Done(UndoResult result, string label)
         {

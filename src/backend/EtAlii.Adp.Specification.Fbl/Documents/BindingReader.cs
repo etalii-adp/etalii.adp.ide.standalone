@@ -200,6 +200,7 @@ internal static partial class BindingReader
         Remove = Object(json, "remove", pointer, "A rule's remove", problems) is { } r ? ReadRemove(r) : null,
         SnapshotUndo = JsonProperties.String(json, "undo") == "snapshot",
         ReadOnly = ReadOnly(json),
+        Origins = OptionalStrings(json, "origins"),
     };
 
     private static IdBinding? ReadId(JsonElement json, string pointer, List<LoadDiagnostic> problems)
@@ -233,7 +234,16 @@ internal static partial class BindingReader
         Skeleton = JsonProperties.String(json, "skeleton"),
         When = JsonProperties.String(json, "when"),
         Constant = Object(json, "constant", pointer, "An insert's constant", problems) is { } constant ? ReadConstant(constant, pointer + "/constant", problems) : null,
+        WhenRefusal = Refusal(json, "when", pointer, problems),
+        ContainerRefusal = Refusal(json, "container", pointer, problems),
     };
+
+    /// <summary>
+    /// The sentence of <c>refusals.<paramref name="name"/></c> (FBL 0.10 §5.2, §6.2): a LocalizedText, in English where
+    /// it gives one; null when the binding gives none, and the host words the refusal.
+    /// </summary>
+    private static string? Refusal(JsonElement json, string name, string pointer, List<LoadDiagnostic> problems) =>
+        Object(json, "refusals", pointer, "A refusals", problems) is { } refusals ? Localized(refusals, name, pointer + "/refusals", problems) : null;
 
     /// <summary>An insert's constant (FBL 0.8 §6.2): each member a scalar, kept in member order; a member that is not one is reported at its pointer.</summary>
     private static List<KeyValuePair<string, object?>> ReadConstant(JsonElement json, string pointer, List<LoadDiagnostic> problems)
@@ -343,6 +353,9 @@ internal static partial class BindingReader
             Fallback = json.TryGetProperty("fallback", out var f) && f.ValueKind == JsonValueKind.Object
                 ? new FallbackBinding(f.TryGetProperty("value", out var fv) ? fv.Clone() : default, !f.TryGetProperty("report", out var report) || report.ValueKind != JsonValueKind.False)
                 : null,
+            Secondary = Object(json, "secondary", pointer, "An attribute's secondary", problems) is { } s ? ReadSlot(s, pointer + "/secondary", problems) : null,
+            EmptyRefusal = Refusal(json, "empty", pointer, problems),
+            AbsentRefusal = Refusal(json, "absent", pointer, problems),
         };
     }
 
@@ -398,8 +411,26 @@ internal static partial class BindingReader
             CreateOnFirstPlacement = JsonProperties.Bool(r, "createOnFirstPlacement"),
             Blocks = ReadBlocks(r, pointer + "/registration", problems),
             ResourceCapture = Object(r, "resource", pointer + "/registration", "A registration's resource", problems) is { } res ? JsonProperties.String(res, "capture") : null,
+            ResourceByOrigin = Object(r, "resource", pointer + "/registration", "A registration's resource", problems) is { } resource ? ReadByOrigin(resource, pointer + "/registration/resource", problems) : null,
             LegacyLayout = JsonProperties.String(r, "legacyLayout"),
         };
+    }
+
+    /// <summary>
+    /// <c>registration.resource.byOrigin</c> (FBL 0.10 §8.2): per origin, the capture its reading selects by, or null
+    /// for one that selects none; null when the resource gives no <c>byOrigin</c>.
+    /// </summary>
+    private static Dictionary<string, string?>? ReadByOrigin(JsonElement resource, string pointer, List<LoadDiagnostic> problems)
+    {
+        if (Object(resource, "byOrigin", pointer, "A resource's byOrigin", problems) is not { } byOrigin) return null;
+        var captures = new Dictionary<string, string?>(StringComparer.Ordinal);
+        foreach (var origin in byOrigin.EnumerateObject())
+        {
+            if (origin.Value.ValueKind == JsonValueKind.Null) captures[origin.Name] = null;
+            else if (origin.Value.ValueKind == JsonValueKind.Object && JsonProperties.String(origin.Value, "capture") is { } capture) captures[origin.Name] = capture;
+            else problems.Add(new LoadDiagnostic(JsonPointer.Append(pointer + "/byOrigin", origin.Name), LoadSeverity.Error, "A byOrigin entry is null or an object naming a capture."));
+        }
+        return captures;
     }
 
     /// <summary>A Name (FBL §2.2).</summary>

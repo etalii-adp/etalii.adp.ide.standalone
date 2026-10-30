@@ -144,6 +144,12 @@ public sealed class FblOptions
     public string? Resource { get; init; }
 
     /// <summary>
+    /// The origin of the reading (FBL 0.10 §5.1, §9.1): the tool type the body is read as, which decides the rules it
+    /// is read by and the resource capture it selects by (§8.2). Null reads by every rule, as before 0.10.
+    /// </summary>
+    public string? Origin { get; init; }
+
+    /// <summary>
     /// For a folder subject, the entries the host adds beside the files the file rules select, each a
     /// path relative to the folder and handed to the plugin with no bytes (<see cref="Plugins.PluginReadRequest.SupplementaryEntries"/>);
     /// it is given the folder's full path. This is outside FBL 0.2, whose file rules select files only:
@@ -154,4 +160,22 @@ public sealed class FblOptions
 
     /// <summary>The registration's <c>identities</c> block, for rules with <c>id.sidecar</c>.</summary>
     public IReadOnlyDictionary<string, string> Identities { get; init; } = new Dictionary<string, string>();
+
+    /// <summary>These options for the reading of another origin and resource of the same body (FBL 0.10 §9.1): everything else as it is.</summary>
+    internal FblOptions With(string? origin, string? resource) => new()
+    {
+        FileName = FileName,
+        MaxBodyBytes = MaxBodyBytes,
+        DeriveId = DeriveId,
+        AttributeType = AttributeType,
+        Many = Many,
+        UnreadableTypes = UnreadableTypes,
+        TimeAttributes = TimeAttributes,
+        ReportUnboundKeys = ReportUnboundKeys,
+        RegistrationHeaders = RegistrationHeaders,
+        Resource = resource,
+        Origin = origin,
+        SupplementaryEntries = SupplementaryEntries,
+        Identities = Identities,
+    };
 }

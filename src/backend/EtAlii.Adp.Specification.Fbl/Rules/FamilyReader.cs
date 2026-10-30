@@ -76,6 +76,12 @@ internal sealed record SlotRead(object? Value, Span? Span, bool Present, bool Wr
     public string? Style { get; init; }
 
     /// <summary>
+    /// For a value read from an attribute's <c>secondary</c> slot (FBL 0.10 §5.2): its own slot, which is absent and
+    /// is where writing the attribute writes. Null for a value read from its own slot.
+    /// </summary>
+    public SlotRead? Own { get; init; }
+
+    /// <summary>
     /// The written text of the slot (FBL §4.1.5): what the author wrote for a true scalar, otherwise
     /// the value as text, which is already the written text for the xml, lines and blocks families.
     /// </summary>
@@ -312,6 +318,7 @@ internal abstract class FamilyReader(BodyText text, FblBinding binding, FblOptio
         var rule = request.Rule;
         var keys = rule.Insert!.Keys;
         var constant = rule.Insert.Constant ?? [];
+        var levels = ChildLevels(request);
         foreach (var key in rule.KeyOrder(null))
         {
             if (keys.Count > 0 && !keys.Contains(key)) continue;
@@ -323,10 +330,48 @@ internal abstract class FamilyReader(BodyText text, FblBinding binding, FblOptio
             }
             if (InsertValue(request, key) is { } value) yield return value;
         }
+
+        // FBL 0.10 §6.2: a level of child that keys names at its place there, every other after the entry's other keys
+        // and before its constants.
+        foreach (var key in keys)
+        {
+            if (levels.FirstOrDefault(level => level.Key == key) is { } named) yield return named;
+        }
+        foreach (var level in levels.Where(level => !keys.Contains(level.Key))) yield return level;
         foreach ((string key, object? value) in constant)
         {
             if (!keys.Contains(key)) yield return new InsertedValue(key, value, null);
         }
+    }
+
+    /// <summary>
+    /// The levels of <c>child</c> a new entry gets for the attributes bound under them that the add gives a value
+    /// (FBL 0.10 §6.2), outermost first: each a key with the members of its mapping, the keys of its attributes and
+    /// the deeper levels, in the order of the attributes' bindings. An empty value under <c>empty: "remove"</c> gives
+    /// none, as at the top level, and a level a <c>*</c> or a capture names cannot be written, so the add is refused.
+    /// </summary>
+    private static List<InsertedValue> ChildLevels(InsertRequest request)
+    {
+        var rule = request.Rule;
+        var levels = new List<InsertedValue>();
+        foreach ((string name, AttributeBinding binding) in rule.Attributes)
+        {
+            if (binding is not { Child: { } child, Kind: SlotKind.Key(var key) }) continue;
+            if (!request.Values.TryGetValue(name, out var value) || (NewText.IsEmpty(value) && binding.Empty == EmptyRule.Remove)) continue;
+            var members = levels;
+            foreach (var segment in child.Trim('/').Split('/'))
+            {
+                if (segment.Length == 0 || segment.Contains('*', StringComparison.Ordinal) || segment.StartsWith('{')) Plan.Refuse($"A new {rule.Type} cannot write its {name} under {child}.");
+                if (members.FirstOrDefault(existing => existing.Key == segment && existing.Members is not null) is not { } level)
+                {
+                    level = new InsertedValue(segment, null, null) { Members = [] };
+                    members.Add(level);
+                }
+                members = level.Members!;
+            }
+            members.Add(new InsertedValue(key, value, binding));
+        }
+        return levels;
     }
 
     private static InsertedValue? InsertValue(InsertRequest request, string key)
@@ -459,7 +504,11 @@ internal abstract class FamilyReader(BodyText text, FblBinding binding, FblOptio
 internal sealed record SlotChange(string Attribute, AttributeBinding Binding, Rule Rule, SlotRead Read, object? Value, bool IsEmpty);
 
 /// <summary>One key of a new entry and the value written under it, with the attribute binding it comes from; none for an id, a source or a target.</summary>
-internal sealed record InsertedValue(string Key, object? Value, AttributeBinding? Binding);
+internal sealed record InsertedValue(string Key, object? Value, AttributeBinding? Binding)
+{
+    /// <summary>For a level of <c>child</c> (FBL 0.10 §6.2): what its mapping holds, in order; null for a key with a value.</summary>
+    public List<InsertedValue>? Members { get; init; }
+}
 
 /// <summary>What adding an element or relation needs to know (FBL §6.2); <paramref name="Index"/> is the position among its siblings, for a family that <see cref="FamilyReader.PlacesByPosition"/>.</summary>
 internal sealed record InsertRequest(Rule Rule, string? Id, IReadOnlyDictionary<string, object?> Values, ReadElement? Parent, ReadElement? Source, ReadElement? Target, int? Index = null);
