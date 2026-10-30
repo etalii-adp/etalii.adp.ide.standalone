@@ -1,7 +1,7 @@
 using System.Globalization;
 using EtAlii.Adp.Documents;
 
-namespace EtAlii.Adp.Diagram.Databricks;
+namespace EtAlii.Adp.Diagram.Databricks.Tests.Parity;
 
 /// <summary>
 /// The named splice operations on a job: tasks in and out, edges connected and disconnected,
@@ -13,6 +13,11 @@ namespace EtAlii.Adp.Diagram.Databricks;
 /// a refusal happens <b>before</b> any splice, never write-then-repair, so a refused document is
 /// untouched by construction (Requirement 6.4). A successful splice invalidates the model that
 /// located it; callers re-parse.
+/// <para>
+/// <b>The oracle</b>: the module's hand-written code, moved here as it was, its namespace aside, from the product code when
+/// databricks-disl-fbl task 12 planned every edit through the binding, so that <see cref="DatabricksDerivedOperationsTests"/>
+/// can compare what the commands write with what the module wrote by hand.
+/// </para>
 /// </remarks>
 internal static class JobWriter
 {

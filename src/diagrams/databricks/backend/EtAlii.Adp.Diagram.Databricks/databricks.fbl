@@ -348,8 +348,13 @@
               "readOnly": "The source is edited in the file."
             }
           },
+          "remove": {
+            "cascade": [
+              "dependency"
+            ]
+          },
           "insert": {
-            "place": "after-last",
+            "place": "end",
             "container": "/resources/jobs/{job}/tasks",
             "keys": [
               "task_key",
@@ -357,18 +362,12 @@
               "job_cluster_key",
               "run_if"
             ],
-            "skeleton": "notebook_task:\n  notebook_path: {taskSource}\n",
             "emit": "{ \"task_key\": \"{key}\", \"notebook_task\": { \"notebook_path\": \"{taskSource}\" } }",
             "refusals": {
               "container": "The job has no tasks section to add into.",
               "when": "A task of that type cannot be added to a job."
             },
-            "when": "attributes.taskType == 'notebook'"
-          },
-          "remove": {
-            "cascade": [
-              "dependency"
-            ]
+            "when": "false"
           }
         },
         {
@@ -396,6 +395,46 @@
           }
         },
         {
+          "name": "notebookTask",
+          "type": "Task",
+          "at": "/resources/jobs/{job}/tasks/*",
+          "origins": [
+            "databricks/job"
+          ],
+          "when": "false",
+          "attributes": {
+            "key": {
+              "key": "task_key",
+              "read": "text",
+              "empty": "refuse",
+              "refusals": {
+                "empty": "A task needs a key."
+              }
+            },
+            "taskType": {
+              "value": "'notebook'"
+            },
+            "taskSource": {
+              "key": "notebook_path",
+              "child": "notebook_task",
+              "read": "text"
+            }
+          },
+          "insert": {
+            "place": "end",
+            "container": "/resources/jobs/{job}/tasks",
+            "keys": [
+              "task_key"
+            ],
+            "emit": "{ \"task_key\": \"{key}\", \"notebook_task\": { \"notebook_path\": \"{taskSource}\" } }",
+            "refusals": {
+              "container": "The job has no tasks section to add into.",
+              "when": "A task of that type cannot be added to a job."
+            },
+            "when": "attributes.taskType == 'notebook'"
+          }
+        },
+        {
           "name": "pythonTask",
           "type": "Task",
           "at": "/resources/jobs/{job}/tasks/*",
@@ -416,17 +455,18 @@
               "value": "'python'"
             },
             "taskSource": {
-              "value": "''"
+              "key": "python_file",
+              "child": "spark_python_task",
+              "read": "text"
             }
           },
           "insert": {
-            "place": "after-last",
+            "place": "end",
             "container": "/resources/jobs/{job}/tasks",
             "keys": [
               "task_key"
             ],
             "when": "attributes.taskType == 'python'",
-            "skeleton": "spark_python_task:\n  python_file: {taskSource}\n",
             "emit": "{ \"task_key\": \"{key}\", \"spark_python_task\": { \"python_file\": \"{taskSource}\" } }",
             "refusals": {
               "container": "The job has no tasks section to add into."
@@ -454,17 +494,23 @@
               "value": "'wheel'"
             },
             "taskSource": {
-              "value": "''"
+              "key": "package_name",
+              "child": "python_wheel_task",
+              "read": "text"
+            },
+            "entryPoint": {
+              "key": "entry_point",
+              "child": "python_wheel_task",
+              "read": "text"
             }
           },
           "insert": {
-            "place": "after-last",
+            "place": "end",
             "container": "/resources/jobs/{job}/tasks",
             "keys": [
               "task_key"
             ],
             "when": "attributes.taskType == 'wheel'",
-            "skeleton": "python_wheel_task:\n  package_name: {taskSource}\n  entry_point: main\n",
             "emit": "{ \"task_key\": \"{key}\", \"python_wheel_task\": { \"package_name\": \"{taskSource}\", \"entry_point\": \"main\" } }",
             "refusals": {
               "container": "The job has no tasks section to add into."
@@ -491,18 +537,24 @@
             "taskType": {
               "value": "'sql'"
             },
+            "warehouseId": {
+              "key": "warehouse_id",
+              "child": "sql_task",
+              "read": "text"
+            },
             "taskSource": {
-              "value": "''"
+              "key": "query_id",
+              "child": "sql_task/query",
+              "read": "text"
             }
           },
           "insert": {
-            "place": "after-last",
+            "place": "end",
             "container": "/resources/jobs/{job}/tasks",
             "keys": [
               "task_key"
             ],
             "when": "attributes.taskType == 'sql'",
-            "skeleton": "sql_task:\n  warehouse_id: \"\"\n  query:\n    query_id: {taskSource}\n",
             "emit": "{ \"task_key\": \"{key}\", \"sql_task\": { \"warehouse_id\": \"\", \"query\": { \"query_id\": \"{taskSource}\" } } }",
             "refusals": {
               "container": "The job has no tasks section to add into."
@@ -530,17 +582,18 @@
               "value": "'pipeline'"
             },
             "taskSource": {
-              "value": "''"
+              "key": "pipeline_id",
+              "child": "pipeline_task",
+              "read": "text"
             }
           },
           "insert": {
-            "place": "after-last",
+            "place": "end",
             "container": "/resources/jobs/{job}/tasks",
             "keys": [
               "task_key"
             ],
             "when": "attributes.taskType == 'pipeline'",
-            "skeleton": "pipeline_task:\n  pipeline_id: {taskSource}\n",
             "emit": "{ \"task_key\": \"{key}\", \"pipeline_task\": { \"pipeline_id\": \"{taskSource}\" } }",
             "refusals": {
               "container": "The job has no tasks section to add into."
@@ -568,17 +621,18 @@
               "value": "'run-job'"
             },
             "taskSource": {
-              "value": "''"
+              "key": "job_id",
+              "child": "run_job_task",
+              "read": "text"
             }
           },
           "insert": {
-            "place": "after-last",
+            "place": "end",
             "container": "/resources/jobs/{job}/tasks",
             "keys": [
               "task_key"
             ],
             "when": "attributes.taskType == 'run-job'",
-            "skeleton": "run_job_task:\n  job_id: {taskSource}\n",
             "emit": "{ \"task_key\": \"{key}\", \"run_job_task\": { \"job_id\": \"{taskSource}\" } }",
             "refusals": {
               "container": "The job has no tasks section to add into."
@@ -605,18 +659,31 @@
             "taskType": {
               "value": "'condition'"
             },
+            "conditionOp": {
+              "key": "op",
+              "child": "condition_task",
+              "read": "text"
+            },
             "taskSource": {
-              "value": "''"
+              "key": "left",
+              "child": "condition_task",
+              "read": "text",
+              "style": "double"
+            },
+            "conditionRight": {
+              "key": "right",
+              "child": "condition_task",
+              "read": "text",
+              "style": "double"
             }
           },
           "insert": {
-            "place": "after-last",
+            "place": "end",
             "container": "/resources/jobs/{job}/tasks",
             "keys": [
               "task_key"
             ],
             "when": "attributes.taskType == 'condition'",
-            "skeleton": "condition_task:\n  op: EQUAL_TO\n  left: \"{taskSource}\"\n  right: \"true\"\n",
             "emit": "{ \"task_key\": \"{key}\", \"condition_task\": { \"op\": \"EQUAL_TO\", \"left\": \"{taskSource}\", \"right\": \"true\" } }",
             "refusals": {
               "container": "The job has no tasks section to add into."
@@ -803,7 +870,7 @@
             ]
           },
           "insert": {
-            "place": "after-last",
+            "place": "end",
             "container": "libraries",
             "create": {
               "at": "end"
@@ -845,7 +912,7 @@
             ]
           },
           "insert": {
-            "place": "after-last",
+            "place": "end",
             "container": "libraries",
             "create": {
               "at": "end"
@@ -888,7 +955,7 @@
             ]
           },
           "insert": {
-            "place": "after-last",
+            "place": "end",
             "container": "libraries",
             "create": {
               "at": "end"
@@ -956,7 +1023,7 @@
             ]
           },
           "insert": {
-            "place": "after-last",
+            "place": "end",
             "container": "/libraries",
             "when": "attributes.libraryKind == 'notebook'",
             "refusals": {
@@ -996,7 +1063,7 @@
             ]
           },
           "insert": {
-            "place": "after-last",
+            "place": "end",
             "container": "/libraries",
             "when": "attributes.libraryKind == 'file'",
             "refusals": {
@@ -1037,7 +1104,7 @@
             ]
           },
           "insert": {
-            "place": "after-last",
+            "place": "end",
             "container": "/libraries",
             "when": "attributes.libraryKind == 'glob'",
             "refusals": {

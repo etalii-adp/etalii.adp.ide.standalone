@@ -50,7 +50,7 @@ public class DatabricksEmptyDocumentTests
         var pipeline = Assert.Single(DatabricksModel.Read(document).Pipelines);
 
         // Assert.
-        Assert.True(DatabricksSplices.IsJson(document));
+        Assert.StartsWith("{", document.Text.TrimStart(), StringComparison.Ordinal);
         Assert.Equal("bronze", pipeline.Name);
         Assert.Single(pipeline.Libraries);
     }

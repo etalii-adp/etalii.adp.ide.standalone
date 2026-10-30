@@ -47,7 +47,18 @@ public sealed class InsertDatabricksTaskCommandHandler(IDatabricksDocumentStore 
     : DatabricksEditHandler<InsertDatabricksTaskCommand>(documents)
 {
     /// <inheritdoc />
-    /// <remarks>The binding has a rule per task type that adds one, and each carries its type's skeleton (FBL 0.10 section 6.2, gap 6).</remarks>
+    /// <remarks>
+    /// <para>
+    /// The binding has a rule per task type that adds one, which writes the task's source under its type's <c>*_task</c>
+    /// mapping as a value of that mapping, so it reads back as the same text (FBL 0.10 section 6.2, finding B9).
+    /// </para>
+    /// <para>
+    /// <b>A stand-in for gap 6</b>: the starter values a wheel, SQL or condition task opens with besides its source
+    /// (<see cref="StarterValues"/>) are this module's, given to the add as values the binding writes, because an insert's
+    /// <c>skeleton</c> is fixed text written beside the entry's keys and cannot share the <c>*_task</c> mapping the source
+    /// is written into, and its <c>constant</c> holds only keys of the entry itself (FBL 0.13 section 6.2).
+    /// </para>
+    /// </remarks>
     protected override EditOutcome Apply(LineDocument body, DatabricksModel model, InsertDatabricksTaskCommand command)
     {
         if (JobOf(model, command.JobKey) is not { } job)
@@ -68,9 +79,18 @@ public sealed class InsertDatabricksTaskCommandHandler(IDatabricksDocumentStore 
         return DatabricksEdits.Job(
             body,
             job,
-            _ => new ModelChange.Add("Task", null, DatabricksEdits.Attributes(("key", command.TaskKey), ("taskType", command.TaskType), ("taskSource", command.Source))),
+            _ => new ModelChange.Add("Task", null, DatabricksEdits.Attributes([("key", command.TaskKey), ("taskType", command.TaskType), ("taskSource", command.Source), .. StarterValues(command.TaskType)])),
             command.TaskType);
     }
+
+    /// <summary>The values a new task of <paramref name="taskType"/> opens with besides its source, as the module's writer wrote them.</summary>
+    private static (string Name, object? Value)[] StarterValues(string taskType) => taskType switch
+    {
+        "wheel" => [("entryPoint", "main")],
+        "sql" => [("warehouseId", "")],
+        "condition" => [("conditionOp", "EQUAL_TO"), ("conditionRight", "true")],
+        _ => [],
+    };
 }
 
 /// <inheritdoc cref="RemoveDatabricksTaskCommand" />

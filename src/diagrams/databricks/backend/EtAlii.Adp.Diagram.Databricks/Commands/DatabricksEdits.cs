@@ -31,9 +31,6 @@ internal static class DatabricksEdits
     /// <summary>The binding's sentence for a task type that no rule of the binding adds (<c>databricks.fbl</c>).</summary>
     private const string UnknownTaskType = "A task of that type cannot be added to a job.";
 
-    /// <summary>The binding's sentence for a library kind that no rule of the binding adds (<c>databricks.fbl</c>).</summary>
-    private const string UnknownLibraryKind = "A library of that kind cannot be added to a pipeline.";
-
     /// <summary>The sentence ruled on 2026-10-19 for an edit of a list written on one line that cannot be made.</summary>
     internal const string OneLineListRefusal = "This list is written on one line, which this diagram cannot change yet; edit it in the text editor.";
 
@@ -97,7 +94,6 @@ internal static class DatabricksEdits
     private static string Sentence(string refusal, string? value) => refusal switch
     {
         UnknownTaskType => $"There is no '{value}' task type to add.",
-        UnknownLibraryKind => $"There is no '{value}' library kind to add.",
         _ when refusal.Contains("one-line", StringComparison.Ordinal) || refusal.Contains("on one line", StringComparison.Ordinal) => OneLineListRefusal,
         _ => refusal,
     };

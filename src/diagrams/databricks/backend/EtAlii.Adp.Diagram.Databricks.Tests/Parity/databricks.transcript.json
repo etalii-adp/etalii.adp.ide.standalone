@@ -279,9 +279,9 @@
           "do": "set task:shared_first databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@17 -0 +\"          run_if: ALL_DONE\\r\\n\""
+            "@18 -0 +\"          run_if: ALL_DONE\\r\\n\""
           ],
-          "sha256": "857c2db07b35b2dec44ab00285fefb4e87e68e56827da757acc9f87eb87c53d0",
+          "sha256": "dbb35c670c5e433a351cc9845b2fffe96ba32851db1896612bc10cb77c3322e4",
           "undo": "ok; restores the text",
           "redo": "ok; reapplies the text",
           "undoAgain": "ok; restores the text"
@@ -296,9 +296,9 @@
           "do": "set task:shared_first databricks.run-if = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@17 -0 +\"          run_if: \\\"yes\\\"\\r\\n\""
+            "@18 -0 +\"          run_if: \\\"yes\\\"\\r\\n\""
           ],
-          "sha256": "e8c914ec2668d2598f7550022f3c1a8ecb36985a9948ee2f9f947723412a65cc",
+          "sha256": "8a0292f0883e51c0dd952d2e193a6f66a86796ceac1d8e5c7fb5f344cdd333d9",
           "undo": "ok; restores the text"
         },
         {
@@ -402,9 +402,9 @@
           "do": "commit databricks.set-run-if on task:shared_first = \"AT_LEAST_ONE_SUCCESS\"",
           "answer": "ok",
           "hunks": [
-            "@17 -0 +\"          run_if: AT_LEAST_ONE_SUCCESS\\r\\n\""
+            "@18 -0 +\"          run_if: AT_LEAST_ONE_SUCCESS\\r\\n\""
           ],
-          "sha256": "46efdf983e55bb9975c9519e2ceeb14560eb96596749c320252d6bbb344c1c09",
+          "sha256": "2bdfd1f6de52a6f92142bff3dac5b9df04b7e83b756d6e36e69189e4d2f1c322",
           "undo": "ok; restores the text"
         },
         {
@@ -436,9 +436,9 @@
           "do": "set task:shared_first databricks.run-if = \"*nothing\"",
           "answer": "ok",
           "hunks": [
-            "@17 -0 +\"          run_if: \\\"*nothing\\\"\\r\\n\""
+            "@18 -0 +\"          run_if: \\\"*nothing\\\"\\r\\n\""
           ],
-          "sha256": "994e70035e82e889c8f0ffb37675255aaaef4310ff47dd7994bff9a198003643"
+          "sha256": "edfd8c3401f1fe67723154c2c2f362bbdaf6afcde38c3f007e494162a6f1d26d"
         },
         {
           "do": "execute databricks.rename-task on task:shared_first",
@@ -449,16 +449,16 @@
           "do": "set task:shared_first databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@17 -1 +\"          run_if: ALL_DONE\\r\\n\""
+            "@18 -1 +\"          run_if: \\\"ALL_DONE\\\"\\r\\n\""
           ],
-          "sha256": "857c2db07b35b2dec44ab00285fefb4e87e68e56827da757acc9f87eb87c53d0",
+          "sha256": "f1a04964ff536c3e92c6e651b19360886e6e1ed568b0bfbc54a0da8791ffc34e",
           "undo": "ok; restores the text"
         },
         {
           "do": "undo",
           "answer": "ok",
           "hunks": [
-            "@17 -1 +\"\""
+            "@18 -1 +\"\""
           ],
           "sha256": "baa9f114bfc6e22a058497627a173cb3b698a8f6d2d412303d4cc74876fb475a"
         },
@@ -466,9 +466,9 @@
           "do": "set task:shared_first databricks.run-if = \"[x\"",
           "answer": "ok",
           "hunks": [
-            "@17 -0 +\"          run_if: \\\"[x\\\"\\r\\n\""
+            "@18 -0 +\"          run_if: \\\"[x\\\"\\r\\n\""
           ],
-          "sha256": "7447a1202794f822286bb3ebeac637d183b9899609a64ad4b5f03e2956c7f43a"
+          "sha256": "ec3cbae70f682b5f95d563382e5ed6fdc1e7fb25e7d1d04e0b379c9a8f131c30"
         },
         {
           "do": "execute databricks.rename-task on task:shared_first",
@@ -479,16 +479,16 @@
           "do": "set task:shared_first databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@17 -1 +\"          run_if: ALL_DONE\\r\\n\""
+            "@18 -1 +\"          run_if: \\\"ALL_DONE\\\"\\r\\n\""
           ],
-          "sha256": "857c2db07b35b2dec44ab00285fefb4e87e68e56827da757acc9f87eb87c53d0",
+          "sha256": "f1a04964ff536c3e92c6e651b19360886e6e1ed568b0bfbc54a0da8791ffc34e",
           "undo": "ok; restores the text"
         },
         {
           "do": "undo",
           "answer": "ok",
           "hunks": [
-            "@17 -1 +\"\""
+            "@18 -1 +\"\""
           ],
           "sha256": "baa9f114bfc6e22a058497627a173cb3b698a8f6d2d412303d4cc74876fb475a"
         },
@@ -1066,8 +1066,19 @@
         },
         {
           "do": "commit databricks.rename-task on task:only = \"parity_moved\"",
-          "answer": "refused: The task 'only' has no task_key line to rewrite.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@8 -1 +\"          { \\\"task_key\\\": \\\"parity_moved\\\", \\\"notebook_task\\\": { \\\"notebook_path\\\": \\\"notebooks/only\\\" } }\\r\\n\""
+          ],
+          "sha256": "29ad7f0ba563ae3648184c4ea9465bd82cab72a7f508051e77d06019f9dbcd5f"
+        },
+        {
+          "do": "undo",
+          "answer": "ok",
+          "hunks": [
+            "@8 -1 +\"          { \\\"task_key\\\": \\\"only\\\", \\\"notebook_task\\\": { \\\"notebook_path\\\": \\\"notebooks/only\\\" } }\\r\\n\""
+          ],
+          "sha256": "47b358592db37ac93b38049e69be927ca1467aa7baf16cf4516e006c0d669f88"
         },
         {
           "do": "undo",
@@ -1076,17 +1087,12 @@
           "writes job.parity.adp": "databricks/job\nbody: bundle.json\n"
         },
         {
-          "do": "undo",
-          "answer": "refused: There is nothing to undo.",
-          "unchanged": true
-        },
-        {
           "do": "set task:only databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@9 -0 +\"            run_if: ALL_DONE\\r\\n\""
+            "@8 -1 +\"          { \\\"task_key\\\": \\\"only\\\", \\\"run_if\\\": \\\"ALL_DONE\\\", \\\"notebook_task\\\": { \\\"notebook_path\\\": \\\"notebooks/only\\\" } }\\r\\n\""
           ],
-          "sha256": "f8d1c0ac2ee55000347a7b4935a954e90f1d7e2f9f707833565f97c0dd6800cf",
+          "sha256": "660543f146b335fcf5138da51adf24d1bea707cc8e83924ee4fbd9e06f01a9bf",
           "undo": "ok; restores the text",
           "redo": "ok; reapplies the text",
           "undoAgain": "ok; restores the text"
@@ -1101,9 +1107,9 @@
           "do": "set task:only databricks.run-if = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@9 -0 +\"            run_if: \\\"yes\\\"\\r\\n\""
+            "@8 -1 +\"          { \\\"task_key\\\": \\\"only\\\", \\\"run_if\\\": \\\"yes\\\", \\\"notebook_task\\\": { \\\"notebook_path\\\": \\\"notebooks/only\\\" } }\\r\\n\""
           ],
-          "sha256": "1664d79acd364a51ab3e87feb75ad7af4be3b2c34247dcde58d88c4c1987c24e",
+          "sha256": "8a092660113b81920593dd72fddf94fc6698bdaeaa061704db0412d118107f0f",
           "undo": "ok; restores the text"
         },
         {
@@ -1169,13 +1175,23 @@
         },
         {
           "do": "commit databricks.rename-task on task:only = \"parity_renamed\"",
-          "answer": "refused: The task 'only' has no task_key line to rewrite.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@8 -1 +\"          { \\\"task_key\\\": \\\"parity_renamed\\\", \\\"notebook_task\\\": { \\\"notebook_path\\\": \\\"notebooks/only\\\" } }\\r\\n\""
+          ],
+          "sha256": "facf3d0318528553be85dd0c83217b0edc7ebce0a726f28e272e60855fa070ba",
+          "undo": "ok; restores the text",
+          "redo": "ok; reapplies the text",
+          "undoAgain": "ok; restores the text"
         },
         {
           "do": "commit databricks.rename-task on task:only = \"123\"",
-          "answer": "refused: The task 'only' has no task_key line to rewrite.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@8 -1 +\"          { \\\"task_key\\\": \\\"123\\\", \\\"notebook_task\\\": { \\\"notebook_path\\\": \\\"notebooks/only\\\" } }\\r\\n\""
+          ],
+          "sha256": "fb2346ec046ce33315072883fc807ba99ba012e4bd03440859f5128a42836666",
+          "undo": "ok; restores the text"
         },
         {
           "do": "commit databricks.rename-task on task:only = \"\"",
@@ -1186,9 +1202,9 @@
           "do": "commit databricks.set-run-if on task:only = \"AT_LEAST_ONE_SUCCESS\"",
           "answer": "ok",
           "hunks": [
-            "@9 -0 +\"            run_if: AT_LEAST_ONE_SUCCESS\\r\\n\""
+            "@8 -1 +\"          { \\\"task_key\\\": \\\"only\\\", \\\"run_if\\\": \\\"AT_LEAST_ONE_SUCCESS\\\", \\\"notebook_task\\\": { \\\"notebook_path\\\": \\\"notebooks/only\\\" } }\\r\\n\""
           ],
-          "sha256": "5975389155bba71c56adad3e20de23910db4cfc249b30913d5484fcbbd665344",
+          "sha256": "95ce4f86df07dec66094fed5ca0ab838a785cab88e1dd360601aa6fdad713c1e",
           "undo": "ok; restores the text"
         },
         {
@@ -1216,25 +1232,29 @@
           "do": "set task:only databricks.run-if = \"*nothing\"",
           "answer": "ok",
           "hunks": [
-            "@9 -0 +\"            run_if: \\\"*nothing\\\"\\r\\n\""
+            "@8 -1 +\"          { \\\"task_key\\\": \\\"only\\\", \\\"run_if\\\": \\\"*nothing\\\", \\\"notebook_task\\\": { \\\"notebook_path\\\": \\\"notebooks/only\\\" } }\\r\\n\""
           ],
-          "sha256": "4fde6cdde53f757c3fd706efe656c1d9e71c564d0a0787870ab76ee2cb5befe9"
+          "sha256": "26ef27d815fc65f02e19fee91c9c2552970c63fa23f50f9a9421ca91359779ad"
         },
         {
           "do": "execute databricks.rename-task on task:only",
-          "answer": "refused: bundle.json could not be read, so it cannot be edited.",
+          "answer": "asks: ContextInputRequest { Title = Rename task, Icon = mdi-pencil-outline, FieldLabel = Key, InitialValue = only, ConfirmLabel = Rename, InlineLabelElementId = task:only, CommitActionId =  }",
           "unchanged": true
         },
         {
           "do": "set task:only databricks.run-if = \"ALL_DONE\"",
-          "answer": "refused: bundle.json could not be read, so it cannot be edited.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@8 -1 +\"          { \\\"task_key\\\": \\\"only\\\", \\\"run_if\\\": \\\"ALL_DONE\\\", \\\"notebook_task\\\": { \\\"notebook_path\\\": \\\"notebooks/only\\\" } }\\r\\n\""
+          ],
+          "sha256": "660543f146b335fcf5138da51adf24d1bea707cc8e83924ee4fbd9e06f01a9bf",
+          "undo": "ok; restores the text"
         },
         {
           "do": "undo",
           "answer": "ok",
           "hunks": [
-            "@9 -1 +\"\""
+            "@8 -1 +\"          { \\\"task_key\\\": \\\"only\\\", \\\"notebook_task\\\": { \\\"notebook_path\\\": \\\"notebooks/only\\\" } }\\r\\n\""
           ],
           "sha256": "47b358592db37ac93b38049e69be927ca1467aa7baf16cf4516e006c0d669f88"
         },
@@ -1242,25 +1262,29 @@
           "do": "set task:only databricks.run-if = \"[x\"",
           "answer": "ok",
           "hunks": [
-            "@9 -0 +\"            run_if: \\\"[x\\\"\\r\\n\""
+            "@8 -1 +\"          { \\\"task_key\\\": \\\"only\\\", \\\"run_if\\\": \\\"[x\\\", \\\"notebook_task\\\": { \\\"notebook_path\\\": \\\"notebooks/only\\\" } }\\r\\n\""
           ],
-          "sha256": "5ac426ed7b6ad42719f1ae4c218283334606d402e00552aa1525e4f20484b25a"
+          "sha256": "2dcd0ef714a531bb1f99929a74c548da54994c3797d13dc23385d308503a7ae9"
         },
         {
           "do": "execute databricks.rename-task on task:only",
-          "answer": "refused: bundle.json could not be read, so it cannot be edited.",
+          "answer": "asks: ContextInputRequest { Title = Rename task, Icon = mdi-pencil-outline, FieldLabel = Key, InitialValue = only, ConfirmLabel = Rename, InlineLabelElementId = task:only, CommitActionId =  }",
           "unchanged": true
         },
         {
           "do": "set task:only databricks.run-if = \"ALL_DONE\"",
-          "answer": "refused: bundle.json could not be read, so it cannot be edited.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@8 -1 +\"          { \\\"task_key\\\": \\\"only\\\", \\\"run_if\\\": \\\"ALL_DONE\\\", \\\"notebook_task\\\": { \\\"notebook_path\\\": \\\"notebooks/only\\\" } }\\r\\n\""
+          ],
+          "sha256": "660543f146b335fcf5138da51adf24d1bea707cc8e83924ee4fbd9e06f01a9bf",
+          "undo": "ok; restores the text"
         },
         {
           "do": "undo",
           "answer": "ok",
           "hunks": [
-            "@9 -1 +\"\""
+            "@8 -1 +\"          { \\\"task_key\\\": \\\"only\\\", \\\"notebook_task\\\": { \\\"notebook_path\\\": \\\"notebooks/only\\\" } }\\r\\n\""
           ],
           "sha256": "47b358592db37ac93b38049e69be927ca1467aa7baf16cf4516e006c0d669f88"
         },
@@ -1294,9 +1318,9 @@
           "do": "execute databricks.add-task:notebook on new:120,80",
           "answer": "ok",
           "hunks": [
-            "@9 -0 +\"          - task_key: notebook_1\\r\\n            notebook_task:\\r\\n              notebook_path: notebooks/notebook_1\\r\\n\""
+            "@8 -1 +\"          { \\\"task_key\\\": \\\"only\\\", \\\"notebook_task\\\": { \\\"notebook_path\\\": \\\"notebooks/only\\\" } },\\r\\n          { \\\"task_key\\\": \\\"notebook_1\\\", \\\"notebook_task\\\": { \\\"notebook_path\\\": \\\"notebooks/notebook_1\\\" } }\\r\\n\""
           ],
-          "sha256": "5cdafb3b765ef7162a50df856c391d1f6315c3f8dad3776d8d7ab0445c3eddac",
+          "sha256": "fbcc4e3eff84b167e9d78aaa0e63c7ae0d0ab9701f6c8da06dd2db30bbaf5cee",
           "undo": "ok; restores the text",
           "redo": "ok; reapplies the text",
           "undoAgain": "ok; restores the text"
@@ -1305,18 +1329,18 @@
           "do": "execute databricks.add-task:python on new:120,80",
           "answer": "ok",
           "hunks": [
-            "@9 -0 +\"          - task_key: python_1\\r\\n            spark_python_task:\\r\\n              python_file: scripts/python_1.py\\r\\n\""
+            "@8 -1 +\"          { \\\"task_key\\\": \\\"only\\\", \\\"notebook_task\\\": { \\\"notebook_path\\\": \\\"notebooks/only\\\" } },\\r\\n          { \\\"task_key\\\": \\\"python_1\\\", \\\"spark_python_task\\\": { \\\"python_file\\\": \\\"scripts/python_1.py\\\" } }\\r\\n\""
           ],
-          "sha256": "ac393d78ed913fe83f06fdfdc5bfe2cce5ecbbfa2086fb6521aa0612b6744cc5",
+          "sha256": "8e69bd951cb74998406dbf593612909441f7f8289e77eea666031ea05727bf81",
           "undo": "ok; restores the text"
         },
         {
           "do": "execute databricks.add-task:condition on new:120,80",
           "answer": "ok",
           "hunks": [
-            "@9 -0 +\"          - task_key: condition_1\\r\\n            condition_task:\\r\\n              op: EQUAL_TO\\r\\n              left: \\\"condition_1\\\"\\r\\n              right: \\\"true\\\"\\r\\n\""
+            "@8 -1 +\"          { \\\"task_key\\\": \\\"only\\\", \\\"notebook_task\\\": { \\\"notebook_path\\\": \\\"notebooks/only\\\" } },\\r\\n          { \\\"task_key\\\": \\\"condition_1\\\", \\\"condition_task\\\": { \\\"op\\\": \\\"EQUAL_TO\\\", \\\"left\\\": \\\"condition_1\\\", \\\"right\\\": \\\"true\\\" } }\\r\\n\""
           ],
-          "sha256": "49016eebb48785880b7e19c8818f2a850547837f3691f1e3dd8a96d61471ca40",
+          "sha256": "b1e2cefea00dad46f57bddd8f4d23c53408003148b91840762264c21f8226a66",
           "undo": "ok; restores the text"
         },
         {
@@ -1338,9 +1362,9 @@
           "do": "commit databricks.add-task:notebook on  = \"parity_task\"",
           "answer": "ok",
           "hunks": [
-            "@9 -0 +\"          - task_key: parity_task\\r\\n            notebook_task:\\r\\n              notebook_path: notebooks/parity_task\\r\\n\""
+            "@8 -1 +\"          { \\\"task_key\\\": \\\"only\\\", \\\"notebook_task\\\": { \\\"notebook_path\\\": \\\"notebooks/only\\\" } },\\r\\n          { \\\"task_key\\\": \\\"parity_task\\\", \\\"notebook_task\\\": { \\\"notebook_path\\\": \\\"notebooks/parity_task\\\" } }\\r\\n\""
           ],
-          "sha256": "b2a5cda7c60fc3c9ef27b449ef1fedc67300e7f8676ab8d8ef75a1f51802908a",
+          "sha256": "ce77512f40473161beb5a16133bd859b759d497a5a39070defcc8dddc712a563",
           "undo": "ok; restores the text"
         },
         {
@@ -1352,36 +1376,36 @@
           "do": "insert a wheel task",
           "answer": "ok",
           "hunks": [
-            "@9 -0 +\"          - task_key: parity_wheel\\r\\n            python_wheel_task:\\r\\n              package_name: parity/wheel\\r\\n              entry_point: main\\r\\n\""
+            "@8 -1 +\"          { \\\"task_key\\\": \\\"only\\\", \\\"notebook_task\\\": { \\\"notebook_path\\\": \\\"notebooks/only\\\" } },\\r\\n          { \\\"task_key\\\": \\\"parity_wheel\\\", \\\"python_wheel_task\\\": { \\\"package_name\\\": \\\"parity/wheel\\\", \\\"entry_point\\\": \\\"main\\\" } }\\r\\n\""
           ],
-          "sha256": "5e69bb75520b04f2c5ecd7716fc593cea6b1f4e9496253d61a9ee56f60251116",
+          "sha256": "ef09187fd57ae4d6f4973d82cff43b0715d36970a3038eb02a275a854d0be686",
           "undo": "ok; restores the text"
         },
         {
           "do": "insert a sql task",
           "answer": "ok",
           "hunks": [
-            "@9 -0 +\"          - task_key: parity_sql\\r\\n            sql_task:\\r\\n              warehouse_id: \\\"\\\"\\r\\n              query:\\r\\n                query_id: parity/sql\\r\\n\""
+            "@8 -1 +\"          { \\\"task_key\\\": \\\"only\\\", \\\"notebook_task\\\": { \\\"notebook_path\\\": \\\"notebooks/only\\\" } },\\r\\n          { \\\"task_key\\\": \\\"parity_sql\\\", \\\"sql_task\\\": { \\\"warehouse_id\\\": \\\"\\\", \\\"query\\\": { \\\"query_id\\\": \\\"parity/sql\\\" } } }\\r\\n\""
           ],
-          "sha256": "2b164e06b09af1a928166c03e1d011efd525c2fed26fac30dfe328d0fe9e2c8a",
+          "sha256": "ae91bc7f135ddaee058dbf3b67dd53c8c3749afb9cbf6fe795bb2eb0398fdc13",
           "undo": "ok; restores the text"
         },
         {
           "do": "insert a pipeline task",
           "answer": "ok",
           "hunks": [
-            "@9 -0 +\"          - task_key: parity_pipeline\\r\\n            pipeline_task:\\r\\n              pipeline_id: parity/pipeline\\r\\n\""
+            "@8 -1 +\"          { \\\"task_key\\\": \\\"only\\\", \\\"notebook_task\\\": { \\\"notebook_path\\\": \\\"notebooks/only\\\" } },\\r\\n          { \\\"task_key\\\": \\\"parity_pipeline\\\", \\\"pipeline_task\\\": { \\\"pipeline_id\\\": \\\"parity/pipeline\\\" } }\\r\\n\""
           ],
-          "sha256": "ae8c969a310a1b6974c0f7294adc6e3efacaffc5bd2e1b5eaa2bae6c68be22b3",
+          "sha256": "5e46a71b0c86dcf7583971ee8debb972f0164f78eee5ed3491fac8752204edac",
           "undo": "ok; restores the text"
         },
         {
           "do": "insert a run-job task",
           "answer": "ok",
           "hunks": [
-            "@9 -0 +\"          - task_key: parity_run_job\\r\\n            run_job_task:\\r\\n              job_id: parity/run-job\\r\\n\""
+            "@8 -1 +\"          { \\\"task_key\\\": \\\"only\\\", \\\"notebook_task\\\": { \\\"notebook_path\\\": \\\"notebooks/only\\\" } },\\r\\n          { \\\"task_key\\\": \\\"parity_run_job\\\", \\\"run_job_task\\\": { \\\"job_id\\\": \\\"parity/run-job\\\" } }\\r\\n\""
           ],
-          "sha256": "75a530d9ae40374b93f9dca2332b2fcee7f793cfd0230038c9898e7ff1864a1d",
+          "sha256": "dd09d137110d1384ff35b3d26dd55d5e6a3ceb02664d0998a5f2942832d9719f",
           "undo": "ok; restores the text"
         },
         {
@@ -1391,8 +1415,14 @@
         },
         {
           "do": "set bundle databricks.bundle-name = \"Parity bundle\"",
-          "answer": "refused: The file has no bundle: section to name.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@2 -1 +\"  \\\"bundle\\\": { \\\"name\\\": \\\"Parity bundle\\\" },\\r\\n\""
+          ],
+          "sha256": "9b738f22d56a13eaaad77c99c8724643cd048f0dc16e61ee0849852468e8d9ca",
+          "undo": "ok; restores the text",
+          "redo": "ok; reapplies the text",
+          "undoAgain": "ok; restores the text"
         },
         {
           "do": "set bundle databricks.bundle-name = \"\"",
@@ -1406,8 +1436,12 @@
         },
         {
           "do": "commit databricks.rename-bundle on bundle = \"null\"",
-          "answer": "refused: The file has no bundle: section to name.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@2 -1 +\"  \\\"bundle\\\": { \\\"name\\\": \\\"null\\\" },\\r\\n\""
+          ],
+          "sha256": "15e90b69cfb467744227a7fb5e29e616e9affeb0500bda99c628b63ea01a3faf",
+          "undo": "ok; restores the text"
         },
         {
           "do": "execute databricks.add-resource:jobs on bundle",
@@ -1841,27 +1875,27 @@
           "do": "set pipeline databricks.pipeline:catalog = \"parity_catalog\"",
           "answer": "ok",
           "hunks": [
-            "@25 -0 +\"      catalog: parity_catalog\\r\\n\""
+            "@26 -0 +\"      catalog: parity_catalog\\r\\n\""
           ],
-          "sha256": "96e003f58affded3b58921044ffea31313eb0e524733a2f284d7dfd143640b95",
+          "sha256": "fd0c55adab4fffc5f52cbfee8ea838f4def5467acc76b4c86845f555fc378bb8",
           "undo": "ok; restores the text"
         },
         {
           "do": "set pipeline databricks.pipeline:schema = \"parity_schema\"",
           "answer": "ok",
           "hunks": [
-            "@25 -0 +\"      schema: parity_schema\\r\\n\""
+            "@26 -0 +\"      schema: parity_schema\\r\\n\""
           ],
-          "sha256": "a877d767257fd5fc7f1d16a71ce7e1b670151a3d2bc6e2c286004a1ca7d01c0c",
+          "sha256": "96038c5e68c291c4d5ed7c05b6482ffc8aa650c0149b9dd66a123dadf829fb26",
           "undo": "ok; restores the text"
         },
         {
           "do": "set pipeline databricks.pipeline:channel = \"PREVIEW\"",
           "answer": "ok",
           "hunks": [
-            "@25 -0 +\"      channel: PREVIEW\\r\\n\""
+            "@26 -0 +\"      channel: PREVIEW\\r\\n\""
           ],
-          "sha256": "f704d193b2f6b42dd33bd77e99cdc4e8ea05fece1b0d2632d03f7a5b4eba67ba",
+          "sha256": "32a2fd4e3b5fcd26146eb09c9b84611febb079f45addf1572a84afbcacfed94b",
           "undo": "ok; restores the text"
         },
         {
@@ -1871,21 +1905,13 @@
         },
         {
           "do": "set pipeline databricks.pipeline:serverless = \"false\"",
-          "answer": "ok",
-          "hunks": [
-            "@25 -0 +\"      serverless: \\\"false\\\"\\r\\n\""
-          ],
-          "sha256": "77b076d6e2335c4798baefd00a91941c7e627ba7dd48511cb768c14b38003aad",
-          "undo": "ok; restores the text"
+          "answer": "refused: The value is computed from the file.",
+          "unchanged": true
         },
         {
           "do": "set pipeline databricks.pipeline:edition = \"CORE\"",
-          "answer": "ok",
-          "hunks": [
-            "@25 -0 +\"      edition: CORE\\r\\n\""
-          ],
-          "sha256": "4f5f5bfde3ad6d906d9dc74b7de654169f11831604c91a629f9cc40c98f7de5f",
-          "undo": "ok; restores the text"
+          "answer": "refused: A Pipeline keeps no 'edition' in this file.",
+          "unchanged": true
         },
         {
           "do": "execute databricks.add-library:notebook on pipeline",
@@ -2207,10 +2233,10 @@
           "do": "commit databricks.rename-task on task:quoted_task = \"parity_moved\"",
           "answer": "ok",
           "hunks": [
-            "@16 -1 +\"        - task_key: parity_moved\\r\\n\"",
-            "@23 -1 +\"            - task_key: parity_moved\\r\\n\""
+            "@16 -1 +\"        - task_key: 'parity_moved' # a single-quoted key\\r\\n\"",
+            "@23 -1 +\"            - task_key: 'parity_moved' # the reference, quoted too\\r\\n\""
           ],
-          "sha256": "3b9196399431c245c1de3da634195d8cfbcaf2b7bf8005ad15eb9b4cd18994e6"
+          "sha256": "c1a3a643dc5192691f71fa7e116838320b1fdf4b629747dd1908052affb32e04"
         },
         {
           "do": "undo",
@@ -2230,10 +2256,7 @@
         {
           "do": "set task:quoted_task databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
-          "hunks": [
-            "@17 -1 +\"          run_if: ALL_DONE\\r\\n\""
-          ],
-          "sha256": "fb6192ab4daa3adf2adda023a6a13ee2d521ff04f1428afa6439d98cd919b1c1",
+          "unchanged": true,
           "undo": "ok; restores the text",
           "redo": "ok; reapplies the text",
           "undoAgain": "ok; restores the text"
@@ -2251,18 +2274,15 @@
           "do": "set task:quoted_task databricks.run-if = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@17 -1 +\"          run_if: \\\"yes\\\"\\r\\n\""
+            "@17 -1 +\"          run_if: 'yes' # keep going whatever happens\\r\\n\""
           ],
-          "sha256": "abe761a6f457f54f05e896d9e9e5f7794e7abde7b3528c777c50a76e40ccec3f",
+          "sha256": "d4b869d4dacec3568b56018555c493d7256dc6707af35ec122f95c852da47a53",
           "undo": "ok; restores the text"
         },
         {
           "do": "set task:quoted_task databricks.cluster = \"main\"",
           "answer": "ok",
-          "hunks": [
-            "@18 -1 +\"          job_cluster_key: main\\r\\n\""
-          ],
-          "sha256": "ca6f535b906ae8f1774c34f45dc762717f8bee9108cd0e3995a0cc33e2e20e9f",
+          "unchanged": true,
           "undo": "ok; restores the text"
         },
         {
@@ -2328,10 +2348,10 @@
           "do": "commit databricks.rename-task on task:quoted_task = \"parity_renamed\"",
           "answer": "ok",
           "hunks": [
-            "@16 -1 +\"        - task_key: parity_renamed\\r\\n\"",
-            "@23 -1 +\"            - task_key: parity_renamed\\r\\n\""
+            "@16 -1 +\"        - task_key: 'parity_renamed' # a single-quoted key\\r\\n\"",
+            "@23 -1 +\"            - task_key: 'parity_renamed' # the reference, quoted too\\r\\n\""
           ],
-          "sha256": "7eabdc34ef167a539e5d36f7783e3bc14f444ddf78761cf35e4fd5ced544529a",
+          "sha256": "9d9d2dc024ee5e8491b95fd05817b4df3f2296682379bbdbf1e82ca146136a83",
           "undo": "ok; restores the text",
           "redo": "ok; reapplies the text",
           "undoAgain": "ok; restores the text"
@@ -2340,10 +2360,10 @@
           "do": "commit databricks.rename-task on task:quoted_task = \"123\"",
           "answer": "ok",
           "hunks": [
-            "@16 -1 +\"        - task_key: \\\"123\\\"\\r\\n\"",
-            "@23 -1 +\"            - task_key: \\\"123\\\"\\r\\n\""
+            "@16 -1 +\"        - task_key: '123' # a single-quoted key\\r\\n\"",
+            "@23 -1 +\"            - task_key: '123' # the reference, quoted too\\r\\n\""
           ],
-          "sha256": "f021788ecc1d2116f65bad637218c0459d6bf991d7d0728c9ac2fcd30847c88a",
+          "sha256": "867140a5001d22043ae173ad3d70f920d50bc1502209dd1586d9bc0b88dd1b13",
           "undo": "ok; restores the text"
         },
         {
@@ -2360,18 +2380,15 @@
           "do": "commit databricks.set-run-if on task:quoted_task = \"AT_LEAST_ONE_SUCCESS\"",
           "answer": "ok",
           "hunks": [
-            "@17 -1 +\"          run_if: AT_LEAST_ONE_SUCCESS\\r\\n\""
+            "@17 -1 +\"          run_if: 'AT_LEAST_ONE_SUCCESS' # keep going whatever happens\\r\\n\""
           ],
-          "sha256": "e6a1cc24dedcc5bc6619c2b83c46f704e5455da8ef768c3a5f800173381d7ccf",
+          "sha256": "7ad744fb200c9a44786f7aad1942f6b7432d967fdb9365ca23cdfe47335f91fe",
           "undo": "ok; restores the text"
         },
         {
           "do": "commit databricks.assign-cluster on task:quoted_task = \"main\"",
           "answer": "ok",
-          "hunks": [
-            "@18 -1 +\"          job_cluster_key: main\\r\\n\""
-          ],
-          "sha256": "ca6f535b906ae8f1774c34f45dc762717f8bee9108cd0e3995a0cc33e2e20e9f",
+          "unchanged": true,
           "undo": "ok; restores the text"
         },
         {
@@ -2397,9 +2414,9 @@
           "do": "set task:quoted_task databricks.run-if = \"*nothing\"",
           "answer": "ok",
           "hunks": [
-            "@17 -1 +\"          run_if: \\\"*nothing\\\"\\r\\n\""
+            "@17 -1 +\"          run_if: '*nothing' # keep going whatever happens\\r\\n\""
           ],
-          "sha256": "54f389b827cd07d1b9797c028e97ff2c0175bfce3d3c109b3a31cac0500b74af"
+          "sha256": "622d4aac26409a50bdc3993412dd1ab0ea1f8c0b42c316dc61e9feeef89aa68b"
         },
         {
           "do": "execute databricks.rename-task on task:quoted_task",
@@ -2410,9 +2427,9 @@
           "do": "set task:quoted_task databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@17 -1 +\"          run_if: ALL_DONE\\r\\n\""
+            "@17 -1 +\"          run_if: 'ALL_DONE' # keep going whatever happens\\r\\n\""
           ],
-          "sha256": "fb6192ab4daa3adf2adda023a6a13ee2d521ff04f1428afa6439d98cd919b1c1",
+          "sha256": "4de239591e6a14239cf7901438af96b549015225fc9fc8b92c802f84e1d55d93",
           "undo": "ok; restores the text"
         },
         {
@@ -2427,9 +2444,9 @@
           "do": "set task:quoted_task databricks.run-if = \"[x\"",
           "answer": "ok",
           "hunks": [
-            "@17 -1 +\"          run_if: \\\"[x\\\"\\r\\n\""
+            "@17 -1 +\"          run_if: '[x' # keep going whatever happens\\r\\n\""
           ],
-          "sha256": "02ccb4b4a60d233f335894624d19f31209869a3d921a46912557c4fd8a8cd7ab"
+          "sha256": "34bc4aeb8fdc99bf67f9fea4e9995dfef3d4ab50ec54cc9db8ea69f1f066fafe"
         },
         {
           "do": "execute databricks.rename-task on task:quoted_task",
@@ -2440,9 +2457,9 @@
           "do": "set task:quoted_task databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@17 -1 +\"          run_if: ALL_DONE\\r\\n\""
+            "@17 -1 +\"          run_if: 'ALL_DONE' # keep going whatever happens\\r\\n\""
           ],
-          "sha256": "fb6192ab4daa3adf2adda023a6a13ee2d521ff04f1428afa6439d98cd919b1c1",
+          "sha256": "4de239591e6a14239cf7901438af96b549015225fc9fc8b92c802f84e1d55d93",
           "undo": "ok; restores the text"
         },
         {
@@ -2629,9 +2646,9 @@
           "do": "set bundle databricks.bundle-name = \"Parity bundle\"",
           "answer": "ok",
           "hunks": [
-            "@2 -1 +\"  name: Parity bundle\\r\\n\""
+            "@2 -1 +\"  name: 'Parity bundle' # the bundle's name, single-quoted\\r\\n\""
           ],
-          "sha256": "4ccb13d4eaaa8dc1226cdbdf76be8337284c714a0cbf3186c9dbe97dad3d3350",
+          "sha256": "e8f86cc1045ea37bb2eabcaefb80763654973289d0909c947ff1b633caac970e",
           "undo": "ok; restores the text",
           "redo": "ok; reapplies the text",
           "undoAgain": "ok; restores the text"
@@ -2650,9 +2667,9 @@
           "do": "commit databricks.rename-bundle on bundle = \"null\"",
           "answer": "ok",
           "hunks": [
-            "@2 -1 +\"  name: \\\"null\\\"\\r\\n\""
+            "@2 -1 +\"  name: 'null' # the bundle's name, single-quoted\\r\\n\""
           ],
-          "sha256": "a4c3a6f487a0ac58d47618e68b8e3ed6d47188176e56c3b7230da0cd39f23c9e",
+          "sha256": "cf840735fe2e415c3305d8c188acf449b62eb0beeedf0cd72e96871519acdf8f",
           "undo": "ok; restores the text"
         },
         {
@@ -2708,9 +2725,9 @@
           "do": "set pipeline databricks.pipeline:name = \"Parity pipeline\"",
           "answer": "ok",
           "hunks": [
-            "@28 -1 +\"      name: Parity pipeline\\r\\n\""
+            "@28 -1 +\"      name: \\\"Parity pipeline\\\" # quoted\\r\\n\""
           ],
-          "sha256": "1073e9a59543108a3ad4682d482ae37eae3077b4bc2b5e7fa6029ef388bbab25",
+          "sha256": "6a36d33ca6bf66853b0e8182120812cfcb2d3e112cdd0a98a8ce9a9143457d35",
           "undo": "ok; restores the text",
           "redo": "ok; reapplies the text",
           "undoAgain": "ok; restores the text"
@@ -2719,27 +2736,27 @@
           "do": "set pipeline databricks.pipeline:catalog = \"parity_catalog\"",
           "answer": "ok",
           "hunks": [
-            "@29 -1 +\"      catalog: parity_catalog\\r\\n\""
+            "@29 -1 +\"      catalog: 'parity_catalog' # the catalog\\r\\n\""
           ],
-          "sha256": "3bf4fa786593ad29e12e1073f33afbb65bc477dcf534689d05312cae21e56305",
+          "sha256": "c32716a769e3437f803da9b00f102b7552b8f0331d9f2219775e32ba905956ef",
           "undo": "ok; restores the text"
         },
         {
           "do": "set pipeline databricks.pipeline:schema = \"parity_schema\"",
           "answer": "ok",
           "hunks": [
-            "@30 -1 +\"      schema: parity_schema\\r\\n\""
+            "@30 -1 +\"      schema: parity_schema # the schema\\r\\n\""
           ],
-          "sha256": "56e8667bdec5e0d66dcb1c28f94e6412f61a51678e8029bc9d79223f85fea8da",
+          "sha256": "5e5be3ec84f385ef8a78f88a81231697389f39f81a2479e8975a3c2c18f8d52b",
           "undo": "ok; restores the text"
         },
         {
           "do": "set pipeline databricks.pipeline:channel = \"PREVIEW\"",
           "answer": "ok",
           "hunks": [
-            "@28 -0 +\"      channel: PREVIEW\\r\\n\""
+            "@31 -0 +\"      channel: PREVIEW\\r\\n\""
           ],
-          "sha256": "edc30339dbf432b480478cfaa9722579b061c6582a682a9fe20d36de5f3b4a1d",
+          "sha256": "d5c6e123fd5efd68de5e90e199ef4477ab030e7c26c13635aba231e4f2c219f5",
           "undo": "ok; restores the text"
         },
         {
@@ -2749,21 +2766,13 @@
         },
         {
           "do": "set pipeline databricks.pipeline:serverless = \"false\"",
-          "answer": "ok",
-          "hunks": [
-            "@28 -0 +\"      serverless: \\\"false\\\"\\r\\n\""
-          ],
-          "sha256": "4aaf418798f3c1cdb8c2a778b831fe0f3c0d281cd157774b0ba3d47d2b128466",
-          "undo": "ok; restores the text"
+          "answer": "refused: The value is computed from the file.",
+          "unchanged": true
         },
         {
           "do": "set pipeline databricks.pipeline:edition = \"CORE\"",
-          "answer": "ok",
-          "hunks": [
-            "@28 -0 +\"      edition: CORE\\r\\n\""
-          ],
-          "sha256": "b84db8066efc74c0f6dbf7ae20dd5149961f6fd9ff0cd4d87ece327aeee90761",
-          "undo": "ok; restores the text"
+          "answer": "refused: A Pipeline keeps no 'edition' in this file.",
+          "unchanged": true
         },
         {
           "do": "execute databricks.add-library:notebook on pipeline",
@@ -3340,9 +3349,9 @@
           "do": "set task:left databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"          run_if: ALL_DONE\\r\\n\""
+            "@9 -0 +\"          run_if: ALL_DONE\\r\\n\""
           ],
-          "sha256": "d5b20934bad72762b292c26142245f64c68e57d6b9333c7e0f50b50f6af8d6c1",
+          "sha256": "be63d896ac64edb29c3f3d9b52db846805edc791eff48e9de5e77b8e30d86842",
           "undo": "ok; restores the text",
           "redo": "ok; reapplies the text",
           "undoAgain": "ok; restores the text"
@@ -3357,9 +3366,9 @@
           "do": "set task:left databricks.run-if = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"          run_if: \\\"yes\\\"\\r\\n\""
+            "@9 -0 +\"          run_if: \\\"yes\\\"\\r\\n\""
           ],
-          "sha256": "f590a65d7cbcf3492ee23df8afd712542243a1af65882efb68a97487533cbd01",
+          "sha256": "71c90b97925de79c72067798763bfc265d7099ae45c7fa8c3f4e99c260ad6064",
           "undo": "ok; restores the text"
         },
         {
@@ -3459,9 +3468,9 @@
           "do": "commit databricks.set-run-if on task:left = \"AT_LEAST_ONE_SUCCESS\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"          run_if: AT_LEAST_ONE_SUCCESS\\r\\n\""
+            "@9 -0 +\"          run_if: AT_LEAST_ONE_SUCCESS\\r\\n\""
           ],
-          "sha256": "c3c316caed0345cb9279d48ce7d35e43ad328de65e98c09152ea76dc0dfc66b0",
+          "sha256": "f82ff37aa000be39eed904d5f82938e97d0ba12868909f13e1f66b23d893b218",
           "undo": "ok; restores the text"
         },
         {
@@ -3489,9 +3498,9 @@
           "do": "set task:left databricks.run-if = \"*nothing\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"          run_if: \\\"*nothing\\\"\\r\\n\""
+            "@9 -0 +\"          run_if: \\\"*nothing\\\"\\r\\n\""
           ],
-          "sha256": "93a396b0ba5ff391cad1cbb3bf9d818664792ac08142e607edb393274f672c38"
+          "sha256": "1e383c4fc6a78108ac207c78168a09f9c879d5bdbe23a1a2f9f999bbf98e372f"
         },
         {
           "do": "execute databricks.rename-task on task:left",
@@ -3502,16 +3511,16 @@
           "do": "set task:left databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@7 -1 +\"          run_if: ALL_DONE\\r\\n\""
+            "@9 -1 +\"          run_if: \\\"ALL_DONE\\\"\\r\\n\""
           ],
-          "sha256": "d5b20934bad72762b292c26142245f64c68e57d6b9333c7e0f50b50f6af8d6c1",
+          "sha256": "68176ca1e3828260f192d78c3ffb44ae9f8c4fcf3b0ae87fd78478694c3eec12",
           "undo": "ok; restores the text"
         },
         {
           "do": "undo",
           "answer": "ok",
           "hunks": [
-            "@7 -1 +\"\""
+            "@9 -1 +\"\""
           ],
           "sha256": "0d88064938f794704b408d59189a32c097fb3cb26569eb20a549a489032be41c"
         },
@@ -3519,9 +3528,9 @@
           "do": "set task:left databricks.run-if = \"[x\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"          run_if: \\\"[x\\\"\\r\\n\""
+            "@9 -0 +\"          run_if: \\\"[x\\\"\\r\\n\""
           ],
-          "sha256": "049eebf57fc7a721cea76154b08e30c43c385addc5432fe66721a071e4a9be3d"
+          "sha256": "fbfc6cc4e0d795bd6b319fef148e295e41da0bd834048d7d69e5ec889ba79115"
         },
         {
           "do": "execute databricks.rename-task on task:left",
@@ -3532,16 +3541,16 @@
           "do": "set task:left databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@7 -1 +\"          run_if: ALL_DONE\\r\\n\""
+            "@9 -1 +\"          run_if: \\\"ALL_DONE\\\"\\r\\n\""
           ],
-          "sha256": "d5b20934bad72762b292c26142245f64c68e57d6b9333c7e0f50b50f6af8d6c1",
+          "sha256": "68176ca1e3828260f192d78c3ffb44ae9f8c4fcf3b0ae87fd78478694c3eec12",
           "undo": "ok; restores the text"
         },
         {
           "do": "undo",
           "answer": "ok",
           "hunks": [
-            "@7 -1 +\"\""
+            "@9 -1 +\"\""
           ],
           "sha256": "0d88064938f794704b408d59189a32c097fb3cb26569eb20a549a489032be41c"
         },
@@ -4192,9 +4201,9 @@
           "do": "set task:twin databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@7 -1 +\"          run_if: ALL_DONE\\r\\n\""
+            "@7 -1 +\"          run_if: \\\"ALL_DONE\\\"\\r\\n\""
           ],
-          "sha256": "3249a0259f11bad6a408f0a43d4f5ce932a3f9aaa1acee4362af7246c89125c8",
+          "sha256": "a63319b47d9af001ee1fa02ac5e119143a9a9e3d27500bd467b3214468fe96ec",
           "undo": "ok; restores the text"
         },
         {
@@ -4222,9 +4231,9 @@
           "do": "set task:twin databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@7 -1 +\"          run_if: ALL_DONE\\r\\n\""
+            "@7 -1 +\"          run_if: \\\"ALL_DONE\\\"\\r\\n\""
           ],
-          "sha256": "3249a0259f11bad6a408f0a43d4f5ce932a3f9aaa1acee4362af7246c89125c8",
+          "sha256": "a63319b47d9af001ee1fa02ac5e119143a9a9e3d27500bd467b3214468fe96ec",
           "undo": "ok; restores the text"
         },
         {
@@ -5168,9 +5177,9 @@
           "do": "set task:a_notebook databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@7 -1 +\"          run_if: ALL_DONE\\r\\n\""
+            "@7 -1 +\"          run_if: \\\"ALL_DONE\\\"\\r\\n\""
           ],
-          "sha256": "0c26ad615285099b227d04389efc2ea7891ed57d460372eff7bc4e6d01b9343c",
+          "sha256": "784d017945773bcdea8a835238c5bad2b0c472eec0ce47fbd1e2d76af3aeba86",
           "undo": "ok; restores the text"
         },
         {
@@ -5198,9 +5207,9 @@
           "do": "set task:a_notebook databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@7 -1 +\"          run_if: ALL_DONE\\r\\n\""
+            "@7 -1 +\"          run_if: \\\"ALL_DONE\\\"\\r\\n\""
           ],
-          "sha256": "0c26ad615285099b227d04389efc2ea7891ed57d460372eff7bc4e6d01b9343c",
+          "sha256": "784d017945773bcdea8a835238c5bad2b0c472eec0ce47fbd1e2d76af3aeba86",
           "undo": "ok; restores the text"
         },
         {
@@ -5763,9 +5772,9 @@
           "do": "set task:both databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@14 -0 +\"          run_if: ALL_DONE\\r\\n\""
+            "@15 -0 +\"          run_if: ALL_DONE\\r\\n\""
           ],
-          "sha256": "434ec71ec2093c80b98d13c4093fc6cd3db78491cfb0a5f33a00de4c804e77c3",
+          "sha256": "9678b176793550215888235a8be2b85006626017bf4665baac34eae0b02c9355",
           "undo": "ok; restores the text",
           "redo": "ok; reapplies the text",
           "undoAgain": "ok; restores the text"
@@ -5780,9 +5789,9 @@
           "do": "set task:both databricks.run-if = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@14 -0 +\"          run_if: \\\"yes\\\"\\r\\n\""
+            "@15 -0 +\"          run_if: \\\"yes\\\"\\r\\n\""
           ],
-          "sha256": "de287228814623143b8eb969c70be7a79d5c51158ad20928533dec95c50b4eb0",
+          "sha256": "27ef3bcb72567b36ec9e20d0eb4c53aa589ea0a4c58af6163a380328cc16f1d1",
           "undo": "ok; restores the text"
         },
         {
@@ -5887,9 +5896,9 @@
           "do": "commit databricks.set-run-if on task:both = \"AT_LEAST_ONE_SUCCESS\"",
           "answer": "ok",
           "hunks": [
-            "@14 -0 +\"          run_if: AT_LEAST_ONE_SUCCESS\\r\\n\""
+            "@15 -0 +\"          run_if: AT_LEAST_ONE_SUCCESS\\r\\n\""
           ],
-          "sha256": "04b78811e38129d5b86c864c8a9ea724b249a612449998259640aa41d7a03a19",
+          "sha256": "daca765a88b550ea94ab0197ebbb6449ef65c7d3be2d086148f3d2131d52f79d",
           "undo": "ok; restores the text"
         },
         {
@@ -5924,9 +5933,9 @@
           "do": "set task:both databricks.run-if = \"*nothing\"",
           "answer": "ok",
           "hunks": [
-            "@14 -0 +\"          run_if: \\\"*nothing\\\"\\r\\n\""
+            "@15 -0 +\"          run_if: \\\"*nothing\\\"\\r\\n\""
           ],
-          "sha256": "8e97a18ee994fa40af1c0cae9c978b40a530892f62f15d4ef396f3ef98097238"
+          "sha256": "04e55d397f0d096c281a93e6fe6c24d355e409a4bda4f41478f0c20970f41132"
         },
         {
           "do": "execute databricks.rename-task on task:both",
@@ -5937,16 +5946,16 @@
           "do": "set task:both databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@14 -1 +\"          run_if: ALL_DONE\\r\\n\""
+            "@15 -1 +\"          run_if: \\\"ALL_DONE\\\"\\r\\n\""
           ],
-          "sha256": "434ec71ec2093c80b98d13c4093fc6cd3db78491cfb0a5f33a00de4c804e77c3",
+          "sha256": "2781f7522ff79cefb707b7f6bdd804bdbe3c3b5ece8d5655b1a139bcf0be41b1",
           "undo": "ok; restores the text"
         },
         {
           "do": "undo",
           "answer": "ok",
           "hunks": [
-            "@14 -1 +\"\""
+            "@15 -1 +\"\""
           ],
           "sha256": "6dcfc8be1baa7d761244799db0bd50d7daf36e2d04e4990a050fa43d7cbdabe6"
         },
@@ -5954,9 +5963,9 @@
           "do": "set task:both databricks.run-if = \"[x\"",
           "answer": "ok",
           "hunks": [
-            "@14 -0 +\"          run_if: \\\"[x\\\"\\r\\n\""
+            "@15 -0 +\"          run_if: \\\"[x\\\"\\r\\n\""
           ],
-          "sha256": "8c9817df31061f56b992dd0504bf4d881d7e544368a33daa0cc68bb62073779c"
+          "sha256": "bed5e765884d4fe02596ace447ba0784d4d2a36d4aafbe0077e43a60a6e7b37a"
         },
         {
           "do": "execute databricks.rename-task on task:both",
@@ -5967,16 +5976,16 @@
           "do": "set task:both databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@14 -1 +\"          run_if: ALL_DONE\\r\\n\""
+            "@15 -1 +\"          run_if: \\\"ALL_DONE\\\"\\r\\n\""
           ],
-          "sha256": "434ec71ec2093c80b98d13c4093fc6cd3db78491cfb0a5f33a00de4c804e77c3",
+          "sha256": "2781f7522ff79cefb707b7f6bdd804bdbe3c3b5ece8d5655b1a139bcf0be41b1",
           "undo": "ok; restores the text"
         },
         {
           "do": "undo",
           "answer": "ok",
           "hunks": [
-            "@14 -1 +\"\""
+            "@15 -1 +\"\""
           ],
           "sha256": "6dcfc8be1baa7d761244799db0bd50d7daf36e2d04e4990a050fa43d7cbdabe6"
         },
@@ -6802,9 +6811,9 @@
           "do": "set task:loop_a databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"          run_if: ALL_DONE\\r\\n\""
+            "@9 -0 +\"          run_if: ALL_DONE\\r\\n\""
           ],
-          "sha256": "696b6b776c7c4cb1f3ddb078d41c0fa6289220019752796385f8ab5c10ca99dc",
+          "sha256": "44415f306d7a290eaa7b87c47af0e4c254c3b88fbcfe4ff4f0c3229cf58623db",
           "undo": "ok; restores the text",
           "redo": "ok; reapplies the text",
           "undoAgain": "ok; restores the text"
@@ -6819,9 +6828,9 @@
           "do": "set task:loop_a databricks.run-if = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"          run_if: \\\"yes\\\"\\r\\n\""
+            "@9 -0 +\"          run_if: \\\"yes\\\"\\r\\n\""
           ],
-          "sha256": "fbbd7b45884484472c6989943e11045e8532a92c94d25a3fb908641ebc34df12",
+          "sha256": "32654f63443d20045394ea821f90e2631b149f4cf7c5c5b5f7095b3f3ec2d4f4",
           "undo": "ok; restores the text"
         },
         {
@@ -6921,9 +6930,9 @@
           "do": "commit databricks.set-run-if on task:loop_a = \"AT_LEAST_ONE_SUCCESS\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"          run_if: AT_LEAST_ONE_SUCCESS\\r\\n\""
+            "@9 -0 +\"          run_if: AT_LEAST_ONE_SUCCESS\\r\\n\""
           ],
-          "sha256": "011096e0db39428760d5accb8e3669b3d62baadf3da0ca39ce780b126909b8c6",
+          "sha256": "28a371ce5ec8c3b6466416181adfd70076ee1481be8cd24c6dbb7e01777c6149",
           "undo": "ok; restores the text"
         },
         {
@@ -6951,9 +6960,9 @@
           "do": "set task:loop_a databricks.run-if = \"*nothing\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"          run_if: \\\"*nothing\\\"\\r\\n\""
+            "@9 -0 +\"          run_if: \\\"*nothing\\\"\\r\\n\""
           ],
-          "sha256": "903fd481ee311a6939ff41900c5a3b8be7b3dc80a25eb8d120040a4ad1a5d9d9"
+          "sha256": "279e63f98ba69873936f6159c83c39459715368500045c38606d475b75119c00"
         },
         {
           "do": "execute databricks.rename-task on task:loop_a",
@@ -6964,16 +6973,16 @@
           "do": "set task:loop_a databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@7 -1 +\"          run_if: ALL_DONE\\r\\n\""
+            "@9 -1 +\"          run_if: \\\"ALL_DONE\\\"\\r\\n\""
           ],
-          "sha256": "696b6b776c7c4cb1f3ddb078d41c0fa6289220019752796385f8ab5c10ca99dc",
+          "sha256": "bdb3198ef23e490e3a7f3b42be54851185ff23b151cc2f83cb2cbd4c378f8452",
           "undo": "ok; restores the text"
         },
         {
           "do": "undo",
           "answer": "ok",
           "hunks": [
-            "@7 -1 +\"\""
+            "@9 -1 +\"\""
           ],
           "sha256": "b44633ef92def6793e026271332848b72d9bf69c33f2fb6064b3eaa46098ad04"
         },
@@ -6981,9 +6990,9 @@
           "do": "set task:loop_a databricks.run-if = \"[x\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"          run_if: \\\"[x\\\"\\r\\n\""
+            "@9 -0 +\"          run_if: \\\"[x\\\"\\r\\n\""
           ],
-          "sha256": "b05d7a33fdb307cba5c36f40b2bd407373d2e8b2b66d0f636c518663256a7f5f"
+          "sha256": "b70da7714edc76f76c64b3edae7016dfcefbc9d521459bcc0244afbf30fcf224"
         },
         {
           "do": "execute databricks.rename-task on task:loop_a",
@@ -6994,16 +7003,16 @@
           "do": "set task:loop_a databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@7 -1 +\"          run_if: ALL_DONE\\r\\n\""
+            "@9 -1 +\"          run_if: \\\"ALL_DONE\\\"\\r\\n\""
           ],
-          "sha256": "696b6b776c7c4cb1f3ddb078d41c0fa6289220019752796385f8ab5c10ca99dc",
+          "sha256": "bdb3198ef23e490e3a7f3b42be54851185ff23b151cc2f83cb2cbd4c378f8452",
           "undo": "ok; restores the text"
         },
         {
           "do": "undo",
           "answer": "ok",
           "hunks": [
-            "@7 -1 +\"\""
+            "@9 -1 +\"\""
           ],
           "sha256": "b44633ef92def6793e026271332848b72d9bf69c33f2fb6064b3eaa46098ad04"
         },
@@ -7528,12 +7537,12 @@
         },
         {
           "do": "set pipeline databricks.pipeline:serverless = \"false\"",
-          "answer": "refused: The settings file has no \"serverless\" to rewrite.",
+          "answer": "refused: The value is computed from the file.",
           "unchanged": true
         },
         {
           "do": "set pipeline databricks.pipeline:edition = \"CORE\"",
-          "answer": "refused: The settings file has no \"edition\" to rewrite.",
+          "answer": "refused: A Pipeline keeps no 'edition' in this file.",
           "unchanged": true
         },
         {
@@ -7543,18 +7552,32 @@
         },
         {
           "do": "commit databricks.add-library:notebook on pipeline = \"parity/notebook\"",
-          "answer": "refused: This list is written on one line, which this diagram cannot change yet; edit it in the text editor.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@4 -1 +\"  \\\"libraries\\\": [{ \\\"notebook\\\": { \\\"path\\\": \\\"parity/notebook\\\" } }]\\r\\n\""
+          ],
+          "sha256": "8434652e1054802e944f5727990421e2f119bb0ca252fc72b797c3e56541f803",
+          "undo": "ok; restores the text",
+          "redo": "ok; reapplies the text",
+          "undoAgain": "ok; restores the text"
         },
         {
           "do": "commit databricks.add-library:file on pipeline = \"parity/file.py\"",
-          "answer": "refused: This list is written on one line, which this diagram cannot change yet; edit it in the text editor.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@4 -1 +\"  \\\"libraries\\\": [{ \\\"file\\\": { \\\"path\\\": \\\"parity/file.py\\\" } }]\\r\\n\""
+          ],
+          "sha256": "26d01646354acf1a5f24d709a0200cabb0867a2454930e219bf63ba7b8c45a65",
+          "undo": "ok; restores the text"
         },
         {
           "do": "commit databricks.add-library:glob on pipeline = \"parity/**\"",
-          "answer": "refused: This list is written on one line, which this diagram cannot change yet; edit it in the text editor.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@4 -1 +\"  \\\"libraries\\\": [{ \\\"glob\\\": { \\\"include\\\": \\\"parity/**\\\" } }]\\r\\n\""
+          ],
+          "sha256": "f5798ae7981506b650cce2cd0f6ec03091db8d743a72d5347958132dad9f8ab6",
+          "undo": "ok; restores the text"
         },
         {
           "do": "commit databricks.add-library:jar on pipeline = \"parity.jar\"",
@@ -7563,8 +7586,12 @@
         },
         {
           "do": "commit databricks.add-library:notebook on pipeline = \"*star\"",
-          "answer": "refused: This list is written on one line, which this diagram cannot change yet; edit it in the text editor.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@4 -1 +\"  \\\"libraries\\\": [{ \\\"notebook\\\": { \\\"path\\\": \\\"*star\\\" } }]\\r\\n\""
+          ],
+          "sha256": "fc456af4bb094b59e30fa086f84b657d177a9112e3554724565b1aa4a640f152",
+          "undo": "ok; restores the text"
         },
         {
           "do": "commit databricks.add-library:notebook on pipeline = \"\"",
@@ -7833,18 +7860,32 @@
         },
         {
           "do": "execute databricks.add-task:notebook on new:120,80",
-          "answer": "refused: This list is written on one line, which this diagram cannot change yet; edit it in the text editor.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@5 -1 +\"      tasks:\\r\\n        - task_key: notebook_1\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/notebook_1\\r\\n\""
+          ],
+          "sha256": "7fe81d39ad76ce5037b9129c3cbf51255d454714b82a35f8404b77fc5d2a7555",
+          "undo": "ok; restores the text",
+          "redo": "ok; reapplies the text",
+          "undoAgain": "ok; restores the text"
         },
         {
           "do": "execute databricks.add-task:python on new:120,80",
-          "answer": "refused: This list is written on one line, which this diagram cannot change yet; edit it in the text editor.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@5 -1 +\"      tasks:\\r\\n        - task_key: python_1\\r\\n          spark_python_task:\\r\\n            python_file: scripts/python_1.py\\r\\n\""
+          ],
+          "sha256": "e1e4f823ce342cb2498d49f5d9ea791703d1e374eb152cfc83fb0b61bd98766f",
+          "undo": "ok; restores the text"
         },
         {
           "do": "execute databricks.add-task:condition on new:120,80",
-          "answer": "refused: This list is written on one line, which this diagram cannot change yet; edit it in the text editor.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@5 -1 +\"      tasks:\\r\\n        - task_key: condition_1\\r\\n          condition_task:\\r\\n            op: EQUAL_TO\\r\\n            left: \\\"condition_1\\\"\\r\\n            right: \\\"true\\\"\\r\\n\""
+          ],
+          "sha256": "0db861360a851a743b1b3541acba46ae9f4412ea8333d71f12f5eff5bab1fe03",
+          "undo": "ok; restores the text"
         },
         {
           "do": "execute databricks.add-task:jar on new:120,80",
@@ -7863,28 +7904,48 @@
         },
         {
           "do": "commit databricks.add-task:notebook on  = \"parity_task\"",
-          "answer": "refused: This list is written on one line, which this diagram cannot change yet; edit it in the text editor.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@5 -1 +\"      tasks:\\r\\n        - task_key: parity_task\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/parity_task\\r\\n\""
+          ],
+          "sha256": "bae5f31cc1f616b610bc113ea858f96042b80e0ddcb50fd08e8e53c1a5a96433",
+          "undo": "ok; restores the text"
         },
         {
           "do": "insert a wheel task",
-          "answer": "refused: This list is written on one line, which this diagram cannot change yet; edit it in the text editor.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@5 -1 +\"      tasks:\\r\\n        - task_key: parity_wheel\\r\\n          python_wheel_task:\\r\\n            package_name: parity/wheel\\r\\n            entry_point: main\\r\\n\""
+          ],
+          "sha256": "05dd1c0a00aa2d06c1d260148ee728a89a1797d00422475288c2674919c5260d",
+          "undo": "ok; restores the text"
         },
         {
           "do": "insert a sql task",
-          "answer": "refused: This list is written on one line, which this diagram cannot change yet; edit it in the text editor.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@5 -1 +\"      tasks:\\r\\n        - task_key: parity_sql\\r\\n          sql_task:\\r\\n            warehouse_id: \\\"\\\"\\r\\n            query:\\r\\n              query_id: parity/sql\\r\\n\""
+          ],
+          "sha256": "025c15bbf28dbe81f458944bcaefafb422769d3c9103058afa689ab1174a8d94",
+          "undo": "ok; restores the text"
         },
         {
           "do": "insert a pipeline task",
-          "answer": "refused: This list is written on one line, which this diagram cannot change yet; edit it in the text editor.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@5 -1 +\"      tasks:\\r\\n        - task_key: parity_pipeline\\r\\n          pipeline_task:\\r\\n            pipeline_id: parity/pipeline\\r\\n\""
+          ],
+          "sha256": "b18d21ba770fbda24b6ececdb88605403b678e5edfacf93ee039fe8a6cbb4533",
+          "undo": "ok; restores the text"
         },
         {
           "do": "insert a run-job task",
-          "answer": "refused: This list is written on one line, which this diagram cannot change yet; edit it in the text editor.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@5 -1 +\"      tasks:\\r\\n        - task_key: parity_run_job\\r\\n          run_job_task:\\r\\n            job_id: parity/run-job\\r\\n\""
+          ],
+          "sha256": "081b317aa26c394ddb21ee2f11cacf8b358e36be74a6c562eac42b27acef541b",
+          "undo": "ok; restores the text"
         },
         {
           "do": "insert a for-each task",
@@ -7984,27 +8045,27 @@
           "do": "set pipeline databricks.pipeline:catalog = \"parity_catalog\"",
           "answer": "ok",
           "hunks": [
-            "@20 -0 +\"      catalog: parity_catalog\\r\\n\""
+            "@21 -0 +\"      catalog: parity_catalog\\r\\n\""
           ],
-          "sha256": "a009324865939fc593807807daf5119e810d5906c06128d67a205e3eb7ab53a2",
+          "sha256": "353f01be1b805866c7f1046710b2f2fd56902a5b96182bc098a88c13d5746318",
           "undo": "ok; restores the text"
         },
         {
           "do": "set pipeline databricks.pipeline:schema = \"parity_schema\"",
           "answer": "ok",
           "hunks": [
-            "@20 -0 +\"      schema: parity_schema\\r\\n\""
+            "@21 -0 +\"      schema: parity_schema\\r\\n\""
           ],
-          "sha256": "68b078eaf822bd5590c0e9bf61153b55f97630b75e2793c6f72d850dcd414e18",
+          "sha256": "db62e5defe623fc3c7608b246a34e8b0355e9d97aa13c20cad9a072f9bbbea2a",
           "undo": "ok; restores the text"
         },
         {
           "do": "set pipeline databricks.pipeline:channel = \"PREVIEW\"",
           "answer": "ok",
           "hunks": [
-            "@20 -0 +\"      channel: PREVIEW\\r\\n\""
+            "@21 -0 +\"      channel: PREVIEW\\r\\n\""
           ],
-          "sha256": "6a0933395cf98d24d0154b7764192d73019a128b9b227040b59c12053bd44fd6",
+          "sha256": "23980cf42f2841dea5082a8b1872f9b1c17556de56b0752c506c49bc1030f98c",
           "undo": "ok; restores the text"
         },
         {
@@ -8014,21 +8075,13 @@
         },
         {
           "do": "set pipeline databricks.pipeline:serverless = \"false\"",
-          "answer": "ok",
-          "hunks": [
-            "@20 -0 +\"      serverless: \\\"false\\\"\\r\\n\""
-          ],
-          "sha256": "099eb5a18dd0008b036923abfc89ae7c0cb7b1ee06c658752fa16d4bbabb0537",
-          "undo": "ok; restores the text"
+          "answer": "refused: The value is computed from the file.",
+          "unchanged": true
         },
         {
           "do": "set pipeline databricks.pipeline:edition = \"CORE\"",
-          "answer": "ok",
-          "hunks": [
-            "@20 -0 +\"      edition: CORE\\r\\n\""
-          ],
-          "sha256": "c7f3d8e47c3e7f139cf02af618d9f59bbc358e10a5c8e157a66516635fc34fec",
-          "undo": "ok; restores the text"
+          "answer": "refused: A Pipeline keeps no 'edition' in this file.",
+          "unchanged": true
         },
         {
           "do": "execute databricks.add-library:notebook on pipeline",
@@ -8037,18 +8090,32 @@
         },
         {
           "do": "commit databricks.add-library:notebook on pipeline = \"parity/notebook\"",
-          "answer": "refused: This list is written on one line, which this diagram cannot change yet; edit it in the text editor.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@21 -1 +\"      libraries: [{notebook: {path: transformations/one}}, {file: {path: transformations/two.py}}, {notebook: {path: parity/notebook}}]\\r\\n\""
+          ],
+          "sha256": "48741a0914e4aa8afbb5d11192face8d7bf9454d3e15a791f455288029a740ca",
+          "undo": "ok; restores the text",
+          "redo": "ok; reapplies the text",
+          "undoAgain": "ok; restores the text"
         },
         {
           "do": "commit databricks.add-library:file on pipeline = \"parity/file.py\"",
-          "answer": "refused: This list is written on one line, which this diagram cannot change yet; edit it in the text editor.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@21 -1 +\"      libraries: [{notebook: {path: transformations/one}}, {file: {path: transformations/two.py}}, {file: {path: parity/file.py}}]\\r\\n\""
+          ],
+          "sha256": "71837093a34284d39e5ff764afbac67781a163907ba97db9874b8f6747d193ea",
+          "undo": "ok; restores the text"
         },
         {
           "do": "commit databricks.add-library:glob on pipeline = \"parity/**\"",
-          "answer": "refused: This list is written on one line, which this diagram cannot change yet; edit it in the text editor.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@21 -1 +\"      libraries: [{notebook: {path: transformations/one}}, {file: {path: transformations/two.py}}, {glob: {include: parity/**}}]\\r\\n\""
+          ],
+          "sha256": "a792eb3e36e746a4041bb41b278f84f3d499c3ced063f762229608dd073ea965",
+          "undo": "ok; restores the text"
         },
         {
           "do": "commit databricks.add-library:jar on pipeline = \"parity.jar\"",
@@ -8057,8 +8124,12 @@
         },
         {
           "do": "commit databricks.add-library:notebook on pipeline = \"*star\"",
-          "answer": "refused: This list is written on one line, which this diagram cannot change yet; edit it in the text editor.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@21 -1 +\"      libraries: [{notebook: {path: transformations/one}}, {file: {path: transformations/two.py}}, {notebook: {path: \\\"*star\\\"}}]\\r\\n\""
+          ],
+          "sha256": "87c570b3b2e90ef128c3f132627fcfcd3d6f184c7660ae500007af7230911e0e",
+          "undo": "ok; restores the text"
         },
         {
           "do": "commit databricks.add-library:notebook on pipeline = \"\"",
@@ -8072,13 +8143,23 @@
         },
         {
           "do": "execute databricks.remove-library on library:transformations/one",
-          "answer": "refused: This list is written on one line, which this diagram cannot change yet; edit it in the text editor.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@21 -1 +\"      libraries: [{file: {path: transformations/two.py}}]\\r\\n\""
+          ],
+          "sha256": "2c21b4fccf860e186c5bbbed07f264adcdb540c8c4151e8872e701115f3033d1",
+          "undo": "ok; restores the text",
+          "redo": "ok; reapplies the text",
+          "undoAgain": "ok; restores the text"
         },
         {
           "do": "execute databricks.remove-library on library:transformations/two.py",
-          "answer": "refused: This list is written on one line, which this diagram cannot change yet; edit it in the text editor.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@21 -1 +\"      libraries: [{notebook: {path: transformations/one}}]\\r\\n\""
+          ],
+          "sha256": "ca81e8e588d6eaf014fc398a22542f67ea76698d35a11ecd257d176c2b1ef5b4",
+          "undo": "ok; restores the text"
         },
         {
           "do": "execute databricks.simulated.pipeline-update on pipeline",
@@ -8322,9 +8403,9 @@
           "do": "set task:b databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"          run_if: ALL_DONE\\r\\n\""
+            "@8 -0 +\"          run_if: ALL_DONE\\r\\n\""
           ],
-          "sha256": "f7526dbd3007bd5b052fd501298d57669be78fc256b9d16c12e416595d2be5ca",
+          "sha256": "e39caacdd64e08e207c453bee52eb0f84ef95b227028e7acaa09a8687477471e",
           "undo": "ok; restores the text",
           "redo": "ok; reapplies the text",
           "undoAgain": "ok; restores the text"
@@ -8339,9 +8420,9 @@
           "do": "set task:b databricks.run-if = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"          run_if: \\\"yes\\\"\\r\\n\""
+            "@8 -0 +\"          run_if: \\\"yes\\\"\\r\\n\""
           ],
-          "sha256": "95ed99f85b7f9cf3821a536bf16dab06236d46010a5ecacab17059e9c98af189",
+          "sha256": "1cb707d3f41121f9e6da7412a2ad55f0e82c8c3d9fd27125b4ec727016e1fe78",
           "undo": "ok; restores the text"
         },
         {
@@ -8439,9 +8520,9 @@
           "do": "commit databricks.set-run-if on task:b = \"AT_LEAST_ONE_SUCCESS\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"          run_if: AT_LEAST_ONE_SUCCESS\\r\\n\""
+            "@8 -0 +\"          run_if: AT_LEAST_ONE_SUCCESS\\r\\n\""
           ],
-          "sha256": "b086e05c11584b96bae60711a95cc42096e94bb4364cb7f5ce5b732e550ac888",
+          "sha256": "77a4e4e78250ecd61913b572b8e0f12baf8b49e7105c5a294732539aa163bafc",
           "undo": "ok; restores the text"
         },
         {
@@ -8469,9 +8550,9 @@
           "do": "set task:b databricks.run-if = \"*nothing\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"          run_if: \\\"*nothing\\\"\\r\\n\""
+            "@8 -0 +\"          run_if: \\\"*nothing\\\"\\r\\n\""
           ],
-          "sha256": "177e76f693a4394c2290fc6f60f50363cfd60e98c33bbdf7e4f3332298bcef56"
+          "sha256": "ed5a2ad307156b3baacda8420509abf5283253d1cbe92f9459488955db744c1f"
         },
         {
           "do": "execute databricks.rename-task on task:b",
@@ -8482,16 +8563,16 @@
           "do": "set task:b databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@7 -1 +\"          run_if: ALL_DONE\\r\\n\""
+            "@8 -1 +\"          run_if: \\\"ALL_DONE\\\"\\r\\n\""
           ],
-          "sha256": "f7526dbd3007bd5b052fd501298d57669be78fc256b9d16c12e416595d2be5ca",
+          "sha256": "02baa4054a8161d5a093dc5fdb29d0464b222e1e641208c99971b83032faad60",
           "undo": "ok; restores the text"
         },
         {
           "do": "undo",
           "answer": "ok",
           "hunks": [
-            "@7 -1 +\"\""
+            "@8 -1 +\"\""
           ],
           "sha256": "ff9187ee7da7ff38832a59946a25e63fb536e81c026b1086d2303e706c5aabe1"
         },
@@ -8499,9 +8580,9 @@
           "do": "set task:b databricks.run-if = \"[x\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"          run_if: \\\"[x\\\"\\r\\n\""
+            "@8 -0 +\"          run_if: \\\"[x\\\"\\r\\n\""
           ],
-          "sha256": "19324e90e01999806ee4d86d9e7c157b85e8be344040f587d8db81b431881d22"
+          "sha256": "5b7effccd2d7af73bc35259b8f3927f9fa350201eb56c3db3a66b4f5596ff921"
         },
         {
           "do": "execute databricks.rename-task on task:b",
@@ -8512,23 +8593,29 @@
           "do": "set task:b databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@7 -1 +\"          run_if: ALL_DONE\\r\\n\""
+            "@8 -1 +\"          run_if: \\\"ALL_DONE\\\"\\r\\n\""
           ],
-          "sha256": "f7526dbd3007bd5b052fd501298d57669be78fc256b9d16c12e416595d2be5ca",
+          "sha256": "02baa4054a8161d5a093dc5fdb29d0464b222e1e641208c99971b83032faad60",
           "undo": "ok; restores the text"
         },
         {
           "do": "undo",
           "answer": "ok",
           "hunks": [
-            "@7 -1 +\"\""
+            "@8 -1 +\"\""
           ],
           "sha256": "ff9187ee7da7ff38832a59946a25e63fb536e81c026b1086d2303e706c5aabe1"
         },
         {
           "do": "execute databricks.disconnect:a on task:b",
-          "answer": "refused: This list is written on one line, which this diagram cannot change yet; edit it in the text editor.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@7 -1 +\"\""
+          ],
+          "sha256": "35f75dbe789f00f5c0243c1bd02c09e2c5bae348a52bc8cb57ca030f194319a3",
+          "undo": "ok; restores the text",
+          "redo": "ok; reapplies the text",
+          "undoAgain": "ok; restores the text"
         },
         {
           "do": "execute databricks.disconnect:parity_nobody on task:b",
@@ -8537,8 +8624,12 @@
         },
         {
           "do": "execute databricks.remove-edge on edge:a->b",
-          "answer": "refused: This list is written on one line, which this diagram cannot change yet; edit it in the text editor.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@7 -1 +\"\""
+          ],
+          "sha256": "35f75dbe789f00f5c0243c1bd02c09e2c5bae348a52bc8cb57ca030f194319a3",
+          "undo": "ok; restores the text"
         },
         {
           "do": "execute databricks.connect on rel:task:a->task:b",
@@ -8547,8 +8638,14 @@
         },
         {
           "do": "execute databricks.connect on rel:task:c->task:b",
-          "answer": "refused: This list is written on one line, which this diagram cannot change yet; edit it in the text editor.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@7 -1 +\"          depends_on: [{task_key: a}, {task_key: c}]\\r\\n\""
+          ],
+          "sha256": "48a5915abf1bbc7050cd8c62586f45b2f1b2409867f64df9d28825c5bd2c48f6",
+          "undo": "ok; restores the text",
+          "redo": "ok; reapplies the text",
+          "undoAgain": "ok; restores the text"
         },
         {
           "do": "execute databricks.connect on rel:task:b->task:b",
@@ -8988,9 +9085,9 @@
           "do": "set task:outer databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@12 -0 +\"          run_if: ALL_DONE\\r\\n\""
+            "@13 -0 +\"          run_if: ALL_DONE\\r\\n\""
           ],
-          "sha256": "c2310d7d73aff43e61aaaabc0949bc4a1a41b4b508fa6bb8b9279b0cf47cb149",
+          "sha256": "a0da59f5ae074fdeaa380f52b7a5e8bfd165461b0f997f5e059225b14196d68c",
           "undo": "ok; restores the text",
           "redo": "ok; reapplies the text",
           "undoAgain": "ok; restores the text"
@@ -9005,9 +9102,9 @@
           "do": "set task:outer databricks.run-if = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@12 -0 +\"          run_if: \\\"yes\\\"\\r\\n\""
+            "@13 -0 +\"          run_if: \\\"yes\\\"\\r\\n\""
           ],
-          "sha256": "edc111f4e48940fb1169f450839a005616bd53213cd1dd138180e4b1a438e46d",
+          "sha256": "76d2e5dc2fc3adf33afcf9210dd841ffa6244e6ba7ff3062dc93539fe82ff549",
           "undo": "ok; restores the text"
         },
         {
@@ -9107,9 +9204,9 @@
           "do": "commit databricks.set-run-if on task:outer = \"AT_LEAST_ONE_SUCCESS\"",
           "answer": "ok",
           "hunks": [
-            "@12 -0 +\"          run_if: AT_LEAST_ONE_SUCCESS\\r\\n\""
+            "@13 -0 +\"          run_if: AT_LEAST_ONE_SUCCESS\\r\\n\""
           ],
-          "sha256": "21c37f8aafca54e7618c18b491fe17341b590e680415e46549e5f583eac8f88c",
+          "sha256": "0d86e768af3aef25e751fca181b6c5ecced92e998c41b2323763022f7526d723",
           "undo": "ok; restores the text"
         },
         {
@@ -9137,9 +9234,9 @@
           "do": "set task:outer databricks.run-if = \"*nothing\"",
           "answer": "ok",
           "hunks": [
-            "@12 -0 +\"          run_if: \\\"*nothing\\\"\\r\\n\""
+            "@13 -0 +\"          run_if: \\\"*nothing\\\"\\r\\n\""
           ],
-          "sha256": "38fab62ea894a16fbfb09857261d07a3ce7639b5e6f7aed2bf38f0b4b2ed51e9"
+          "sha256": "c646aefe288c838601b23d6a8ff11f8044172615fa4ea6557e54527cdacd3d92"
         },
         {
           "do": "execute databricks.rename-task on task:outer",
@@ -9150,16 +9247,16 @@
           "do": "set task:outer databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@12 -1 +\"          run_if: ALL_DONE\\r\\n\""
+            "@13 -1 +\"          run_if: \\\"ALL_DONE\\\"\\r\\n\""
           ],
-          "sha256": "c2310d7d73aff43e61aaaabc0949bc4a1a41b4b508fa6bb8b9279b0cf47cb149",
+          "sha256": "dde73c1ade93f0f193819af53a35b4e3fa873b1f3a003b5c09431947f77a48cd",
           "undo": "ok; restores the text"
         },
         {
           "do": "undo",
           "answer": "ok",
           "hunks": [
-            "@12 -1 +\"\""
+            "@13 -1 +\"\""
           ],
           "sha256": "754f8df8d68f8d3a60022068f82e407518d097b18b96ab8a462f6accb4f08ec5"
         },
@@ -9167,9 +9264,9 @@
           "do": "set task:outer databricks.run-if = \"[x\"",
           "answer": "ok",
           "hunks": [
-            "@12 -0 +\"          run_if: \\\"[x\\\"\\r\\n\""
+            "@13 -0 +\"          run_if: \\\"[x\\\"\\r\\n\""
           ],
-          "sha256": "418d90ebab07784787884ef16f46df9f90d2f0b339b62fd2e58d1eea74b90bee"
+          "sha256": "b2cacca935631149c9d6e92c206f37d1817d3745cdb2dad9e889a88872aa0f54"
         },
         {
           "do": "execute databricks.rename-task on task:outer",
@@ -9180,16 +9277,16 @@
           "do": "set task:outer databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@12 -1 +\"          run_if: ALL_DONE\\r\\n\""
+            "@13 -1 +\"          run_if: \\\"ALL_DONE\\\"\\r\\n\""
           ],
-          "sha256": "c2310d7d73aff43e61aaaabc0949bc4a1a41b4b508fa6bb8b9279b0cf47cb149",
+          "sha256": "dde73c1ade93f0f193819af53a35b4e3fa873b1f3a003b5c09431947f77a48cd",
           "undo": "ok; restores the text"
         },
         {
           "do": "undo",
           "answer": "ok",
           "hunks": [
-            "@12 -1 +\"\""
+            "@13 -1 +\"\""
           ],
           "sha256": "754f8df8d68f8d3a60022068f82e407518d097b18b96ab8a462f6accb4f08ec5"
         },
@@ -9227,9 +9324,9 @@
           "do": "execute databricks.connect on rel:task:mapping_first->task:outer",
           "answer": "ok",
           "hunks": [
-            "@12 -0 +\"          depends_on:\\r\\n            - task_key: mapping_first\\r\\n\""
+            "@13 -0 +\"          depends_on:\\r\\n            - task_key: mapping_first\\r\\n\""
           ],
-          "sha256": "486be0ac5cf230cc01ee0f241a0ab6a62edbcafcb529b4f2633c08cc76c36040",
+          "sha256": "8150ca7dbf2ab85cb9f7fa8867224c5d9a267fba33535994eb4ea3323081d34a",
           "undo": "ok; restores the text",
           "redo": "ok; reapplies the text",
           "undoAgain": "ok; restores the text"
@@ -9831,9 +9928,9 @@
           "do": "set task:notebook_2 databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@7 -1 +\"          run_if: ALL_DONE\\r\\n\""
+            "@7 -1 +\"          run_if: \\\"ALL_DONE\\\"\\r\\n\""
           ],
-          "sha256": "4eee1551095083e79c015156225a58ab1d0ca9ea87658e2f02072e9caece6349",
+          "sha256": "4f29e1d8c3b90aeed91459b1fbf0e540b5785ca1569df8c76110d1e3bf4ce73c",
           "undo": "ok; restores the text"
         },
         {
@@ -9861,9 +9958,9 @@
           "do": "set task:notebook_2 databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@7 -1 +\"          run_if: ALL_DONE\\r\\n\""
+            "@7 -1 +\"          run_if: \\\"ALL_DONE\\\"\\r\\n\""
           ],
-          "sha256": "4eee1551095083e79c015156225a58ab1d0ca9ea87658e2f02072e9caece6349",
+          "sha256": "4f29e1d8c3b90aeed91459b1fbf0e540b5785ca1569df8c76110d1e3bf4ce73c",
           "undo": "ok; restores the text"
         },
         {
@@ -10411,9 +10508,9 @@
           "do": "set task:ingest databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@16 -0 +\"          run_if: ALL_DONE\\r\\n\""
+            "@17 -0 +\"          run_if: ALL_DONE\\r\\n\""
           ],
-          "sha256": "053ccca818c1cbc04f69068c4b0a31b84ef00341a8ce7e1925ef1af247655d4a",
+          "sha256": "f1edbfae04ebda3693d401e94bd322ffdbf2ef8c3726e063bdaa1cd3db3ab9b7",
           "undo": "ok; restores the text",
           "redo": "ok; reapplies the text",
           "undoAgain": "ok; restores the text"
@@ -10428,9 +10525,9 @@
           "do": "set task:ingest databricks.run-if = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@16 -0 +\"          run_if: \\\"yes\\\"\\r\\n\""
+            "@17 -0 +\"          run_if: \\\"yes\\\"\\r\\n\""
           ],
-          "sha256": "1c9732d8fd7999a6fc659d7e2273286d1994349d1a4c6bea9e99359d07d9c8bc",
+          "sha256": "a67f0dadb9cda1cfbfbee683b3d281ada069351f73a671c4b862a35f58069b25",
           "undo": "ok; restores the text"
         },
         {
@@ -10534,9 +10631,9 @@
           "do": "commit databricks.set-run-if on task:ingest = \"AT_LEAST_ONE_SUCCESS\"",
           "answer": "ok",
           "hunks": [
-            "@16 -0 +\"          run_if: AT_LEAST_ONE_SUCCESS\\r\\n\""
+            "@17 -0 +\"          run_if: AT_LEAST_ONE_SUCCESS\\r\\n\""
           ],
-          "sha256": "7cae1f431b6059b85f54c71c696761da5eeaa4fa11d23085d882b049ba1af3c8",
+          "sha256": "42d2150b57723804ac2b67ccd58bc96c571328708bb66b6d961d7d1c29e31d4b",
           "undo": "ok; restores the text"
         },
         {
@@ -10568,9 +10665,9 @@
           "do": "set task:ingest databricks.run-if = \"*nothing\"",
           "answer": "ok",
           "hunks": [
-            "@16 -0 +\"          run_if: \\\"*nothing\\\"\\r\\n\""
+            "@17 -0 +\"          run_if: \\\"*nothing\\\"\\r\\n\""
           ],
-          "sha256": "7c0ef186642d14722cfb881c1bdc499a0f3fe10833f31653f2ace6010ab4244a"
+          "sha256": "3dbb55a64d858aab40cbdad781f73866e71ead9ccaaa18c322017eedf7c44a57"
         },
         {
           "do": "execute databricks.rename-task on task:ingest",
@@ -10581,16 +10678,16 @@
           "do": "set task:ingest databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@16 -1 +\"          run_if: ALL_DONE\\r\\n\""
+            "@17 -1 +\"          run_if: \\\"ALL_DONE\\\"\\r\\n\""
           ],
-          "sha256": "053ccca818c1cbc04f69068c4b0a31b84ef00341a8ce7e1925ef1af247655d4a",
+          "sha256": "9ffdc8dbd77d905d25d3823cb2de28563383ef5b92888064d0051122a2ce6af7",
           "undo": "ok; restores the text"
         },
         {
           "do": "undo",
           "answer": "ok",
           "hunks": [
-            "@16 -1 +\"\""
+            "@17 -1 +\"\""
           ],
           "sha256": "442e011930eeb461cf9e69796796853e2f0f519d785c37655da65a1e7befbf11"
         },
@@ -10598,9 +10695,9 @@
           "do": "set task:ingest databricks.run-if = \"[x\"",
           "answer": "ok",
           "hunks": [
-            "@16 -0 +\"          run_if: \\\"[x\\\"\\r\\n\""
+            "@17 -0 +\"          run_if: \\\"[x\\\"\\r\\n\""
           ],
-          "sha256": "6417f8610467b4e596de866133576a1e9eb0e694e37e2d9000f62190b51ea44d"
+          "sha256": "49f2126582f9d6528d9ee6d26f3b240a116e21a847c6aaca21bd6cd0e0504eeb"
         },
         {
           "do": "execute databricks.rename-task on task:ingest",
@@ -10611,16 +10708,16 @@
           "do": "set task:ingest databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@16 -1 +\"          run_if: ALL_DONE\\r\\n\""
+            "@17 -1 +\"          run_if: \\\"ALL_DONE\\\"\\r\\n\""
           ],
-          "sha256": "053ccca818c1cbc04f69068c4b0a31b84ef00341a8ce7e1925ef1af247655d4a",
+          "sha256": "9ffdc8dbd77d905d25d3823cb2de28563383ef5b92888064d0051122a2ce6af7",
           "undo": "ok; restores the text"
         },
         {
           "do": "undo",
           "answer": "ok",
           "hunks": [
-            "@16 -1 +\"\""
+            "@17 -1 +\"\""
           ],
           "sha256": "442e011930eeb461cf9e69796796853e2f0f519d785c37655da65a1e7befbf11"
         },
@@ -11415,9 +11512,9 @@
           "do": "set task:land databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@8 -1 +\"          run_if: ALL_DONE\\r\\n\""
+            "@8 -1 +\"          run_if: \\\"ALL_DONE\\\"\\r\\n\""
           ],
-          "sha256": "9993dc76626843ee98516a09b1360f5a5f49798c07d0f64b0703f114dc4320b0",
+          "sha256": "d8650e5e5580efaafe8eb692f3848463029ef6314a836fd9cd3d0c2af142f5ef",
           "undo": "ok; restores the text"
         },
         {
@@ -11445,9 +11542,9 @@
           "do": "set task:land databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@8 -1 +\"          run_if: ALL_DONE\\r\\n\""
+            "@8 -1 +\"          run_if: \\\"ALL_DONE\\\"\\r\\n\""
           ],
-          "sha256": "9993dc76626843ee98516a09b1360f5a5f49798c07d0f64b0703f114dc4320b0",
+          "sha256": "d8650e5e5580efaafe8eb692f3848463029ef6314a836fd9cd3d0c2af142f5ef",
           "undo": "ok; restores the text"
         },
         {
@@ -11518,9 +11615,9 @@
           "do": "execute databricks.remove-task on task:publish",
           "answer": "ok",
           "hunks": [
-            "@18 -3 +\"\""
+            "@17 -4 +\"\""
           ],
-          "sha256": "814a1064bbe0edc7d6bad0475f421acce0e45c92368eb08c83a73b07a13ddb41",
+          "sha256": "febe5b5ced578fe7834167e9d87e70fa02f2ddf49bfe1757d682d2e72430ce56",
           "undo": "ok; restores the text",
           "redo": "ok; reapplies the text",
           "undoAgain": "ok; restores the text"
@@ -11534,10 +11631,10 @@
           "do": "commit databricks.remove-task on task:land = \"\"",
           "answer": "ok",
           "hunks": [
-            "@7 -3 +\"\"",
+            "@6 -4 +\"\"",
             "@13 -2 +\"\""
           ],
-          "sha256": "7b0b5d3f19abcadd54f5ba229814f4fa825a92726cc93da1aa9ff6810643ea8d",
+          "sha256": "dc3494086c1e6fcfe8539354617be15d0f46bdfc6074e299fe3ad72cc8007b8c",
           "undo": "ok; restores the text",
           "redo": "ok; reapplies the text",
           "undoAgain": "ok; restores the text"
@@ -11991,12 +12088,12 @@
         },
         {
           "do": "set pipeline databricks.pipeline:serverless = \"false\"",
-          "answer": "refused: The settings file has no \"serverless\" to rewrite.",
+          "answer": "refused: The value is computed from the file.",
           "unchanged": true
         },
         {
           "do": "set pipeline databricks.pipeline:edition = \"CORE\"",
-          "answer": "refused: The settings file has no \"edition\" to rewrite.",
+          "answer": "refused: A Pipeline keeps no 'edition' in this file.",
           "unchanged": true
         },
         {
@@ -12338,18 +12435,18 @@
           "do": "set pipeline databricks.pipeline:schema = \"parity_schema\"",
           "answer": "ok",
           "hunks": [
-            "@4 -0 +\"      schema: parity_schema\\r\\n\""
+            "@6 -1 +\"      schema: parity_schema\\r\\n\""
           ],
-          "sha256": "47e6c702da0657ed34a3db095baa7577564f34364f9238ec58d1fb006946440e",
+          "sha256": "9e9856104e21cd5cb0f113caaff2808422b55653d9fd9fac66f1a63bcd7c048b",
           "undo": "ok; restores the text"
         },
         {
           "do": "set pipeline databricks.pipeline:channel = \"PREVIEW\"",
           "answer": "ok",
           "hunks": [
-            "@4 -0 +\"      channel: PREVIEW\\r\\n\""
+            "@6 -0 +\"      channel: PREVIEW\\r\\n\""
           ],
-          "sha256": "d7a242cf64b0fe584946176b7375b8113ea3e0f963d285c75048f6ff2f4d16e1",
+          "sha256": "0ef450bc3d93e50479f1c4ea6fedca10dbc688623e1ce4eebcb42de2355c7d0e",
           "undo": "ok; restores the text"
         },
         {
@@ -12359,21 +12456,13 @@
         },
         {
           "do": "set pipeline databricks.pipeline:serverless = \"false\"",
-          "answer": "ok",
-          "hunks": [
-            "@4 -0 +\"      serverless: \\\"false\\\"\\r\\n\""
-          ],
-          "sha256": "d5200426642d9e18348ad4509374612f86cc7ff7371e38becc8cf8126b9d62c8",
-          "undo": "ok; restores the text"
+          "answer": "refused: The value is computed from the file.",
+          "unchanged": true
         },
         {
           "do": "set pipeline databricks.pipeline:edition = \"CORE\"",
-          "answer": "ok",
-          "hunks": [
-            "@4 -0 +\"      edition: CORE\\r\\n\""
-          ],
-          "sha256": "0cf97c344ede29fae3406766dbc41181e3f2d7529b6f08d1af64aff628a21f06",
-          "undo": "ok; restores the text"
+          "answer": "refused: A Pipeline keeps no 'edition' in this file.",
+          "unchanged": true
         },
         {
           "do": "execute databricks.add-library:notebook on pipeline",
@@ -12963,12 +13052,12 @@
         },
         {
           "do": "set pipeline databricks.pipeline:serverless = \"false\"",
-          "answer": "refused: The settings file has no \"serverless\" to rewrite.",
+          "answer": "refused: The value is computed from the file.",
           "unchanged": true
         },
         {
           "do": "set pipeline databricks.pipeline:edition = \"CORE\"",
-          "answer": "refused: The settings file has no \"edition\" to rewrite.",
+          "answer": "refused: A Pipeline keeps no 'edition' in this file.",
           "unchanged": true
         },
         {
@@ -13301,9 +13390,9 @@
           "do": "set task:first_waiter databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"          run_if: ALL_DONE\\r\\n\""
+            "@9 -0 +\"          run_if: ALL_DONE\\r\\n\""
           ],
-          "sha256": "13aa837ab67c90c00ed1630b523aa1d9d773fd5f567b9e6f17deb23751ba34a7",
+          "sha256": "ee2620ac1632b4c5c0d770241b558b203d228f97a6e0012ccd1ac2fc641e3e7f",
           "undo": "ok; restores the text",
           "redo": "ok; reapplies the text",
           "undoAgain": "ok; restores the text"
@@ -13318,9 +13407,9 @@
           "do": "set task:first_waiter databricks.run-if = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"          run_if: \\\"yes\\\"\\r\\n\""
+            "@9 -0 +\"          run_if: \\\"yes\\\"\\r\\n\""
           ],
-          "sha256": "3ce027bd5883905ace2aebbccb943dc0f77842871e9d1cf0b4cb977dffd8fd4e",
+          "sha256": "828f1480e5e4e20ede29b34363c606d521b9d5a57b30c13b765fce94cdc2a096",
           "undo": "ok; restores the text"
         },
         {
@@ -13418,9 +13507,9 @@
           "do": "commit databricks.set-run-if on task:first_waiter = \"AT_LEAST_ONE_SUCCESS\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"          run_if: AT_LEAST_ONE_SUCCESS\\r\\n\""
+            "@9 -0 +\"          run_if: AT_LEAST_ONE_SUCCESS\\r\\n\""
           ],
-          "sha256": "8c7fc315e9744f61f50bca453844f6aa4201d535d8d952ee7612761d9e959309",
+          "sha256": "e3dc7f1afd3ac422fb5a2ddeab5a76a6d73c4f367f6967b40df08c72195f740b",
           "undo": "ok; restores the text"
         },
         {
@@ -13448,9 +13537,9 @@
           "do": "set task:first_waiter databricks.run-if = \"*nothing\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"          run_if: \\\"*nothing\\\"\\r\\n\""
+            "@9 -0 +\"          run_if: \\\"*nothing\\\"\\r\\n\""
           ],
-          "sha256": "94cb867ef5913c2995eda95516171aa8288fe93e779b40cc758dab107c063d24"
+          "sha256": "9b9434a1ec065c8aecfd06929fd0fd794d5cb771f2f0cc44b6bed6a43ce302eb"
         },
         {
           "do": "execute databricks.rename-task on task:first_waiter",
@@ -13461,16 +13550,16 @@
           "do": "set task:first_waiter databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@7 -1 +\"          run_if: ALL_DONE\\r\\n\""
+            "@9 -1 +\"          run_if: \\\"ALL_DONE\\\"\\r\\n\""
           ],
-          "sha256": "13aa837ab67c90c00ed1630b523aa1d9d773fd5f567b9e6f17deb23751ba34a7",
+          "sha256": "2eedd70977b9e17d5b74ae676b850f387e923a2c0bf43090b56eab178242a870",
           "undo": "ok; restores the text"
         },
         {
           "do": "undo",
           "answer": "ok",
           "hunks": [
-            "@7 -1 +\"\""
+            "@9 -1 +\"\""
           ],
           "sha256": "72015b9eaf577989ddc3ce7438d653dd1cd05050f78fffb96a91040ef1c45cf1"
         },
@@ -13478,9 +13567,9 @@
           "do": "set task:first_waiter databricks.run-if = \"[x\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"          run_if: \\\"[x\\\"\\r\\n\""
+            "@9 -0 +\"          run_if: \\\"[x\\\"\\r\\n\""
           ],
-          "sha256": "beb95cf650c5a7eedbf631ec16d3a9962f0062077ab711f0135b5e868a8ac5f3"
+          "sha256": "e13e49a99f967c323ca80c46b39560c5ca97b14cd2f361b35e02d439c50caff1"
         },
         {
           "do": "execute databricks.rename-task on task:first_waiter",
@@ -13491,16 +13580,16 @@
           "do": "set task:first_waiter databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@7 -1 +\"          run_if: ALL_DONE\\r\\n\""
+            "@9 -1 +\"          run_if: \\\"ALL_DONE\\\"\\r\\n\""
           ],
-          "sha256": "13aa837ab67c90c00ed1630b523aa1d9d773fd5f567b9e6f17deb23751ba34a7",
+          "sha256": "2eedd70977b9e17d5b74ae676b850f387e923a2c0bf43090b56eab178242a870",
           "undo": "ok; restores the text"
         },
         {
           "do": "undo",
           "answer": "ok",
           "hunks": [
-            "@7 -1 +\"\""
+            "@9 -1 +\"\""
           ],
           "sha256": "72015b9eaf577989ddc3ce7438d653dd1cd05050f78fffb96a91040ef1c45cf1"
         },
@@ -14144,9 +14233,9 @@
           "do": "set task:upstream databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@14 -1 +\"          run_if: ALL_DONE\\r\\n\""
+            "@14 -1 +\"          run_if: \\\"ALL_DONE\\\"\\r\\n\""
           ],
-          "sha256": "f2adb14d030d8fc554c72d7a2acaf9a2b5206caf9e635e89bcd5053d2f8a9215",
+          "sha256": "169d6b6fc02ebdd6afdfe596ef609227b422cd24054f4f425704bf1a8a1c42ff",
           "undo": "ok; restores the text"
         },
         {
@@ -14174,9 +14263,9 @@
           "do": "set task:upstream databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@14 -1 +\"          run_if: ALL_DONE\\r\\n\""
+            "@14 -1 +\"          run_if: \\\"ALL_DONE\\\"\\r\\n\""
           ],
-          "sha256": "f2adb14d030d8fc554c72d7a2acaf9a2b5206caf9e635e89bcd5053d2f8a9215",
+          "sha256": "169d6b6fc02ebdd6afdfe596ef609227b422cd24054f4f425704bf1a8a1c42ff",
           "undo": "ok; restores the text"
         },
         {
@@ -14700,27 +14789,27 @@
           "do": "set pipeline databricks.pipeline:catalog = \"parity_catalog\"",
           "answer": "ok",
           "hunks": [
-            "@9 -0 +\"      catalog: parity_catalog\\r\\n\""
+            "@10 -0 +\"      catalog: parity_catalog\\r\\n\""
           ],
-          "sha256": "b62662947be397ff53fcb207ed3117f58f7f0b75da71d40667a405d7cee45366",
+          "sha256": "169ad6a0aa3fc45a9cc88fc38b1ef8b85813c2845341120072ddee0a3721293d",
           "undo": "ok; restores the text"
         },
         {
           "do": "set pipeline databricks.pipeline:schema = \"parity_schema\"",
           "answer": "ok",
           "hunks": [
-            "@9 -0 +\"      schema: parity_schema\\r\\n\""
+            "@10 -0 +\"      schema: parity_schema\\r\\n\""
           ],
-          "sha256": "41579ed31eabbfc1e99ed48eb9d1d7cf2f07411e9fb4b8fb07a7cfbd966fa13c",
+          "sha256": "28317a1887618b9aeaa0a2c93627ded1408ab3955e9bb43300a833f2005b47e2",
           "undo": "ok; restores the text"
         },
         {
           "do": "set pipeline databricks.pipeline:channel = \"PREVIEW\"",
           "answer": "ok",
           "hunks": [
-            "@9 -0 +\"      channel: PREVIEW\\r\\n\""
+            "@10 -0 +\"      channel: PREVIEW\\r\\n\""
           ],
-          "sha256": "4da74a54ef0d73632e0f2fa9d6b48e35076e62583a09ffa73bfaabdaed05e2a5",
+          "sha256": "b94e10fb5b06b504a982ea4acb65919ece901e8dd446fd3fd8e455ec055e0ad4",
           "undo": "ok; restores the text"
         },
         {
@@ -14730,21 +14819,13 @@
         },
         {
           "do": "set pipeline databricks.pipeline:serverless = \"false\"",
-          "answer": "ok",
-          "hunks": [
-            "@9 -0 +\"      serverless: \\\"false\\\"\\r\\n\""
-          ],
-          "sha256": "7e54b437bddb2c170b1f7720e22cc9a68f36a55ba3d54c550087b805a06674ba",
-          "undo": "ok; restores the text"
+          "answer": "refused: The value is computed from the file.",
+          "unchanged": true
         },
         {
           "do": "set pipeline databricks.pipeline:edition = \"CORE\"",
-          "answer": "ok",
-          "hunks": [
-            "@9 -0 +\"      edition: CORE\\r\\n\""
-          ],
-          "sha256": "cfa2cd5789f1a3a0c197fa8ad1572bf8e6850e5ea3f2e1ed5f4d8dd6a2254955",
-          "undo": "ok; restores the text"
+          "answer": "refused: A Pipeline keeps no 'edition' in this file.",
+          "unchanged": true
         },
         {
           "do": "execute databricks.add-library:notebook on pipeline",
@@ -15563,21 +15644,13 @@
         },
         {
           "do": "set pipeline databricks.pipeline:serverless = \"false\"",
-          "answer": "ok",
-          "hunks": [
-            "@5 -1 +\"  \\\"serverless\\\": \\\"false\\\",\\r\\n\""
-          ],
-          "sha256": "1d0b939a86f794fbb09a4a20e3a4844593cda5a9d10b02b32cc1024e7acb1b2b",
-          "undo": "ok; restores the text"
+          "answer": "refused: The value is computed from the file.",
+          "unchanged": true
         },
         {
           "do": "set pipeline databricks.pipeline:edition = \"CORE\"",
-          "answer": "ok",
-          "hunks": [
-            "@20 -1 +\"  \\\"edition\\\": \\\"CORE\\\"\\r\\n\""
-          ],
-          "sha256": "93b4b651f2b01b52cb9010526d0541468dcef57bae0a7981b9f3c670592187f8",
-          "undo": "ok; restores the text"
+          "answer": "refused: A Pipeline keeps no 'edition' in this file.",
+          "unchanged": true
         },
         {
           "do": "execute databricks.add-library:notebook on pipeline",
@@ -16131,9 +16204,9 @@
           "do": "set task:plain databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@14 -1 +\"          run_if: ALL_DONE\\r\\n\""
+            "@14 -1 +\"          run_if: \\\"ALL_DONE\\\"\\r\\n\""
           ],
-          "sha256": "a589a03ca5f695fa7c5b6f736d76b45e32bac67052135d3560099ead66f0eca7",
+          "sha256": "ff8eb11d14c0b9319b657646325a7bf1bb3de30e39339565057543cc80c717ff",
           "undo": "ok; restores the text"
         },
         {
@@ -16161,9 +16234,9 @@
           "do": "set task:plain databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@14 -1 +\"          run_if: ALL_DONE\\r\\n\""
+            "@14 -1 +\"          run_if: \\\"ALL_DONE\\\"\\r\\n\""
           ],
-          "sha256": "a589a03ca5f695fa7c5b6f736d76b45e32bac67052135d3560099ead66f0eca7",
+          "sha256": "ff8eb11d14c0b9319b657646325a7bf1bb3de30e39339565057543cc80c717ff",
           "undo": "ok; restores the text"
         },
         {
@@ -16468,9 +16541,9 @@
           "do": "set pipeline databricks.pipeline:channel = \"PREVIEW\"",
           "answer": "ok",
           "hunks": [
-            "@23 -0 +\"      channel: PREVIEW\\r\\n\""
+            "@26 -0 +\"      channel: PREVIEW\\r\\n\""
           ],
-          "sha256": "3a5d36247578c8deae20eaa3a83e8a27fa08e665c85f6f62a0d3af758f06972d",
+          "sha256": "34a15ec1b2820d48fd6e3c8d4b32c5905dd57f433945cad2b06a319f356ab574",
           "undo": "ok; restores the text"
         },
         {
@@ -16480,21 +16553,13 @@
         },
         {
           "do": "set pipeline databricks.pipeline:serverless = \"false\"",
-          "answer": "ok",
-          "hunks": [
-            "@23 -0 +\"      serverless: \\\"false\\\"\\r\\n\""
-          ],
-          "sha256": "bf2d7b0a60bbf395fc2de31d9b6ef468acdff1afece5aed9e00d7e72a567cf7a",
-          "undo": "ok; restores the text"
+          "answer": "refused: The value is computed from the file.",
+          "unchanged": true
         },
         {
           "do": "set pipeline databricks.pipeline:edition = \"CORE\"",
-          "answer": "ok",
-          "hunks": [
-            "@23 -0 +\"      edition: CORE\\r\\n\""
-          ],
-          "sha256": "0287009af11559af67a37d1716e246aab8c96e8727141bfd0859801fab7ee57c",
-          "undo": "ok; restores the text"
+          "answer": "refused: A Pipeline keeps no 'edition' in this file.",
+          "unchanged": true
         },
         {
           "do": "execute databricks.add-library:notebook on pipeline",
@@ -16829,18 +16894,32 @@
         },
         {
           "do": "set pipeline databricks.pipeline:name = \"Parity pipeline\"",
-          "answer": "refused: The settings file has no \"name\" to rewrite.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@1 -1 +\"{ \\\"name\\\": \\\"Parity pipeline\\\", \\\"catalog\\\": \\\"main\\\", \\\"schema\\\": \\\"gold\\\", \\\"libraries\\\": [ { \\\"notebook\\\": { \\\"path\\\": \\\"transformations/a\\\" } }, { \\\"file\\\": { \\\"path\\\": \\\"transformations/b.py\\\" } } ] }\\r\\n\""
+          ],
+          "sha256": "85d8bd6f811f38e25b81718d3c5d1b577833402b3b24e60fe01fd3fc2bab546e",
+          "undo": "ok; restores the text",
+          "redo": "ok; reapplies the text",
+          "undoAgain": "ok; restores the text"
         },
         {
           "do": "set pipeline databricks.pipeline:catalog = \"parity_catalog\"",
-          "answer": "refused: The settings file has no \"catalog\" to rewrite.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@1 -1 +\"{ \\\"name\\\": \\\"one_line\\\", \\\"catalog\\\": \\\"parity_catalog\\\", \\\"schema\\\": \\\"gold\\\", \\\"libraries\\\": [ { \\\"notebook\\\": { \\\"path\\\": \\\"transformations/a\\\" } }, { \\\"file\\\": { \\\"path\\\": \\\"transformations/b.py\\\" } } ] }\\r\\n\""
+          ],
+          "sha256": "2b56a6a05a02c3f9f39745f49fd0db28b2538189578af8233a2f7d628920925e",
+          "undo": "ok; restores the text"
         },
         {
           "do": "set pipeline databricks.pipeline:schema = \"parity_schema\"",
-          "answer": "refused: The settings file has no \"schema\" to rewrite.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@1 -1 +\"{ \\\"name\\\": \\\"one_line\\\", \\\"catalog\\\": \\\"main\\\", \\\"schema\\\": \\\"parity_schema\\\", \\\"libraries\\\": [ { \\\"notebook\\\": { \\\"path\\\": \\\"transformations/a\\\" } }, { \\\"file\\\": { \\\"path\\\": \\\"transformations/b.py\\\" } } ] }\\r\\n\""
+          ],
+          "sha256": "69d5e3a208c287a513ebc1dbb797af8590a6b2dd6724f5e2b5441ea5ccabca0f",
+          "undo": "ok; restores the text"
         },
         {
           "do": "set pipeline databricks.pipeline:channel = \"PREVIEW\"",
@@ -16854,12 +16933,12 @@
         },
         {
           "do": "set pipeline databricks.pipeline:serverless = \"false\"",
-          "answer": "refused: The settings file has no \"serverless\" to rewrite.",
+          "answer": "refused: The value is computed from the file.",
           "unchanged": true
         },
         {
           "do": "set pipeline databricks.pipeline:edition = \"CORE\"",
-          "answer": "refused: The settings file has no \"edition\" to rewrite.",
+          "answer": "refused: A Pipeline keeps no 'edition' in this file.",
           "unchanged": true
         },
         {
@@ -16869,18 +16948,32 @@
         },
         {
           "do": "commit databricks.add-library:notebook on pipeline = \"parity/notebook\"",
-          "answer": "refused: This list is written on one line, which this diagram cannot change yet; edit it in the text editor.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@1 -1 +\"{ \\\"name\\\": \\\"one_line\\\", \\\"catalog\\\": \\\"main\\\", \\\"schema\\\": \\\"gold\\\", \\\"libraries\\\": [ { \\\"notebook\\\": { \\\"path\\\": \\\"transformations/a\\\" } }, { \\\"file\\\": { \\\"path\\\": \\\"transformations/b.py\\\" } }, { \\\"notebook\\\": { \\\"path\\\": \\\"parity/notebook\\\" } } ] }\\r\\n\""
+          ],
+          "sha256": "81976e7acc1c65b9705a9af2feda27c14826d4a7ccc3c4fb69dd2b695e70f438",
+          "undo": "ok; restores the text",
+          "redo": "ok; reapplies the text",
+          "undoAgain": "ok; restores the text"
         },
         {
           "do": "commit databricks.add-library:file on pipeline = \"parity/file.py\"",
-          "answer": "refused: This list is written on one line, which this diagram cannot change yet; edit it in the text editor.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@1 -1 +\"{ \\\"name\\\": \\\"one_line\\\", \\\"catalog\\\": \\\"main\\\", \\\"schema\\\": \\\"gold\\\", \\\"libraries\\\": [ { \\\"notebook\\\": { \\\"path\\\": \\\"transformations/a\\\" } }, { \\\"file\\\": { \\\"path\\\": \\\"transformations/b.py\\\" } }, { \\\"file\\\": { \\\"path\\\": \\\"parity/file.py\\\" } } ] }\\r\\n\""
+          ],
+          "sha256": "17cd70c125501c6d8100e6bb346f266d3ed7e93bf6710d3b2c43bcb261d49b0e",
+          "undo": "ok; restores the text"
         },
         {
           "do": "commit databricks.add-library:glob on pipeline = \"parity/**\"",
-          "answer": "refused: This list is written on one line, which this diagram cannot change yet; edit it in the text editor.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@1 -1 +\"{ \\\"name\\\": \\\"one_line\\\", \\\"catalog\\\": \\\"main\\\", \\\"schema\\\": \\\"gold\\\", \\\"libraries\\\": [ { \\\"notebook\\\": { \\\"path\\\": \\\"transformations/a\\\" } }, { \\\"file\\\": { \\\"path\\\": \\\"transformations/b.py\\\" } }, { \\\"glob\\\": { \\\"include\\\": \\\"parity/**\\\" } } ] }\\r\\n\""
+          ],
+          "sha256": "e764a01726476858f7ae6bf2b16739e5c83b8a802337eb7779691b9f6015d6e2",
+          "undo": "ok; restores the text"
         },
         {
           "do": "commit databricks.add-library:jar on pipeline = \"parity.jar\"",
@@ -16889,8 +16982,12 @@
         },
         {
           "do": "commit databricks.add-library:notebook on pipeline = \"*star\"",
-          "answer": "refused: This list is written on one line, which this diagram cannot change yet; edit it in the text editor.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@1 -1 +\"{ \\\"name\\\": \\\"one_line\\\", \\\"catalog\\\": \\\"main\\\", \\\"schema\\\": \\\"gold\\\", \\\"libraries\\\": [ { \\\"notebook\\\": { \\\"path\\\": \\\"transformations/a\\\" } }, { \\\"file\\\": { \\\"path\\\": \\\"transformations/b.py\\\" } }, { \\\"notebook\\\": { \\\"path\\\": \\\"*star\\\" } } ] }\\r\\n\""
+          ],
+          "sha256": "5af11d7afa4e8c10ccc8e6348558a9383f8a16b283f713b3582177e356d1f4fa",
+          "undo": "ok; restores the text"
         },
         {
           "do": "commit databricks.add-library:notebook on pipeline = \"\"",
@@ -16904,13 +17001,23 @@
         },
         {
           "do": "execute databricks.remove-library on library:transformations/a",
-          "answer": "refused: This list is written on one line, which this diagram cannot change yet; edit it in the text editor.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@1 -1 +\"{ \\\"name\\\": \\\"one_line\\\", \\\"catalog\\\": \\\"main\\\", \\\"schema\\\": \\\"gold\\\", \\\"libraries\\\": [ { \\\"file\\\": { \\\"path\\\": \\\"transformations/b.py\\\" } } ] }\\r\\n\""
+          ],
+          "sha256": "c325d79ab618223d8b647543436888cb157b7666cfcb907b48d7f118b3fe9499",
+          "undo": "ok; restores the text",
+          "redo": "ok; reapplies the text",
+          "undoAgain": "ok; restores the text"
         },
         {
           "do": "execute databricks.remove-library on library:transformations/b.py",
-          "answer": "refused: This list is written on one line, which this diagram cannot change yet; edit it in the text editor.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@1 -1 +\"{ \\\"name\\\": \\\"one_line\\\", \\\"catalog\\\": \\\"main\\\", \\\"schema\\\": \\\"gold\\\", \\\"libraries\\\": [ { \\\"notebook\\\": { \\\"path\\\": \\\"transformations/a\\\" } } ] }\\r\\n\""
+          ],
+          "sha256": "282f67b55c7e485384b13ab7f2cec3efb8119b791a2e7c29750051177d1e32b1",
+          "undo": "ok; restores the text"
         },
         {
           "do": "execute databricks.simulated.pipeline-update on pipeline",
@@ -17526,9 +17633,9 @@
           "do": "set task:ingest databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@11 -0 +\"          run_if: ALL_DONE\\r\\n\""
+            "@12 -0 +\"          run_if: ALL_DONE\\r\\n\""
           ],
-          "sha256": "a5f4d22f02754a2aba7948dd8b64f182a8de913fa52b2727b6036b84c72892d8",
+          "sha256": "6823b7cf330cd94687270b99b411d53b98b64bc78d6bc68d60cc420eff324cdf",
           "undo": "ok; restores the text",
           "redo": "ok; reapplies the text",
           "undoAgain": "ok; restores the text"
@@ -17543,9 +17650,9 @@
           "do": "set task:ingest databricks.run-if = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@11 -0 +\"          run_if: \\\"yes\\\"\\r\\n\""
+            "@12 -0 +\"          run_if: \\\"yes\\\"\\r\\n\""
           ],
-          "sha256": "0e0f5bb97545ae54e07227598da84d45d1428a965e89f6bf3f7662f9b52465de",
+          "sha256": "3d9b397560354e89b0dac9ef15f4a985494a490bec63ed4b8fa9aff60c191820",
           "undo": "ok; restores the text"
         },
         {
@@ -17663,9 +17770,9 @@
           "do": "commit databricks.set-run-if on task:ingest = \"AT_LEAST_ONE_SUCCESS\"",
           "answer": "ok",
           "hunks": [
-            "@11 -0 +\"          run_if: AT_LEAST_ONE_SUCCESS\\r\\n\""
+            "@12 -0 +\"          run_if: AT_LEAST_ONE_SUCCESS\\r\\n\""
           ],
-          "sha256": "6e8a39e55dcf8bdd21551606a1ef222bf8e88e490c9448d593b9f55262201dab",
+          "sha256": "ceb2dbb5c77f3de3e3699b807f05d8b54c200e1dad8e8b2e77e7c1fa2b7f2247",
           "undo": "ok; restores the text"
         },
         {
@@ -17696,9 +17803,9 @@
           "do": "set task:ingest databricks.run-if = \"*nothing\"",
           "answer": "ok",
           "hunks": [
-            "@11 -0 +\"          run_if: \\\"*nothing\\\"\\r\\n\""
+            "@12 -0 +\"          run_if: \\\"*nothing\\\"\\r\\n\""
           ],
-          "sha256": "735800078a6cd70d12f53369d286cc75069847cf080c923a4394a4433cde2d9e"
+          "sha256": "ebe896e7d8d72f6d2aea770e0e1e1415eafbb45f07140e35359490094a2c5f7b"
         },
         {
           "do": "execute databricks.rename-task on task:ingest",
@@ -17709,16 +17816,16 @@
           "do": "set task:ingest databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@11 -1 +\"          run_if: ALL_DONE\\r\\n\""
+            "@12 -1 +\"          run_if: \\\"ALL_DONE\\\"\\r\\n\""
           ],
-          "sha256": "a5f4d22f02754a2aba7948dd8b64f182a8de913fa52b2727b6036b84c72892d8",
+          "sha256": "3d35b047b0037e44fa38ad6620283f9e13b22044fbc0adbadcdca8b07bb0a2a6",
           "undo": "ok; restores the text"
         },
         {
           "do": "undo",
           "answer": "ok",
           "hunks": [
-            "@11 -1 +\"\""
+            "@12 -1 +\"\""
           ],
           "sha256": "569b2ce4f7faad3d4bf8ae3d74c50d37ac985703ef47a7ea30e644d97b31f272"
         },
@@ -17726,9 +17833,9 @@
           "do": "set task:ingest databricks.run-if = \"[x\"",
           "answer": "ok",
           "hunks": [
-            "@11 -0 +\"          run_if: \\\"[x\\\"\\r\\n\""
+            "@12 -0 +\"          run_if: \\\"[x\\\"\\r\\n\""
           ],
-          "sha256": "d8ea6142bdc0786d1c37dc924beace18497ea78461e4119cc14e96a4d6cdc8d9"
+          "sha256": "d6d293247ebd2361758d283fc5492c17afe399a1543939bfce22f216beac5d0a"
         },
         {
           "do": "execute databricks.rename-task on task:ingest",
@@ -17739,16 +17846,16 @@
           "do": "set task:ingest databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@11 -1 +\"          run_if: ALL_DONE\\r\\n\""
+            "@12 -1 +\"          run_if: \\\"ALL_DONE\\\"\\r\\n\""
           ],
-          "sha256": "a5f4d22f02754a2aba7948dd8b64f182a8de913fa52b2727b6036b84c72892d8",
+          "sha256": "3d35b047b0037e44fa38ad6620283f9e13b22044fbc0adbadcdca8b07bb0a2a6",
           "undo": "ok; restores the text"
         },
         {
           "do": "undo",
           "answer": "ok",
           "hunks": [
-            "@11 -1 +\"\""
+            "@12 -1 +\"\""
           ],
           "sha256": "569b2ce4f7faad3d4bf8ae3d74c50d37ac985703ef47a7ea30e644d97b31f272"
         },
@@ -17928,9 +18035,9 @@
           "do": "set task:ingest databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@11 -0 +\"          run_if: ALL_DONE\\r\\n\""
+            "@12 -0 +\"          run_if: ALL_DONE\\r\\n\""
           ],
-          "sha256": "a5f4d22f02754a2aba7948dd8b64f182a8de913fa52b2727b6036b84c72892d8",
+          "sha256": "6823b7cf330cd94687270b99b411d53b98b64bc78d6bc68d60cc420eff324cdf",
           "undo": "ok; restores the text"
         },
         {
@@ -18055,9 +18162,9 @@
           "do": "set pipeline databricks.pipeline:channel = \"PREVIEW\"",
           "answer": "ok",
           "hunks": [
-            "@32 -0 +\"      channel: PREVIEW\\r\\n\""
+            "@35 -0 +\"      channel: PREVIEW\\r\\n\""
           ],
-          "sha256": "579228545cc50bb0115b78052e0b8079c8740cfa83aa4fceb49fdf10c1816738",
+          "sha256": "e303174bada2ed7febdd350c0d2329092f1cce410ee995cdea6be5e982c43b52",
           "undo": "ok; restores the text"
         },
         {
@@ -18067,21 +18174,13 @@
         },
         {
           "do": "set pipeline databricks.pipeline:serverless = \"false\"",
-          "answer": "ok",
-          "hunks": [
-            "@32 -0 +\"      serverless: \\\"false\\\"\\r\\n\""
-          ],
-          "sha256": "eddecc0ba4b335539e8c7d9e232f01a293d15f96711b7ba9c743d2853c392cfa",
-          "undo": "ok; restores the text"
+          "answer": "refused: The value is computed from the file.",
+          "unchanged": true
         },
         {
           "do": "set pipeline databricks.pipeline:edition = \"CORE\"",
-          "answer": "ok",
-          "hunks": [
-            "@32 -0 +\"      edition: CORE\\r\\n\""
-          ],
-          "sha256": "7d408b38287ea007774f155cf8ed4b0416eab285f16fdad0f8d6b7689f9ec8a5",
-          "undo": "ok; restores the text"
+          "answer": "refused: A Pipeline keeps no 'edition' in this file.",
+          "unchanged": true
         },
         {
           "do": "execute databricks.add-library:notebook on pipeline",
@@ -18606,9 +18705,9 @@
           "do": "set task:01 databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@10 -1 +\"          run_if: ALL_DONE\\r\\n\""
+            "@10 -1 +\"          run_if: \\\"ALL_DONE\\\"\\r\\n\""
           ],
-          "sha256": "ead7546e5b895823959450c04cc0d3a21ffbe9d8c5497fd74b3f1e4f946f7224",
+          "sha256": "0614eec59605430d493302e616e0950dbd9ccdae36387b9f26d1789b0c6d9d97",
           "undo": "ok; restores the text"
         },
         {
@@ -18636,9 +18735,9 @@
           "do": "set task:01 databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@10 -1 +\"          run_if: ALL_DONE\\r\\n\""
+            "@10 -1 +\"          run_if: \\\"ALL_DONE\\\"\\r\\n\""
           ],
-          "sha256": "ead7546e5b895823959450c04cc0d3a21ffbe9d8c5497fd74b3f1e4f946f7224",
+          "sha256": "0614eec59605430d493302e616e0950dbd9ccdae36387b9f26d1789b0c6d9d97",
           "undo": "ok; restores the text"
         },
         {
@@ -18934,18 +19033,18 @@
           "do": "set pipeline databricks.pipeline:schema = \"parity_schema\"",
           "answer": "ok",
           "hunks": [
-            "@21 -0 +\"      schema: parity_schema\\r\\n\""
+            "@23 -0 +\"      schema: parity_schema\\r\\n\""
           ],
-          "sha256": "3f3db0b2f0accfa10500fede43c99068be9765095c4ad3edac9957e4ae0c4872",
+          "sha256": "f91edd8aeb8978c82be40c51c7792f2fff45fdbc74adaca5d54529f750d04000",
           "undo": "ok; restores the text"
         },
         {
           "do": "set pipeline databricks.pipeline:channel = \"PREVIEW\"",
           "answer": "ok",
           "hunks": [
-            "@21 -0 +\"      channel: PREVIEW\\r\\n\""
+            "@23 -0 +\"      channel: PREVIEW\\r\\n\""
           ],
-          "sha256": "ff310b572ac0681b8471441b9d0975df66ed3d98995764e45a621c4189fb0f72",
+          "sha256": "71edf92354f5202cc6d3ed3d1e00c8078cc3a1e5851774544c7e99a0015fd3b2",
           "undo": "ok; restores the text"
         },
         {
@@ -18955,21 +19054,13 @@
         },
         {
           "do": "set pipeline databricks.pipeline:serverless = \"false\"",
-          "answer": "ok",
-          "hunks": [
-            "@23 -1 +\"      serverless: \\\"false\\\"\\r\\n\""
-          ],
-          "sha256": "25d79ff73da38e898daa12387711adacfc01792b1d68984eeced5aa9bcb31d9a",
-          "undo": "ok; restores the text"
+          "answer": "refused: The value is computed from the file.",
+          "unchanged": true
         },
         {
           "do": "set pipeline databricks.pipeline:edition = \"CORE\"",
-          "answer": "ok",
-          "hunks": [
-            "@21 -0 +\"      edition: CORE\\r\\n\""
-          ],
-          "sha256": "d2d0123df2f4c2a9ae02c972ee5fc3b89cb60f5bf0725c4f33dfde624a50542d",
-          "undo": "ok; restores the text"
+          "answer": "refused: A Pipeline keeps no 'edition' in this file.",
+          "unchanged": true
         },
         {
           "do": "execute databricks.add-library:notebook on pipeline",
@@ -19454,9 +19545,9 @@
           "do": "set task:run databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@22 -0 +\"          run_if: ALL_DONE\\r\\n\""
+            "@23 -0 +\"          run_if: ALL_DONE\\r\\n\""
           ],
-          "sha256": "9077f1a8d820af4e13e984eebc21ee22c0acab11388f688cdaba20324edb77f3",
+          "sha256": "65feae5a0b6d10745e5b0f85308c1e45a5c715255a679fa516c97d84b07ba647",
           "undo": "ok; restores the text",
           "redo": "ok; reapplies the text",
           "undoAgain": "ok; restores the text"
@@ -19471,9 +19562,9 @@
           "do": "set task:run databricks.run-if = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@22 -0 +\"          run_if: \\\"yes\\\"\\r\\n\""
+            "@23 -0 +\"          run_if: \\\"yes\\\"\\r\\n\""
           ],
-          "sha256": "bfde05376dfb5de1b4669eb7aac064e8ea45135bf4accd36a79fa36088d39597",
+          "sha256": "16cdc0ab8d1c19dad388255da7393aee7c80e45be4e73dc83058c0e6db7c2a67",
           "undo": "ok; restores the text"
         },
         {
@@ -19570,9 +19661,9 @@
           "do": "commit databricks.set-run-if on task:run = \"AT_LEAST_ONE_SUCCESS\"",
           "answer": "ok",
           "hunks": [
-            "@22 -0 +\"          run_if: AT_LEAST_ONE_SUCCESS\\r\\n\""
+            "@23 -0 +\"          run_if: AT_LEAST_ONE_SUCCESS\\r\\n\""
           ],
-          "sha256": "5bceafb5b434968d46bdd528d92970030239656ec40f3636940bc851e821eb65",
+          "sha256": "9168607aa9bb2cca0af9f8ee9206914412206d8c0fcaae5755e3fc414950ebba",
           "undo": "ok; restores the text"
         },
         {
@@ -19604,9 +19695,9 @@
           "do": "set task:run databricks.run-if = \"*nothing\"",
           "answer": "ok",
           "hunks": [
-            "@22 -0 +\"          run_if: \\\"*nothing\\\"\\r\\n\""
+            "@23 -0 +\"          run_if: \\\"*nothing\\\"\\r\\n\""
           ],
-          "sha256": "ab07e03cc11ef31fa7b963076387cd3331941e1900a6a8e31914ac9bc8f6325b"
+          "sha256": "d7505958226c213dfd343a240b0450248ec45c434cf9235ca5f18644db1c61e8"
         },
         {
           "do": "execute databricks.rename-task on task:run",
@@ -19617,16 +19708,16 @@
           "do": "set task:run databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@22 -1 +\"          run_if: ALL_DONE\\r\\n\""
+            "@23 -1 +\"          run_if: \\\"ALL_DONE\\\"\\r\\n\""
           ],
-          "sha256": "9077f1a8d820af4e13e984eebc21ee22c0acab11388f688cdaba20324edb77f3",
+          "sha256": "d462fbc61e245ac8abb666c647226849281cf46662f9031775f1359044d1f0a4",
           "undo": "ok; restores the text"
         },
         {
           "do": "undo",
           "answer": "ok",
           "hunks": [
-            "@22 -1 +\"\""
+            "@23 -1 +\"\""
           ],
           "sha256": "5080db3ca5a3817073936967dfca11c34c74e4289719fbb3a1c0dd6ca7ae52d2"
         },
@@ -19634,9 +19725,9 @@
           "do": "set task:run databricks.run-if = \"[x\"",
           "answer": "ok",
           "hunks": [
-            "@22 -0 +\"          run_if: \\\"[x\\\"\\r\\n\""
+            "@23 -0 +\"          run_if: \\\"[x\\\"\\r\\n\""
           ],
-          "sha256": "242f5ad72c77fc32305099bc80dc10e4b8bd659f4762327783f8c7a8ff0631f7"
+          "sha256": "31da9612e5ab59ba868e1cc9e906150d05ae5e8a8dd5cd73573a17510ab299ee"
         },
         {
           "do": "execute databricks.rename-task on task:run",
@@ -19647,16 +19738,16 @@
           "do": "set task:run databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@22 -1 +\"          run_if: ALL_DONE\\r\\n\""
+            "@23 -1 +\"          run_if: \\\"ALL_DONE\\\"\\r\\n\""
           ],
-          "sha256": "9077f1a8d820af4e13e984eebc21ee22c0acab11388f688cdaba20324edb77f3",
+          "sha256": "d462fbc61e245ac8abb666c647226849281cf46662f9031775f1359044d1f0a4",
           "undo": "ok; restores the text"
         },
         {
           "do": "undo",
           "answer": "ok",
           "hunks": [
-            "@22 -1 +\"\""
+            "@23 -1 +\"\""
           ],
           "sha256": "5080db3ca5a3817073936967dfca11c34c74e4289719fbb3a1c0dd6ca7ae52d2"
         },
@@ -19898,18 +19989,18 @@
           "do": "set pipeline databricks.pipeline:schema = \"parity_schema\"",
           "answer": "ok",
           "hunks": [
-            "@27 -0 +\"      schema: parity_schema\\r\\n\""
+            "@29 -0 +\"      schema: parity_schema\\r\\n\""
           ],
-          "sha256": "a40ca383c4abe4667e8b61da4d1eaf4f099ba46303c28c68168d56c07e50fd4f",
+          "sha256": "8958159f4ac4a48ec8e8d25e94a630c6ffa18d9c207029e6b3f41e50d808d837",
           "undo": "ok; restores the text"
         },
         {
           "do": "set pipeline databricks.pipeline:channel = \"PREVIEW\"",
           "answer": "ok",
           "hunks": [
-            "@27 -0 +\"      channel: PREVIEW\\r\\n\""
+            "@29 -0 +\"      channel: PREVIEW\\r\\n\""
           ],
-          "sha256": "02a0bccc37cc2bb91339d5385fd42ac29bcc10603db91cfa3897420531433a91",
+          "sha256": "867ede18166f025494812d8f244ce91d587a42db5f581db922c1ec508b391177",
           "undo": "ok; restores the text"
         },
         {
@@ -19919,21 +20010,13 @@
         },
         {
           "do": "set pipeline databricks.pipeline:serverless = \"false\"",
-          "answer": "ok",
-          "hunks": [
-            "@29 -1 +\"      serverless: \\\"false\\\"\\r\\n\""
-          ],
-          "sha256": "9f99f5ca17bb673a37f1042dbb1e06a75692804460818a0ae9f3fe4024d6c5e7",
-          "undo": "ok; restores the text"
+          "answer": "refused: The value is computed from the file.",
+          "unchanged": true
         },
         {
           "do": "set pipeline databricks.pipeline:edition = \"CORE\"",
-          "answer": "ok",
-          "hunks": [
-            "@27 -0 +\"      edition: CORE\\r\\n\""
-          ],
-          "sha256": "11caa9203fc86df87f6e3f02ca036a0080fc8d44505b79a8ded48873cf055c80",
-          "undo": "ok; restores the text"
+          "answer": "refused: A Pipeline keeps no 'edition' in this file.",
+          "unchanged": true
         },
         {
           "do": "execute databricks.add-library:notebook on pipeline",
@@ -20390,21 +20473,13 @@
         },
         {
           "do": "set pipeline databricks.pipeline:serverless = \"false\"",
-          "answer": "ok",
-          "hunks": [
-            "@23 -1 +\"      serverless: \\\"false\\\"\\r\\n\""
-          ],
-          "sha256": "621a59f0ea6c6558f0ea85078f3143ef81ae227113156def2b5956aa342b5b89",
-          "undo": "ok; restores the text"
+          "answer": "refused: The value is computed from the file.",
+          "unchanged": true
         },
         {
           "do": "set pipeline databricks.pipeline:edition = \"CORE\"",
-          "answer": "ok",
-          "hunks": [
-            "@20 -0 +\"      edition: CORE\\r\\n\""
-          ],
-          "sha256": "9e95d96aa4574ca05908463e0e822dc4c3ae70c98681fb3fcbad1c4b60f7d76c",
-          "undo": "ok; restores the text"
+          "answer": "refused: A Pipeline keeps no 'edition' in this file.",
+          "unchanged": true
         },
         {
           "do": "execute databricks.add-library:notebook on pipeline",
@@ -20812,9 +20887,9 @@
           "do": "set task:land_raw databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@18 -0 +\"          run_if: ALL_DONE\\r\\n\""
+            "@19 -0 +\"          run_if: ALL_DONE\\r\\n\""
           ],
-          "sha256": "f262208f64dfc6f68a86e5b689233bc70c351f2ae17efee9bcd1511877194be3",
+          "sha256": "e068792e8576686faf0b9652b66bbca4486fe94cb7db351ad3f54d9c02a1284b",
           "undo": "ok; restores the text",
           "redo": "ok; reapplies the text",
           "undoAgain": "ok; restores the text"
@@ -20829,9 +20904,9 @@
           "do": "set task:land_raw databricks.run-if = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@18 -0 +\"          run_if: \\\"yes\\\"\\r\\n\""
+            "@19 -0 +\"          run_if: \\\"yes\\\"\\r\\n\""
           ],
-          "sha256": "fb98a6e3b1f2a8ba6e1ef1a15213950c0b3712882e96dee582e429079d58ae9d",
+          "sha256": "dbff25ae0ffabebf35970c0c6a3abbfb092de620c5b3f24bd7032446d7447054",
           "undo": "ok; restores the text"
         },
         {
@@ -20935,9 +21010,9 @@
           "do": "commit databricks.set-run-if on task:land_raw = \"AT_LEAST_ONE_SUCCESS\"",
           "answer": "ok",
           "hunks": [
-            "@18 -0 +\"          run_if: AT_LEAST_ONE_SUCCESS\\r\\n\""
+            "@19 -0 +\"          run_if: AT_LEAST_ONE_SUCCESS\\r\\n\""
           ],
-          "sha256": "8b9794bdc959ba1976f66ced34dc6274d44cfb07ef1fafbcaa22c9bd588bfdce",
+          "sha256": "a281624ba5d21222559436de27fb054bc872335aed4551b4168408c7f1620511",
           "undo": "ok; restores the text"
         },
         {
@@ -20969,9 +21044,9 @@
           "do": "set task:land_raw databricks.run-if = \"*nothing\"",
           "answer": "ok",
           "hunks": [
-            "@18 -0 +\"          run_if: \\\"*nothing\\\"\\r\\n\""
+            "@19 -0 +\"          run_if: \\\"*nothing\\\"\\r\\n\""
           ],
-          "sha256": "3b8065418d1efecedbe0120ef7c298c6ecabc2da6f0ce3eb113d2895b1e04d34"
+          "sha256": "d8eab4b7f42433d307c706d411be49f94040a379a3845775dd6fd8afb882c3e4"
         },
         {
           "do": "execute databricks.rename-task on task:land_raw",
@@ -20982,16 +21057,16 @@
           "do": "set task:land_raw databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@18 -1 +\"          run_if: ALL_DONE\\r\\n\""
+            "@19 -1 +\"          run_if: \\\"ALL_DONE\\\"\\r\\n\""
           ],
-          "sha256": "f262208f64dfc6f68a86e5b689233bc70c351f2ae17efee9bcd1511877194be3",
+          "sha256": "5b723105f8505a26b78a429c90c13da69e9148227eb64166b902b09170d5d657",
           "undo": "ok; restores the text"
         },
         {
           "do": "undo",
           "answer": "ok",
           "hunks": [
-            "@18 -1 +\"\""
+            "@19 -1 +\"\""
           ],
           "sha256": "0041ed5073e94019149330c9f33e0e15cfc3d4d8e6421b354ffa7c47cef3e917"
         },
@@ -20999,9 +21074,9 @@
           "do": "set task:land_raw databricks.run-if = \"[x\"",
           "answer": "ok",
           "hunks": [
-            "@18 -0 +\"          run_if: \\\"[x\\\"\\r\\n\""
+            "@19 -0 +\"          run_if: \\\"[x\\\"\\r\\n\""
           ],
-          "sha256": "34787f2b9f7768af4cf46c9ded6d426ecbcd3190b133d6a6fcd2c5c328400e5f"
+          "sha256": "6d292604bd0ff8e4bf968771b4dfb047490c4c5e5d110c0f1bef6d67349fb8a0"
         },
         {
           "do": "execute databricks.rename-task on task:land_raw",
@@ -21012,16 +21087,16 @@
           "do": "set task:land_raw databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@18 -1 +\"          run_if: ALL_DONE\\r\\n\""
+            "@19 -1 +\"          run_if: \\\"ALL_DONE\\\"\\r\\n\""
           ],
-          "sha256": "f262208f64dfc6f68a86e5b689233bc70c351f2ae17efee9bcd1511877194be3",
+          "sha256": "5b723105f8505a26b78a429c90c13da69e9148227eb64166b902b09170d5d657",
           "undo": "ok; restores the text"
         },
         {
           "do": "undo",
           "answer": "ok",
           "hunks": [
-            "@18 -1 +\"\""
+            "@19 -1 +\"\""
           ],
           "sha256": "0041ed5073e94019149330c9f33e0e15cfc3d4d8e6421b354ffa7c47cef3e917"
         },
@@ -21653,21 +21728,13 @@
         },
         {
           "do": "set pipeline databricks.pipeline:serverless = \"false\"",
-          "answer": "ok",
-          "hunks": [
-            "@23 -1 +\"      serverless: \\\"false\\\"\\r\\n\""
-          ],
-          "sha256": "621a59f0ea6c6558f0ea85078f3143ef81ae227113156def2b5956aa342b5b89",
-          "undo": "ok; restores the text"
+          "answer": "refused: The value is computed from the file.",
+          "unchanged": true
         },
         {
           "do": "set pipeline databricks.pipeline:edition = \"CORE\"",
-          "answer": "ok",
-          "hunks": [
-            "@20 -0 +\"      edition: CORE\\r\\n\""
-          ],
-          "sha256": "9e95d96aa4574ca05908463e0e822dc4c3ae70c98681fb3fcbad1c4b60f7d76c",
-          "undo": "ok; restores the text"
+          "answer": "refused: A Pipeline keeps no 'edition' in this file.",
+          "unchanged": true
         },
         {
           "do": "execute databricks.add-library:notebook on pipeline",
@@ -22331,9 +22398,9 @@
           "do": "set task:main databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@7 -1 +\"          run_if: ALL_DONE\\r\\n\""
+            "@7 -1 +\"          run_if: \\\"ALL_DONE\\\"\\r\\n\""
           ],
-          "sha256": "4f7f85e43e56debc8dc71012c683b573e39ae3bc5a046db490dd5e6c725324a0",
+          "sha256": "42544521e3d4d36dc33645c61c3733a18c0f754c6b324d4e85f9660cb3d01165",
           "undo": "ok; restores the text"
         },
         {
@@ -22361,9 +22428,9 @@
           "do": "set task:main databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@7 -1 +\"          run_if: ALL_DONE\\r\\n\""
+            "@7 -1 +\"          run_if: \\\"ALL_DONE\\\"\\r\\n\""
           ],
-          "sha256": "4f7f85e43e56debc8dc71012c683b573e39ae3bc5a046db490dd5e6c725324a0",
+          "sha256": "42544521e3d4d36dc33645c61c3733a18c0f754c6b324d4e85f9660cb3d01165",
           "undo": "ok; restores the text"
         },
         {
@@ -22841,12 +22908,12 @@
         },
         {
           "do": "set pipeline databricks.pipeline:serverless = \"false\"",
-          "answer": "refused: The settings file has no \"serverless\" to rewrite.",
+          "answer": "refused: The value is computed from the file.",
           "unchanged": true
         },
         {
           "do": "set pipeline databricks.pipeline:edition = \"CORE\"",
-          "answer": "refused: The settings file has no \"edition\" to rewrite.",
+          "answer": "refused: A Pipeline keeps no 'edition' in this file.",
           "unchanged": true
         },
         {

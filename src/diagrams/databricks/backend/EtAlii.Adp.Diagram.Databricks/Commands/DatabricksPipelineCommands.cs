@@ -37,6 +37,12 @@ public sealed class InsertDatabricksLibraryCommandHandler(IDatabricksDocumentSto
             return EditOutcome.Refused("There is no pipeline in this file any more.");
         }
 
+        // The kinds the binding has a rule to add, checked first as they always were, before the path's own refusal.
+        if (command.Kind is not ("notebook" or "file" or "glob"))
+        {
+            return EditOutcome.Refused($"There is no '{command.Kind}' library kind to add.");
+        }
+
         if (pipeline.Libraries.Any(library => library.Kind == command.Kind && library.Path == command.Path) && command.Path.Length > 0)
         {
             return EditOutcome.Refused($"The {command.Kind} library '{command.Path}' is already there.");
@@ -45,8 +51,7 @@ public sealed class InsertDatabricksLibraryCommandHandler(IDatabricksDocumentSto
         return DatabricksEdits.Pipeline(
             body,
             pipeline,
-            reading => new ModelChange.Add("Library", null, DatabricksEdits.Attributes(("libraryKind", command.Kind), ("path", command.Path)), DatabricksEdits.OneOf(reading, "Pipeline")),
-            command.Kind);
+            reading => new ModelChange.Add("Library", null, DatabricksEdits.Attributes(("libraryKind", command.Kind), ("path", command.Path)), DatabricksEdits.OneOf(reading, "Pipeline")));
     }
 }
 

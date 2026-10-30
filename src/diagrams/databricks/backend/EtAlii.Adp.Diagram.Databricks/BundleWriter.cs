@@ -1,14 +1,22 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Specification.Fbl.Yaml;
 
 namespace EtAlii.Adp.Diagram.Databricks;
 
 /// <summary>
-/// The named splice operations on a <c>databricks.yml</c>: resource skeletons in, scalars
-/// rewritten - only the lines an edit concerns change (databricks-diagrams Requirement 2.2).
+/// The one edit not yet planned through the binding: a new resource's skeleton under <c>resources:</c>, spliced as lines
+/// (databricks-diagrams Requirement 2.2).
 /// </summary>
 /// <remarks>
-/// Every operation answers with an empty string, or the sentence explaining why it refused -
-/// before any splice, never write-then-repair (Requirement 6.4).
+/// <para>
+/// <b>A stand-in, and the last module code that writes a line of YAML</b> (databricks-disl-fbl task 12, Requirements
+/// 6.1 and 7.2). FBL's YAML family cannot add an entry to a mapping keyed by a new name, such as
+/// <c>/resources/jobs/&lt;key&gt;</c>: the library refuses with "The /resources/jobs of this file is not a list a Resource
+/// can be added to.", and FBL 0.12 defines no such insert. TODO(fork): the insert is being specified in etalii.adp
+/// (FBL 0.13, recommended on Peter's card); once it is, <see cref="AddDatabricksResourceCommandHandler"/> plans the add
+/// through the binding and this class leaves the product.
+/// </para>
+/// <para>Every refusal is answered before any splice, never write-then-repair (Requirement 6.4).</para>
 /// </remarks>
 internal static class BundleWriter
 {
@@ -43,7 +51,7 @@ internal static class BundleWriter
         if (siblings.Count > 0)
         {
             var last = siblings[^1];
-            var keyIndent = DatabricksSplices.Indent(document.Lines[last.Lines.Start].Text);
+            var keyIndent = Indent(document.Lines[last.Lines.Start].Text);
             document.Insert(last.Lines.End + 1, Skeleton(kind, key, keyIndent));
             return "";
         }
@@ -51,8 +59,7 @@ internal static class BundleWriter
         var resourcesLine = RootKeyLine(document, "resources");
         if (resourcesLine >= 0)
         {
-            var kindIndent = DatabricksSplices.KeyIndentWithin(
-                document, new LineRange(resourcesLine, document.Lines.Count - 1));
+            var kindIndent = IndentAfter(document, resourcesLine);
             document.Insert(resourcesLine + 1, [$"{kindIndent}{kind}:", .. Skeleton(kind, key, kindIndent + "  ")]);
             return "";
         }
@@ -63,60 +70,61 @@ internal static class BundleWriter
         return "";
     }
 
-    /// <summary>Rewrites the bundle's name.</summary>
-    public static string SetName(LineDocument document, BundleModel bundle, string name)
-    {
-        ArgumentNullException.ThrowIfNull(document);
-        ArgumentNullException.ThrowIfNull(bundle);
-
-        if (name.Length == 0)
-        {
-            return "A bundle needs a name.";
-        }
-
-        var bundleLine = RootKeyLine(document, "bundle");
-        if (bundleLine < 0)
-        {
-            return "The file has no bundle: section to name.";
-        }
-
-        var region = new LineRange(bundleLine, document.Lines.Count - 1);
-        // The bundle's own name, among the keys under bundle: - never the name of a mapping nested in it.
-        var nameLine = DatabricksSplices.FindKey(
-            document, new LineRange(bundleLine, RegionEnd(document, bundleLine)), "name");
-        if (nameLine >= 0)
-        {
-            var text = document.Lines[nameLine].Text;
-            var colon = text.IndexOf(':', StringComparison.Ordinal);
-            document.Replace(new LineRange(nameLine, nameLine), [$"{text[..(colon + 1)]} {DatabricksSplices.Quote(name)}"]);
-            return "";
-        }
-
-        var keyIndent = DatabricksSplices.KeyIndentWithin(document, region);
-        document.Insert(bundleLine + 1, [$"{keyIndent}name: {DatabricksSplices.Quote(name)}"]);
-        return "";
-    }
-
     /// <summary>The lines of a new resource, each value written so that it reads back as the key it was made from (finding B9).</summary>
     private static List<string> Skeleton(string kind, string key, string keyIndent) =>
         kind == "jobs"
             ?
             [
-                $"{keyIndent}{DatabricksSplices.Quote(key)}:",
-                $"{keyIndent}  name: {DatabricksSplices.Quote(key)}",
+                $"{keyIndent}{Quote(key)}:",
+                $"{keyIndent}  name: {Quote(key)}",
                 $"{keyIndent}  tasks:",
                 $"{keyIndent}    - task_key: main",
                 $"{keyIndent}      notebook_task:",
-                $"{keyIndent}        notebook_path: {DatabricksSplices.Quote($"notebooks/{key}")}",
+                $"{keyIndent}        notebook_path: {Quote($"notebooks/{key}")}",
             ]
             :
             [
-                $"{keyIndent}{DatabricksSplices.Quote(key)}:",
-                $"{keyIndent}  name: {DatabricksSplices.Quote(key)}",
+                $"{keyIndent}{Quote(key)}:",
+                $"{keyIndent}  name: {Quote(key)}",
                 $"{keyIndent}  libraries:",
                 $"{keyIndent}    - notebook:",
-                $"{keyIndent}        path: {DatabricksSplices.Quote($"transformations/{key}")}",
+                $"{keyIndent}        path: {Quote($"transformations/{key}")}",
             ];
+
+    /// <summary>
+    /// A value plain only where it reads back as the same text, FBL 6.3's plain-safe rule, and double-quoted otherwise
+    /// (finding B9); a <c>:</c> or a <c>#</c> anywhere, or a leading indicator, is quoted as the writers quoted it.
+    /// </summary>
+    private static string Quote(string value)
+    {
+        var needsQuoting =
+            value.Length == 0 ||
+            value.Contains(':', StringComparison.Ordinal) ||
+            value.Contains('#', StringComparison.Ordinal) ||
+            value[0] is '-' or ' ' or '"' or '\'' or '{' or '[' ||
+            value.EndsWith(' ') ||
+            !YamlScalars.IsPlainSafe(value, false);
+
+        return needsQuoting ? YamlScalars.DoubleQuoted(value) : value;
+    }
+
+    /// <summary>The leading whitespace of a line's text.</summary>
+    private static string Indent(string text) => text[..^text.TrimStart().Length];
+
+    /// <summary>The indentation of the first line after <paramref name="keyLine"/> that holds anything, so a file written with four spaces stays written with four spaces.</summary>
+    private static string IndentAfter(LineDocument document, int keyLine)
+    {
+        for (var i = keyLine + 1; i < document.Lines.Count; i++)
+        {
+            var text = document.Lines[i].Text;
+            if (!string.IsNullOrWhiteSpace(text))
+            {
+                return Indent(text);
+            }
+        }
+
+        return Indent(document.Lines[keyLine].Text) + "  ";
+    }
 
     /// <summary>
     /// The line declaring a root-level key - at column zero, so a target's own nested
@@ -133,20 +141,5 @@ internal static class BundleWriter
         }
 
         return -1;
-    }
-
-    /// <summary>The last line still belonging to the root key starting at <paramref name="keyLine"/>: everything up to the next column-zero key.</summary>
-    private static int RegionEnd(LineDocument document, int keyLine)
-    {
-        for (var i = keyLine + 1; i < document.Lines.Count; i++)
-        {
-            var text = document.Lines[i].Text;
-            if (text.Length > 0 && !char.IsWhiteSpace(text[0]) && !text.StartsWith('#'))
-            {
-                return i - 1;
-            }
-        }
-
-        return document.Lines.Count - 1;
     }
 }
