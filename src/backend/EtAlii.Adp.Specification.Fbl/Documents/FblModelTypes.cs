@@ -62,6 +62,51 @@ public sealed class FblBinding
 
     /// <summary>Elements before relations, in binding order: the order rules are offered an entry (FBL §5.1).</summary>
     public IEnumerable<Rule> AllRules => Elements.Concat(Relations);
+
+    // The binding as each reading sees it, made once per origin (FBL 0.10 §5.1, §8.2).
+    private readonly Dictionary<string, FblBinding> _readings = new(StringComparer.Ordinal);
+
+    /// <summary>
+    /// The binding as the reading of <paramref name="origin"/> sees it (FBL 0.10 §5.1, §8.2): only the rules whose
+    /// <c>origins</c> admit it, a rule without <c>origins</c> being every reading's, and the resource capture
+    /// <c>registration.resource</c> gives that origin. Null, a reading that names no origin, sees every rule and the
+    /// binding's one <c>capture</c>, as before 0.10.
+    /// </summary>
+    public FblBinding ForOrigin(string? origin)
+    {
+        if (Unfiltered is { } written) return written.ForOrigin(origin);
+        if (origin is null) return this;
+        lock (_readings)
+        {
+            if (_readings.TryGetValue(origin, out var known)) return known;
+            var admitted = new Func<Rule, bool>(rule => rule.Origins is null || rule.Origins.Contains(origin));
+            var reading = new FblBinding
+            {
+                Name = Name,
+                Title = Title,
+                Claims = Claims,
+                Body = Body,
+                Plugin = Plugin,
+                ReadOnly = ReadOnly,
+                Text = Text,
+                Header = Header,
+                Comment = Comment,
+                ReportUnmatched = ReportUnmatched,
+                Blocks = Blocks,
+                Sections = Sections,
+                Elements = [.. Elements.Where(admitted)],
+                Relations = [.. Relations.Where(admitted)],
+                Registration = Registration.ForOrigin(origin),
+                Template = Template,
+                Unfiltered = this,
+            };
+            _readings[origin] = reading;
+            return reading;
+        }
+    }
+
+    /// <summary>The binding as written, of which this is the reading of one origin (<see cref="ForOrigin"/>); null when this is it.</summary>
+    private FblBinding? Unfiltered { get; init; }
 }
 
 public sealed class Claims
@@ -182,6 +227,9 @@ public sealed partial class Rule
     public bool SnapshotUndo { get; init; }
 
     public string? ReadOnly { get; init; }
+
+    /// <summary>The readings the rule is read for, as origins (FBL 0.10 §5.1); null for every reading.</summary>
+    public IReadOnlyList<string>? Origins { get; init; }
 
     /// <summary>
     /// The programs of this rule's expressions, compiled once as the binding loads (FBL §14.1 step 8),
@@ -365,6 +413,18 @@ public sealed record AttributeBinding : Slot
 
     /// <summary>yaml, json (FBL 0.5): what the attribute is when its value does not convert, keeping the entry readable.</summary>
     internal FallbackBinding? Fallback { get; init; }
+
+    /// <summary>
+    /// A second slot read only when the attribute's own slot is absent (FBL 0.10 §5.2), and removed whenever the
+    /// attribute is written: the reverse of <see cref="Slot"/>'s <c>override</c>. Null when the binding gives none.
+    /// </summary>
+    public Slot? Secondary { get; init; }
+
+    /// <summary>The sentence a set or an add refused by <c>empty: "refuse"</c> is refused with (FBL 0.10 §5.2, §6.4); null for the host's own.</summary>
+    public string? EmptyRefusal { get; init; }
+
+    /// <summary>The sentence a set refused by an <c>absent</c> rule is refused with (FBL 0.10 §5.2, §6.4); null for the host's own.</summary>
+    public string? AbsentRefusal { get; init; }
 }
 
 internal sealed record ReferenceBinding(IReadOnlyList<string> To, string By);
@@ -400,6 +460,12 @@ internal sealed class InsertSettings
     /// order: a string, a <see cref="double"/>, a <see cref="bool"/> or null. Null when the insert has none.
     /// </summary>
     public IReadOnlyList<KeyValuePair<string, object?>>? Constant { get; init; }
+
+    /// <summary>The sentence an add is refused with when <see cref="When"/> does not hold (FBL 0.10 §6.2, §6.4); null for the host's own.</summary>
+    public string? WhenRefusal { get; init; }
+
+    /// <summary>The sentence an add is refused with when the container is missing and there is no <see cref="Create"/> (FBL 0.10 §6.2, §6.4); null for the host's own.</summary>
+    public string? ContainerRefusal { get; init; }
 }
 
 /// <summary>How a missing container is created: where, with the key or selector <see cref="At"/> names, and its own text.</summary>
@@ -422,7 +488,25 @@ internal sealed class RegistrationSettings
 
     public string? ResourceCapture { get; init; }
 
+    /// <summary>
+    /// <c>registration.resource.byOrigin</c> (FBL 0.10 §8.2): the capture each origin's reading selects its resource
+    /// by, null for an origin that selects none; null when the binding gives one <see cref="ResourceCapture"/> for all.
+    /// </summary>
+    public IReadOnlyDictionary<string, string?>? ResourceByOrigin { get; init; }
+
     public string? LegacyLayout { get; init; }
+
+    /// <summary>These settings as the reading of <paramref name="origin"/> sees them: its own resource capture, or none (FBL 0.10 §8.2).</summary>
+    public RegistrationSettings ForOrigin(string origin) => ResourceByOrigin is not { } byOrigin
+        ? this
+        : new RegistrationSettings
+        {
+            Headers = Headers,
+            CreateOnFirstPlacement = CreateOnFirstPlacement,
+            Blocks = Blocks,
+            ResourceCapture = byOrigin.GetValueOrDefault(origin),
+            LegacyLayout = LegacyLayout,
+        };
 }
 
 public sealed record TemplateSettings(string Text, IReadOnlyDictionary<string, string> ByOrigin);

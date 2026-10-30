@@ -481,15 +481,8 @@
       "property": "cross-check",
       "binding": "databricks-job",
       "file": "src/diagrams/databricks/backend/EtAlii.Adp.Diagram.Databricks.Tests/Fixtures/flow-collections.yml",
-      "observed": "Resource: the binding lacks 1 (empty_flow) | job flow_dependencies: Dependency: the binding lacks 1 (edge:a->b)",
-      "reason": "The fixture is one of the Databricks module's parity corpus (databricks-disl-fbl task 1), written to hold flow collections (finding B12). The job 'empty_flow' writes 'tasks: []', and databricks-job.fbl's resource capture over /resources/jobs/{job}/tasks/* captures no job that has no task, so the bundle parser's resource 'empty_flow' is not among the binding's resources; and the dependency written 'depends_on: [{task_key: a}]' is not read as a relation, with no finding, where the job parser reads it. The parity transcript freezes what the module does with it today."
-    },
-    {
-      "property": "cross-check",
-      "binding": "databricks-job",
-      "file": "src/diagrams/databricks/backend/EtAlii.Adp.Diagram.Databricks.Tests/Fixtures/flow-dependencies.yml",
-      "observed": "job flow_dependencies: Dependency: the binding lacks 1 (edge:a->b)",
-      "reason": "The fixture is one of the Databricks module's parity corpus (databricks-disl-fbl task 1), written to hold a dependency written as a flow sequence (finding B12). databricks-job.fbl reads 'depends_on: [{task_key: a}]' as no relation, with no finding, where the job parser reads the dependency a->b. The parity transcript freezes what the module does with it today."
+      "observed": "Resource: the binding lacks 1 (empty_flow)",
+      "reason": "The fixture is one of the Databricks module's parity corpus (databricks-disl-fbl task 1), written to hold flow collections (finding B12). The job 'empty_flow' writes 'tasks: []', and databricks-job.fbl's resource capture over /resources/jobs/{job}/tasks/* captures no job that has no task, so the bundle parser's resource 'empty_flow' is not among the binding's resources. The dependency written 'depends_on: [{task_key: a}]' is read since FBL 0.10 section 4.3 (databricks-disl-fbl task 10). The parity transcript freezes what the module does with it today."
     },
     {
       "property": "cross-check",

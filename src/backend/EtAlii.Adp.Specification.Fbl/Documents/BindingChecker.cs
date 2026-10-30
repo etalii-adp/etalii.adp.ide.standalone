@@ -61,6 +61,7 @@ internal static class BindingChecker
         if (rule.Line is not null) CheckRegex(rule.Line, at + "/line", problems);
         CheckWithin(rule.Within, ruleNames, at + "/within", problems);
         CheckReferences(binding, rule, rules, at, problems);
+        CheckOrigins(binding, rule.Origins, at + "/origins", problems);
 
         var families = FamiliesOf(binding, rule);
         var scalars = families.Count > 0 && families.All(f => f is Family.Yaml or Family.Json);
@@ -140,6 +141,11 @@ internal static class BindingChecker
                 foreach (var to in reference.To) Require(to, rules, a + "/reference/to", problems);
             }
             if (attribute.Override is { } o) CheckSlot(rule, o, context, a + "/override", problems);
+            if (attribute.Secondary is { } s) CheckSlot(rule, s, context, a + "/secondary", problems);
+            if (attribute is { Secondary: not null, Override: not null })
+            {
+                problems.Add(new LoadDiagnostic(a + "/secondary", LoadSeverity.Error, "An attribute binding has a secondary or an override, not both (FBL 0.10 14.1)."));
+            }
             CheckScalarOptions(attribute, scalars, a, problems);
         }
     }
@@ -169,6 +175,10 @@ internal static class BindingChecker
         if (binding.Claims.Readings.Values.Count(r => r.Bare) > 1)
         {
             problems.Add(new LoadDiagnostic(pointer + "/claims/readings", LoadSeverity.Error, "At most one reading is bare."));
+        }
+        foreach (var origin in binding.Registration.ResourceByOrigin?.Keys ?? [])
+        {
+            CheckOrigins(binding, [origin], JsonPointer.Append(pointer + "/registration/resource/byOrigin", origin), problems);
         }
         if (binding.Comment is not null) CheckRegex(binding.Comment, pointer + "/comment", problems);
         if (binding.Header?.Line is { } headerLine) CheckRegex(headerLine, pointer + "/header/line", problems);
@@ -207,6 +217,18 @@ internal static class BindingChecker
     {
         if (slot.Kind is SlotKind.Value(var expression)) Compile(rule, expression, context, pointer + "/value", problems);
         if (slot.Word is not null) CheckRegex(slot.Word, pointer + "/word", problems);
+    }
+
+    /// <summary>FBL 0.10 §14.1 step 6: every origin a rule's <c>origins</c> or <c>registration.resource.byOrigin</c> names is one the binding claims.</summary>
+    private static void CheckOrigins(FblBinding binding, IReadOnlyList<string>? origins, string pointer, List<LoadDiagnostic> problems)
+    {
+        foreach (var origin in origins ?? [])
+        {
+            if (!binding.Claims.Origins.Contains(origin))
+            {
+                problems.Add(new LoadDiagnostic(pointer, LoadSeverity.Error, $"The origin '{origin}' is not one of the binding's claims.origins (FBL 0.10 14.1)."));
+            }
+        }
     }
 
     private static void Require(string name, List<Rule> rules, string pointer, List<LoadDiagnostic> problems)
