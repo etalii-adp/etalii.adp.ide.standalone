@@ -156,7 +156,7 @@ One Developer owns this specification, per CLAUDE.md's one-owner-per-specificati
 
 ### Stage two
 
-- [-] 10. Library work for the binding: what FBL gains for gaps 1 to 4, and the id prefix
+- [x] 10. Library work for the binding: what FBL gains for gaps 1 to 4, and the id prefix
   - ~~Waits on a language change in etalii-adp/etalii.adp: FBL answering gaps 1, 2 and 3, and gap 4 for its part. Do not start before the FBL specification there states the constructs and ships conformance fixtures for them.~~ [Amended by small amendment, user ruling in chat 2026-10-29: waits on FBL 0.10, etalii.adp #618 (merge `5795b37`, spec 066 User Story 2), which states the constructs for gaps 1, 2 and 4 and ships the `databricks-*` conformance fixtures; gap 3 is FBL 0.5's. Both are on etalii.adp `develop`.]
   - Files: `src/backend/EtAlii.Adp.Specification.Fbl/Documents/FblDocumentLoader.cs`, `Rules/BodyReading.cs`, `Planning/EditPlanner.cs` and whichever files the constructs land in, `src/backend/EtAlii.Adp.Specification.Fbl.Tests/Conformance/` (fixtures vendored from etalii.adp, with `LICENSE.md` and `readme.md` kept true), `src/backend/EtAlii.Adp.Specification.Disl/Model/DislModelBuilder.cs` for `persistence.ids.prefix`, and their test projects
   - Implement each construct FBL gained as its specification states it: several readings with different metamodels over one binding, a resource capture per reading and the model of one open body when two readings select different resources, a YAML scalar read as written where a value that does not convert does not cost the element, and opening an empty or one-line flow collection. Each has a conformance fixture vendored from etalii.adp and a test seen to fail first.
