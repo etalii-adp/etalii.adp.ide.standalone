@@ -10,7 +10,7 @@ layout:
   variable:emotionSuppression: -97.72 589.626
   variable:exhaustion: -552.247 736.387
   variable:generationalLabels: -1365.601 189.517
-  variable:goalOrientation: 19.452 234.294
+  variable:goalOrientation: 64.515 228.541
   variable:goalsAchieved: 209.051 503.719
   variable:insurerDependence: -293.899 -203.853
   variable:legalFrame: -284.659 81.598
@@ -25,8 +25,8 @@ layout:
   variable:selfDirection: -28.532 -338.905
   variable:shortTermFunctioning: -116.701 830.963
   variable:systemChange: -1665.031 -468.353
-  variable:toughNorm: -398.988 226.291
-  variable:visibleComplaints: -621.731 379.051
+  variable:toughNorm: -429.669 210.951
+  variable:visibleComplaints: -710.897 465.341
   variable:vulnerability: -999.33 273.247
   variable:withdrawal: -1660.921 -91.492
   variable:youthSelfImage: -1250.281 -221.469
