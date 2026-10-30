@@ -62,6 +62,13 @@ public sealed class OpenRegistration : SplicedFile
     /// <summary>The natural keys the reading has, when known: an <c>identities</c> entry for any other key is stale (FBL §8.6).</summary>
     public IReadOnlySet<string>? KnownKeys { get; set; }
 
+    /// <summary>
+    /// The resources the body holds for the reading's resource capture, when the reading selects by one
+    /// (<see cref="FblModel.Resources"/>): a <c>resource</c> header naming none of them is <c>fbl.missing-resource</c>
+    /// (FBL 0.10 §8.2). Null when not known, or the reading selects by no capture.
+    /// </summary>
+    public IReadOnlyList<string>? KnownResources { get; set; }
+
     public static OpenRegistration Open(byte[] bytes) => new(bytes ?? throw new ArgumentNullException(nameof(bytes)), new RegistrationSettings());
 
     /// <summary>Opens a registration through its binding, which declares its headers and blocks (FBL 0.7 §8.1).</summary>
@@ -81,6 +88,7 @@ public sealed class OpenRegistration : SplicedFile
         findings.AddRange(Document.UnknownHeaders(_headers, fileName));
         findings.AddRange(Document.UnknownBlocks(fileName));
         if (KnownIds is { } ids) findings.AddRange(Document.StaleEntries(ids, fileName, _declarations));
+        if (KnownResources is { } resources) findings.AddRange(Document.MissingResource(resources, fileName));
         return findings;
     }
 

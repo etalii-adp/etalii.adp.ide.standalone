@@ -67,6 +67,19 @@ public class TemplatesTests
         Assert.Equal(key, TemplateWriter.Key(baseName));
     }
 
+    [Theory]
+    [InlineData("My_Job.yml", "my_job My_Job")]
+    [InlineData("Nightly Ingest.yml", "nightly_ingest Nightly_Ingest")]
+    [InlineData("2024 Roadmap.json", "_2024_roadmap _2024_Roadmap")]
+    public void TheLowerKeyPlaceholder_IsTheKeyInLowerCase(string fileName, string expected)
+    {
+        // Act: FBL 0.10 section 13.
+        var text = TemplateWriter.Replace("{key:lower} {key}", fileName, rule => "N-" + rule);
+
+        // Assert.
+        Assert.Equal(expected, text);
+    }
+
     [Fact]
     public void OnlyTheFourPlaceholdersAreReplaced()
     {

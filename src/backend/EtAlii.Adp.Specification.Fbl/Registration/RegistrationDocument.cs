@@ -70,6 +70,23 @@ internal sealed partial class RegistrationDocument
         return findings;
     }
 
+    /// <summary>
+    /// The <c>resource</c> header when it names none of <paramref name="resources"/>, the resources the body holds for
+    /// the reading's capture (FBL 0.10 §8.2): <c>fbl.missing-resource</c>, a warning at the header's line, and the
+    /// reading is empty. Nothing when there is no header, or the reading selects by no capture.
+    /// </summary>
+    public IReadOnlyList<Finding> MissingResource(IReadOnlyList<string> resources, string fileName)
+    {
+        if (Headers.FirstOrDefault(candidate => candidate.Key == "resource") is not { } header || resources.Contains(header.Value)) return [];
+        (int line, int column) = Text.Position(header.Line.Start);
+        return
+        [
+            new Finding(FindingCodes.MissingResource, FindingSeverity.Warning,
+                $"The resource '{header.Value}' this registration names is not in the file, so nothing of it can be shown.",
+                new SourceLocation(fileName, line, column, Text.CodePoints(header.Line.Start, header.Line.End))),
+        ];
+    }
+
     /// <summary>The blocks neither FBL nor the binding declares, reported once each as <c>fbl.unknown-block</c> (FBL 0.7 §8.1).</summary>
     public IReadOnlyList<Finding> UnknownBlocks(string fileName) =>
         Undeclared.Select(block => Located(FindingCodes.UnknownBlock,

@@ -74,8 +74,11 @@ internal sealed class TreeEntry : Entry
 
     public required TreeValue Value { get; init; }
 
-    /// <summary>json: the offset of the comma after this entry, or -1.</summary>
+    /// <summary>json, and an item of a yaml flow sequence (FBL 0.10 §4.3): the offset of the comma after this entry, or -1.</summary>
     public int Separator { get; set; } = -1;
+
+    /// <summary>yaml: an entry inside a flow collection, an item of a flow sequence or a member of such an item (FBL 0.10 §4.3).</summary>
+    public bool InFlow { get; init; }
 }
 
 /// <summary>What yaml and json share: selectors, CEL values and reading keys (FBL §4.2, §4.1.4, §5.2).</summary>
@@ -245,9 +248,20 @@ internal abstract class TreeFamily(BodyText text, FblBinding binding, FblOptions
         return Selector.Match(start, resolved).FirstOrDefault().Entry as TreeEntry;
     }
 
-    /// <summary>The captures the binding's existing entries bound, so <c>{capture}</c> segments of a container resolve (FBL §6.2).</summary>
-    protected static IReadOnlyDictionary<string, string> CapturesOf(Planning.Plan plan) =>
-        plan.Reading.Elements.Select(e => e.Candidate.Captures).FirstOrDefault(c => c.Count > 0) ?? new Dictionary<string, string>();
+    /// <summary>
+    /// The captures the binding's existing entries bound, so <c>{capture}</c> segments of a container resolve (FBL §6.2),
+    /// with the resource the reading selects (FBL §8.2), which binds its capture where no element did: a task added to
+    /// a job that has none yet goes into the job the registration names.
+    /// </summary>
+    protected static IReadOnlyDictionary<string, string> CapturesOf(Planning.Plan plan)
+    {
+        var captures = new Dictionary<string, string>(plan.Reading.ResourceCaptures, StringComparer.Ordinal);
+        if (plan.Reading.Elements.Select(e => e.Candidate.Captures).FirstOrDefault(c => c.Count > 0) is { } bound)
+        {
+            foreach ((string name, string value) in bound) captures.TryAdd(name, value);
+        }
+        return captures;
+    }
 
     protected void Index(TreeEntry entry)
     {
