@@ -1,7 +1,7 @@
 {
   "$schema": "https://etalii.net/adp/fbl/schema/0.1/fbl.schema.json#/$defs/Fixture",
   "doc": "Both slots present (databricks.fbl#configuration; FBL 0.10, section 5.2; spec 066, edge case 16): the own slot is read, schema gold, and target is removed at the next write of the schema. Its body is written here.",
-  "binding": "../../../../databricks.fbl#configuration",
+  "binding": "../../../databricks.fbl#configuration",
   "input": "both.adp",
   "read": {
     "elements": [

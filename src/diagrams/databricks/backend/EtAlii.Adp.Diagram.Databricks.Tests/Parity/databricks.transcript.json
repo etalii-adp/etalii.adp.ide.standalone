@@ -48,23 +48,21 @@
   },
   "resourceHeaders": [
     "\"databricks/job\\nbody: a.yml\\nresource: job_b\\n\" => \"job_b\"",
-    "\"databricks/job\\nbody: a.yml\\nRESOURCE:job_b\\n\" => \"job_b\"",
-    "\"databricks/job\\nbody: a.yml\\nResource:    job_b   \\n\" => \"job_b\"",
+    "\"databricks/job\\nbody: a.yml\\nRESOURCE:job_b\\n\" => null",
+    "\"databricks/job\\nbody: a.yml\\nResource:    job_b   \\n\" => null",
     "\"databricks/job\\n\\n\\nresource: job_b\\n\" => \"job_b\"",
     "\"databricks/job\\nbody: a.yml\\nresource:\\n\" => null",
     "\"databricks/job\\nbody: a.yml\\nresources: job_b\\n\" => null",
     "\"databricks/job\\nbody: a.yml\\nlayout:\\n  task:x: 1 2\\nresource: job_b\\n\" => null",
     "\"databricks/job\\nh1: 1\\nh2: 2\\nh3: 3\\nh4: 4\\nh5: 5\\nh6: 6\\nh7: 7\\nresource: job_b\\n\" => \"job_b\"",
-    "\"databricks/job\\nh1: 1\\nh2: 2\\nh3: 3\\nh4: 4\\nh5: 5\\nh6: 6\\nh7: 7\\nh8: 8\\nresource: job_b\\n\" => null",
+    "\"databricks/job\\nh1: 1\\nh2: 2\\nh3: 3\\nh4: 4\\nh5: 5\\nh6: 6\\nh7: 7\\nh8: 8\\nresource: job_b\\n\" => \"job_b\"",
     "\"databricks/job\\r\\nbody: a.yml\\r\\nresource: job_b\\r\\n\" => \"job_b\""
   ],
   "documents": [
     {
       "document": "diagrams/databricks/backend/EtAlii.Adp.Diagram.Databricks.Tests/Fixtures/anchors-and-merge.yml",
       "sha256": "baa9f114bfc6e22a058497627a173cb3b698a8f6d2d412303d4cc74876fb475a",
-      "findings": [
-        "line 16 | Error | databricks.dangling-cluster | 'shared_first' runs on cluster 'merged', which this job does not declare. Declare it under job_clusters, or clear the binding for serverless."
-      ],
+      "findings": [],
       "readings": [
         {
           "reading": "databricks/bundle | no registration",
@@ -92,7 +90,7 @@
             "task:shared_first | databricks/job+task | 0, 0 | DatabricksTaskPayload { \"taskKey\": \"shared_first\", \"taskType\": \"notebook\", \"source\": \"notebooks/shared_first\", \"clusterKey\": \"merged\" }",
             "task:shared_second | databricks/job+task | 260, 0 | DatabricksTaskPayload { \"taskKey\": \"shared_second\", \"taskType\": \"notebook\", \"source\": \"notebooks/shared_second\" }",
             "edge:shared_first->shared_second | databricks/job+edge | 0, 0 | DatabricksEdgePayload { \"fromElementId\": \"task:shared_first\", \"toElementId\": \"task:shared_second\" }",
-            "cluster:merged | databricks/job+cluster | 0, 200 | DatabricksPipelineNodePayload { \"role\": \"compute\", \"label\": \"merged\", \"badges\": [ \"2 workers\" ] }"
+            "cluster:merged | databricks/job+cluster | 0, 200 | DatabricksPipelineNodePayload { \"role\": \"compute\", \"label\": \"merged\", \"badges\": [ \"15.4.x-scala2.12\", \"Standard_DS3_v2\", \"2 workers\" ] }"
           ],
           "targets": [
             "\"task:shared_first\" => selects \"shared_first\", menu #4, rows #1",
@@ -112,24 +110,6 @@
         },
         {
           "reading": "databricks/job | resource: aliased",
-          "payloads": [
-            "task:shared_first | databricks/job+task | 0, 0 | DatabricksTaskPayload { \"taskKey\": \"shared_first\", \"taskType\": \"notebook\", \"source\": \"notebooks/shared_first\", \"clusterKey\": \"merged\" }",
-            "task:shared_second | databricks/job+task | 260, 0 | DatabricksTaskPayload { \"taskKey\": \"shared_second\", \"taskType\": \"notebook\", \"source\": \"notebooks/shared_second\" }",
-            "edge:shared_first->shared_second | databricks/job+edge | 0, 0 | DatabricksEdgePayload { \"fromElementId\": \"task:shared_first\", \"toElementId\": \"task:shared_second\" }"
-          ],
-          "targets": [
-            "\"task:shared_first\" => selects \"shared_first\", menu #4, rows #1",
-            "\"task:shared_second\" => selects \"shared_second\", menu #5, rows #2",
-            "\"edge:shared_first->shared_second\" => selects \"shared_first → shared_second\", menu #6, no rows",
-            "\"\" => selects null, menu #1, no rows",
-            "\"new:120,80\" => selects null, menu #7, no rows",
-            "\"rel:task:shared_first->task:shared_second\" => selects null, menu #3, no rows",
-            "\"rel:new:120,80->task:shared_first\" => selects null, menu #3, no rows",
-            "\"parity:unknown\" => selects null, menu #1, no rows"
-          ]
-        },
-        {
-          "reading": "databricks/job | resource: parity-missing",
           "payloads": [],
           "targets": [
             "\"\" => selects null, menu #1, no rows",
@@ -138,6 +118,10 @@
             "\"rel:new:120,80->task:a\" => selects null, menu #3, no rows",
             "\"parity:unknown\" => selects null, menu #1, no rows"
           ]
+        },
+        {
+          "reading": "databricks/job | resource: parity-missing",
+          "sameAs": "databricks/job | resource: aliased"
         },
         {
           "reading": "databricks/pipeline | no registration",
@@ -679,15 +663,6 @@
           "do": "insert a for-each task",
           "answer": "refused: There is no 'for-each' task type to add.",
           "unchanged": true
-        },
-        {
-          "do": "set task:shared_first databricks.run-if = \"ALL_DONE\"",
-          "answer": "ok",
-          "hunks": [
-            "@17 -0 +\"          run_if: ALL_DONE\\r\\n\""
-          ],
-          "sha256": "857c2db07b35b2dec44ab00285fefb4e87e68e56827da757acc9f87eb87c53d0",
-          "undo": "ok; restores the text"
         },
         {
           "do": "set bundle databricks.bundle-name = \"Parity bundle\"",

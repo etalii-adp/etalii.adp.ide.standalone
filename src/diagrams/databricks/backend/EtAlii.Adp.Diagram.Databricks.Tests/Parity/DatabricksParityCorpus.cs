@@ -49,10 +49,14 @@ internal sealed class DatabricksParityCorpus : IDisposable
         return documents;
     }
 
+    /// <summary>The text of the document <paramref name="name"/>.</summary>
+    public static Task<string> TextAsync(string name, CancellationToken cancellationToken) =>
+        File.ReadAllTextAsync(Paths().Single(path => path.Name == name).Path, cancellationToken);
+
     /// <summary>The entry the module's store would hold for the document <paramref name="name"/>.</summary>
     public static async Task<DocumentEntry<LineDocument, DatabricksModel>> EntryAsync(string name, CancellationToken cancellationToken)
     {
-        var text = await File.ReadAllTextAsync(Paths().Single(path => path.Name == name).Path, cancellationToken);
+        var text = await TextAsync(name, cancellationToken);
         var document = LineDocument.Parse(text);
         return new DocumentEntry<LineDocument, DatabricksModel>(document, DatabricksModel.Outcome(document));
     }
@@ -94,7 +98,7 @@ internal sealed class DatabricksParityCorpus : IDisposable
     public static IReadOnlyList<string> Targets(DatabricksModel model, ToolOrigin origin, string? registration)
     {
         var mapper = new DatabricksElementMapper();
-        var key = DatabricksHeaders.ReadResourceKey(registration);
+        var key = DatabricksBody.ResourceOf(registration);
         var none = ReadOnlyDictionary<string, RegistrationPosition>.Empty;
         IReadOnlyList<DiagramElement> elements = origin.Type switch
         {

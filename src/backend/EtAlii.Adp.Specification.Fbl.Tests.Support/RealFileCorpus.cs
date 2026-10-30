@@ -99,6 +99,17 @@ public static class RealFileCorpus
 
     public static FblBinding Binding(CorpusBinding binding) => Binding(binding.Document, binding.Binding);
 
+    /// <summary>
+    /// The bindings a module embeds and reads its files with, by document and name. A registration of an origin one of them
+    /// claims is opened with it, as the tool opens it, before any vendored example binding that claims the origin too.
+    /// </summary>
+    public static readonly IReadOnlyList<(string Document, string Binding)> ModuleBindings =
+    [
+        // databricks-disl-fbl, task 11: one binding, three readings; etalii.adp's databricks-job.fbl and
+        // databricks-pipeline.fbl are examples that claim the job and pipeline origins too.
+        ("src/diagrams/databricks/backend/EtAlii.Adp.Diagram.Databricks/databricks.fbl", "configuration"),
+    ];
+
     /// <summary>Every vendored binding, with the document it is in.</summary>
     public static IReadOnlyList<(string Document, FblBinding Binding)> AllBindings()
     {

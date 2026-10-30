@@ -1,7 +1,7 @@
 {
   "$schema": "https://etalii.net/adp/fbl/schema/0.1/fbl.schema.json#/$defs/Fixture",
   "doc": "The bundle reading of one Databricks bundle file that two other readings share (databricks.fbl#configuration; FBL 0.10, sections 5.1, 8.2, 9.1 and 9.2; spec 066, User Story 2, scenario 1). The input is the bundle's registration, and its read is that of the body it names, ../databricks.yml, through the rules whose origins admit databricks/bundle: the bundle, one Resource for the job and one for the pipeline, which the job and the pipeline readings read as themselves (job/ and pipeline/ beside this folder), and the targets. No element is of a type the bundle's metamodel does not declare, since resource.byOrigin gives this reading no capture and every rule of another reading is not its. The reading is editable: the step renames the bundle in the body, through a splice that names the body's file. Its body, databricks.yml, is etalii.adp.ide.standalone's src/diagrams/databricks/examples/lakehouse/databricks.yml at ad1a4680a, byte for byte as git holds it (LF), with one change: the job resources/nightly-ingest.yml declares, its resources.jobs mapping as that file writes it, copied in under resources: before pipelines:, so that one body holds a job for the job reading (the example declares its job in an included file, which no reading follows).",
-  "binding": "../../../../databricks.fbl#configuration",
+  "binding": "../../../databricks.fbl#configuration",
   "input": "databricks.adp",
   "read": {
     "elements": [

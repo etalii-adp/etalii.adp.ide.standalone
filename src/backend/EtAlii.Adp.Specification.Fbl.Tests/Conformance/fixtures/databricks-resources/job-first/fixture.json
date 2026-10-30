@@ -1,7 +1,7 @@
 {
   "$schema": "https://etalii.net/adp/fbl/schema/0.1/fbl.schema.json#/$defs/Fixture",
   "doc": "A job registration without a resource header selects the first job in document order, job_a (FBL 0.10, section 8.2, per origin; spec 066, User Story 2, scenario 3). ingest runs on missing_cluster, which names no cluster, a dangling reference. Its body, two-jobs-two-pipelines.yml, is etalii.adp.ide.standalone's src/diagrams/databricks/backend/EtAlii.Adp.Diagram.Databricks.Tests/Fixtures/two-jobs-two-pipelines.yml at ad1a4680a, byte for byte (CRLF).",
-  "binding": "../../../../databricks.fbl#configuration",
+  "binding": "../../../databricks.fbl#configuration",
   "input": "jobs.adp",
   "read": {
     "document": {

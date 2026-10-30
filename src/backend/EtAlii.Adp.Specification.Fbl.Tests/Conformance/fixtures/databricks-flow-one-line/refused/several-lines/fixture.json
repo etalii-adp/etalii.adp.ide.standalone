@@ -1,7 +1,7 @@
 {
   "$schema": "https://etalii.net/adp/fbl/schema/0.1/fbl.schema.json#/$defs/Fixture",
   "doc": "A flow sequence written over several lines takes no insert (FBL 0.10, sections 4.3 and 6.2; spec 066, edge case 14): adding a dependency of b on c is refused and writes nothing. The refusal's wording is the host's, since the binding gives none for it. Its body is written here.",
-  "binding": "../../../../../databricks.fbl#configuration",
+  "binding": "../../../../databricks.fbl#configuration",
   "input": "several_lines.adp",
   "read": {
     "document": {

@@ -68,7 +68,7 @@ public class RegistrationsTests
         var bodyFile = Path.GetRelativePath(Repository.Root, location.Path!).Replace('\\', '/');
         var headers = registration.Headers.ToDictionary(h => h.Key, h => h.Value, StringComparer.Ordinal);
         var body = OpenBody.Open(File.ReadAllBytes(location.Path!), binding, RealFileCorpus.Options(binding, bodyFile, headers));
-        var model = body.Model;
+        var model = body.ModelOf(registration.Origin, registration.Resource);
         if (model.Unreadable) return;
 
         // Assert: the view and the resource select something.
@@ -175,7 +175,9 @@ public class RegistrationsTests
 
     private static List<string> All() => RealFileCorpus.All.Where(f => f.EndsWith(".adp", StringComparison.OrdinalIgnoreCase)).ToList();
 
-    /// <summary>The vendored declared file binding whose <c>claims.origins</c> holds <paramref name="origin"/>, if any.</summary>
+    /// <summary>The declared file binding whose <c>claims.origins</c> holds <paramref name="origin"/>, if any: a module's own before a vendored one.</summary>
     private static FblBinding? Declared(string origin) =>
-        RealFileCorpus.AllBindings().Select(b => b.Binding).FirstOrDefault(b => b.Plugin is null && !b.Body.IsFolder && b.Claims.Origins.Contains(origin));
+        RealFileCorpus.ModuleBindings.Select(b => RealFileCorpus.Binding(b.Document, b.Binding))
+            .Concat(RealFileCorpus.AllBindings().Select(b => b.Binding))
+            .FirstOrDefault(b => b.Plugin is null && !b.Body.IsFolder && b.Claims.Origins.Contains(origin));
 }

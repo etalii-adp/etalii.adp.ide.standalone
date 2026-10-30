@@ -2,6 +2,7 @@ using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Specification.Disl;
+using EtAlii.Adp.Specification.Fbl;
 
 namespace EtAlii.Adp.Diagram.Databricks;
 
@@ -14,7 +15,7 @@ namespace EtAlii.Adp.Diagram.Databricks;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>The model is a reading of the parsed file</b> (<see cref="DatabricksDisl"/>), of the resource the target's
+/// <b>The model is a reading of the parsed file</b> (<see cref="DatabricksReadings"/>), of the resource the target's
 /// registration names (<see cref="DatabricksSelection.ReadingOf"/>, finding B3): a job's, the bundle's or a pipeline's.
 /// </para>
 /// <para>
@@ -50,8 +51,31 @@ internal static class DatabricksDefinition
     /// <summary>The pipeline's definition.</summary>
     private static DislDiagramDefinition Pipeline { get; } = new(typeof(DatabricksDefinition).Assembly, "databricks-pipeline.dis", WireBlock);
 
+    /// <summary>
+    /// The ids the binding's readings are read with (FBL 5.3): each definition's natural id of the types it holds, so a
+    /// task reads with its key, a cluster with its key, a target with its name and a library with its path; and a
+    /// resource with the id the bundle's definition derives for it, <c>resource:&lt;kind&gt;/&lt;key&gt;</c>, which is what an
+    /// override's target end names. A derived id is computed once every element is read, too late for an end to name it.
+    /// A library without a path (a jar, a maven coordinate) reads as the empty path, so its id is <c>library:</c>, as the
+    /// module has always given it; a natural id is never empty otherwise.
+    /// </summary>
+    public static Func<IdRequest, string?> ReadIds { get; } = ReadIdsOf([Bundle.Specification, Job.Specification, Pipeline.Specification]);
+
     /// <summary>What <c>env</c> reads: editable, in the one viewpoint each reading has.</summary>
     private static DislEnv Env { get; } = new();
+
+    private static Func<IdRequest, string?> ReadIdsOf(IReadOnlyList<DislSpecification> specifications)
+    {
+        var ids = specifications.Select(DislNaturalIds.Of).ToList();
+        return request => ResourceId(request) ?? ids.Select(id => id(request)).FirstOrDefault(id => id is not null);
+    }
+
+    private static string? ResourceId(IdRequest request) => request.Type switch
+    {
+        "Resource" when request.Attributes.GetValueOrDefault("resourceKind") is string kind && request.Attributes.GetValueOrDefault("key") is string key => $"resource:{kind}/{key}",
+        "Library" when request.Attributes.GetValueOrDefault("path") is "" => "",
+        _ => null,
+    };
 
     /// <summary>The definition of the tool type <paramref name="origin"/> names: the job's when it names none.</summary>
     private static DislDiagramDefinition Of(ToolOrigin? origin) => origin?.Type switch
@@ -91,7 +115,7 @@ internal static class DatabricksDefinition
         if (DatabricksRelationGesture.TryParse(target.ElementId, out var from, out var to))
         {
             var diagram = CanvasOf(target.Origin, reading);
-            return Of(target.Origin).Menus(DislMenuTarget.Connection(diagram, DatabricksDisl.ElementOf(diagram, from), DatabricksDisl.ElementOf(diagram, to)), Env);
+            return Of(target.Origin).Menus(DislMenuTarget.Connection(diagram, DatabricksReadings.ElementOf(diagram, from), DatabricksReadings.ElementOf(diagram, to)), Env);
         }
 
         return [];
@@ -146,7 +170,7 @@ internal static class DatabricksDefinition
         ArgumentNullException.ThrowIfNull(job);
         ArgumentNullException.ThrowIfNull(actionId);
 
-        var diagram = DatabricksDisl.Job(job, Job.Specification).Diagram;
+        var diagram = DatabricksReadings.Job(job, Job.Specification).Diagram;
         var tool = ToolboxDerivation.Derive(Job.Specification, Job.Ids).FirstOrDefault(candidate => candidate.DropActionId == actionId);
         if (tool is not null
             && DislDrop.Resolve(Job.Specification, tool.Name, diagram, null, Env) is DislDropOutcome.Target landed
@@ -168,7 +192,7 @@ internal static class DatabricksDefinition
     public static (DislDiagram Diagram, IReadOnlyList<DislFinding> Findings) Findings(JobModel job, string file)
     {
         ArgumentNullException.ThrowIfNull(job);
-        var diagram = DatabricksDisl.Job(job, Job.Specification, file).Diagram;
+        var diagram = DatabricksReadings.Job(job, Job.Specification, file).Diagram;
         var keyless = job.Tasks
             .Where(task => task.Key.Length == 0)
             .Select(task => DislReaderFinding.Unreadable("A task has no task_key.", task.Lines.Start + 1))
@@ -180,14 +204,14 @@ internal static class DatabricksDefinition
     public static IReadOnlyList<DislFinding> Findings(BundleModel bundle, string file)
     {
         ArgumentNullException.ThrowIfNull(bundle);
-        return ConstraintEvaluator.Evaluate(Bundle.Specification, DatabricksDisl.Bundle(bundle, Bundle.Specification, file).Diagram, new DislConstraintOptions(Env));
+        return ConstraintEvaluator.Evaluate(Bundle.Specification, DatabricksReadings.Bundle(bundle, Bundle.Specification, file).Diagram, new DislConstraintOptions(Env));
     }
 
     /// <summary>The findings of the pipeline definition over <paramref name="pipeline"/> of the subject <paramref name="file"/>, in DISL's order (§8.6).</summary>
     public static IReadOnlyList<DislFinding> Findings(PipelineModel pipeline, string file)
     {
         ArgumentNullException.ThrowIfNull(pipeline);
-        return ConstraintEvaluator.Evaluate(Pipeline.Specification, DatabricksDisl.Pipeline(pipeline, Pipeline.Specification, file).Diagram, new DislConstraintOptions(Env));
+        return ConstraintEvaluator.Evaluate(Pipeline.Specification, DatabricksReadings.Pipeline(pipeline, Pipeline.Specification, file).Diagram, new DislConstraintOptions(Env));
     }
 
     /// <summary>
@@ -198,7 +222,7 @@ internal static class DatabricksDefinition
     public static IReadOnlyList<DislFinding> Unparseable(string reason, int line)
     {
         ArgumentNullException.ThrowIfNull(reason);
-        return ConstraintEvaluator.Evaluate(Job.Specification, DatabricksDisl.Job(null, Job.Specification).Diagram, new DislConstraintOptions(Env, [DislReaderFinding.NotParsed(reason, line)]));
+        return ConstraintEvaluator.Evaluate(Job.Specification, DatabricksReadings.Job(null, Job.Specification).Diagram, new DislConstraintOptions(Env, [DislReaderFinding.NotParsed(reason, line)]));
     }
 
     /// <summary>
@@ -214,20 +238,20 @@ internal static class DatabricksDefinition
 
         foreach (var job in reading.Jobs)
         {
-            if (DatabricksDisl.ElementOf(DatabricksDisl.Job(job, Job.Specification).Diagram, elementId) is { } task)
+            if (DatabricksReadings.ElementOf(DatabricksReadings.Job(job, Job.Specification).Diagram, elementId) is { } task)
             {
                 return (Job, task);
             }
         }
 
-        if (DatabricksDisl.ElementOf(DatabricksDisl.Bundle(reading.Bundle, Bundle.Specification).Diagram, elementId) is { } bundle)
+        if (DatabricksReadings.ElementOf(DatabricksReadings.Bundle(reading.Bundle, Bundle.Specification).Diagram, elementId) is { } bundle)
         {
             return (Bundle, bundle);
         }
 
         foreach (var pipeline in reading.Pipelines)
         {
-            if (DatabricksDisl.ElementOf(DatabricksDisl.Pipeline(pipeline, Pipeline.Specification).Diagram, elementId) is { } element)
+            if (DatabricksReadings.ElementOf(DatabricksReadings.Pipeline(pipeline, Pipeline.Specification).Diagram, elementId) is { } element)
             {
                 return (Pipeline, element);
             }
@@ -239,8 +263,8 @@ internal static class DatabricksDefinition
     /// <summary>The diagram the empty canvas of the tool type <paramref name="origin"/> names is: the first job's, the bundle's or the first pipeline's of <paramref name="reading"/>.</summary>
     private static DislDiagram CanvasOf(ToolOrigin? origin, DatabricksModel reading) => origin?.Type switch
     {
-        "bundle" => DatabricksDisl.Bundle(reading.Bundle, Bundle.Specification).Diagram,
-        "pipeline" => DatabricksDisl.Pipeline(reading.Pipelines.FirstOrDefault(), Pipeline.Specification).Diagram,
-        _ => DatabricksDisl.Job(reading.Jobs.FirstOrDefault(), Job.Specification).Diagram,
+        "bundle" => DatabricksReadings.Bundle(reading.Bundle, Bundle.Specification).Diagram,
+        "pipeline" => DatabricksReadings.Pipeline(reading.Pipelines.FirstOrDefault(), Pipeline.Specification).Diagram,
+        _ => DatabricksReadings.Job(reading.Jobs.FirstOrDefault(), Job.Specification).Diagram,
     };
 }

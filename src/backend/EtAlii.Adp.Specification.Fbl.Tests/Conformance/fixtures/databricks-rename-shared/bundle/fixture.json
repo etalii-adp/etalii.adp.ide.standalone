@@ -1,7 +1,7 @@
 {
   "$schema": "https://etalii.net/adp/fbl/schema/0.1/fbl.schema.json#/$defs/Fixture",
   "doc": "The bundle reading of the body the job reading renamed a task in (databricks.fbl#configuration; FBL 0.10, section 9.1; spec 066, User Story 2, scenario 2). ../renamed.yml is byte for byte the body after the last step of job/ beside this folder: the bundle reading reads it without a reload, as the same open body, and since its metamodel draws resources and not tasks, the rename leaves every element it reads as it was; it edits that body in turn, an edit that one history holds with the rename.",
-  "binding": "../../../../databricks.fbl#configuration",
+  "binding": "../../../databricks.fbl#configuration",
   "input": "databricks.adp",
   "read": {
     "elements": [

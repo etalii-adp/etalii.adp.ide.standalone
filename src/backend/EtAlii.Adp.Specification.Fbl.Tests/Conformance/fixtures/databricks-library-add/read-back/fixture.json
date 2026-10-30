@@ -1,7 +1,7 @@
 {
   "$schema": "https://etalii.net/adp/fbl/schema/0.1/fbl.schema.json#/$defs/Fixture",
   "doc": "The body pipeline/ beside this folder writes by adding a library, ../added.yml, read back through the same binding (FBL 0.10, section 6.2; spec 066, User Story 2, scenario 9): the library added is a notebook library with the path the add gave it.",
-  "binding": "../../../../databricks.fbl#configuration",
+  "binding": "../../../databricks.fbl#configuration",
   "input": "legacy.adp",
   "read": {
     "elements": [

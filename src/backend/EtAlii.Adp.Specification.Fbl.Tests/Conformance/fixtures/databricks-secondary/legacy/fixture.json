@@ -1,7 +1,7 @@
 {
   "$schema": "https://etalii.net/adp/fbl/schema/0.1/fbl.schema.json#/$defs/Fixture",
   "doc": "A slot read only when the attribute's own slot is absent (databricks.fbl#configuration, the pipeline rule's schema with secondary: {key: target}; FBL 0.10, section 5.2; spec 066, User Story 2, scenario 7). The pipeline legacy has target and no schema, so its schema is the value of target; a set writes schema and removes target. Its body is written here.",
-  "binding": "../../../../databricks.fbl#configuration",
+  "binding": "../../../databricks.fbl#configuration",
   "input": "legacy.adp",
   "read": {
     "elements": [

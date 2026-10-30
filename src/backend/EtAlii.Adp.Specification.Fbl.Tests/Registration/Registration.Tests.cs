@@ -250,4 +250,24 @@ public class RegistrationTests
         Assert.Equal("wardley/map\r\nbody: growth.owm\r\nidentities:\r\n  component Customer: 3k2m9x0q1v7b8n4c5d6f7g8h9\r\n  component Tea: t1\r\n", Encoding.UTF8.GetString(registration.Bytes));
         Assert.False(registration.Document.IdentityMap().ContainsKey("component Web shop"));
     }
+
+    [Theory]
+    [InlineData("databricks/job\nbody: a.yml\nresource: job_b\n", "job_b")]
+    [InlineData("databricks/job\r\nbody: a.yml\r\nresource:    job_b   \r\n", "job_b")]
+    [InlineData("databricks/job\n\n\nresource: job_b\n", "job_b")]
+    [InlineData("databricks/job\nbody: a.yml\n", null)]
+    [InlineData("databricks/job\nbody: a.yml\nRESOURCE: job_b\n", null)]
+    [InlineData("databricks/job\nbody: a.yml\nresource:job_b\n", null)]
+    [InlineData("databricks/job\nbody: a.yml\nlayout:\n  task:x: 1 2\nresource: job_b\n", null)]
+    public void TheResourceHeader_IsReadAsEveryHeaderIs(string text, string? resource)
+    {
+        // Arrange.
+        var registration = OpenRegistration.Open(Encoding.UTF8.GetBytes(text));
+
+        // Act.
+        var read = registration.Resource;
+
+        // Assert: by its exact key, after a colon and a space, in the header region only (FBL §8.1, 0.10 §8.2).
+        Assert.Equal(resource, read);
+    }
 }
