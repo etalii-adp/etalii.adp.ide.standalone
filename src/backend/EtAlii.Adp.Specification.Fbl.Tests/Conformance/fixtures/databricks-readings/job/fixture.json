@@ -1,7 +1,7 @@
 {
   "$schema": "https://etalii.net/adp/fbl/schema/0.1/fbl.schema.json#/$defs/Fixture",
   "doc": "The job reading of the same Databricks bundle file (databricks.fbl#configuration; FBL 0.10, sections 5.1, 8.2 and 9.1; spec 066, User Story 2, scenario 1). Its registration's resource header selects nightly_ingest by the capture resource.byOrigin gives databricks/job, and the rules whose origins admit this reading read the job itself as the diagram (Job, which the job definition maps as: \"diagram\"), its cluster, its tasks and their dependencies; the bundle's Resource rules are not this reading's. The step edits the body the bundle and the pipeline readings read too. Its body, databricks.yml, is etalii.adp.ide.standalone's src/diagrams/databricks/examples/lakehouse/databricks.yml at ad1a4680a, byte for byte as git holds it (LF), with one change: the job resources/nightly-ingest.yml declares, its resources.jobs mapping as that file writes it, copied in under resources: before pipelines:, so that one body holds a job for the job reading (the example declares its job in an included file, which no reading follows).",
-  "binding": "../../../../databricks.fbl#configuration",
+  "binding": "../../../databricks.fbl#configuration",
   "input": "databricks.job.adp",
   "read": {
     "document": {

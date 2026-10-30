@@ -1,12 +1,15 @@
 using EtAlii.Adp.Documents;
 using YamlDotNet.RepresentationModel;
 
-namespace EtAlii.Adp.Diagram.Databricks;
+namespace EtAlii.Adp.Diagram.Databricks.Tests.Oracle;
 
 /// <summary>
 /// Reads every Lakeflow declarative pipeline a document declares - keyed under
 /// <c>resources: pipelines:</c> in a bundle or resource file, or the whole document for a bare
-/// pipeline settings <c>.json</c> - recording which lines declare what (Requirement 5).
+/// pipeline settings <c>.json</c> - recording which lines declare what (Requirement 5). The module's
+/// own reader until databricks-disl-fbl task 11, kept here as the oracle the binding's reading is held
+/// to (<see cref="DatabricksReadingOracleTests"/>); the unmodelled keys it read are no longer read,
+/// because the module never drew them.
 /// </summary>
 /// <remarks>
 /// One parser for both shapes because they are the same object at different depths: the settings
@@ -15,12 +18,6 @@ namespace EtAlii.Adp.Diagram.Databricks;
 /// </remarks>
 internal static class PipelineParser
 {
-    private static readonly string[] _modelledKeys =
-    [
-        "name", "catalog", "schema", "target", "serverless", "continuous", "development",
-        "channel", "libraries", "notifications",
-    ];
-
     public static IReadOnlyList<PipelineModel> Parse(YamlMappingNode? root, LineDocument document)
     {
         ArgumentNullException.ThrowIfNull(document);
@@ -69,7 +66,6 @@ internal static class PipelineParser
             YamlAccess.Scalar(pipeline, "channel") ?? "",
             ReadLibraries(pipeline, document),
             ReadNotifications(pipeline, document),
-            ReadUnknownKeys(pipeline, document),
             lines);
 
     private static List<PipelineLibrary> ReadLibraries(YamlMappingNode pipeline, LineDocument document)
@@ -121,19 +117,4 @@ internal static class PipelineParser
             .OfType<YamlScalarNode>()
             .Select(node => node.Value ?? "")
             .ToList();
-
-    private static List<UnknownNode> ReadUnknownKeys(YamlMappingNode pipeline, LineDocument document)
-    {
-        var unknown = new List<UnknownNode>();
-        foreach ((YamlNode keyNode, YamlNode value) in pipeline.Children)
-        {
-            if (keyNode is YamlScalarNode { Value: { } key }
-                && !_modelledKeys.Contains(key, StringComparer.Ordinal))
-            {
-                unknown.Add(new UnknownNode(key, key, YamlAccess.Range(keyNode, value, document)));
-            }
-        }
-
-        return unknown;
-    }
 }

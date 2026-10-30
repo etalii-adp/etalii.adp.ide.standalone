@@ -100,20 +100,6 @@
       "reason": "The registration keeps positions for two variables on-call.cld does not declare (left from earlier edits of the example), so they name no element of the reading and would be pruned as stale at the next write of the registration. The ids of every declared variable agree since the reading takes DISL's natural ids ('variable:<name>', causal-loop-disl-fbl task 6). Candidate follow-up: drop the two stale positions from the example."
     },
     {
-      "property": "registration-resource",
-      "binding": "settings",
-      "file": "src/diagrams/databricks/examples/lakehouse/databricks.pipeline.adp",
-      "observed": "no resource 'bronze_to_gold' among []",
-      "reason": "This registration points the databricks/pipeline reading at the bundle file databricks.yml and selects the pipeline with 'resource: bronze_to_gold', but databricks-pipeline.fbl reads a pipeline settings document from its root and declares no registration.resource capture, so it finds no pipeline in the bundle. Candidate follow-up for etalii.adp: a resource capture over resources.pipelines.{pipeline} in databricks-pipeline.fbl."
-    },
-    {
-      "property": "registration-resource",
-      "binding": "settings",
-      "file": "src/examples/diagrams/databricks/lakehouse/databricks.pipeline.adp",
-      "observed": "no resource 'bronze_to_gold' among []",
-      "reason": "This registration points the databricks/pipeline reading at the bundle file databricks.yml and selects the pipeline with 'resource: bronze_to_gold', but databricks-pipeline.fbl reads a pipeline settings document from its root and declares no registration.resource capture, so it finds no pipeline in the bundle. Candidate follow-up for etalii.adp: a resource capture over resources.pipelines.{pipeline} in databricks-pipeline.fbl."
-    },
-    {
       "property": "registration-view",
       "binding": "workspace",
       "file": "src/diagrams/c4/examples/industrial-plant/architecture/bottling-mes.adp",
@@ -446,8 +432,8 @@
       "property": "cross-check",
       "binding": "databricks-job",
       "file": "src/diagrams/databricks/backend/EtAlii.Adp.Diagram.Databricks.Tests/Fixtures/anchors-and-merge.yml",
-      "observed": "Resource: the binding lacks 1 (aliased) | job aliased: Dependency: the binding lacks 1 (edge:shared_first->shared_second) | Task: the binding lacks 2 (task:shared_first, task:shared_second)",
-      "reason": "The fixture is one of the Databricks module's parity corpus (databricks-disl-fbl task 1), written to hold an anchor, an alias and a merge key (finding B5). The job 'aliased' writes its tasks as the alias *shared_tasks; databricks-job.fbl reads no entry through the alias, so neither the job's resource nor its tasks and dependency are read, while YamlDotNet resolves the alias to the anchored list and the job parser reads both jobs with the same tasks. The parity transcript freezes what the module does with it today."
+      "observed": "Resource: the binding lacks 1 (aliased)",
+      "reason": "The fixture is one of the Databricks module's parity corpus (databricks-disl-fbl task 1), written to hold an anchor, an alias and a merge key (finding B5). The job 'aliased' writes its tasks as the alias *shared_tasks. Since task 11 the module reads the file through its own binding and, under the reading adopted for B5, reads no entry through the alias either, so its job 'aliased' has no tasks, as databricks-job.fbl's has none. What remains is the bundle's side: the module reads every job resource as a Resource, and databricks-job.fbl, which reads a job file, reads no resource for the aliased job."
     },
     {
       "property": "cross-check",

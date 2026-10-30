@@ -38,7 +38,7 @@ internal static class DatabricksSelection
             return model;
         }
 
-        var key = DatabricksHeaders.ReadResourceKey(registration);
+        var key = DatabricksBody.ResourceOf(registration);
         if (target.Origin == ServiceCollectionAddDatabricksExtension.JobOrigin)
         {
             return model with { Jobs = Named(model.Jobs, job => job.Key, key) };
@@ -61,7 +61,7 @@ internal static class DatabricksSelection
     public static string ResourceKeyOf(ContextTarget target)
     {
         ArgumentNullException.ThrowIfNull(target);
-        return DatabricksHeaders.ReadResourceKey(target.RegistrationPath) ?? "";
+        return DatabricksBody.ResourceOf(target.RegistrationPath) ?? "";
     }
 
     /// <summary>The task an id names, with the job declaring it; null when it names none.</summary>

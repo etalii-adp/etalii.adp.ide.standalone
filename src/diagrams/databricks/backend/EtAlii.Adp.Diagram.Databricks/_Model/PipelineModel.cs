@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Specification.Fbl;
 
 namespace EtAlii.Adp.Diagram.Databricks;
 
@@ -16,7 +17,6 @@ namespace EtAlii.Adp.Diagram.Databricks;
 /// <param name="Channel">The release <c>channel:</c> as written; empty when unspecified.</param>
 /// <param name="Libraries">The <c>libraries:</c> entries, in file order.</param>
 /// <param name="Notifications">The <c>notifications:</c> entries.</param>
-/// <param name="UnknownNodes">Constructs present but not modelled - drawn generically, never written.</param>
 /// <param name="Lines">The lines that declare the pipeline.</param>
 public sealed record PipelineModel(
     string Key,
@@ -29,5 +29,8 @@ public sealed record PipelineModel(
     string Channel,
     IReadOnlyList<PipelineLibrary> Libraries,
     IReadOnlyList<PipelineNotification> Notifications,
-    IReadOnlyList<UnknownNode> UnknownNodes,
-    LineRange Lines);
+    LineRange Lines)
+{
+    /// <summary>The pipeline's reading of the file, which the pipeline definition's model is built from.</summary>
+    internal FblModel? Reading { get; init; }
+}

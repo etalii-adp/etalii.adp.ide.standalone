@@ -1,7 +1,7 @@
 {
   "$schema": "https://etalii.net/adp/fbl/schema/0.1/fbl.schema.json#/$defs/Fixture",
   "doc": "An insert into a one-line YAML flow sequence and a removal from it (databricks.fbl#configuration; FBL 0.10, sections 4.3 and 6.2; spec 066, User Story 2, scenario 5). b's depends_on is written [{task_key: a}]; the dependency added is on c, since in this body that list is b's own and a dependency of b on b would wait for itself. Its body, flow-dependencies.yml, is etalii.adp.ide.standalone's src/diagrams/databricks/backend/EtAlii.Adp.Diagram.Databricks.Tests/Fixtures/flow-dependencies.yml at ad1a4680a, byte for byte (CRLF).",
-  "binding": "../../../../databricks.fbl#configuration",
+  "binding": "../../../databricks.fbl#configuration",
   "input": "flow_dependencies.adp",
   "read": {
     "document": {

@@ -69,6 +69,13 @@ public sealed class OpenRegistration : SplicedFile
     /// </summary>
     public IReadOnlyList<string>? KnownResources { get; set; }
 
+    /// <summary>
+    /// The <c>resource</c> header's value, which selects the resource a reading shows (FBL 0.10 §8.2), or null when the
+    /// registration has none. Read as every header is (FBL §8.1): in the header region, by its exact key, separated from
+    /// its value by a colon and a space.
+    /// </summary>
+    public string? Resource => Document.Resource;
+
     public static OpenRegistration Open(byte[] bytes) => new(bytes ?? throw new ArgumentNullException(nameof(bytes)), new RegistrationSettings());
 
     /// <summary>Opens a registration through its binding, which declares its headers and blocks (FBL 0.7 §8.1).</summary>

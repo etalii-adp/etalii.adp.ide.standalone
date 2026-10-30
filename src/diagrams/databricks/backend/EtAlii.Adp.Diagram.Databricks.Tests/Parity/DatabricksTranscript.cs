@@ -88,7 +88,7 @@ internal static class DatabricksTranscript
     private static readonly ToolOrigin[] _origins = [.. Diagram.Definitions.Select(definition => definition.Origin)];
 
     /// <summary>The base names each type's new document is written for (finding B20).</summary>
-    private static readonly string[] _newBaseNames = ["parity", "Nightly Ingest.job", "2024", "Ünïcode \"quoted\"", "null", "--", " "];
+    internal static readonly string[] NewBaseNames = ["parity", "Nightly Ingest.job", "2024", "Ünïcode \"quoted\"", "null", "--", " "];
 
     /// <summary>
     /// The ways a registration's <c>resource:</c> header is written that the transcript records the reading
@@ -135,7 +135,7 @@ internal static class DatabricksTranscript
                 foreach (var factory in services.GetServices<IDiagramDocumentFactory>())
                 {
                     json.WriteStartObject(factory.Origin.Key);
-                    foreach (var baseName in _newBaseNames)
+                    foreach (var baseName in NewBaseNames)
                     {
                         json.WriteString(baseName, NewDocument(factory, baseName));
                     }
@@ -199,7 +199,7 @@ internal static class DatabricksTranscript
             foreach (var text in _resourceHeaders)
             {
                 await File.WriteAllTextAsync(registration, text, cancellationToken);
-                lines.Add($"{TranscriptText.Quoted(text)} => {TranscriptText.Quoted(DatabricksHeaders.ReadResourceKey(registration))}");
+                lines.Add($"{TranscriptText.Quoted(text)} => {TranscriptText.Quoted(DatabricksBody.ResourceOf(registration))}");
             }
 
             json.WritePropertyName("resourceHeaders");
@@ -311,7 +311,7 @@ internal static class DatabricksTranscript
         foreach ((string path, string origin) in await session.RegistrationsAsync(cancellationToken))
         {
             var text = await File.ReadAllTextAsync(path, cancellationToken);
-            lines.Add($"{Path.GetFileName(path)} | {TranscriptText.Quoted(text)} => {origin}, resource {TranscriptText.Quoted(DatabricksHeaders.ReadResourceKey(path))}");
+            lines.Add($"{Path.GetFileName(path)} | {TranscriptText.Quoted(text)} => {origin}, resource {TranscriptText.Quoted(DatabricksBody.ResourceOf(path))}");
         }
 
         if (lines.Count == 0)
@@ -819,7 +819,7 @@ internal static class DatabricksTranscript
 
         /// <summary>A session of <paramref name="origin"/> over the document, as the host opens one through <paramref name="registration"/>.</summary>
         public DatabricksSession Open(ToolOrigin origin, string? registration, bool withHistory = true) =>
-            new(Body, registration, origin, DatabricksHeaders.ReadResourceKey(registration), Documents, Mapper, withHistory ? Stack : null);
+            new(Body, registration, origin, DatabricksBody.ResourceOf(registration), Documents, Mapper, withHistory ? Stack : null);
 
         /// <summary>What a session of <paramref name="origin"/> opened through <paramref name="registration"/> draws first.</summary>
         public async Task<IReadOnlyList<DiagramElement>> DrawAsync(ToolOrigin origin, string? registration, CancellationToken cancellationToken)

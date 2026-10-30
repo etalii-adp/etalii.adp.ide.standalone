@@ -1,7 +1,7 @@
 {
   "$schema": "https://etalii.net/adp/fbl/schema/0.1/fbl.schema.json#/$defs/Fixture",
   "doc": "The body job/ beside this folder writes by adding a task to tasks: [], ../added.yml, read back through the same binding (FBL 0.10, section 6.2; spec 066, User Story 2, scenario 4): the job holds one task, first, the one added.",
-  "binding": "../../../../databricks.fbl#configuration",
+  "binding": "../../../databricks.fbl#configuration",
   "input": "empty_flow.adp",
   "read": {
     "document": {

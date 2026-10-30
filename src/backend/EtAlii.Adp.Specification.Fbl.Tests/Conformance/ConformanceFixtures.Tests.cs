@@ -72,8 +72,7 @@ public class ConformanceFixturesTests
     /// binding where etalii.adp keeps it, under <c>definitions/</c>, a folder this corpus does not
     /// have: the binding is vendored beside the others, and a reference whose file is not where it
     /// points is read as naming the file of that name here, at the corpus's root. The fixture itself is
-    /// never edited. The fixtures of FBL 0.10's Databricks readings, one folder deeper than their
-    /// binding, name it one <c>..</c> too far, and are read so too.
+    /// never edited.
     /// </summary>
     private static string BindingReference(string reference, string folder)
     {

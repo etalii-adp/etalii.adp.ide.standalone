@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Specification.Fbl;
 
 namespace EtAlii.Adp.Diagram.Databricks;
 
@@ -20,4 +21,8 @@ public sealed record JobModel(
     IReadOnlyList<JobCluster> Clusters,
     string Schedule,
     bool Continuous,
-    LineRange Lines);
+    LineRange Lines)
+{
+    /// <summary>The job's reading of the file, which the job definition's model is built from.</summary>
+    internal FblModel? Reading { get; init; }
+}

@@ -4,16 +4,16 @@ using IoPath = System.IO.Path;
 namespace EtAlii.Adp.Diagram.Databricks.Tests;
 
 /// <summary>
-/// The <c>resource:</c> header scan: what it reads, where it stops, and that it reads through
-/// the shared reader - the guard shape the rdf family's header reader carried until it went,
-/// unused (code-structure T295), kept identical because the two were the same helper.
+/// The <c>resource</c> header as the module reads it, through FBL's registration reader: what it reads, where it
+/// stops, and that it reads through the shared reader. How FBL reads a header is the library's own test
+/// (<c>RegistrationTests.TheResourceHeader_IsReadAsEveryHeaderIs</c>).
 /// </summary>
-public class DatabricksHeadersTests : IDisposable
+public class DatabricksResourceHeaderTests : IDisposable
 {
-    private readonly TestFolder _testFolder = TestFolder.Create("databricks-headers");
+    private readonly TestFolder _testFolder = TestFolder.Create("databricks-resource-header");
     private readonly string _root;
 
-    public DatabricksHeadersTests()
+    public DatabricksResourceHeaderTests()
     {
         _root = _testFolder.Path;
     }
@@ -38,7 +38,7 @@ public class DatabricksHeadersTests : IDisposable
         var path = Write("databricks/pipeline\r\nbody: lakehouse.yml\r\nresource: bronze\r\n");
 
         // Act & assert.
-        Assert.Equal("bronze", DatabricksHeaders.ReadResourceKey(path));
+        Assert.Equal("bronze", DatabricksBody.ResourceOf(path));
     }
 
     [Fact]
@@ -48,7 +48,7 @@ public class DatabricksHeadersTests : IDisposable
         var path = Write("databricks/job\r\nbody: lakehouse.yml\r\nlayout:\r\n  task:ingest: 1 2\r\nresource: bronze\r\n");
 
         // Act & assert.
-        Assert.Null(DatabricksHeaders.ReadResourceKey(path));
+        Assert.Null(DatabricksBody.ResourceOf(path));
     }
 
     [Fact]
@@ -58,9 +58,9 @@ public class DatabricksHeadersTests : IDisposable
         var path = Write("databricks/bundle\r\nbody: lakehouse.yml\r\nresource:\r\n");
 
         // Act & assert.
-        Assert.Null(DatabricksHeaders.ReadResourceKey(path));
-        Assert.Null(DatabricksHeaders.ReadResourceKey(IoPath.Combine(_root, "absent.adp")));
-        Assert.Null(DatabricksHeaders.ReadResourceKey(null));
+        Assert.Null(DatabricksBody.ResourceOf(path));
+        Assert.Null(DatabricksBody.ResourceOf(IoPath.Combine(_root, "absent.adp")));
+        Assert.Null(DatabricksBody.ResourceOf(null));
     }
 
     [Fact]
@@ -74,6 +74,6 @@ public class DatabricksHeadersTests : IDisposable
         using var writer = new FileStream(path, FileMode.Open, FileAccess.Write, FileShare.Read);
 
         // Act & assert.
-        Assert.Equal("bronze", DatabricksHeaders.ReadResourceKey(path));
+        Assert.Equal("bronze", DatabricksBody.ResourceOf(path));
     }
 }

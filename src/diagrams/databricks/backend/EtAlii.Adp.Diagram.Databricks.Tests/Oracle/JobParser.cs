@@ -1,11 +1,13 @@
 using EtAlii.Adp.Documents;
 using YamlDotNet.RepresentationModel;
 
-namespace EtAlii.Adp.Diagram.Databricks;
+namespace EtAlii.Adp.Diagram.Databricks.Tests.Oracle;
 
 /// <summary>
 /// Reads every Lakeflow job a document declares under <c>resources: jobs:</c>, recording which
-/// lines declare what - the task DAG the job diagram draws (Requirement 4).
+/// lines declare what - the task DAG the job diagram draws (Requirement 4). The module's own reader
+/// until databricks-disl-fbl task 11, kept here as the oracle the binding's reading is held to
+/// (<see cref="DatabricksReadingOracleTests"/>).
 /// </summary>
 /// <remarks>
 /// Forgiving on purpose. A task without a key, a dependency naming a task that is not there, a

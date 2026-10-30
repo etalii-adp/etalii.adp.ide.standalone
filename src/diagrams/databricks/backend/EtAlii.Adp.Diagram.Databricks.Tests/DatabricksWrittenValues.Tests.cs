@@ -193,7 +193,7 @@ public sealed class DatabricksWrittenValuesTests : IDisposable
         // Arrange.
         var document = Load("flow-collections.yml");
         var before = document.Text;
-        var job = JobParser.Parse(YamlAccess.Root(document), document).Single(candidate => candidate.Key == "empty_flow");
+        var job = DatabricksModel.Read(document).Jobs.Single(candidate => candidate.Key == "empty_flow");
 
         // Act.
         var refusal = JobWriter.InsertTask(document, job, "added", "notebook", "notebooks/added");
@@ -270,7 +270,7 @@ public sealed class DatabricksWrittenValuesTests : IDisposable
     private static LineDocument Load(string name) => LineDocument.Parse(File.ReadAllText(Fixture(name)));
 
     private static JobModel Job(LineDocument document) =>
-        Assert.Single(JobParser.Parse(YamlAccess.Root(document), document));
+        Assert.Single(DatabricksModel.Read(document).Jobs);
 
     private static JobTask TaskOf(LineDocument document, string key) =>
         DatabricksModel.Read(document).Jobs.SelectMany(job => job.Tasks).Single(task => task.Key == key);

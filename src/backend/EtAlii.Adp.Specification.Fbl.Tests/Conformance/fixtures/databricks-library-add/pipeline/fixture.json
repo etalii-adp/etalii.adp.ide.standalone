@@ -1,7 +1,7 @@
 {
   "$schema": "https://etalii.net/adp/fbl/schema/0.1/fbl.schema.json#/$defs/Fixture",
   "doc": "A library added to a YAML pipeline is a nested mapping (databricks.fbl#configuration, the notebookLibrary rule, whose path is bound with child: notebook; FBL 0.10, section 6.2; spec 066, User Story 2, scenario 9). The body after the add is ../added.yml, which read-back/ reads with the library added. Its body, legacy-target.yml, is etalii.adp.ide.standalone's src/diagrams/databricks/backend/EtAlii.Adp.Diagram.Databricks.Tests/Fixtures/legacy-target.yml at ad1a4680a, byte for byte (CRLF).",
-  "binding": "../../../../databricks.fbl#configuration",
+  "binding": "../../../databricks.fbl#configuration",
   "input": "legacy.adp",
   "read": {
     "elements": [
