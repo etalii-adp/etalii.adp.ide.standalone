@@ -105,7 +105,7 @@ internal static class DatabricksRuleSet
 
         // With include: globs in play, an override may name a resource declared in an included
         // file this rule set cannot see - so the rule only speaks when the bundle stands alone.
-        if (bundle.Includes.Count == 0)
+        if (!Includes(bundle))
         {
             foreach (var target in bundle.Targets)
             {
@@ -176,6 +176,10 @@ internal static class DatabricksRuleSet
 
         return remaining.Values.OrderBy(task => task.Lines.Start);
     }
+
+    /// <summary>Whether the bundle has <c>include:</c> globs, which its reading holds as the diagram's attributes.</summary>
+    private static bool Includes(BundleModel bundle) =>
+        bundle.Reading?.Elements.FirstOrDefault(element => element.Type == "BundleFile")?.Attributes.GetValueOrDefault("includes") is IEnumerable<object?> includes && includes.Any();
 
     private static DiagramProblem Error(string message, string ruleId, LineRange lines) =>
         new(DiagramProblemSeverity.Error, message, ruleId, new DiagramProblemLineLocation((uint)(lines.Start + 1)));

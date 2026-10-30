@@ -1,7 +1,7 @@
 {
   "$schema": "https://etalii.net/adp/fbl/schema/0.1/fbl.schema.json#/$defs/Fixture",
   "doc": "The pipeline reading of the same Databricks bundle file (databricks.fbl#configuration; FBL 0.10, sections 5.1, 8.2 and 9.1; spec 066, User Story 2, scenario 1). Its registration, the example's databricks.pipeline.adp with its body named from this folder, selects bronze_to_gold by the capture resource.byOrigin gives databricks/pipeline, and resources.pipelines.bronze_to_gold is the Pipeline itself, where the bundle reading reads the same entry as a Resource. Its libraries are read as notebooks and a glob. The step edits the shared body. Its body, databricks.yml, is etalii.adp.ide.standalone's src/diagrams/databricks/examples/lakehouse/databricks.yml at ad1a4680a, byte for byte as git holds it (LF), with one change: the job resources/nightly-ingest.yml declares, its resources.jobs mapping as that file writes it, copied in under resources: before pipelines:, so that one body holds a job for the job reading (the example declares its job in an included file, which no reading follows).",
-  "binding": "../../../../databricks.fbl#configuration",
+  "binding": "../../../databricks.fbl#configuration",
   "input": "databricks.pipeline.adp",
   "read": {
     "elements": [

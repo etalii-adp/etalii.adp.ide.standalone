@@ -1,11 +1,14 @@
 using EtAlii.Adp.Documents;
 using YamlDotNet.RepresentationModel;
 
-namespace EtAlii.Adp.Diagram.Databricks;
+namespace EtAlii.Adp.Diagram.Databricks.Tests.Oracle;
 
 /// <summary>
 /// Reads a document as a Databricks Asset Bundle: the <c>databricks.yml</c> reading, recording
-/// which lines declare what.
+/// which lines declare what. The module's own reader until databricks-disl-fbl task 11, kept here as
+/// the oracle the binding's reading is held to (<see cref="DatabricksReadingOracleTests"/>); the
+/// includes and variables it read are the bundle diagram's attributes now, which the module never
+/// drew, so it no longer reads them.
 /// </summary>
 /// <remarks>
 /// Forgiving on purpose. A resource without a kind it knows, a root key it does not model - none
@@ -31,46 +34,9 @@ internal static class BundleParser
 
         return new BundleModel(
             name,
-            ReadIncludes(root, document),
-            ReadVariables(root, document),
             ReadResources(root, document, out var unknownKinds),
             ReadTargets(root, document),
             ReadUnknownRootKeys(root, document).Concat(unknownKinds).ToList());
-    }
-
-    private static List<BundleInclude> ReadIncludes(YamlMappingNode root, LineDocument document) =>
-        YamlAccess.Sequence(root, "include")
-            .OfType<YamlScalarNode>()
-            .Select(node => new BundleInclude(node.Value ?? "", YamlAccess.Range(node, document)))
-            .ToList();
-
-    private static List<BundleVariable> ReadVariables(YamlMappingNode root, LineDocument document)
-    {
-        var variables = new List<BundleVariable>();
-        var mapping = YamlAccess.Mapping(root, "variables");
-        if (mapping is null)
-        {
-            return variables;
-        }
-
-        foreach ((YamlNode key, YamlNode value) in mapping.Children)
-        {
-            if (key is not YamlScalarNode { Value: { } variableName })
-            {
-                continue;
-            }
-
-            // A variable may be declared bare (`name:`) or with a mapping of default/description;
-            // a bare declaration is a variable with neither.
-            var declaration = value as YamlMappingNode;
-            variables.Add(new BundleVariable(
-                variableName,
-                declaration is null ? "" : YamlAccess.Scalar(declaration, "default") ?? "",
-                declaration is null ? "" : YamlAccess.Scalar(declaration, "description") ?? "",
-                YamlAccess.Range(key, value, document)));
-        }
-
-        return variables;
     }
 
     private static List<BundleResource> ReadResources(

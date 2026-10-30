@@ -144,7 +144,7 @@ public class DatabricksFindingsTests
         var specification = DislLoader.Load(Encoding.UTF8.GetBytes(copy.ToJsonString()), DatabricksFreeKey.Plugins()).Specification!;
         var job = Assert.Single(DatabricksModel.Read(LineDocument.Parse(text)).Jobs);
         var keyless = job.Tasks.Where(task => task.Key.Length == 0).Select(task => DislReaderFinding.Unreadable("no task_key", task.Lines.Start + 1)).ToList();
-        var diagram = DatabricksDisl.Job(job, specification, "finding-order.yml").Diagram;
+        var diagram = DatabricksReadings.Job(job, specification, "finding-order.yml").Diagram;
         return [.. ConstraintEvaluator.Evaluate(specification, diagram, new DislConstraintOptions(ReaderFindings: keyless)).Select(finding => $"line {finding.Line} | {finding.Code}")];
     }
 

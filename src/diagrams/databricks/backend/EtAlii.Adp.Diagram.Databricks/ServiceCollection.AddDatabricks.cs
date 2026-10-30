@@ -85,7 +85,7 @@ public static class ServiceCollectionAddDatabricksExtension
                 opening.BodyPath,
                 opening.RegistrationPath,
                 origin,
-                DatabricksHeaders.ReadResourceKey(opening.RegistrationPath),
+                DatabricksBody.ResourceOf(opening.RegistrationPath),
                 provider.GetRequiredService<IDatabricksDocumentStore>(),
                 provider.GetRequiredService<DatabricksElementMapper>(),
                 provider.GetRequiredService<IHistoryStackStore>().Get(opening.Root)));

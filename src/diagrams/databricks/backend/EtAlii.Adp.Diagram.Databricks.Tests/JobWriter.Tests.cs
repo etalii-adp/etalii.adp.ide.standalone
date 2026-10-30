@@ -17,7 +17,7 @@ public class JobWriterTests
     }
 
     private static JobModel Job(LineDocument document) =>
-        Assert.Single(JobParser.Parse(YamlAccess.Root(document), document));
+        Assert.Single(DatabricksModel.Read(document).Jobs);
 
     [Fact]
     public void ConnectThenDisconnect_OnATaskWithNoDependencies_ReturnsTheBytes()

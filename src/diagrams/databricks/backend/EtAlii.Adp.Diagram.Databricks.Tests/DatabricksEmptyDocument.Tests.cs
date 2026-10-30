@@ -34,7 +34,7 @@ public class DatabricksEmptyDocumentTests
     {
         // Act.
         var document = LineDocument.Parse(ServiceCollectionAddDatabricksExtension.EmptyDocument("job", "Nightly Ingest"));
-        var job = Assert.Single(JobParser.Parse(YamlAccess.Root(document), document));
+        var job = Assert.Single(DatabricksModel.Read(document).Jobs);
 
         // Assert.
         Assert.Equal("nightly_ingest", job.Key);
@@ -47,7 +47,7 @@ public class DatabricksEmptyDocumentTests
     {
         // Act.
         var document = LineDocument.Parse(ServiceCollectionAddDatabricksExtension.EmptyDocument("pipeline", "bronze"));
-        var pipeline = Assert.Single(PipelineParser.Parse(YamlAccess.Root(document), document));
+        var pipeline = Assert.Single(DatabricksModel.Read(document).Pipelines);
 
         // Assert.
         Assert.True(DatabricksSplices.IsJson(document));
