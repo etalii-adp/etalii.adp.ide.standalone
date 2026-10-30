@@ -123,11 +123,17 @@ internal static class EditPlanner
                 Planning.Plan.Refuse(read.Reason is { Length: > 0 } reason ? reason : $"The {attribute} of a {element.Rule.Type} cannot be changed in this file.");
             }
             var empty = NewText.IsEmpty(value) || (binding.Flag && value is false);
-            if (empty && binding is { Flag: false, Empty: EmptyRule.Refuse }) Planning.Plan.Refuse($"The {attribute} of a {element.Rule.Type} cannot be empty.");
+            if (empty && binding is { Flag: false, Empty: EmptyRule.Refuse }) Planning.Plan.Refuse(binding.EmptyRefusal ?? $"The {attribute} of a {element.Rule.Type} cannot be empty.");
+
+            // FBL 0.10 §5.2: a value read from the secondary slot is written to the attribute's own slot, and the
+            // secondary is removed in the same edit, whether the value was read from it or not.
+            var secondary = Secondary(reading, element, rule, binding);
+            read = read.Own ?? read;
             if (!read.Present && !empty && !binding.Flag && binding.Absent.TryGetValue(reading.Family.FamilyName, out var absent) && absent == AbsentRule.Refuse)
             {
-                Planning.Plan.Refuse($"The {reading.Binding.Name} file has no \"{SlotName(binding)}\" to rewrite.");
+                Planning.Plan.Refuse(binding.AbsentRefusal ?? $"The {reading.Binding.Name} file has no \"{SlotName(binding)}\" to rewrite.");
             }
+            if (secondary is not null) changes.Add(secondary);
             if (empty && !read.Present && !binding.Flag) continue;
             if (!empty && IsKey(element, attribute, binding))
             {
@@ -141,11 +147,20 @@ internal static class EditPlanner
                     newKey = key;
                 }
             }
-            changes.Add(new SlotChange(attribute, binding, rule, read, value, empty));
+            changes.Insert(secondary is null ? changes.Count : changes.Count - 1, new SlotChange(attribute, binding, rule, read, value, empty));
         }
         if (changes.Count > 0) reading.Family.Write(plan, element, changes);
         if (newKey is not null) RewriteReferences(plan, element, newKey);
         if (element.Rule.SnapshotUndo) plan.Snapshot = true;
+    }
+
+    /// <summary>The removal of an attribute's <c>secondary</c> slot, when the entry has it (FBL 0.10 §5.2); null otherwise.</summary>
+    private static SlotChange? Secondary(BodyReading reading, ReadElement element, Rule rule, AttributeBinding binding)
+    {
+        if (binding.Secondary is not { } secondary) return null;
+        var slot = BodyReading.SecondarySlot(secondary);
+        var read = reading.ReadSlot(element.Candidate with { Rule = rule }, slot, element);
+        return read.Present ? new SlotChange(SlotName(secondary), slot, rule, read, null, true) : null;
     }
 
     private static string SlotName(Slot slot) => slot.Kind switch
@@ -238,9 +253,12 @@ internal static class EditPlanner
         var container = add.ParentId is { } containerId ? reading.Find(containerId) : null;
         var insertable = rules.Where(r => r.Insert is not null).ToList();
         var contained = insertable.Where(r => container is not null && r.Parent?.Rules.Contains(container.Rule.Name) == true).ToList();
-        var rule = (contained.Count > 0 ? contained : insertable)
+        var ordered = (contained.Count > 0 ? contained : insertable)
             .OrderByDescending(r => add.Attributes.Keys.Count(name => r.Attribute(name) is not null))
-            .FirstOrDefault();
+            .ToList();
+        // FBL 0.10 §6.2: of the rules of one type, the first whose insert's when holds plans the add; when none does,
+        // the first refuses it, with its own sentence.
+        var rule = ordered.FirstOrDefault(r => r.Insert!.When is not { } condition || reading.InsertAllowed(r, condition, InsertedAttributes(r, add))) ?? ordered.FirstOrDefault();
         if (rule is null)
         {
             Planning.Plan.Refuse(rules[0].ReadOnly is { Length: > 0 } text ? text : $"A {add.Type} cannot be added to this file.");
@@ -257,14 +275,14 @@ internal static class EditPlanner
         // which follows its own rule for optional segments.
         foreach ((string name, object? value) in values)
         {
-            if (rule.Insert!.Emit is null && rule.Attribute(name) is { Flag: false, Empty: EmptyRule.Refuse } && NewText.IsEmpty(value))
+            if (rule.Insert!.Emit is null && rule.Attribute(name) is { Flag: false, Empty: EmptyRule.Refuse } refused && NewText.IsEmpty(value))
             {
-                Planning.Plan.Refuse($"The {name} of a {add.Type} cannot be empty.");
+                Planning.Plan.Refuse(refused.EmptyRefusal ?? $"The {name} of a {add.Type} cannot be empty.");
             }
         }
         if (rule.Insert!.When is { } when && !reading.InsertAllowed(rule, when, values))
         {
-            Planning.Plan.Refuse($"This {add.Type} cannot be added to the file.");
+            Planning.Plan.Refuse(rule.Insert.WhenRefusal ?? $"This {add.Type} cannot be added to the file.");
         }
         ReadElement? source = null;
         ReadElement? target = null;
@@ -286,6 +304,10 @@ internal static class EditPlanner
         reading.Family.Insert(plan, new InsertRequest(rule, add.Id, values, parent, source, target, add.Index));
         if (rule.SnapshotUndo) plan.Snapshot = true;
     }
+
+    /// <summary>The attributes an add gives, as a rule's insert <c>when</c> sees them: a relation's ends are not among them.</summary>
+    private static Dictionary<string, object?> InsertedAttributes(Rule rule, ModelChange.Add add) =>
+        add.Attributes.Where(given => !(rule.IsRelation && given.Key is "source" or "target")).ToDictionary(given => given.Key, given => given.Value, StringComparer.Ordinal);
 
     private static ReadElement End(BodyReading reading, ModelChange.Add add, string end)
     {

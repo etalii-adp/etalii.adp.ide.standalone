@@ -12,7 +12,7 @@ namespace EtAlii.Adp.Specification.Fbl.Routing;
 /// </summary>
 public static partial class TemplateWriter
 {
-    [GeneratedRegex(@"\{(name|base|key|newid:[A-Za-z_][A-Za-z0-9_-]*)\}", RegexOptions.CultureInvariant)]
+    [GeneratedRegex(@"\{(name|base|key|key:lower|newid:[A-Za-z_][A-Za-z0-9_-]*)\}", RegexOptions.CultureInvariant)]
     private static partial Regex Placeholder();
 
     /// <summary>
@@ -33,11 +33,13 @@ public static partial class TemplateWriter
         return null;
     }
 
-    /// <summary>Replaces the four placeholder forms of FBL §13 and leaves every other brace literal.</summary>
+    /// <summary>Replaces the placeholder forms of FBL §13, <c>{key:lower}</c> of 0.10 among them, and leaves every other brace literal.</summary>
     public static string Replace(string template, string fileName, Func<string, string> newId)
     {
         ArgumentNullException.ThrowIfNull(template);
-        var values = Placeholders(fileName);
+        var values = new Dictionary<string, string>(Placeholders(fileName), StringComparer.Ordinal);
+        // FBL 0.10 §13: {key:lower}, {key} with every ASCII letter in lower case.
+        values["key:lower"] = values["key"].ToLowerInvariant();
         return Placeholder().Replace(template, match =>
         {
             var name = match.Groups[1].Value;

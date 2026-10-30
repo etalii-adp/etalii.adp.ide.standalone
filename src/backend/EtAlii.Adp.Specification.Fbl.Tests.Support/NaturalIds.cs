@@ -20,6 +20,17 @@ public static class NaturalIds
         ("job", "dependency") => $"edge:{Unprefixed(request.Source)}->{Unprefixed(request.Target)}",
         ("settings", "pipeline") => "pipeline",
         ("settings", "library") => $"library:{Attribute(request, "path")}",
+        // The one binding the bundle, job and pipeline readings of a Databricks file share (FBL 0.10), named as the
+        // fixtures name them, which are the standalone module's ids: the job reading's diagram is the job itself.
+        ("configuration", "bundle") => "bundle",
+        ("configuration", "jobResource" or "pipelineResource") => $"resource:{Attribute(request, "resourceKind")}/{Attribute(request, "key")}",
+        ("configuration", "target") => $"target:{Attribute(request, "name")}",
+        ("configuration", "job") => "job",
+        ("configuration", "task") => $"task:{Attribute(request, "key")}",
+        ("configuration", "cluster") => $"cluster:{Attribute(request, "key")}",
+        ("configuration", "dependency") => $"edge:{Unprefixed(request.Source)}->{Unprefixed(request.Target)}",
+        ("configuration", "pipeline" or "settings") => "pipeline",
+        ("configuration", "notebookLibrary" or "fileLibrary" or "globLibrary" or "settingsLibrary") => $"library:{Attribute(request, "path")}",
         ("freeplane", "branch") => $"branch:{request.Source}->{request.Target}",
         ("workspace", "relationship") => $"{request.Source}->{request.Target}",
         // The agent activity diagram (DISL 0.4, persistence.view.bind): the root is the diagram, and a
@@ -38,6 +49,17 @@ public static class NaturalIds
     {
         "aad" => new HashSet<string>(StringComparer.Ordinal) { "task.updated", "pullRequest.updated" },
         _ => new HashSet<string>(StringComparer.Ordinal),
+    };
+
+    /// <summary>
+    /// The binding type a binding's tool type maps <c>as: "diagram"</c> (DISL 11.2), whose element's attributes are a
+    /// fixture's <c>read.document</c> (FBL 0.7 §15.3): read here, as the ids are, from the specifications in etalii.adp.
+    /// Null for a binding whose tool type maps none.
+    /// </summary>
+    public static string? DocumentType(string binding) => binding switch
+    {
+        "configuration" => "Job",
+        _ => null,
     };
 
     /// <summary>Whether a binding's tool type keeps DISL's default deletion policy, which clears the references to a removed element.</summary>

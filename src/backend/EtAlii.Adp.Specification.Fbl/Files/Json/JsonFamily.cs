@@ -194,7 +194,7 @@ internal sealed class JsonFamily(BodyText text, FblBinding binding, FblOptions o
         }
         else
         {
-            var members = InsertValues(request).Select(v => $"{Quote(v.Key)}: {Write(v.Value, v.Binding)}").ToList();
+            var members = InsertValues(request).Select(Member).ToList();
             IReadOnlyList<TreeEntry> entries = container is null ? [] : container.Value.Entries;
             var neighbour = entries.Count == 0 ? null : insert.Place == InsertPlace.Start ? entries[0] : entries[^1];
             text = NewObject(members, neighbour);
@@ -203,7 +203,7 @@ internal sealed class JsonFamily(BodyText text, FblBinding binding, FblOptions o
         {
             if (NewContainer(insert, request.Parent?.Entry as TreeEntry) is not { } created)
             {
-                Plan.Refuse($"The {Binding.Name} file has no {insert.Container ?? "container"} to add the {request.Rule.Type} to.");
+                Plan.Refuse(insert.Create is null && insert.ContainerRefusal is { } refusal ? refusal : $"The {Binding.Name} file has no {insert.Container ?? "container"} to add the {request.Rule.Type} to.");
                 return;
             }
 
@@ -230,6 +230,12 @@ internal sealed class JsonFamily(BodyText text, FblBinding binding, FblOptions o
         (int offset, string inserted) = NewMember(container.Value, text);
         plan.Add(SpliceOperation.InsertEntry, offset, offset, inserted);
     }
+
+    /// <summary>A member of a new entry's object: a key with its value, or a level of child (FBL 0.10 §6.2) as a member whose value is an object of what it holds.</summary>
+    private static string Member(InsertedValue inserted) =>
+        inserted.Members is { } members
+            ? $"{Quote(inserted.Key)}: {{ {string.Join(", ", members.Select(Member))} }}"
+            : $"{Quote(inserted.Key)}: {Write(inserted.Value, inserted.Binding)}";
 
     /// <summary>
     /// Where a missing container is created and how it opens (FBL §6.2 <c>create</c>): a list under
