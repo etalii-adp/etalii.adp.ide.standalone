@@ -565,7 +565,7 @@ public static class DislModelBuilder
         private DislElement Node(FblElement element, DislTypeMapping mapping, DislType type)
         {
             if (_built.TryGetValue(element, out var done)) return done;
-            var parent = element.ParentId is { } parentId && typed.FirstOrDefault(entry => entry.Element.Id == parentId) is { Element: not null } owner && !owner.Type.IsRelation
+            var parent = element.ParentId is { } parentId && typed.FirstOrDefault(entry => entry.Element.Id == parentId) is { Element: not null, Type.IsRelation: false } owner
                 ? Node(owner.Element, owner.Mapping, owner.Type)
                 : null;
             var attributes = Attributes(element, mapping, type, _specification.Metamodel, out var host, out _);
