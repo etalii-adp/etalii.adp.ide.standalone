@@ -45,7 +45,7 @@ public class CausalLoopFlowPropertiesTests : IDisposable
     }
 
     private ContextTarget DiagramTarget() =>
-        new(ContextScope.Hierarchy, _path, false, ShortGuid.NewShortGuid(), ProjectRoot.From(_testFolder.Path), default, "");
+        new(ContextScope.Hierarchy, _path, false, ShortGuid.NewShortGuid(), ProjectRoot.From(_testFolder.Path));
 
     private ContextTarget ElementTarget(string elementId) =>
         new(ContextScope.DiagramElement, _path, false, ShortGuid.NewShortGuid(), ProjectRoot.From(_testFolder.Path), default, elementId);

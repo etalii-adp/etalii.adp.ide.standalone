@@ -102,7 +102,7 @@ public static class ServiceCollectionAddCausalLoopExtension
         services.AddSingleton<IContextPropertyProvider>(provider => new CausalLoopDiagramPropertyProvider(
             provider.GetRequiredService<IHistoryStackStore>(),
             provider.GetRequiredService<ICausalLoopDocumentStore>(),
-            () => provider.GetRequiredService<DiagramFileRouter>()));
+            provider.GetRequiredService<DiagramFileRouter>));
 
         // The rules, resolved by origin through core's validator registry. This reading only
         // ever reports: the disagreement between a stated label and the arithmetic is a finding,
