@@ -1,4 +1,5 @@
 using System.Text.Json;
+using EtAlii.Adp.Specification.Fbl.Grammar;
 using EtAlii.Adp.Specification.Json;
 
 namespace EtAlii.Adp.Specification.Fbl.Documents;
@@ -18,7 +19,7 @@ public static class FblDocumentLoader
         Load(ReadShared(path), Path.GetDirectoryName(Path.GetFullPath(path)), out document);
 
     /// <summary>Reads at the sharing the repository's own reader uses, so a concurrent save is never refused.</summary>
-    private static byte[] ReadShared(string path)
+    internal static byte[] ReadShared(string path)
     {
         using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
         using var buffer = new MemoryStream();
@@ -87,7 +88,7 @@ public static class FblDocumentLoader
                 if (binding is not null)
                 {
                     BindingChecker.Check(binding, pointer, problems);
-                    if (binding.Body.Grammar is { } grammar) grammar.Built = Files.Grammar.GrammarBuild.Build(grammar, folder, pointer + "/body", problems);
+                    if (binding.Body.Grammar is { } grammar) grammar.Built = GrammarBuild.Build(grammar, folder, pointer + "/body", problems);
                     result[property.Name] = binding;
                 }
             }
