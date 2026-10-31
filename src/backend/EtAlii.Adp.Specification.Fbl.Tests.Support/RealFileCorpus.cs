@@ -110,12 +110,21 @@ public static class RealFileCorpus
         ("src/diagrams/databricks/backend/EtAlii.Adp.Diagram.Databricks/databricks.fbl", "configuration"),
     ];
 
-    /// <summary>Every vendored binding, with the document it is in.</summary>
+    /// <summary>
+    /// The vendored documents that are a fixture's binding rather than an example the repository's real files are routed
+    /// by: <c>w3c-turtle-grammar.fbl</c> claims <c>.ttl</c> for the grammar family's fixtures (FBL 0.9, etalii.adp spec 072),
+    /// while this repository's Turtle stays routed to <c>w3c-turtle.fbl</c> and the RDF module's plugin (spec 072,
+    /// Requirement 9.4).
+    /// </summary>
+    private static readonly HashSet<string> FixtureBindings = new(StringComparer.Ordinal) { "w3c-turtle-grammar.fbl" };
+
+    /// <summary>Every vendored binding, with the document it is in, but the fixtures' own.</summary>
     public static IReadOnlyList<(string Document, FblBinding Binding)> AllBindings()
     {
         var all = new List<(string, FblBinding)>();
         foreach (var path in Directory.GetFiles(Conformance, "*.fbl").Order(StringComparer.Ordinal))
         {
+            if (FixtureBindings.Contains(Path.GetFileName(path))) continue;
             var document = Path.GetFileName(path);
             var problems = FblDocumentLoader.Load(path, out var loaded);
             Assert.DoesNotContain(problems, p => p.Severity == LoadSeverity.Error);

@@ -19,6 +19,13 @@ public class ConformanceFixturesTests
     /// <summary>The number of fixtures vendored: fewer means the enumeration broke.</summary>
     private const int MinimumFixtures = 47;
 
+    /// <summary>
+    /// The fixtures of FBL 0.9's grammar family and of FBL 0.13's split slot (etalii.adp spec 072), vendored before the
+    /// library reads the family and held out of the theories until it does. Each task of the specification takes its
+    /// fixtures out of this set; <see cref="TheGrammarFixturesAreRefusedForTheirFamily"/> holds what is left.
+    /// </summary>
+    private static readonly HashSet<string> Pending = new(StringComparer.Ordinal) { "grammar-split-slot", "w3c-turtle-grammar", "w3c-turtle-grammar-partial" };
+
     /// <summary>The fixtures copied in etalii.adp's own layout, beside the Knowledge designer's.</summary>
     private const string AdpFixtures = "etalii.adp/specifications/fbl/fixtures";
 
@@ -33,6 +40,7 @@ public class ConformanceFixturesTests
         var data = new TheoryData<string>();
         foreach (var name in Under("fixtures", "").Concat(Under(AdpFixtures, AdpFixtures + "/")).Order(StringComparer.Ordinal))
         {
+            if (Pending.Contains(name)) continue;
             if (!name.StartsWith(AdpFixtures + "/knowledge-", StringComparison.Ordinal) && !name.StartsWith(AdpFixtures + "/hierarchical-requirement-", StringComparison.Ordinal)) data.Add(name);
         }
         return data;
@@ -55,6 +63,31 @@ public class ConformanceFixturesTests
     public void TheFixturesAreFound()
     {
         Assert.True(Fixtures().Count >= MinimumFixtures, $"Only {Fixtures().Count} fixtures were found; {MinimumFixtures} are vendored.");
+    }
+
+    /// <summary>
+    /// Requirement 1.1 of etalii.adp spec 072: the gap is seen before it is closed. Every fixture still held out of the
+    /// theories is a fixture whose binding this library refuses for its family, <c>grammar</c>, which it does not read
+    /// yet; a pending fixture that loads, or that is refused for no reason of its family, fails here.
+    /// </summary>
+    [Fact]
+    public void TheGrammarFixturesAreRefusedForTheirFamily()
+    {
+        foreach (var name in Pending)
+        {
+            // Arrange.
+            var folder = Path.Combine(Repository.Conformance, "fixtures", name);
+            using var fixture = JsonDocument.Parse(File.ReadAllBytes(Path.Combine(folder, "fixture.json")));
+            var reference = BindingReference(fixture.RootElement.GetProperty("binding").GetString()!, folder);
+            var path = Path.GetFullPath(Path.Combine(folder, reference[..reference.LastIndexOf('#')]));
+
+            // Act.
+            var problems = FblDocumentLoader.Load(path, out var document);
+
+            // Assert.
+            Assert.Null(document);
+            Assert.Contains(problems, p => p is { Severity: LoadSeverity.Error, Message: "A declared file body names its family." } && p.Pointer.EndsWith("/body/family", StringComparison.Ordinal));
+        }
     }
 
     [Fact]

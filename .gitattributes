@@ -206,6 +206,11 @@ src/backend/EtAlii.Adp.Specification.Fbl.Tests/Conformance/**/*.adp -text
 # folder, so the bindings beside the readme (ordinary text) are not exempted with them.
 src/backend/EtAlii.Adp.Specification.Fbl.Tests/Conformance/fixtures/**/*.fbl -text
 src/backend/EtAlii.Adp.Specification.Fbl.Tests/Conformance/fixtures/**/*.yaml -text
+# FBL 0.9's grammar family (etalii.adp spec 072): a fixture's text input is byte-compared like every
+# other (`.ttl` is exempt by its own rule above), and a grammar beside its binding is kept as the
+# source holds it, since the binding's own bytes are the fixture's subject too.
+src/backend/EtAlii.Adp.Specification.Fbl.Tests/Conformance/fixtures/**/*.txt -text
+src/backend/EtAlii.Adp.Specification.Fbl.Tests/Conformance/**/*.lark -text
 
 # `.owm` and the ansible-structure fixture tree are covered by `.gitattributes` files inside those
 # modules rather than from here. Both are scoped more narrowly than an extension rule would be -
