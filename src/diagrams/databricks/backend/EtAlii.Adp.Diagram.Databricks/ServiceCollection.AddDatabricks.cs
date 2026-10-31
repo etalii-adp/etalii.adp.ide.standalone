@@ -45,6 +45,7 @@ public static class ServiceCollectionAddDatabricksExtension
         services.AddSingleton<ICommandHandler<ConnectDatabricksTasksCommand>, ConnectDatabricksTasksCommandHandler>();
         services.AddSingleton<ICommandHandler<DisconnectDatabricksTasksCommand>, DisconnectDatabricksTasksCommandHandler>();
         services.AddSingleton<ICommandHandler<RenameDatabricksTaskCommand>, RenameDatabricksTaskCommandHandler>();
+        services.AddSingleton<ICommandHandler<DatabricksStepsCommand>, DatabricksStepsCommandHandler>();
         services.AddSingleton<ICommandHandler<SetDatabricksRunIfCommand>, SetDatabricksRunIfCommandHandler>();
         services.AddSingleton<ICommandHandler<SetDatabricksClusterCommand>, SetDatabricksClusterCommandHandler>();
         services.AddSingleton<ICommandHandler<AddDatabricksResourceCommand>, AddDatabricksResourceCommandHandler>();

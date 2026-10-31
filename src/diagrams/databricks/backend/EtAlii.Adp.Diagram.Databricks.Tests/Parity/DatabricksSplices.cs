@@ -3,7 +3,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using EtAlii.Adp.Documents;
 
-namespace EtAlii.Adp.Diagram.Databricks;
+namespace EtAlii.Adp.Diagram.Databricks.Tests.Parity;
 
 /// <summary>
 /// The line-splicing helpers the three writers share: locating a key inside a range, reading
@@ -13,6 +13,11 @@ namespace EtAlii.Adp.Diagram.Databricks;
 /// A write invalidates the model that located it - line numbers after a splice have moved -
 /// so callers re-parse rather than adjusting ranges by hand, which is cheap and removes a whole
 /// class of off-by-one bug. Every helper here reads; only the writers splice.
+/// <para>
+/// <b>The oracle</b>: the module's hand-written code, moved here as it was, its namespace aside, from the product code when
+/// databricks-disl-fbl task 12 planned every edit through the binding, so that <see cref="DatabricksDerivedOperationsTests"/>
+/// can compare what the commands write with what the module wrote by hand.
+/// </para>
 /// </remarks>
 internal static partial class DatabricksSplices
 {
