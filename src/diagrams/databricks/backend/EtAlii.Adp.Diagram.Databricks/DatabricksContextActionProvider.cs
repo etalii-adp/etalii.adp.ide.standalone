@@ -1,7 +1,6 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Documents;
-using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.Databricks;
@@ -331,8 +330,7 @@ public sealed class DatabricksContextActionProvider : DiagramActionProvider<Line
         return new DatabricksStepsCommand(
         [
             rename,
-            new RemoveRegistrationLayoutCommand(registration, oldId),
-            new SetRegistrationLayoutCommand(registration, newId, stored.X, stored.Y),
+            new CarryDatabricksPositionCommand(registration, oldId, newId, stored.X, stored.Y),
         ]);
     }
 
