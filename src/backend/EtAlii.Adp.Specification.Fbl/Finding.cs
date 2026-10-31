@@ -40,6 +40,7 @@ public static class FindingCodes
     public const string RegexTimeout = "fbl.regex-timeout";
     public const string UnconvertedValue = "fbl.unconverted-value";
     public const string MissingResource = "fbl.missing-resource";
+    public const string UnparsedText = "fbl.unparsed-text";
     public const string Unparseable = "std.unparseable";
     public const string UnreadableEntry = "std.unreadableEntry";
     public const string MissingId = "std.missingId";

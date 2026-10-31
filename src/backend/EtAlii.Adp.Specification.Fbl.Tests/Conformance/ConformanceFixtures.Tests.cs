@@ -27,11 +27,11 @@ public class ConformanceFixturesTests
     private static readonly HashSet<string> Pending = new(StringComparer.Ordinal) { "grammar-split-slot", "w3c-turtle-grammar", "w3c-turtle-grammar-partial" };
 
     /// <summary>
-    /// The pending fixtures whose reading and unchanged save the library passes already (etalii.adp spec 072, task T004),
+    /// The pending fixtures whose reading and unchanged save the library passes already (etalii.adp spec 072, tasks T004 and T005),
     /// run by <see cref="ThePendingFixtureIsRead"/>, <see cref="EveryByteOfTheInputBelongsToTheReading"/> and
     /// <see cref="AnUnchangedSaveOfTheInputPlansNoSpliceAndKeepsItsBytes"/>; their edits wait for task T006.
     /// </summary>
-    private static readonly HashSet<string> Reading = new(StringComparer.Ordinal) { "w3c-turtle-grammar" };
+    private static readonly HashSet<string> Reading = new(StringComparer.Ordinal) { "w3c-turtle-grammar", "w3c-turtle-grammar-partial" };
 
     /// <summary>The fixtures copied in etalii.adp's own layout, beside the Knowledge designer's.</summary>
     private const string AdpFixtures = "etalii.adp/specifications/fbl/fixtures";

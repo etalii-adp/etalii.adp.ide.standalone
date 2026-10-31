@@ -4,8 +4,14 @@ using EtAlii.Lark;
 
 namespace EtAlii.Adp.Specification.Fbl.Grammar;
 
-/// <summary>What reading a body by its grammar gave: the tree, its nodes in document order, its tokens and its comments, in bytes.</summary>
-internal sealed record GrammarReading(GrammarNode Root, IReadOnlyList<GrammarNode> Nodes, IReadOnlyList<Span> Tokens, IReadOnlyList<Span> Comments);
+/// <summary>
+/// What reading a body by its grammar gave: the tree, its nodes in document order, its tokens and its comments, and the
+/// text a body read in part skipped, in bytes.
+/// </summary>
+internal sealed record GrammarReading(GrammarNode Root, IReadOnlyList<GrammarNode> Nodes, IReadOnlyList<Span> Tokens, IReadOnlyList<Span> Comments, IReadOnlyList<GrammarSkipped> Skipped);
+
+/// <summary>Text a body read in part skipped (FBL 0.9 §4.9), in bytes: all of it, and where reading stopped in it.</summary>
+internal sealed record GrammarSkipped(Span Text, int Stop);
 
 /// <summary>A body that does not read by its grammar (FBL §7.5): where, in bytes, and why.</summary>
 internal sealed class GrammarSyntaxException(int offset, string message) : Exception(message)
@@ -34,9 +40,13 @@ internal sealed class GrammarParser
         _bytes = ByteOffsets(_source, text.BomLength);
     }
 
-    /// <summary>The tree of the whole body; throws <see cref="GrammarSyntaxException"/> when it does not read.</summary>
+    /// <summary>
+    /// The tree of the body: with <c>recover</c> read unit by unit, the root a node of the start rule whose children are the
+    /// units read; without it parsed whole, throwing <see cref="GrammarSyntaxException"/> when it does not read (FBL §7.5).
+    /// </summary>
     public GrammarReading Parse()
     {
+        if (_grammar.Recover is not null) return ParseInPart();
         Tree tree;
         IReadOnlyDictionary<int, Token> tokens;
         try
@@ -48,7 +58,22 @@ internal sealed class GrammarParser
             var at = e.PosInStream is >= 0 and var position && position <= _source.Length ? _bytes[position] : _text.Length;
             throw new GrammarSyntaxException(at, FirstLine(e.Message));
         }
-        var root = Node(tree, null, new Span(_text.BomLength, _text.Length));
+        var root = Node(tree.Data, tree.Children, null, new Span(_text.BomLength, _text.Length));
+        return Reading(root, tokens, []);
+    }
+
+    /// <summary>The body read unit by unit (FBL 0.9 §4.9, <i>Reading in part</i>): the units the root's children, the skipped text a leaf that binds nothing.</summary>
+    private GrammarReading ParseInPart()
+    {
+        var read = _grammar.ParseUnits(_source);
+        var root = Node(_grammar.Start, read.Units, null, new Span(_text.BomLength, _text.Length));
+        var skipped = read.Skips.Select(skip => new GrammarSkipped(new Span(_bytes[skip.Start], _bytes[skip.End]), _bytes[skip.Stop])).ToList();
+        return Reading(root, read.Tokens, skipped);
+    }
+
+    /// <summary>The reading of a tree: every token cut a leaf but whitespace, an ignored one a comment, and skipped text a leaf.</summary>
+    private GrammarReading Reading(GrammarNode root, IReadOnlyDictionary<int, Token> tokens, IReadOnlyList<GrammarSkipped> skipped)
+    {
         var leaves = new List<Span>();
         var comments = new List<Span>();
         foreach (var token in tokens.Values.OrderBy(t => t.StartPos))
@@ -59,17 +84,24 @@ internal sealed class GrammarParser
             leaves.Add(span);
             if (ignored) comments.Add(span);
         }
-        return new GrammarReading(root, _nodes, leaves, comments);
+        leaves.AddRange(skipped.Select(skip => skip.Text));
+        return new GrammarReading(root, _nodes, leaves, comments, skipped);
     }
 
-    /// <summary>A node of the tree and its parts; <paramref name="own"/> overrides its span, as the root's is the whole body.</summary>
-    private GrammarNode Node(Tree tree, GrammarNode? parent, Span? own = null)
+    /// <summary>A node of the tree and its parts, over its container span (ATD §4.5).</summary>
+    private GrammarNode Node(Tree tree, GrammarNode? parent)
     {
         var meta = tree.Meta;
-        var span = own ?? (meta is { Empty: false, ContainerStartPos: { } from, ContainerEndPos: { } to } ? new Span(_bytes[from], _bytes[to]) : null);
+        var span = meta is { Empty: false, ContainerStartPos: { } from, ContainerEndPos: { } to } ? new Span(_bytes[from], _bytes[to]) : (Span?)null;
+        return Node(tree.Data, tree.Children, parent, span);
+    }
+
+    /// <summary>A node named <paramref name="name"/> over <paramref name="span"/>, none when it read no token, and its parts.</summary>
+    private GrammarNode Node(string name, IEnumerable<object?> children, GrammarNode? parent, Span? span)
+    {
         var node = new GrammarNode
         {
-            Name = tree.Data,
+            Name = name,
             Own = span ?? Here(parent),
             HasSpan = span is not null,
             Order = _nodes.Count,
@@ -77,7 +109,7 @@ internal sealed class GrammarParser
             Indent = Indent(span),
         };
         _nodes.Add(node);
-        foreach (var child in tree.Children)
+        foreach (var child in children)
         {
             var part = child switch
             {
