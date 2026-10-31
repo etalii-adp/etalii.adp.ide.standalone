@@ -4,7 +4,6 @@ using EtAlii.Adp.Specification.Fbl.Documents;
 using EtAlii.Adp.Specification.Fbl.Grammar;
 using EtAlii.Adp.Specification.Fbl.History;
 using EtAlii.Adp.Specification.Fbl.Planning;
-using EtAlii.Adp.Specification.Fbl.Text;
 using EtAlii.Adp.Specification.Json;
 using Xunit;
 
