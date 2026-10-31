@@ -70,7 +70,7 @@ internal sealed class GrammarBuild
         {
             _reader ??= Reader();
             _cut = [];
-            var tree = (Tree)_reader.Parse(text, start);
+            var tree = _reader.Parse(text, start);
             return (tree, _cut);
         }
     }
