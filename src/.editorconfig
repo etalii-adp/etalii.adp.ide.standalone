@@ -187,7 +187,7 @@ dotnet_style_explicit_tuple_names = true:suggestion
 # and the history without three more usings. All 131 findings are that convention:
 # 95 in `_Model`, 16 in `Commands`, 14 in `History`, 6 in `Support` - and none anywhere
 # else, which is what makes it a convention rather than drift. It is stated as a rule in
-# `.spec-workflow/steering/structure.md`; enforcing this would rename every one of them.
+# `docs/steering/structure.md`; enforcing this would rename every one of them.
 dotnet_style_namespace_match_folder = true:none
 dotnet_style_null_propagation = true:suggestion
 dotnet_style_object_initializer = true:suggestion

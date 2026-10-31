@@ -1,5 +1,5 @@
 #!/bin/bash
-# gate.test.sh - the tests of the scripts beside it that still apply: retire.sh, who-owns.sh and
+# gate.test.sh - the tests of the scripts beside it that still apply: retire.sh and
 # who-is-gating.sh, and the parts of gate-lib.sh they use. The Build workflow runs it in a job of
 # its own, `gate-scripts`; it is not part of the product test suite (etalii.adp spec 025, FR-096):
 #
@@ -32,7 +32,7 @@ ROOT=$(cd "$HERE/../../.." && pwd)
 case "$(uname -s)" in MINGW* | MSYS* | CYGWIN*) MSYS=1 ;; *) MSYS=0 ;; esac
 # --quick runs everything except the throwaway-repository sections at the end, which are what
 # makes the full suite expensive: they build real repositories, worktrees and, on Windows, MAX_PATH
-# probes. Quick keeps the tree check, the tell, the argument handling and who-owns' unreadables.
+# probes. Quick keeps the tree check, the tell, and the argument handling.
 QUICK=0
 case "${1:-}" in
   "") ;;
@@ -43,12 +43,13 @@ case "${1:-}" in
     ;;
 esac
 [ $# -le 1 ] || { echo "RESULT=selftest-broken (expected one argument at most; got $#)"; exit 2; }
-# The counts are PINNED PER MODE. On Linux both were MEASURED on 2026-10-22, as a user other than
-# root: 84 in full and 42 in quick. The msys numbers are DERIVED, not measured: the 205 and 130
-# measured on Git Bash before the gate.sh and land.sh cases left, less those cases (115 on msys,
-# four of them msys-only in the guard section, so 88 in quick). A wrong pin fails LOUDLY with the
-# true count in the same line, so the first run on Git Bash corrects it rather than passing quietly.
-if [ "$MSYS" = 1 ]; then EXPECTED=90; EXPECTED_QUICK=42; else EXPECTED=84; EXPECTED_QUICK=42; fi
+# The counts are PINNED PER MODE. On Linux both were MEASURED on 2026-10-31, as a user other than
+# root: 57 in full and 32 in quick, after who-owns.sh left with spec-workflow (27 cases, 10 of them
+# in quick). The msys numbers are DERIVED, not measured: the 205 and 130 measured on Git Bash before
+# the gate.sh and land.sh cases left, less those cases (115 on msys, four of them msys-only in the
+# guard section, so 88 in quick), less the who-owns cases. A wrong pin fails LOUDLY with the true
+# count in the same line, so the first run on Git Bash corrects it rather than passing quietly.
+if [ "$MSYS" = 1 ]; then EXPECTED=63; EXPECTED_QUICK=32; else EXPECTED=57; EXPECTED_QUICK=32; fi
 [ "$QUICK" = 1 ] && EXPECTED=$EXPECTED_QUICK
 
 W=$(mktemp -d) || { echo "RESULT=selftest-broken (no temp dir)"; exit 2; }
@@ -195,27 +196,6 @@ bash "$HERE/who-is-gating.sh" --require-free extra > /dev/null 2>&1; report 3 "$
 # shared 2 until 2026-09-24, and while they did the probe passed against exactly the copy it detects.
 REFUSED=$(bash "$HERE/who-is-gating.sh" --typo-for-the-probe > /dev/null 2>&1; echo $?)
 report distinct "$([ "$REFUSED" != 2 ] && echo distinct || echo SHARED-WITH-UNREADABLE)" "refusal does not share the unreadable code, which is what lets a probe require it"
-
-echo "== who-owns.sh refuses an argument it does not understand, before reading anything"
-# Every case here refuses before the board is touched, so none of them depends on what the real
-# repository's specifications happen to be doing while this suite runs.
-bash "$HERE/who-owns.sh" > /dev/null 2>&1; report 3 "$?" "no argument is refused rather than answered for some default specification"
-bash "$HERE/who-owns.sh" --all extra > /dev/null 2>&1; report 3 "$?" "--all takes no second argument"
-bash "$HERE/who-owns.sh" some-spec --requireunowned > /dev/null 2>&1; report 3 "$?" "a MISTYPED flag is refused with the refusal code, not with the unreadable one"
-bash "$HERE/who-owns.sh" some-spec --require-unowned extra > /dev/null 2>&1; report 3 "$?" "a surplus argument is refused - the caller asked for something else than what would have run"
-OWNS_REFUSED=$(bash "$HERE/who-owns.sh" --typo-for-the-probe > /dev/null 2>&1; echo $?)
-report distinct "$([ "$OWNS_REFUSED" != 2 ] && echo distinct || echo SHARED-WITH-UNREADABLE)" "who-owns' refusal does not share its unreadable code either, for the same probe"
-
-echo "== who-owns: every missing input is UNREADABLE, never unowned"
-# This is the whole point of the instrument. A Developer was placed on a specification whose owner
-# was offline because two absences - an idle session list and unmarked tasks - read as "nobody is
-# here". Each case below is an input this reader does not have, and not one of them may answer that
-# the specification is free.
-report "OWNERSHIP_UNREADABLE=<no main checkout named>" "$(gate_who_owns '' spec)" "no main checkout is loud"
-gate_who_owns '' spec > /dev/null; report 2 "$?" "... and exits 2, so a caller cannot read it as a free specification"
-report "OWNERSHIP_UNREADABLE=<no specification named>" "$(gate_who_owns "$W" '')" "no specification named is loud too"
-report "OWNERSHIP_UNREADABLE=<refusing a specification name that is a path: ../../etc>" "$(gate_who_owns "$W" ../../etc)" "a name that is a path is refused rather than resolved somewhere outside the specifications"
-report "OWNERSHIP_UNREADABLE=<no specification folder at .spec-workflow/specs/nope>" "$(gate_who_owns "$W" nope)" "a specification that does not exist is unreadable, never unowned"
 
 # Everything from here to the summary builds throwaway repositories, and it is the whole of the
 # difference between --quick and a full run. The body below is deliberately NOT re-indented: bash
@@ -376,92 +356,6 @@ else
   report yes "$([ -f "$WT3/stuck1/.git" ] && [ "$(git -C "$WT3/stuck1" rev-parse --show-toplevel 2> /dev/null)" = "$WT3/stuck1" ] && echo yes || echo no)" "... and leaves a worktree of its own, not a husk"
   chmod 755 "$WT3/stuck1/src/held"
 fi
-
-echo "== who-owns: a planted owner is SEEN, and removing the plant changes the answer"
-# THE CONTROL THIS SECTION EXISTS FOR. A clean "nobody is on this" from an instrument that could not
-# have found anybody is indistinguishable from a true one - seven mechanisms produced exactly that
-# shape here in one day. So an owner is planted and the reader must name it, then the plant is
-# removed and the answer must CHANGE. A reader that reported `unowned` throughout would pass a
-# suite that only ever asked it about free specifications.
-R5="$W/repo5"
-mkrepo "$R5" || broken "cannot create the ownership repository"
-S5="$R5/.spec-workflow/specs"
-mkdir -p "$S5/planted/Implementation Logs" "$S5/finished" "$S5/no-tasks" "$S5/fresh" "$S5/marked-no-logs" ||
-  broken "cannot create the planted specification folders"
-printf -- '- [ ] 1. an open task\n' > "$S5/planted/tasks.md"
-printf -- '- [x] 1. a marked task\n' > "$S5/finished/tasks.md"
-printf -- '# a specification with no tasks document\n' > "$S5/no-tasks/design.md"
-printf -- '- [ ] 1. nobody has started\n- [ ] 2. nor this\n' > "$S5/fresh/tasks.md"
-printf -- '- [x] 1. marked without a log\n- [ ] 2. still open\n' > "$S5/marked-no-logs/tasks.md"
-git -C "$R5" add .spec-workflow && git -C "$R5" -c user.name=planter commit -q -m "five specifications" ||
-  broken "cannot commit the planted specification folders"
-owns() { gate_who_owns "$R5" "$1" | sed -n '$p'; } # the verdict is always the last line
-# Preconditions, asserted rather than assumed: a harness whose plant did not take would report every
-# case as unowned and look green.
-[ -f "$S5/planted/tasks.md" ] || broken "the planted tasks document is not on disk"
-[ -n "$(git -C "$R5" log -n 1 --format=%H -- "$S5/planted")" ] || broken "the planted specification has no history"
-
-# THE WINDOW THE INSTRUMENT GOT WRONG BEFORE THIS PAIR EXISTED. A specification that has been written
-# and not implemented has an author, and that author is its Architect - so authorship alone reports
-# an owner for every freshly approved specification and refuses the placement it exists to inform.
-# The answer must flip at the first implementation and not before, which is what these two ask.
-report "OWNERSHIP=unowned REASON=no-implementation-yet" "$(owns fresh)" "written but not implemented is UNOWNED, even though its Architect is its most recent author"
-mkdir -p "$S5/fresh/Implementation Logs" && printf -- '# a log\n' > "$S5/fresh/Implementation Logs/task-1.md" &&
-  printf -- '# a log\n' > "$S5/planted/Implementation Logs/task-1.md" &&
-  git -C "$R5" add .spec-workflow && git -C "$R5" -c user.name=log-writer commit -q -m "a first log" ||
-  broken "cannot write the first implementation log"
-report "OWNER=log-writer EVIDENCE=recent-authorship" "$(owns fresh)" "... and ONE implementation log flips it, which is the moment ownership begins"
-report "OWNER=planter EVIDENCE=recent-authorship" "$(owns marked-no-logs)" "a marked box with no log is implemented too - some specifications are worked without logs"
-# An Architect amendment AFTER the Developer's log, so the last author of the folder and the last
-# author of a log are different people. The first draft of this case committed the log in the same
-# commit as the documents, which made both answers `planter` - it asserted the right string for the
-# wrong reason and would have passed with the distinction removed from the library entirely.
-printf -- '- [ ] 1. an open task, amended\n' > "$S5/planted/tasks.md" &&
-  git -C "$R5" add .spec-workflow && git -C "$R5" -c user.name=architect-amender commit -q -m "an amendment after the log" ||
-  broken "cannot write the architect's amendment"
-[ "$(git -C "$R5" log -n 1 --format=%an -- "$S5/planted")" = architect-amender ] ||
-  broken "the amendment is not the last author of the planted folder, so the case below tests nothing"
-report "OWNER=log-writer EVIDENCE=recent-authorship" "$(owns planted)" "the last LOG author is named, not the last author of the folder, so an Architect's amendment does not take the specification"
-report "OWNERSHIP=unowned REASON=every-task-marked" "$(owns finished)" "every box marked is the ONE direction the tasks document may end ownership in"
-report "OWNERSHIP_UNREADABLE=<no tasks document, so whether every task is done has no answer>" "$(owns no-tasks)" "no tasks document means the completion question has no answer, so neither has this"
-
-git -C "$R5" switch -q -c claude/planted-work develop &&
-  echo work > "$R5/w.txt" && git -C "$R5" add w.txt &&
-  git -C "$R5" -c user.name=branch-author commit -q -m "unlanded work" &&
-  git -C "$R5" switch -q develop || broken "cannot build the planted branch"
-report "OWNER=branch-author EVIDENCE=unlanded-branch" "$(owns planted)" "an unlanded branch named for the specification outranks the history: work set aside is not absent"
-
-git -C "$R5" worktree add -q "$W/wt-planted" claude/planted-work &&
-  git -C "$W/wt-planted" config --worktree user.name planted-owner || broken "cannot plant the worktree"
-[ "$(git -C "$W/wt-planted" config user.name)" = planted-owner ] || broken "the planted worktree identity did not take, so the strongest case would test nothing"
-report "OWNER=planted-owner EVIDENCE=worktree" "$(owns planted)" "A PLANTED OWNER IS SEEN, and named from the worktree's own identity rather than from any title"
-report 1 "$(gate_who_owns "$R5" planted | grep -c '^WORKTREE=.*COUNTS=yes')" "... and the worktree line says it counted, so the verdict can be traced to its evidence"
-
-git -C "$R5" worktree remove --force "$W/wt-planted" || broken "cannot remove the planted worktree"
-report "OWNER=branch-author EVIDENCE=unlanded-branch" "$(owns planted)" "REMOVING THE PLANT CHANGES THE ANSWER - without this the three cases above could all be one constant"
-git -C "$R5" branch -q -D claude/planted-work || broken "cannot delete the planted branch"
-report "OWNER=log-writer EVIDENCE=recent-authorship" "$(owns planted)" "... and removing the branch too falls back to the history, rather than to unowned"
-
-# A landed, clean worktree is a tree somebody did not retire. It is PRINTED, because a reader placing
-# work wants to know it is standing there, and it does not decide - which is what stops the
-# instrument reporting an owner for every finished specification whose author forgot to clean up.
-git -C "$R5" branch -q claude/finished-leftover develop &&
-  git -C "$R5" worktree add -q "$W/wt-finished" claude/finished-leftover || broken "cannot plant the leftover worktree"
-report 1 "$(gate_who_owns "$R5" finished | grep -c '^WORKTREE=.*BRANCH_STATE=landed.*COUNTS=no')" "a landed, clean worktree is reported and marked as not counting"
-report "OWNERSHIP=unowned REASON=every-task-marked" "$(owns finished)" "... and does not turn a finished specification back into an owned one"
-git -C "$R5" worktree remove --force "$W/wt-finished" && git -C "$R5" branch -q -D claude/finished-leftover || broken "cannot remove the leftover worktree"
-
-# The walk's own health figure. A walk that could answer nothing must say so rather than printing a
-# page of unreadables and exiting zero - which reads, at a glance, exactly like a quiet board.
-gate_who_owns_all "$R5" > /dev/null; report 0 "$?" "a walk that answered something exits zero"
-report 1 "$(gate_who_owns_all "$R5" | grep -c '^WALKED=5 answered=4 unreadable=1')" "... and prints what it could and could not answer, beside the answers themselves"
-R6="$W/repo6"
-mkrepo "$R6" || broken "cannot create the blind-walk repository"
-mkdir -p "$R6/.spec-workflow/specs/only-one" && printf '# no tasks\n' > "$R6/.spec-workflow/specs/only-one/design.md" &&
-  git -C "$R6" add .spec-workflow && git -C "$R6" -c user.name=planter commit -q -m "one unreadable specification" ||
-  broken "cannot build the blind-walk repository"
-gate_who_owns_all "$R6" > /dev/null; report 2 "$?" "a walk that could answer NOTHING exits 2 - a zero from a blind reader must not look like a quiet board"
-report 1 "$(gate_who_owns_all "$R6" | grep -c 'treat this reader as blind rather than the board as free')" "... and says which of the two it is, in words"
 
 fi  # end of the throwaway-repository sections, skipped by --quick
 

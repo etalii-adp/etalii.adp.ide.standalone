@@ -6,7 +6,7 @@
 
 ADP — *A Different Perspective* — is a family of specialized, task-tuned tools: diagrams, designers and editors, hosted in several IDEs. This repository is the **standalone host**: it opens diagrams from a user's own workspace folder, draws them, and lets them be edited. The diagrams stay plain text files in that folder: diffable, version-controlled, owned by whatever tool already understood their format.
 
-Its reason for existing, and what it is for, are in [`product.md`](../.spec-workflow/steering/product.md). This page does not repeat them.
+Its reason for existing, and what it is for, are in [`product.md`](steering/product.md). This page does not repeat them.
 
 ## The three parts, and the single boundary
 
@@ -96,7 +96,7 @@ One line each, with the project that owns it. Their internals are deliberately o
 | What the DISL and FBL loaders share: the diagnostic a loader reports and its severity, JSON pointers, duplicate-key detection, scalar and property reading, and the language version | `EtAlii.Adp.Specification.Json` |
 | Loading DISL specifications and the bundled definitions, building a diagram's model from a reading, and deriving its toolbox, context menus, property rows, findings and gesture refusals, resolving a toolbox drop by its drop targets, and running its operations, hooks, deletion policy and retyping, and giving the FBL library the attribute types of a binding | `EtAlii.Adp.Specification.Disl` |
 
-For how a subsystem behaves rather than which project holds it, read [`tech.md`](../.spec-workflow/steering/tech.md).
+For how a subsystem behaves rather than which project holds it, read [`tech.md`](steering/tech.md).
 
 ## What this page is not
 

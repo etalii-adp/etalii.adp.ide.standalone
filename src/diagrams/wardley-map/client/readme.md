@@ -11,5 +11,5 @@ is a press on the background. The dot at the far end of an evolve indicator is u
 declaration too: a press on it clears the selection, exactly as a press on the background does
 (Requirement 2.3), where it once did nothing at all. These are
 decisions about the notation, not omissions; making any of them selectable is a separate question
-for the user ([centralized-selection](../../../../.spec-workflow/specs/centralized-selection/requirements.md),
+for the user ([centralized-selection](https://github.com/etalii-adp/etalii.adp.ide.standalone/blob/bd7e2ea95b8e4195bf6f8d97f7aede9ab4dc3ad8/.spec-workflow/specs/centralized-selection/requirements.md),
 Requirements 2.3 and 2.4). Selection and its look are the canvas library's.
