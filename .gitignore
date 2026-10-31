@@ -17,3 +17,9 @@ src/client/src/generated/
 # OS
 .DS_Store
 Thumbs.db
+
+# spec-workflow MCP is no longer used (2026-10-31; specifications live in etalii.adp's specs/).
+# Its server is configured at user scope on some machines and its dashboard recreates these
+# when started here, so keep them out of the tree; .claude/settings.json denies the server.
+.spec-workflow/
+audit.log
