@@ -9,7 +9,9 @@
   <ItemGroup>
     <PackageReference Include="YamlDotNet" />
     <!-- FBL 0.9's grammar family (Files/Grammar/): the binding's grammar is built, lexed and parsed by EtAlii.Lark (MIT),
-         as a strict LALR(1) parser with the contextual lexer; the library has no parser of its own for it. -->
+         as a strict LALR(1) parser with the contextual lexer; the library has no parser of its own for it. The family is
+         read at FBL 0.9, with FBL 0.13's split and the three constructs of FBL 0.11 it uses: escape, create with after, and
+         a many attribute's items read from several nodes. -->
     <PackageReference Include="EtAlii.Lark" />
   </ItemGroup>
 
