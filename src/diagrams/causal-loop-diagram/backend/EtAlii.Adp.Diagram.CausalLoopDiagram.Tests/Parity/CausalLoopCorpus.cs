@@ -25,4 +25,22 @@ internal static class CausalLoopCorpus
         var shipped = Directory.GetDirectories(Path.Combine(SourceFolder, "examples", "diagrams", "causal-loop-diagram")).SelectMany(folder => Directory.GetFiles(folder, "*.cld"));
         return [.. RepositoryPaths.SortedRelativeToSource(fixtures), .. RepositoryPaths.SortedRelativeToSource(examples), .. RepositoryPaths.SortedRelativeToSource(shipped)];
     }
+
+    /// <summary>The most variables a document of <see cref="WalkedElementByElement"/> has.</summary>
+    public const int MostWalkedVariables = 30;
+
+    /// <summary>
+    /// The corpus, less its documents of more than <see cref="MostWalkedVariables"/> variables: what the tests that
+    /// walk every element, and every pair of variables, read.
+    /// </summary>
+    /// <remarks>
+    /// Those tests drive the providers once per element and once per ordered pair of variables, and every step reads,
+    /// writes and judges the whole document, cycles included, so their cost grows faster than the square of its size.
+    /// The examples redrawn from published figures - thirty-four variables for life insurance and forty-nine for the
+    /// UK cod population, each shipped twice - took one such document past twenty minutes and the backend tests from
+    /// about twenty minutes to over two hours, while showing nothing about the parity of an entry that the smaller
+    /// documents do not. They stay in the corpus of every other test, and their own claims are held in Examples.Tests.
+    /// </remarks>
+    public static IReadOnlyList<string> WalkedElementByElement() =>
+        [.. Paths().Where(relative => CausalLoopBody.Parse(File.ReadAllText(Path.Combine(SourceFolder, relative))).Read().Variables.Count <= MostWalkedVariables)];
 }
