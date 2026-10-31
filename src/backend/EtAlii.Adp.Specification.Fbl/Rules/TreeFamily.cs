@@ -280,7 +280,7 @@ internal abstract class TreeFamily(BodyText text, FblBinding binding, FblOptions
     /// with the resource the reading selects (FBL §8.2), which binds its capture where no element did: a task added to
     /// a job that has none yet goes into the job the registration names.
     /// </summary>
-    protected static IReadOnlyDictionary<string, string> CapturesOf(Planning.Plan plan)
+    protected static IReadOnlyDictionary<string, string> CapturesOf(Plan plan)
     {
         var captures = new Dictionary<string, string>(plan.Reading.ResourceCaptures, StringComparer.Ordinal);
         if (plan.Reading.Elements.Select(e => e.Candidate.Captures).FirstOrDefault(c => c.Count > 0) is { } bound)
