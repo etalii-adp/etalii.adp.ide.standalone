@@ -9,9 +9,10 @@
 #################################################################################
 version: "1.0"
 
-#Specify IDE code to run analysis without container (Applied in CI/CD pipeline)
-#QDNETC is Qodana Community for .NET: the Qodana Cloud organization has a Community licence, which refuses QDNET
-ide: QDNETC
+#Specify the linter to run the analysis in a container (Applied in CI/CD pipeline)
+#Qodana Community for .NET: the Qodana Cloud organization has a Community licence, which refuses Qodana for .NET,
+#and the community linter runs only in its container, never natively
+linter: jetbrains/qodana-cdnet:2026.1
 
 #The solution to analyse; the repository holds other .slnx files (test fixtures, examples) that must not be picked
 dotnet:
