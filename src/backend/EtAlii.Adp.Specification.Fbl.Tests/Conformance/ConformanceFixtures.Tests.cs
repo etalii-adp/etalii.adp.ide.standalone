@@ -347,6 +347,12 @@ public class ConformanceFixturesTests
         }
         if (edit.TryGetProperty("add", out var add))
         {
+            // A position after an entry of another type is no index among siblings (etalii.adp spec 074).
+            if (add.TryGetProperty("position", out var placed) && placed.TryGetProperty("after", out var following)
+                && model?.Find(following.GetString()!) is { } anchor && anchor.Type != add.GetProperty("type").GetString())
+            {
+                return new ModelChange.AddAfter(add.GetProperty("type").GetString()!, FixtureEdits.Attributes(add.GetProperty("attributes")), anchor.Id);
+            }
             return new ModelChange.Add(
                 add.GetProperty("type").GetString()!,
                 add.TryGetProperty("id", out var id) ? id.GetString() : null,

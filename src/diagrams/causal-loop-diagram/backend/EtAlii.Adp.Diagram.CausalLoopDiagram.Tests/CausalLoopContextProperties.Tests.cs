@@ -202,7 +202,7 @@ public class CausalLoopContextPropertiesTests : IDisposable
 
         // Assert.
         Assert.False(result.IsSuccess);
-        Assert.Contains("never evaluates", result.Error, StringComparison.Ordinal);
+        Assert.Contains("starting strength", result.Error, StringComparison.Ordinal);
         Assert.Equal(Corpus, await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken));
     }
 

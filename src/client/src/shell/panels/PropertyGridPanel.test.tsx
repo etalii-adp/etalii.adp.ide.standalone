@@ -8,6 +8,7 @@ import { EntryKind } from "../../generated/shared_pb";
 import { NONE_DETAIL, selectionFor } from "../context/ContextConnectionProvider";
 import { PropertyGridPanel, groupsOf, levelsOf } from "./PropertyGridPanel";
 import { ContextSelectionSchema } from "../../generated/context_pb";
+import { clearFocusedDiagram, showFocusedDiagram } from "../../canvas/focusedDiagram";
 import { clearPropertyPreview, endPropertyPreview, settlePropertyPreview, showPropertyPreview } from "./propertyPreview";
 
 const contextState: { selection: ContextSelection | null; levels: ContextLevelDetail[]; actions: ContextActionGroup[] } = {
@@ -21,6 +22,7 @@ const backend: {
   properties: ContextProperty[];
   writes: Array<{ propertyId: string; value: string }>;
   reject: string;
+  lastSource?: unknown;
   describeError: string;
 } = { properties: [], writes: [], reject: "", describeError: "" };
 
@@ -37,8 +39,9 @@ vi.mock("../context/ContextConnectionProvider", async (importOriginal) => {
       clearReveal: () => {},
       revealPath: () => {},
       describeProperties: async () => ({ properties: backend.properties, error: backend.describeError }),
-      setProperty: async (propertyId: string, value: string) => {
+      setProperty: async (propertyId: string, value: string, source?: unknown) => {
         backend.writes.push({ propertyId, value });
+        backend.lastSource = source;
         return backend.reject.length > 0
           ? { accepted: false, error: backend.reject }
           : { accepted: true, error: "" };
@@ -93,6 +96,32 @@ describe("PropertyGridPanel", () => {
 
     // Assert.
     expect(screen.getByText("Nothing selected")).toBeTruthy();
+  });
+
+  it("shows the rows of the diagram showing when nothing is selected, and writes to that diagram", async () => {
+    const entryId = new Uint8Array([7]);
+    backend.properties = [create(ContextPropertySchema, { id: "causal-loop.flow-strength", label: "Link strength", value: "3", group: "Flow page", editor: ContextPropertyEditor.LINE })];
+    act(() => showFocusedDiagram(entryId));
+    render(<PropertyGridPanel />);
+    const field = await screen.findByDisplayValue("3");
+    expect(screen.getByText("Flow page")).toBeTruthy();
+    (field as HTMLInputElement).focus();
+    fireEvent.change(field, { target: { value: "4" } });
+    await act(async () => {
+      fireEvent.blur(field);
+    });
+    expect(backend.writes).toEqual([{ propertyId: "causal-loop.flow-strength", value: "4" }]);
+    expect((backend.lastSource as { source: { value: { value: Uint8Array } } }).source.value.value).toEqual(entryId);
+    act(() => clearFocusedDiagram(entryId));
+  });
+
+  it("shows the empty state for a diagram showing whose type has no rows of its own", async () => {
+    const entryId = new Uint8Array([8]);
+    act(() => showFocusedDiagram(entryId));
+    render(<PropertyGridPanel />);
+    await act(async () => {});
+    expect(screen.getByText("Nothing selected")).toBeTruthy();
+    act(() => clearFocusedDiagram(entryId));
   });
 
   it("shows a selected file's name, path, kind, availability and source", () => {

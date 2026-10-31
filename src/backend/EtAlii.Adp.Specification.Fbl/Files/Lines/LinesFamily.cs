@@ -695,6 +695,7 @@ internal class LinesFamily(BodyText text, FblBinding binding, FblOptions options
                 Plan.Refuse($"A {FamilyName} body cannot place a new entry '{WireName.Of(insert.Place)}'.");
                 break;
         }
+        if (request.After is { Entry: Statement after }) previous = after;
         if (container is not null && !container.Opens)
         {
             OpenBlock(plan, container, line);

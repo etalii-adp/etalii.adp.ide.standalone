@@ -1,5 +1,6 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.Modules;
+using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Sessions;
 using Microsoft.Extensions.DependencyInjection;
@@ -61,6 +62,8 @@ public static class ServiceCollectionAddCausalLoopExtension
         services.AddSingleton<ICommandHandler<RenameVariableCommand>, RenameVariableCommandHandler>();
         services.AddSingleton<ICommandHandler<RemoveVariableCommand>, RemoveVariableCommandHandler>();
         services.AddSingleton<ICommandHandler<SetVariableLabelCommand>, SetVariableLabelCommandHandler>();
+        services.AddSingleton<ICommandHandler<SetVariableFlowCommand>, SetVariableFlowCommandHandler>();
+        services.AddSingleton<ICommandHandler<SetDiagramAttributeCommand>, SetDiagramAttributeCommandHandler>();
         services.AddSingleton<ICommandHandler<SetLinkPolarityCommand>, SetLinkPolarityCommandHandler>();
         services.AddSingleton<ICommandHandler<SetLinkDelayCommand>, SetLinkDelayCommandHandler>();
         services.AddSingleton<ICommandHandler<AddVariableAtCommand>, AddVariableAtCommandHandler>();
@@ -94,6 +97,12 @@ public static class ServiceCollectionAddCausalLoopExtension
         services.AddSingleton<IContextPropertyProvider>(provider => new CausalLoopContextPropertyProvider(
             provider.GetRequiredService<IHistoryStackStore>(),
             provider.GetRequiredService<ICausalLoopDocumentStore>()));
+
+        // The diagram's own rows, which a file selected with nothing on its canvas shows.
+        services.AddSingleton<IContextPropertyProvider>(provider => new CausalLoopDiagramPropertyProvider(
+            provider.GetRequiredService<IHistoryStackStore>(),
+            provider.GetRequiredService<ICausalLoopDocumentStore>(),
+            provider.GetRequiredService<DiagramFileRouter>));
 
         // The rules, resolved by origin through core's validator registry. This reading only
         // ever reports: the disagreement between a stated label and the arithmetic is a finding,

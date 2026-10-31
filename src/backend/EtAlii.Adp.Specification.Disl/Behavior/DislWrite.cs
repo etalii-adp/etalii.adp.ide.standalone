@@ -1,3 +1,4 @@
+using EtAlii.Adp.Specification.Fbl;
 using EtAlii.Adp.Specification.Fbl.Planning;
 
 namespace EtAlii.Adp.Specification.Disl;
@@ -61,6 +62,52 @@ public static class DislWrite
             ? Stored(specification, definition.Type, value)
             : value;
     }
+
+    /// <summary>The stored form of <paramref name="value"/> for an attribute of type <paramref name="type"/>.</summary>
+    public static object? StoredOfType(DislSpecification specification, string type, object? value)
+    {
+        ArgumentNullException.ThrowIfNull(specification);
+        return Stored(specification, type, value);
+    }
+
+    /// <summary>
+    /// The FBL changes that set diagram attribute <paramref name="attribute"/> to <paramref name="value"/> (null to forget it)
+    /// against <paramref name="reading"/> (etalii.adp spec 074). A diagram attribute lives in an entry of a binding type
+    /// <c>persistence.typeMap</c> maps as <c>diagram</c> and whose <c>attributes</c> name it.
+    /// </summary>
+    /// <remarks>
+    /// A value goes to the last such entry that states the attribute, else the last such entry, else a new one, which stands
+    /// right after the entries at the top of the body mapped as the header or as an earlier type of the diagram, or where
+    /// its rule's insert says when there are none. A forgotten attribute leaves every entry that states it, last first so
+    /// that no earlier id moves, and an entry left with nothing to state is removed with it.
+    /// </remarks>
+    public static IReadOnlyList<ModelChange> DiagramSet(DislSpecification specification, FblModel reading, string attribute, object? value)
+    {
+        ArgumentNullException.ThrowIfNull(specification);
+        ArgumentNullException.ThrowIfNull(reading);
+        var map = specification.TypeMap;
+        if (map.DiagramTypeHolding(attribute) is not { } type) throw new ArgumentException($"This file has no place for the diagram's {attribute}.", nameof(attribute));
+        var mapping = map.For(type);
+        var name = mapping.Attributes.First(rename => rename.Value == attribute).Key;
+        var entries = reading.Elements.Where(element => element.Type == type).ToList();
+        if (value is null)
+        {
+            return [.. entries.Where(entry => States(entry, name)).Reverse().Select(entry => Forgotten(mapping, entry, name))];
+        }
+
+        var written = new Dictionary<string, object?>(StringComparer.Ordinal) { [name] = value };
+        if ((entries.LastOrDefault(entry => States(entry, name)) ?? entries.LastOrDefault()) is { } target) return [new ModelChange.Set(target.Id, written)];
+        var before = map.DiagramTypesBefore(type);
+        var anchor = reading.Elements.TakeWhile(element => map.For(element.Type).As == "header" || before.Contains(element.Type)).LastOrDefault();
+        return [anchor is null ? new ModelChange.Add(type, null, written) : new ModelChange.AddAfter(type, written, anchor.Id)];
+    }
+
+    private static bool States(FblElement entry, string name) => entry.Attributes.TryGetValue(name, out var stated) && stated is not null;
+
+    private static ModelChange Forgotten(DislTypeMapping mapping, FblElement entry, string name) =>
+        mapping.Attributes.Keys.Any(other => other != name && States(entry, other))
+            ? new ModelChange.Set(entry.Id, new Dictionary<string, object?>(StringComparer.Ordinal) { [name] = null })
+            : new ModelChange.Remove(entry.Id);
 
     /// <summary>
     /// The id <paramref name="id"/>, an element of <paramref name="type"/>, was read with: without the

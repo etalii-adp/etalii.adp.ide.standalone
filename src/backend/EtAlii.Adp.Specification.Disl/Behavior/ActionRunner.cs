@@ -68,6 +68,39 @@ internal sealed class ActionRunner(DislSpecification specification, DislDiagram 
         return true;
     }
 
+    /// <summary>
+    /// What <paramref name="actions"/> assign where they are a row's <c>write</c> on the diagram's own form: each <c>set</c>
+    /// and <c>unset</c> that applies, a forgotten attribute null, in order. A diagram is no element a change can name, so
+    /// nothing is stored here, and any other action is refused.
+    /// </summary>
+    public IReadOnlyList<(string Name, object? Value)> DiagramAssignments(DislActionList actions, Dictionary<string, object?> variables)
+    {
+        ArgumentNullException.ThrowIfNull(actions);
+        ArgumentNullException.ThrowIfNull(variables);
+        var assigned = new List<(string Name, object? Value)>();
+        foreach (var action in actions.Actions)
+        {
+            if (action.When is { } when && !when.Holds(variables)) continue;
+            switch (action)
+            {
+                case DislAction.Set set:
+                    foreach ((string name, DislActionValue declared) in set.Values)
+                    {
+                        if (!Value(declared, variables, out var value)) return assigned;
+                        assigned.Add((name, Stored(value)));
+                    }
+                    break;
+                case DislAction.Unset unset:
+                    assigned.AddRange(unset.Names.Select(name => (name, (object?)null)));
+                    break;
+                default:
+                    Refuse($"The action at {action.At} is none a form on the diagram can run.");
+                    return assigned;
+            }
+        }
+        return assigned;
+    }
+
     public bool Refuse(string reason)
     {
         Refusal ??= reason;
