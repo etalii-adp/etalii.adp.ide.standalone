@@ -331,8 +331,7 @@ public sealed class DatabricksContextActionProvider : DiagramActionProvider<Line
         return new DatabricksStepsCommand(
         [
             rename,
-            new RemoveRegistrationLayoutCommand(registration, oldId),
-            new SetRegistrationLayoutCommand(registration, newId, stored.X, stored.Y),
+            new CarryDatabricksPositionCommand(registration, oldId, newId, stored.X, stored.Y),
         ]);
     }
 

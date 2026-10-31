@@ -95,6 +95,44 @@ public sealed class DatabricksRenameKeepsPositionTests : IDisposable
         Assert.Equal(registration, await File.ReadAllBytesAsync(_registration, TestContext.Current.CancellationToken));
     }
 
+    [Fact]
+    public async Task ARename_ChangesOnlyTheEntryItCarries_AndKeepsAStaleOne()
+    {
+        // Arrange. Line feeds, the author's number form and an entry for a task the file does not have are the author's,
+        // and stay: the registration writer takes out the renamed task's entry and prunes nothing else (Requirement 5.5).
+        await File.WriteAllTextAsync(_registration, $"databricks/job\nbody: {Fixture}\nlayout:\n  task:ingest: 10.50 20\n  task:quality_gate: 200 100\n  task:retired: 5 5\n", TestContext.Current.CancellationToken);
+
+        // Act.
+        var renamed = await RenameAsync("quality_gate", "gate");
+
+        // Assert.
+        Assert.True(renamed.Completed, renamed.Error);
+        Assert.Equal(
+            $"databricks/job\nbody: {Fixture}\nlayout:\n  task:gate: 200 100\n  task:ingest: 10.50 20\n  task:retired: 5 5\n",
+            await File.ReadAllTextAsync(_registration, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task ARenameUndoneAndRedone_GivesTheSameBytesEachTime()
+    {
+        // Arrange.
+        var before = await File.ReadAllBytesAsync(_registration, TestContext.Current.CancellationToken);
+        Assert.True((await RenameAsync("quality_gate", "gate")).Completed);
+        var after = await File.ReadAllBytesAsync(_registration, TestContext.Current.CancellationToken);
+        var history = _provider.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(_root));
+
+        // Act.
+        var undone = await history.UndoAsync(TestContext.Current.CancellationToken);
+        var undoneBytes = await File.ReadAllBytesAsync(_registration, TestContext.Current.CancellationToken);
+        var redone = await history.RedoAsync(TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.True(undone.IsSuccess, undone.Error);
+        Assert.True(redone.IsSuccess, redone.Error);
+        Assert.Equal(before, undoneBytes);
+        Assert.Equal(after, await File.ReadAllBytesAsync(_registration, TestContext.Current.CancellationToken));
+    }
+
     private ValueTask<ContextCommitResult> RenameAsync(string key, string newKey) =>
         _actions.CommitAsync(
             ContextTarget.ForElement(_body, $"task:{key}", ProjectRoot.From(_root), origin: ServiceCollectionAddDatabricksExtension.JobOrigin) with { RegistrationPath = _registration },
