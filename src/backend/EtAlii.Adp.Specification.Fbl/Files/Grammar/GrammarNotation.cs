@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 
-namespace EtAlii.Adp.Specification.Fbl.Files.Grammar;
+namespace EtAlii.Adp.Specification.Fbl.Grammar;
 
 /// <summary>
 /// The check that a binding's grammar is written in ATD grammar notation (ATD §4.1) and that its terminals keep to

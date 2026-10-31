@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 using EtAlii.Adp.Specification.Cel;
-using EtAlii.Adp.Specification.Fbl.Files.Grammar;
+using EtAlii.Adp.Specification.Fbl.Grammar;
 using EtAlii.Adp.Specification.Json;
 
 namespace EtAlii.Adp.Specification.Fbl.Documents;

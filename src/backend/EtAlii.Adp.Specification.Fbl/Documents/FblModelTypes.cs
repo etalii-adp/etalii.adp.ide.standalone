@@ -1,6 +1,7 @@
 using System.Text.Json;
 using EtAlii.Adp.Specification.Cel;
 using EtAlii.Adp.Specification.Fbl.Expressions;
+using EtAlii.Adp.Specification.Fbl.Grammar;
 
 namespace EtAlii.Adp.Specification.Fbl.Documents;
 
@@ -182,7 +183,7 @@ internal sealed class GrammarBody
 
     public GrammarRecover? Recover { get; init; }
 
-    public Files.Grammar.GrammarBuild? Built { get; set; }
+    public GrammarBuild? Built { get; set; }
 }
 
 /// <summary><c>body.recover</c> (FBL 0.9 §4.9): the rule a body is read unit by unit by, and the terminals a skip ends at.</summary>

@@ -135,7 +135,7 @@ internal static partial class BindingReader
 
     /// <summary>
     /// <c>body.grammar</c>, <c>body.start</c> and <c>body.recover</c> (FBL 0.9 §3.2, §4.9); null when the body has no
-    /// grammar. The grammar is built once the binding is read, by <see cref="Files.Grammar.GrammarBuild"/>.
+    /// grammar. The grammar is built once the binding is read, by <see cref="Grammar.GrammarBuild"/>.
     /// </summary>
     private static GrammarBody? ReadGrammar(JsonElement json, string pointer, List<LoadDiagnostic> problems)
     {
