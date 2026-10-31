@@ -268,6 +268,18 @@ public class GrammarLoadingTests
         Assert.Empty(problems);
     }
 
+    [Fact]
+    public void ASelectorWithATest_KeepsItsPathAndItsText()
+    {
+        // Act.
+        var segments = GrammarSelector.Parse("/word[NAME='a b']", slot: false);
+
+        // Assert.
+        var segment = Assert.Single(Assert.IsAssignableFrom<IReadOnlyList<GrammarSegment>>(segments));
+        Assert.Equal(new GrammarSegment(GrammarSegmentKind.Name, "NAME"), Assert.Single(segment.TestPath!));
+        Assert.Equal((GrammarSegmentKind.Name, "word", "a b"), (segment.Kind, segment.Name, segment.TestValue));
+    }
+
     [Theory]
     [InlineData("\"at\": \"/word\"", "\"at\": \"/wurd\"", "/bindings/b/elements/0/at", "names 'wurd', which is no rule, alias or terminal")]
     [InlineData("\"at\": \"/word\"", "\"at\": \"/word[NAMES='a']\"", "/bindings/b/elements/0/at", "names 'NAMES', which is no rule, alias or terminal")]
