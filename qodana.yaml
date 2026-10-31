@@ -3136,6 +3136,37 @@ include:
   - name: RouteTemplates.ParameterTypeCanBeMadeStricter
   - name: RouteTemplates.RouteParameterIsNotPassedToMethod
   - name: RouteTemplates.ParameterConstraintCanBeSpecified
+  - name: Stylelint
+  - name: W3CssValidation
+  - name: CssMissingSemicolon
+  - name: CssRedundantUnit
+  - name: CssInvalidCustomPropertyAtRuleDeclaration
+  - name: CssInvalidCustomPropertyAtRuleName
+  - name: CssInvalidFunction
+  - name: CssInvalidMediaFeature
+  - name: CssInvalidPropertyValue
+  - name: CssInvalidPseudoSelector
+  - name: CssInvalidHtmlTagReference
+  - name: CssInvalidImport
+  - name: CssInvalidCharsetRule
+  - name: CssNegativeValue
+  - name: CssInvalidAtRule
+  - name: CssUnknownProperty
+  - name: CssUnknownUnit
+  - name: CssUnresolvedClassInComposesRule
+  - name: CssUnresolvedCustomProperty
+  - name: CssUnknownTarget
+  - name: CssMissingComma
+  - name: CssNoGenericFontName
+  - name: CssNonIntegerLengthInPixels
+  - name: CssConvertColorToHexInspection
+  - name: CssConvertColorToRgbInspection
+  - name: CssDeprecatedValue
+  - name: CssOverwrittenProperties
+  - name: CssReplaceWithShorthandSafely
+  - name: CssReplaceWithShorthandUnsafely
+  - name: CssBrowserCompatibilityForProperties
+  - name: CssUnusedSymbol
 
 #Enable inspections
 #include:
