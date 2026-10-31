@@ -68,6 +68,7 @@ public class ExamplesTests
     [InlineData("business-philosophy")]
     [InlineData("mental-health")]
     [InlineData("life-insurance")]
+    [InlineData("uk-cod-population")]
     public void AnExample_SitsBesideItsOwnRegistration(string name)
     {
         // Act.
@@ -90,7 +91,7 @@ public class ExamplesTests
     {
         // Act & assert.
         // So that an example added without a test is a failure rather than a silent gap.
-        Assert.Equal(["business-philosophy", "life-insurance", "mental-health", "on-call", "reference"], [.. Names().OrderBy(name => name, StringComparer.Ordinal)]);
+        Assert.Equal(["business-philosophy", "life-insurance", "mental-health", "on-call", "reference", "uk-cod-population"], [.. Names().OrderBy(name => name, StringComparer.Ordinal)]);
     }
 
     [Theory]
@@ -99,6 +100,7 @@ public class ExamplesTests
     [InlineData("business-philosophy")]
     [InlineData("mental-health")]
     [InlineData("life-insurance")]
+    [InlineData("uk-cod-population")]
     public void AnExample_Parses_AndEveryLinkAndLoopNamesADeclaredVariable(string name)
     {
         // Act.
@@ -292,6 +294,37 @@ public class ExamplesTests
         Assert.All(model.Loops, loop => Assert.False(loop.Disagrees, $"{loop.Identifier} disagrees with its arithmetic."));
     }
 
+    /// <summary>
+    /// The UK cod population example is redrawn from a handwritten academic figure whose own R and B
+    /// marks are kept. Four of them disagree with their arrows, and the readme names them; the loops
+    /// through carrying capacity, which the figure joins without a polarity, are undecidable. Every
+    /// other cycle is named with its arithmetic, so nothing is unlabelled and nothing else is reported.
+    /// </summary>
+    [Fact]
+    public async Task TheUkCodPopulationExample_KeepsTheFiguresLabels_AndReportsExactlyWhatTheReadmeSays()
+    {
+        // Arrange.
+        var model = Load("uk-cod-population");
+
+        // Act.
+        var findings = await Judge("uk-cod-population");
+
+        // Assert.
+        Assert.Equal(35, model.Loops.Count);
+        Assert.Equal(14, model.Loops.Count(loop => loop.Computed == LoopPolarityResult.Reinforcing));
+        Assert.Equal(9, model.Loops.Count(loop => loop.Computed == LoopPolarityResult.Balancing));
+        Assert.Equal(12, model.Loops.Count(loop => loop.Computed == LoopPolarityResult.Undecidable));
+
+        Assert.Equal(
+            ["B2", "B3", "R2", "R3"],
+            [.. model.Loops.Where(loop => loop.Disagrees).Select(loop => loop.Identifier).Order(StringComparer.Ordinal)]);
+
+        Assert.DoesNotContain(findings, finding => finding.RuleId == CausalLoopValidator.UnlabelledLoopRuleId);
+        Assert.Equal(4, findings.Count(finding => finding.RuleId == CausalLoopValidator.LabelDisagreesRuleId));
+        Assert.Equal(12, findings.Count(finding => finding.RuleId == CausalLoopValidator.UndecidableLoopRuleId));
+        Assert.Equal(16, findings.Count);
+    }
+
     // ---- the layout the reader will actually see ------------------------------------------------
 
     /// <summary>
@@ -305,6 +338,7 @@ public class ExamplesTests
     [InlineData("business-philosophy")]
     [InlineData("mental-health")]
     [InlineData("life-insurance")]
+    [InlineData("uk-cod-population")]
     public void AnExample_ArrangesWithoutOverlap(string name)
     {
         // Act.
