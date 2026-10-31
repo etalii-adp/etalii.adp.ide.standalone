@@ -1,6 +1,7 @@
 using EtAlii.Adp.Specification.Fbl.Documents;
 using EtAlii.Adp.Specification.Json;
 using EtAlii.Lark;
+using EtAlii.Lark.Parsers;
 using LarkParser = EtAlii.Lark.Lark;
 
 namespace EtAlii.Adp.Specification.Fbl.Grammar;
@@ -125,7 +126,7 @@ internal sealed class GrammarBuild
     /// </summary>
     private static UnitRead ReadUnit(LarkParser reader, string text, int position, string unit)
     {
-        var parser = reader.ParseInteractive(new TextSlice(text, position, null), unit);
+        var parser = reader.ParseInteractive(new TextSlice(text, position), unit);
         var before = parser.Copy(false);
         Token? last = null;
         int? first = null;
@@ -160,7 +161,7 @@ internal sealed class GrammarBuild
     }
 
     /// <summary>The unit's tree, when the parser accepts it where it is; null when it does not.</summary>
-    private static object? Accepted(EtAlii.Lark.Parsers.InteractiveParser parser)
+    private static object? Accepted(InteractiveParser parser)
     {
         try
         {
