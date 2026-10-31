@@ -242,11 +242,11 @@ internal static class EditPlanner
 
     // ---- add ----
 
-    /// <summary>An add put on a line of its own right after the entry it names. Only the lines family's statements can be, and a statement of any other family is refused.</summary>
+    /// <summary>An add put on a line of its own right after the entry it names. Only the lines and grammar families' entries can be, and an entry of any other family is refused.</summary>
     private static void PlanAddAfter(Plan plan, ModelChange.AddAfter added)
     {
         var anchor = Element(plan.Reading, added.After);
-        if (plan.Reading.Family is not LinesFamily) Planning.Plan.Refuse($"This file's binding cannot add a {added.Type} at that position.");
+        if (plan.Reading.Family is not (LinesFamily or Grammar.GrammarFamily)) Planning.Plan.Refuse($"This file's binding cannot add a {added.Type} at that position.");
         PlanAdd(plan, new ModelChange.Add(added.Type, null, added.Attributes), anchor);
     }
 

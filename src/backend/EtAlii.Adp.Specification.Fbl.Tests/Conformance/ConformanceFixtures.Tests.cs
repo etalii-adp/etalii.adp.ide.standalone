@@ -17,21 +17,14 @@ namespace EtAlii.Adp.Specification.Fbl.Tests.Conformance;
 public class ConformanceFixturesTests
 {
     /// <summary>The number of fixtures vendored: fewer means the enumeration broke.</summary>
-    private const int MinimumFixtures = 47;
+    private const int MinimumFixtures = 49;
 
     /// <summary>
     /// The fixtures of FBL 0.9's grammar family and of FBL 0.13's split slot (etalii.adp spec 072), vendored before the
     /// library reads the family and held out of the theories until it does. Each task of the specification takes its
     /// fixtures out of this set; <see cref="ThePendingGrammarFixturesDoNotPassYet"/> holds what is left.
     /// </summary>
-    private static readonly HashSet<string> Pending = new(StringComparer.Ordinal) { "grammar-split-slot", "w3c-turtle-grammar", "w3c-turtle-grammar-partial" };
-
-    /// <summary>
-    /// The pending fixtures whose reading and unchanged save the library passes already (etalii.adp spec 072, tasks T004 and T005),
-    /// run by <see cref="ThePendingFixtureIsRead"/>, <see cref="EveryByteOfTheInputBelongsToTheReading"/> and
-    /// <see cref="AnUnchangedSaveOfTheInputPlansNoSpliceAndKeepsItsBytes"/>; their edits wait for task T006.
-    /// </summary>
-    private static readonly HashSet<string> Reading = new(StringComparer.Ordinal) { "w3c-turtle-grammar", "w3c-turtle-grammar-partial" };
+    private static readonly HashSet<string> Pending = new(StringComparer.Ordinal) { "grammar-split-slot" };
 
     /// <summary>The fixtures copied in etalii.adp's own layout, beside the Knowledge designer's.</summary>
     private const string AdpFixtures = "etalii.adp/specifications/fbl/fixtures";
@@ -59,17 +52,6 @@ public class ConformanceFixturesTests
                 .Select(fixture => prefix + Path.GetRelativePath(root, Path.GetDirectoryName(fixture)!).Replace('\\', '/'));
         }
     }
-
-    /// <summary>Every fixture whose reading the library passes: those of <see cref="Fixtures"/>, and the pending ones of <see cref="Reading"/>.</summary>
-    public static TheoryData<string> ReadFixtures()
-    {
-        var data = new TheoryData<string>();
-        foreach (var name in Fixtures().Select(row => row.Data).Concat(Reading)) data.Add(name);
-        return data;
-    }
-
-    /// <summary>The pending fixtures of <see cref="Reading"/>, for their reading alone.</summary>
-    public static TheoryData<string> PendingReadFixtures() => [.. Reading.Order(StringComparer.Ordinal)];
 
     /// <summary>The folder of the fixture <paramref name="name"/>, as <see cref="Fixtures"/> names it.</summary>
     private static string Folder(string name) =>
@@ -107,15 +89,6 @@ public class ConformanceFixturesTests
             Assert.DoesNotContain(problems, p => p.Severity == LoadSeverity.Error);
             Assert.True(failure is not null, $"The pending fixture {name} passes; take it out of Pending.");
         }
-    }
-
-    /// <summary>A pending fixture of <see cref="Reading"/>: its reading, before its edits pass (etalii.adp spec 072, Requirements 4.1 to 4.8).</summary>
-    [Theory]
-    [MemberData(nameof(PendingReadFixtures))]
-    public void ThePendingFixtureIsRead(string name)
-    {
-        var folder = Folder(name);
-        Run(name, folder, File.ReadAllBytes(Path.Combine(folder, "fixture.json")), steps: false);
     }
 
     [Fact]
@@ -177,8 +150,34 @@ public class ConformanceFixturesTests
         Assert.Contains("'label'", failure.Message, StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// The runner fails on a grammar fixture with one wrong offset (etalii.adp spec 072, Requirement 7.3): a copy of
+    /// <c>w3c-turtle-grammar</c> whose set of the label starts one byte late, which shows that it runs byte for byte with its splices.
+    /// </summary>
+    [Fact]
+    public void TheRunnerFailsOnAPlantedOffsetOfAGrammarFixture()
+    {
+        // Arrange.
+        var folder = Path.Combine(Repository.Conformance, "fixtures", "w3c-turtle-grammar");
+        var original = File.ReadAllText(Path.Combine(folder, "fixture.json"));
+        const string planted = "\"start\": 192,";
+        var at = original.IndexOf(planted, StringComparison.Ordinal);
+        Assert.True(at >= 0);
+        var changed = original[..at] + "\"start\": 193," + original[(at + planted.Length)..];
+        using var scratch = TestFolder.Create("fbl");
+        var copy = scratch.Combine("fixture.json");
+        File.WriteAllText(copy, changed);
+
+        // Act.
+        var failure = Record.Exception(() => Run("w3c-turtle-grammar", folder, File.ReadAllBytes(copy)));
+
+        // Assert.
+        Assert.NotNull(failure);
+        Assert.Contains("192", failure.Message, StringComparison.Ordinal);
+    }
+
     /// <summary>Runs a fixture's reading and steps; its binding and input are found from <paramref name="folder"/>.</summary>
-    private static void Run(string name, string folder, byte[] fixtureBytes, bool steps = true)
+    private static void Run(string name, string folder, byte[] fixtureBytes)
     {
         // Arrange.
         var fixturePath = Path.Combine(folder, "fixture.json");
@@ -195,7 +194,6 @@ public class ConformanceFixturesTests
 
         // Act and assert: the reading.
         if (root.TryGetProperty("read", out var read)) AssertRead(subject, read, name, binding);
-        if (!steps) return;
 
         // Act and assert: every step.
         var index = 0;
@@ -252,7 +250,7 @@ public class ConformanceFixturesTests
     }
 
     [Theory]
-    [MemberData(nameof(ReadFixtures))]
+    [MemberData(nameof(Fixtures))]
     public void EveryByteOfTheInputBelongsToTheReading(string name)
     {
         // Arrange.
@@ -272,7 +270,7 @@ public class ConformanceFixturesTests
     }
 
     [Theory]
-    [MemberData(nameof(ReadFixtures))]
+    [MemberData(nameof(Fixtures))]
     public void AnUnchangedSaveOfTheInputPlansNoSpliceAndKeepsItsBytes(string name)
     {
         // Arrange.
