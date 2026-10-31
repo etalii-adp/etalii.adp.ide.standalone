@@ -12,7 +12,7 @@ namespace EtAlii.Adp.Specification.Fbl.Documents;
 public static class FblDocumentLoader
 {
     /// <summary>The FBL major version this library reads, and the newest minor it reads in full; a document of a newer one loads with a warning.</summary>
-    private static readonly LanguageVersion Fbl = new("FBL", 0, 7, "FBL §2.7");
+    private static readonly LanguageVersion Fbl = new("FBL", 0, 9, "FBL §2.7");
 
     public static IReadOnlyList<LoadDiagnostic> Load(string path, out FblDocument? document) =>
         Load(ReadShared(path), Path.GetDirectoryName(Path.GetFullPath(path)), out document);
@@ -87,7 +87,11 @@ public static class FblDocumentLoader
                 if (binding is not null)
                 {
                     BindingChecker.Check(binding, pointer, problems);
-                    if (binding.Body.Grammar is { } grammar) grammar.Built = Files.Grammar.GrammarBuild.Build(grammar, folder, pointer + "/body", problems);
+                    if (binding.Body is { Family: Family.Grammar, Grammar: { } grammar })
+                    {
+                        grammar.Built = Files.Grammar.GrammarBuild.Build(grammar, folder, pointer + "/body", problems);
+                        if (grammar.Built is { } built) GrammarChecks.CheckSelectors(binding, built, pointer, problems);
+                    }
                     result[property.Name] = binding;
                 }
             }

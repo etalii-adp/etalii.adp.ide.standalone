@@ -53,15 +53,18 @@ public class LoadingTests
         Assert.Contains(problems, p => p is { Severity: LoadSeverity.Error, Pointer: "/fbl" });
     }
 
+    /// <summary>The library reads FBL up to 0.9 (etalii.adp spec 072, Requirement 2.1), so 0.10 is the newer minor that warns.</summary>
     [Fact]
     public void ANewerMinorVersionLoadsWithAWarning()
     {
         // Act.
-        var problems = FblDocumentLoader.Load(Encoding.UTF8.GetBytes($$"""{ "fbl": "0.8", "bindings": { "t": {{Binding()}} } }"""), out var document);
+        var problems = FblDocumentLoader.Load(Encoding.UTF8.GetBytes($$"""{ "fbl": "0.10", "bindings": { "t": {{Binding()}} } }"""), out var document);
 
         // Assert.
         Assert.NotNull(document);
-        Assert.Equal(LoadSeverity.Warning, Assert.Single(problems).Severity);
+        var warning = Assert.Single(problems);
+        Assert.Equal(LoadSeverity.Warning, warning.Severity);
+        Assert.Equal("This runtime knows FBL up to 0.9; what FBL 0.10 adds is not read (FBL §2.7).", warning.Message);
     }
 
     [Theory]
@@ -108,6 +111,8 @@ public class LoadingTests
     [Theory]
     [InlineData("0.2")]
     [InlineData("0.5")]
+    [InlineData("0.8")] // etalii.adp spec 072, Requirement 2.1: the library reads FBL 0.8 and 0.9 in full.
+    [InlineData("0.9")]
     public void AVersionThisLibraryKnowsLoadsWithoutAWarning(string version)
     {
         // Act.

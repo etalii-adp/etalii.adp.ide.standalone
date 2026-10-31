@@ -23,6 +23,7 @@ internal static class BindingChecker
             CheckRule(binding, rule, rules, ruleNames, names, at, problems);
         }
         CheckBinding(binding, rules.Count, pointer, problems);
+        GrammarChecks.Check(binding, pointer, problems);
     }
 
     private static void CheckBlocks(FblBinding binding, HashSet<string> ruleNames, HashSet<string> names, string pointer, List<LoadDiagnostic> problems)

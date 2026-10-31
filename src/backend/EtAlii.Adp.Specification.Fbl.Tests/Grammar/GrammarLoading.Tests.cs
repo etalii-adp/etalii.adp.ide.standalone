@@ -238,14 +238,167 @@ public class GrammarLoadingTests
         Assert.DoesNotContain(problems, problem => problem.Severity == LoadSeverity.Error);
     }
 
+    /// <summary>A rule of the family that reads each word's name and value through <c>{node}</c> slots, the value without its quotes.</summary>
+    private const string WordRule = """{ "name": "word", "type": "Word", "at": "/word", "id": { "from": { "node": "NAME" } }, "attributes": { "value": { "node": "VALUE", "match": "\"(?<value>[^\"]*)\"" } } }""";
+
+    [Fact]
+    public void ARuleThatReadsThroughNodeSlots_Loads()
+    {
+        // Act.
+        var problems = Load(Binding(Words, WordRule));
+
+        // Assert.
+        Assert.Empty(problems);
+    }
+
+    [Theory]
+    [InlineData("\"at\": \"/word\"", "\"at\": \"/**/word\"")]
+    [InlineData("\"at\": \"/word\"", "\"at\": \"/*\"")]
+    [InlineData("\"at\": \"/word\"", "\"at\": \"/word[NAME='a']\"")]
+    [InlineData("\"at\": \"/word\"", "\"at\": \"/\"")]
+    [InlineData("{ \"node\": \"NAME\" }", "{ \"node\": \".\" }")]
+    [InlineData("{ \"node\": \"NAME\" }", "{ \"node\": \"**/NAME\" }")]
+    public void ASelectorOfTheFamily_Loads(string kept, string written)
+    {
+        // Act.
+        var problems = Load(Binding(Words, WordRule.Replace(kept, written, StringComparison.Ordinal)));
+
+        // Assert.
+        Assert.Empty(problems);
+    }
+
+    [Theory]
+    [InlineData("\"at\": \"/word\"", "\"at\": \"/wurd\"", "/bindings/b/elements/0/at", "names 'wurd', which is no rule, alias or terminal")]
+    [InlineData("\"at\": \"/word\"", "\"at\": \"/word[NAMES='a']\"", "/bindings/b/elements/0/at", "names 'NAMES', which is no rule, alias or terminal")]
+    [InlineData("\"at\": \"/word\"", "\"at\": \"/word/{key}\"", "/bindings/b/elements/0/at", "is not a selector of the grammar family")]
+    [InlineData("\"at\": \"/word\"", "\"at\": \".\"", "/bindings/b/elements/0/at", "is not a selector of the grammar family")]
+    [InlineData("{ \"node\": \"NAME\" }", "{ \"node\": \"NAMEX\" }", "/bindings/b/elements/0/id/from/node", "names 'NAMEX', which is no rule, alias or terminal")]
+    [InlineData("{ \"node\": \"NAME\" }", "{ \"node\": \"./NAME\" }", "/bindings/b/elements/0/id/from/node", "is not a selector of the grammar family")]
+    [InlineData("\"at\": \"/word\"", "\"line\": \"^(?<w>.*)$\"", "/bindings/b/elements/0", "A rule of the grammar family has 'at' and no 'line'")]
+    [InlineData("\"match\": \"\\\"(?<value>[^\\\"]*)\\\"\"", "\"match\": \"\\\"(?<text>[^\\\"]*)\\\"\"", "/bindings/b/elements/0/attributes/value/match", "has the named group 'value'")]
+    [InlineData("{ \"node\": \"VALUE\",", "{ \"key\": \"VALUE\",", "/bindings/b/elements/0/attributes/value", "A {key} slot is not admitted in the grammar family")]
+    [InlineData("{ \"node\": \"VALUE\",", "{ \"attribute\": \"VALUE\",", "/bindings/b/elements/0/attributes/value", "A {attribute} slot is not admitted in the grammar family")]
+    [InlineData("{ \"node\": \"VALUE\",", "{ \"text\": true,", "/bindings/b/elements/0/attributes/value", "A {text} slot is not admitted in the grammar family")]
+    [InlineData("{ \"node\": \"VALUE\",", "{ \"group\": \"VALUE\",", "/bindings/b/elements/0/attributes/value", "A {group} slot is not admitted in the grammar family")]
+    [InlineData("{ \"node\": \"VALUE\",", "{ \"continuation\": true,", "/bindings/b/elements/0/attributes/value", "A {continuation} slot is not admitted in the grammar family")]
+    [InlineData("{ \"node\": \"VALUE\",", "{ \"capture\": \"VALUE\",", "/bindings/b/elements/0/attributes/value", "A {capture} slot is not admitted in the grammar family")]
+    public void ARuleOutsideTheFamily_IsRefused(string kept, string planted, string pointer, string named)
+    {
+        // Arrange.
+        Assert.Empty(Load(Binding(Words, WordRule)));
+
+        // Act.
+        var problems = Load(Binding(Words, WordRule.Replace(kept, planted, StringComparison.Ordinal)));
+
+        // Assert.
+        var problem = Assert.Single(problems, p => p.Severity == LoadSeverity.Error);
+        Assert.Equal(pointer, problem.Pointer);
+        Assert.Contains(named, problem.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ABodyOfTheFamilyWithoutAGrammar_IsRefused()
+    {
+        // Arrange.
+        var binding = Binding(Words);
+        Assert.Empty(Load(binding));
+        var grammar = $", \"grammar\": {JsonSerializer.Serialize(Words)}, \"recover\": {{ \"unit\": \"unit\", \"sync\": [\"_NL\"] }}";
+        Assert.Contains(grammar, binding, StringComparison.Ordinal);
+
+        // Act.
+        var problems = Load(binding.Replace(grammar, "", StringComparison.Ordinal));
+
+        // Assert.
+        var problem = Assert.Single(problems, p => p.Severity == LoadSeverity.Error);
+        Assert.Equal("/bindings/b/body", problem.Pointer);
+        Assert.Equal("A body of the grammar family carries its grammar (FBL 0.9 4.9).", problem.Message);
+    }
+
+    [Fact]
+    public void AGrammarOnABodyOfAnotherFamily_IsRefused()
+    {
+        // Arrange.
+        var yaml = """{ "fbl": "0.9", "bindings": { "b": { "claims": { "extensions": [".y"] }, "body": { "kind": "file", "family": "yaml" }, "reader": "declared", "elements": [ { "name": "item", "type": "Item", "at": "/items/*", "attributes": { "name": { "key": "name" } } } ] } } }""";
+        Assert.Empty(Load(yaml));
+
+        // Act.
+        var problems = Load(yaml.Replace("\"family\": \"yaml\"", "\"family\": \"yaml\", \"grammar\": \"start: NAME\\nNAME: /[a-z]+/\\n\"", StringComparison.Ordinal));
+
+        // Assert.
+        var problem = Assert.Single(problems, p => p.Severity == LoadSeverity.Error);
+        Assert.Equal("/bindings/b/body/grammar", problem.Pointer);
+        Assert.Equal("A grammar is given only on a body of the grammar family (FBL 0.9 4.9).", problem.Message);
+    }
+
+    [Fact]
+    public void ANodeSlotInAnotherFamily_IsRefused()
+    {
+        // Arrange.
+        var yaml = """{ "fbl": "0.9", "bindings": { "b": { "claims": { "extensions": [".y"] }, "body": { "kind": "file", "family": "yaml" }, "reader": "declared", "elements": [ { "name": "item", "type": "Item", "at": "/items/*", "attributes": { "name": { "key": "name" } } } ] } } }""";
+        Assert.Empty(Load(yaml));
+
+        // Act.
+        var problems = Load(yaml.Replace("{ \"key\": \"name\" }", "{ \"node\": \"name\" }", StringComparison.Ordinal));
+
+        // Assert.
+        var problem = Assert.Single(problems, p => p.Severity == LoadSeverity.Error);
+        Assert.Equal("/bindings/b/elements/0/attributes/name/node", problem.Pointer);
+        Assert.Equal("A {node} slot is admitted only in the grammar family (FBL 0.9 4.9).", problem.Message);
+    }
+
+    /// <summary>
+    /// Requirement 8.1: FBL 0.11's <c>recover.nested</c> is a construct of the family newer than the 0.9 the library reads,
+    /// so the binding loads with FBL §2.7's warning, which says it is not read, and with nothing else.
+    /// </summary>
+    [Fact]
+    public void ABindingWithANewerConstructOfTheFamily_LoadsWithTheWarningAndTheConstructIgnored()
+    {
+        // Arrange.
+        var newer = Binding(Words, WordRule)
+            .Replace("\"fbl\": \"0.9\"", "\"fbl\": \"0.11\"", StringComparison.Ordinal)
+            .Replace("\"sync\": [\"_NL\"] }", "\"sync\": [\"_NL\"], \"nested\": { \"open\": \"{\", \"close\": \"}\" } }", StringComparison.Ordinal);
+
+        // Act.
+        var problems = FblDocumentLoader.Load(Encoding.UTF8.GetBytes(newer), null, out var document);
+
+        // Assert.
+        var warning = Assert.Single(problems);
+        Assert.Equal(new LoadDiagnostic("/fbl", LoadSeverity.Warning, "This runtime knows FBL up to 0.9; what FBL 0.11 adds is not read (FBL §2.7)."), warning);
+        var body = Assert.IsType<FblDocument>(document).Bindings["b"].Body;
+        Assert.Equal("unit", body.Grammar!.Recover!.Unit);
+        Assert.Equal(["_NL"], body.Grammar.Recover.Sync);
+    }
+
+    /// <summary>
+    /// Requirement 8.2 (FBL §15.1): a binding refused under Requirement 2 yields no document, and its problems are the
+    /// reason a host gives when it opens the binding's documents read-only, each with its pointer and words.
+    /// </summary>
+    [Fact]
+    public void ARefusedBindingOfTheFamily_YieldsNoDocumentAndItsReason()
+    {
+        // Arrange.
+        var refused = Binding(Words, WordRule.Replace("\"at\": \"/word\"", "\"at\": \"/wurd\"", StringComparison.Ordinal));
+
+        // Act.
+        var problems = FblDocumentLoader.Load(Encoding.UTF8.GetBytes(refused), null, out var document);
+
+        // Assert.
+        Assert.Null(document);
+        Assert.Equal(
+            "error at /bindings/b/elements/0/at: The selector '/wurd' names 'wurd', which is no rule, alias or terminal of the grammar (FBL 0.9 4.9).",
+            Assert.Single(problems).ToString());
+    }
+
     private static IReadOnlyList<LoadDiagnostic> Load(string json) => FblDocumentLoader.Load(Encoding.UTF8.GetBytes(json), null, out _);
 
     /// <summary>A binding of the family over <paramref name="grammar"/>, whose one rule reads a computed value, so that only its grammar can refuse it.</summary>
-    private static string Binding(string grammar) => Document(JsonSerializer.Serialize(grammar));
+    private static string Binding(string grammar, string rule = DefaultRule) => Document(JsonSerializer.Serialize(grammar), rule);
 
-    private static string BindingWithFile(string file) => Document($$"""{ "file": "{{file}}" }""");
+    private static string BindingWithFile(string file) => Document($$"""{ "file": "{{file}}" }""", DefaultRule);
 
-    private static string Document(string grammar) => $$"""
+    private const string DefaultRule = """{ "name": "word", "type": "Word", "at": "/word", "attributes": { "kind": { "value": "'word'" } } }""";
+
+    private static string Document(string grammar, string rule) => $$"""
         {
           "fbl": "0.9",
           "bindings": {
@@ -254,7 +407,7 @@ public class GrammarLoadingTests
               "claims": { "extensions": [".words"] },
               "body": { "kind": "file", "family": "grammar", "grammar": {{grammar}}, "recover": { "unit": "unit", "sync": ["_NL"] } },
               "reader": "declared",
-              "elements": [ { "name": "word", "type": "Word", "at": "/word", "attributes": { "kind": { "value": "'word'" } } } ]
+              "elements": [ {{rule}} ]
             }
           }
         }

@@ -330,7 +330,7 @@ internal static partial class BindingReader
 
     private static Slot? ReadSlot(JsonElement json, string pointer, List<LoadDiagnostic> problems) =>
         ReadKind(json, pointer, "A slot names exactly one place (FBL §3.3).", problems) is { } kind
-            ? new Slot { Kind = kind, Child = JsonProperties.String(json, "child"), Word = JsonProperties.String(json, "word"), Flag = JsonProperties.Bool(json, "flag") }
+            ? new Slot { Kind = kind, Child = JsonProperties.String(json, "child"), Word = JsonProperties.String(json, "word"), Flag = JsonProperties.Bool(json, "flag"), Match = JsonProperties.String(json, "match") }
             : null;
 
     /// <summary>The one kind of slot <paramref name="json"/> names; none or several are reported as <paramref name="problem"/>.</summary>
@@ -345,6 +345,7 @@ internal static partial class BindingReader
         if (JsonProperties.String(json, "capture") is { } capture) kinds.Add(new SlotKind.Capture(capture));
         if (JsonProperties.String(json, "value") is { } value) kinds.Add(new SlotKind.Value(value));
         if (JsonProperties.Bool(json, "continuation")) kinds.Add(new SlotKind.Continuation());
+        if (JsonProperties.String(json, "node") is { } node) kinds.Add(new SlotKind.Node(node));
         if (kinds is [var kind]) return kind;
         problems.Add(new LoadDiagnostic(pointer, LoadSeverity.Error, problem));
         return null;
@@ -359,6 +360,7 @@ internal static partial class BindingReader
             Child = JsonProperties.String(json, "child"),
             Word = JsonProperties.String(json, "word"),
             Flag = JsonProperties.Bool(json, "flag"),
+            Match = JsonProperties.String(json, "match"),
             Empty = Setting<EmptyRule>(json, "empty", pointer, "An attribute's empty", problems) ?? EmptyRule.Keep,
             Absent = ReadAbsent(json, pointer, problems),
             Default = json.TryGetProperty("default", out var def) ? def.Clone() : null,
