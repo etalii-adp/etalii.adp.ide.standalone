@@ -2,7 +2,7 @@ using System.Text;
 using EtAlii.Adp.Specification.Fbl.Text;
 using EtAlii.Lark;
 
-namespace EtAlii.Adp.Specification.Fbl.Files.Grammar;
+namespace EtAlii.Adp.Specification.Fbl.Grammar;
 
 /// <summary>What reading a body by its grammar gave: the tree, its nodes in document order, its tokens and its comments, in bytes.</summary>
 internal sealed record GrammarReading(GrammarNode Root, IReadOnlyList<GrammarNode> Nodes, IReadOnlyList<Span> Tokens, IReadOnlyList<Span> Comments);

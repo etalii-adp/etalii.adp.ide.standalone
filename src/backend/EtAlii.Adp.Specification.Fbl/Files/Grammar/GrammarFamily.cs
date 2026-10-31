@@ -5,7 +5,7 @@ using EtAlii.Adp.Specification.Fbl.Planning;
 using EtAlii.Adp.Specification.Fbl.Rules;
 using EtAlii.Adp.Specification.Fbl.Text;
 
-namespace EtAlii.Adp.Specification.Fbl.Files.Grammar;
+namespace EtAlii.Adp.Specification.Fbl.Grammar;
 
 /// <summary>
 /// The <c>grammar</c> family (FBL 0.9 §4.9): a body read by the grammar its binding carries, built by <c>EtAlii.Lark</c>.

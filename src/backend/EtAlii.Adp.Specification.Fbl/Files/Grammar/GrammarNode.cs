@@ -1,6 +1,6 @@
 using EtAlii.Adp.Specification.Fbl.Rules;
 
-namespace EtAlii.Adp.Specification.Fbl.Files.Grammar;
+namespace EtAlii.Adp.Specification.Fbl.Grammar;
 
 /// <summary>
 /// A node or token of the tree a grammar gives a body (FBL 0.9 §4.9, ATD §4.5): named by its rule, the alias of the

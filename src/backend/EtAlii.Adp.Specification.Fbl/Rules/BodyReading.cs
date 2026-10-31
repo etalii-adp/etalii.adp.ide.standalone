@@ -88,7 +88,7 @@ internal sealed class BodyReading
             Documents.Family.Yaml => new YamlFamily(text, binding, options),
             Documents.Family.Json => new JsonFamily(text, binding, options),
             Documents.Family.Xml => new XmlFamily(text, binding, options),
-            Documents.Family.Grammar => new Files.Grammar.GrammarFamily(text, binding, options),
+            Documents.Family.Grammar => new Grammar.GrammarFamily(text, binding, options),
             _ => throw new ArgumentOutOfRangeException(nameof(binding)),
         };
     }
