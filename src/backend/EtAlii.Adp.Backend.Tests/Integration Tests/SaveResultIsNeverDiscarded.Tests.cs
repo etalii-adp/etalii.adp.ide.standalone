@@ -54,6 +54,7 @@ public partial class SaveResultIsNeverDiscardedTests
     [
         ("writer", "an IFileWriter's SaveAsync completes or throws and carries no result; it is what a store's save calls, not a store's save"),
         ("_writer", "an IFileWriter's SaveAsync completes or throws and carries no result; it is what a store's save calls, not a store's save"),
+        ("Lark", "EtAlii.Lark's Lark.Save writes a built parser to a stream and returns nothing; the FBL grammar family saves its parser to load it again with lexer callbacks, which is no store's save"),
     ];
 
     /// <summary>

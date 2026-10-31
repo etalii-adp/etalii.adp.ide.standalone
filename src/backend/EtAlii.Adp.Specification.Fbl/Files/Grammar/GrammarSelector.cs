@@ -50,6 +50,46 @@ internal static class GrammarSelector
     public static IEnumerable<string> UnknownNames(IReadOnlyList<GrammarSegment> selector, IReadOnlySet<string> names) =>
         selector.SelectMany(Named).Where(name => !names.Contains(name)).Distinct(StringComparer.Ordinal);
 
+    /// <summary>
+    /// The nodes and tokens <paramref name="selector"/> reaches from <paramref name="from"/>, in document order, each once;
+    /// a test compares the text <paramref name="textOf"/> gives (FBL 0.9 §4.9's table).
+    /// </summary>
+    public static List<GrammarNode> Match(GrammarNode from, IReadOnlyList<GrammarSegment> selector, Func<GrammarNode, string> textOf)
+    {
+        var found = new HashSet<GrammarNode>();
+        Walk(from, selector, 0, textOf, found);
+        return [.. found.OrderBy(node => node.Order)];
+    }
+
+    private static void Walk(GrammarNode node, IReadOnlyList<GrammarSegment> selector, int index, Func<GrammarNode, string> textOf, HashSet<GrammarNode> found)
+    {
+        if (index == selector.Count)
+        {
+            found.Add(node);
+            return;
+        }
+        var segment = selector[index];
+        switch (segment.Kind)
+        {
+            case GrammarSegmentKind.Self:
+                Walk(node, selector, index + 1, textOf, found);
+                return;
+            case GrammarSegmentKind.Descendants:
+                Walk(node, selector, index + 1, textOf, found);
+                foreach (var child in node.Children.Cast<GrammarNode>()) Walk(child, selector, index, textOf, found);
+                return;
+        }
+        foreach (var child in node.Children.Cast<GrammarNode>())
+        {
+            if (segment.Kind == GrammarSegmentKind.Name && (child.Name != segment.Name || !Passes(child, segment, textOf))) continue;
+            Walk(child, selector, index + 1, textOf, found);
+        }
+    }
+
+    /// <summary>Whether <paramref name="node"/> has, at the test's path, a node or token whose text is the test's value.</summary>
+    private static bool Passes(GrammarNode node, GrammarSegment segment, Func<GrammarNode, string> textOf) =>
+        segment.TestPath is not { } path || Match(node, path, textOf).Any(reached => textOf(reached) == segment.TestValue);
+
     private static IEnumerable<string> Named(GrammarSegment segment) =>
         segment.Kind == GrammarSegmentKind.Name ? [segment.Name, .. (segment.TestPath ?? []).SelectMany(Named)] : [];
 

@@ -22,9 +22,16 @@ public class ConformanceFixturesTests
     /// <summary>
     /// The fixtures of FBL 0.9's grammar family and of FBL 0.13's split slot (etalii.adp spec 072), vendored before the
     /// library reads the family and held out of the theories until it does. Each task of the specification takes its
-    /// fixtures out of this set; <see cref="TheGrammarFixturesLoadButAreNotRead"/> holds what is left.
+    /// fixtures out of this set; <see cref="ThePendingGrammarFixturesDoNotPassYet"/> holds what is left.
     /// </summary>
     private static readonly HashSet<string> Pending = new(StringComparer.Ordinal) { "grammar-split-slot", "w3c-turtle-grammar", "w3c-turtle-grammar-partial" };
+
+    /// <summary>
+    /// The pending fixtures whose reading and unchanged save the library passes already (etalii.adp spec 072, task T004),
+    /// run by <see cref="ThePendingFixtureIsRead"/>, <see cref="EveryByteOfTheInputBelongsToTheReading"/> and
+    /// <see cref="AnUnchangedSaveOfTheInputPlansNoSpliceAndKeepsItsBytes"/>; their edits wait for task T006.
+    /// </summary>
+    private static readonly HashSet<string> Reading = new(StringComparer.Ordinal) { "w3c-turtle-grammar" };
 
     /// <summary>The fixtures copied in etalii.adp's own layout, beside the Knowledge designer's.</summary>
     private const string AdpFixtures = "etalii.adp/specifications/fbl/fixtures";
@@ -53,6 +60,17 @@ public class ConformanceFixturesTests
         }
     }
 
+    /// <summary>Every fixture whose reading the library passes: those of <see cref="Fixtures"/>, and the pending ones of <see cref="Reading"/>.</summary>
+    public static TheoryData<string> ReadFixtures()
+    {
+        var data = new TheoryData<string>();
+        foreach (var name in Fixtures().Select(row => row.Data).Concat(Reading)) data.Add(name);
+        return data;
+    }
+
+    /// <summary>The pending fixtures of <see cref="Reading"/>, for their reading alone.</summary>
+    public static TheoryData<string> PendingReadFixtures() => [.. Reading.Order(StringComparer.Ordinal)];
+
     /// <summary>The folder of the fixture <paramref name="name"/>, as <see cref="Fixtures"/> names it.</summary>
     private static string Folder(string name) =>
         name.StartsWith(AdpFixtures + "/", StringComparison.Ordinal)
@@ -67,11 +85,11 @@ public class ConformanceFixturesTests
 
     /// <summary>
     /// Requirement 1.1 of etalii.adp spec 072: the gap is seen before it is closed. The library loads a binding of the
-    /// family since task T003, so every fixture still held out of the theories is a fixture whose binding loads and
-    /// whose body the library does not read yet; a pending fixture that is refused, or that is read, fails here.
+    /// family since task T003 and reads its bodies since task T004, so every fixture still held out of the theories is one
+    /// whose binding loads and that does not pass whole yet; a pending fixture that is refused, or that passes, fails here.
     /// </summary>
     [Fact]
-    public void TheGrammarFixturesLoadButAreNotRead()
+    public void ThePendingGrammarFixturesDoNotPassYet()
     {
         foreach (var name in Pending)
         {
@@ -82,13 +100,22 @@ public class ConformanceFixturesTests
             var path = Path.GetFullPath(Path.Combine(folder, reference[..reference.LastIndexOf('#')]));
 
             // Act.
-            var problems = FblDocumentLoader.Load(path, out var document);
+            var problems = FblDocumentLoader.Load(path, out _);
+            var failure = Record.Exception(() => Run(name, folder, File.ReadAllBytes(Path.Combine(folder, "fixture.json"))));
 
             // Assert.
             Assert.DoesNotContain(problems, p => p.Severity == LoadSeverity.Error);
-            var binding = Assert.Single(Assert.IsType<FblDocument>(document).Bindings.Values);
-            Assert.Throws<ArgumentOutOfRangeException>(() => Rules.BodyReading.Read("x"u8.ToArray(), binding, new FblOptions { FileName = "body" }));
+            Assert.True(failure is not null, $"The pending fixture {name} passes; take it out of Pending.");
         }
+    }
+
+    /// <summary>A pending fixture of <see cref="Reading"/>: its reading, before its edits pass (etalii.adp spec 072, Requirements 4.1 to 4.8).</summary>
+    [Theory]
+    [MemberData(nameof(PendingReadFixtures))]
+    public void ThePendingFixtureIsRead(string name)
+    {
+        var folder = Folder(name);
+        Run(name, folder, File.ReadAllBytes(Path.Combine(folder, "fixture.json")), steps: false);
     }
 
     [Fact]
@@ -151,7 +178,7 @@ public class ConformanceFixturesTests
     }
 
     /// <summary>Runs a fixture's reading and steps; its binding and input are found from <paramref name="folder"/>.</summary>
-    private static void Run(string name, string folder, byte[] fixtureBytes)
+    private static void Run(string name, string folder, byte[] fixtureBytes, bool steps = true)
     {
         // Arrange.
         var fixturePath = Path.Combine(folder, "fixture.json");
@@ -168,6 +195,7 @@ public class ConformanceFixturesTests
 
         // Act and assert: the reading.
         if (root.TryGetProperty("read", out var read)) AssertRead(subject, read, name, binding);
+        if (!steps) return;
 
         // Act and assert: every step.
         var index = 0;
@@ -224,7 +252,7 @@ public class ConformanceFixturesTests
     }
 
     [Theory]
-    [MemberData(nameof(Fixtures))]
+    [MemberData(nameof(ReadFixtures))]
     public void EveryByteOfTheInputBelongsToTheReading(string name)
     {
         // Arrange.
@@ -244,7 +272,7 @@ public class ConformanceFixturesTests
     }
 
     [Theory]
-    [MemberData(nameof(Fixtures))]
+    [MemberData(nameof(ReadFixtures))]
     public void AnUnchangedSaveOfTheInputPlansNoSpliceAndKeepsItsBytes(string name)
     {
         // Arrange.
