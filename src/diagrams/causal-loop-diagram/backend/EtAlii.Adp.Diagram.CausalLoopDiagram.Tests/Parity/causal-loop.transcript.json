@@ -6551,7 +6551,7 @@
     },
     {
       "document": "diagrams/causal-loop-diagram/examples/mental-health/mental-health.cld",
-      "sha256": "3ce83274402681e40dd135787ddf65d4636944ac9a92fab86067dbcf060a5506",
+      "sha256": "047f1d21ef62fa14bd28c94d457cbbb6de6438c5bde59b21f73ded315fdf152a",
       "registration": "mental-health.adp, sha256 5a33260d6ecb4e78330f18c1be256c52be04cb23dca59dd1e094c35cbe1d4272",
       "menus": [
         [
@@ -6892,7 +6892,7 @@
           "rows": [
             "causal-loop.variable-label | Label | \"Norm: don't make a fuss\" | Line | editable | group Identity",
             "causal-loop.variable-id | Identifier | \"toughNorm\" | Line | editable | group Identity",
-            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-start | Starting level | \"0.8\" | Line | editable | group Flow page",
             "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
@@ -6912,7 +6912,7 @@
           "rows": [
             "causal-loop.variable-label | Label | \"Legal limits on discussing mental health\" | Line | editable | group Identity",
             "causal-loop.variable-id | Identifier | \"legalFrame\" | Line | editable | group Identity",
-            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-start | Starting level | \"0.8\" | Line | editable | group Flow page",
             "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
@@ -6922,7 +6922,7 @@
           "rows": [
             "causal-loop.variable-label | Label | \"Dependence on insurers and premiums\" | Line | editable | group Identity",
             "causal-loop.variable-id | Identifier | \"insurerDependence\" | Line | editable | group Identity",
-            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-start | Starting level | \"0.7\" | Line | editable | group Flow page",
             "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
@@ -6932,7 +6932,7 @@
           "rows": [
             "causal-loop.variable-label | Label | \"Ageing population\" | Line | editable | group Identity",
             "causal-loop.variable-id | Identifier | \"ageing\" | Line | editable | group Identity",
-            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-start | Starting level | \"0.7\" | Line | editable | group Flow page",
             "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
@@ -7695,25 +7695,25 @@
           "do": "execute causal-loop.toggle-delay on link:emotionSuppression|shortTermFunctioning",
           "answer": "ok",
           "hunks": [
-            "@71 -1 +\"link emotionSuppression -> shortTermFunctioning + delayed \\\"relativeren als coping\\\"\\r\\n\""
+            "@72 -1 +\"link emotionSuppression -> shortTermFunctioning + delayed \\\"relativeren als coping\\\"\\r\\n\""
           ],
-          "sha256": "efb223b63e0de1d1a5be579add30837d27cda8d839d3725052c475848b6087c8"
+          "sha256": "796ff97b19d1b9f274dd38ef68f80ee5bf8afd38625081ab2087cc1246237951"
         },
         {
           "do": "execute causal-loop.flip-curvature on link:emotionSuppression|shortTermFunctioning",
           "answer": "ok",
           "hunks": [
-            "@71 -1 +\"link emotionSuppression -> shortTermFunctioning + delayed flipped \\\"relativeren als coping\\\"\\r\\n\""
+            "@72 -1 +\"link emotionSuppression -> shortTermFunctioning + delayed flipped \\\"relativeren als coping\\\"\\r\\n\""
           ],
-          "sha256": "334588bb2cfebe87ad7d4dac021fb1a05788bc96e294b61f79da11e824d42553"
+          "sha256": "9c8cf8572900d0634066fa8e2aa4f55ff556c0edcf21f34e93f4ec0855d3f013"
         },
         {
           "do": "set link:emotionSuppression|shortTermFunctioning causal-loop.link-label = \"Parity note\"",
           "answer": "ok",
           "hunks": [
-            "@71 -1 +\"link emotionSuppression -> shortTermFunctioning + delayed flipped \\\"Parity note\\\"\\r\\n\""
+            "@72 -1 +\"link emotionSuppression -> shortTermFunctioning + delayed flipped \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "705218b8a958ab980f8f1d75570c600986c43bef23296e12428c633709ba2f91"
+          "sha256": "848398545635b97168777983c88a564be36e1962cb2ee0d293f2b59e3d72d8ed"
         },
         {
           "do": "set link:emotionSuppression|shortTermFunctioning causal-loop.link-weight = \"heavy\"",
@@ -7724,9 +7724,9 @@
           "do": "set link:emotionSuppression|shortTermFunctioning causal-loop.link-weight = \"1e21\"",
           "answer": "ok",
           "hunks": [
-            "@71 -1 +\"link emotionSuppression -> shortTermFunctioning + delayed flipped weight=1e+21 \\\"Parity note\\\"\\r\\n\""
+            "@72 -1 +\"link emotionSuppression -> shortTermFunctioning + delayed flipped weight=1e+21 \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "03ee7965b3b7ce2fbcb8b5ffab933603a1f18257a53c753fb31c8a2693760cd0"
+          "sha256": "3a1b1f43caaaef05cbb43265ffb67b5e17a254eccb531863a09afee581ee69d5"
         },
         {
           "do": "describe link:emotionSuppression|shortTermFunctioning",
@@ -7737,17 +7737,17 @@
           "do": "set link:emotionSuppression|shortTermFunctioning causal-loop.link-weight = \"0.000001\"",
           "answer": "ok",
           "hunks": [
-            "@71 -1 +\"link emotionSuppression -> shortTermFunctioning + delayed flipped weight=0.000001 \\\"Parity note\\\"\\r\\n\""
+            "@72 -1 +\"link emotionSuppression -> shortTermFunctioning + delayed flipped weight=0.000001 \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "0159d28af947c200e52fdad0ef68f8f70246e0e0602e6819c59254814c1e8dba"
+          "sha256": "f0ec89fa486d3e63c051f7051270f3dd91bfe2abbbcf596572aef997bfa87434"
         },
         {
           "do": "set link:emotionSuppression|shortTermFunctioning causal-loop.link-weight = \"\"",
           "answer": "ok",
           "hunks": [
-            "@71 -1 +\"link emotionSuppression -> shortTermFunctioning + delayed flipped \\\"Parity note\\\"\\r\\n\""
+            "@72 -1 +\"link emotionSuppression -> shortTermFunctioning + delayed flipped \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "705218b8a958ab980f8f1d75570c600986c43bef23296e12428c633709ba2f91"
+          "sha256": "848398545635b97168777983c88a564be36e1962cb2ee0d293f2b59e3d72d8ed"
         },
         {
           "do": "set link:emotionSuppression|shortTermFunctioning causal-loop.link-polarity = \"sideways\"",
@@ -7758,9 +7758,9 @@
           "do": "set link:emotionSuppression|shortTermFunctioning causal-loop.link-polarity = \"unstated\"",
           "answer": "ok",
           "hunks": [
-            "@71 -1 +\"link emotionSuppression -> shortTermFunctioning delayed flipped \\\"Parity note\\\"\\r\\n\""
+            "@72 -1 +\"link emotionSuppression -> shortTermFunctioning delayed flipped \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "c5020a8033b8d6e1830aed7a5c563ea71c904ea81b20b6b0d9a1ffeed040cacd"
+          "sha256": "d63b2c1c6b301a40374c7c9b7bf73349add47e16a4fd9914bfec81e196fa6bc0"
         },
         {
           "do": "set link:emotionSuppression|shortTermFunctioning causal-loop.link-delayed = \"true\"",
@@ -7776,17 +7776,17 @@
           "do": "execute causal-loop.make-positive on link:emotionSuppression|shortTermFunctioning",
           "answer": "ok",
           "hunks": [
-            "@71 -1 +\"link emotionSuppression -> shortTermFunctioning + delayed flipped \\\"Parity note\\\"\\r\\n\""
+            "@72 -1 +\"link emotionSuppression -> shortTermFunctioning + delayed flipped \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "705218b8a958ab980f8f1d75570c600986c43bef23296e12428c633709ba2f91"
+          "sha256": "848398545635b97168777983c88a564be36e1962cb2ee0d293f2b59e3d72d8ed"
         },
         {
           "do": "execute causal-loop.make-negative on link:emotionSuppression|shortTermFunctioning",
           "answer": "ok",
           "hunks": [
-            "@71 -1 +\"link emotionSuppression -> shortTermFunctioning - delayed flipped \\\"Parity note\\\"\\r\\n\""
+            "@72 -1 +\"link emotionSuppression -> shortTermFunctioning - delayed flipped \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "8639e2bc4dc022df6528dae1ec5695375170e8d65859015e358c5d60ed0fab64"
+          "sha256": "28530dc1624453f85a546bf0f7349704dd82323adb9c42305e6568a335307082"
         },
         {
           "do": "execute causal-loop.make-negative on link:emotionSuppression|shortTermFunctioning",
@@ -7802,17 +7802,17 @@
           "do": "commit causal-loop.rename-loop on loop:R1 = \"Parity loop\"",
           "answer": "ok",
           "hunks": [
-            "@75 -1 +\"loop R1 \\\"Parity loop\\\" emotionSuppression shortTermFunctioning copingConfirmation\\r\\n\""
+            "@76 -1 +\"loop R1 \\\"Parity loop\\\" emotionSuppression shortTermFunctioning copingConfirmation\\r\\n\""
           ],
-          "sha256": "70e4ae0afc9ef23bd6c9c42d2882b770a34343a630ee3e0f3c35b6f9b61b9657"
+          "sha256": "385368b2752fca81493b31db7125ea57d15835d041073abe593a7f9340034e92"
         },
         {
           "do": "set loop:R1 causal-loop.loop-name = \"Parity name\"",
           "answer": "ok",
           "hunks": [
-            "@75 -1 +\"loop R1 \\\"Parity name\\\" emotionSuppression shortTermFunctioning copingConfirmation\\r\\n\""
+            "@76 -1 +\"loop R1 \\\"Parity name\\\" emotionSuppression shortTermFunctioning copingConfirmation\\r\\n\""
           ],
-          "sha256": "cae62aa7baf0f0b30bb984627447cd51407a29b41fd15af6ab284ab4d9603391"
+          "sha256": "f3237e9a0524a72dcda98fddfebadebe5d289fd5559bba9a146ef87f446efafc"
         },
         {
           "do": "set loop:R1 causal-loop.loop-name = \"Has \\\"quote\\\"\"",
@@ -7843,9 +7843,9 @@
           "do": "set loop:R1 causal-loop.loop-identifier = \"B99\"",
           "answer": "ok",
           "hunks": [
-            "@75 -1 +\"loop B99 \\\"Parity name\\\" emotionSuppression shortTermFunctioning copingConfirmation\\r\\n\""
+            "@76 -1 +\"loop B99 \\\"Parity name\\\" emotionSuppression shortTermFunctioning copingConfirmation\\r\\n\""
           ],
-          "sha256": "d6b833890dd53e0e203ccc0f27e4843e6f6590cf14370b2b2e4fb42a1818d7d4"
+          "sha256": "c8121b02ebf96c56750d4d05281921170c43126bb55096a3d1b16e97ae9a4b14"
         },
         {
           "do": "execute causal-loop.rename-variable on variable:selfDirection",
@@ -7866,9 +7866,9 @@
           "do": "commit causal-loop.rename-variable on variable:selfDirection = \"Parity renamed\"",
           "answer": "ok",
           "hunks": [
-            "@19 -1 +\"variable selfDirection \\\"Parity renamed\\\"\\r\\n\""
+            "@20 -1 +\"variable selfDirection \\\"Parity renamed\\\"\\r\\n\""
           ],
-          "sha256": "2000f21c84eb4bafd5fb1ab2d88ee5fff45400ad1f3e345eb490d7b9d792fce5"
+          "sha256": "0f40f3a0981460c1b2a8ac959eb4bd2d2480016d7c71a6356ccb9091723bede5"
         },
         {
           "do": "set variable:selfDirection causal-loop.variable-label = \"Say \\\"hi\\\"\"",
@@ -7884,9 +7884,9 @@
           "do": "set variable:selfDirection causal-loop.variable-label = \"Parity label\"",
           "answer": "ok",
           "hunks": [
-            "@19 -1 +\"variable selfDirection \\\"Parity label\\\"\\r\\n\""
+            "@20 -1 +\"variable selfDirection \\\"Parity label\\\"\\r\\n\""
           ],
-          "sha256": "b52c03b4a81fdfec717c5d4280086fb6a24a8a11383559aabccbcf78caf0cf3f"
+          "sha256": "31cb33871f4dd1220e64ad72ad4b687f0bcc9195e8f297f48f22215f61ed87ce"
         },
         {
           "do": "validate causal-loop.add-link on variable:selfDirection = \"nobody\"",
@@ -7907,9 +7907,9 @@
           "do": "commit causal-loop.add-link on variable:selfDirection = \"emotionSuppression\"",
           "answer": "ok",
           "hunks": [
-            "@184 -0 +\"link selfDirection -> emotionSuppression +\\r\\n\""
+            "@185 -0 +\"link selfDirection -> emotionSuppression +\\r\\n\""
           ],
-          "sha256": "549bbe51234f9bc33b633ab2cd87c43c423feceb43f8f08351f2f02b3f1f9011"
+          "sha256": "cbf7e9235cee96798c063f003b46ed5a14a0a7e70553eb71b34dd8f979f7e3f1"
         },
         {
           "do": "commit causal-loop.add-link on variable:selfDirection = \"nobody\"",
@@ -7930,9 +7930,9 @@
           "do": "commit causal-loop.add-loop on variable:selfDirection = \"R99\"",
           "answer": "ok",
           "hunks": [
-            "@187 -0 +\"loop R99 \\\"R99\\\" selfDirection meaning sacrifice progress confidence\\r\\n\""
+            "@188 -0 +\"loop R99 \\\"R99\\\" selfDirection meaning sacrifice progress confidence\\r\\n\""
           ],
-          "sha256": "e5d67c83003f18ebacfefe824b4397cdd5fd24d48ed3adf1e05065717abb3d5a"
+          "sha256": "301754baa45fce2203c3385b92e02ffc7ef4a1b284a7d997ad6fbca25f02e31e"
         },
         {
           "do": "set variable:selfDirection causal-loop.variable-id = \"emotionSuppression\"",
@@ -7953,26 +7953,26 @@
           "do": "set variable:selfDirection causal-loop.variable-id = \"parityId\"",
           "answer": "ok",
           "hunks": [
-            "@19 -1 +\"variable parityId \\\"Parity label\\\"\\r\\n\"",
-            "@96 -2 +\"link confidence -> parityId +\\r\\nlink parityId -> meaning + \\\"back to the perspective\\\"\\r\\n\"",
-            "@99 -1 +\"loop R2 \\\"Perspective carries the cost\\\" meaning sacrifice progress confidence parityId\\r\\n\"",
-            "@108 -1 +\"link parityId -> goalOrientation + \\\"the bridge to suppression\\\"\\r\\n\"",
-            "@122 -1 +\"loop B2 \\\"Goals narrow the view\\\" parityId goalOrientation bigPicture meaning sacrifice progress confidence\\r\\n\"",
-            "@141 -1 +\"link insurerDependence -> parityId -\\r\\n\"",
-            "@143 -1 +\"link ageing -> parityId -\\r\\n\"",
-            "@184 -1 +\"link parityId -> emotionSuppression +\\r\\n\"",
-            "@187 -1 +\"loop R99 \\\"R99\\\" parityId meaning sacrifice progress confidence\\r\\n\""
+            "@20 -1 +\"variable parityId \\\"Parity label\\\"\\r\\n\"",
+            "@97 -2 +\"link confidence -> parityId +\\r\\nlink parityId -> meaning + \\\"back to the perspective\\\"\\r\\n\"",
+            "@100 -1 +\"loop R2 \\\"Perspective carries the cost\\\" meaning sacrifice progress confidence parityId\\r\\n\"",
+            "@109 -1 +\"link parityId -> goalOrientation + \\\"the bridge to suppression\\\"\\r\\n\"",
+            "@123 -1 +\"loop B2 \\\"Goals narrow the view\\\" parityId goalOrientation bigPicture meaning sacrifice progress confidence\\r\\n\"",
+            "@142 -1 +\"link insurerDependence -> parityId -\\r\\n\"",
+            "@144 -1 +\"link ageing -> parityId -\\r\\n\"",
+            "@185 -1 +\"link parityId -> emotionSuppression +\\r\\n\"",
+            "@188 -1 +\"loop R99 \\\"R99\\\" parityId meaning sacrifice progress confidence\\r\\n\""
           ],
-          "sha256": "3f9426dcb9ca781909dfd9a2ae1119a9757d54e4f9175c9891e6aa9d07fc3ebe"
+          "sha256": "c84eff33481735ae3731690eecc674510bc838d1f791368287ddba10eadabaf4"
         },
         {
           "do": "execute causal-loop.connect on rel:emotionSuppression->parityId",
           "answer": "ok",
           "hunks": [
-            "@185 -0 +\"link emotionSuppression -> parityId +\\r\\n\"",
-            "@188 -0 +\"loop R100 \\\"\\\" parityId goalOrientation emotionSuppression\\r\\nloop R101 \\\"\\\" parityId emotionSuppression\\r\\n\""
+            "@186 -0 +\"link emotionSuppression -> parityId +\\r\\n\"",
+            "@189 -0 +\"loop R100 \\\"\\\" parityId goalOrientation emotionSuppression\\r\\nloop R101 \\\"\\\" parityId emotionSuppression\\r\\n\""
           ],
-          "sha256": "b74926692f82e29a4e22eac78d18547995ba455a51da7a5041c41d72c5d38ffc"
+          "sha256": "dd19d25f5e2f810a40c1685db7280eae59b1e5a7cd3d4a7070aaf040c4e8b69f"
         },
         {
           "do": "execute causal-loop.connect on rel:emotionSuppression->parityId",
@@ -7983,10 +7983,10 @@
           "do": "execute causal-loop.connect on rel:parityId->parityId",
           "answer": "ok",
           "hunks": [
-            "@186 -0 +\"link parityId -> parityId +\\r\\n\"",
-            "@191 -0 +\"loop R102 \\\"\\\" parityId\\r\\n\""
+            "@187 -0 +\"link parityId -> parityId +\\r\\n\"",
+            "@192 -0 +\"loop R102 \\\"\\\" parityId\\r\\n\""
           ],
-          "sha256": "7511778c82f2d23fa67dc8397b5f53a966f62f78b6f0e6c39bd7788d742e0b28"
+          "sha256": "4bcde63c8afc16a5ca8c517b7a4bfbfd59cb71ad2194a248229671895c06137f"
         },
         {
           "do": "execute causal-loop.connect on rel:parityId->nobody",
@@ -7997,9 +7997,9 @@
           "do": "execute causal-loop.add-variable on new:240,160",
           "answer": "ok",
           "hunks": [
-            "@65 -0 +\"variable variable1 \\\"Variable 1\\\"\\r\\n\""
+            "@66 -0 +\"variable variable1 \\\"Variable 1\\\"\\r\\n\""
           ],
-          "sha256": "b116f53f0e417c45cb3e7afe02e66bfaff9c5838f225ef1bad7349bcfe1fca2d",
+          "sha256": "878c3a3ba7454a9d6d2a93718100ddb3556be7793d9c948139d55883c6a15a72",
           "registration": {
             "hunks": [
               "@19 -0 +\"  variable:premiumPressure: 700 1200\\r\\n\"",
@@ -8013,9 +8013,9 @@
           "do": "execute causal-loop.add-variable on ",
           "answer": "ok",
           "hunks": [
-            "@66 -0 +\"variable variable2 \\\"Variable 2\\\"\\r\\n\""
+            "@67 -0 +\"variable variable2 \\\"Variable 2\\\"\\r\\n\""
           ],
-          "sha256": "42b277147b5d1e9d7e59869a6c397977964f2ef44305f5f71b7dd68e4989e0e3"
+          "sha256": "c10ba135b4cf873f076eb58516089434c37f3c427aa2b14e3fc044c7e91942a2"
         },
         {
           "do": "move variable:emotionSuppression to (100, 200)",
@@ -8074,17 +8074,17 @@
           "do": "execute causal-loop.remove-link on link:emotionSuppression|shortTermFunctioning",
           "answer": "ok",
           "hunks": [
-            "@73 -1 +\"\""
+            "@74 -1 +\"\""
           ],
-          "sha256": "b7541ed5efa68abf9efff407081937881bbbf98fd90652348ba107b54e11aedb"
+          "sha256": "3c48b117b191021003176c2776a95ad4e101a97011d501a7952df114af6ec759"
         },
         {
           "do": "execute causal-loop.remove-loop on loop:B99",
           "answer": "ok",
           "hunks": [
-            "@76 -1 +\"\""
+            "@77 -1 +\"\""
           ],
-          "sha256": "f81b6fae0c7b154bfda3bda49248953ae55bd98d708e6e97d14a9fa01bb668a2"
+          "sha256": "141ced6d99b44b46a966846ef5cb630eb6ca2e8086c8dc68a037e1369e10e808"
         },
         {
           "do": "execute causal-loop.remove-variable on variable:parityId",
@@ -8095,17 +8095,17 @@
           "do": "commit causal-loop.remove-variable on variable:parityId = \"\"",
           "answer": "ok",
           "hunks": [
-            "@18 -2 +\"\"",
-            "@96 -2 +\"\"",
-            "@99 -1 +\"\"",
-            "@108 -1 +\"\"",
-            "@122 -1 +\"\"",
-            "@141 -1 +\"\"",
-            "@143 -1 +\"\"",
-            "@184 -3 +\"\"",
-            "@189 -4 +\"\""
+            "@19 -2 +\"\"",
+            "@97 -2 +\"\"",
+            "@100 -1 +\"\"",
+            "@109 -1 +\"\"",
+            "@123 -1 +\"\"",
+            "@142 -1 +\"\"",
+            "@144 -1 +\"\"",
+            "@185 -3 +\"\"",
+            "@190 -4 +\"\""
           ],
-          "sha256": "aa83d3a0382d692a5f8dc953fceb9ccd491841c1e77f1dc7d2dbe11bcb223bd1"
+          "sha256": "39737c67d4299dc7482ce427ab565f8d5e88303e7b7689d7db34fb425308c3d9"
         }
       ],
       "undoAll": "28 undone; the original text is NOT back",
@@ -9658,7 +9658,7 @@
     },
     {
       "document": "examples/diagrams/causal-loop-diagram/mental-health/mental-health.cld",
-      "sha256": "86dfb7b374b6006044cfd1e6e19bb1da4f805d9bef31fe56246ce5483912903c",
+      "sha256": "4ec7803cfb378ffe4763753ad5bad82d3c9838bf0562c2c80e42cec44ff9f954",
       "registration": "mental-health.adp, sha256 555aeb0da62911a2227a5f673e49b804771f8ebde2cf98e57be580a940cebd87",
       "menus": [
         [
@@ -10027,7 +10027,7 @@
           "rows": [
             "causal-loop.variable-label | Label | \"Norm: don't make a fuss\" | Line | editable | group Identity",
             "causal-loop.variable-id | Identifier | \"toughNorm\" | Line | editable | group Identity",
-            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-start | Starting level | \"0.8\" | Line | editable | group Flow page",
             "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
@@ -10047,7 +10047,7 @@
           "rows": [
             "causal-loop.variable-label | Label | \"Legal limits on discussing mental health\" | Line | editable | group Identity",
             "causal-loop.variable-id | Identifier | \"legalFrame\" | Line | editable | group Identity",
-            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-start | Starting level | \"0.8\" | Line | editable | group Flow page",
             "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
@@ -10057,7 +10057,7 @@
           "rows": [
             "causal-loop.variable-label | Label | \"Dependence on insurers and premiums\" | Line | editable | group Identity",
             "causal-loop.variable-id | Identifier | \"insurerDependence\" | Line | editable | group Identity",
-            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-start | Starting level | \"0.7\" | Line | editable | group Flow page",
             "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
@@ -10067,7 +10067,7 @@
           "rows": [
             "causal-loop.variable-label | Label | \"Ageing population\" | Line | editable | group Identity",
             "causal-loop.variable-id | Identifier | \"ageing\" | Line | editable | group Identity",
-            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-start | Starting level | \"0.7\" | Line | editable | group Flow page",
             "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
@@ -10830,25 +10830,25 @@
           "do": "execute causal-loop.toggle-delay on link:emotionSuppression|shortTermFunctioning",
           "answer": "ok",
           "hunks": [
-            "@71 -1 +\"link emotionSuppression -> shortTermFunctioning + delayed \\\"relativeren als coping\\\"\\r\\n\""
+            "@72 -1 +\"link emotionSuppression -> shortTermFunctioning + delayed \\\"relativeren als coping\\\"\\r\\n\""
           ],
-          "sha256": "26bcbdb1b9b4efddf1f578c469451b01311438f466c7045a28d5ec7d0914ba89"
+          "sha256": "e32d193f98a8a5f46a6dfb2e2c460618a9b87978dff58eb9b52fe992b28e6653"
         },
         {
           "do": "execute causal-loop.flip-curvature on link:emotionSuppression|shortTermFunctioning",
           "answer": "ok",
           "hunks": [
-            "@71 -1 +\"link emotionSuppression -> shortTermFunctioning + delayed flipped \\\"relativeren als coping\\\"\\r\\n\""
+            "@72 -1 +\"link emotionSuppression -> shortTermFunctioning + delayed flipped \\\"relativeren als coping\\\"\\r\\n\""
           ],
-          "sha256": "f55edb8d5a083c3d08b80f9d0571e0fc5b3757e787b4989498c991b197562eac"
+          "sha256": "6c8a0d5ea1102cd48198c820565d8b3daf8a1a7daaaec750b4a046586e7ac505"
         },
         {
           "do": "set link:emotionSuppression|shortTermFunctioning causal-loop.link-label = \"Parity note\"",
           "answer": "ok",
           "hunks": [
-            "@71 -1 +\"link emotionSuppression -> shortTermFunctioning + delayed flipped \\\"Parity note\\\"\\r\\n\""
+            "@72 -1 +\"link emotionSuppression -> shortTermFunctioning + delayed flipped \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "20348f80a677bc4093ae1b9411549a03d67267d97b5a11b18118cee29f9be16b"
+          "sha256": "bad5602ca0fa0f5b3773a114d10d6f0c8fbccb73ab5fdad73fc46325bb8f3fb1"
         },
         {
           "do": "set link:emotionSuppression|shortTermFunctioning causal-loop.link-weight = \"heavy\"",
@@ -10859,9 +10859,9 @@
           "do": "set link:emotionSuppression|shortTermFunctioning causal-loop.link-weight = \"1e21\"",
           "answer": "ok",
           "hunks": [
-            "@71 -1 +\"link emotionSuppression -> shortTermFunctioning + delayed flipped weight=1e+21 \\\"Parity note\\\"\\r\\n\""
+            "@72 -1 +\"link emotionSuppression -> shortTermFunctioning + delayed flipped weight=1e+21 \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "5d8f80e44454eddc2ebb87ae96c3a75877736b1c6fa059b80f5dbd6001dd3666"
+          "sha256": "90ef8237209dbb744d12da04f9aa727963bea31cd5240589ad0772b4a66ec203"
         },
         {
           "do": "describe link:emotionSuppression|shortTermFunctioning",
@@ -10872,17 +10872,17 @@
           "do": "set link:emotionSuppression|shortTermFunctioning causal-loop.link-weight = \"0.000001\"",
           "answer": "ok",
           "hunks": [
-            "@71 -1 +\"link emotionSuppression -> shortTermFunctioning + delayed flipped weight=0.000001 \\\"Parity note\\\"\\r\\n\""
+            "@72 -1 +\"link emotionSuppression -> shortTermFunctioning + delayed flipped weight=0.000001 \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "26f73f71072d53ff472be9301ced5ce9c7d882a08d97517b5328c0124103de80"
+          "sha256": "97fdbd8f6f133190e989601010697f261651aaf1c889590fef2cab602e3a5f94"
         },
         {
           "do": "set link:emotionSuppression|shortTermFunctioning causal-loop.link-weight = \"\"",
           "answer": "ok",
           "hunks": [
-            "@71 -1 +\"link emotionSuppression -> shortTermFunctioning + delayed flipped \\\"Parity note\\\"\\r\\n\""
+            "@72 -1 +\"link emotionSuppression -> shortTermFunctioning + delayed flipped \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "20348f80a677bc4093ae1b9411549a03d67267d97b5a11b18118cee29f9be16b"
+          "sha256": "bad5602ca0fa0f5b3773a114d10d6f0c8fbccb73ab5fdad73fc46325bb8f3fb1"
         },
         {
           "do": "set link:emotionSuppression|shortTermFunctioning causal-loop.link-polarity = \"sideways\"",
@@ -10893,9 +10893,9 @@
           "do": "set link:emotionSuppression|shortTermFunctioning causal-loop.link-polarity = \"unstated\"",
           "answer": "ok",
           "hunks": [
-            "@71 -1 +\"link emotionSuppression -> shortTermFunctioning delayed flipped \\\"Parity note\\\"\\r\\n\""
+            "@72 -1 +\"link emotionSuppression -> shortTermFunctioning delayed flipped \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "e9b6d9a3377eed4b06afdd7f51c969ef879a90a014ee17003bb3466248210d26"
+          "sha256": "8063fbbcab2aa6d4ed988326d024a3f42b81198aa70565cebb354179718d31c8"
         },
         {
           "do": "set link:emotionSuppression|shortTermFunctioning causal-loop.link-delayed = \"true\"",
@@ -10911,17 +10911,17 @@
           "do": "execute causal-loop.make-positive on link:emotionSuppression|shortTermFunctioning",
           "answer": "ok",
           "hunks": [
-            "@71 -1 +\"link emotionSuppression -> shortTermFunctioning + delayed flipped \\\"Parity note\\\"\\r\\n\""
+            "@72 -1 +\"link emotionSuppression -> shortTermFunctioning + delayed flipped \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "20348f80a677bc4093ae1b9411549a03d67267d97b5a11b18118cee29f9be16b"
+          "sha256": "bad5602ca0fa0f5b3773a114d10d6f0c8fbccb73ab5fdad73fc46325bb8f3fb1"
         },
         {
           "do": "execute causal-loop.make-negative on link:emotionSuppression|shortTermFunctioning",
           "answer": "ok",
           "hunks": [
-            "@71 -1 +\"link emotionSuppression -> shortTermFunctioning - delayed flipped \\\"Parity note\\\"\\r\\n\""
+            "@72 -1 +\"link emotionSuppression -> shortTermFunctioning - delayed flipped \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "28849aca3da75fe6c29c48809f3344f3186614ea17407643f45e654ffd66835e"
+          "sha256": "bd7172248149688c44c3e1104b1ac0b9061a918bbda29f06e8709878e83e7bfe"
         },
         {
           "do": "execute causal-loop.make-negative on link:emotionSuppression|shortTermFunctioning",
@@ -10937,17 +10937,17 @@
           "do": "commit causal-loop.rename-loop on loop:R1 = \"Parity loop\"",
           "answer": "ok",
           "hunks": [
-            "@75 -1 +\"loop R1 \\\"Parity loop\\\" emotionSuppression shortTermFunctioning copingConfirmation\\r\\n\""
+            "@76 -1 +\"loop R1 \\\"Parity loop\\\" emotionSuppression shortTermFunctioning copingConfirmation\\r\\n\""
           ],
-          "sha256": "c6a1ea1a39be0042bbc2ed4b785302ca274babe0f0eb36367fc7a8306ef7a26b"
+          "sha256": "185139e0f9813f7d71aeb918b2fb91507cf87b9f5c47a7815bdae0957f665fad"
         },
         {
           "do": "set loop:R1 causal-loop.loop-name = \"Parity name\"",
           "answer": "ok",
           "hunks": [
-            "@75 -1 +\"loop R1 \\\"Parity name\\\" emotionSuppression shortTermFunctioning copingConfirmation\\r\\n\""
+            "@76 -1 +\"loop R1 \\\"Parity name\\\" emotionSuppression shortTermFunctioning copingConfirmation\\r\\n\""
           ],
-          "sha256": "9367ac89c6040975262dcf534a6c383895bacfba24416cacb8e01cbd16d4953a"
+          "sha256": "6f4e67f8c6476da34f43229aeaead4aba6108f854a8a74ab6855aa909e1fbd4b"
         },
         {
           "do": "set loop:R1 causal-loop.loop-name = \"Has \\\"quote\\\"\"",
@@ -10978,9 +10978,9 @@
           "do": "set loop:R1 causal-loop.loop-identifier = \"B99\"",
           "answer": "ok",
           "hunks": [
-            "@75 -1 +\"loop B99 \\\"Parity name\\\" emotionSuppression shortTermFunctioning copingConfirmation\\r\\n\""
+            "@76 -1 +\"loop B99 \\\"Parity name\\\" emotionSuppression shortTermFunctioning copingConfirmation\\r\\n\""
           ],
-          "sha256": "c40b250d3a1925dd76ef23f722791a548a0b3c78c175d3d03a45eddc01412545"
+          "sha256": "e72346fcdb3d7d794bec7385cced33c325f64fc1918a616f2cd8f6549dc2be8f"
         },
         {
           "do": "execute causal-loop.rename-variable on variable:selfDirection",
@@ -11001,9 +11001,9 @@
           "do": "commit causal-loop.rename-variable on variable:selfDirection = \"Parity renamed\"",
           "answer": "ok",
           "hunks": [
-            "@19 -1 +\"variable selfDirection \\\"Parity renamed\\\"\\r\\n\""
+            "@20 -1 +\"variable selfDirection \\\"Parity renamed\\\"\\r\\n\""
           ],
-          "sha256": "9adb18906ca045b6be65893ee715a32c85828acac94c29038e8b2a90f64bcdd4"
+          "sha256": "50cdbb1bc5c9d951c878e52a1739f3214ffe4bc2ca9d03a236fb39367b37fe34"
         },
         {
           "do": "set variable:selfDirection causal-loop.variable-label = \"Say \\\"hi\\\"\"",
@@ -11019,9 +11019,9 @@
           "do": "set variable:selfDirection causal-loop.variable-label = \"Parity label\"",
           "answer": "ok",
           "hunks": [
-            "@19 -1 +\"variable selfDirection \\\"Parity label\\\"\\r\\n\""
+            "@20 -1 +\"variable selfDirection \\\"Parity label\\\"\\r\\n\""
           ],
-          "sha256": "211fe74a4df26bf3759fd276c5308c1a181ed25652ad5a6f1e8e5636dbc9cd42"
+          "sha256": "8cfaeb1efe8cc8cd3fa69536b1b458c6717ad143c934f1ac56117aae25fde632"
         },
         {
           "do": "validate causal-loop.add-link on variable:selfDirection = \"nobody\"",
@@ -11042,9 +11042,9 @@
           "do": "commit causal-loop.add-link on variable:selfDirection = \"emotionSuppression\"",
           "answer": "ok",
           "hunks": [
-            "@184 -0 +\"link selfDirection -> emotionSuppression +\\r\\n\""
+            "@185 -0 +\"link selfDirection -> emotionSuppression +\\r\\n\""
           ],
-          "sha256": "286e4ba96ffc5b15bc45eed81a6fc6efd0c4dd4d9593d7869830f16e309a3f63"
+          "sha256": "487bd65a255cfa08d67a5ed0b95cd08c265f95099408c0cb376c6e7f0c68f9f9"
         },
         {
           "do": "commit causal-loop.add-link on variable:selfDirection = \"nobody\"",
@@ -11065,9 +11065,9 @@
           "do": "commit causal-loop.add-loop on variable:selfDirection = \"R99\"",
           "answer": "ok",
           "hunks": [
-            "@187 -0 +\"loop R99 \\\"R99\\\" selfDirection meaning sacrifice progress confidence\\r\\n\""
+            "@188 -0 +\"loop R99 \\\"R99\\\" selfDirection meaning sacrifice progress confidence\\r\\n\""
           ],
-          "sha256": "b71534cba0c9b4562cfc426091996830ea5a894a3285e1ce7661c13639563cef"
+          "sha256": "3fba3e19d113bb65634ac47166e53965119fd7172589e4c2bdedc1246252ae91"
         },
         {
           "do": "set variable:selfDirection causal-loop.variable-id = \"emotionSuppression\"",
@@ -11088,26 +11088,26 @@
           "do": "set variable:selfDirection causal-loop.variable-id = \"parityId\"",
           "answer": "ok",
           "hunks": [
-            "@19 -1 +\"variable parityId \\\"Parity label\\\"\\r\\n\"",
-            "@96 -2 +\"link confidence -> parityId + flipped\\r\\nlink parityId -> meaning + \\\"back to the perspective\\\"\\r\\n\"",
-            "@99 -1 +\"loop R2 \\\"Perspective carries the cost\\\" meaning sacrifice progress confidence parityId\\r\\n\"",
-            "@108 -1 +\"link parityId -> goalOrientation + \\\"the bridge to suppression\\\"\\r\\n\"",
-            "@122 -1 +\"loop B2 \\\"Goals narrow the view\\\" parityId goalOrientation bigPicture meaning sacrifice progress confidence\\r\\n\"",
-            "@141 -1 +\"link insurerDependence -> parityId -\\r\\n\"",
-            "@143 -1 +\"link ageing -> parityId - flipped\\r\\n\"",
-            "@184 -1 +\"link parityId -> emotionSuppression +\\r\\n\"",
-            "@187 -1 +\"loop R99 \\\"R99\\\" parityId meaning sacrifice progress confidence\\r\\n\""
+            "@20 -1 +\"variable parityId \\\"Parity label\\\"\\r\\n\"",
+            "@97 -2 +\"link confidence -> parityId + flipped\\r\\nlink parityId -> meaning + \\\"back to the perspective\\\"\\r\\n\"",
+            "@100 -1 +\"loop R2 \\\"Perspective carries the cost\\\" meaning sacrifice progress confidence parityId\\r\\n\"",
+            "@109 -1 +\"link parityId -> goalOrientation + \\\"the bridge to suppression\\\"\\r\\n\"",
+            "@123 -1 +\"loop B2 \\\"Goals narrow the view\\\" parityId goalOrientation bigPicture meaning sacrifice progress confidence\\r\\n\"",
+            "@142 -1 +\"link insurerDependence -> parityId -\\r\\n\"",
+            "@144 -1 +\"link ageing -> parityId - flipped\\r\\n\"",
+            "@185 -1 +\"link parityId -> emotionSuppression +\\r\\n\"",
+            "@188 -1 +\"loop R99 \\\"R99\\\" parityId meaning sacrifice progress confidence\\r\\n\""
           ],
-          "sha256": "a30911db8633377a2466ef38dcff34b0721fca146050198f23df7ec086e7005d"
+          "sha256": "94a2e14e86d2adf1904ce6b07ee9861820c7bd70b676cbcb94806d3dc3204ff5"
         },
         {
           "do": "execute causal-loop.connect on rel:emotionSuppression->parityId",
           "answer": "ok",
           "hunks": [
-            "@185 -0 +\"link emotionSuppression -> parityId +\\r\\n\"",
-            "@188 -0 +\"loop R100 \\\"\\\" parityId goalOrientation emotionSuppression\\r\\nloop R101 \\\"\\\" parityId emotionSuppression\\r\\n\""
+            "@186 -0 +\"link emotionSuppression -> parityId +\\r\\n\"",
+            "@189 -0 +\"loop R100 \\\"\\\" parityId goalOrientation emotionSuppression\\r\\nloop R101 \\\"\\\" parityId emotionSuppression\\r\\n\""
           ],
-          "sha256": "3488f1991e7113f081a3c8822e846a6492ecac6afc54c82011ccb95d57272a98"
+          "sha256": "7f67aa5a72be4f1cb23c2e666decff6f8e25538cc535e9560e850a948157c89c"
         },
         {
           "do": "execute causal-loop.connect on rel:emotionSuppression->parityId",
@@ -11118,10 +11118,10 @@
           "do": "execute causal-loop.connect on rel:parityId->parityId",
           "answer": "ok",
           "hunks": [
-            "@186 -0 +\"link parityId -> parityId +\\r\\n\"",
-            "@191 -0 +\"loop R102 \\\"\\\" parityId\\r\\n\""
+            "@187 -0 +\"link parityId -> parityId +\\r\\n\"",
+            "@192 -0 +\"loop R102 \\\"\\\" parityId\\r\\n\""
           ],
-          "sha256": "4c1116a4350d8eb03d3df310dcad79d8b02a8267814c9094f8c8881ead266268"
+          "sha256": "be67ab66e2eeb47706591235dc35b238bbe1d462ce4c58cf24167161c843cf72"
         },
         {
           "do": "execute causal-loop.connect on rel:parityId->nobody",
@@ -11132,9 +11132,9 @@
           "do": "execute causal-loop.add-variable on new:240,160",
           "answer": "ok",
           "hunks": [
-            "@65 -0 +\"variable variable1 \\\"Variable 1\\\"\\r\\n\""
+            "@66 -0 +\"variable variable1 \\\"Variable 1\\\"\\r\\n\""
           ],
-          "sha256": "dce877749276aaceffa5e7ea01297674c70c2f2043a6d343d7c8405da1365099",
+          "sha256": "9f1a6ca39ec6ae03998a41f343c409c89e2a2f5b27e0f7291bc8f4404dbd8250",
           "registration": {
             "hunks": [
               "@29 -0 +\"  variable:variable1: 240 160\\r\\n\""
@@ -11146,9 +11146,9 @@
           "do": "execute causal-loop.add-variable on ",
           "answer": "ok",
           "hunks": [
-            "@66 -0 +\"variable variable2 \\\"Variable 2\\\"\\r\\n\""
+            "@67 -0 +\"variable variable2 \\\"Variable 2\\\"\\r\\n\""
           ],
-          "sha256": "3f6efd8c4c54bdd024fbabe0fa8612047d4342d0f6c523bf2854498a2a36e568"
+          "sha256": "dfe31153e44d211bf2261761dcc478de9c18d9da5491091363cf480d3b7da76c"
         },
         {
           "do": "move variable:emotionSuppression to (100, 200)",
@@ -11207,17 +11207,17 @@
           "do": "execute causal-loop.remove-link on link:emotionSuppression|shortTermFunctioning",
           "answer": "ok",
           "hunks": [
-            "@73 -1 +\"\""
+            "@74 -1 +\"\""
           ],
-          "sha256": "8452999facacee8a4a07925f12b7502f7f7b18caea51c6aa351a7068091460c7"
+          "sha256": "c404b38ca481a4a68c1064ba186630c6d21d89f5b187cea6fc68b751351f3a00"
         },
         {
           "do": "execute causal-loop.remove-loop on loop:B99",
           "answer": "ok",
           "hunks": [
-            "@76 -1 +\"\""
+            "@77 -1 +\"\""
           ],
-          "sha256": "cdb07aa99dd971dc3c7cfe83841e9cd39c0891344f115ecca1ee7a4c8ed25c17"
+          "sha256": "43af9813ddc3a04e082617d41ea9f612762d0d1d0108d2009ab6513911e66064"
         },
         {
           "do": "execute causal-loop.remove-variable on variable:parityId",
@@ -11228,17 +11228,17 @@
           "do": "commit causal-loop.remove-variable on variable:parityId = \"\"",
           "answer": "ok",
           "hunks": [
-            "@18 -2 +\"\"",
-            "@96 -2 +\"\"",
-            "@99 -1 +\"\"",
-            "@108 -1 +\"\"",
-            "@122 -1 +\"\"",
-            "@141 -1 +\"\"",
-            "@143 -1 +\"\"",
-            "@184 -3 +\"\"",
-            "@189 -4 +\"\""
+            "@19 -2 +\"\"",
+            "@97 -2 +\"\"",
+            "@100 -1 +\"\"",
+            "@109 -1 +\"\"",
+            "@123 -1 +\"\"",
+            "@142 -1 +\"\"",
+            "@144 -1 +\"\"",
+            "@185 -3 +\"\"",
+            "@190 -4 +\"\""
           ],
-          "sha256": "d76b08c764b1bfb3542c02302e3a6f429b91340b64bc7c53a0d142ad46f45d54"
+          "sha256": "d2198f04a056e16dc6d553037fa1420589fa6aa37814f6b24dc3a19e42c99469"
         }
       ],
       "undoAll": "28 undone; the original text is back"

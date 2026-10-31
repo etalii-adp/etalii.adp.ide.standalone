@@ -1,4 +1,5 @@
 causal-loop 1
+title "Why mental health at work stays out of sight"
 
 # Why mental health at work stays out of sight: the structure of a wicked problem.
 #
@@ -38,13 +39,13 @@ variable exhaustion "Exhaustion"
 variable dropout "Mental health dropout"
 
 # The cultural norm.
-variable toughNorm "Norm: don't make a fuss"
+variable toughNorm "Norm: don't make a fuss" start=0.8
 variable emotionExpression "Expression of emotion"
 
 # The constraints of the system, outside every loop.
-variable legalFrame "Legal limits on discussing mental health"
-variable insurerDependence "Dependence on insurers and premiums"
-variable ageing "Ageing population"
+variable legalFrame "Legal limits on discussing mental health" start=0.8
+variable insurerDependence "Dependence on insurers and premiums" start=0.7
+variable ageing "Ageing population" start=0.7
 
 # Invisibility.
 variable conversationalSafety "Safety to talk"
