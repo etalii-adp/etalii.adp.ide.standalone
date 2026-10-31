@@ -93,6 +93,10 @@ internal static class CausalLoopParser
                     loops.Add(new CausalLoopLoop(tokens[1], tokens[2], tokens[3..], range));
                     break;
 
+                // The statements of a flow page's values (etalii.adp spec 074), which nothing here reads.
+                case "title" or "flow":
+                    break;
+
                 default:
                     problems.Add(new CausalLoopParseProblem(range, $"'{tokens[0]}' is not a statement this reading knows."));
                     break;
