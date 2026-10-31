@@ -129,7 +129,11 @@ public static class ClientTestRun
                 + ". Run `npm install` in src/ - the gate does this before it tests.");
         }
 
-        return Drive(client, "");
+        // Retried and given more time here and nowhere else. This run shares the machine with every other test assembly of
+        // `dotnet test`, and on a loaded Windows machine a different wall-clock test ran out of its time
+        // on each run (2026-10-31), each passing alone. `npm test` is the gate that holds the suite without
+        // retries, so a test that fails three times here still fails, and a flaky one still shows there.
+        return Drive(client, "--retry=2 --testTimeout=30000");
     }
 
     /// <summary>
