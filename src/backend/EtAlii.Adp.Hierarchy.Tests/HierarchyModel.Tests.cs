@@ -335,6 +335,33 @@ public class HierarchyModelTests : IDisposable
     }
 
     [Fact]
+    public void OnWatcherEvent_Created_ForAPathThatIsGoneAgain_MakesNoEntry_SoARenameBackStaysARename()
+    {
+        // macOS' FSEvents reports a file's creation late, even one from just before the watch began.
+        // Here it arrives after the file was renamed, the shape UndoRedoFlowTests met on every run.
+        var originalPath = CreateFile(segments: "original.txt");
+        var renamedPath = IoPath.Combine(_root, "renamed.txt");
+        var model = new HierarchyModel(_root, TestToolRouters.For());
+        var entry = model.ListChildren(null).Single();
+
+        File.Move(originalPath, renamedPath);
+        model.ApplyLocalRename(originalPath, renamedPath);
+
+        var changes = new List<HierarchyEntryChange>();
+        model.EntryChanged += changes.Add;
+
+        model.OnWatcherEvent(WatcherChangeTypes.Created, null, originalPath);
+        Assert.Empty(changes);
+
+        File.Move(renamedPath, originalPath);
+        model.ApplyLocalRename(renamedPath, originalPath);
+
+        var renamedBack = Assert.IsType<HierarchyEntryRenamed>(Assert.Single(changes, change => change is HierarchyEntryRenamed));
+        Assert.Equal(entry.Id, renamedBack.EntryId);
+        Assert.Equal("original.txt", renamedBack.NewName);
+    }
+
+    [Fact]
     public void OnWatcherEvent_ReplaceFileSequence_KeepsTheEntryAndItsId()
     {
         // The event sequence Windows' ReplaceFile actually raises when File.Replace rewrites a

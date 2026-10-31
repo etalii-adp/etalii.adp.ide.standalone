@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using EtAlii.Adp.Context;
@@ -671,7 +672,7 @@ public sealed partial class WardleyTranscript() : TranscriptAdapter("wardley-map
                 answer = Thrown(exception);
             }
 
-            await RecordAsync($"drag {Named(id)} to {x}, {y}", answer);
+            await RecordAsync(string.Create(CultureInfo.InvariantCulture, $"drag {Named(id)} to {x}, {y}"), answer);
         }
 
         public async Task SetAsync(string target, string propertyId, string value)

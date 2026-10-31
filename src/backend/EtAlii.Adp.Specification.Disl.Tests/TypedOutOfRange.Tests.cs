@@ -1,3 +1,4 @@
+using System.Globalization;
 using Xunit;
 
 namespace EtAlii.Adp.Specification.Disl.Tests;
@@ -35,7 +36,7 @@ public class TypedOutOfRangeTests
     private static string Commit(string row, string value)
     {
         var transaction = FormCommit.Row(Specification, Dot(), row, value, new DislEnv());
-        return transaction.Refusal ?? string.Join(" ", transaction.Changes.OfType<DislChange.Set>().SelectMany(set => set.Attributes.Select(pair => $"{pair.Key}={pair.Value}")));
+        return transaction.Refusal ?? string.Join(" ", transaction.Changes.OfType<DislChange.Set>().SelectMany(set => set.Attributes.Select(pair => string.Create(CultureInfo.InvariantCulture, $"{pair.Key}={pair.Value}"))));
     }
 
     [Theory]
