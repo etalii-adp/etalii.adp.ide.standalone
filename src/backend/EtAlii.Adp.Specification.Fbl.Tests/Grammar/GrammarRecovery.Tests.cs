@@ -4,7 +4,6 @@ using System.Text.Json.Nodes;
 using EtAlii.Adp.Specification.Fbl.Documents;
 using EtAlii.Adp.Specification.Fbl.Grammar;
 using EtAlii.Adp.Specification.Fbl.History;
-using EtAlii.Adp.Specification.Fbl.Tests.Support;
 using EtAlii.Adp.Specification.Fbl.Text;
 using Xunit;
 
@@ -156,7 +155,7 @@ public class GrammarRecoveryTests
 
         // Assert: every byte is accounted for, the skipped text as one leaf no element covers.
         Assert.Empty(reading.Family.Unaccounted());
-        Assert.DoesNotContain(reading.Elements, e => e.Entry.Own.Start < 19 && e.Entry.Own.End > 10);
+        Assert.DoesNotContain(reading.Elements, e => e.Entry.Own is { Start: < 19, End: > 10 });
     }
 
     [Theory]
