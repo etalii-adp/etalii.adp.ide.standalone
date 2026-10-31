@@ -282,7 +282,57 @@ public static class AdpFileWriter
     }
 
     internal static void ReplaceDestination(string temporary, string path) =>
+        ReplaceAllowingForAnOutsider(temporary, path, ReplaceOnce);
+
+    private static void ReplaceOnce(string temporary, string path) =>
         File.Replace(temporary, path, destinationBackupFileName: null, ignoreMetadataErrors: true);
+
+    /// <summary>
+    /// Replaces <paramref name="path"/>, trying again for a moment when the replace fails with
+    /// <c>0x80070497</c>, "Unable to remove the file to be replaced". Any other failure is left to surface
+    /// at once, a reader's sharing violation (<c>0x80070020</c>) above all.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Why, against the ruling this reverses (the user, 2026-10-31).</b> Saves to one path in this process
+    /// already take turns, yet 3 of 8 full test runs on one Windows machine still failed this way, with no
+    /// holder, no second publisher in the folder and the destination still the same file. So the other party
+    /// is outside this process and gone at once, and to the person dragging an element the failure reads as
+    /// a refused move.
+    /// </para>
+    /// <para>
+    /// The destination is looked at again before each attempt, because a failed replace can briefly leave it
+    /// missing, and a replace needs one. A failure left after the last attempt is what the caller records.
+    /// </para>
+    /// </remarks>
+    internal static void ReplaceAllowingForAnOutsider(string temporary, string path, Action<string, string> replace)
+    {
+        foreach (var pause in ReplacePauses)
+        {
+            try
+            {
+                replace(temporary, path);
+                return;
+            }
+            catch (IOException exception) when (exception.HResult == UnableToRemoveTheReplaced)
+            {
+                Logger.Information("Replacing {Path} failed with 0x80070497; trying again in {Pause} ms", path, pause.TotalMilliseconds);
+                Thread.Sleep(pause);
+            }
+
+            if (!File.Exists(path))
+            {
+                File.Move(temporary, path);
+                return;
+            }
+        }
+
+        replace(temporary, path);
+    }
+
+    private const int UnableToRemoveTheReplaced = unchecked((int)0x80070497);
+
+    private static readonly TimeSpan[] ReplacePauses = [TimeSpan.FromMilliseconds(50), TimeSpan.FromMilliseconds(100), TimeSpan.FromMilliseconds(200)];
 
     /// <summary>
     /// Creates every file in <paramref name="files"/> or none of them: all are written to

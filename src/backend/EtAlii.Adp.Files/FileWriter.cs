@@ -60,8 +60,9 @@ public sealed class FileWriter : IFileWriter
     /// hide it where a logged wait names it.
     /// </para>
     /// <para>
-    /// <b>This is not an error policy</b> in the sense above: a save still fails exactly as it did
-    /// for any other reason, and each caller still decides what a failure means. A sharing
+    /// <b>This is not an error policy</b> in the sense above: a save still fails as it did for any
+    /// other reason, after <see cref="AdpFileWriter.ReplaceDestination"/> has allowed a moment for an
+    /// outside party behind <c>0x80070497</c>, and each caller still decides what a failure means. A sharing
     /// violation (<c>0x80070020</c>) from a reader sharing only <c>Read</c> is not retried and
     /// still fails at once - that is ADP's own file-access bug class, and a runtime retry would
     /// be the wrong layer to meet it.
