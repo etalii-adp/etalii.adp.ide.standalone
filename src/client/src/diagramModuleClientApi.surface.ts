@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import ts from "typescript";
@@ -138,7 +138,7 @@ function filesUnder(directory: string, accept: (path: string) => boolean): strin
     }
   };
 
-  if (statSync(directory, { throwIfNoEntry: false })?.isDirectory() === true) {
+  if (existsSync(directory) && statSync(directory).isDirectory()) {
     walk(directory);
   }
 
@@ -181,7 +181,8 @@ function resolveClientSpecifier(specifier: string, root: string): string | undef
   const withoutAlias = specifier.slice("@client/".length);
   for (const candidate of [`${withoutAlias}.ts`, `${withoutAlias}.tsx`, join(withoutAlias, "index.ts")]) {
     const absolute = join(root, "client", "src", candidate);
-    if (statSync(absolute, { throwIfNoEntry: false })?.isFile() === true) {
+    // existsSync, because `canvas.css/index.ts` runs through a file: ENOTDIR, which throwIfNoEntry does not cover on every Node.
+    if (existsSync(absolute) && statSync(absolute).isFile()) {
       return absolute;
     }
   }
