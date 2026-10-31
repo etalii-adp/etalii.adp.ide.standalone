@@ -36,7 +36,7 @@ internal sealed class GrammarBuild
     /// <summary>The parser, with the start rule and, with <c>recover</c>, its unit as start symbols.</summary>
     private LarkParser Lark { get; }
 
-    private string Start { get; }
+    public string Start { get; }
 
     private GrammarRecover? Recover { get; }
 
