@@ -17,14 +17,14 @@ namespace EtAlii.Adp.Specification.Fbl.Tests.Conformance;
 public class ConformanceFixturesTests
 {
     /// <summary>The number of fixtures vendored: fewer means the enumeration broke.</summary>
-    private const int MinimumFixtures = 49;
+    private const int MinimumFixtures = 50;
 
     /// <summary>
     /// The fixtures of FBL 0.9's grammar family and of FBL 0.13's split slot (etalii.adp spec 072), vendored before the
     /// library reads the family and held out of the theories until it does. Each task of the specification takes its
     /// fixtures out of this set; <see cref="ThePendingGrammarFixturesDoNotPassYet"/> holds what is left.
     /// </summary>
-    private static readonly HashSet<string> Pending = new(StringComparer.Ordinal) { "grammar-split-slot" };
+    private static readonly HashSet<string> Pending = new(StringComparer.Ordinal);
 
     /// <summary>The fixtures copied in etalii.adp's own layout, beside the Knowledge designer's.</summary>
     private const string AdpFixtures = "etalii.adp/specifications/fbl/fixtures";
@@ -364,23 +364,27 @@ public class ConformanceFixturesTests
             var label = $"{name}: '{attribute.Name}' of '{element.Id}'";
             Assert.True(element.Attributes.TryGetValue(attribute.Name, out var actual), $"{label} was not read.");
             var expected = attribute.Value;
-            var same = expected.ValueKind switch
-            {
-                JsonValueKind.String => actual is string text && text == expected.GetString(),
-                JsonValueKind.Number => actual is long or int or double or decimal && Convert.ToDouble(actual, System.Globalization.CultureInfo.InvariantCulture).Equals(expected.GetDouble()),
-                JsonValueKind.True or JsonValueKind.False => actual is bool flag && flag == expected.GetBoolean(),
-                JsonValueKind.Null => actual is null,
-                _ => false,
-            };
-            Assert.True(same, $"{label} is {Describe(actual)}, where the fixture reads {expected.GetRawText()}.");
+            Assert.True(Same(actual, expected), $"{label} is {Describe(actual)}, where the fixture reads {expected.GetRawText()}.");
         }
     }
+
+    /// <summary>Whether a read value is the fixture's: of its JSON type, and a list item by item, as a <c>many</c> attribute reads.</summary>
+    private static bool Same(object? actual, JsonElement expected) => expected.ValueKind switch
+    {
+        JsonValueKind.String => actual is string text && text == expected.GetString(),
+        JsonValueKind.Number => actual is long or int or double or decimal && Convert.ToDouble(actual, System.Globalization.CultureInfo.InvariantCulture).Equals(expected.GetDouble()),
+        JsonValueKind.True or JsonValueKind.False => actual is bool flag && flag == expected.GetBoolean(),
+        JsonValueKind.Null => actual is null,
+        JsonValueKind.Array => actual is IEnumerable<object?> list && list.Count() == expected.GetArrayLength() && list.Zip(expected.EnumerateArray()).All(pair => Same(pair.First, pair.Second)),
+        _ => false,
+    };
 
     private static string Describe(object? value) => value switch
     {
         null => "null",
         string text => $"the text \"{text}\"",
         bool flag => $"the bool {(flag ? "true" : "false")}",
+        IEnumerable<object?> list => $"the list [{string.Join(", ", list.Select(Describe))}]",
         _ => $"the {value.GetType().Name} {Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture)}",
     };
 

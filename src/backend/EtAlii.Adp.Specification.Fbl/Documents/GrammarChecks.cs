@@ -40,7 +40,33 @@ internal static class GrammarChecks
                     problems.Add(Error(place + "/node", "A {node} slot is admitted only in the grammar family (FBL 0.9 4.9)."));
                 }
                 if (slot.Match is { } match) CheckMatch(match, place + "/match", problems);
+                CheckParts(rule, slot, family, place, problems);
             }
+        }
+    }
+
+    /// <summary>
+    /// <c>split</c> and <c>escape</c> stand only on a <c>{node}</c> slot of the family, <c>split</c> holding neither
+    /// character of the escape, and <c>create.after</c> only in the family, naming other attributes of the same rule
+    /// (FBL 0.11 and 0.13 §14.1 step 6).
+    /// </summary>
+    private static void CheckParts(Rule rule, Slot slot, bool family, string place, List<LoadDiagnostic> problems)
+    {
+        var node = family && slot.Kind is SlotKind.Node;
+        if (slot.Split is { } split)
+        {
+            if (!node) problems.Add(Error(place + "/split", "A split stands only on a {node} slot of the grammar family (FBL 0.13 14.1)."));
+            else if (slot.Escape is { } escape && (split.Contains(escape.With) || split.Contains(escape.Quote)))
+            {
+                problems.Add(Error(place + "/split", $"The split '{split}' holds a character of the slot's escape, so cutting before its escapes are resolved would give other items (FBL 0.13 4.9)."));
+            }
+        }
+        if (slot.Escape is not null && !node) problems.Add(Error(place + "/escape", "An escape stands only on a {node} slot of the grammar family (FBL 0.11 14.1)."));
+        if (slot is not AttributeBinding { Create.After: { } after }) return;
+        if (!family) problems.Add(Error(place + "/create/after", "A create's after stands only in the grammar family (FBL 0.11 14.1)."));
+        foreach (var name in after.Where(name => rule.Attribute(name) is null || ReferenceEquals(rule.Attribute(name), slot)))
+        {
+            problems.Add(Error(place + "/create/after", $"A create's after names '{name}', which is no other attribute of the rule (FBL 0.11 14.1)."));
         }
     }
 

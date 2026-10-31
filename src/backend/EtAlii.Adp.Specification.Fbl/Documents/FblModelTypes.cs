@@ -2,6 +2,7 @@ using System.Text.Json;
 using EtAlii.Adp.Specification.Cel;
 using EtAlii.Adp.Specification.Fbl.Expressions;
 using EtAlii.Adp.Specification.Fbl.Grammar;
+using EtAlii.Adp.Specification.Json;
 
 namespace EtAlii.Adp.Specification.Fbl.Documents;
 
@@ -66,6 +67,27 @@ public sealed class FblBinding
 
     /// <summary>Elements before relations, in binding order: the order rules are offered an entry (FBL §5.1).</summary>
     public IEnumerable<Rule> AllRules => Elements.Concat(Relations);
+
+    /// <summary>
+    /// The check of FBL 0.13 §14.1 step 6 that needs the tool type's attribute types: a slot with <c>split</c> stands only on
+    /// an attribute that <paramref name="many"/>, given the rule's type and the attribute's name, says is <c>many</c>. Each
+    /// refusal is a problem at the slot's <c>split</c>; none when every such attribute is <c>many</c>.
+    /// </summary>
+    public IReadOnlyList<LoadDiagnostic> CheckManyAttributes(Func<string, string, bool> many)
+    {
+        var problems = new List<LoadDiagnostic>();
+        var rules = Elements.Select((rule, i) => (rule, $"elements/{i}")).Concat(Relations.Select((rule, i) => (rule, $"relations/{i}")));
+        foreach ((Rule rule, string at) in rules)
+        {
+            foreach ((string name, AttributeBinding binding) in rule.Attributes)
+            {
+                if (binding.Split is null || many(rule.Type, name)) continue;
+                problems.Add(new LoadDiagnostic($"/bindings/{JsonPointer.Token(Name)}/{at}/attributes/{JsonPointer.Token(name)}/split", LoadSeverity.Error,
+                    $"The attribute {name} of a {rule.Type} is single-valued, so the items its split cuts have nothing to hold them (FBL 0.13 14.1)."));
+            }
+        }
+        return problems;
+    }
 
     // The binding as each reading sees it, made once per origin (FBL 0.10 §5.1, §8.2).
     private readonly Dictionary<string, FblBinding> _readings = new(StringComparer.Ordinal);
@@ -365,6 +387,15 @@ public record Slot
     /// <summary>A <c>{node}</c> slot's <c>match</c> (FBL 0.9 §5.2): its named group <c>value</c> is the value, and its span the value's.</summary>
     public string? Match { get; init; }
 
+    /// <summary>A <c>{node}</c> slot's <c>escape</c> (FBL 0.11 §5.2): how a quoted value escapes its quotes.</summary>
+    internal SlotEscape? Escape { get; init; }
+
+    /// <summary>A <c>{node}</c> slot's <c>split</c> (FBL 0.13 §4.9): the text its value is cut into items at.</summary>
+    public string? Split { get; init; }
+
+    /// <summary>The text written between two items (FBL 0.12 §5.2), <c>", "</c> when the binding gives none.</summary>
+    public string? Separator { get; init; }
+
     public override string ToString() => Kind.ToString();
 }
 
@@ -492,7 +523,44 @@ internal sealed record FallbackBinding(JsonElement Value, bool Report);
 /// (FBL 0.4): <see cref="AtEnd"/>, each missing level of the mapping <c>child</c> reaches created at
 /// the end of the level above it.
 /// </summary>
-internal sealed record CreateChild(string Emit, ChildPlace Place, string? Before, bool AtEnd = false);
+internal sealed record CreateChild(string Emit, ChildPlace Place, string? Before, bool AtEnd = false)
+{
+    /// <summary>
+    /// grammar (FBL 0.11 §5.2): the attributes of the same rule, nearest first, whose parts precede an absent part, which
+    /// is written right after the first of them that is present; null when the binding gives none.
+    /// </summary>
+    public IReadOnlyList<string>? After { get; init; }
+}
+
+/// <summary>
+/// A <c>{node}</c> slot's <c>escape</c> (FBL 0.11 §5.2): reading replaces <paramref name="With"/> before
+/// <paramref name="Quote"/> or before itself by that character and keeps it before any other; writing escapes both.
+/// </summary>
+internal sealed record SlotEscape(char With, char Quote)
+{
+    public string Read(string text)
+    {
+        if (text.IndexOf(With) < 0) return text;
+        var read = new System.Text.StringBuilder(text.Length);
+        for (var i = 0; i < text.Length; i++)
+        {
+            if (text[i] == With && i + 1 < text.Length && (text[i + 1] == Quote || text[i + 1] == With)) i++;
+            read.Append(text[i]);
+        }
+        return read.ToString();
+    }
+
+    public string Write(string value)
+    {
+        var written = new System.Text.StringBuilder(value.Length);
+        foreach (var c in value)
+        {
+            if (c == With || c == Quote) written.Append(With);
+            written.Append(c);
+        }
+        return written.ToString();
+    }
+}
 
 internal sealed class InsertSettings
 {

@@ -361,6 +361,9 @@ internal static partial class BindingReader
             Word = JsonProperties.String(json, "word"),
             Flag = JsonProperties.Bool(json, "flag"),
             Match = JsonProperties.String(json, "match"),
+            Escape = ReadEscape(json, pointer, problems),
+            Split = ReadSplit(json, pointer, problems),
+            Separator = JsonProperties.String(json, "separator"),
             Empty = Setting<EmptyRule>(json, "empty", pointer, "An attribute's empty", problems) ?? EmptyRule.Keep,
             Absent = ReadAbsent(json, pointer, problems),
             Default = json.TryGetProperty("default", out var def) ? def.Clone() : null,
@@ -399,9 +402,32 @@ internal static partial class BindingReader
     {
         var place = json.TryGetProperty("place", out var p) ? p : default;
         if (JsonProperties.String(json, "at") == "end") return new CreateChild("", ChildPlace.Last, null, true);
+        var after = json.TryGetProperty("after", out var a) && a.ValueKind == JsonValueKind.Array ? JsonProperties.Strings(json, "after") : null;
         return place.ValueKind == JsonValueKind.Object
-            ? new CreateChild(JsonProperties.String(json, "emit") ?? "", ChildPlace.Before, JsonProperties.String(place, "before"))
-            : new CreateChild(JsonProperties.String(json, "emit") ?? "", Setting<ChildPlace>(json, "place", pointer, "A child's place", problems) ?? ChildPlace.Last, null);
+            ? new CreateChild(JsonProperties.String(json, "emit") ?? "", ChildPlace.Before, JsonProperties.String(place, "before")) { After = after }
+            : new CreateChild(JsonProperties.String(json, "emit") ?? "", Setting<ChildPlace>(json, "place", pointer, "A child's place", problems) ?? ChildPlace.Last, null) { After = after };
+    }
+
+    /// <summary>A slot's <c>escape</c> (FBL 0.11 §5.2), <c>{"with": "\\", "quote": "\""}</c>, one character each.</summary>
+    private static SlotEscape? ReadEscape(JsonElement json, string pointer, List<LoadDiagnostic> problems)
+    {
+        if (Object(json, "escape", pointer, "A slot's escape", problems) is not { } escape) return null;
+        if (JsonProperties.String(escape, "with") is { Length: 1 } with && JsonProperties.String(escape, "quote") is { Length: 1 } quote) return new SlotEscape(with[0], quote[0]);
+        problems.Add(new LoadDiagnostic(pointer + "/escape", LoadSeverity.Error, "A slot's escape gives 'with' and 'quote', one character each (FBL 0.11 5.2)."));
+        return null;
+    }
+
+    /// <summary>A slot's <c>split</c> (FBL 0.13 §4.9): a text of one character or more, never beside <c>items</c>.</summary>
+    private static string? ReadSplit(JsonElement json, string pointer, List<LoadDiagnostic> problems)
+    {
+        if (!json.TryGetProperty("split", out var split)) return null;
+        if (split.ValueKind != JsonValueKind.String || split.GetString() is not { Length: > 0 } text)
+        {
+            problems.Add(new LoadDiagnostic(pointer + "/split", LoadSeverity.Error, "A slot's split is a text of one character or more (FBL 0.13 4.9)."));
+            return null;
+        }
+        if (json.TryGetProperty("items", out _)) problems.Add(new LoadDiagnostic(pointer + "/split", LoadSeverity.Error, "A slot's split never stands beside items (FBL 0.13 14.1)."));
+        return text;
     }
 
     /// <summary>

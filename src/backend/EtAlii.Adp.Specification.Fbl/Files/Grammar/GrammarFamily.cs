@@ -148,19 +148,53 @@ internal sealed class GrammarFamily(BodyText text, FblBinding binding, FblOption
     public override SlotRead Read(Candidate candidate, Slot slot)
     {
         if (slot.Kind is not SlotKind.Node(var selector)) return SlotRead.ReadOnlyAbsent($"A grammar entry has no {slot}.");
+        if (slot.Split is not null) return ReadItems(candidate, slot, selector);
         var node = GrammarSelector.Match((GrammarNode)candidate.Entry, Selector(selector, slot: true), TextOf).FirstOrDefault();
-        return node is null ? SlotRead.Absent : ReadNode(node, slot.Match);
+        return node is null ? SlotRead.Absent : ReadNode(node, slot);
     }
 
-    private SlotRead ReadNode(GrammarNode node, string? match)
+    /// <summary>
+    /// A <c>{node}</c> slot of a <c>many</c> attribute (FBL 0.11 §5.2): every node its selector reaches, in document order,
+    /// each one item, or, with <c>split</c>, each holding the items its value is cut into (FBL 0.13 §4.9).
+    /// </summary>
+    public override SlotRead ReadMany(Candidate candidate, Slot slot) =>
+        slot.Kind is SlotKind.Node(var selector) ? ReadItems(candidate, slot, selector) : Read(candidate, slot);
+
+    /// <summary>
+    /// The items of a slot (FBL 0.13 §4.9): with <c>split</c>, the slot is present even where it reaches no node or no
+    /// item, as a list holds no item; a node whose text its <c>match</c> does not match holds none, and makes the slot read-only.
+    /// </summary>
+    private SlotRead ReadItems(Candidate candidate, Slot slot, string selector)
+    {
+        var values = new List<(GrammarNode Node, Span Span)>();
+        var items = new List<GrammarItem>();
+        string? reason = null;
+        foreach (var node in GrammarSelector.Match((GrammarNode)candidate.Entry, Selector(selector, slot: true), TextOf))
+        {
+            var read = ReadNode(node, slot);
+            if (read is not { Present: true, Span: { } span, Wire: { } wire })
+            {
+                reason ??= read.Reason;
+                continue;
+            }
+            values.Add((node, span));
+            if (slot.Split is not { } split) items.Add(new GrammarItem((string)read.Value!, span, node));
+            else items.AddRange(SplitItems.Cut(wire, span.Start, split).Select(item => new GrammarItem(slot.Escape?.Read(item.Text) ?? item.Text, item.Span, node)));
+        }
+        var list = items.Select(object? (item) => item.Value).ToList();
+        return new SlotRead(list, null, slot.Split is not null || items.Count > 0, reason is null, reason) { Node = new GrammarItems(values, items) };
+    }
+
+    /// <summary>A node's value: its text, or the group <c>value</c> of the slot's <c>match</c>, its escapes resolved by the slot's <c>escape</c> (FBL 0.11 §5.2), the text as written its wire.</summary>
+    private SlotRead ReadNode(GrammarNode node, Slot slot)
     {
         var text = TextOf(node);
-        if (match is null) return new SlotRead(text, node.Own, true, true) { Node = node, Wire = text };
+        if (slot.Match is not { } match) return new SlotRead(slot.Escape?.Read(text) ?? text, node.Own, true, true) { Node = node, Wire = text };
         if (Regex($"^(?:{match})\\z", false).Match(text) is not { } matched) return SlotRead.ReadOnlyAbsent($"'{text}' does not match the slot's match.");
         var value = matched.Groups["value"];
         var start = node.Own.Start + Encoding.UTF8.GetByteCount(text.AsSpan(0, value.Success ? value.Index : 0));
         var span = new Span(start, start + Encoding.UTF8.GetByteCount(value.Value));
-        return new SlotRead(value.Value, span, true, true) { Node = node, Wire = value.Value };
+        return new SlotRead(slot.Escape?.Read(value.Value) ?? value.Value, span, true, true) { Node = node, Wire = value.Value };
     }
 
     public override SlotRead ReadRaw(Entry entry, string name) =>
@@ -171,26 +205,167 @@ internal sealed class GrammarFamily(BodyText text, FblBinding binding, FblOption
 
     // ---- writing (FBL 0.9 §4.9, §6.3) ----
 
-    /// <summary>A value as the family writes it: as text, through the binding's <c>map</c> when it has one, numbers and booleans as FBL §6.3 writes them.</summary>
-    public override string Format(SlotRead read, AttributeBinding? binding, object? value) =>
-        (binding is null ? null : NewText.Wire(binding, value, read.Wire)) ?? NewText.Plain(value, binding);
+    /// <summary>
+    /// A value as the family writes it: as text, through the binding's <c>map</c> when it has one, numbers and booleans as
+    /// FBL §6.3 writes them, escaped by the slot's <c>escape</c> (FBL 0.11 §6.3); a list as its items joined by the slot's
+    /// <c>separator</c>, <c>", "</c> when it gives none (FBL 0.13 §6.3).
+    /// </summary>
+    public override string Format(SlotRead read, AttributeBinding? binding, object? value)
+    {
+        if (value is IEnumerable<object?> list) return string.Join(Separator(binding), list.Select(item => Escaped(binding, NewText.Plain(item, binding))));
+        return (binding is null ? null : NewText.Wire(binding, value, read.Wire)) ?? Escaped(binding, NewText.Plain(value, binding));
+    }
+
+    private static string Escaped(Slot? slot, string text) => slot?.Escape?.Write(text) ?? text;
+
+    private static string Separator(Slot? slot) => slot?.Separator ?? ", ";
 
     /// <summary>The family removes no part of an entry (FBL 0.9 §4.9, <i>Writing</i>): an emptied value is set, as any other.</summary>
     protected override bool RemoveSlot(Plan plan, ReadElement element, SlotChange change) => false;
 
-    /// <summary>A changed value: a <c>replace-value</c> of the value's span, the group <c>value</c> of the slot's <c>match</c> or the node's own span.</summary>
+    /// <summary>
+    /// A changed value: a <c>replace-value</c> of the value's span, the group <c>value</c> of the slot's <c>match</c> or the
+    /// node's own span; a list of items, the difference (<see cref="WriteItems"/>), unless the slot reaches no node.
+    /// </summary>
     protected override bool ReplaceSlot(Plan plan, SlotChange change)
     {
+        if (change.Read.Node is GrammarItems items)
+        {
+            if (items.Values.Count == 0) return false;
+            WriteItems(plan, change, items);
+            return true;
+        }
         if (change.Read.Span is not { } span) return false;
         plan.Add(SpliceOperation.ReplaceValue, span, Format(change.Read, change.Binding, change.Value));
         return true;
     }
 
-    /// <summary>The family writes no part an entry lacks (FBL 0.9 §4.9, <i>Writing</i>): a set of an attribute whose node is absent is refused.</summary>
+    /// <summary>
+    /// An attribute whose node is absent (FBL 0.11 §5.2, <i>An absent part</i>): written by its binding's <c>create</c>, its
+    /// <c>emit</c> by one <c>insert-key</c> right after the last token of the first attribute of <c>after</c> that is
+    /// present, the items of a list joined by the slot's separator, or each emitted in turn without <c>split</c>; refused
+    /// without <c>create.after</c> or when no attribute it lists is present. A list set to no item writes nothing.
+    /// </summary>
     protected override bool InsertSlot(Plan plan, ReadElement element, SlotChange change)
     {
-        Plan.Refuse($"This {element.Rule.Type} has no {change.Attribute} in this file to set, and a body read by its grammar is given no part an entry lacks.");
+        if (change.Read.Node is GrammarItems && NewText.IsEmpty(change.Value)) return true;
+        if (change.Binding.Create is not { After: { } after } create || PartEnd(element, after) is not { } offset)
+        {
+            Plan.Refuse($"This {element.Rule.Type} has no {change.Attribute} in this file to set, and a body read by its grammar is given no part an entry lacks.");
+            return true;
+        }
+        var values = change.Read.Node is GrammarItems && change.Binding.Split is null ? Wanted(change).Select(object? (value) => value).ToList() : [change.Value];
+        var text = string.Concat(values.Select(value => NewText.Render(create.Emit, name => name == "value" ? Format(change.Read, change.Binding, value) : null)));
+        plan.Add(SpliceOperation.InsertKey, offset, offset, text);
         return true;
+    }
+
+    /// <summary>The end of the last token of the first attribute of <paramref name="after"/> the entry holds a part of.</summary>
+    private static int? PartEnd(ReadElement element, IReadOnlyList<string> after)
+    {
+        foreach (var name in after)
+        {
+            if (!element.Slots.TryGetValue(name, out var read) || !read.Present) continue;
+            if (read.Node is GrammarNode node) return node.Own.End;
+            if (read.Node is GrammarItems { Values.Count: > 0 } items) return items.Values[^1].Node.Own.End;
+        }
+        return null;
+    }
+
+    /// <summary>The items a set gives a list, as text.</summary>
+    private static List<string> Wanted(SlotChange change) => (change.Value as IEnumerable<object?> ?? []).Select(value => NewText.Plain(value, null)).ToList();
+
+    /// <summary>
+    /// A set of a list of items (FBL 0.11 §5.2, FBL 0.13 §6.3): the items of the longest common subsequence of the old list
+    /// and the new one stay, an item removed and one added at the same place are a <c>replace-value</c> of the item's span,
+    /// removed items are written off by <see cref="RemoveItems"/> and new ones by <see cref="AddItems"/>, so that every byte
+    /// of an item the set keeps, and between two items it keeps, stays.
+    /// </summary>
+    private void WriteItems(Plan plan, SlotChange change, GrammarItems items)
+    {
+        var wanted = Wanted(change);
+        var held = items.Items.Select(item => item.Value).ToList();
+        var kept = ListDifference.CommonSubsequence(held, wanted);
+        var survives = new bool[held.Count];
+        var added = new List<string>();
+        int i = 0, j = 0;
+        foreach ((int Held, int Wanted) anchor in kept.Append((held.Count, wanted.Count)))
+        {
+            var paired = Math.Min(anchor.Held - i, anchor.Wanted - j);
+            for (var k = 0; k < paired; k++)
+            {
+                survives[i + k] = true;
+                plan.Add(SpliceOperation.ReplaceValue, items.Items[i + k].Span, Escaped(change.Binding, wanted[j + k]));
+            }
+            added.AddRange(wanted.Skip(j + paired).Take(anchor.Wanted - j - paired));
+            if (anchor.Held < held.Count) survives[anchor.Held] = true;
+            i = anchor.Held + 1;
+            j = anchor.Wanted + 1;
+        }
+        RemoveItems(plan, items, survives);
+        if (added.Count > 0) AddItems(plan, change, items, survives, added);
+    }
+
+    /// <summary>
+    /// The removed items, node by node (FBL 0.13 §6.3): a run after an item the set keeps goes from the end of that item to
+    /// the end of the run, a run at the start of a node to the start of the item kept after it, and a node whose every item
+    /// goes is removed with the whitespace before it, as a node of a <c>many</c> slot without <c>split</c> is.
+    /// </summary>
+    private void RemoveItems(Plan plan, GrammarItems items, bool[] survives)
+    {
+        foreach (var node in items.Values.Select(value => value.Node))
+        {
+            var places = Enumerable.Range(0, survives.Length).Where(place => items.Items[place].Node == node).ToList();
+            if (places.Count == 0) continue;
+            if (places.All(place => !survives[place]))
+            {
+                plan.Add(SpliceOperation.RemoveKey, SpaceBefore(node.Own.Start), node.Own.End, "");
+                continue;
+            }
+            for (var at = 0; at < places.Count; at++)
+            {
+                if (survives[places[at]]) continue;
+                var last = at;
+                while (last + 1 < places.Count && !survives[places[last + 1]]) last++;
+                var run = (First: items.Items[places[at]].Span, Last: items.Items[places[last]].Span);
+                if (at > 0) plan.Add(SpliceOperation.RemoveKey, items.Items[places[at - 1]].Span.End, run.Last.End, "");
+                else plan.Add(SpliceOperation.RemoveKey, run.First.Start, items.Items[places[last + 1]].Span.Start, "");
+                at = last;
+            }
+        }
+    }
+
+    /// <summary>
+    /// The new items (FBL 0.13 §6.3): with <c>split</c>, an <c>insert-key</c> of the separator and the values right after the
+    /// last item the set keeps, or, where no node holds an item, a <c>replace-value</c> of the last node's value; without it,
+    /// each new node written by the slot's <c>create</c> right after the last node the set keeps (FBL 0.12 §4.9).
+    /// </summary>
+    private void AddItems(Plan plan, SlotChange change, GrammarItems items, bool[] survives, List<string> added)
+    {
+        var last = Enumerable.Range(0, survives.Length).Where(place => survives[place]).Select(place => items.Items[place]).LastOrDefault();
+        var separator = Separator(change.Binding);
+        var joined = string.Join(separator, added.Select(value => Escaped(change.Binding, value)));
+        if (change.Binding.Split is not null)
+        {
+            if (last is not null) plan.Add(SpliceOperation.InsertKey, last.Span.End, last.Span.End, separator + joined);
+            else plan.Add(SpliceOperation.ReplaceValue, items.Values[^1].Span, joined);
+            return;
+        }
+        if (change.Binding.Create is not { } create)
+        {
+            Plan.Refuse($"The binding gives no form to write a new {change.Attribute} in.");
+            return;
+        }
+        var offset = (last?.Node ?? items.Values[^1].Node).Own.End;
+        var text = string.Concat(added.Select(value => NewText.Render(create.Emit, name => name == "value" ? Escaped(change.Binding, value) : null)));
+        plan.Add(SpliceOperation.InsertKey, offset, offset, text);
+    }
+
+    /// <summary>The start of the spaces and tabs that stand right before <paramref name="offset"/>.</summary>
+    private int SpaceBefore(int offset)
+    {
+        while (offset > Text.BomLength && Text.Bytes[offset - 1] is (byte)' ' or (byte)'\t') offset--;
+        return offset;
     }
 
     /// <summary>
@@ -204,8 +379,15 @@ internal sealed class GrammarFamily(BodyText text, FblBinding binding, FblOption
         var place = before.IndexOf(element.Entry);
         if (place < 0 || ReadAgain(planned) is not { } after) return false;
         var again = after.Candidates(element.Rule).ToList();
-        return again.Count == before.Count
-            && changes.All(change => after.Read(again[place], change.Binding) is { Present: true } read && read.Wire == Format(change.Read, change.Binding, change.Value));
+        return again.Count == before.Count && changes.All(change => ReadsAgain(after, again[place], change));
+    }
+
+    /// <summary>Whether <paramref name="after"/> reads the changed value as it was written: a list holding the new items, in any order, and any other value as written.</summary>
+    private bool ReadsAgain(GrammarFamily after, Candidate candidate, SlotChange change)
+    {
+        if (change.Read.Node is not GrammarItems) return after.Read(candidate, change.Binding) is { Present: true } read && read.Wire == Format(change.Read, change.Binding, change.Value);
+        var items = (after.ReadMany(candidate, change.Binding).Value as IEnumerable<object?> ?? []).Select(value => NewText.Plain(value, null));
+        return items.Order(StringComparer.Ordinal).SequenceEqual(Wanted(change).Order(StringComparer.Ordinal), StringComparer.Ordinal);
     }
 
     /// <summary>A set that would not read back is refused, and nothing is written (FBL 0.9 §4.9, §6.4).</summary>
@@ -354,7 +536,7 @@ internal sealed class GrammarFamily(BodyText text, FblBinding binding, FblOption
         var placed = NewText.Parts(emit).Select(part => part.Placeholder).OfType<string>().ToHashSet(StringComparer.Ordinal);
         return candidates.Any(candidate => written.Start <= candidate.Entry.Own.Start && candidate.Entry.Own.Start < written.End
             && (!placed.Contains("id") || request.Id is null || rule.Id?.From is not { } from || after.Read(candidate, from).Wire == request.Id)
-            && request.Values.All(pair => !placed.Contains(pair.Key) || pair.Value is null || rule.Attribute(pair.Key) is not { Kind: SlotKind.Node } binding
+            && request.Values.All(pair => !placed.Contains(pair.Key) || pair.Value is null or IEnumerable<object?> || rule.Attribute(pair.Key) is not { Kind: SlotKind.Node } binding
                 || after.Read(candidate, binding).Wire == after.Format(SlotRead.Absent, binding, pair.Value)));
     }
 
