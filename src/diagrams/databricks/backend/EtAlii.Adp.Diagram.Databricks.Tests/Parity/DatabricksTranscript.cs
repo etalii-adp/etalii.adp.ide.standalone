@@ -671,12 +671,12 @@ internal static class DatabricksTranscript
         }
 
         // Removals: one nothing touches, asked nothing; one that takes dependencies with it, asked first.
-        if (keyed.FirstOrDefault(task => task.DependsOn.Count == 0 && JobWriter.ReferencesTo(job, task.Key).Count == 0) is { } untouched)
+        if (keyed.FirstOrDefault(task => task.DependsOn.Count == 0 && HandWrittenDatabricks.ReferencesTo(job, task.Key).Count == 0) is { } untouched)
         {
             await script.ExecuteAsync($"task:{untouched.Key}", DatabricksContextActionProvider.RemoveTaskActionId, Mode.RevertWithRedo);
         }
 
-        if (keyed.FirstOrDefault(task => task.DependsOn.Count + JobWriter.ReferencesTo(job, task.Key).Count > 0) is { } touched)
+        if (keyed.FirstOrDefault(task => task.DependsOn.Count + HandWrittenDatabricks.ReferencesTo(job, task.Key).Count > 0) is { } touched)
         {
             await script.ExecuteAsync($"task:{touched.Key}", DatabricksContextActionProvider.RemoveTaskActionId, Mode.Revert);
             await script.CommitAsync($"task:{touched.Key}", DatabricksContextActionProvider.RemoveTaskActionId, "", Mode.RevertWithRedo);

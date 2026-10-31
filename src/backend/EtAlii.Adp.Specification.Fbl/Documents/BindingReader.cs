@@ -236,6 +236,8 @@ internal static partial class BindingReader
         Constant = Object(json, "constant", pointer, "An insert's constant", problems) is { } constant ? ReadConstant(constant, pointer + "/constant", problems) : null,
         WhenRefusal = Refusal(json, "when", pointer, problems),
         ContainerRefusal = Refusal(json, "container", pointer, problems),
+        KeyRefusal = Refusal(json, "key", pointer, problems),
+        DuplicateRefusal = Refusal(json, "duplicate", pointer, problems),
     };
 
     /// <summary>

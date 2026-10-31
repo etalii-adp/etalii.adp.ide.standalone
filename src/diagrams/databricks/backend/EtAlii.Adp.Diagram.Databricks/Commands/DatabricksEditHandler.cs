@@ -1,12 +1,13 @@
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Specification.Fbl.Planning;
 
 namespace EtAlii.Adp.Diagram.Databricks;
 
 /// <summary>
 /// A handler of a command that edits a Databricks file: the shared run, which edits a copy, saves
 /// it and carries a warning of the save to the result (code-structure FR-033), with the model the
-/// family's parsers read.
+/// binding reads; every edit is a model change written by <see cref="DatabricksEdits"/>.
 /// </summary>
 /// <remarks>
 /// The inverse is the run's whole-document restore rather than a per-segment capture,
@@ -23,11 +24,20 @@ public abstract class DatabricksEditHandler<TCommand>(IDatabricksDocumentStore d
     /// <inheritdoc />
     protected sealed override DatabricksModel Parse(LineDocument body) => DatabricksModel.Read(body);
 
-    /// <summary>A writer's answer as an outcome: its refusal, or applied when it has none.</summary>
-    protected static EditOutcome Outcome(string refusal)
+    /// <summary>Sets one attribute of the task keyed <paramref name="taskKey"/> of the job an edit addresses.</summary>
+    protected static EditOutcome SetTask(LineDocument body, DatabricksModel model, string jobKey, string taskKey, string attribute, string value)
     {
-        ArgumentNullException.ThrowIfNull(refusal);
-        return refusal.Length > 0 ? EditOutcome.Refused(refusal) : EditOutcome.Applied;
+        if (JobOf(model, jobKey) is not { } job)
+        {
+            return EditOutcome.Refused("There is no job in this file any more.");
+        }
+
+        if (job.Tasks.All(task => task.Key != taskKey))
+        {
+            return EditOutcome.Refused($"There is no task named '{taskKey}' any more.");
+        }
+
+        return DatabricksEdits.Job(body, job, reading => new ModelChange.Set(DatabricksEdits.TaskId(reading, taskKey), DatabricksEdits.Attributes((attribute, value))));
     }
 
     /// <summary>The job an edit addresses: the named one, or the file's first.</summary>

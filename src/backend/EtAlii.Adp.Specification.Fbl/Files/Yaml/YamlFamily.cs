@@ -285,6 +285,7 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
         var captures = request.Parent?.Candidate.Captures ?? (parent is null ? null : plan.Reading.ElementOf(parent)?.Candidate.Captures) ?? CapturesOf(plan);
         var selector = insert.Container ?? ContainerOf(rule.At);
         var container = Container(selector, parent, captures);
+        var member = MemberKey(request);
         var keys = ItemLines(request);
         if (keys.Count == 0)
         {
@@ -293,7 +294,12 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
         }
         if (container is null)
         {
-            EnsureContainer(plan, insert, selector, parent, keys);
+            EnsureContainer(plan, insert, selector, parent, keys, member);
+            return;
+        }
+        if (member is not null)
+        {
+            InsertMember(plan, request, container, selector, member, keys);
             return;
         }
         var value = container.Value;
@@ -340,6 +346,48 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
     }
 
     /// <summary>
+    /// A new member of a mapping, named by its key (FBL 0.14 §6.2): the key, then the entry's keys and skeleton one step
+    /// deeper, placed among the container's members by <c>place</c> and indented like the member it follows, else like
+    /// the one it precedes, else one step deeper than the container's key. A container written as its key alone takes it
+    /// as the first member of a block mapping; one written in flow form, or that is not a mapping, takes none.
+    /// </summary>
+    private void InsertMember(Plan plan, InsertRequest request, TreeEntry container, string selector, string key, List<string> lines)
+    {
+        var value = container.Value;
+        var name = selector.TrimEnd('/')[(selector.TrimEnd('/').LastIndexOf('/') + 1)..];
+        if (value.Style == ValueStyle.FlowMapping) Plan.Refuse($"The {name} are written as a flow mapping, which takes no insert.");
+        if (value.Style == ValueStyle.Empty)
+        {
+            var at = container.IsRoot ? Text.Length : LineEndAfter(container);
+            plan.Add(SpliceOperation.InsertEntry, at, at, NewLine(at, MemberLines(key, lines, container.IsRoot ? 0 : container.Indent + Step)));
+            return;
+        }
+        if (value is not { Kind: ValueKind.Mapping, Entries.Count: > 0 }) Plan.Refuse($"The {selector} of this file is not a mapping a {request.Rule.Type} can be added to.");
+        RefuseDuplicate(request, value, key);
+        var siblings = value.Entries;
+        var previous = request.Rule.Insert!.Place switch
+        {
+            InsertPlace.Start => null,
+            InsertPlace.AfterLast => siblings.LastOrDefault(s => plan.Reading.ClaimedBy(s) == request.Rule.Name) ?? siblings[^1],
+            _ => siblings[^1],
+        };
+        var offset = previous is null ? siblings[0].LineSpan?.Start ?? siblings[0].Own.Start : LineEndAfter(previous);
+        plan.Add(SpliceOperation.InsertEntry, offset, offset, NewLine(offset, MemberLines(key, lines, (previous ?? siblings[0]).Indent)));
+    }
+
+    /// <summary>
+    /// The lines of a new member (FBL 0.14 §6.2): its key at <paramref name="indent"/>, written as a new string value is,
+    /// plain when it is plain-safe and else in <c>text.quote</c>, then <paramref name="lines"/> one step deeper.
+    /// </summary>
+    private List<string> MemberLines(string key, List<string> lines, int indent)
+    {
+        var inside = indent + Step;
+        var member = new List<string>(lines.Count + 1) { Indentation(indent) + String(key, null, null, indent) + ":" };
+        member.AddRange(lines.Select(line => Indentation(inside) + Nested(line, inside)));
+        return member;
+    }
+
+    /// <summary>
     /// An insert into a flow collection that holds something (FBL 0.10 §6.2, Flow sequences): a one-line flow sequence
     /// takes the new item inside it, after its last item and a <c>, </c>, written in flow form; a flow sequence over
     /// several lines and a flow mapping take no insert, and the add is refused with a reason.
@@ -381,7 +429,7 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
                 : null;
     }
 
-    private void EnsureContainer(Plan plan, InsertSettings insert, string selector, Entry? parent, List<string> keys)
+    private void EnsureContainer(Plan plan, InsertSettings insert, string selector, Entry? parent, List<string> keys, string? member)
     {
         if (insert.Create is not { } create)
         {
@@ -408,7 +456,7 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
                 if (create.Text is { } own && levels.Count > 0) levels[^1] = own;
                 foreach (var level in levels) plan.Add(SpliceOperation.EnsureContainer, at, at, NewLine(at, [level]));
                 var first = inside - Step + SequenceOffset;
-                plan.Add(SpliceOperation.InsertEntry, at, at, NewLine(at, Item(keys, first, first + 2)));
+                plan.Add(SpliceOperation.InsertEntry, at, at, NewLine(at, member is null ? Item(keys, first, first + 2) : MemberLines(member, keys, inside)));
                 return;
             }
             // At the end of a document whose root is a mapping, or that holds nothing yet: a root list or scalar has no
@@ -441,7 +489,7 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
         var containerText = create.Text ?? Indentation(indent) + name + ":";
         plan.Add(SpliceOperation.EnsureContainer, offset, offset, NewLine(offset, [containerText]));
         var dash = indent + SequenceOffset;
-        plan.Add(SpliceOperation.InsertEntry, offset, offset, NewLine(offset, Item(keys, dash, dash + 2)));
+        plan.Add(SpliceOperation.InsertEntry, offset, offset, NewLine(offset, member is null ? Item(keys, dash, dash + 2) : MemberLines(member, keys, indent + Step)));
     }
 
     /// <summary>

@@ -1,5 +1,6 @@
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Specification.Fbl.Planning;
 
 namespace EtAlii.Adp.Diagram.Databricks;
 
@@ -46,10 +47,50 @@ public sealed class InsertDatabricksTaskCommandHandler(IDatabricksDocumentStore 
     : DatabricksEditHandler<InsertDatabricksTaskCommand>(documents)
 {
     /// <inheritdoc />
-    protected override EditOutcome Apply(LineDocument body, DatabricksModel model, InsertDatabricksTaskCommand command) => Outcome(
-        JobOf(model, command.JobKey) is { } job
-            ? JobWriter.InsertTask(body, job, command.TaskKey, command.TaskType, command.Source)
-            : "There is no job in this file to add a task to.");
+    /// <remarks>
+    /// <para>
+    /// The binding has a rule per task type that adds one, which writes the task's source under its type's <c>*_task</c>
+    /// mapping as a value of that mapping, so it reads back as the same text (FBL 0.10 section 6.2, finding B9).
+    /// </para>
+    /// <para>
+    /// <b>A stand-in for gap 6</b>: the starter values a wheel, SQL or condition task opens with besides its source
+    /// (<see cref="StarterValues"/>) are this module's, given to the add as values the binding writes, because an insert's
+    /// <c>skeleton</c> is fixed text written beside the entry's keys and cannot share the <c>*_task</c> mapping the source
+    /// is written into, and its <c>constant</c> holds only keys of the entry itself (FBL 0.13 section 6.2).
+    /// </para>
+    /// </remarks>
+    protected override EditOutcome Apply(LineDocument body, DatabricksModel model, InsertDatabricksTaskCommand command)
+    {
+        if (JobOf(model, command.JobKey) is not { } job)
+        {
+            return EditOutcome.Refused("There is no job in this file to add a task to.");
+        }
+
+        if (command.TaskKey.Length == 0)
+        {
+            return EditOutcome.Refused("A task needs a key.");
+        }
+
+        if (job.Tasks.Any(task => task.Key == command.TaskKey))
+        {
+            return EditOutcome.Refused($"A task named '{command.TaskKey}' is already there.");
+        }
+
+        return DatabricksEdits.Job(
+            body,
+            job,
+            _ => new ModelChange.Add("Task", null, DatabricksEdits.Attributes([("key", command.TaskKey), ("taskType", command.TaskType), ("taskSource", command.Source), .. StarterValues(command.TaskType)])),
+            command.TaskType);
+    }
+
+    /// <summary>The values a new task of <paramref name="taskType"/> opens with besides its source, as the module's writer wrote them.</summary>
+    private static (string Name, object? Value)[] StarterValues(string taskType) => taskType switch
+    {
+        "wheel" => [("entryPoint", "main")],
+        "sql" => [("warehouseId", "")],
+        "condition" => [("conditionOp", "EQUAL_TO"), ("conditionRight", "true")],
+        _ => [],
+    };
 }
 
 /// <inheritdoc cref="RemoveDatabricksTaskCommand" />
@@ -57,10 +98,21 @@ public sealed class RemoveDatabricksTaskCommandHandler(IDatabricksDocumentStore 
     : DatabricksEditHandler<RemoveDatabricksTaskCommand>(documents)
 {
     /// <inheritdoc />
-    protected override EditOutcome Apply(LineDocument body, DatabricksModel model, RemoveDatabricksTaskCommand command) => Outcome(
-        JobOf(model, command.JobKey) is { } job
-            ? JobWriter.RemoveTask(body, job, command.TaskKey)
-            : "There is no job in this file any more.");
+    /// <remarks>The binding's remove cascades to every dependency on the task, and a <c>depends_on</c> left empty goes too, in the one edit.</remarks>
+    protected override EditOutcome Apply(LineDocument body, DatabricksModel model, RemoveDatabricksTaskCommand command)
+    {
+        if (JobOf(model, command.JobKey) is not { } job)
+        {
+            return EditOutcome.Refused("There is no job in this file any more.");
+        }
+
+        if (job.Tasks.All(task => task.Key != command.TaskKey))
+        {
+            return EditOutcome.Refused($"There is no task named '{command.TaskKey}' any more.");
+        }
+
+        return DatabricksEdits.Job(body, job, reading => new ModelChange.Remove(DatabricksEdits.TaskId(reading, command.TaskKey)));
+    }
 }
 
 /// <inheritdoc cref="ConnectDatabricksTasksCommand" />
@@ -68,10 +120,34 @@ public sealed class ConnectDatabricksTasksCommandHandler(IDatabricksDocumentStor
     : DatabricksEditHandler<ConnectDatabricksTasksCommand>(documents)
 {
     /// <inheritdoc />
-    protected override EditOutcome Apply(LineDocument body, DatabricksModel model, ConnectDatabricksTasksCommand command) => Outcome(
-        JobOf(model, command.JobKey) is { } job
-            ? JobWriter.Connect(body, job, command.FromKey, command.ToKey, command.Outcome)
-            : "There is no job in this file any more.");
+    protected override EditOutcome Apply(LineDocument body, DatabricksModel model, ConnectDatabricksTasksCommand command)
+    {
+        if (JobOf(model, command.JobKey) is not { } job)
+        {
+            return EditOutcome.Refused("There is no job in this file any more.");
+        }
+
+        if (command.FromKey == command.ToKey)
+        {
+            return EditOutcome.Refused("A task cannot depend on itself.");
+        }
+
+        var to = job.Tasks.FirstOrDefault(task => task.Key == command.ToKey);
+        if (to is null || job.Tasks.All(task => task.Key != command.FromKey))
+        {
+            return EditOutcome.Refused("One of those tasks is not there any more.");
+        }
+
+        if (to.DependsOn.Any(dependency => dependency.TaskKey == command.FromKey))
+        {
+            return EditOutcome.Refused($"'{command.ToKey}' already depends on '{command.FromKey}'.");
+        }
+
+        var attributes = command.Outcome.Length > 0
+            ? DatabricksEdits.Attributes(("upstreamKey", command.FromKey), ("outcome", command.Outcome))
+            : DatabricksEdits.Attributes(("upstreamKey", command.FromKey));
+        return DatabricksEdits.Job(body, job, reading => new ModelChange.Add("Dependency", null, attributes, DatabricksEdits.TaskId(reading, command.ToKey)));
+    }
 }
 
 /// <inheritdoc cref="DisconnectDatabricksTasksCommand" />
@@ -79,10 +155,22 @@ public sealed class DisconnectDatabricksTasksCommandHandler(IDatabricksDocumentS
     : DatabricksEditHandler<DisconnectDatabricksTasksCommand>(documents)
 {
     /// <inheritdoc />
-    protected override EditOutcome Apply(LineDocument body, DatabricksModel model, DisconnectDatabricksTasksCommand command) => Outcome(
-        JobOf(model, command.JobKey) is { } job
-            ? JobWriter.Disconnect(body, job, command.FromKey, command.ToKey)
-            : "There is no job in this file any more.");
+    /// <remarks>The <c>depends_on:</c> key goes with its last entry (<c>remove-when-empty</c>), so undoing the connect that made both restores the file.</remarks>
+    protected override EditOutcome Apply(LineDocument body, DatabricksModel model, DisconnectDatabricksTasksCommand command)
+    {
+        if (JobOf(model, command.JobKey) is not { } job)
+        {
+            return EditOutcome.Refused("There is no job in this file any more.");
+        }
+
+        var to = job.Tasks.FirstOrDefault(task => task.Key == command.ToKey);
+        if (to is null || to.DependsOn.All(dependency => dependency.TaskKey != command.FromKey))
+        {
+            return EditOutcome.Refused($"There is no dependency from '{command.FromKey}' to '{command.ToKey}' any more.");
+        }
+
+        return DatabricksEdits.Job(body, job, reading => new ModelChange.Remove(DatabricksEdits.DependencyId(reading, command.ToKey, command.FromKey)));
+    }
 }
 
 /// <inheritdoc cref="RenameDatabricksTaskCommand" />
@@ -90,10 +178,31 @@ public sealed class RenameDatabricksTaskCommandHandler(IDatabricksDocumentStore 
     : DatabricksEditHandler<RenameDatabricksTaskCommand>(documents)
 {
     /// <inheritdoc />
-    protected override EditOutcome Apply(LineDocument body, DatabricksModel model, RenameDatabricksTaskCommand command) => Outcome(
-        JobOf(model, command.JobKey) is { } job
-            ? JobWriter.RenameTask(body, job, command.TaskKey, command.NewKey)
-            : "There is no job in this file any more.");
+    /// <remarks>A rename rewrites every reference to the old key in the same edit (FBL section 5.7): each dependency's <c>task_key</c> is a reference to a task by its key.</remarks>
+    protected override EditOutcome Apply(LineDocument body, DatabricksModel model, RenameDatabricksTaskCommand command)
+    {
+        if (JobOf(model, command.JobKey) is not { } job)
+        {
+            return EditOutcome.Refused("There is no job in this file any more.");
+        }
+
+        if (command.NewKey.Length == 0)
+        {
+            return EditOutcome.Refused("A task needs a key.");
+        }
+
+        if (job.Tasks.All(task => task.Key != command.TaskKey))
+        {
+            return EditOutcome.Refused($"There is no task named '{command.TaskKey}' any more.");
+        }
+
+        if (command.NewKey != command.TaskKey && job.Tasks.Any(task => task.Key == command.NewKey))
+        {
+            return EditOutcome.Refused($"A task named '{command.NewKey}' is already there.");
+        }
+
+        return DatabricksEdits.Job(body, job, reading => new ModelChange.Set(DatabricksEdits.TaskId(reading, command.TaskKey), DatabricksEdits.Attributes(("key", command.NewKey))));
+    }
 }
 
 /// <inheritdoc cref="SetDatabricksRunIfCommand" />
@@ -101,10 +210,9 @@ public sealed class SetDatabricksRunIfCommandHandler(IDatabricksDocumentStore do
     : DatabricksEditHandler<SetDatabricksRunIfCommand>(documents)
 {
     /// <inheritdoc />
-    protected override EditOutcome Apply(LineDocument body, DatabricksModel model, SetDatabricksRunIfCommand command) => Outcome(
-        JobOf(model, command.JobKey) is { } job
-            ? JobWriter.SetRunIf(body, job, command.TaskKey, command.RunIf)
-            : "There is no job in this file any more.");
+    /// <remarks>An empty value removes the key, restoring the default (<c>empty: "remove"</c>).</remarks>
+    protected override EditOutcome Apply(LineDocument body, DatabricksModel model, SetDatabricksRunIfCommand command) =>
+        SetTask(body, model, command.JobKey, command.TaskKey, "runIf", command.RunIf);
 }
 
 /// <inheritdoc cref="SetDatabricksClusterCommand" />
@@ -112,8 +220,14 @@ public sealed class SetDatabricksClusterCommandHandler(IDatabricksDocumentStore 
     : DatabricksEditHandler<SetDatabricksClusterCommand>(documents)
 {
     /// <inheritdoc />
-    protected override EditOutcome Apply(LineDocument body, DatabricksModel model, SetDatabricksClusterCommand command) => Outcome(
-        JobOf(model, command.JobKey) is { } job
-            ? JobWriter.SetCluster(body, job, command.TaskKey, command.ClusterKey)
-            : "There is no job in this file any more.");
+    /// <remarks>An empty value removes the key: the task runs serverless.</remarks>
+    protected override EditOutcome Apply(LineDocument body, DatabricksModel model, SetDatabricksClusterCommand command)
+    {
+        if (JobOf(model, command.JobKey) is { } job && command.ClusterKey.Length > 0 && job.Clusters.All(cluster => cluster.Key != command.ClusterKey))
+        {
+            return EditOutcome.Refused($"There is no cluster named '{command.ClusterKey}' in this job.");
+        }
+
+        return SetTask(body, model, command.JobKey, command.TaskKey, "clusterKey", command.ClusterKey);
+    }
 }

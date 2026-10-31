@@ -245,6 +245,24 @@ public sealed partial class Rule
 
     public AttributeBinding? Attribute(string name) => Attributes.FirstOrDefault(a => a.Key == name).Value;
 
+    /// <summary>
+    /// The capture a rule's <c>at</c> ends in (<c>/resources/jobs/{job}</c> ends in <c>job</c>), which names each entry it
+    /// reads by its key in a mapping; null when its last segment is not a capture (FBL 0.14 §6.2).
+    /// </summary>
+    internal string? MemberCapture => At is { } at && MemberSegmentPattern().Match(at) is { Success: true } match ? match.Groups[1].Value : null;
+
+    /// <summary>
+    /// The attribute bound to <see cref="MemberCapture"/>, whose value an add gives as the new member's key, and its
+    /// name; null when the rule reads no member or binds no attribute to its capture (FBL 0.14 §6.2, §14.1).
+    /// </summary>
+    internal string? MemberKeyAttribute => MemberCapture is { } capture
+        ? Attributes.FirstOrDefault(a => a.Value.Kind is SlotKind.Capture c && c.Name == capture).Key
+        : null;
+
+    /// <summary>The last segment of an <c>at</c>, when it is a capture.</summary>
+    [System.Text.RegularExpressions.GeneratedRegex(@"/\{([^}/]+)\}$", System.Text.RegularExpressions.RegexOptions.CultureInvariant)]
+    private static partial System.Text.RegularExpressions.Regex MemberSegmentPattern();
+
     /// <summary>A placeholder of an <c>emit</c> text: an attribute's name, or <c>id</c>, in braces.</summary>
     [System.Text.RegularExpressions.GeneratedRegex(@"\{([A-Za-z_][A-Za-z0-9_]*)\}", System.Text.RegularExpressions.RegexOptions.CultureInvariant)]
     private static partial System.Text.RegularExpressions.Regex PlaceholderPattern();
@@ -466,6 +484,12 @@ internal sealed class InsertSettings
 
     /// <summary>The sentence an add is refused with when the container is missing and there is no <see cref="Create"/> (FBL 0.10 §6.2, §6.4); null for the host's own.</summary>
     public string? ContainerRefusal { get; init; }
+
+    /// <summary>The sentence an add of a new member is refused with when it gives no key or the empty text (FBL 0.14 §6.2, §6.4); null for the host's own.</summary>
+    public string? KeyRefusal { get; init; }
+
+    /// <summary>The sentence an add of a new member is refused with when its key is one the mapping already holds (FBL 0.14 §6.2, §6.4); null for the host's own.</summary>
+    public string? DuplicateRefusal { get; init; }
 }
 
 /// <summary>How a missing container is created: where, with the key or selector <see cref="At"/> names, and its own text.</summary>

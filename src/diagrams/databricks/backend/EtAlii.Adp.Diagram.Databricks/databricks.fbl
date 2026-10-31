@@ -1,7 +1,7 @@
 {
   "$schema": "https://etalii.net/adp/fbl/schema/0.1/fbl.schema.json#/$defs/Document",
-  "fbl": "0.10",
-  "doc": "The Databricks module's one binding (databricks-disl-fbl task 11): etalii.adp's specifications/fbl/databricks.fbl, which names the three readings of one Databricks file, with what the module's three readers read besides: the includes and variables, the configuration it does not model as Unknown, a target's overrides, a task's source and a task without a key, a pipeline's notifications, a flag read as true only when it is written true, and a dependency read as an element with its two ends, so that one on a task the job does not declare is kept (DISL gap 8, finding A9).",
+  "fbl": "0.14",
+  "doc": "The Databricks module's one binding (databricks-disl-fbl task 11): etalii.adp's specifications/fbl/databricks.fbl, which names the three readings of one Databricks file, with what the module's three readers read besides: the includes and variables, the configuration it does not model as Unknown, a target's overrides, a task's source and a task without a key, a pipeline's notifications, a flag read as true only when it is written true, and a dependency read as an element with its two ends, so that one on a task the job does not declare is kept (DISL gap 8, finding A9). A new job or pipeline is added as a member of resources.jobs or resources.pipelines, named by its key, after the last of its kind, through the insert-only rules newJobResource and newPipelineResource, which write its name as the text the key is and a skeleton complete enough to open, and create the levels they need at the end of their parents (FBL 0.14, section 6.2).",
   "bindings": {
     "configuration": {
       "title": "Databricks configuration",
@@ -126,6 +126,82 @@
           }
         },
         {
+          "name": "newJobResource",
+          "type": "Resource",
+          "at": "/resources/jobs/{job}",
+          "origins": [
+            "databricks/bundle"
+          ],
+          "when": "false",
+          "attributes": {
+            "resourceKind": {
+              "value": "'jobs'"
+            },
+            "key": {
+              "capture": "job"
+            },
+            "name": {
+              "key": "name",
+              "read": "text"
+            }
+          },
+          "insert": {
+            "place": "after-last",
+            "container": "/resources/jobs",
+            "create": {
+              "at": "end"
+            },
+            "keys": [
+              "name"
+            ],
+            "when": "attributes.resourceKind == 'jobs'",
+            "skeleton": "tasks:\n  - task_key: main\n    notebook_task:\n      notebook_path: notebooks/{key}\n",
+            "refusals": {
+              "when": "A resource of that kind cannot be added to a bundle.",
+              "key": "A resource needs a key.",
+              "duplicate": "A job with that key is already there."
+            }
+          }
+        },
+        {
+          "name": "newPipelineResource",
+          "type": "Resource",
+          "at": "/resources/pipelines/{pipeline}",
+          "origins": [
+            "databricks/bundle"
+          ],
+          "when": "false",
+          "attributes": {
+            "resourceKind": {
+              "value": "'pipelines'"
+            },
+            "key": {
+              "capture": "pipeline"
+            },
+            "name": {
+              "key": "name",
+              "read": "text"
+            }
+          },
+          "insert": {
+            "place": "after-last",
+            "container": "/resources/pipelines",
+            "create": {
+              "at": "end"
+            },
+            "keys": [
+              "name"
+            ],
+            "when": "attributes.resourceKind == 'pipelines'",
+            "skeleton": "libraries:\n  - notebook:\n      path: transformations/{key}\n",
+            "refusals": {
+              "when": "A resource of that kind cannot be added to a bundle.",
+              "key": "A resource needs a key.",
+              "duplicate": "A pipeline with that key is already there."
+            }
+          }
+        },
+        {
           "name": "unknownKey",
           "type": "Unknown",
           "at": "/{key}",
@@ -246,12 +322,6 @@
             "key": {
               "key": "task_key",
               "read": "text",
-              "reference": {
-                "to": [
-                  "task"
-                ],
-                "by": "key"
-              },
               "empty": "refuse",
               "refusals": {
                 "empty": "A task needs a key."
@@ -282,8 +352,13 @@
               "readOnly": "The source is edited in the file."
             }
           },
+          "remove": {
+            "cascade": [
+              "dependency"
+            ]
+          },
           "insert": {
-            "place": "after-last",
+            "place": "end",
             "container": "/resources/jobs/{job}/tasks",
             "keys": [
               "task_key",
@@ -291,15 +366,12 @@
               "job_cluster_key",
               "run_if"
             ],
-            "skeleton": "notebook_task:\n  notebook_path: notebooks/{key}\n",
+            "emit": "{ \"task_key\": \"{key}\", \"notebook_task\": { \"notebook_path\": \"{taskSource}\" } }",
             "refusals": {
-              "container": "The job has no tasks section to add into."
-            }
-          },
-          "remove": {
-            "cascade": [
-              "dependency"
-            ]
+              "container": "The job has no tasks section to add into.",
+              "when": "A task of that type cannot be added to a job."
+            },
+            "when": "false"
           }
         },
         {
@@ -323,6 +395,302 @@
             },
             "runIf": {
               "value": "(has(text.run_if) && type(text.run_if) == string ? text.run_if : '')"
+            }
+          }
+        },
+        {
+          "name": "notebookTask",
+          "type": "Task",
+          "at": "/resources/jobs/{job}/tasks/*",
+          "origins": [
+            "databricks/job"
+          ],
+          "when": "false",
+          "attributes": {
+            "key": {
+              "key": "task_key",
+              "read": "text",
+              "empty": "refuse",
+              "refusals": {
+                "empty": "A task needs a key."
+              }
+            },
+            "taskType": {
+              "value": "'notebook'"
+            },
+            "taskSource": {
+              "key": "notebook_path",
+              "child": "notebook_task",
+              "read": "text"
+            }
+          },
+          "insert": {
+            "place": "end",
+            "container": "/resources/jobs/{job}/tasks",
+            "keys": [
+              "task_key"
+            ],
+            "emit": "{ \"task_key\": \"{key}\", \"notebook_task\": { \"notebook_path\": \"{taskSource}\" } }",
+            "refusals": {
+              "container": "The job has no tasks section to add into.",
+              "when": "A task of that type cannot be added to a job."
+            },
+            "when": "attributes.taskType == 'notebook'"
+          }
+        },
+        {
+          "name": "pythonTask",
+          "type": "Task",
+          "at": "/resources/jobs/{job}/tasks/*",
+          "origins": [
+            "databricks/job"
+          ],
+          "when": "false",
+          "attributes": {
+            "key": {
+              "key": "task_key",
+              "read": "text",
+              "empty": "refuse",
+              "refusals": {
+                "empty": "A task needs a key."
+              }
+            },
+            "taskType": {
+              "value": "'python'"
+            },
+            "taskSource": {
+              "key": "python_file",
+              "child": "spark_python_task",
+              "read": "text"
+            }
+          },
+          "insert": {
+            "place": "end",
+            "container": "/resources/jobs/{job}/tasks",
+            "keys": [
+              "task_key"
+            ],
+            "when": "attributes.taskType == 'python'",
+            "emit": "{ \"task_key\": \"{key}\", \"spark_python_task\": { \"python_file\": \"{taskSource}\" } }",
+            "refusals": {
+              "container": "The job has no tasks section to add into."
+            }
+          }
+        },
+        {
+          "name": "wheelTask",
+          "type": "Task",
+          "at": "/resources/jobs/{job}/tasks/*",
+          "origins": [
+            "databricks/job"
+          ],
+          "when": "false",
+          "attributes": {
+            "key": {
+              "key": "task_key",
+              "read": "text",
+              "empty": "refuse",
+              "refusals": {
+                "empty": "A task needs a key."
+              }
+            },
+            "taskType": {
+              "value": "'wheel'"
+            },
+            "taskSource": {
+              "key": "package_name",
+              "child": "python_wheel_task",
+              "read": "text"
+            },
+            "entryPoint": {
+              "key": "entry_point",
+              "child": "python_wheel_task",
+              "read": "text"
+            }
+          },
+          "insert": {
+            "place": "end",
+            "container": "/resources/jobs/{job}/tasks",
+            "keys": [
+              "task_key"
+            ],
+            "when": "attributes.taskType == 'wheel'",
+            "emit": "{ \"task_key\": \"{key}\", \"python_wheel_task\": { \"package_name\": \"{taskSource}\", \"entry_point\": \"main\" } }",
+            "refusals": {
+              "container": "The job has no tasks section to add into."
+            }
+          }
+        },
+        {
+          "name": "sqlTask",
+          "type": "Task",
+          "at": "/resources/jobs/{job}/tasks/*",
+          "origins": [
+            "databricks/job"
+          ],
+          "when": "false",
+          "attributes": {
+            "key": {
+              "key": "task_key",
+              "read": "text",
+              "empty": "refuse",
+              "refusals": {
+                "empty": "A task needs a key."
+              }
+            },
+            "taskType": {
+              "value": "'sql'"
+            },
+            "warehouseId": {
+              "key": "warehouse_id",
+              "child": "sql_task",
+              "read": "text"
+            },
+            "taskSource": {
+              "key": "query_id",
+              "child": "sql_task/query",
+              "read": "text"
+            }
+          },
+          "insert": {
+            "place": "end",
+            "container": "/resources/jobs/{job}/tasks",
+            "keys": [
+              "task_key"
+            ],
+            "when": "attributes.taskType == 'sql'",
+            "emit": "{ \"task_key\": \"{key}\", \"sql_task\": { \"warehouse_id\": \"\", \"query\": { \"query_id\": \"{taskSource}\" } } }",
+            "refusals": {
+              "container": "The job has no tasks section to add into."
+            }
+          }
+        },
+        {
+          "name": "pipelineTask",
+          "type": "Task",
+          "at": "/resources/jobs/{job}/tasks/*",
+          "origins": [
+            "databricks/job"
+          ],
+          "when": "false",
+          "attributes": {
+            "key": {
+              "key": "task_key",
+              "read": "text",
+              "empty": "refuse",
+              "refusals": {
+                "empty": "A task needs a key."
+              }
+            },
+            "taskType": {
+              "value": "'pipeline'"
+            },
+            "taskSource": {
+              "key": "pipeline_id",
+              "child": "pipeline_task",
+              "read": "text"
+            }
+          },
+          "insert": {
+            "place": "end",
+            "container": "/resources/jobs/{job}/tasks",
+            "keys": [
+              "task_key"
+            ],
+            "when": "attributes.taskType == 'pipeline'",
+            "emit": "{ \"task_key\": \"{key}\", \"pipeline_task\": { \"pipeline_id\": \"{taskSource}\" } }",
+            "refusals": {
+              "container": "The job has no tasks section to add into."
+            }
+          }
+        },
+        {
+          "name": "runJobTask",
+          "type": "Task",
+          "at": "/resources/jobs/{job}/tasks/*",
+          "origins": [
+            "databricks/job"
+          ],
+          "when": "false",
+          "attributes": {
+            "key": {
+              "key": "task_key",
+              "read": "text",
+              "empty": "refuse",
+              "refusals": {
+                "empty": "A task needs a key."
+              }
+            },
+            "taskType": {
+              "value": "'run-job'"
+            },
+            "taskSource": {
+              "key": "job_id",
+              "child": "run_job_task",
+              "read": "text"
+            }
+          },
+          "insert": {
+            "place": "end",
+            "container": "/resources/jobs/{job}/tasks",
+            "keys": [
+              "task_key"
+            ],
+            "when": "attributes.taskType == 'run-job'",
+            "emit": "{ \"task_key\": \"{key}\", \"run_job_task\": { \"job_id\": \"{taskSource}\" } }",
+            "refusals": {
+              "container": "The job has no tasks section to add into."
+            }
+          }
+        },
+        {
+          "name": "conditionTask",
+          "type": "Task",
+          "at": "/resources/jobs/{job}/tasks/*",
+          "origins": [
+            "databricks/job"
+          ],
+          "when": "false",
+          "attributes": {
+            "key": {
+              "key": "task_key",
+              "read": "text",
+              "empty": "refuse",
+              "refusals": {
+                "empty": "A task needs a key."
+              }
+            },
+            "taskType": {
+              "value": "'condition'"
+            },
+            "conditionOp": {
+              "key": "op",
+              "child": "condition_task",
+              "read": "text"
+            },
+            "taskSource": {
+              "key": "left",
+              "child": "condition_task",
+              "read": "text",
+              "style": "double"
+            },
+            "conditionRight": {
+              "key": "right",
+              "child": "condition_task",
+              "read": "text",
+              "style": "double"
+            }
+          },
+          "insert": {
+            "place": "end",
+            "container": "/resources/jobs/{job}/tasks",
+            "keys": [
+              "task_key"
+            ],
+            "when": "attributes.taskType == 'condition'",
+            "emit": "{ \"task_key\": \"{key}\", \"condition_task\": { \"op\": \"EQUAL_TO\", \"left\": \"{taskSource}\", \"right\": \"true\" } }",
+            "refusals": {
+              "container": "The job has no tasks section to add into."
             }
           }
         },
@@ -500,10 +868,21 @@
               }
             }
           },
+          "parent": {
+            "rules": [
+              "pipeline"
+            ]
+          },
           "insert": {
-            "place": "after-last",
-            "container": "/resources/pipelines/{pipeline}/libraries",
-            "when": "attributes.libraryKind == 'notebook'"
+            "place": "end",
+            "container": "libraries",
+            "create": {
+              "at": "end"
+            },
+            "when": "attributes.libraryKind == 'notebook'",
+            "refusals": {
+              "when": "A library of that kind cannot be added to a pipeline."
+            }
           },
           "remove": {
             "container": "keep"
@@ -531,10 +910,21 @@
               }
             }
           },
+          "parent": {
+            "rules": [
+              "pipeline"
+            ]
+          },
           "insert": {
-            "place": "after-last",
-            "container": "/resources/pipelines/{pipeline}/libraries",
-            "when": "attributes.libraryKind == 'file'"
+            "place": "end",
+            "container": "libraries",
+            "create": {
+              "at": "end"
+            },
+            "when": "attributes.libraryKind == 'file'",
+            "refusals": {
+              "when": "A library of that kind cannot be added to a pipeline."
+            }
           },
           "remove": {
             "container": "keep"
@@ -556,7 +946,27 @@
               "key": "include",
               "child": "glob",
               "read": "text",
-              "readOnly": "A glob library is edited in the file."
+              "readOnly": "A glob library is edited in the file.",
+              "empty": "refuse",
+              "refusals": {
+                "empty": "A library needs a path."
+              }
+            }
+          },
+          "parent": {
+            "rules": [
+              "pipeline"
+            ]
+          },
+          "insert": {
+            "place": "end",
+            "container": "libraries",
+            "create": {
+              "at": "end"
+            },
+            "when": "attributes.libraryKind == 'glob'",
+            "refusals": {
+              "when": "A library of that kind cannot be added to a pipeline."
             }
           },
           "remove": {
@@ -580,6 +990,132 @@
               "value": "type(text) == map && size(text) == 1 && type(text[text.map(k, k)[0]]) == map ? (has(text[text.map(k, k)[0]].path) && type(text[text.map(k, k)[0]].path) == string ? text[text.map(k, k)[0]].path : has(text[text.map(k, k)[0]].include) && type(text[text.map(k, k)[0]].include) == string ? text[text.map(k, k)[0]].include : '') : ''"
             }
           },
+          "parent": {
+            "rules": [
+              "pipeline"
+            ]
+          },
+          "remove": {
+            "container": "keep"
+          }
+        },
+        {
+          "name": "settingsNotebookLibrary",
+          "type": "Library",
+          "at": "/libraries/*",
+          "origins": [
+            "databricks/pipeline"
+          ],
+          "when": "false",
+          "attributes": {
+            "libraryKind": {
+              "value": "'notebook'"
+            },
+            "path": {
+              "key": "path",
+              "child": "notebook",
+              "read": "text",
+              "empty": "refuse",
+              "refusals": {
+                "empty": "A library needs a path."
+              }
+            }
+          },
+          "parent": {
+            "rules": [
+              "settings"
+            ]
+          },
+          "insert": {
+            "place": "end",
+            "container": "/libraries",
+            "when": "attributes.libraryKind == 'notebook'",
+            "refusals": {
+              "container": "The settings file has no libraries array to add into.",
+              "when": "A library of that kind cannot be added to a pipeline."
+            }
+          },
+          "remove": {
+            "container": "keep"
+          }
+        },
+        {
+          "name": "settingsFileLibrary",
+          "type": "Library",
+          "at": "/libraries/*",
+          "origins": [
+            "databricks/pipeline"
+          ],
+          "when": "false",
+          "attributes": {
+            "libraryKind": {
+              "value": "'file'"
+            },
+            "path": {
+              "key": "path",
+              "child": "file",
+              "read": "text",
+              "empty": "refuse",
+              "refusals": {
+                "empty": "A library needs a path."
+              }
+            }
+          },
+          "parent": {
+            "rules": [
+              "settings"
+            ]
+          },
+          "insert": {
+            "place": "end",
+            "container": "/libraries",
+            "when": "attributes.libraryKind == 'file'",
+            "refusals": {
+              "container": "The settings file has no libraries array to add into.",
+              "when": "A library of that kind cannot be added to a pipeline."
+            }
+          },
+          "remove": {
+            "container": "keep"
+          }
+        },
+        {
+          "name": "settingsGlobLibrary",
+          "type": "Library",
+          "at": "/libraries/*",
+          "origins": [
+            "databricks/pipeline"
+          ],
+          "when": "false",
+          "attributes": {
+            "libraryKind": {
+              "value": "'glob'"
+            },
+            "path": {
+              "key": "include",
+              "child": "glob",
+              "read": "text",
+              "readOnly": "A glob library is edited in the file.",
+              "empty": "refuse",
+              "refusals": {
+                "empty": "A library needs a path."
+              }
+            }
+          },
+          "parent": {
+            "rules": [
+              "settings"
+            ]
+          },
+          "insert": {
+            "place": "end",
+            "container": "/libraries",
+            "when": "attributes.libraryKind == 'glob'",
+            "refusals": {
+              "container": "The settings file has no libraries array to add into.",
+              "when": "A library of that kind cannot be added to a pipeline."
+            }
+          },
           "remove": {
             "container": "keep"
           }
@@ -600,6 +1136,11 @@
               "value": "type(text) == map && size(text) == 1 && type(text[text.map(k, k)[0]]) == map ? (has(text[text.map(k, k)[0]].path) && type(text[text.map(k, k)[0]].path) == string ? text[text.map(k, k)[0]].path : has(text[text.map(k, k)[0]].include) && type(text[text.map(k, k)[0]].include) == string ? text[text.map(k, k)[0]].include : '') : ''",
               "readOnly": "A library's path is changed by removing it and adding another."
             }
+          },
+          "parent": {
+            "rules": [
+              "settings"
+            ]
           },
           "remove": {
             "container": "keep"
@@ -654,7 +1195,13 @@
             "upstreamKey": {
               "key": "task_key",
               "read": "text",
-              "readOnly": true
+              "readOnly": true,
+              "reference": {
+                "to": [
+                  "task"
+                ],
+                "by": "key"
+              }
             },
             "outcome": {
               "key": "outcome",

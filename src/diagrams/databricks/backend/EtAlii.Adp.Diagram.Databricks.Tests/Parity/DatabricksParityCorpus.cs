@@ -49,6 +49,9 @@ internal sealed class DatabricksParityCorpus : IDisposable
         return documents;
     }
 
+    /// <summary>The path of the document <paramref name="name"/>.</summary>
+    public static string PathOf(string name) => Paths().Single(path => path.Name == name).Path;
+
     /// <summary>The text of the document <paramref name="name"/>.</summary>
     public static Task<string> TextAsync(string name, CancellationToken cancellationToken) =>
         File.ReadAllTextAsync(Paths().Single(path => path.Name == name).Path, cancellationToken);

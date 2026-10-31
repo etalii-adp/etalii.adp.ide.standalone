@@ -1,6 +1,7 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.Databricks;
@@ -287,7 +288,7 @@ public sealed class DatabricksContextActionProvider : DiagramActionProvider<Line
         return actionId switch
         {
             RenameTaskActionId when task is { } selected =>
-                new RenameDatabricksTaskCommand(body, selected.Job.Key, selected.Task.Key, trimmed),
+                KeepingPosition(target, new RenameDatabricksTaskCommand(body, selected.Job.Key, selected.Task.Key, trimmed)),
             SetRunIfActionId when task is { } selected =>
                 new SetDatabricksRunIfCommand(body, selected.Job.Key, selected.Task.Key, trimmed),
             AssignClusterActionId when task is { } selected =>
@@ -312,6 +313,28 @@ public sealed class DatabricksContextActionProvider : DiagramActionProvider<Line
     /// <summary>An element id's task key: <c>task:{key}</c>, or the id as given.</summary>
     private static string KeyOf(string elementId) =>
         elementId.StartsWith("task:", StringComparison.Ordinal) ? elementId["task:".Length..] : elementId;
+
+    /// <summary>
+    /// A rename with the move of the renamed task's stored position from its old id to its new one, as one step of the
+    /// history (finding B16, Requirement 6.6): the rename alone when the target's registration stores no position for it.
+    /// </summary>
+    private static ICommand KeepingPosition(ContextTarget target, RenameDatabricksTaskCommand rename)
+    {
+        var oldId = $"task:{rename.TaskKey}";
+        var newId = $"task:{rename.NewKey}";
+        if (rename.NewKey.Length == 0 || oldId == newId || target.RegistrationPath is not { Length: > 0 } registration || !File.Exists(registration)
+            || !RegistrationLayout.Read(registration).TryGetValue(oldId, out var stored))
+        {
+            return rename;
+        }
+
+        return new DatabricksStepsCommand(
+        [
+            rename,
+            new RemoveRegistrationLayoutCommand(registration, oldId),
+            new SetRegistrationLayoutCommand(registration, newId, stored.X, stored.Y),
+        ]);
+    }
 
     private static string SourceFor(string taskType, string key) => taskType switch
     {
