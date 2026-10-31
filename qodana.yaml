@@ -12,6 +12,10 @@ version: "1.0"
 #Specify IDE code to run analysis without container (Applied in CI/CD pipeline)
 ide: QDNET
 
+#The solution to analyse; the repository holds other .slnx files (test fixtures, examples) that must not be picked
+dotnet:
+  solution: src/backend/EtAlii.Adp.slnx
+
 #Specify inspection profile for code analysis
 profile:
   name: qodana.starter
