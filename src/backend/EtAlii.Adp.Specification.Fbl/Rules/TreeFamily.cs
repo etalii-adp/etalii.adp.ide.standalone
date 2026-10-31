@@ -1,5 +1,6 @@
 using EtAlii.Adp.Specification.Cel;
 using EtAlii.Adp.Specification.Fbl.Documents;
+using EtAlii.Adp.Specification.Fbl.Planning;
 using EtAlii.Adp.Specification.Fbl.Text;
 
 namespace EtAlii.Adp.Specification.Fbl.Rules;
@@ -89,6 +90,32 @@ internal abstract class TreeFamily(BodyText text, FblBinding binding, FblOptions
     public TreeEntry? Root { get; protected set; }
 
     public override IReadOnlyList<Entry> Entries => AllEntries;
+
+    /// <summary>
+    /// The key of the member an insert adds (FBL 0.14 §6.2): the value the add gives the attribute its rule binds to the
+    /// capture its <c>at</c> ends in, taken as the new entry's key rather than as a set of that attribute. Null for an
+    /// insert that adds no member. An add that gives no key, or the empty text, is refused with <c>refusals.key</c>.
+    /// </summary>
+    protected static string? MemberKey(InsertRequest request)
+    {
+        var rule = request.Rule;
+        if (rule.MemberKeyAttribute is not { } name) return null;
+        var key = request.Values.TryGetValue(name, out var value) && value is not null ? NewText.Plain(value, rule.Attribute(name)) : "";
+        if (key.Length == 0) Plan.Refuse(rule.Insert!.KeyRefusal ?? $"A new {rule.Type} needs a key.");
+        return key;
+    }
+
+    /// <summary>
+    /// Refuses a new member whose key <paramref name="mapping"/> already holds, compared as written text, since a mapping
+    /// holds one key once (FBL 0.14 §6.2); with <c>refusals.duplicate</c>.
+    /// </summary>
+    protected static void RefuseDuplicate(InsertRequest request, TreeValue mapping, string key)
+    {
+        if (mapping.Entries.Any(entry => entry.Name == key))
+        {
+            Plan.Refuse(request.Rule.Insert!.DuplicateRefusal ?? $"A {request.Rule.Type} named '{key}' is already there.");
+        }
+    }
 
     public override IEnumerable<Candidate> Candidates(Rule rule)
     {

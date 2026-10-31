@@ -25,6 +25,12 @@ namespace EtAlii.Adp.Diagram.Databricks.Tests.Parity;
 /// <b>One answer is ruled</b>: setting <c>serverless</c> or <c>edition</c> on a pipeline, which the writers wrote and
 /// the commands refuse as the definitions do (fork 2, taken as A on 2026-10-30), is expected refused.
 /// </para>
+/// <para>
+/// <b>And one place is the binding's</b>: a new resource whose kind the file has no level for yet gets that level at the
+/// end of <c>resources</c>, where the binding creates it (FBL 0.14 section 6.2, etalii.adp's fixture
+/// <c>databricks-resource-add/no-jobs</c>, Peter's "Extend FBL" of 2026-10-30), and the writers wrote it first; so an add of
+/// a resource compares the bundle's resources in any order.
+/// </para>
 /// </remarks>
 internal sealed class DatabricksOperationComparison(string name, byte[] original)
 {
@@ -40,7 +46,7 @@ internal sealed class DatabricksOperationComparison(string name, byte[] original
     public List<string> Repairs { get; } = [];
 
     /// <summary>Runs <paramref name="command"/> and <paramref name="handWritten"/> on the document as it was and compares what they give.</summary>
-    public async Task CompareAsync(string edit, Func<string, ICommand> command, Func<LineDocument, DatabricksModel, string> handWritten, string? scalar = null)
+    public async Task CompareAsync(string edit, Func<string, ICommand> command, Func<LineDocument, DatabricksModel, string> handWritten, string? scalar = null, bool resourcesInAnyOrder = false)
     {
         Compared.Add(edit);
 
@@ -51,7 +57,7 @@ internal sealed class DatabricksOperationComparison(string name, byte[] original
         using var editing = DatabricksEditing.Copying(DatabricksParityCorpus.PathOf(name));
         var result = await editing.RunAsync(command);
         var after = result.IsSuccess ? DatabricksModel.Outcome(LineDocument.Parse(await editing.TextAsync())) : null;
-        var actual = after is null ? $"refused: {result.Error}" : Answer(after);
+        var actual = after is null ? $"refused: {result.Error}" : Answer(after, resourcesInAnyOrder);
 
         // A repair: the writers refused the edit, or wrote a file that no longer read, and the command makes it, or refuses
         // it before anything is written.
@@ -66,23 +72,25 @@ internal sealed class DatabricksOperationComparison(string name, byte[] original
             return;
         }
 
-        var expected = refusal.Length > 0 ? $"refused: {refusal}" : Answer(written!);
+        var expected = refusal.Length > 0 ? $"refused: {refusal}" : Answer(written!, resourcesInAnyOrder);
         if (!string.Equals(expected, actual, StringComparison.Ordinal))
         {
             Mismatches.Add($"{edit}\n  hand-written {Indented(expected)}\n  command      {Indented(actual)}");
         }
     }
 
-    private static string Answer(ParseOutcome<DatabricksModel> outcome) =>
-        outcome.IsUsable ? Read(outcome.Model) : $"a file that does not read: {outcome.Unreadable}";
+    private static string Answer(ParseOutcome<DatabricksModel> outcome, bool resourcesInAnyOrder) =>
+        outcome.IsUsable ? Read(outcome.Model, resourcesInAnyOrder) : $"a file that does not read: {outcome.Unreadable}";
 
     private static string Indented(string text) => text.Replace("\n", "\n               ", StringComparison.Ordinal);
 
     /// <summary>The file as it is compared: the bundle, every job with its tasks and every pipeline with its libraries, one line each.</summary>
-    private static string Read(DatabricksModel model)
+    private static string Read(DatabricksModel model, bool resourcesInAnyOrder)
     {
         var lines = new StringBuilder();
-        lines.Append($"bundle '{model.Bundle.Name}' {string.Join(" ", model.Bundle.Resources.Select(resource => $"{resource.Kind}/{resource.Key}"))}\n");
+        var resources = model.Bundle.Resources.Select(resource => $"{resource.Kind}/{resource.Key}");
+        if (resourcesInAnyOrder) resources = resources.Order(StringComparer.Ordinal);
+        lines.Append($"bundle '{model.Bundle.Name}' {string.Join(" ", resources)}\n");
         foreach (var job in model.Jobs)
         {
             lines.Append($"job {job.Key} '{job.Name}' clusters {string.Join(",", job.Clusters.Select(cluster => cluster.Key))}\n");

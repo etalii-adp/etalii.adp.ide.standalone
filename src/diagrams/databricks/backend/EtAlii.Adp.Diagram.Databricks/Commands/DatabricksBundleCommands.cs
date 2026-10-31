@@ -18,11 +18,32 @@ public sealed class AddDatabricksResourceCommandHandler(IDatabricksDocumentStore
     : DatabricksEditHandler<AddDatabricksResourceCommand>(documents)
 {
     /// <inheritdoc />
+    /// <remarks>
+    /// The resource is a new member of <c>resources.jobs</c> or <c>resources.pipelines</c>, named by its key, planned by
+    /// the binding's insert (FBL 0.14 section 6.2) with its name and a skeleton complete enough to open. The module's own
+    /// sentences are answered first, before anything is planned (Requirement 6.4).
+    /// </remarks>
     protected override EditOutcome Apply(LineDocument body, DatabricksModel model, AddDatabricksResourceCommand command)
     {
-        // TODO(fork): FBL cannot add a mapping entry keyed by a capture; pending the ruling.
-        var refusal = BundleWriter.AddResourceSkeleton(body, model.Bundle, command.Kind, command.Key);
-        return refusal.Length > 0 ? EditOutcome.Refused(refusal) : EditOutcome.Applied;
+        if (command.Key.Length == 0)
+        {
+            return EditOutcome.Refused("A resource needs a key.");
+        }
+
+        if (command.Kind is not ("jobs" or "pipelines"))
+        {
+            return EditOutcome.Refused($"There is no '{command.Kind}' resource kind to add.");
+        }
+
+        if (model.Bundle.Resources.Any(resource => resource.Kind == command.Kind && resource.Key == command.Key))
+        {
+            return EditOutcome.Refused($"A {command.Kind} resource named '{command.Key}' is already there.");
+        }
+
+        return DatabricksEdits.Bundle(body, _ => new ModelChange.Add(
+            "Resource",
+            null,
+            DatabricksEdits.Attributes(("resourceKind", command.Kind), ("key", command.Key), ("name", command.Key))));
     }
 }
 

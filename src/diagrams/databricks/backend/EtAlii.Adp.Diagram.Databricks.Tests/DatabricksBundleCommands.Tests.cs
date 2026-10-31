@@ -62,6 +62,28 @@ public sealed class DatabricksBundleCommandsTests
         Assert.Equal(original, await editing.BytesAsync());
     }
 
+    [Theory]
+    [InlineData("jobs")]
+    [InlineData("pipelines")]
+    public async Task AddResource_OnABundleWrittenAsJson_LeavesAFileThatStillReads(string kind)
+    {
+        // Arrange: a bundle written as JSON (B22), which a skeleton of YAML lines would break.
+        using var editing = DatabricksEditing.Of("bundle.json");
+        var original = await editing.BytesAsync();
+
+        // Act.
+        var result = await editing.RunAsync(body => new AddDatabricksResourceCommand(body, kind, "added"));
+
+        // Assert: refused with nothing written, or written so that the file still reads and holds the resource.
+        if (!result.IsSuccess)
+        {
+            Assert.Equal(original, await editing.BytesAsync());
+            return;
+        }
+        using var json = System.Text.Json.JsonDocument.Parse(await editing.BytesAsync());
+        Assert.True(json.RootElement.GetProperty("resources").GetProperty(kind).TryGetProperty("added", out _));
+    }
+
     [Fact]
     public async Task SetName_RewritesTheOneLine()
     {

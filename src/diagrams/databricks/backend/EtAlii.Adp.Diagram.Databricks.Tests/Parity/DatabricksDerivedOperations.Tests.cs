@@ -19,16 +19,22 @@ public sealed class DatabricksDerivedOperationsTests
     {
         // the job's tasks reached through an alias: the writers wrote a file that no longer read (B15), the binding refuses the add.
         ["anchors-and-merge.yml"] = ["insert notebook task into aliased", "insert python task into aliased", "insert sql task into aliased", "insert condition task into aliased"],
-        // a bundle written in JSON, where the writers looked for lines of YAML (B12).
-        ["bundle.json"] = ["insert notebook task into json_job", "insert python task into json_job", "insert sql task into json_job", "insert condition task into json_job", "rename only", "run_if of only to 'ALL_DONE'", "bundle name to 'parity-bundle'"],
+        // a bundle written in JSON, where the writers looked for lines of YAML (B12), and the resource adds of the JSON
+        // files below.
+        ["bundle.json"] = ["insert notebook task into json_job", "insert python task into json_job", "insert sql task into json_job", "insert condition task into json_job", "rename only", "run_if of only to 'ALL_DONE'", "bundle name to 'parity-bundle'", "add jobs resource", "add pipelines resource"],
         // "libraries": [], an empty array on one line (B12).
-        ["findings-pipeline.json"] = ["insert notebook library into ", "insert file library into ", "insert glob library into "],
+        ["findings-pipeline.json"] = ["insert notebook library into ", "insert file library into ", "insert glob library into ", "add jobs resource", "add pipelines resource"],
         // tasks: [], depends_on and libraries written as flow sequences (B12).
         ["flow-collections.yml"] = ["insert notebook task into empty_flow", "insert python task into empty_flow", "insert sql task into empty_flow", "insert condition task into empty_flow", "rename a", "remove a", "disconnect a from b", "insert notebook library into flow_pipeline", "insert file library into flow_pipeline", "insert glob library into flow_pipeline", "remove notebook library transformations/one", "remove file library transformations/two.py"],
+        // a resource added to a file written in JSON: the writers wrote lines of YAML into it, which no longer read (B15),
+        // and the binding refuses the add, whose skeleton a json file cannot hold (FBL 0.14 section 6.2).
+        ["legacy-target.json"] = ["add jobs resource", "add pipelines resource"],
+        ["library-ids.json"] = ["add jobs resource", "add pipelines resource"],
+        ["pipeline.json"] = ["add jobs resource", "add pipelines resource"],
         // depends_on: [{task_key: a}] (B12).
         ["flow-dependencies.yml"] = ["disconnect a from b", "rename a", "remove a"],
         // a settings file written on one line (B12).
-        ["settings-one-line.json"] = ["name of  to 'parity_name'", "catalog of  to 'parity_catalog'", "schema of  to 'parity_schema'", "insert notebook library into ", "insert file library into ", "insert glob library into ", "remove notebook library transformations/a", "remove file library transformations/b.py"],
+        ["settings-one-line.json"] = ["name of  to 'parity_name'", "catalog of  to 'parity_catalog'", "schema of  to 'parity_schema'", "insert notebook library into ", "insert file library into ", "insert glob library into ", "remove notebook library transformations/a", "remove file library transformations/b.py", "add jobs resource", "add pipelines resource"],
     };
 
     public static TheoryData<string> Documents() => DatabricksParityCorpus.Documents();
@@ -173,7 +179,8 @@ public sealed class DatabricksDerivedOperationsTests
             await comparison.CompareAsync(
                 $"add {kind} resource",
                 body => new AddDatabricksResourceCommand(body, kind, "parity_resource"),
-                (text, read) => BundleWriter.AddResourceSkeleton(text, read.Bundle, kind, "parity_resource"));
+                (text, read) => BundleWriter.AddResourceSkeleton(text, read.Bundle, kind, "parity_resource"),
+                resourcesInAnyOrder: true);
         }
     }
 

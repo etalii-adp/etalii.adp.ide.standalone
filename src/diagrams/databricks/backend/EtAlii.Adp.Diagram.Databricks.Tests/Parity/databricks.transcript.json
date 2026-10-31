@@ -713,9 +713,9 @@
           "do": "commit databricks.add-resource:pipelines on bundle = \"parity_pipeline\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"  pipelines:\\r\\n    parity_pipeline:\\r\\n      name: parity_pipeline\\r\\n      libraries:\\r\\n        - notebook:\\r\\n            path: transformations/parity_pipeline\\r\\n\""
+            "@28 -0 +\"  pipelines:\\r\\n    parity_pipeline:\\r\\n      name: parity_pipeline\\r\\n      libraries:\\r\\n        - notebook:\\r\\n            path: transformations/parity_pipeline\\r\\n\""
           ],
-          "sha256": "6f567ef95631d14775cd9da4a224a8178f5cb26469ac34016939eb154b212bb2",
+          "sha256": "78dc675367bc6c93c8a205aa3ddf5ca4756abf24e0212d2b3fe8826f5cfcedc5",
           "undo": "ok; restores the text"
         },
         {
@@ -1450,32 +1450,18 @@
         },
         {
           "do": "commit databricks.add-resource:jobs on bundle = \"parity_job\"",
-          "answer": "ok",
-          "hunks": [
-            "@9 -0 +\"      parity_job:\\r\\n        name: parity_job\\r\\n        tasks:\\r\\n          - task_key: main\\r\\n            notebook_task:\\r\\n              notebook_path: notebooks/parity_job\\r\\n\""
-          ],
-          "sha256": "842eae95acf26a3ec42a726985441e07c5de87cd9b23fc994b49ecd2d8630b47",
-          "undo": "ok; restores the text",
-          "redo": "ok; reapplies the text",
-          "undoAgain": "ok; restores the text"
+          "answer": "refused: A new Resource is written with a skeleton, which a json file cannot hold.",
+          "unchanged": true
         },
         {
           "do": "commit databricks.add-resource:jobs on bundle = \"yes\"",
-          "answer": "ok",
-          "hunks": [
-            "@9 -0 +\"      \\\"yes\\\":\\r\\n        name: \\\"yes\\\"\\r\\n        tasks:\\r\\n          - task_key: main\\r\\n            notebook_task:\\r\\n              notebook_path: notebooks/yes\\r\\n\""
-          ],
-          "sha256": "d96f8f09755b9481dc8fabdc5c6f15627bb8d3fd9939777a39864e37bd99095f",
-          "undo": "ok; restores the text"
+          "answer": "refused: A new Resource is written with a skeleton, which a json file cannot hold.",
+          "unchanged": true
         },
         {
           "do": "commit databricks.add-resource:pipelines on bundle = \"parity_pipeline\"",
-          "answer": "ok",
-          "hunks": [
-            "@17 -0 +\"resources:\\r\\n  pipelines:\\r\\n    parity_pipeline:\\r\\n      name: parity_pipeline\\r\\n      libraries:\\r\\n        - notebook:\\r\\n            path: transformations/parity_pipeline\\r\\n\""
-          ],
-          "sha256": "74c6a356805f09d26800a6fbb04ff0af89b535affcdcdda1277f3a37b2788fdf",
-          "undo": "ok; restores the text"
+          "answer": "refused: The configuration file has no /resources/pipelines to add the Resource to.",
+          "unchanged": true
         },
         {
           "do": "commit databricks.add-resource:experiments on bundle = \"parity_experiment\"",
@@ -3786,9 +3772,9 @@
           "do": "commit databricks.add-resource:pipelines on bundle = \"parity_pipeline\"",
           "answer": "ok",
           "hunks": [
-            "@2 -0 +\"  pipelines:\\r\\n    parity_pipeline:\\r\\n      name: parity_pipeline\\r\\n      libraries:\\r\\n        - notebook:\\r\\n            path: transformations/parity_pipeline\\r\\n\""
+            "@29 -0 +\"  pipelines:\\r\\n    parity_pipeline:\\r\\n      name: parity_pipeline\\r\\n      libraries:\\r\\n        - notebook:\\r\\n            path: transformations/parity_pipeline\\r\\n\""
           ],
-          "sha256": "7fcb926d1712fcf6998ae4937265460c8441a39047a3fb066444cd96048b6018",
+          "sha256": "086fab10543512485faa7cc466c011cf3a07f7db3d7c3af0ddfa0324076eb0e5",
           "undo": "ok; restores the text"
         },
         {
@@ -4454,9 +4440,9 @@
           "do": "commit databricks.add-resource:pipelines on bundle = \"parity_pipeline\"",
           "answer": "ok",
           "hunks": [
-            "@2 -0 +\"  pipelines:\\r\\n    parity_pipeline:\\r\\n      name: parity_pipeline\\r\\n      libraries:\\r\\n        - notebook:\\r\\n            path: transformations/parity_pipeline\\r\\n\""
+            "@19 -0 +\"  pipelines:\\r\\n    parity_pipeline:\\r\\n      name: parity_pipeline\\r\\n      libraries:\\r\\n        - notebook:\\r\\n            path: transformations/parity_pipeline\\r\\n\""
           ],
-          "sha256": "c0a1a6d5cf3543f0b1d4167b565a30a2b45a1a11cfea0a63857dcb28fcfd919c",
+          "sha256": "5f7df95b579e0e87a6888ac1b2e8a85cb3fd2138ef294df05a3d247326646df1",
           "undo": "ok; restores the text"
         },
         {
@@ -5452,9 +5438,9 @@
           "do": "commit databricks.add-resource:pipelines on bundle = \"parity_pipeline\"",
           "answer": "ok",
           "hunks": [
-            "@2 -0 +\"  pipelines:\\r\\n    parity_pipeline:\\r\\n      name: parity_pipeline\\r\\n      libraries:\\r\\n        - notebook:\\r\\n            path: transformations/parity_pipeline\\r\\n\""
+            "@56 -0 +\"  pipelines:\\r\\n    parity_pipeline:\\r\\n      name: parity_pipeline\\r\\n      libraries:\\r\\n        - notebook:\\r\\n            path: transformations/parity_pipeline\\r\\n\""
           ],
-          "sha256": "353756020ad976c5b11b9495560afa4e7dd65ee4fe21d79e8d64133cbd94cd0e",
+          "sha256": "0ca24955bd68bd43e1c5b81d84aff7c1919475802955ab5657582c03e0e8b230",
           "undo": "ok; restores the text"
         },
         {
@@ -6214,9 +6200,9 @@
           "do": "commit databricks.add-resource:pipelines on bundle = \"parity_pipeline\"",
           "answer": "ok",
           "hunks": [
-            "@2 -0 +\"  pipelines:\\r\\n    parity_pipeline:\\r\\n      name: parity_pipeline\\r\\n      libraries:\\r\\n        - notebook:\\r\\n            path: transformations/parity_pipeline\\r\\n\""
+            "@39 -0 +\"  pipelines:\\r\\n    parity_pipeline:\\r\\n      name: parity_pipeline\\r\\n      libraries:\\r\\n        - notebook:\\r\\n            path: transformations/parity_pipeline\\r\\n\""
           ],
-          "sha256": "337ab632218b6dfbff02493686936ba013da99b988e056102920cc435cfbfcaa",
+          "sha256": "736ac5fe711cbbcab4cb92c7200d92fc561272afb59d74ed88e0c58134bb8254",
           "undo": "ok; restores the text"
         },
         {
@@ -6512,9 +6498,9 @@
           "do": "commit databricks.add-resource:pipelines on bundle = \"parity_pipeline\"",
           "answer": "ok",
           "hunks": [
-            "@5 -0 +\"  pipelines:\\r\\n    parity_pipeline:\\r\\n      name: parity_pipeline\\r\\n      libraries:\\r\\n        - notebook:\\r\\n            path: transformations/parity_pipeline\\r\\n\""
+            "@8 -0 +\"  pipelines:\\r\\n    parity_pipeline:\\r\\n      name: parity_pipeline\\r\\n      libraries:\\r\\n        - notebook:\\r\\n            path: transformations/parity_pipeline\\r\\n\""
           ],
-          "sha256": "de4f195582616028d4d0ddb80d6ff69bd93401edb07cea1dfdb5cec6e6c4f76e",
+          "sha256": "8fbb380dc6760004ecbd9ddff5456579d3e8569db16828da742e825852648672",
           "undo": "ok; restores the text"
         },
         {
@@ -7242,9 +7228,9 @@
           "do": "commit databricks.add-resource:pipelines on bundle = \"parity_pipeline\"",
           "answer": "ok",
           "hunks": [
-            "@2 -0 +\"  pipelines:\\r\\n    parity_pipeline:\\r\\n      name: parity_pipeline\\r\\n      libraries:\\r\\n        - notebook:\\r\\n            path: transformations/parity_pipeline\\r\\n\""
+            "@27 -0 +\"  pipelines:\\r\\n    parity_pipeline:\\r\\n      name: parity_pipeline\\r\\n      libraries:\\r\\n        - notebook:\\r\\n            path: transformations/parity_pipeline\\r\\n\""
           ],
-          "sha256": "85e844eccdeb15e434f24145a5047217b45db1b7f92a7900ee18dc4e06e18d59",
+          "sha256": "fbb0d9948baf1c75713dbd76871b19aa7fcfdc4b06b45287da73fcd83e91cca6",
           "undo": "ok; restores the text"
         },
         {
@@ -7463,32 +7449,18 @@
         },
         {
           "do": "commit databricks.add-resource:jobs on bundle = \"parity_job\"",
-          "answer": "ok",
-          "hunks": [
-            "@6 -0 +\"resources:\\r\\n  jobs:\\r\\n    parity_job:\\r\\n      name: parity_job\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/parity_job\\r\\n\""
-          ],
-          "sha256": "91cebb4dd62bbc1cffc94ba05a0a13f6d32aacf34c2bc69ce247ee78272887cf",
-          "undo": "ok; restores the text",
-          "redo": "ok; reapplies the text",
-          "undoAgain": "ok; restores the text"
+          "answer": "refused: The configuration file has no /resources/jobs to add the Resource to.",
+          "unchanged": true
         },
         {
           "do": "commit databricks.add-resource:jobs on bundle = \"yes\"",
-          "answer": "ok",
-          "hunks": [
-            "@6 -0 +\"resources:\\r\\n  jobs:\\r\\n    \\\"yes\\\":\\r\\n      name: \\\"yes\\\"\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
-          ],
-          "sha256": "b31e01a451214a7afeba4da02e6b5b459c324a7bde0018de16ce0068e782e743",
-          "undo": "ok; restores the text"
+          "answer": "refused: The configuration file has no /resources/jobs to add the Resource to.",
+          "unchanged": true
         },
         {
           "do": "commit databricks.add-resource:pipelines on bundle = \"parity_pipeline\"",
-          "answer": "ok",
-          "hunks": [
-            "@6 -0 +\"resources:\\r\\n  pipelines:\\r\\n    parity_pipeline:\\r\\n      name: parity_pipeline\\r\\n      libraries:\\r\\n        - notebook:\\r\\n            path: transformations/parity_pipeline\\r\\n\""
-          ],
-          "sha256": "73982c48231aee0e3cf30749a319ec5cf08fdbe270d7935468378d062867185b",
-          "undo": "ok; restores the text"
+          "answer": "refused: The configuration file has no /resources/pipelines to add the Resource to.",
+          "unchanged": true
         },
         {
           "do": "commit databricks.add-resource:experiments on bundle = \"parity_experiment\"",
@@ -8837,9 +8809,9 @@
           "do": "commit databricks.add-resource:pipelines on bundle = \"parity_pipeline\"",
           "answer": "ok",
           "hunks": [
-            "@2 -0 +\"  pipelines:\\r\\n    parity_pipeline:\\r\\n      name: parity_pipeline\\r\\n      libraries:\\r\\n        - notebook:\\r\\n            path: transformations/parity_pipeline\\r\\n\""
+            "@15 -0 +\"  pipelines:\\r\\n    parity_pipeline:\\r\\n      name: parity_pipeline\\r\\n      libraries:\\r\\n        - notebook:\\r\\n            path: transformations/parity_pipeline\\r\\n\""
           ],
-          "sha256": "a256a6bb62980300a0b3c24801c8a3658efdb0a612664c8bce501b32aa8443b0",
+          "sha256": "916db42281ca65222f0bc7bf735d073b737e0b1fc2362c372c473f99ca86e773",
           "undo": "ok; restores the text"
         },
         {
@@ -9511,9 +9483,9 @@
           "do": "commit databricks.add-resource:pipelines on bundle = \"parity_pipeline\"",
           "answer": "ok",
           "hunks": [
-            "@2 -0 +\"  pipelines:\\r\\n    parity_pipeline:\\r\\n      name: parity_pipeline\\r\\n      libraries:\\r\\n        - notebook:\\r\\n            path: transformations/parity_pipeline\\r\\n\""
+            "@18 -0 +\"  pipelines:\\r\\n    parity_pipeline:\\r\\n      name: parity_pipeline\\r\\n      libraries:\\r\\n        - notebook:\\r\\n            path: transformations/parity_pipeline\\r\\n\""
           ],
-          "sha256": "4632f744021aab2d3914f7d654d3cb05bf49128c2a7a3bc04c79b8410b130919",
+          "sha256": "a4da38b80c3dd30dd59f90aee0d45f781bd7f672d4905254df0900e70d6316cd",
           "undo": "ok; restores the text"
         },
         {
@@ -10203,9 +10175,9 @@
           "do": "commit databricks.add-resource:pipelines on bundle = \"parity_pipeline\"",
           "answer": "ok",
           "hunks": [
-            "@2 -0 +\"  pipelines:\\r\\n    parity_pipeline:\\r\\n      name: parity_pipeline\\r\\n      libraries:\\r\\n        - notebook:\\r\\n            path: transformations/parity_pipeline\\r\\n\""
+            "@19 -0 +\"  pipelines:\\r\\n    parity_pipeline:\\r\\n      name: parity_pipeline\\r\\n      libraries:\\r\\n        - notebook:\\r\\n            path: transformations/parity_pipeline\\r\\n\""
           ],
-          "sha256": "e993553a234823521da4846a2607a23b9f0b6826b1245d6a5b2f52f74ecb59fc",
+          "sha256": "b63131b8052d13fd9b474de5822af3c019f06c9b26043cda94384e90be6f1ed0",
           "undo": "ok; restores the text"
         },
         {
@@ -10942,9 +10914,9 @@
           "do": "commit databricks.add-resource:pipelines on bundle = \"parity_pipeline\"",
           "answer": "ok",
           "hunks": [
-            "@2 -0 +\"  pipelines:\\r\\n    parity_pipeline:\\r\\n      name: parity_pipeline\\r\\n      libraries:\\r\\n        - notebook:\\r\\n            path: transformations/parity_pipeline\\r\\n\""
+            "@46 -0 +\"  pipelines:\\r\\n    parity_pipeline:\\r\\n      name: parity_pipeline\\r\\n      libraries:\\r\\n        - notebook:\\r\\n            path: transformations/parity_pipeline\\r\\n\""
           ],
-          "sha256": "ad88dc6d9ba37cf35fa2e52a93df4ba29b465e7ead70d1607d5e70536ad4040d",
+          "sha256": "fef51f48f72f92cbb76e136900c9a9eb34b86c7f6427ad60ea8b468be1cec69c",
           "undo": "ok; restores the text"
         },
         {
@@ -11787,9 +11759,9 @@
           "do": "commit databricks.add-resource:pipelines on bundle = \"parity_pipeline\"",
           "answer": "ok",
           "hunks": [
-            "@2 -0 +\"  pipelines:\\r\\n    parity_pipeline:\\r\\n      name: parity_pipeline\\r\\n      libraries:\\r\\n        - notebook:\\r\\n            path: transformations/parity_pipeline\\r\\n\""
+            "@21 -0 +\"  pipelines:\\r\\n    parity_pipeline:\\r\\n      name: parity_pipeline\\r\\n      libraries:\\r\\n        - notebook:\\r\\n            path: transformations/parity_pipeline\\r\\n\""
           ],
-          "sha256": "cc53fbcfba82bc69d2f3ab83d49e1f0ebb5052711752263f79c0ccee4780b3fa",
+          "sha256": "7fbd994655dbcd14d6df5940a393dbe329ddd02c29d93f543ddbcb8331b15245",
           "undo": "ok; restores the text"
         },
         {
@@ -12014,32 +11986,18 @@
         },
         {
           "do": "commit databricks.add-resource:jobs on bundle = \"parity_job\"",
-          "answer": "ok",
-          "hunks": [
-            "@9 -0 +\"resources:\\r\\n  jobs:\\r\\n    parity_job:\\r\\n      name: parity_job\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/parity_job\\r\\n\""
-          ],
-          "sha256": "7c2a64c31be360c72d3d5300b06be5e87e35d417a75e59fc4f5566901168ffb9",
-          "undo": "ok; restores the text",
-          "redo": "ok; reapplies the text",
-          "undoAgain": "ok; restores the text"
+          "answer": "refused: The configuration file has no /resources/jobs to add the Resource to.",
+          "unchanged": true
         },
         {
           "do": "commit databricks.add-resource:jobs on bundle = \"yes\"",
-          "answer": "ok",
-          "hunks": [
-            "@9 -0 +\"resources:\\r\\n  jobs:\\r\\n    \\\"yes\\\":\\r\\n      name: \\\"yes\\\"\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
-          ],
-          "sha256": "24261af87505bb4439a7bc25f0f2689bf60b9593673d107cb04d4ecbc20e505c",
-          "undo": "ok; restores the text"
+          "answer": "refused: The configuration file has no /resources/jobs to add the Resource to.",
+          "unchanged": true
         },
         {
           "do": "commit databricks.add-resource:pipelines on bundle = \"parity_pipeline\"",
-          "answer": "ok",
-          "hunks": [
-            "@9 -0 +\"resources:\\r\\n  pipelines:\\r\\n    parity_pipeline:\\r\\n      name: parity_pipeline\\r\\n      libraries:\\r\\n        - notebook:\\r\\n            path: transformations/parity_pipeline\\r\\n\""
-          ],
-          "sha256": "24616306191d45e959db4b4d42157893c1e1ae0cb416b8963118c306968c51f0",
-          "undo": "ok; restores the text"
+          "answer": "refused: The configuration file has no /resources/pipelines to add the Resource to.",
+          "unchanged": true
         },
         {
           "do": "commit databricks.add-resource:experiments on bundle = \"parity_experiment\"",
@@ -12371,9 +12329,9 @@
           "do": "commit databricks.add-resource:jobs on bundle = \"parity_job\"",
           "answer": "ok",
           "hunks": [
-            "@2 -0 +\"  jobs:\\r\\n    parity_job:\\r\\n      name: parity_job\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/parity_job\\r\\n\""
+            "@10 -0 +\"  jobs:\\r\\n    parity_job:\\r\\n      name: parity_job\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/parity_job\\r\\n\""
           ],
-          "sha256": "a2e559adfde289838a859a32dc28a69ca2bec9fa285628555008308a9b6e5ae7",
+          "sha256": "a1c3de59772d8999d2594612f930cbba396e11c98b11425324b6071210f79c48",
           "undo": "ok; restores the text",
           "redo": "ok; reapplies the text",
           "undoAgain": "ok; restores the text"
@@ -12382,9 +12340,9 @@
           "do": "commit databricks.add-resource:jobs on bundle = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@2 -0 +\"  jobs:\\r\\n    \\\"yes\\\":\\r\\n      name: \\\"yes\\\"\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
+            "@10 -0 +\"  jobs:\\r\\n    \\\"yes\\\":\\r\\n      name: \\\"yes\\\"\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
           ],
-          "sha256": "85e561d39dd1dd3c30126926b97e674e8b96d4220802fb2ddf6dca9b2121460c",
+          "sha256": "360d9b16aa804d863f5eb23f0748ae1f99336e16b51df99adac3c24f3ba357cf",
           "undo": "ok; restores the text"
         },
         {
@@ -12974,32 +12932,18 @@
         },
         {
           "do": "commit databricks.add-resource:jobs on bundle = \"parity_job\"",
-          "answer": "ok",
-          "hunks": [
-            "@14 -0 +\"resources:\\r\\n  jobs:\\r\\n    parity_job:\\r\\n      name: parity_job\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/parity_job\\r\\n\""
-          ],
-          "sha256": "5c23077b9c4ffafe8cad12726fc6a14ef06e3e49e480b141a0e5aac6304b8dea",
-          "undo": "ok; restores the text",
-          "redo": "ok; reapplies the text",
-          "undoAgain": "ok; restores the text"
+          "answer": "refused: The configuration file has no /resources/jobs to add the Resource to.",
+          "unchanged": true
         },
         {
           "do": "commit databricks.add-resource:jobs on bundle = \"yes\"",
-          "answer": "ok",
-          "hunks": [
-            "@14 -0 +\"resources:\\r\\n  jobs:\\r\\n    \\\"yes\\\":\\r\\n      name: \\\"yes\\\"\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
-          ],
-          "sha256": "2238772c4dc1b5c28f6bb58726fc7928f9dd4070e5d7dd00500beec3879b04b3",
-          "undo": "ok; restores the text"
+          "answer": "refused: The configuration file has no /resources/jobs to add the Resource to.",
+          "unchanged": true
         },
         {
           "do": "commit databricks.add-resource:pipelines on bundle = \"parity_pipeline\"",
-          "answer": "ok",
-          "hunks": [
-            "@14 -0 +\"resources:\\r\\n  pipelines:\\r\\n    parity_pipeline:\\r\\n      name: parity_pipeline\\r\\n      libraries:\\r\\n        - notebook:\\r\\n            path: transformations/parity_pipeline\\r\\n\""
-          ],
-          "sha256": "89e31ec8f6d91ac9ac62bdff503283521a3de8f50b746cf0c699ec52a44523ea",
-          "undo": "ok; restores the text"
+          "answer": "refused: The configuration file has no /resources/pipelines to add the Resource to.",
+          "unchanged": true
         },
         {
           "do": "commit databricks.add-resource:experiments on bundle = \"parity_experiment\"",
@@ -13813,9 +13757,9 @@
           "do": "commit databricks.add-resource:pipelines on bundle = \"parity_pipeline\"",
           "answer": "ok",
           "hunks": [
-            "@2 -0 +\"  pipelines:\\r\\n    parity_pipeline:\\r\\n      name: parity_pipeline\\r\\n      libraries:\\r\\n        - notebook:\\r\\n            path: transformations/parity_pipeline\\r\\n\""
+            "@18 -0 +\"  pipelines:\\r\\n    parity_pipeline:\\r\\n      name: parity_pipeline\\r\\n      libraries:\\r\\n        - notebook:\\r\\n            path: transformations/parity_pipeline\\r\\n\""
           ],
-          "sha256": "d6ae27eb0d79ec0316b1580c8807c9d4449fa80ad5fc28be37b94e804f24729c",
+          "sha256": "eff6cc36ac6a4ee76676e46d9ccf711dda17c3583215b82e04e773fadf5e2fbc",
           "undo": "ok; restores the text"
         },
         {
@@ -14507,9 +14451,9 @@
           "do": "commit databricks.add-resource:pipelines on bundle = \"parity_pipeline\"",
           "answer": "ok",
           "hunks": [
-            "@5 -0 +\"  pipelines:\\r\\n    parity_pipeline:\\r\\n      name: parity_pipeline\\r\\n      libraries:\\r\\n        - notebook:\\r\\n            path: transformations/parity_pipeline\\r\\n\""
+            "@21 -0 +\"  pipelines:\\r\\n    parity_pipeline:\\r\\n      name: parity_pipeline\\r\\n      libraries:\\r\\n        - notebook:\\r\\n            path: transformations/parity_pipeline\\r\\n\""
           ],
-          "sha256": "ed8e22d4e961df40f45999a9f1cfa153b73044e17bbc9e095de4cd52f4f29af5",
+          "sha256": "eaa5dd591b8bdf47a71d22efcf0aac24b06318f661dafb33ee649981a1d7e48d",
           "undo": "ok; restores the text"
         },
         {
@@ -14734,9 +14678,9 @@
           "do": "commit databricks.add-resource:jobs on bundle = \"parity_job\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"  jobs:\\r\\n    parity_job:\\r\\n      name: parity_job\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/parity_job\\r\\n\""
+            "@13 -0 +\"  jobs:\\r\\n    parity_job:\\r\\n      name: parity_job\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/parity_job\\r\\n\""
           ],
-          "sha256": "6e634907ec4f28ce22243d3f3db0b4563b1ac5c5913bdd20c0b5dd7b0e2651ea",
+          "sha256": "e892172b5303eed3d3c53f9064cfafbadf43f546d99053eb6b82374b2803c50c",
           "undo": "ok; restores the text",
           "redo": "ok; reapplies the text",
           "undoAgain": "ok; restores the text"
@@ -14745,9 +14689,9 @@
           "do": "commit databricks.add-resource:jobs on bundle = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"  jobs:\\r\\n    \\\"yes\\\":\\r\\n      name: \\\"yes\\\"\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
+            "@13 -0 +\"  jobs:\\r\\n    \\\"yes\\\":\\r\\n      name: \\\"yes\\\"\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
           ],
-          "sha256": "d159079423b77a314ad63e03381f24968e8638933fdec5df4da53248f47a93b7",
+          "sha256": "aef796a8710a4857a85942c99ce2b018bc31d357ddd878cbc91193018cc22ea4",
           "undo": "ok; restores the text"
         },
         {
@@ -15562,32 +15506,18 @@
         },
         {
           "do": "commit databricks.add-resource:jobs on bundle = \"parity_job\"",
-          "answer": "ok",
-          "hunks": [
-            "@22 -0 +\"resources:\\r\\n  jobs:\\r\\n    parity_job:\\r\\n      name: parity_job\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/parity_job\\r\\n\""
-          ],
-          "sha256": "ef013bc72ee8275beb8b4a797a175b2b64a35995ef262ba3e999d13fa316e01d",
-          "undo": "ok; restores the text",
-          "redo": "ok; reapplies the text",
-          "undoAgain": "ok; restores the text"
+          "answer": "refused: The configuration file has no /resources/jobs to add the Resource to.",
+          "unchanged": true
         },
         {
           "do": "commit databricks.add-resource:jobs on bundle = \"yes\"",
-          "answer": "ok",
-          "hunks": [
-            "@22 -0 +\"resources:\\r\\n  jobs:\\r\\n    \\\"yes\\\":\\r\\n      name: \\\"yes\\\"\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
-          ],
-          "sha256": "b127066bb751318ed5e69bac4ab994172dfeaa361ee2605eb3cded963bf45be8",
-          "undo": "ok; restores the text"
+          "answer": "refused: The configuration file has no /resources/jobs to add the Resource to.",
+          "unchanged": true
         },
         {
           "do": "commit databricks.add-resource:pipelines on bundle = \"parity_pipeline\"",
-          "answer": "ok",
-          "hunks": [
-            "@22 -0 +\"resources:\\r\\n  pipelines:\\r\\n    parity_pipeline:\\r\\n      name: parity_pipeline\\r\\n      libraries:\\r\\n        - notebook:\\r\\n            path: transformations/parity_pipeline\\r\\n\""
-          ],
-          "sha256": "3944726883c8c60e274cc9be0668743435ab8faedfb4fc5c6053d54260d230fb",
-          "undo": "ok; restores the text"
+          "answer": "refused: The configuration file has no /resources/pipelines to add the Resource to.",
+          "unchanged": true
         },
         {
           "do": "commit databricks.add-resource:experiments on bundle = \"parity_experiment\"",
@@ -16855,32 +16785,18 @@
         },
         {
           "do": "commit databricks.add-resource:jobs on bundle = \"parity_job\"",
-          "answer": "ok",
-          "hunks": [
-            "@2 -0 +\"resources:\\r\\n  jobs:\\r\\n    parity_job:\\r\\n      name: parity_job\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/parity_job\\r\\n\""
-          ],
-          "sha256": "eb202b143c46de7a5205a12765c07e38e9f187249dd68062fa70584674a0642e",
-          "undo": "ok; restores the text",
-          "redo": "ok; reapplies the text",
-          "undoAgain": "ok; restores the text"
+          "answer": "refused: The configuration file has no /resources/jobs to add the Resource to.",
+          "unchanged": true
         },
         {
           "do": "commit databricks.add-resource:jobs on bundle = \"yes\"",
-          "answer": "ok",
-          "hunks": [
-            "@2 -0 +\"resources:\\r\\n  jobs:\\r\\n    \\\"yes\\\":\\r\\n      name: \\\"yes\\\"\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
-          ],
-          "sha256": "e29bdf7aa98f513c44aa25623ac42d76887333ac8465c400bc6c6cc3895927a3",
-          "undo": "ok; restores the text"
+          "answer": "refused: The configuration file has no /resources/jobs to add the Resource to.",
+          "unchanged": true
         },
         {
           "do": "commit databricks.add-resource:pipelines on bundle = \"parity_pipeline\"",
-          "answer": "ok",
-          "hunks": [
-            "@2 -0 +\"resources:\\r\\n  pipelines:\\r\\n    parity_pipeline:\\r\\n      name: parity_pipeline\\r\\n      libraries:\\r\\n        - notebook:\\r\\n            path: transformations/parity_pipeline\\r\\n\""
-          ],
-          "sha256": "fa51b98c947ef098b17eee5f472d7353e1cc17cc957aad837366147b279cb121",
-          "undo": "ok; restores the text"
+          "answer": "refused: The configuration file has no /resources/pipelines to add the Resource to.",
+          "unchanged": true
         },
         {
           "do": "commit databricks.add-resource:experiments on bundle = \"parity_experiment\"",
@@ -17200,9 +17116,9 @@
           "do": "commit databricks.add-resource:jobs on bundle = \"parity_job\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"resources:\\r\\n  jobs:\\r\\n    parity_job:\\r\\n      name: parity_job\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/parity_job\\r\\n\""
+            "@7 -0 +\"resources:\\n  jobs:\\n    parity_job:\\n      name: parity_job\\n      tasks:\\n        - task_key: main\\n          notebook_task:\\n            notebook_path: notebooks/parity_job\\n\""
           ],
-          "sha256": "2c5f1bed9941770f8e337d3d7954af0e413f3cb48e4bfbf11ae7b24e17e28aa1",
+          "sha256": "d79ac466ca35c013f3200cb1938967ef83cf4849bc1af17e8cadf25e621d78fa",
           "undo": "ok; restores the text",
           "redo": "ok; reapplies the text",
           "undoAgain": "ok; restores the text"
@@ -17211,18 +17127,18 @@
           "do": "commit databricks.add-resource:jobs on bundle = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"resources:\\r\\n  jobs:\\r\\n    \\\"yes\\\":\\r\\n      name: \\\"yes\\\"\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
+            "@7 -0 +\"resources:\\n  jobs:\\n    \\\"yes\\\":\\n      name: \\\"yes\\\"\\n      tasks:\\n        - task_key: main\\n          notebook_task:\\n            notebook_path: notebooks/yes\\n\""
           ],
-          "sha256": "b23ad9f49a5de5e3df4d117501fc501f2b1a4928311135352a7c835b4eec064b",
+          "sha256": "e31303f8b2adb5bf323ced8b39d2201c7f3682ae18622f42e4d3b786525a223d",
           "undo": "ok; restores the text"
         },
         {
           "do": "commit databricks.add-resource:pipelines on bundle = \"parity_pipeline\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"resources:\\r\\n  pipelines:\\r\\n    parity_pipeline:\\r\\n      name: parity_pipeline\\r\\n      libraries:\\r\\n        - notebook:\\r\\n            path: transformations/parity_pipeline\\r\\n\""
+            "@7 -0 +\"resources:\\n  pipelines:\\n    parity_pipeline:\\n      name: parity_pipeline\\n      libraries:\\n        - notebook:\\n            path: transformations/parity_pipeline\\n\""
           ],
-          "sha256": "17629b58c5d28bc05ff3687d690255a08502dee7e1a34edd59e46a675732e377",
+          "sha256": "83d52e8e91500ef8558012e3838c591f79635920edd71932bf8546171dca59e5",
           "undo": "ok; restores the text"
         },
         {
@@ -20378,9 +20294,9 @@
           "do": "commit databricks.add-resource:jobs on bundle = \"parity_job\"",
           "answer": "ok",
           "hunks": [
-            "@18 -0 +\"  jobs:\\r\\n    parity_job:\\r\\n      name: parity_job\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/parity_job\\r\\n\""
+            "@38 -0 +\"  jobs:\\r\\n    parity_job:\\r\\n      name: parity_job\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/parity_job\\r\\n\""
           ],
-          "sha256": "8e2cf7fe07d2d44449007035e0a94e8a58ae588a1625bfdbec5641fba5b9f708",
+          "sha256": "8e15e0af65c66a678aa532e0bb13221818c5008b036e1a3bbc2bb147e101a004",
           "undo": "ok; restores the text",
           "redo": "ok; reapplies the text",
           "undoAgain": "ok; restores the text"
@@ -20389,9 +20305,9 @@
           "do": "commit databricks.add-resource:jobs on bundle = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@18 -0 +\"  jobs:\\r\\n    \\\"yes\\\":\\r\\n      name: \\\"yes\\\"\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
+            "@38 -0 +\"  jobs:\\r\\n    \\\"yes\\\":\\r\\n      name: \\\"yes\\\"\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
           ],
-          "sha256": "cd7d221d5054a437a67977b5c042c188ee05546798a8d45545bdd3f63dc54b95",
+          "sha256": "e5636a4a0616c50db1cfcf385710e98b026e72abc332979ef53fa173dca7f353",
           "undo": "ok; restores the text"
         },
         {
@@ -21321,9 +21237,9 @@
           "do": "commit databricks.add-resource:pipelines on bundle = \"parity_pipeline\"",
           "answer": "ok",
           "hunks": [
-            "@4 -0 +\"  pipelines:\\r\\n    parity_pipeline:\\r\\n      name: parity_pipeline\\r\\n      libraries:\\r\\n        - notebook:\\r\\n            path: transformations/parity_pipeline\\r\\n\""
+            "@50 -0 +\"  pipelines:\\r\\n    parity_pipeline:\\r\\n      name: parity_pipeline\\r\\n      libraries:\\r\\n        - notebook:\\r\\n            path: transformations/parity_pipeline\\r\\n\""
           ],
-          "sha256": "ab4d2c1b373f09361664b62dcb0939a121d61a5b52e2ad7447775376e4eb5f9c",
+          "sha256": "8deffc3b988c91a11547193e25684f96f876de0d0b23cbb775e7282488e2347e",
           "undo": "ok; restores the text"
         },
         {
@@ -21633,9 +21549,9 @@
           "do": "commit databricks.add-resource:jobs on bundle = \"parity_job\"",
           "answer": "ok",
           "hunks": [
-            "@18 -0 +\"  jobs:\\r\\n    parity_job:\\r\\n      name: parity_job\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/parity_job\\r\\n\""
+            "@38 -0 +\"  jobs:\\r\\n    parity_job:\\r\\n      name: parity_job\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/parity_job\\r\\n\""
           ],
-          "sha256": "8e2cf7fe07d2d44449007035e0a94e8a58ae588a1625bfdbec5641fba5b9f708",
+          "sha256": "8e15e0af65c66a678aa532e0bb13221818c5008b036e1a3bbc2bb147e101a004",
           "undo": "ok; restores the text",
           "redo": "ok; reapplies the text",
           "undoAgain": "ok; restores the text"
@@ -21644,9 +21560,9 @@
           "do": "commit databricks.add-resource:jobs on bundle = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@18 -0 +\"  jobs:\\r\\n    \\\"yes\\\":\\r\\n      name: \\\"yes\\\"\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
+            "@38 -0 +\"  jobs:\\r\\n    \\\"yes\\\":\\r\\n      name: \\\"yes\\\"\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
           ],
-          "sha256": "cd7d221d5054a437a67977b5c042c188ee05546798a8d45545bdd3f63dc54b95",
+          "sha256": "e5636a4a0616c50db1cfcf385710e98b026e72abc332979ef53fa173dca7f353",
           "undo": "ok; restores the text"
         },
         {
@@ -22615,9 +22531,9 @@
           "do": "commit databricks.add-resource:pipelines on bundle = \"parity_pipeline\"",
           "answer": "ok",
           "hunks": [
-            "@2 -0 +\"  pipelines:\\r\\n    parity_pipeline:\\r\\n      name: parity_pipeline\\r\\n      libraries:\\r\\n        - notebook:\\r\\n            path: transformations/parity_pipeline\\r\\n\""
+            "@9 -0 +\"  pipelines:\\r\\n    parity_pipeline:\\r\\n      name: parity_pipeline\\r\\n      libraries:\\r\\n        - notebook:\\r\\n            path: transformations/parity_pipeline\\r\\n\""
           ],
-          "sha256": "4ee51a5fca90fca4a1b40601f574016de5b2fc556305f0ed2222560d9dded26d",
+          "sha256": "79b87d5d1cfa1dcf6a88292c2b57028243eea1699c613b793213f1f6964c9ba7",
           "undo": "ok; restores the text"
         },
         {
@@ -22838,32 +22754,18 @@
         },
         {
           "do": "commit databricks.add-resource:jobs on bundle = \"parity_job\"",
-          "answer": "ok",
-          "hunks": [
-            "@7 -0 +\"resources:\\r\\n  jobs:\\r\\n    parity_job:\\r\\n      name: parity_job\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/parity_job\\r\\n\""
-          ],
-          "sha256": "a5b29ad574155bd7b291a415b056399be2511a928db60cd537b2f32ebd3e71d4",
-          "undo": "ok; restores the text",
-          "redo": "ok; reapplies the text",
-          "undoAgain": "ok; restores the text"
+          "answer": "refused: The configuration file has no /resources/jobs to add the Resource to.",
+          "unchanged": true
         },
         {
           "do": "commit databricks.add-resource:jobs on bundle = \"yes\"",
-          "answer": "ok",
-          "hunks": [
-            "@7 -0 +\"resources:\\r\\n  jobs:\\r\\n    \\\"yes\\\":\\r\\n      name: \\\"yes\\\"\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
-          ],
-          "sha256": "189a42118d5a3327e7acdb040d22d12ab881b72b6e7973d86b7b294a2f5480d1",
-          "undo": "ok; restores the text"
+          "answer": "refused: The configuration file has no /resources/jobs to add the Resource to.",
+          "unchanged": true
         },
         {
           "do": "commit databricks.add-resource:pipelines on bundle = \"parity_pipeline\"",
-          "answer": "ok",
-          "hunks": [
-            "@7 -0 +\"resources:\\r\\n  pipelines:\\r\\n    parity_pipeline:\\r\\n      name: parity_pipeline\\r\\n      libraries:\\r\\n        - notebook:\\r\\n            path: transformations/parity_pipeline\\r\\n\""
-          ],
-          "sha256": "04565a9da0f51a40c55023e484f409b060057bda04b69946ee41dcb14311e38a",
-          "undo": "ok; restores the text"
+          "answer": "refused: The configuration file has no /resources/pipelines to add the Resource to.",
+          "unchanged": true
         },
         {
           "do": "commit databricks.add-resource:experiments on bundle = \"parity_experiment\"",

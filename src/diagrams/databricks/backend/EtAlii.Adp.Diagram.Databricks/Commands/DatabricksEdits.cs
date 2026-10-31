@@ -117,10 +117,9 @@ internal static class DatabricksEdits
         // A change the library plans with no splice is still an edit, as the writers' were: it is saved and undone as one.
         if (lastBefore < start && lastAfter < start) return EditOutcome.Applied;
 
-        var replacement = after.Skip(start).Take(lastAfter - start + 1).Select(line => line.Text).ToList();
-        if (lastBefore < start) document.Insert(start, replacement);
-        else if (replacement.Count == 0) document.Remove(new LineRange(start, lastBefore));
-        else document.Replace(new LineRange(start, lastBefore), replacement);
+        // Each line with the terminator the library planned, which in a file of mixed endings is the ending of the line it
+        // is inserted at, not the document's majority (FBL section 6.3).
+        document.Splice(start, lastBefore - start + 1, after.Skip(start).Take(lastAfter - start + 1).ToList());
 
         return string.Equals(document.Text, text, StringComparison.Ordinal) ? EditOutcome.Applied : EditOutcome.Refused(NotStored);
     }
