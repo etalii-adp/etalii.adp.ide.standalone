@@ -20,8 +20,10 @@ namespace EtAlii.Adp.Diagram.Databricks;
 /// </para>
 /// <para>
 /// A drag never touches the body file: repositioning dispatches the core
-/// <see cref="SetRegistrationLayoutCommand"/>, which writes the <c>.adp</c>'s <c>layout:</c>
-/// block - the layout-in-.adp rule this family exists to exercise (Requirement 7). The change
+/// <see cref="PlaceInRegistrationCommand"/>, which writes the <c>.adp</c>'s <c>layout:</c>
+/// block through the FBL library's registration writer (databricks-disl-fbl Requirement 5.5): one
+/// entry spliced in or changed and every other byte left as it was, with no stale entry pruned,
+/// because the command sets no known ids (ruled by the user in chat, 2026-10-11). The change
 /// comes back through the registration's reload, and every session on the file re-renders with
 /// the authored position overlaid.
 /// </para>
@@ -87,7 +89,7 @@ public sealed class DatabricksSession : DocumentDiagramSession<LineDocument, Dat
             return DiagramPlacement.Refused("That element is not something this diagram can move.");
         }
 
-        return DiagramPlacement.By(new SetRegistrationLayoutCommand(_registrationPath, elementId, x, y));
+        return DiagramPlacement.By(new PlaceInRegistrationCommand(_registrationPath, elementId, x, y));
     }
 
     /// <summary>The reading this session's type shows of <paramref name="model"/>, with the stored positions overlaid.</summary>
