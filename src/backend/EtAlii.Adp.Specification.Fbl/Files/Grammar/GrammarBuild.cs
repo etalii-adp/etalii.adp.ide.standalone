@@ -55,6 +55,46 @@ internal sealed class GrammarBuild
     /// <summary>The terminal a <c>sync</c> entry names: a terminal's name, or the text of an anonymous string terminal; null for neither.</summary>
     public string? Terminal(string entry) => Terminals.Contains(entry) ? entry : StringTerminals.GetValueOrDefault(entry);
 
+    private readonly Lock _gate = new();
+    private LarkParser? _reader;
+    private Dictionary<int, Token> _cut = [];
+
+    /// <summary>
+    /// Parses <paramref name="text"/> from <paramref name="start"/>, and gives every token the lexer cut on the way, by its
+    /// UTF-16 offset, the ignored ones and those the tree leaves out included (research R6). A token cut again at the same
+    /// offset, as a lookahead is, is kept once. One parse at a time runs on a grammar.
+    /// </summary>
+    public (Tree Tree, IReadOnlyDictionary<int, Token> Tokens) Parse(string text, string start)
+    {
+        lock (_gate)
+        {
+            _reader ??= Reader();
+            _cut = [];
+            var tree = (Tree)_reader.Parse(text, start);
+            return (tree, _cut);
+        }
+    }
+
+    /// <summary>
+    /// The parser reading bodies: the built one, saved and loaded again with a lexer callback on each of its terminals,
+    /// since <c>EtAlii.Lark</c> takes lexer callbacks only when a parser is made and the terminals' names are known only
+    /// once it is built. Loading needs no second build.
+    /// </summary>
+    private LarkParser Reader()
+    {
+        using var saved = new MemoryStream();
+        Lark.Save(saved);
+        saved.Position = 0;
+        var callbacks = Terminals.ToDictionary(name => name, _ => (Func<Token, Token>)Record, StringComparer.Ordinal);
+        return LarkParser.Load(saved, new LarkOptions { LexerCallbacks = callbacks, PropagatePositions = true });
+    }
+
+    private Token Record(Token token)
+    {
+        if (token.StartPos is { } at) _cut[at] = token;
+        return token;
+    }
+
     /// <summary>
     /// Builds <paramref name="body"/>'s grammar, its file and imports read from <paramref name="folder"/>, the FBL
     /// document's own folder; null when it is refused, each refusal a problem at <paramref name="pointer"/>, the body's.
