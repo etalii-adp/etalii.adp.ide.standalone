@@ -28,7 +28,7 @@ public class CausalLoopDerivedOperationsTests
     private const string Path = "derived.cld";
     private const string Nobody = "nobody";
 
-    public static TheoryData<string> Documents() => [.. CausalLoopCorpus.Paths()];
+    public static TheoryData<string> Documents() => [.. CausalLoopCorpus.WalkedElementByElement()];
 
     [Theory]
     [MemberData(nameof(Documents))]
