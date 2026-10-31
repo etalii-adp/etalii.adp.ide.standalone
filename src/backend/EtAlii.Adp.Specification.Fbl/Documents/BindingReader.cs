@@ -129,7 +129,29 @@ internal static partial class BindingReader
             Files = Array(json, "files").Select(f => new FileRule(JsonProperties.String(f, "name"), JsonProperties.String(f, "glob") ?? "", ParseFamily(JsonProperties.String(f, "family")))).ToList(),
             Ignore = JsonProperties.Strings(json, "ignore"),
             Settle = settle,
+            Grammar = ReadGrammar(json, pointer, problems),
         };
+    }
+
+    /// <summary>
+    /// <c>body.grammar</c>, <c>body.start</c> and <c>body.recover</c> (FBL 0.9 §3.2, §4.9); null when the body has no
+    /// grammar. The grammar is built once the binding is read, by <see cref="Files.Grammar.GrammarBuild"/>.
+    /// </summary>
+    private static GrammarBody? ReadGrammar(JsonElement json, string pointer, List<LoadDiagnostic> problems)
+    {
+        if (!json.TryGetProperty("grammar", out var grammar)) return null;
+        string? text = null;
+        string? file = null;
+        if (grammar.ValueKind == JsonValueKind.String) text = grammar.GetString();
+        else if (grammar.ValueKind == JsonValueKind.Object && JsonProperties.String(grammar, "file") is { } named) file = named;
+        else problems.Add(new LoadDiagnostic(pointer + "/grammar", LoadSeverity.Error, "A body's grammar is its text, or {\"file\": \"<name>.lark\"} beside the FBL document (FBL 0.9 4.9)."));
+        GrammarRecover? recover = null;
+        if (Object(json, "recover", pointer, "A body's recover", problems) is { } r)
+        {
+            if (JsonProperties.String(r, "unit") is { } unit) recover = new GrammarRecover(unit, JsonProperties.Strings(r, "sync"));
+            else problems.Add(new LoadDiagnostic(pointer + "/recover/unit", LoadSeverity.Error, "A body's recover names its unit (FBL 0.9 4.9)."));
+        }
+        return new GrammarBody { Text = text, File = file, Start = JsonProperties.String(json, "start") ?? "start", Recover = recover };
     }
 
     private static Family? ParseFamily(string? name) => name switch
@@ -140,6 +162,7 @@ internal static partial class BindingReader
         "lines" => Family.Lines,
         "blocks" => Family.Blocks,
         "bullets" => Family.Bullets,
+        "grammar" => Family.Grammar,
         _ => null,
     };
 
