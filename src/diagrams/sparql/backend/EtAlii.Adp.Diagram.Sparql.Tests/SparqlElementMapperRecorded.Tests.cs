@@ -74,12 +74,13 @@ public sealed class SparqlElementMapperRecordedTests
             : File.ReadAllText(RepositoryPaths.Under(["src", "diagrams", "sparql", .. name.Split('/')]));
     }
 
+    // Each line ends in \n, never Environment.NewLine: a digest above must be one number on every platform.
     private static string Describe(IReadOnlyList<DiagramElement> elements)
     {
         var text = new StringBuilder();
         foreach (var element in elements)
         {
-            text.AppendLine(CultureInfo.InvariantCulture, $"{element.Id} {element.X:R} {element.Y:R} {element.Type} {element.PayloadTypeUrl} {Convert.ToHexString(element.Payload.Span)}");
+            text.Append(CultureInfo.InvariantCulture, $"{element.Id} {element.X:R} {element.Y:R} {element.Type} {element.PayloadTypeUrl} {Convert.ToHexString(element.Payload.Span)}\n");
         }
 
         return text.ToString();

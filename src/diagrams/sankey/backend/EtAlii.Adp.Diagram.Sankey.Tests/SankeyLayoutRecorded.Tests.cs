@@ -34,19 +34,20 @@ public sealed class SankeyLayoutRecordedTests
         Assert.True(digest == Digest(described), $"{Path.GetFileName(path)} is laid out as {Digest(described)}:\n{described}");
     }
 
+    // Each line ends in \n, never Environment.NewLine: a digest above must be one number on every platform.
     private static string Describe(SankeyLayout layout)
     {
         var text = new StringBuilder();
         foreach (var node in layout.Nodes)
         {
             var box = layout.Boxes[node.Id];
-            text.AppendLine(CultureInfo.InvariantCulture, $"node {node.Id} {layout.Columns[node.Id]} {box.X:R} {box.Y:R} {box.Width:R} {box.Height:R}");
+            text.Append(CultureInfo.InvariantCulture, $"node {node.Id} {layout.Columns[node.Id]} {box.X:R} {box.Y:R} {box.Width:R} {box.Height:R}\n");
         }
 
         foreach (var flow in layout.Flows)
         {
             var band = layout.Bands[flow.Id];
-            text.AppendLine(CultureInfo.InvariantCulture, $"band {flow.Id} {band.Thickness:R} {band.SourceAt:R} {band.TargetAt:R} {band.Backward}");
+            text.Append(CultureInfo.InvariantCulture, $"band {flow.Id} {band.Thickness:R} {band.SourceAt:R} {band.TargetAt:R} {band.Backward}\n");
         }
 
         return text.ToString();

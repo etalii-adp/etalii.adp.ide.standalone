@@ -83,7 +83,15 @@ public sealed class FblOptions
     /// <summary>The body's file name, relative to the subject, for findings.</summary>
     public string FileName { get; init; } = "body";
 
-    public TimeSpan RegexTimeout { get; } = TimeSpan.FromMilliseconds(250);
+    /// <summary>
+    /// How long one expression may take on one statement before it is read as not matching. It bounds an
+    /// expression that backtracks without end, and it is wall-clock: a thread paused beside a busy machine
+    /// runs out of it on a match that takes microseconds. At 250 ms a `dotnet test` of the whole solution
+    /// lost a line of a causal-loop example that way (2026-10-31), which reads as a wrong finding.
+    /// </summary>
+    public static readonly TimeSpan DefaultRegexTimeout = TimeSpan.FromSeconds(2);
+
+    public TimeSpan RegexTimeout { get; } = DefaultRegexTimeout;
 
     /// <summary>
     /// A body larger than this is unreadable rather than read in part (FBL §16); for a folder subject,

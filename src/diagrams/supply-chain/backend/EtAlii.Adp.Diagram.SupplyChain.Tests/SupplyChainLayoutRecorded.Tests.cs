@@ -34,24 +34,25 @@ public sealed class SupplyChainLayoutRecordedTests
         Assert.True(digest == Digest(described), $"{Path.GetFileName(path)} is laid out as {Digest(described)}:\n{described}");
     }
 
+    // Each line ends in \n, never Environment.NewLine: a digest above must be one number on every platform.
     private static string Describe(SupplyChainLayout layout)
     {
         var text = new StringBuilder();
         foreach (var node in layout.Nodes)
         {
             var box = layout.NodeBoxes[node.Id];
-            text.AppendLine(CultureInfo.InvariantCulture, $"node {node.Id} {box.X:R} {box.Y:R} {box.Width:R} {box.Height:R}");
+            text.Append(CultureInfo.InvariantCulture, $"node {node.Id} {box.X:R} {box.Y:R} {box.Width:R} {box.Height:R}\n");
         }
 
         foreach (var group in layout.Groups.Where(group => layout.GroupBoxes.ContainsKey(group.Id)))
         {
             var box = layout.GroupBoxes[group.Id];
-            text.AppendLine(CultureInfo.InvariantCulture, $"group {group.Id} {box.X:R} {box.Y:R} {box.Width:R} {box.Height:R}");
+            text.Append(CultureInfo.InvariantCulture, $"group {group.Id} {box.X:R} {box.Y:R} {box.Width:R} {box.Height:R}\n");
         }
 
         foreach (var flow in layout.Flows.Where(flow => layout.Lanes.ContainsKey(flow.Id)))
         {
-            text.AppendLine(CultureInfo.InvariantCulture, $"lane {flow.Id} {string.Join(" ", layout.Lanes[flow.Id].Select(point => FormattableString.Invariant($"{point.X:R},{point.Y:R}")))}");
+            text.Append(CultureInfo.InvariantCulture, $"lane {flow.Id} {string.Join(" ", layout.Lanes[flow.Id].Select(point => FormattableString.Invariant($"{point.X:R},{point.Y:R}")))}\n");
         }
 
         return text.ToString();

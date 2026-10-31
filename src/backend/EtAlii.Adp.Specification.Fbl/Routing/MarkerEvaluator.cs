@@ -29,7 +29,7 @@ internal static class MarkerEvaluator
         }
         if (marker.Pattern is { } pattern)
         {
-            var regex = new BoundedRegex(pattern, false, regexTimeout ?? TimeSpan.FromMilliseconds(250));
+            var regex = new BoundedRegex(pattern, false, regexTimeout ?? FblOptions.DefaultRegexTimeout);
             var lines = marker.Lines > 0 ? marker.Lines : DefaultLines;
             foreach (var line in text.Lines.Take(lines))
             {

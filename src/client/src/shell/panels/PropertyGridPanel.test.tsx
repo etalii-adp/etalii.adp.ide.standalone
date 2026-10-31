@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { create } from "@bufbuild/protobuf";
 import { ContextLevelDetailSchema, ContextSelectionSource, ContextPropertyEditor } from "../../generated/context-contract_pb";
 import { type ContextActionGroup, type ContextLevelDetail } from "../../generated/context-contract_pb";
@@ -110,7 +110,7 @@ describe("PropertyGridPanel", () => {
     await act(async () => {
       fireEvent.blur(field);
     });
-    expect(backend.writes).toEqual([{ propertyId: "causal-loop.flow-strength", value: "4" }]);
+    await waitFor(() => expect(backend.writes).toEqual([{ propertyId: "causal-loop.flow-strength", value: "4" }]));
     expect((backend.lastSource as { source: { value: { value: Uint8Array } } }).source.value.value).toEqual(entryId);
     act(() => clearFocusedDiagram(entryId));
   });

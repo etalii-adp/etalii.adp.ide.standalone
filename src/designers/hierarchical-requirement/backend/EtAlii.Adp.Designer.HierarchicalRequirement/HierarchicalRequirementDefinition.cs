@@ -80,7 +80,7 @@ internal static class HierarchicalRequirementDefinition
                 if (attribute.Value.TryGetProperty("many", out var many) && many.GetBoolean()) specification.Many.Add(key);
                 if (attribute.Value.TryGetProperty("mentions", out var mentions))
                 {
-                    specification.MentionPatterns[key] = new Regex(mentions.GetProperty("pattern").GetString()!, RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(250));
+                    specification.MentionPatterns[key] = new Regex(mentions.GetProperty("pattern").GetString()!, RegexOptions.CultureInvariant, TimeSpan.FromSeconds(2));
                 }
             }
         }
