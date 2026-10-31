@@ -389,9 +389,9 @@ public sealed class DislDiagram : ICelObject
         return _cycles[(relationType, max)] = DislCycles.Find(_nodes, _relations.Where(relation => relation.IsA(relationType)), max);
     }
 
-    internal IReadOnlyList<DislElement> IncomingOf(DislElement node) => Ends().GetValueOrDefault(node).Incoming ?? [];
+    internal IReadOnlyList<DislElement> IncomingOf(DislElement node) => Ends().TryGetValue(node, out var ends) ? ends.Incoming : [];
 
-    internal IReadOnlyList<DislElement> OutgoingOf(DislElement node) => Ends().GetValueOrDefault(node).Outgoing ?? [];
+    internal IReadOnlyList<DislElement> OutgoingOf(DislElement node) => Ends().TryGetValue(node, out var ends) ? ends.Outgoing : [];
 
     private Dictionary<DislElement, (List<DislElement> Incoming, List<DislElement> Outgoing)> Ends()
     {

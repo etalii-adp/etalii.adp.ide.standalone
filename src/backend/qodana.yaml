@@ -7,7 +7,8 @@
 #               as its contents will be included in the Qodana report.          #
 #################################################################################
 #Read by Qodana in Rider only: the plugin looks for qodana.yaml in the folder of the opened solution, this one, and
-#never in a parent folder. The pipeline reads the qodana.yaml in the repository root. Keep both include lists equal.
+#never in a parent folder. The pipeline reads the qodana.yaml in the repository root, and its linter has no use for
+#this list.
 version: "1.0"
 #Specify IDE code to run analysis without container (Applied in CI/CD pipeline)
 ide: QDNET
