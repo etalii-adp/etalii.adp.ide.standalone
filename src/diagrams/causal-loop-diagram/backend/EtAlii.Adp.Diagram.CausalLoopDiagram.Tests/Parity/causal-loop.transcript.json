@@ -9480,8 +9480,8 @@
     },
     {
       "document": "examples/diagrams/causal-loop-diagram/mental-health/mental-health.cld",
-      "sha256": "a1c21d9e45179503d71dc87b541d628423308ed65df0378020372d17a47b95fa",
-      "registration": "mental-health.adp, sha256 68049825e06a340f447869c09f71a757b98b3bd1ba8f7feca82dc169ef7b97fc",
+      "sha256": "86dfb7b374b6006044cfd1e6e19bb1da4f805d9bef31fe56246ce5483912903c",
+      "registration": "mental-health.adp, sha256 555aeb0da62911a2227a5f673e49b804771f8ebde2cf98e57be580a940cebd87",
       "menus": [
         [
           "g1 causal-loop.add-link | Add link from here… | mdi-arrow-right-thin | - | on",
@@ -9675,7 +9675,7 @@
         "\"link:legalFrame|conversationalSafety\" => menu #13, read-only #1",
         "\"link:insurerDependence|selfDirection\" => menu #13, read-only #1",
         "\"link:insurerDependence|conversationalSafety\" => menu #13, read-only #1",
-        "\"link:ageing|selfDirection\" => menu #13, read-only #1",
+        "\"link:ageing|selfDirection\" => menu #12, read-only #1",
         "\"link:conversationalSafety|openness\" => menu #8, read-only #1",
         "\"link:openness|visibleComplaints\" => menu #7, read-only #1",
         "\"link:visibleComplaints|preventionUrgency\" => menu #7, read-only #1",
@@ -10508,84 +10508,84 @@
       "readOnlySet": "set variable:selfDirection causal-loop.variable-label => refused: mental-health.cld could not be read, so it cannot be edited.",
       "findings": [],
       "payloads": [
-        "variable:selfDirection | systems/causal-loop+variable | 484.234, -544.233 | CausalLoopVariablePayload { \"display\": \"Experienced self-direction\", \"id\": \"selfDirection\", \"width\": 228.20000000000002, \"height\": 39.599999999999994 }",
-        "variable:emotionSuppression | systems/causal-loop+variable | 566.879, 803.789 | CausalLoopVariablePayload { \"display\": \"Emotion suppression (downplaying as coping)\", \"id\": \"emotionSuppression\", \"width\": 359.1, \"height\": 39.599999999999994 }",
-        "variable:meaning | systems/causal-loop+variable | 1047.435, -669.032 | CausalLoopVariablePayload { \"display\": \"Experienced meaning and perspective\", \"id\": \"meaning\", \"width\": 297.5, \"height\": 39.599999999999994 }",
-        "variable:goalOrientation | systems/causal-loop+variable | 789.397, 147.376 | CausalLoopVariablePayload { \"display\": \"Goal orientation\", \"id\": \"goalOrientation\", \"width\": 151.20000000000002, \"height\": 39.599999999999994 }",
-        "variable:goalsAchieved | systems/causal-loop+variable | 922.589, 290.997 | CausalLoopVariablePayload { \"display\": \"Goals achieved\", \"id\": \"goalsAchieved\", \"width\": 135.8, \"height\": 39.599999999999994 }",
-        "variable:satisfaction | systems/causal-loop+variable | 1091.689, 332.547 | CausalLoopVariablePayload { \"display\": \"Satisfaction\", \"id\": \"satisfaction\", \"width\": 120.4, \"height\": 39.599999999999994 }",
-        "variable:bigPicture | systems/causal-loop+variable | 1060.805, -231.457 | CausalLoopVariablePayload { \"display\": \"Sight of the bigger picture\", \"id\": \"bigPicture\", \"width\": 235.9, \"height\": 39.599999999999994 }",
-        "variable:sacrifice | systems/causal-loop+variable | 1083.654, -1097.51 | CausalLoopVariablePayload { \"display\": \"Willingness to sacrifice\", \"id\": \"sacrifice\", \"width\": 212.8, \"height\": 39.599999999999994 }",
-        "variable:progress | systems/causal-loop+variable | 692.68, -1199.03 | CausalLoopVariablePayload { \"display\": \"Progress\", \"id\": \"progress\", \"width\": 90, \"height\": 39.599999999999994 }",
-        "variable:confidence | systems/causal-loop+variable | 339.931, -1051.454 | CausalLoopVariablePayload { \"display\": \"Confidence\", \"id\": \"confidence\", \"width\": 105, \"height\": 39.599999999999994 }",
-        "variable:shortTermFunctioning | systems/causal-loop+variable | 602.901, 1105.539 | CausalLoopVariablePayload { \"display\": \"Functioning in the short term\", \"id\": \"shortTermFunctioning\", \"width\": 251.3, \"height\": 39.599999999999994 }",
-        "variable:copingConfirmation | systems/causal-loop+variable | 1019.055, 1067.292 | CausalLoopVariablePayload { \"display\": \"Confirmation of the coping strategy\", \"id\": \"copingConfirmation\", \"width\": 297.5, \"height\": 39.599999999999994 }",
-        "variable:exhaustion | systems/causal-loop+variable | 77.454, 1092 | CausalLoopVariablePayload { \"display\": \"Exhaustion\", \"id\": \"exhaustion\", \"width\": 105, \"height\": 39.599999999999994 }",
-        "variable:dropout | systems/causal-loop+variable | -528.407, 1107.041 | CausalLoopVariablePayload { \"display\": \"Mental health dropout\", \"id\": \"dropout\", \"width\": 189.70000000000002, \"height\": 39.599999999999994 }",
-        "variable:toughNorm | systems/causal-loop+variable | -191.892, 401.747 | CausalLoopVariablePayload { \"display\": \"Norm: don't make a fuss\", \"id\": \"toughNorm\", \"width\": 205.10000000000002, \"height\": 39.599999999999994 }",
-        "variable:emotionExpression | systems/causal-loop+variable | 93.495, 484.37 | CausalLoopVariablePayload { \"display\": \"Expression of emotion\", \"id\": \"emotionExpression\", \"width\": 189.70000000000002, \"height\": 39.599999999999994 }",
-        "variable:legalFrame | systems/causal-loop+variable | -439.279, -331.685 | CausalLoopVariablePayload { \"display\": \"Legal limits on discussing mental health\", \"id\": \"legalFrame\", \"width\": 336, \"height\": 39.599999999999994 }",
-        "variable:insurerDependence | systems/causal-loop+variable | 17.221000000000004, -398.445 | CausalLoopVariablePayload { \"display\": \"Dependence on insurers and premiums\", \"id\": \"insurerDependence\", \"width\": 297.5, \"height\": 39.599999999999994 }",
-        "variable:ageing | systems/causal-loop+variable | 477.831, -371.271 | CausalLoopVariablePayload { \"display\": \"Ageing population\", \"id\": \"ageing\", \"width\": 158.9, \"height\": 39.599999999999994 }",
-        "variable:conversationalSafety | systems/causal-loop+variable | -531.961, -185.32999999999998 | CausalLoopVariablePayload { \"display\": \"Safety to talk\", \"id\": \"conversationalSafety\", \"width\": 135.8, \"height\": 39.599999999999994 }",
-        "variable:openness | systems/causal-loop+variable | -823.104, -178.61599999999999 | CausalLoopVariablePayload { \"display\": \"Openness and vulnerability\", \"id\": \"openness\", \"width\": 228.20000000000002, \"height\": 39.599999999999994 }",
-        "variable:visibleComplaints | systems/causal-loop+variable | -520.101, 333.029 | CausalLoopVariablePayload { \"display\": \"Visible mental health complaints\", \"id\": \"visibleComplaints\", \"width\": 274.40000000000003, \"height\": 39.599999999999994 }",
-        "variable:preventionUrgency | systems/causal-loop+variable | -1005.686, 501.284 | CausalLoopVariablePayload { \"display\": \"Perceived need for prevention\", \"id\": \"preventionUrgency\", \"width\": 251.3, \"height\": 39.599999999999994 }",
-        "variable:systemChange | systems/causal-loop+variable | -1034.829, 176.654 | CausalLoopVariablePayload { \"display\": \"System change\", \"id\": \"systemChange\", \"width\": 128.10000000000002, \"height\": 39.599999999999994 }",
-        "variable:preventionInvestment | systems/causal-loop+variable | -948.7870000000001, 925.699 | CausalLoopVariablePayload { \"display\": \"Investment in prevention\", \"id\": \"preventionInvestment\", \"width\": 212.8, \"height\": 39.599999999999994 }",
-        "variable:premiumPressure | systems/causal-loop+variable | -944.763, 1173.646 | CausalLoopVariablePayload { \"display\": \"Costs and premium pressure\", \"id\": \"premiumPressure\", \"width\": 228.20000000000002, \"height\": 39.599999999999994 }",
-        "variable:generationalLabels | systems/causal-loop+variable | -921.6200000000001, -950.992 | CausalLoopVariablePayload { \"display\": \"Limiting stories and labels of older generations\", \"id\": \"generationalLabels\", \"width\": 397.6, \"height\": 39.599999999999994 }",
-        "variable:youthSelfImage | systems/causal-loop+variable | -587.127, -1171.803 | CausalLoopVariablePayload { \"display\": \"Self-image of young people\", \"id\": \"youthSelfImage\", \"width\": 228.20000000000002, \"height\": 39.599999999999994 }",
-        "variable:withdrawal | systems/causal-loop+variable | -932.4220000000001, -1214.618 | CausalLoopVariablePayload { \"display\": \"Withdrawal and behaviour\", \"id\": \"withdrawal\", \"width\": 212.8, \"height\": 39.599999999999994 }",
-        "variable:vulnerability | systems/causal-loop+variable | -1095.398, -554.589 | CausalLoopVariablePayload { \"display\": \"Showing vulnerability\", \"id\": \"vulnerability\", \"width\": 189.70000000000002, \"height\": 39.599999999999994 }",
-        "link:emotionSuppression|shortTermFunctioning | systems/causal-loop+link | 584.89, 954.664 | CausalLoopLinkPayload { \"fromElementId\": \"variable:emotionSuppression\", \"toElementId\": \"variable:shortTermFunctioning\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"label\": \"relativeren als coping\" }",
-        "link:shortTermFunctioning|copingConfirmation | systems/causal-loop+link | 810.978, 1086.4155 | CausalLoopLinkPayload { \"fromElementId\": \"variable:shortTermFunctioning\", \"toElementId\": \"variable:copingConfirmation\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"flipped\": true }",
-        "link:copingConfirmation|emotionSuppression | systems/causal-loop+link | 792.967, 935.5405 | CausalLoopLinkPayload { \"fromElementId\": \"variable:copingConfirmation\", \"toElementId\": \"variable:emotionSuppression\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"flipped\": true }",
-        "link:emotionSuppression|exhaustion | systems/causal-loop+link | 322.1665, 947.8945 | CausalLoopLinkPayload { \"fromElementId\": \"variable:emotionSuppression\", \"toElementId\": \"variable:exhaustion\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"delayed\": true, \"label\": \"keeping up an untrue story is tiring\", \"flipped\": true }",
-        "link:exhaustion|shortTermFunctioning | systems/causal-loop+link | 340.17749999999995, 1098.7694999999999 | CausalLoopLinkPayload { \"fromElementId\": \"variable:exhaustion\", \"toElementId\": \"variable:shortTermFunctioning\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\", \"delayed\": true, \"flipped\": true }",
-        "link:exhaustion|dropout | systems/causal-loop+link | -225.47650000000002, 1099.5205 | CausalLoopLinkPayload { \"fromElementId\": \"variable:exhaustion\", \"toElementId\": \"variable:dropout\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"delayed\": true, \"label\": \"uitval\" }",
-        "link:meaning|sacrifice | systems/causal-loop+link | 1065.5445, -883.271 | CausalLoopLinkPayload { \"fromElementId\": \"variable:meaning\", \"toElementId\": \"variable:sacrifice\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"label\": \"a clear way out\", \"flipped\": true }",
-        "link:sacrifice|progress | systems/causal-loop+link | 888.1669999999999, -1148.27 | CausalLoopLinkPayload { \"fromElementId\": \"variable:sacrifice\", \"toElementId\": \"variable:progress\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"flipped\": true }",
-        "link:progress|confidence | systems/causal-loop+link | 516.3054999999999, -1125.242 | CausalLoopLinkPayload { \"fromElementId\": \"variable:progress\", \"toElementId\": \"variable:confidence\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"flipped\": true }",
-        "link:confidence|selfDirection | systems/causal-loop+link | 412.0825, -797.8435 | CausalLoopLinkPayload { \"fromElementId\": \"variable:confidence\", \"toElementId\": \"variable:selfDirection\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"flipped\": true }",
-        "link:selfDirection|meaning | systems/causal-loop+link | 765.8344999999999, -606.6324999999999 | CausalLoopLinkPayload { \"fromElementId\": \"variable:selfDirection\", \"toElementId\": \"variable:meaning\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"label\": \"back to the perspective\" }",
-        "link:selfDirection|goalOrientation | systems/causal-loop+link | 636.8155, -198.42849999999999 | CausalLoopLinkPayload { \"fromElementId\": \"variable:selfDirection\", \"toElementId\": \"variable:goalOrientation\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"label\": \"the bridge to suppression\" }",
-        "link:goalOrientation|emotionSuppression | systems/causal-loop+link | 678.138, 475.5825 | CausalLoopLinkPayload { \"fromElementId\": \"variable:goalOrientation\", \"toElementId\": \"variable:emotionSuppression\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"label\": \"flight into goals\" }",
-        "link:goalOrientation|goalsAchieved | systems/causal-loop+link | 855.993, 219.18650000000002 | CausalLoopLinkPayload { \"fromElementId\": \"variable:goalOrientation\", \"toElementId\": \"variable:goalsAchieved\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"flipped\": true }",
-        "link:goalsAchieved|satisfaction | systems/causal-loop+link | 1007.1390000000001, 311.77200000000005 | CausalLoopLinkPayload { \"fromElementId\": \"variable:goalsAchieved\", \"toElementId\": \"variable:satisfaction\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"flipped\": true }",
-        "link:satisfaction|goalOrientation | systems/causal-loop+link | 940.5430000000001, 239.9615 | CausalLoopLinkPayload { \"fromElementId\": \"variable:satisfaction\", \"toElementId\": \"variable:goalOrientation\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"flipped\": true }",
-        "link:goalOrientation|bigPicture | systems/causal-loop+link | 925.1010000000001, -42.040499999999994 | CausalLoopLinkPayload { \"fromElementId\": \"variable:goalOrientation\", \"toElementId\": \"variable:bigPicture\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\", \"label\": \"eyes on the next target\", \"flipped\": true }",
-        "link:bigPicture|meaning | systems/causal-loop+link | 1054.12, -450.2445 | CausalLoopLinkPayload { \"fromElementId\": \"variable:bigPicture\", \"toElementId\": \"variable:meaning\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"label\": \"the bridge to the bigger picture\", \"flipped\": true }",
-        "link:toughNorm|emotionExpression | systems/causal-loop+link | -49.198499999999996, 443.0585 | CausalLoopLinkPayload { \"fromElementId\": \"variable:toughNorm\", \"toElementId\": \"variable:emotionExpression\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\", \"label\": \"niet aanstellen, niet zeiken\" }",
-        "link:toughNorm|visibleComplaints | systems/causal-loop+link | -355.99649999999997, 367.38800000000003 | CausalLoopLinkPayload { \"fromElementId\": \"variable:toughNorm\", \"toElementId\": \"variable:visibleComplaints\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\", \"flipped\": true }",
-        "link:emotionSuppression|emotionExpression | systems/causal-loop+link | 330.187, 644.0795 | CausalLoopLinkPayload { \"fromElementId\": \"variable:emotionSuppression\", \"toElementId\": \"variable:emotionExpression\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\" }",
-        "link:emotionExpression|visibleComplaints | systems/causal-loop+link | -213.303, 408.6995 | CausalLoopLinkPayload { \"fromElementId\": \"variable:emotionExpression\", \"toElementId\": \"variable:visibleComplaints\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
-        "link:legalFrame|conversationalSafety | systems/causal-loop+link | -485.62, -258.5075 | CausalLoopLinkPayload { \"fromElementId\": \"variable:legalFrame\", \"toElementId\": \"variable:conversationalSafety\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\", \"label\": \"employers may not discuss complaints\" }",
-        "link:insurerDependence|selfDirection | systems/causal-loop+link | 250.7275, -471.33899999999994 | CausalLoopLinkPayload { \"fromElementId\": \"variable:insurerDependence\", \"toElementId\": \"variable:selfDirection\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\" }",
-        "link:insurerDependence|conversationalSafety | systems/causal-loop+link | -257.37, -291.8875 | CausalLoopLinkPayload { \"fromElementId\": \"variable:insurerDependence\", \"toElementId\": \"variable:conversationalSafety\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\" }",
-        "link:ageing|selfDirection | systems/causal-loop+link | 481.0325, -457.75199999999995 | CausalLoopLinkPayload { \"fromElementId\": \"variable:ageing\", \"toElementId\": \"variable:selfDirection\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\" }",
-        "link:conversationalSafety|openness | systems/causal-loop+link | -677.5325, -181.97299999999998 | CausalLoopLinkPayload { \"fromElementId\": \"variable:conversationalSafety\", \"toElementId\": \"variable:openness\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"flipped\": true }",
-        "link:openness|visibleComplaints | systems/causal-loop+link | -671.6025, 77.2065 | CausalLoopLinkPayload { \"fromElementId\": \"variable:openness\", \"toElementId\": \"variable:visibleComplaints\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
-        "link:visibleComplaints|preventionUrgency | systems/causal-loop+link | -762.8935, 417.1565 | CausalLoopLinkPayload { \"fromElementId\": \"variable:visibleComplaints\", \"toElementId\": \"variable:preventionUrgency\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
-        "link:preventionUrgency|systemChange | systems/causal-loop+link | -1020.2574999999999, 338.969 | CausalLoopLinkPayload { \"fromElementId\": \"variable:preventionUrgency\", \"toElementId\": \"variable:systemChange\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
-        "link:systemChange|conversationalSafety | systems/causal-loop+link | -783.395, -4.337999999999994 | CausalLoopLinkPayload { \"fromElementId\": \"variable:systemChange\", \"toElementId\": \"variable:conversationalSafety\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"delayed\": true }",
-        "link:preventionUrgency|preventionInvestment | systems/causal-loop+link | -977.2365000000001, 713.4915 | CausalLoopLinkPayload { \"fromElementId\": \"variable:preventionUrgency\", \"toElementId\": \"variable:preventionInvestment\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"flipped\": true }",
-        "link:preventionInvestment|dropout | systems/causal-loop+link | -738.5970000000001, 1016.3699999999999 | CausalLoopLinkPayload { \"fromElementId\": \"variable:preventionInvestment\", \"toElementId\": \"variable:dropout\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\", \"delayed\": true }",
-        "link:dropout|premiumPressure | systems/causal-loop+link | -736.585, 1140.3435 | CausalLoopLinkPayload { \"fromElementId\": \"variable:dropout\", \"toElementId\": \"variable:premiumPressure\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
-        "link:premiumPressure|preventionInvestment | systems/causal-loop+link | -946.7750000000001, 1049.6725 | CausalLoopLinkPayload { \"fromElementId\": \"variable:premiumPressure\", \"toElementId\": \"variable:preventionInvestment\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\", \"label\": \"no room left for prevention\" }",
-        "link:generationalLabels|youthSelfImage | systems/causal-loop+link | -754.3735, -1061.3975 | CausalLoopLinkPayload { \"fromElementId\": \"variable:generationalLabels\", \"toElementId\": \"variable:youthSelfImage\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\", \"flipped\": true }",
-        "link:youthSelfImage|withdrawal | systems/causal-loop+link | -759.7745, -1193.2105000000001 | CausalLoopLinkPayload { \"fromElementId\": \"variable:youthSelfImage\", \"toElementId\": \"variable:withdrawal\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\", \"flipped\": true }",
-        "link:withdrawal|generationalLabels | systems/causal-loop+link | -927.0210000000002, -1082.8049999999998 | CausalLoopLinkPayload { \"fromElementId\": \"variable:withdrawal\", \"toElementId\": \"variable:generationalLabels\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"label\": \"the label confirmed\", \"flipped\": true }",
-        "link:openness|vulnerability | systems/causal-loop+link | -959.251, -366.6025 | CausalLoopLinkPayload { \"fromElementId\": \"variable:openness\", \"toElementId\": \"variable:vulnerability\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
-        "link:vulnerability|generationalLabels | systems/causal-loop+link | -1008.509, -752.7905000000001 | CausalLoopLinkPayload { \"fromElementId\": \"variable:vulnerability\", \"toElementId\": \"variable:generationalLabels\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\", \"label\": \"kwetsbaarheid inzetten\" }",
-        "loop:R1 | systems/causal-loop+loop | 729.6116666666667, 992.2066666666666 | CausalLoopLoopPayload { \"identifier\": \"R1\", \"name\": \"Coping that confirms itself\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:emotionSuppression\", \"variable:shortTermFunctioning\", \"variable:copingConfirmation\" ] }",
-        "loop:B1 | systems/causal-loop+loop | 566.5722499999999, 1017.155 | CausalLoopLoopPayload { \"identifier\": \"B1\", \"name\": \"An untrue story wears out\", \"computed\": \"LOOP_POLARITY_PROTO_BALANCING\", \"memberElementIds\": [ \"variable:emotionSuppression\", \"variable:exhaustion\", \"variable:shortTermFunctioning\", \"variable:copingConfirmation\" ] }",
-        "loop:R2 | systems/causal-loop+loop | 729.5867999999999, -912.2518 | CausalLoopLoopPayload { \"identifier\": \"R2\", \"name\": \"Perspective carries the cost\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:meaning\", \"variable:sacrifice\", \"variable:progress\", \"variable:confidence\", \"variable:selfDirection\" ] }",
-        "loop:R3 | systems/causal-loop+loop | 934.5583333333334, 256.97333333333336 | CausalLoopLoopPayload { \"identifier\": \"R3\", \"name\": \"Goals feed goals\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:goalOrientation\", \"variable:goalsAchieved\", \"variable:satisfaction\" ] }",
-        "loop:B2 | systems/causal-loop+loop | 785.448, -663.6199999999999 | CausalLoopLoopPayload { \"identifier\": \"B2\", \"name\": \"Goals narrow the view\", \"computed\": \"LOOP_POLARITY_PROTO_BALANCING\", \"memberElementIds\": [ \"variable:selfDirection\", \"variable:goalOrientation\", \"variable:bigPicture\", \"variable:meaning\", \"variable:sacrifice\", \"variable:progress\", \"variable:confidence\" ] }",
-        "loop:R4 | systems/causal-loop+loop | -783.1362000000001, 129.4042 | CausalLoopLoopPayload { \"identifier\": \"R4\", \"name\": \"What is not seen does not change\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:conversationalSafety\", \"variable:openness\", \"variable:visibleComplaints\", \"variable:preventionUrgency\", \"variable:systemChange\" ] }",
-        "loop:R5 | systems/causal-loop+loop | -807.3190000000001, 1068.7953333333332 | CausalLoopLoopPayload { \"identifier\": \"R5\", \"name\": \"Prevention pays for prevention\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:preventionInvestment\", \"variable:dropout\", \"variable:premiumPressure\" ] }",
-        "loop:R6 | systems/causal-loop+loop | -813.7230000000001, -1112.471 | CausalLoopLoopPayload { \"identifier\": \"R6\", \"name\": \"Labels that confirm themselves\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:generationalLabels\", \"variable:youthSelfImage\", \"variable:withdrawal\" ] }"
+        "variable:selfDirection | systems/causal-loop+variable | -28.531999999999996, -338.905 | CausalLoopVariablePayload { \"display\": \"Experienced self-direction\", \"id\": \"selfDirection\", \"width\": 228.20000000000002, \"height\": 39.599999999999994 }",
+        "variable:emotionSuppression | systems/causal-loop+variable | -97.71999999999997, 589.626 | CausalLoopVariablePayload { \"display\": \"Emotion suppression (downplaying as coping)\", \"id\": \"emotionSuppression\", \"width\": 359.1, \"height\": 39.599999999999994 }",
+        "variable:meaning | systems/causal-loop+variable | 530.316, -93.041 | CausalLoopVariablePayload { \"display\": \"Experienced meaning and perspective\", \"id\": \"meaning\", \"width\": 297.5, \"height\": 39.599999999999994 }",
+        "variable:goalOrientation | systems/causal-loop+variable | 64.515, 228.541 | CausalLoopVariablePayload { \"display\": \"Goal orientation\", \"id\": \"goalOrientation\", \"width\": 151.20000000000002, \"height\": 39.599999999999994 }",
+        "variable:goalsAchieved | systems/causal-loop+variable | 209.051, 503.719 | CausalLoopVariablePayload { \"display\": \"Goals achieved\", \"id\": \"goalsAchieved\", \"width\": 135.8, \"height\": 39.599999999999994 }",
+        "variable:satisfaction | systems/causal-loop+variable | 480.086, 382.942 | CausalLoopVariablePayload { \"display\": \"Satisfaction\", \"id\": \"satisfaction\", \"width\": 120.4, \"height\": 39.599999999999994 }",
+        "variable:bigPicture | systems/causal-loop+variable | 383.217, 35.88 | CausalLoopVariablePayload { \"display\": \"Sight of the bigger picture\", \"id\": \"bigPicture\", \"width\": 235.9, \"height\": 39.599999999999994 }",
+        "variable:sacrifice | systems/causal-loop+variable | 612.972, -285.156 | CausalLoopVariablePayload { \"display\": \"Willingness to sacrifice\", \"id\": \"sacrifice\", \"width\": 212.8, \"height\": 39.599999999999994 }",
+        "variable:progress | systems/causal-loop+variable | 430.424, -456.95 | CausalLoopVariablePayload { \"display\": \"Progress\", \"id\": \"progress\", \"width\": 90, \"height\": 39.599999999999994 }",
+        "variable:confidence | systems/causal-loop+variable | 60.217, -480.135 | CausalLoopVariablePayload { \"display\": \"Confidence\", \"id\": \"confidence\", \"width\": 105, \"height\": 39.599999999999994 }",
+        "variable:shortTermFunctioning | systems/causal-loop+variable | -116.701, 830.963 | CausalLoopVariablePayload { \"display\": \"Functioning in the short term\", \"id\": \"shortTermFunctioning\", \"width\": 251.3, \"height\": 39.599999999999994 }",
+        "variable:copingConfirmation | systems/causal-loop+variable | 298.802, 672.177 | CausalLoopVariablePayload { \"display\": \"Confirmation of the coping strategy\", \"id\": \"copingConfirmation\", \"width\": 297.5, \"height\": 39.599999999999994 }",
+        "variable:exhaustion | systems/causal-loop+variable | -552.247, 736.387 | CausalLoopVariablePayload { \"display\": \"Exhaustion\", \"id\": \"exhaustion\", \"width\": 105, \"height\": 39.599999999999994 }",
+        "variable:dropout | systems/causal-loop+variable | -797.978, 649.983 | CausalLoopVariablePayload { \"display\": \"Mental health dropout\", \"id\": \"dropout\", \"width\": 189.70000000000002, \"height\": 39.599999999999994 }",
+        "variable:toughNorm | systems/causal-loop+variable | -429.66900000000004, 210.95100000000002 | CausalLoopVariablePayload { \"display\": \"Norm: don't make a fuss\", \"id\": \"toughNorm\", \"width\": 205.10000000000002, \"height\": 39.599999999999994 }",
+        "variable:emotionExpression | systems/causal-loop+variable | -251.66499999999996, 337.677 | CausalLoopVariablePayload { \"display\": \"Expression of emotion\", \"id\": \"emotionExpression\", \"width\": 189.70000000000002, \"height\": 39.599999999999994 }",
+        "variable:legalFrame | systems/causal-loop+variable | -284.659, 81.598 | CausalLoopVariablePayload { \"display\": \"Legal limits on discussing mental health\", \"id\": \"legalFrame\", \"width\": 336, \"height\": 39.599999999999994 }",
+        "variable:insurerDependence | systems/causal-loop+variable | -293.899, -203.853 | CausalLoopVariablePayload { \"display\": \"Dependence on insurers and premiums\", \"id\": \"insurerDependence\", \"width\": 297.5, \"height\": 39.599999999999994 }",
+        "variable:ageing | systems/causal-loop+variable | -347.591, -473.596 | CausalLoopVariablePayload { \"display\": \"Ageing population\", \"id\": \"ageing\", \"width\": 158.9, \"height\": 39.599999999999994 }",
+        "variable:conversationalSafety | systems/causal-loop+variable | -654.681, -291.38 | CausalLoopVariablePayload { \"display\": \"Safety to talk\", \"id\": \"conversationalSafety\", \"width\": 135.8, \"height\": 39.599999999999994 }",
+        "variable:openness | systems/causal-loop+variable | -714.156, 107.094 | CausalLoopVariablePayload { \"display\": \"Openness and vulnerability\", \"id\": \"openness\", \"width\": 228.20000000000002, \"height\": 39.599999999999994 }",
+        "variable:visibleComplaints | systems/causal-loop+variable | -710.897, 465.341 | CausalLoopVariablePayload { \"display\": \"Visible mental health complaints\", \"id\": \"visibleComplaints\", \"width\": 274.40000000000003, \"height\": 39.599999999999994 }",
+        "variable:preventionUrgency | systems/causal-loop+variable | -1861.712, 421.737 | CausalLoopVariablePayload { \"display\": \"Perceived need for prevention\", \"id\": \"preventionUrgency\", \"width\": 251.3, \"height\": 39.599999999999994 }",
+        "variable:systemChange | systems/causal-loop+variable | -1665.031, -468.353 | CausalLoopVariablePayload { \"display\": \"System change\", \"id\": \"systemChange\", \"width\": 128.10000000000002, \"height\": 39.599999999999994 }",
+        "variable:preventionInvestment | systems/causal-loop+variable | -1589.133, 733.697 | CausalLoopVariablePayload { \"display\": \"Investment in prevention\", \"id\": \"preventionInvestment\", \"width\": 212.8, \"height\": 39.599999999999994 }",
+        "variable:premiumPressure | systems/causal-loop+variable | -1172.344, 941.176 | CausalLoopVariablePayload { \"display\": \"Costs and premium pressure\", \"id\": \"premiumPressure\", \"width\": 228.20000000000002, \"height\": 39.599999999999994 }",
+        "variable:generationalLabels | systems/causal-loop+variable | -1365.601, 189.517 | CausalLoopVariablePayload { \"display\": \"Limiting stories and labels of older generations\", \"id\": \"generationalLabels\", \"width\": 397.6, \"height\": 39.599999999999994 }",
+        "variable:youthSelfImage | systems/causal-loop+variable | -1250.281, -221.469 | CausalLoopVariablePayload { \"display\": \"Self-image of young people\", \"id\": \"youthSelfImage\", \"width\": 228.20000000000002, \"height\": 39.599999999999994 }",
+        "variable:withdrawal | systems/causal-loop+variable | -1660.921, -91.492 | CausalLoopVariablePayload { \"display\": \"Withdrawal and behaviour\", \"id\": \"withdrawal\", \"width\": 212.8, \"height\": 39.599999999999994 }",
+        "variable:vulnerability | systems/causal-loop+variable | -999.33, 273.247 | CausalLoopVariablePayload { \"display\": \"Showing vulnerability\", \"id\": \"vulnerability\", \"width\": 189.70000000000002, \"height\": 39.599999999999994 }",
+        "link:emotionSuppression|shortTermFunctioning | systems/causal-loop+link | -107.21049999999998, 710.2945 | CausalLoopLinkPayload { \"fromElementId\": \"variable:emotionSuppression\", \"toElementId\": \"variable:shortTermFunctioning\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"label\": \"relativeren als coping\" }",
+        "link:shortTermFunctioning|copingConfirmation | systems/causal-loop+link | 91.05050000000001, 751.5699999999999 | CausalLoopLinkPayload { \"fromElementId\": \"variable:shortTermFunctioning\", \"toElementId\": \"variable:copingConfirmation\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"flipped\": true }",
+        "link:copingConfirmation|emotionSuppression | systems/causal-loop+link | 100.54100000000003, 630.9014999999999 | CausalLoopLinkPayload { \"fromElementId\": \"variable:copingConfirmation\", \"toElementId\": \"variable:emotionSuppression\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"flipped\": true }",
+        "link:emotionSuppression|exhaustion | systems/causal-loop+link | -324.98349999999994, 663.0065 | CausalLoopLinkPayload { \"fromElementId\": \"variable:emotionSuppression\", \"toElementId\": \"variable:exhaustion\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"delayed\": true, \"label\": \"keeping up an untrue story is tiring\", \"flipped\": true }",
+        "link:exhaustion|shortTermFunctioning | systems/causal-loop+link | -334.474, 783.675 | CausalLoopLinkPayload { \"fromElementId\": \"variable:exhaustion\", \"toElementId\": \"variable:shortTermFunctioning\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\", \"delayed\": true, \"flipped\": true }",
+        "link:exhaustion|dropout | systems/causal-loop+link | -675.1125, 693.185 | CausalLoopLinkPayload { \"fromElementId\": \"variable:exhaustion\", \"toElementId\": \"variable:dropout\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"delayed\": true, \"label\": \"uitval\" }",
+        "link:meaning|sacrifice | systems/causal-loop+link | 571.644, -189.0985 | CausalLoopLinkPayload { \"fromElementId\": \"variable:meaning\", \"toElementId\": \"variable:sacrifice\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"label\": \"a clear way out\", \"flipped\": true }",
+        "link:sacrifice|progress | systems/causal-loop+link | 521.698, -371.053 | CausalLoopLinkPayload { \"fromElementId\": \"variable:sacrifice\", \"toElementId\": \"variable:progress\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"flipped\": true }",
+        "link:progress|confidence | systems/causal-loop+link | 245.32049999999998, -468.5425 | CausalLoopLinkPayload { \"fromElementId\": \"variable:progress\", \"toElementId\": \"variable:confidence\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"flipped\": true }",
+        "link:confidence|selfDirection | systems/causal-loop+link | 15.842500000000001, -409.52 | CausalLoopLinkPayload { \"fromElementId\": \"variable:confidence\", \"toElementId\": \"variable:selfDirection\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"flipped\": true }",
+        "link:selfDirection|meaning | systems/causal-loop+link | 250.89200000000002, -215.97299999999998 | CausalLoopLinkPayload { \"fromElementId\": \"variable:selfDirection\", \"toElementId\": \"variable:meaning\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"label\": \"back to the perspective\" }",
+        "link:selfDirection|goalOrientation | systems/causal-loop+link | 17.991500000000002, -55.18199999999999 | CausalLoopLinkPayload { \"fromElementId\": \"variable:selfDirection\", \"toElementId\": \"variable:goalOrientation\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"label\": \"the bridge to suppression\" }",
+        "link:goalOrientation|emotionSuppression | systems/causal-loop+link | -16.602499999999985, 409.08349999999996 | CausalLoopLinkPayload { \"fromElementId\": \"variable:goalOrientation\", \"toElementId\": \"variable:emotionSuppression\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"label\": \"flight into goals\" }",
+        "link:goalOrientation|goalsAchieved | systems/causal-loop+link | 136.783, 366.13 | CausalLoopLinkPayload { \"fromElementId\": \"variable:goalOrientation\", \"toElementId\": \"variable:goalsAchieved\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"flipped\": true }",
+        "link:goalsAchieved|satisfaction | systems/causal-loop+link | 344.5685, 443.33050000000003 | CausalLoopLinkPayload { \"fromElementId\": \"variable:goalsAchieved\", \"toElementId\": \"variable:satisfaction\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"flipped\": true }",
+        "link:satisfaction|goalOrientation | systems/causal-loop+link | 272.3005, 305.7415 | CausalLoopLinkPayload { \"fromElementId\": \"variable:satisfaction\", \"toElementId\": \"variable:goalOrientation\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"flipped\": true }",
+        "link:goalOrientation|bigPicture | systems/causal-loop+link | 223.86599999999999, 132.2105 | CausalLoopLinkPayload { \"fromElementId\": \"variable:goalOrientation\", \"toElementId\": \"variable:bigPicture\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\", \"label\": \"eyes on the next target\", \"flipped\": true }",
+        "link:bigPicture|meaning | systems/causal-loop+link | 456.7665, -28.580499999999997 | CausalLoopLinkPayload { \"fromElementId\": \"variable:bigPicture\", \"toElementId\": \"variable:meaning\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"label\": \"the bridge to the bigger picture\", \"flipped\": true }",
+        "link:toughNorm|emotionExpression | systems/causal-loop+link | -340.66700000000003, 274.314 | CausalLoopLinkPayload { \"fromElementId\": \"variable:toughNorm\", \"toElementId\": \"variable:emotionExpression\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\", \"label\": \"niet aanstellen, niet zeiken\" }",
+        "link:toughNorm|visibleComplaints | systems/causal-loop+link | -570.283, 338.146 | CausalLoopLinkPayload { \"fromElementId\": \"variable:toughNorm\", \"toElementId\": \"variable:visibleComplaints\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\", \"flipped\": true }",
+        "link:emotionSuppression|emotionExpression | systems/causal-loop+link | -174.69249999999997, 463.6515 | CausalLoopLinkPayload { \"fromElementId\": \"variable:emotionSuppression\", \"toElementId\": \"variable:emotionExpression\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\" }",
+        "link:emotionExpression|visibleComplaints | systems/causal-loop+link | -481.281, 401.509 | CausalLoopLinkPayload { \"fromElementId\": \"variable:emotionExpression\", \"toElementId\": \"variable:visibleComplaints\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
+        "link:legalFrame|conversationalSafety | systems/causal-loop+link | -469.67, -104.89099999999999 | CausalLoopLinkPayload { \"fromElementId\": \"variable:legalFrame\", \"toElementId\": \"variable:conversationalSafety\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\", \"label\": \"employers may not discuss complaints\" }",
+        "link:insurerDependence|selfDirection | systems/causal-loop+link | -161.2155, -271.379 | CausalLoopLinkPayload { \"fromElementId\": \"variable:insurerDependence\", \"toElementId\": \"variable:selfDirection\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\" }",
+        "link:insurerDependence|conversationalSafety | systems/causal-loop+link | -474.29, -247.6165 | CausalLoopLinkPayload { \"fromElementId\": \"variable:insurerDependence\", \"toElementId\": \"variable:conversationalSafety\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\" }",
+        "link:ageing|selfDirection | systems/causal-loop+link | -188.0615, -406.2505 | CausalLoopLinkPayload { \"fromElementId\": \"variable:ageing\", \"toElementId\": \"variable:selfDirection\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\", \"flipped\": true }",
+        "link:conversationalSafety|openness | systems/causal-loop+link | -684.4185, -92.143 | CausalLoopLinkPayload { \"fromElementId\": \"variable:conversationalSafety\", \"toElementId\": \"variable:openness\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"flipped\": true }",
+        "link:openness|visibleComplaints | systems/causal-loop+link | -712.5264999999999, 286.2175 | CausalLoopLinkPayload { \"fromElementId\": \"variable:openness\", \"toElementId\": \"variable:visibleComplaints\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
+        "link:visibleComplaints|preventionUrgency | systems/causal-loop+link | -1286.3045, 443.539 | CausalLoopLinkPayload { \"fromElementId\": \"variable:visibleComplaints\", \"toElementId\": \"variable:preventionUrgency\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
+        "link:preventionUrgency|systemChange | systems/causal-loop+link | -1763.3715, -23.307999999999993 | CausalLoopLinkPayload { \"fromElementId\": \"variable:preventionUrgency\", \"toElementId\": \"variable:systemChange\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
+        "link:systemChange|conversationalSafety | systems/causal-loop+link | -1159.856, -379.8665 | CausalLoopLinkPayload { \"fromElementId\": \"variable:systemChange\", \"toElementId\": \"variable:conversationalSafety\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"delayed\": true }",
+        "link:preventionUrgency|preventionInvestment | systems/causal-loop+link | -1725.4225000000001, 577.717 | CausalLoopLinkPayload { \"fromElementId\": \"variable:preventionUrgency\", \"toElementId\": \"variable:preventionInvestment\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"flipped\": true }",
+        "link:preventionInvestment|dropout | systems/causal-loop+link | -1193.5555, 691.8399999999999 | CausalLoopLinkPayload { \"fromElementId\": \"variable:preventionInvestment\", \"toElementId\": \"variable:dropout\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\", \"delayed\": true }",
+        "link:dropout|premiumPressure | systems/causal-loop+link | -985.1610000000001, 795.5795 | CausalLoopLinkPayload { \"fromElementId\": \"variable:dropout\", \"toElementId\": \"variable:premiumPressure\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
+        "link:premiumPressure|preventionInvestment | systems/causal-loop+link | -1380.7385, 837.4365 | CausalLoopLinkPayload { \"fromElementId\": \"variable:premiumPressure\", \"toElementId\": \"variable:preventionInvestment\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\", \"label\": \"no room left for prevention\" }",
+        "link:generationalLabels|youthSelfImage | systems/causal-loop+link | -1307.941, -15.975999999999999 | CausalLoopLinkPayload { \"fromElementId\": \"variable:generationalLabels\", \"toElementId\": \"variable:youthSelfImage\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\", \"flipped\": true }",
+        "link:youthSelfImage|withdrawal | systems/causal-loop+link | -1455.601, -156.4805 | CausalLoopLinkPayload { \"fromElementId\": \"variable:youthSelfImage\", \"toElementId\": \"variable:withdrawal\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\", \"flipped\": true }",
+        "link:withdrawal|generationalLabels | systems/causal-loop+link | -1513.261, 49.012499999999996 | CausalLoopLinkPayload { \"fromElementId\": \"variable:withdrawal\", \"toElementId\": \"variable:generationalLabels\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"label\": \"the label confirmed\", \"flipped\": true }",
+        "link:openness|vulnerability | systems/causal-loop+link | -856.7429999999999, 190.1705 | CausalLoopLinkPayload { \"fromElementId\": \"variable:openness\", \"toElementId\": \"variable:vulnerability\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
+        "link:vulnerability|generationalLabels | systems/causal-loop+link | -1182.4655, 231.382 | CausalLoopLinkPayload { \"fromElementId\": \"variable:vulnerability\", \"toElementId\": \"variable:generationalLabels\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\", \"label\": \"kwetsbaarheid inzetten\" }",
+        "loop:R1 | systems/causal-loop+loop | 28.12700000000002, 697.5886666666667 | CausalLoopLoopPayload { \"identifier\": \"R1\", \"name\": \"Coping that confirms itself\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:emotionSuppression\", \"variable:shortTermFunctioning\", \"variable:copingConfirmation\" ] }",
+        "loop:B1 | systems/causal-loop+loop | -116.96649999999997, 707.28825 | CausalLoopLoopPayload { \"identifier\": \"B1\", \"name\": \"An untrue story wears out\", \"computed\": \"LOOP_POLARITY_PROTO_BALANCING\", \"memberElementIds\": [ \"variable:emotionSuppression\", \"variable:exhaustion\", \"variable:shortTermFunctioning\", \"variable:copingConfirmation\" ] }",
+        "loop:R2 | systems/causal-loop+loop | 321.0794, -330.8374 | CausalLoopLoopPayload { \"identifier\": \"R2\", \"name\": \"Perspective carries the cost\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:meaning\", \"variable:sacrifice\", \"variable:progress\", \"variable:confidence\", \"variable:selfDirection\" ] }",
+        "loop:R3 | systems/causal-loop+loop | 251.21733333333336, 371.734 | CausalLoopLoopPayload { \"identifier\": \"R3\", \"name\": \"Goals feed goals\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:goalOrientation\", \"variable:goalsAchieved\", \"variable:satisfaction\" ] }",
+        "loop:B2 | systems/causal-loop+loop | 293.30414285714284, -198.538 | CausalLoopLoopPayload { \"identifier\": \"B2\", \"name\": \"Goals narrow the view\", \"computed\": \"LOOP_POLARITY_PROTO_BALANCING\", \"memberElementIds\": [ \"variable:selfDirection\", \"variable:goalOrientation\", \"variable:bigPicture\", \"variable:meaning\", \"variable:sacrifice\", \"variable:progress\", \"variable:confidence\" ] }",
+        "loop:R4 | systems/causal-loop+loop | -1121.2954, 46.887800000000006 | CausalLoopLoopPayload { \"identifier\": \"R4\", \"name\": \"What is not seen does not change\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:conversationalSafety\", \"variable:openness\", \"variable:visibleComplaints\", \"variable:preventionUrgency\", \"variable:systemChange\" ] }",
+        "loop:R5 | systems/causal-loop+loop | -1186.485, 774.9519999999999 | CausalLoopLoopPayload { \"identifier\": \"R5\", \"name\": \"Prevention pays for prevention\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:preventionInvestment\", \"variable:dropout\", \"variable:premiumPressure\" ] }",
+        "loop:R6 | systems/causal-loop+loop | -1425.6009999999999, -41.148 | CausalLoopLoopPayload { \"identifier\": \"R6\", \"name\": \"Labels that confirm themselves\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:generationalLabels\", \"variable:youthSelfImage\", \"variable:withdrawal\" ] }"
       ],
       "edits": [
         {
@@ -10594,7 +10594,7 @@
           "hunks": [
             "@71 -1 +\"link emotionSuppression -> shortTermFunctioning + delayed \\\"relativeren als coping\\\"\\r\\n\""
           ],
-          "sha256": "43005198fb9bc4f8c8e83d2443b2c668ea65cdea6272dc436e4e3cb94c7a5d29"
+          "sha256": "26bcbdb1b9b4efddf1f578c469451b01311438f466c7045a28d5ec7d0914ba89"
         },
         {
           "do": "execute causal-loop.flip-curvature on link:emotionSuppression|shortTermFunctioning",
@@ -10602,7 +10602,7 @@
           "hunks": [
             "@71 -1 +\"link emotionSuppression -> shortTermFunctioning + delayed flipped \\\"relativeren als coping\\\"\\r\\n\""
           ],
-          "sha256": "1ca2bb06d14f483cf3fc9804504c38882a986706c1726a772cd41de36c7ea753"
+          "sha256": "f55edb8d5a083c3d08b80f9d0571e0fc5b3757e787b4989498c991b197562eac"
         },
         {
           "do": "set link:emotionSuppression|shortTermFunctioning causal-loop.link-label = \"Parity note\"",
@@ -10610,7 +10610,7 @@
           "hunks": [
             "@71 -1 +\"link emotionSuppression -> shortTermFunctioning + delayed flipped \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "e72ed643e926e38c4d3a9e36fa326116c4f1c09ea202fbae42c9f6a9f9bc7164"
+          "sha256": "20348f80a677bc4093ae1b9411549a03d67267d97b5a11b18118cee29f9be16b"
         },
         {
           "do": "set link:emotionSuppression|shortTermFunctioning causal-loop.link-weight = \"heavy\"",
@@ -10623,7 +10623,7 @@
           "hunks": [
             "@71 -1 +\"link emotionSuppression -> shortTermFunctioning + delayed flipped weight=1e+21 \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "bd91fdd30ea8375534e056b9e0040084eac711605650d1d05837fa0c447a2348"
+          "sha256": "5d8f80e44454eddc2ebb87ae96c3a75877736b1c6fa059b80f5dbd6001dd3666"
         },
         {
           "do": "describe link:emotionSuppression|shortTermFunctioning",
@@ -10636,7 +10636,7 @@
           "hunks": [
             "@71 -1 +\"link emotionSuppression -> shortTermFunctioning + delayed flipped weight=0.000001 \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "87ad02ea493907390aae8c5bd2ffd4df01b61bfbb4143687400c11992e45b095"
+          "sha256": "26f73f71072d53ff472be9301ced5ce9c7d882a08d97517b5328c0124103de80"
         },
         {
           "do": "set link:emotionSuppression|shortTermFunctioning causal-loop.link-weight = \"\"",
@@ -10644,7 +10644,7 @@
           "hunks": [
             "@71 -1 +\"link emotionSuppression -> shortTermFunctioning + delayed flipped \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "e72ed643e926e38c4d3a9e36fa326116c4f1c09ea202fbae42c9f6a9f9bc7164"
+          "sha256": "20348f80a677bc4093ae1b9411549a03d67267d97b5a11b18118cee29f9be16b"
         },
         {
           "do": "set link:emotionSuppression|shortTermFunctioning causal-loop.link-polarity = \"sideways\"",
@@ -10657,7 +10657,7 @@
           "hunks": [
             "@71 -1 +\"link emotionSuppression -> shortTermFunctioning delayed flipped \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "f3a36aa089a99106395ea8e840b0238489a5a7cb356f6e5f60c8c9011eb155a9"
+          "sha256": "e9b6d9a3377eed4b06afdd7f51c969ef879a90a014ee17003bb3466248210d26"
         },
         {
           "do": "set link:emotionSuppression|shortTermFunctioning causal-loop.link-delayed = \"true\"",
@@ -10675,7 +10675,7 @@
           "hunks": [
             "@71 -1 +\"link emotionSuppression -> shortTermFunctioning + delayed flipped \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "e72ed643e926e38c4d3a9e36fa326116c4f1c09ea202fbae42c9f6a9f9bc7164"
+          "sha256": "20348f80a677bc4093ae1b9411549a03d67267d97b5a11b18118cee29f9be16b"
         },
         {
           "do": "execute causal-loop.make-negative on link:emotionSuppression|shortTermFunctioning",
@@ -10683,7 +10683,7 @@
           "hunks": [
             "@71 -1 +\"link emotionSuppression -> shortTermFunctioning - delayed flipped \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "efaaacb401359a2e6bab48b951ea68452810b6d2de8b1bfe9303e63ec87fd6e9"
+          "sha256": "28849aca3da75fe6c29c48809f3344f3186614ea17407643f45e654ffd66835e"
         },
         {
           "do": "execute causal-loop.make-negative on link:emotionSuppression|shortTermFunctioning",
@@ -10701,7 +10701,7 @@
           "hunks": [
             "@75 -1 +\"loop R1 \\\"Parity loop\\\" emotionSuppression shortTermFunctioning copingConfirmation\\r\\n\""
           ],
-          "sha256": "cf7d830e9f5402f9b8c3136df0724f99975360ee3f4265881492bd0baea5d595"
+          "sha256": "c6a1ea1a39be0042bbc2ed4b785302ca274babe0f0eb36367fc7a8306ef7a26b"
         },
         {
           "do": "set loop:R1 causal-loop.loop-name = \"Parity name\"",
@@ -10709,7 +10709,7 @@
           "hunks": [
             "@75 -1 +\"loop R1 \\\"Parity name\\\" emotionSuppression shortTermFunctioning copingConfirmation\\r\\n\""
           ],
-          "sha256": "eb496a14ba0849770623c52924c72e5b7acb0d3e5ff0443e5efcf5148bbaae5b"
+          "sha256": "9367ac89c6040975262dcf534a6c383895bacfba24416cacb8e01cbd16d4953a"
         },
         {
           "do": "set loop:R1 causal-loop.loop-name = \"Has \\\"quote\\\"\"",
@@ -10742,7 +10742,7 @@
           "hunks": [
             "@75 -1 +\"loop B99 \\\"Parity name\\\" emotionSuppression shortTermFunctioning copingConfirmation\\r\\n\""
           ],
-          "sha256": "20dd909fd78f794fa127b18550b0dd4c4d7769bcdaf6d0759f1436c3e1119e50"
+          "sha256": "c40b250d3a1925dd76ef23f722791a548a0b3c78c175d3d03a45eddc01412545"
         },
         {
           "do": "execute causal-loop.rename-variable on variable:selfDirection",
@@ -10765,7 +10765,7 @@
           "hunks": [
             "@19 -1 +\"variable selfDirection \\\"Parity renamed\\\"\\r\\n\""
           ],
-          "sha256": "9d72350d04327c4965f7cdb182594694bd2b6975db939eebe69576a0d9ce1cbc"
+          "sha256": "9adb18906ca045b6be65893ee715a32c85828acac94c29038e8b2a90f64bcdd4"
         },
         {
           "do": "set variable:selfDirection causal-loop.variable-label = \"Say \\\"hi\\\"\"",
@@ -10783,7 +10783,7 @@
           "hunks": [
             "@19 -1 +\"variable selfDirection \\\"Parity label\\\"\\r\\n\""
           ],
-          "sha256": "aab9e7e92ddb3882462c497dece30d7c023031bc48bb5e0d6969c346e65ddfe4"
+          "sha256": "211fe74a4df26bf3759fd276c5308c1a181ed25652ad5a6f1e8e5636dbc9cd42"
         },
         {
           "do": "validate causal-loop.add-link on variable:selfDirection = \"nobody\"",
@@ -10806,7 +10806,7 @@
           "hunks": [
             "@184 -0 +\"link selfDirection -> emotionSuppression +\\r\\n\""
           ],
-          "sha256": "7cc1175aefaaec478f97afd28ffcedf9be6c2c335c09b25d7d7f98cc5dc0dd46"
+          "sha256": "286e4ba96ffc5b15bc45eed81a6fc6efd0c4dd4d9593d7869830f16e309a3f63"
         },
         {
           "do": "commit causal-loop.add-link on variable:selfDirection = \"nobody\"",
@@ -10829,7 +10829,7 @@
           "hunks": [
             "@187 -0 +\"loop R99 \\\"R99\\\" selfDirection meaning sacrifice progress confidence\\r\\n\""
           ],
-          "sha256": "830a557a86c3afc9418b672090bad9d246f26817314fe1579a32bfeee2a2de1c"
+          "sha256": "b71534cba0c9b4562cfc426091996830ea5a894a3285e1ce7661c13639563cef"
         },
         {
           "do": "set variable:selfDirection causal-loop.variable-id = \"emotionSuppression\"",
@@ -10856,11 +10856,11 @@
             "@108 -1 +\"link parityId -> goalOrientation + \\\"the bridge to suppression\\\"\\r\\n\"",
             "@122 -1 +\"loop B2 \\\"Goals narrow the view\\\" parityId goalOrientation bigPicture meaning sacrifice progress confidence\\r\\n\"",
             "@141 -1 +\"link insurerDependence -> parityId -\\r\\n\"",
-            "@143 -1 +\"link ageing -> parityId -\\r\\n\"",
+            "@143 -1 +\"link ageing -> parityId - flipped\\r\\n\"",
             "@184 -1 +\"link parityId -> emotionSuppression +\\r\\n\"",
             "@187 -1 +\"loop R99 \\\"R99\\\" parityId meaning sacrifice progress confidence\\r\\n\""
           ],
-          "sha256": "b443f5728730e477d204dc4e62e668b3c0bf659e514517f8e52d5511025b0f81"
+          "sha256": "a30911db8633377a2466ef38dcff34b0721fca146050198f23df7ec086e7005d"
         },
         {
           "do": "execute causal-loop.connect on rel:emotionSuppression->parityId",
@@ -10869,7 +10869,7 @@
             "@185 -0 +\"link emotionSuppression -> parityId +\\r\\n\"",
             "@188 -0 +\"loop R100 \\\"\\\" parityId goalOrientation emotionSuppression\\r\\nloop R101 \\\"\\\" parityId emotionSuppression\\r\\n\""
           ],
-          "sha256": "5e6efce252ebb18f7cc1e0e590b7cea2dae2d3dc2f1cbca04fb26ebbf80d727d"
+          "sha256": "3488f1991e7113f081a3c8822e846a6492ecac6afc54c82011ccb95d57272a98"
         },
         {
           "do": "execute causal-loop.connect on rel:emotionSuppression->parityId",
@@ -10883,7 +10883,7 @@
             "@186 -0 +\"link parityId -> parityId +\\r\\n\"",
             "@191 -0 +\"loop R102 \\\"\\\" parityId\\r\\n\""
           ],
-          "sha256": "6575ab3d313b89b1b973c3a3fe6ff34457a1a92dadf6064dc3b775d226db2bfa"
+          "sha256": "4c1116a4350d8eb03d3df310dcad79d8b02a8267814c9094f8c8881ead266268"
         },
         {
           "do": "execute causal-loop.connect on rel:parityId->nobody",
@@ -10896,12 +10896,12 @@
           "hunks": [
             "@65 -0 +\"variable variable1 \\\"Variable 1\\\"\\r\\n\""
           ],
-          "sha256": "a237c24762878d8a78a1054e979603ede217edda16bdb78d458e1ee83a55793a",
+          "sha256": "dce877749276aaceffa5e7ea01297674c70c2f2043a6d343d7c8405da1365099",
           "registration": {
             "hunks": [
               "@29 -0 +\"  variable:variable1: 240 160\\r\\n\""
             ],
-            "sha256": "2c3e68dbb9b03d7538bf561b9375aac36c709791207f8348346d472a0adfe4f7"
+            "sha256": "f388e1cbbdaf8c5049a170f9033d498146d35bcf74ba1fe9de19bc7765fea870"
           }
         },
         {
@@ -10910,7 +10910,7 @@
           "hunks": [
             "@66 -0 +\"variable variable2 \\\"Variable 2\\\"\\r\\n\""
           ],
-          "sha256": "9fb9c1d3639609b9b79c95db6126b1392e74c9a68712a4b677af5d518a229930"
+          "sha256": "3f6efd8c4c54bdd024fbabe0fa8612047d4342d0f6c523bf2854498a2a36e568"
         },
         {
           "do": "move variable:emotionSuppression to (100, 200)",
@@ -10920,7 +10920,7 @@
             "hunks": [
               "@10 -1 +\"  variable:emotionSuppression: 100 200\\r\\n\""
             ],
-            "sha256": "a844f5a8f72b8ef30fc222e37ac96ec4fc22d0c816bb75418c0a2b4948c64728"
+            "sha256": "fc536942637f9b8fc3e3b61af6c382a0f23dcf434dbf96e6dd89f858a4f356e1"
           }
         },
         {
@@ -10937,7 +10937,7 @@
               "@3 -22 +\"  variable:ageing: -598.932 -204.035\\r\\n  variable:bigPicture: -1276.894 -899.466\\r\\n  variable:confidence: -999.538 92.458\\r\\n  variable:conversationalSafety: -104.137 672.566\\r\\n  variable:copingConfirmation: -434.709 -690.66\\r\\n  variable:dropout: 275.197 -1061.847\\r\\n  variable:emotionExpression: 46.151 -263.962\\r\\n  variable:emotionSuppression: -371.708 -610.06\\r\\n  variable:exhaustion: -100.271 -1038.044\\r\\n  variable:generationalLabels: 948.036 889.624\\r\\n  variable:goalOrientation: -896.777 -890.588\\r\\n  variable:goalsAchieved: -852.344 -1100.844\\r\\n  variable:insurerDependence: -437.436 324.512\\r\\n  variable:legalFrame: -215.419 1097.262\\r\\n  variable:meaning: -1183.857 -520.982\\r\\n  variable:openness: 348.283 641.147\\r\\n  variable:parityId: -779.582 -211.797\\r\\n  variable:premiumPressure: 525.147 -1119.959\\r\\n  variable:preventionInvestment: 598.741 -706.005\\r\\n  variable:preventionUrgency: 811.557 -187.915\\r\\n  variable:progress: -1284.697 172.975\\r\\n  variable:sacrifice: -1324.359 -167.238\\r\\n  variable:satisfaction: -907.97 -1252.452\\r\\n\"",
               "@26 -8 +\"  variable:shortTermFunctioning: -293.901 -852.304\\r\\n  variable:systemChange: 379.58 196.078\\r\\n  variable:toughNorm: 221.576 -88.795\\r\\n  variable:variable1: -1150.859 1048.778\\r\\n  variable:variable2: 1202.968 -958.027\\r\\n  variable:visibleComplaints: 502.326 -12.449\\r\\n  variable:vulnerability: 584.85 992.272\\r\\n  variable:withdrawal: 1154.657 616.434\\r\\n  variable:youthSelfImage: 1174.949 970.224\\r\\n\""
             ],
-            "sha256": "11659eed23cebbbab72e65ee4298ec0e3d86cbeb89d1f1d715c9de488e37052e"
+            "sha256": "4d9d6b05c7df12f31a931016f9190f87916ec31c5ed8dadfd0d8d0747de8da87"
           }
         },
         {
@@ -10971,7 +10971,7 @@
           "hunks": [
             "@73 -1 +\"\""
           ],
-          "sha256": "5b715c252dc5be3b30d3fe1bbb5af2f95e56b6e29ca991298671f3ea68db276c"
+          "sha256": "8452999facacee8a4a07925f12b7502f7f7b18caea51c6aa351a7068091460c7"
         },
         {
           "do": "execute causal-loop.remove-loop on loop:B99",
@@ -10979,7 +10979,7 @@
           "hunks": [
             "@76 -1 +\"\""
           ],
-          "sha256": "312304dfcc51636a613a2ce8e5e0331cc03665b05c6f8a1212959edce8163e2f"
+          "sha256": "cdb07aa99dd971dc3c7cfe83841e9cd39c0891344f115ecca1ee7a4c8ed25c17"
         },
         {
           "do": "execute causal-loop.remove-variable on variable:parityId",
