@@ -1,5 +1,3 @@
-using EtAlii.Adp.Specification.Fbl.Text;
-
 namespace EtAlii.Adp.Specification.Fbl.Grammar;
 
 /// <summary>One item of a <c>{node}</c> slot of a <c>many</c> attribute (FBL 0.13 §4.9): its value, escapes resolved, the span it is written in, and the node that holds it.</summary>
