@@ -34,20 +34,20 @@ internal sealed class GrammarBuild
     }
 
     /// <summary>The parser, with the start rule and, with <c>recover</c>, its unit as start symbols.</summary>
-    public LarkParser Lark { get; }
+    private LarkParser Lark { get; }
 
-    public string Start { get; }
+    private string Start { get; }
 
-    public GrammarRecover? Recover { get; }
+    private GrammarRecover? Recover { get; }
 
     /// <summary>The names of the grammar's terminals, the anonymous ones under the names Lark gives them.</summary>
-    public IReadOnlySet<string> Terminals { get; }
+    private IReadOnlySet<string> Terminals { get; }
 
     /// <summary>The terminals the grammar ignores (<c>%ignore</c>): its trivia.</summary>
     public IReadOnlySet<string> Ignored { get; }
 
     /// <summary>The terminal of each string the grammar matches as written, by that text (<c>"."</c> is <c>DOT</c>).</summary>
-    public IReadOnlyDictionary<string, string> StringTerminals { get; }
+    private IReadOnlyDictionary<string, string> StringTerminals { get; }
 
     /// <summary>Every name a node or token of the tree can have: the rules, the aliases and the terminals.</summary>
     public IReadOnlySet<string> Names { get; }

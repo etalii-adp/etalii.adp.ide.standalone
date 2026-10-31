@@ -99,7 +99,7 @@ internal static partial class GrammarNotation
     }
 
     /// <summary>What a terminal's regular expression uses outside the subset of ATD §3.5, as phrases.</summary>
-    public static IReadOnlyList<string> RegexProblems(string pattern)
+    private static IReadOnlyList<string> RegexProblems(string pattern)
     {
         var problems = new List<string>();
         var i = 0;

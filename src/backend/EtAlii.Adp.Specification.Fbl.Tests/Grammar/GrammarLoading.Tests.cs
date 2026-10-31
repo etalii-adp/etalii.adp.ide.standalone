@@ -40,10 +40,11 @@ public class GrammarLoadingTests
     public void ABindingWithAGrammar_Loads()
     {
         // Act.
-        var problems = Load(Binding(Words));
+        var problems = FblDocumentLoader.Load(Encoding.UTF8.GetBytes(Binding(Words)), null, out var document);
 
         // Assert.
         Assert.DoesNotContain(problems, problem => problem.Severity == LoadSeverity.Error);
+        Assert.NotNull(Assert.IsType<FblDocument>(document).Bindings["b"].Body.Grammar!.Built);
     }
 
     [Theory]
