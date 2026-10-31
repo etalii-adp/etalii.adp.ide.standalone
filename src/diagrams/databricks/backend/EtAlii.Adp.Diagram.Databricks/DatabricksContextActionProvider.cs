@@ -1,7 +1,6 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Documents;
-using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.Databricks;
