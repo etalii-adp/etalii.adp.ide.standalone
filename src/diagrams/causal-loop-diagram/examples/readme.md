@@ -1,6 +1,6 @@
 # Causal loop examples
 
-Four ADP projects you can open and click around in. They are not fixtures — the fixtures under
+Five ADP projects you can open and click around in. They are not fixtures — the fixtures under
 `../backend/EtAlii.Adp.Diagram.CausalLoop.Tests/` exist to pin parser behaviour one construct at
 a time, and read like it. These read like systems.
 
@@ -10,6 +10,7 @@ a time, and read like it. These read like systems.
 | [`on-call/`](on-call/) | Why an on-call rotation gets worse on its own. Read it to see the notation carrying a problem you probably recognise. |
 | [`business-philosophy/`](business-philosophy/) | Whether a Business Philosophy study is applicable at a university of applied sciences: experts, philosophers, practical tools, core values, latent wisdom, stories, wicked problems, insight over solutions, and art as expression. Read it to see a larger model - eighteen variables, ten loops - where every cycle is named and the arrangement is authored. |
 | [`mental-health/`](mental-health/) | Why mental health at work stays out of sight: self-direction, emotion suppression and meaning, the norm "don't make a fuss", the constraints of the system, and the loops that keep complaints invisible. Read it to see a wicked problem drawn as structure alone - thirty variables, eight loops, no solutions. |
+| [`life-insurance/`](life-insurance/) | The growth or decline of a life insurance company: attrition, recruits and coaching, lapses and clawback, sales, capital and solvency, the back office and reputation. Read it to see a published figure redrawn - thirty-four variables, thirty-eight loops, every cycle named. |
 
 ## Opening one
 
@@ -18,7 +19,7 @@ what appears in the explorer as a diagram. Nothing needs configuring first.
 
 ## Authored for this repository
 
-**All four examples were written for ADP.** None is derived from, nor attributed to, any external
+**Four of the five examples were written for ADP**; `life-insurance/` is the exception, redrawn from a public-domain figure (see *A published figure, redrawn*). None of the other four is derived from, nor attributed to, any external
 source. That is the honest-fallback path Requirement 11 leads with, and it is where this task
 landed after checking five candidate sources and rejecting every one on licence grounds:
 
@@ -26,7 +27,7 @@ landed after checking five candidate sources and rejecting every one on licence 
 |---|---|
 | `github.com/nocomplexity/causalloopdiagram` | GPL-3.0 — share-alike |
 | `github.com/elbazjosh/AutoCLD` | No licence file at all, which reserves all rights |
-| The Wikipedia article and its figures | CC BY-SA — share-alike |
+| The Wikipedia article and its figures | CC BY-SA — share-alike (the article text; each figure carries its own licence, and the life insurance figure is public domain) |
 | The MetaSD model library | Per-model author permission rather than a named licence, and Vensim stock-and-flow models rather than causal loop diagrams |
 | `github.com/bear96/System-Dynamics-Bot` | CC BY-NC-4.0 — the NonCommercial term fails the same test the share-alike ones did |
 
@@ -70,3 +71,7 @@ purpose: the study does not claim to solve them, only to understand them better.
 ## Structure without solutions
 
 `mental-health/` is drawn from a Dutch set of notes on mental health in working life, and it keeps their limits: no person in them is named, and no solution is offered - the diagram shows only the structure of the problem. Its labels are in English like the other examples, with the notes' own Dutch phrases kept in link notes and comments. Its three core variables - experienced self-direction, emotion suppression and experienced meaning - are tied together by two bridges, goal orientation and the willingness to sacrifice, and its eight loops are all named and all agree with their arithmetic: six reinforcing, two balancing. A test holds it there. The norm "don't make a fuss" and the three constraints of the system - the legal limits on discussing mental health, the dependence on insurers and premiums, and an ageing population - sit outside every loop on purpose: they press on the system, and nothing in it presses back.
+
+## A published figure, redrawn
+
+`life-insurance/` redraws "Causal Loop Diagram of a Model Examining the Growth or Decline of a Life Insurance Company" by Robert A. Taylor of the U.S. Department of Energy (2008), the figure the Wikipedia article on causal loop diagrams closes with. A work of the U.S. Federal Government, it is in the public domain, and `LICENSE.md` beside the example quotes the statement on its file page. Every variable, arrow and delay mark of the figure is there, in the figure's own words, arranged as the figure arranges them. The figure prints a polarity on only some arrows: those links carry the note "printed", and the others the polarity the arrow plainly means. It marks four loops with a circling arrow and no letter; they are the example's first four loops, labelled by their arithmetic. The arrows make thirty-four more cycles the figure leaves unmarked, and the example names them too, so that it opens with no finding - twenty-nine reinforcing and nine balancing in all. A test holds it there. What it does not show: the figure is a qualitative map of one company's model, so the example carries no starting values, no weights and nothing of the simulation behind it.

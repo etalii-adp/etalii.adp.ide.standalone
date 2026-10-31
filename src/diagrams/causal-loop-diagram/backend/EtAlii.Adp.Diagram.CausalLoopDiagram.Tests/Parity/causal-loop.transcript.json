@@ -6550,6 +6550,2342 @@
       "undoAll": "27 undone; the original text is back"
     },
     {
+      "document": "diagrams/causal-loop-diagram/examples/life-insurance/life-insurance.cld",
+      "sha256": "11b91e21868089dd25fa1d4c8b0683acab1555ac246283b0b34d7bc0d5c4766e",
+      "registration": "life-insurance.adp, sha256 42e2e806c31633cbf21d909574237e063b7882fb7b638a0923b3958dc49df594",
+      "menus": [
+        [
+          "g1 causal-loop.add-link | Add link from here… | mdi-arrow-right-thin | - | on",
+          "g1 causal-loop.add-loop | Claim a loop from here… | mdi-sync | - | on",
+          "g1 causal-loop.rename-variable | Rename… | mdi-rename-outline | - | on",
+          "g1 causal-loop.remove-variable | Remove variable (with 27 references) | mdi-delete-outline | Delete | on"
+        ],
+        [],
+        [
+          "g1 causal-loop.add-link | Add link from here… | mdi-arrow-right-thin | - | on",
+          "g1 causal-loop.add-loop | Claim a loop from here… | mdi-sync | - | on",
+          "g1 causal-loop.rename-variable | Rename… | mdi-rename-outline | - | on",
+          "g1 causal-loop.remove-variable | Remove variable (with 13 references) | mdi-delete-outline | Delete | on"
+        ],
+        [
+          "g1 causal-loop.add-link | Add link from here… | mdi-arrow-right-thin | - | on",
+          "g1 causal-loop.add-loop | Claim a loop from here… | mdi-sync | - | on",
+          "g1 causal-loop.rename-variable | Rename… | mdi-rename-outline | - | on",
+          "g1 causal-loop.remove-variable | Remove variable (with 14 references) | mdi-delete-outline | Delete | on"
+        ],
+        [
+          "g1 causal-loop.add-link | Add link from here… | mdi-arrow-right-thin | - | on",
+          "g1 causal-loop.add-loop | Claim a loop from here… | mdi-sync | - | on",
+          "g1 causal-loop.rename-variable | Rename… | mdi-rename-outline | - | on",
+          "g1 causal-loop.remove-variable | Remove variable (with 7 references) | mdi-delete-outline | Delete | on"
+        ],
+        [
+          "g1 causal-loop.add-link | Add link from here… | mdi-arrow-right-thin | - | on",
+          "g1 causal-loop.add-loop | Claim a loop from here… | mdi-sync | - | on",
+          "g1 causal-loop.rename-variable | Rename… | mdi-rename-outline | - | on",
+          "g1 causal-loop.remove-variable | Remove variable (with 9 references) | mdi-delete-outline | Delete | on"
+        ],
+        [
+          "g1 causal-loop.add-link | Add link from here… | mdi-arrow-right-thin | - | on",
+          "g1 causal-loop.add-loop | Claim a loop from here… | mdi-sync | - | on",
+          "g1 causal-loop.rename-variable | Rename… | mdi-rename-outline | - | on",
+          "g1 causal-loop.remove-variable | Remove variable (with 24 references) | mdi-delete-outline | Delete | on"
+        ],
+        [
+          "g1 causal-loop.add-link | Add link from here… | mdi-arrow-right-thin | - | on",
+          "g1 causal-loop.add-loop | Claim a loop from here… | mdi-sync | - | on",
+          "g1 causal-loop.rename-variable | Rename… | mdi-rename-outline | - | on",
+          "g1 causal-loop.remove-variable | Remove variable (with 5 references) | mdi-delete-outline | Delete | on"
+        ],
+        [
+          "g1 causal-loop.add-link | Add link from here… | mdi-arrow-right-thin | - | on",
+          "g1 causal-loop.add-loop | Claim a loop from here… | mdi-sync | - | on",
+          "g1 causal-loop.rename-variable | Rename… | mdi-rename-outline | - | on",
+          "g1 causal-loop.remove-variable | Remove variable (with 36 references) | mdi-delete-outline | Delete | on"
+        ],
+        [
+          "g1 causal-loop.add-link | Add link from here… | mdi-arrow-right-thin | - | on",
+          "g1 causal-loop.add-loop | Claim a loop from here… | mdi-sync | - | on",
+          "g1 causal-loop.rename-variable | Rename… | mdi-rename-outline | - | on",
+          "g1 causal-loop.remove-variable | Remove variable (with 3 references) | mdi-delete-outline | Delete | on"
+        ],
+        [
+          "g1 causal-loop.add-link | Add link from here… | mdi-arrow-right-thin | - | on",
+          "g1 causal-loop.add-loop | Claim a loop from here… | mdi-sync | - | on",
+          "g1 causal-loop.rename-variable | Rename… | mdi-rename-outline | - | on",
+          "g1 causal-loop.remove-variable | Remove variable (with 37 references) | mdi-delete-outline | Delete | on"
+        ],
+        [
+          "g1 causal-loop.add-link | Add link from here… | mdi-arrow-right-thin | - | on",
+          "g1 causal-loop.add-loop | Claim a loop from here… | mdi-sync | - | on",
+          "g1 causal-loop.rename-variable | Rename… | mdi-rename-outline | - | on",
+          "g1 causal-loop.remove-variable | Remove variable (with 8 references) | mdi-delete-outline | Delete | on"
+        ],
+        [
+          "g1 causal-loop.add-link | Add link from here… | mdi-arrow-right-thin | - | on",
+          "g1 causal-loop.add-loop | Claim a loop from here… | mdi-sync | - | on",
+          "g1 causal-loop.rename-variable | Rename… | mdi-rename-outline | - | on",
+          "g1 causal-loop.remove-variable | Remove variable (with 4 references) | mdi-delete-outline | Delete | on"
+        ],
+        [
+          "g1 causal-loop.add-link | Add link from here… | mdi-arrow-right-thin | - | on",
+          "g1 causal-loop.add-loop | Claim a loop from here… | mdi-sync | - | on",
+          "g1 causal-loop.rename-variable | Rename… | mdi-rename-outline | - | on",
+          "g1 causal-loop.remove-variable | Remove variable (with 12 references) | mdi-delete-outline | Delete | on"
+        ],
+        [
+          "g1 causal-loop.add-link | Add link from here… | mdi-arrow-right-thin | - | on",
+          "g1 causal-loop.add-loop | Claim a loop from here… | mdi-sync | - | on",
+          "g1 causal-loop.rename-variable | Rename… | mdi-rename-outline | - | on",
+          "g1 causal-loop.remove-variable | Remove variable (with 6 references) | mdi-delete-outline | Delete | on"
+        ],
+        [
+          "g1 causal-loop.add-link | Add link from here… | mdi-arrow-right-thin | - | on",
+          "g1 causal-loop.add-loop | Claim a loop from here… | mdi-sync | - | on",
+          "g1 causal-loop.rename-variable | Rename… | mdi-rename-outline | - | on",
+          "g1 causal-loop.remove-variable | Remove variable (with 20 references) | mdi-delete-outline | Delete | on"
+        ],
+        [
+          "g1 causal-loop.add-link | Add link from here… | mdi-arrow-right-thin | - | on",
+          "g1 causal-loop.add-loop | Claim a loop from here… | mdi-sync | - | on",
+          "g1 causal-loop.rename-variable | Rename… | mdi-rename-outline | - | on",
+          "g1 causal-loop.remove-variable | Remove variable (with 11 references) | mdi-delete-outline | Delete | on"
+        ],
+        [
+          "g1 causal-loop.add-link | Add link from here… | mdi-arrow-right-thin | - | on",
+          "g1 causal-loop.add-loop | Claim a loop from here… | mdi-sync | - | on",
+          "g1 causal-loop.rename-variable | Rename… | mdi-rename-outline | - | on",
+          "g1 causal-loop.remove-variable | Remove variable (with 15 references) | mdi-delete-outline | Delete | on"
+        ],
+        [
+          "g1 causal-loop.add-link | Add link from here… | mdi-arrow-right-thin | - | on",
+          "g1 causal-loop.add-loop | Claim a loop from here… | mdi-sync | - | on",
+          "g1 causal-loop.rename-variable | Rename… | mdi-rename-outline | - | on",
+          "g1 causal-loop.remove-variable | Remove variable (with 2 references) | mdi-delete-outline | Delete | on"
+        ],
+        [
+          "g1 causal-loop.make-positive | Same direction (+) | mdi-plus | - | on (This link already states +.)",
+          "g1 causal-loop.make-negative | Opposite direction (−) | mdi-minus | - | off (This link already states −.)",
+          "g1 causal-loop.toggle-delay | Not delayed | mdi-timer-sand | - | on",
+          "g1 causal-loop.flip-curvature | Flip the curve | mdi-vector-curve | - | on",
+          "g1 causal-loop.remove-link | Remove link | mdi-delete-outline | Delete | on"
+        ],
+        [
+          "g1 causal-loop.make-positive | Same direction (+) | mdi-plus | - | off (This link already states +.)",
+          "g1 causal-loop.make-negative | Opposite direction (−) | mdi-minus | - | on (This link already states −.)",
+          "g1 causal-loop.toggle-delay | Delayed | mdi-timer-sand | - | on",
+          "g1 causal-loop.flip-curvature | Flip the curve | mdi-vector-curve | - | on",
+          "g1 causal-loop.remove-link | Remove link | mdi-delete-outline | Delete | on"
+        ],
+        [
+          "g1 causal-loop.make-positive | Same direction (+) | mdi-plus | - | on (This link already states +.)",
+          "g1 causal-loop.make-negative | Opposite direction (−) | mdi-minus | - | off (This link already states −.)",
+          "g1 causal-loop.toggle-delay | Delayed | mdi-timer-sand | - | on",
+          "g1 causal-loop.flip-curvature | Flip the curve | mdi-vector-curve | - | on",
+          "g1 causal-loop.remove-link | Remove link | mdi-delete-outline | Delete | on"
+        ],
+        [
+          "g1 causal-loop.make-positive | Same direction (+) | mdi-plus | - | off (This link already states +.)",
+          "g1 causal-loop.make-negative | Opposite direction (−) | mdi-minus | - | on (This link already states −.)",
+          "g1 causal-loop.toggle-delay | Not delayed | mdi-timer-sand | - | on",
+          "g1 causal-loop.flip-curvature | Flip the curve | mdi-vector-curve | - | on",
+          "g1 causal-loop.remove-link | Remove link | mdi-delete-outline | Delete | on"
+        ],
+        [
+          "g1 causal-loop.rename-loop | Rename loop… | mdi-rename-outline | - | on",
+          "g1 causal-loop.remove-loop | Remove loop | mdi-delete-outline | Delete | on"
+        ],
+        [
+          "g1 causal-loop.add-variable | Add variable | mdi-plus-circle-outline | - | on",
+          "g1 causal-loop.arrange | Arrange diagram | mdi-graph-outline | - | on (There is nothing to arrange until this diagram has two variables.)"
+        ],
+        [
+          "g1 causal-loop.connect | Add link | mdi-arrow-right-thin | - | on"
+        ]
+      ],
+      "choices": [
+        [
+          "positive",
+          "negative",
+          "unstated"
+        ],
+        [
+          "attrition → orphanedPolicies → lapses → clawback → individualCompensation"
+        ],
+        [
+          "attrition → recruits → managementTime → coachingQuality → salespersonSkills → salesProductivity → individualCompensation"
+        ],
+        [
+          "sales → capital → solvencyMargin"
+        ],
+        [
+          "sales → backOfficeLoading → sellingTime → salesProductivity"
+        ],
+        [
+          "attrition → orphanedPolicies → lapses → surrenderValue → salesProductivity → individualCompensation"
+        ],
+        [
+          "attrition → recruits → salesPeople → salesforceCosts → profits → capital → solvencyMargin → sales → backOfficeLoading → sellingTime → salesProductivity → individualCompensation"
+        ],
+        [
+          "attrition → recruits → salesPeople → salesforceCosts → profits → financialReturns → reputation → salesProductivity → individualCompensation"
+        ],
+        [
+          "attrition → recruits → salesPeople → sales → profits → financialReturns → reputation → salesProductivity → individualCompensation"
+        ],
+        [
+          "attrition → recruits → salesPeople → sales → capital → solvencyMargin → portfolioMismatch → investmentPerformance → profits → financialReturns → reputation → salesProductivity → individualCompensation"
+        ],
+        [
+          "attrition → recruits → salesPeople → sales → backOfficeLoading → sellingTime → salesProductivity → individualCompensation"
+        ],
+        [
+          "attrition → recruits → managementTime → coachingQuality → salespersonSkills → policyAppropriateness → lapses → clawback → individualCompensation"
+        ],
+        [
+          "attrition → recruits → managementTime → coachingQuality → salespersonSkills → policyAppropriateness → lapses → surrenderValue → salesProductivity → individualCompensation"
+        ],
+        [
+          "attrition → recruits → managementTime → coachingQuality → salespersonSkills → highNetWorth → caseSize → salesProductivity → individualCompensation"
+        ],
+        [
+          "attrition → recruits → managementTime → coachingQuality → salespersonSkills → highNetWorth → caseSize → expenseRatio → reputation → salesProductivity → individualCompensation"
+        ],
+        [
+          "attrition → salesPeople → salesforceCosts → profits → capital → solvencyMargin → sales → backOfficeLoading → sellingTime → salesProductivity → individualCompensation"
+        ],
+        [
+          "attrition → salesPeople → salesforceCosts → profits → financialReturns → reputation → salesProductivity → individualCompensation"
+        ],
+        [
+          "attrition → salesPeople → sales → profits → financialReturns → reputation → salesProductivity → individualCompensation"
+        ],
+        [
+          "attrition → salesPeople → sales → capital → solvencyMargin → portfolioMismatch → investmentPerformance → profits → financialReturns → reputation → salesProductivity → individualCompensation"
+        ],
+        [
+          "attrition → salesPeople → sales → backOfficeLoading → sellingTime → salesProductivity → individualCompensation"
+        ],
+        [
+          "attrition → salespersonSkills → policyAppropriateness → lapses → clawback → individualCompensation"
+        ],
+        [
+          "attrition → salespersonSkills → policyAppropriateness → lapses → surrenderValue → salesProductivity → individualCompensation"
+        ],
+        [
+          "attrition → salespersonSkills → salesProductivity → individualCompensation"
+        ],
+        [
+          "attrition → salespersonSkills → highNetWorth → caseSize → salesProductivity → individualCompensation"
+        ],
+        [
+          "attrition → salespersonSkills → highNetWorth → caseSize → expenseRatio → reputation → salesProductivity → individualCompensation"
+        ],
+        [
+          "backOfficeLoading → sellingTime → salesProductivity → individualCompensation → lowerCommissions → salesforceCosts → profits → capital → solvencyMargin → sales"
+        ],
+        [
+          "capital → solvencyMargin → sales → profits"
+        ],
+        [
+          "capital → solvencyMargin → portfolioMismatch → investmentPerformance → profits"
+        ],
+        [
+          "capital → solvencyMargin → portfolioMismatch → investmentPerformance → profits → financialReturns → reputation → salesProductivity → sales"
+        ],
+        [
+          "caseSize → salesProductivity → individualCompensation → companyAttractiveness → recruitQuality → salespersonSkills → highNetWorth"
+        ],
+        [
+          "caseSize → expenseRatio → reputation → salesProductivity → individualCompensation → companyAttractiveness → recruitQuality → salespersonSkills → highNetWorth"
+        ],
+        [
+          "clawback → individualCompensation → companyAttractiveness → recruitQuality → salespersonSkills → policyAppropriateness → lapses"
+        ],
+        [
+          "coachingQuality → salespersonSkills → managementSkill"
+        ],
+        [
+          "companyAttractiveness → recruitQuality → salespersonSkills → policyAppropriateness → lapses → surrenderValue → salesProductivity → individualCompensation"
+        ],
+        [
+          "companyAttractiveness → recruitQuality → salespersonSkills → salesProductivity → individualCompensation"
+        ],
+        [
+          "financialReturns → reputation → salesProductivity → individualCompensation → lowerCommissions → salesforceCosts → profits"
+        ],
+        [
+          "financialReturns → reputation → salesProductivity → sales → profits"
+        ],
+        [
+          "individualCompensation → motivation → salesProductivity"
+        ],
+        [
+          "managementSkill → recruitQuality → salespersonSkills"
+        ]
+      ],
+      "targets": [
+        "\"variable:attrition\" => menu #0, read-only #1",
+        "\"variable:recruits\" => menu #2, read-only #1",
+        "\"variable:salesPeople\" => menu #3, read-only #1",
+        "\"variable:managementTime\" => menu #4, read-only #1",
+        "\"variable:coachingQuality\" => menu #5, read-only #1",
+        "\"variable:recruitQuality\" => menu #5, read-only #1",
+        "\"variable:salespersonSkills\" => menu #6, read-only #1",
+        "\"variable:managementSkill\" => menu #7, read-only #1",
+        "\"variable:companyAttractiveness\" => menu #4, read-only #1",
+        "\"variable:individualCompensation\" => menu #8, read-only #1",
+        "\"variable:motivation\" => menu #9, read-only #1",
+        "\"variable:salesProductivity\" => menu #10, read-only #1",
+        "\"variable:sellingTime\" => menu #11, read-only #1",
+        "\"variable:orphanedPolicies\" => menu #12, read-only #1",
+        "\"variable:lapses\" => menu #13, read-only #1",
+        "\"variable:clawback\" => menu #14, read-only #1",
+        "\"variable:policyAppropriateness\" => menu #11, read-only #1",
+        "\"variable:surrenderValue\" => menu #14, read-only #1",
+        "\"variable:highNetWorth\" => menu #11, read-only #1",
+        "\"variable:caseSize\" => menu #5, read-only #1",
+        "\"variable:sales\" => menu #15, read-only #1",
+        "\"variable:lowerCommissions\" => menu #12, read-only #1",
+        "\"variable:salesforceCosts\" => menu #5, read-only #1",
+        "\"variable:profits\" => menu #15, read-only #1",
+        "\"variable:investmentPerformance\" => menu #14, read-only #1",
+        "\"variable:portfolioMismatch\" => menu #14, read-only #1",
+        "\"variable:capital\" => menu #13, read-only #1",
+        "\"variable:solvencyMargin\" => menu #13, read-only #1",
+        "\"variable:financialReturns\" => menu #16, read-only #1",
+        "\"variable:reputation\" => menu #17, read-only #1",
+        "\"variable:adminExpenses\" => menu #9, read-only #1",
+        "\"variable:expenseRatio\" => menu #14, read-only #1",
+        "\"variable:backOfficeCapacity\" => menu #18, read-only #1",
+        "\"variable:backOfficeLoading\" => menu #5, read-only #1",
+        "\"link:individualCompensation|attrition\" => menu #19, read-only #1",
+        "\"link:attrition|recruits\" => menu #20, read-only #1",
+        "\"link:attrition|salesPeople\" => menu #21, read-only #1",
+        "\"link:recruits|salesPeople\" => menu #20, read-only #1",
+        "\"link:recruits|managementTime\" => menu #21, read-only #1",
+        "\"link:managementTime|coachingQuality\" => menu #20, read-only #1",
+        "\"link:attrition|salespersonSkills\" => menu #19, read-only #1",
+        "\"link:coachingQuality|salespersonSkills\" => menu #20, read-only #1",
+        "\"link:recruitQuality|salespersonSkills\" => menu #20, read-only #1",
+        "\"link:salespersonSkills|managementSkill\" => menu #20, read-only #1",
+        "\"link:managementSkill|coachingQuality\" => menu #20, read-only #1",
+        "\"link:managementSkill|recruitQuality\" => menu #20, read-only #1",
+        "\"link:individualCompensation|companyAttractiveness\" => menu #20, read-only #1",
+        "\"link:companyAttractiveness|recruitQuality\" => menu #20, read-only #1",
+        "\"link:individualCompensation|motivation\" => menu #20, read-only #1",
+        "\"link:motivation|salesProductivity\" => menu #20, read-only #1",
+        "\"link:salespersonSkills|salesProductivity\" => menu #20, read-only #1",
+        "\"link:salesProductivity|individualCompensation\" => menu #20, read-only #1",
+        "\"link:attrition|orphanedPolicies\" => menu #20, read-only #1",
+        "\"link:orphanedPolicies|lapses\" => menu #22, read-only #1",
+        "\"link:lapses|clawback\" => menu #20, read-only #1",
+        "\"link:clawback|individualCompensation\" => menu #21, read-only #1",
+        "\"link:salespersonSkills|policyAppropriateness\" => menu #20, read-only #1",
+        "\"link:policyAppropriateness|lapses\" => menu #21, read-only #1",
+        "\"link:lapses|surrenderValue\" => menu #21, read-only #1",
+        "\"link:surrenderValue|salesProductivity\" => menu #20, read-only #1",
+        "\"link:salespersonSkills|highNetWorth\" => menu #20, read-only #1",
+        "\"link:highNetWorth|caseSize\" => menu #20, read-only #1",
+        "\"link:caseSize|salesProductivity\" => menu #20, read-only #1",
+        "\"link:caseSize|expenseRatio\" => menu #21, read-only #1",
+        "\"link:salesPeople|sales\" => menu #20, read-only #1",
+        "\"link:salesProductivity|sales\" => menu #20, read-only #1",
+        "\"link:individualCompensation|lowerCommissions\" => menu #20, read-only #1",
+        "\"link:lowerCommissions|salesforceCosts\" => menu #21, read-only #1",
+        "\"link:salesPeople|salesforceCosts\" => menu #20, read-only #1",
+        "\"link:salesforceCosts|profits\" => menu #21, read-only #1",
+        "\"link:sales|profits\" => menu #20, read-only #1",
+        "\"link:sales|capital\" => menu #21, read-only #1",
+        "\"link:profits|capital\" => menu #20, read-only #1",
+        "\"link:capital|solvencyMargin\" => menu #20, read-only #1",
+        "\"link:solvencyMargin|sales\" => menu #20, read-only #1",
+        "\"link:solvencyMargin|portfolioMismatch\" => menu #20, read-only #1",
+        "\"link:portfolioMismatch|investmentPerformance\" => menu #22, read-only #1",
+        "\"link:investmentPerformance|profits\" => menu #20, read-only #1",
+        "\"link:profits|financialReturns\" => menu #20, read-only #1",
+        "\"link:financialReturns|reputation\" => menu #22, read-only #1",
+        "\"link:reputation|salesProductivity\" => menu #20, read-only #1",
+        "\"link:sales|backOfficeLoading\" => menu #20, read-only #1",
+        "\"link:backOfficeCapacity|backOfficeLoading\" => menu #21, read-only #1",
+        "\"link:backOfficeLoading|sellingTime\" => menu #21, read-only #1",
+        "\"link:sellingTime|salesProductivity\" => menu #20, read-only #1",
+        "\"link:backOfficeCapacity|adminExpenses\" => menu #20, read-only #1",
+        "\"link:adminExpenses|profits\" => menu #21, read-only #1",
+        "\"link:adminExpenses|expenseRatio\" => menu #20, read-only #1",
+        "\"link:expenseRatio|reputation\" => menu #19, read-only #1",
+        "\"loop:R1\" => menu #23, read-only #1",
+        "\"loop:R2\" => menu #23, read-only #1",
+        "\"loop:B1\" => menu #23, read-only #1",
+        "\"loop:B2\" => menu #23, read-only #1",
+        "\"loop:R3\" => menu #23, read-only #1",
+        "\"loop:B3\" => menu #23, read-only #1",
+        "\"loop:R4\" => menu #23, read-only #1",
+        "\"loop:B4\" => menu #23, read-only #1",
+        "\"loop:R5\" => menu #23, read-only #1",
+        "\"loop:R6\" => menu #23, read-only #1",
+        "\"loop:R7\" => menu #23, read-only #1",
+        "\"loop:R8\" => menu #23, read-only #1",
+        "\"loop:R9\" => menu #23, read-only #1",
+        "\"loop:R10\" => menu #23, read-only #1",
+        "\"loop:R11\" => menu #23, read-only #1",
+        "\"loop:B5\" => menu #23, read-only #1",
+        "\"loop:R12\" => menu #23, read-only #1",
+        "\"loop:B6\" => menu #23, read-only #1",
+        "\"loop:B7\" => menu #23, read-only #1",
+        "\"loop:R13\" => menu #23, read-only #1",
+        "\"loop:R14\" => menu #23, read-only #1",
+        "\"loop:R15\" => menu #23, read-only #1",
+        "\"loop:R16\" => menu #23, read-only #1",
+        "\"loop:R17\" => menu #23, read-only #1",
+        "\"loop:B8\" => menu #23, read-only #1",
+        "\"loop:R18\" => menu #23, read-only #1",
+        "\"loop:R19\" => menu #23, read-only #1",
+        "\"loop:B9\" => menu #23, read-only #1",
+        "\"loop:R20\" => menu #23, read-only #1",
+        "\"loop:R21\" => menu #23, read-only #1",
+        "\"loop:R22\" => menu #23, read-only #1",
+        "\"loop:R23\" => menu #23, read-only #1",
+        "\"loop:R24\" => menu #23, read-only #1",
+        "\"loop:R25\" => menu #23, read-only #1",
+        "\"loop:R26\" => menu #23, read-only #1",
+        "\"loop:R27\" => menu #23, read-only #1",
+        "\"loop:R28\" => menu #23, read-only #1",
+        "\"loop:R29\" => menu #23, read-only #1",
+        "\"\" => menu #1, read-only #1",
+        "\"new:240,160\" => menu #24, read-only #1",
+        "\"rel:recruits->attrition\" => menu #25, read-only #1",
+        "\"parity:unknown\" => menu #1, read-only #1"
+      ],
+      "rows": [
+        {
+          "target": "variable:attrition",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Attrition\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"attrition\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:recruits",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Recruits\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"recruits\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:salesPeople",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Sales people\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"salesPeople\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:managementTime",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Management time\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"managementTime\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:coachingQuality",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Training and coaching quality\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"coachingQuality\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:recruitQuality",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Recruit quality\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"recruitQuality\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:salespersonSkills",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Salesperson skills\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"salespersonSkills\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:managementSkill",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Management skill\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"managementSkill\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:companyAttractiveness",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Company attractiveness\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"companyAttractiveness\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:individualCompensation",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Individual compensation\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"individualCompensation\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:motivation",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Motivation\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"motivation\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:salesProductivity",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Sales productivity\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"salesProductivity\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:sellingTime",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Salesperson's time available for selling vs. administration\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"sellingTime\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:orphanedPolicies",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Orphaned policies\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"orphanedPolicies\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:lapses",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Lapses\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"lapses\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:clawback",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Clawback\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"clawback\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:policyAppropriateness",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Policy appropriateness for customer\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"policyAppropriateness\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:surrenderValue",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Ability to offer high surrender value early on\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"surrenderValue\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:highNetWorth",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Ability to target high net worth individuals\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"highNetWorth\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:caseSize",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Average case size\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"caseSize\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:sales",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Sales\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"sales\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:lowerCommissions",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Lower commissions as compensation increases\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"lowerCommissions\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:salesforceCosts",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Salesforce costs\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"salesforceCosts\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:profits",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Profits\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"profits\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:investmentPerformance",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Investment performance\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"investmentPerformance\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:portfolioMismatch",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Portfolio mismatch\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"portfolioMismatch\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:capital",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Capital available\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"capital\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:solvencyMargin",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Solvency margin\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"solvencyMargin\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:financialReturns",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Financial returns to policyholders\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"financialReturns\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:reputation",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Reputation\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"reputation\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:adminExpenses",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Administrative expenses\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"adminExpenses\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:expenseRatio",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Expense ratio\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"expenseRatio\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:backOfficeCapacity",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Back office capacity\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"backOfficeCapacity\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:backOfficeLoading",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Back office loading\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"backOfficeLoading\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:individualCompensation|attrition",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"individualCompensation\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"attrition\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"printed\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"negative\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"true\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:attrition|recruits",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"attrition\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"recruits\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"printed\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:attrition|salesPeople",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"attrition\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"salesPeople\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"printed\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"negative\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:recruits|salesPeople",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"recruits\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"salesPeople\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"printed\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:recruits|managementTime",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"recruits\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"managementTime\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"printed\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"negative\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:managementTime|coachingQuality",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"managementTime\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"coachingQuality\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"printed\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:attrition|salespersonSkills",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"attrition\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"salespersonSkills\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"negative\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"true\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:coachingQuality|salespersonSkills",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"coachingQuality\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"salespersonSkills\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:recruitQuality|salespersonSkills",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"recruitQuality\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"salespersonSkills\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:salespersonSkills|managementSkill",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"salespersonSkills\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"managementSkill\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:managementSkill|coachingQuality",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"managementSkill\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"coachingQuality\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:managementSkill|recruitQuality",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"managementSkill\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"recruitQuality\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:individualCompensation|companyAttractiveness",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"individualCompensation\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"companyAttractiveness\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:companyAttractiveness|recruitQuality",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"companyAttractiveness\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"recruitQuality\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:individualCompensation|motivation",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"individualCompensation\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"motivation\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:motivation|salesProductivity",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"motivation\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"salesProductivity\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:salespersonSkills|salesProductivity",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"salespersonSkills\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"salesProductivity\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:salesProductivity|individualCompensation",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"salesProductivity\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"individualCompensation\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:attrition|orphanedPolicies",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"attrition\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"orphanedPolicies\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:orphanedPolicies|lapses",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"orphanedPolicies\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"lapses\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"true\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:lapses|clawback",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"lapses\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"clawback\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:clawback|individualCompensation",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"clawback\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"individualCompensation\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"negative\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:salespersonSkills|policyAppropriateness",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"salespersonSkills\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"policyAppropriateness\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:policyAppropriateness|lapses",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"policyAppropriateness\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"lapses\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"negative\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:lapses|surrenderValue",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"lapses\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"surrenderValue\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"negative\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:surrenderValue|salesProductivity",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"surrenderValue\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"salesProductivity\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:salespersonSkills|highNetWorth",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"salespersonSkills\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"highNetWorth\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:highNetWorth|caseSize",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"highNetWorth\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"caseSize\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:caseSize|salesProductivity",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"caseSize\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"salesProductivity\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:caseSize|expenseRatio",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"caseSize\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"expenseRatio\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"negative\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:salesPeople|sales",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"salesPeople\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"sales\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"printed\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:salesProductivity|sales",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"salesProductivity\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"sales\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"printed\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:individualCompensation|lowerCommissions",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"individualCompensation\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"lowerCommissions\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:lowerCommissions|salesforceCosts",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"lowerCommissions\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"salesforceCosts\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"negative\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:salesPeople|salesforceCosts",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"salesPeople\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"salesforceCosts\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"printed\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:salesforceCosts|profits",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"salesforceCosts\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"profits\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"negative\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:sales|profits",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"sales\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"profits\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"printed\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:sales|capital",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"sales\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"capital\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"printed: new business consumes capital\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"negative\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:profits|capital",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"profits\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"capital\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:capital|solvencyMargin",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"capital\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"solvencyMargin\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:solvencyMargin|sales",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"solvencyMargin\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"sales\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:solvencyMargin|portfolioMismatch",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"solvencyMargin\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"portfolioMismatch\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"printed\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:portfolioMismatch|investmentPerformance",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"portfolioMismatch\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"investmentPerformance\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"printed\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"true\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:investmentPerformance|profits",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"investmentPerformance\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"profits\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:profits|financialReturns",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"profits\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"financialReturns\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:financialReturns|reputation",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"financialReturns\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"reputation\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"true\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:reputation|salesProductivity",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"reputation\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"salesProductivity\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:sales|backOfficeLoading",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"sales\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"backOfficeLoading\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"printed\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:backOfficeCapacity|backOfficeLoading",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"backOfficeCapacity\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"backOfficeLoading\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"printed\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"negative\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:backOfficeLoading|sellingTime",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"backOfficeLoading\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"sellingTime\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"printed\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"negative\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:sellingTime|salesProductivity",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"sellingTime\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"salesProductivity\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"printed\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:backOfficeCapacity|adminExpenses",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"backOfficeCapacity\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"adminExpenses\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"printed\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:adminExpenses|profits",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"adminExpenses\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"profits\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"printed\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"negative\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:adminExpenses|expenseRatio",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"adminExpenses\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"expenseRatio\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"printed\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:expenseRatio|reputation",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"expenseRatio\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"reputation\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"negative\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"true\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "loop:R1",
+          "rows": [
+            "causal-loop.loop-identifier | Identifier | \"R1\" | Line | editable | group Identity",
+            "causal-loop.loop-name | Name | \"Orphaned policies claw back pay\" | Line | editable | group Identity",
+            "causal-loop.loop-computed | Computed polarity | \"reinforcing\" | Line | read-only (Counted from the polarity of the links around the cycle. Change an arrow to change this.) | group Feedback",
+            "causal-loop.loop-variables | Runs through | \"attrition → orphanedPolicies → lapses → clawback → individualCompensation\" | Choice | editable | group Feedback | choices #1"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "loop:R2",
+          "rows": [
+            "causal-loop.loop-identifier | Identifier | \"R2\" | Line | editable | group Identity",
+            "causal-loop.loop-name | Name | \"Recruits dilute coaching\" | Line | editable | group Identity",
+            "causal-loop.loop-computed | Computed polarity | \"reinforcing\" | Line | read-only (Counted from the polarity of the links around the cycle. Change an arrow to change this.) | group Feedback",
+            "causal-loop.loop-variables | Runs through | \"attrition → recruits → managementTime → coachingQuality → salespersonSkills → salesProductivity → individualCompensation\" | Choice | editable | group Feedback | choices #2"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "loop:B1",
+          "rows": [
+            "causal-loop.loop-identifier | Identifier | \"B1\" | Line | editable | group Identity",
+            "causal-loop.loop-name | Name | \"New business strains capital\" | Line | editable | group Identity",
+            "causal-loop.loop-computed | Computed polarity | \"balancing\" | Line | read-only (Counted from the polarity of the links around the cycle. Change an arrow to change this.) | group Feedback",
+            "causal-loop.loop-variables | Runs through | \"sales → capital → solvencyMargin\" | Choice | editable | group Feedback | choices #3"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "loop:B2",
+          "rows": [
+            "causal-loop.loop-identifier | Identifier | \"B2\" | Line | editable | group Identity",
+            "causal-loop.loop-name | Name | \"Administration crowds out selling\" | Line | editable | group Identity",
+            "causal-loop.loop-computed | Computed polarity | \"balancing\" | Line | read-only (Counted from the polarity of the links around the cycle. Change an arrow to change this.) | group Feedback",
+            "causal-loop.loop-variables | Runs through | \"sales → backOfficeLoading → sellingTime → salesProductivity\" | Choice | editable | group Feedback | choices #4"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "loop:R3",
+          "rows": [
+            "causal-loop.loop-identifier | Identifier | \"R3\" | Line | editable | group Identity",
+            "causal-loop.loop-name | Name | \"Orphaned lapses cost the surrender offer\" | Line | editable | group Identity",
+            "causal-loop.loop-computed | Computed polarity | \"reinforcing\" | Line | read-only (Counted from the polarity of the links around the cycle. Change an arrow to change this.) | group Feedback",
+            "causal-loop.loop-variables | Runs through | \"attrition → orphanedPolicies → lapses → surrenderValue → salesProductivity → individualCompensation\" | Choice | editable | group Feedback | choices #5"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "loop:B3",
+          "rows": [
+            "causal-loop.loop-identifier | Identifier | \"B3\" | Line | editable | group Identity",
+            "causal-loop.loop-name | Name | \"Recruiting costs slow sales and free selling time\" | Line | editable | group Identity",
+            "causal-loop.loop-computed | Computed polarity | \"balancing\" | Line | read-only (Counted from the polarity of the links around the cycle. Change an arrow to change this.) | group Feedback",
+            "causal-loop.loop-variables | Runs through | \"attrition → recruits → salesPeople → salesforceCosts → profits → capital → solvencyMargin → sales → backOfficeLoading → sellingTime → salesProductivity → individualCompensation\" | Choice | editable | group Feedback | choices #6"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "loop:R4",
+          "rows": [
+            "causal-loop.loop-identifier | Identifier | \"R4\" | Line | editable | group Identity",
+            "causal-loop.loop-name | Name | \"Recruiting costs dent the reputation\" | Line | editable | group Identity",
+            "causal-loop.loop-computed | Computed polarity | \"reinforcing\" | Line | read-only (Counted from the polarity of the links around the cycle. Change an arrow to change this.) | group Feedback",
+            "causal-loop.loop-variables | Runs through | \"attrition → recruits → salesPeople → salesforceCosts → profits → financialReturns → reputation → salesProductivity → individualCompensation\" | Choice | editable | group Feedback | choices #7"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "loop:B4",
+          "rows": [
+            "causal-loop.loop-identifier | Identifier | \"B4\" | Line | editable | group Identity",
+            "causal-loop.loop-name | Name | \"Recruits' sales lift the reputation\" | Line | editable | group Identity",
+            "causal-loop.loop-computed | Computed polarity | \"balancing\" | Line | read-only (Counted from the polarity of the links around the cycle. Change an arrow to change this.) | group Feedback",
+            "causal-loop.loop-variables | Runs through | \"attrition → recruits → salesPeople → sales → profits → financialReturns → reputation → salesProductivity → individualCompensation\" | Choice | editable | group Feedback | choices #8"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "loop:R5",
+          "rows": [
+            "causal-loop.loop-identifier | Identifier | \"R5\" | Line | editable | group Identity",
+            "causal-loop.loop-name | Name | \"Recruits' sales strain the portfolio\" | Line | editable | group Identity",
+            "causal-loop.loop-computed | Computed polarity | \"reinforcing\" | Line | read-only (Counted from the polarity of the links around the cycle. Change an arrow to change this.) | group Feedback",
+            "causal-loop.loop-variables | Runs through | \"attrition → recruits → salesPeople → sales → capital → solvencyMargin → portfolioMismatch → investmentPerformance → profits → financialReturns → reputation → salesProductivity → individualCompensation\" | Choice | editable | group Feedback | choices #9"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "loop:R6",
+          "rows": [
+            "causal-loop.loop-identifier | Identifier | \"R6\" | Line | editable | group Identity",
+            "causal-loop.loop-name | Name | \"Recruits' sales load the back office\" | Line | editable | group Identity",
+            "causal-loop.loop-computed | Computed polarity | \"reinforcing\" | Line | read-only (Counted from the polarity of the links around the cycle. Change an arrow to change this.) | group Feedback",
+            "causal-loop.loop-variables | Runs through | \"attrition → recruits → salesPeople → sales → backOfficeLoading → sellingTime → salesProductivity → individualCompensation\" | Choice | editable | group Feedback | choices #10"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "loop:R7",
+          "rows": [
+            "causal-loop.loop-identifier | Identifier | \"R7\" | Line | editable | group Identity",
+            "causal-loop.loop-name | Name | \"Thin coaching sells lapsing policies\" | Line | editable | group Identity",
+            "causal-loop.loop-computed | Computed polarity | \"reinforcing\" | Line | read-only (Counted from the polarity of the links around the cycle. Change an arrow to change this.) | group Feedback",
+            "causal-loop.loop-variables | Runs through | \"attrition → recruits → managementTime → coachingQuality → salespersonSkills → policyAppropriateness → lapses → clawback → individualCompensation\" | Choice | editable | group Feedback | choices #11"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "loop:R8",
+          "rows": [
+            "causal-loop.loop-identifier | Identifier | \"R8\" | Line | editable | group Identity",
+            "causal-loop.loop-name | Name | \"Thin coaching costs the surrender offer\" | Line | editable | group Identity",
+            "causal-loop.loop-computed | Computed polarity | \"reinforcing\" | Line | read-only (Counted from the polarity of the links around the cycle. Change an arrow to change this.) | group Feedback",
+            "causal-loop.loop-variables | Runs through | \"attrition → recruits → managementTime → coachingQuality → salespersonSkills → policyAppropriateness → lapses → surrenderValue → salesProductivity → individualCompensation\" | Choice | editable | group Feedback | choices #12"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "loop:R9",
+          "rows": [
+            "causal-loop.loop-identifier | Identifier | \"R9\" | Line | editable | group Identity",
+            "causal-loop.loop-name | Name | \"Thin coaching shrinks the cases\" | Line | editable | group Identity",
+            "causal-loop.loop-computed | Computed polarity | \"reinforcing\" | Line | read-only (Counted from the polarity of the links around the cycle. Change an arrow to change this.) | group Feedback",
+            "causal-loop.loop-variables | Runs through | \"attrition → recruits → managementTime → coachingQuality → salespersonSkills → highNetWorth → caseSize → salesProductivity → individualCompensation\" | Choice | editable | group Feedback | choices #13"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "loop:R10",
+          "rows": [
+            "causal-loop.loop-identifier | Identifier | \"R10\" | Line | editable | group Identity",
+            "causal-loop.loop-name | Name | \"Thin coaching raises the expense ratio\" | Line | editable | group Identity",
+            "causal-loop.loop-computed | Computed polarity | \"reinforcing\" | Line | read-only (Counted from the polarity of the links around the cycle. Change an arrow to change this.) | group Feedback",
+            "causal-loop.loop-variables | Runs through | \"attrition → recruits → managementTime → coachingQuality → salespersonSkills → highNetWorth → caseSize → expenseRatio → reputation → salesProductivity → individualCompensation\" | Choice | editable | group Feedback | choices #14"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "loop:R11",
+          "rows": [
+            "causal-loop.loop-identifier | Identifier | \"R11\" | Line | editable | group Identity",
+            "causal-loop.loop-name | Name | \"Leavers cut costs and selling time\" | Line | editable | group Identity",
+            "causal-loop.loop-computed | Computed polarity | \"reinforcing\" | Line | read-only (Counted from the polarity of the links around the cycle. Change an arrow to change this.) | group Feedback",
+            "causal-loop.loop-variables | Runs through | \"attrition → salesPeople → salesforceCosts → profits → capital → solvencyMargin → sales → backOfficeLoading → sellingTime → salesProductivity → individualCompensation\" | Choice | editable | group Feedback | choices #15"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "loop:B5",
+          "rows": [
+            "causal-loop.loop-identifier | Identifier | \"B5\" | Line | editable | group Identity",
+            "causal-loop.loop-name | Name | \"Leavers cut costs and lift returns\" | Line | editable | group Identity",
+            "causal-loop.loop-computed | Computed polarity | \"balancing\" | Line | read-only (Counted from the polarity of the links around the cycle. Change an arrow to change this.) | group Feedback",
+            "causal-loop.loop-variables | Runs through | \"attrition → salesPeople → salesforceCosts → profits → financialReturns → reputation → salesProductivity → individualCompensation\" | Choice | editable | group Feedback | choices #16"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "loop:R12",
+          "rows": [
+            "causal-loop.loop-identifier | Identifier | \"R12\" | Line | editable | group Identity",
+            "causal-loop.loop-name | Name | \"Leavers cut sales and returns\" | Line | editable | group Identity",
+            "causal-loop.loop-computed | Computed polarity | \"reinforcing\" | Line | read-only (Counted from the polarity of the links around the cycle. Change an arrow to change this.) | group Feedback",
+            "causal-loop.loop-variables | Runs through | \"attrition → salesPeople → sales → profits → financialReturns → reputation → salesProductivity → individualCompensation\" | Choice | editable | group Feedback | choices #17"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "loop:B6",
+          "rows": [
+            "causal-loop.loop-identifier | Identifier | \"B6\" | Line | editable | group Identity",
+            "causal-loop.loop-name | Name | \"Leavers ease the portfolio\" | Line | editable | group Identity",
+            "causal-loop.loop-computed | Computed polarity | \"balancing\" | Line | read-only (Counted from the polarity of the links around the cycle. Change an arrow to change this.) | group Feedback",
+            "causal-loop.loop-variables | Runs through | \"attrition → salesPeople → sales → capital → solvencyMargin → portfolioMismatch → investmentPerformance → profits → financialReturns → reputation → salesProductivity → individualCompensation\" | Choice | editable | group Feedback | choices #18"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "loop:B7",
+          "rows": [
+            "causal-loop.loop-identifier | Identifier | \"B7\" | Line | editable | group Identity",
+            "causal-loop.loop-name | Name | \"Leavers ease the back office\" | Line | editable | group Identity",
+            "causal-loop.loop-computed | Computed polarity | \"balancing\" | Line | read-only (Counted from the polarity of the links around the cycle. Change an arrow to change this.) | group Feedback",
+            "causal-loop.loop-variables | Runs through | \"attrition → salesPeople → sales → backOfficeLoading → sellingTime → salesProductivity → individualCompensation\" | Choice | editable | group Feedback | choices #19"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "loop:R13",
+          "rows": [
+            "causal-loop.loop-identifier | Identifier | \"R13\" | Line | editable | group Identity",
+            "causal-loop.loop-name | Name | \"Lost skills sell lapsing policies\" | Line | editable | group Identity",
+            "causal-loop.loop-computed | Computed polarity | \"reinforcing\" | Line | read-only (Counted from the polarity of the links around the cycle. Change an arrow to change this.) | group Feedback",
+            "causal-loop.loop-variables | Runs through | \"attrition → salespersonSkills → policyAppropriateness → lapses → clawback → individualCompensation\" | Choice | editable | group Feedback | choices #20"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "loop:R14",
+          "rows": [
+            "causal-loop.loop-identifier | Identifier | \"R14\" | Line | editable | group Identity",
+            "causal-loop.loop-name | Name | \"Lost skills cost the surrender offer\" | Line | editable | group Identity",
+            "causal-loop.loop-computed | Computed polarity | \"reinforcing\" | Line | read-only (Counted from the polarity of the links around the cycle. Change an arrow to change this.) | group Feedback",
+            "causal-loop.loop-variables | Runs through | \"attrition → salespersonSkills → policyAppropriateness → lapses → surrenderValue → salesProductivity → individualCompensation\" | Choice | editable | group Feedback | choices #21"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "loop:R15",
+          "rows": [
+            "causal-loop.loop-identifier | Identifier | \"R15\" | Line | editable | group Identity",
+            "causal-loop.loop-name | Name | \"Skills leave with the people\" | Line | editable | group Identity",
+            "causal-loop.loop-computed | Computed polarity | \"reinforcing\" | Line | read-only (Counted from the polarity of the links around the cycle. Change an arrow to change this.) | group Feedback",
+            "causal-loop.loop-variables | Runs through | \"attrition → salespersonSkills → salesProductivity → individualCompensation\" | Choice | editable | group Feedback | choices #22"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "loop:R16",
+          "rows": [
+            "causal-loop.loop-identifier | Identifier | \"R16\" | Line | editable | group Identity",
+            "causal-loop.loop-name | Name | \"Lost skills shrink the cases\" | Line | editable | group Identity",
+            "causal-loop.loop-computed | Computed polarity | \"reinforcing\" | Line | read-only (Counted from the polarity of the links around the cycle. Change an arrow to change this.) | group Feedback",
+            "causal-loop.loop-variables | Runs through | \"attrition → salespersonSkills → highNetWorth → caseSize → salesProductivity → individualCompensation\" | Choice | editable | group Feedback | choices #23"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "loop:R17",
+          "rows": [
+            "causal-loop.loop-identifier | Identifier | \"R17\" | Line | editable | group Identity",
+            "causal-loop.loop-name | Name | \"Lost skills raise the expense ratio\" | Line | editable | group Identity",
+            "causal-loop.loop-computed | Computed polarity | \"reinforcing\" | Line | read-only (Counted from the polarity of the links around the cycle. Change an arrow to change this.) | group Feedback",
+            "causal-loop.loop-variables | Runs through | \"attrition → salespersonSkills → highNetWorth → caseSize → expenseRatio → reputation → salesProductivity → individualCompensation\" | Choice | editable | group Feedback | choices #24"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "loop:B8",
+          "rows": [
+            "causal-loop.loop-identifier | Identifier | \"B8\" | Line | editable | group Identity",
+            "causal-loop.loop-name | Name | \"Commissions fall as pay rises\" | Line | editable | group Identity",
+            "causal-loop.loop-computed | Computed polarity | \"balancing\" | Line | read-only (Counted from the polarity of the links around the cycle. Change an arrow to change this.) | group Feedback",
+            "causal-loop.loop-variables | Runs through | \"backOfficeLoading → sellingTime → salesProductivity → individualCompensation → lowerCommissions → salesforceCosts → profits → capital → solvencyMargin → sales\" | Choice | editable | group Feedback | choices #25"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "loop:R18",
+          "rows": [
+            "causal-loop.loop-identifier | Identifier | \"R18\" | Line | editable | group Identity",
+            "causal-loop.loop-name | Name | \"Profitable sales build capital\" | Line | editable | group Identity",
+            "causal-loop.loop-computed | Computed polarity | \"reinforcing\" | Line | read-only (Counted from the polarity of the links around the cycle. Change an arrow to change this.) | group Feedback",
+            "causal-loop.loop-variables | Runs through | \"capital → solvencyMargin → sales → profits\" | Choice | editable | group Feedback | choices #26"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "loop:R19",
+          "rows": [
+            "causal-loop.loop-identifier | Identifier | \"R19\" | Line | editable | group Identity",
+            "causal-loop.loop-name | Name | \"Mismatch earns on capital\" | Line | editable | group Identity",
+            "causal-loop.loop-computed | Computed polarity | \"reinforcing\" | Line | read-only (Counted from the polarity of the links around the cycle. Change an arrow to change this.) | group Feedback",
+            "causal-loop.loop-variables | Runs through | \"capital → solvencyMargin → portfolioMismatch → investmentPerformance → profits\" | Choice | editable | group Feedback | choices #27"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "loop:B9",
+          "rows": [
+            "causal-loop.loop-identifier | Identifier | \"B9\" | Line | editable | group Identity",
+            "causal-loop.loop-name | Name | \"Returns sell policies\" | Line | editable | group Identity",
+            "causal-loop.loop-computed | Computed polarity | \"balancing\" | Line | read-only (Counted from the polarity of the links around the cycle. Change an arrow to change this.) | group Feedback",
+            "causal-loop.loop-variables | Runs through | \"capital → solvencyMargin → portfolioMismatch → investmentPerformance → profits → financialReturns → reputation → salesProductivity → sales\" | Choice | editable | group Feedback | choices #28"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "loop:R20",
+          "rows": [
+            "causal-loop.loop-identifier | Identifier | \"R20\" | Line | editable | group Identity",
+            "causal-loop.loop-name | Name | \"Large cases attract good recruits\" | Line | editable | group Identity",
+            "causal-loop.loop-computed | Computed polarity | \"reinforcing\" | Line | read-only (Counted from the polarity of the links around the cycle. Change an arrow to change this.) | group Feedback",
+            "causal-loop.loop-variables | Runs through | \"caseSize → salesProductivity → individualCompensation → companyAttractiveness → recruitQuality → salespersonSkills → highNetWorth\" | Choice | editable | group Feedback | choices #29"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "loop:R21",
+          "rows": [
+            "causal-loop.loop-identifier | Identifier | \"R21\" | Line | editable | group Identity",
+            "causal-loop.loop-name | Name | \"Large cases keep expenses low\" | Line | editable | group Identity",
+            "causal-loop.loop-computed | Computed polarity | \"reinforcing\" | Line | read-only (Counted from the polarity of the links around the cycle. Change an arrow to change this.) | group Feedback",
+            "causal-loop.loop-variables | Runs through | \"caseSize → expenseRatio → reputation → salesProductivity → individualCompensation → companyAttractiveness → recruitQuality → salespersonSkills → highNetWorth\" | Choice | editable | group Feedback | choices #30"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "loop:R22",
+          "rows": [
+            "causal-loop.loop-identifier | Identifier | \"R22\" | Line | editable | group Identity",
+            "causal-loop.loop-name | Name | \"Clawback deters good recruits\" | Line | editable | group Identity",
+            "causal-loop.loop-computed | Computed polarity | \"reinforcing\" | Line | read-only (Counted from the polarity of the links around the cycle. Change an arrow to change this.) | group Feedback",
+            "causal-loop.loop-variables | Runs through | \"clawback → individualCompensation → companyAttractiveness → recruitQuality → salespersonSkills → policyAppropriateness → lapses\" | Choice | editable | group Feedback | choices #31"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "loop:R23",
+          "rows": [
+            "causal-loop.loop-identifier | Identifier | \"R23\" | Line | editable | group Identity",
+            "causal-loop.loop-name | Name | \"Skilled managers coach\" | Line | editable | group Identity",
+            "causal-loop.loop-computed | Computed polarity | \"reinforcing\" | Line | read-only (Counted from the polarity of the links around the cycle. Change an arrow to change this.) | group Feedback",
+            "causal-loop.loop-variables | Runs through | \"coachingQuality → salespersonSkills → managementSkill\" | Choice | editable | group Feedback | choices #32"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "loop:R24",
+          "rows": [
+            "causal-loop.loop-identifier | Identifier | \"R24\" | Line | editable | group Identity",
+            "causal-loop.loop-name | Name | \"Good recruits keep policies in force\" | Line | editable | group Identity",
+            "causal-loop.loop-computed | Computed polarity | \"reinforcing\" | Line | read-only (Counted from the polarity of the links around the cycle. Change an arrow to change this.) | group Feedback",
+            "causal-loop.loop-variables | Runs through | \"companyAttractiveness → recruitQuality → salespersonSkills → policyAppropriateness → lapses → surrenderValue → salesProductivity → individualCompensation\" | Choice | editable | group Feedback | choices #33"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "loop:R25",
+          "rows": [
+            "causal-loop.loop-identifier | Identifier | \"R25\" | Line | editable | group Identity",
+            "causal-loop.loop-name | Name | \"Pay attracts good recruits\" | Line | editable | group Identity",
+            "causal-loop.loop-computed | Computed polarity | \"reinforcing\" | Line | read-only (Counted from the polarity of the links around the cycle. Change an arrow to change this.) | group Feedback",
+            "causal-loop.loop-variables | Runs through | \"companyAttractiveness → recruitQuality → salespersonSkills → salesProductivity → individualCompensation\" | Choice | editable | group Feedback | choices #34"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "loop:R26",
+          "rows": [
+            "causal-loop.loop-identifier | Identifier | \"R26\" | Line | editable | group Identity",
+            "causal-loop.loop-name | Name | \"Lower commissions fund returns\" | Line | editable | group Identity",
+            "causal-loop.loop-computed | Computed polarity | \"reinforcing\" | Line | read-only (Counted from the polarity of the links around the cycle. Change an arrow to change this.) | group Feedback",
+            "causal-loop.loop-variables | Runs through | \"financialReturns → reputation → salesProductivity → individualCompensation → lowerCommissions → salesforceCosts → profits\" | Choice | editable | group Feedback | choices #35"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "loop:R27",
+          "rows": [
+            "causal-loop.loop-identifier | Identifier | \"R27\" | Line | editable | group Identity",
+            "causal-loop.loop-name | Name | \"Reputation sells\" | Line | editable | group Identity",
+            "causal-loop.loop-computed | Computed polarity | \"reinforcing\" | Line | read-only (Counted from the polarity of the links around the cycle. Change an arrow to change this.) | group Feedback",
+            "causal-loop.loop-variables | Runs through | \"financialReturns → reputation → salesProductivity → sales → profits\" | Choice | editable | group Feedback | choices #36"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "loop:R28",
+          "rows": [
+            "causal-loop.loop-identifier | Identifier | \"R28\" | Line | editable | group Identity",
+            "causal-loop.loop-name | Name | \"Pay motivates\" | Line | editable | group Identity",
+            "causal-loop.loop-computed | Computed polarity | \"reinforcing\" | Line | read-only (Counted from the polarity of the links around the cycle. Change an arrow to change this.) | group Feedback",
+            "causal-loop.loop-variables | Runs through | \"individualCompensation → motivation → salesProductivity\" | Choice | editable | group Feedback | choices #37"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "loop:R29",
+          "rows": [
+            "causal-loop.loop-identifier | Identifier | \"R29\" | Line | editable | group Identity",
+            "causal-loop.loop-name | Name | \"Skilled managers recruit well\" | Line | editable | group Identity",
+            "causal-loop.loop-computed | Computed polarity | \"reinforcing\" | Line | read-only (Counted from the polarity of the links around the cycle. Change an arrow to change this.) | group Feedback",
+            "causal-loop.loop-variables | Runs through | \"managementSkill → recruitQuality → salespersonSkills\" | Choice | editable | group Feedback | choices #38"
+          ],
+          "rowsReadOnly": []
+        }
+      ],
+      "readOnlySet": "set variable:attrition causal-loop.variable-label => refused: life-insurance.cld could not be read, so it cannot be edited.",
+      "findings": [],
+      "payloads": [
+        "variable:attrition | systems/causal-loop+variable | -823, -304 | CausalLoopVariablePayload { \"display\": \"Attrition\", \"id\": \"attrition\", \"width\": 97.30000000000001, \"height\": 39.599999999999994 }",
+        "variable:recruits | systems/causal-loop+variable | -704, -217 | CausalLoopVariablePayload { \"display\": \"Recruits\", \"id\": \"recruits\", \"width\": 90, \"height\": 39.599999999999994 }",
+        "variable:salesPeople | systems/causal-loop+variable | -440, -217 | CausalLoopVariablePayload { \"display\": \"Sales people\", \"id\": \"salesPeople\", \"width\": 120.4, \"height\": 39.599999999999994 }",
+        "variable:managementTime | systems/causal-loop+variable | -691, -84 | CausalLoopVariablePayload { \"display\": \"Management time\", \"id\": \"managementTime\", \"width\": 143.5, \"height\": 39.599999999999994 }",
+        "variable:coachingQuality | systems/causal-loop+variable | -647, 68 | CausalLoopVariablePayload { \"display\": \"Training and coaching quality\", \"id\": \"coachingQuality\", \"width\": 251.3, \"height\": 39.599999999999994 }",
+        "variable:recruitQuality | systems/causal-loop+variable | -282, 171 | CausalLoopVariablePayload { \"display\": \"Recruit quality\", \"id\": \"recruitQuality\", \"width\": 143.5, \"height\": 39.599999999999994 }",
+        "variable:salespersonSkills | systems/causal-loop+variable | -920, 228 | CausalLoopVariablePayload { \"display\": \"Salesperson skills\", \"id\": \"salespersonSkills\", \"width\": 166.60000000000002, \"height\": 39.599999999999994 }",
+        "variable:managementSkill | systems/causal-loop+variable | -515, 350 | CausalLoopVariablePayload { \"display\": \"Management skill\", \"id\": \"managementSkill\", \"width\": 151.20000000000002, \"height\": 39.599999999999994 }",
+        "variable:companyAttractiveness | systems/causal-loop+variable | -141, -19 | CausalLoopVariablePayload { \"display\": \"Company attractiveness\", \"id\": \"companyAttractiveness\", \"width\": 197.4, \"height\": 39.599999999999994 }",
+        "variable:individualCompensation | systems/causal-loop+variable | -88, -372 | CausalLoopVariablePayload { \"display\": \"Individual compensation\", \"id\": \"individualCompensation\", \"width\": 205.10000000000002, \"height\": 39.599999999999994 }",
+        "variable:motivation | systems/causal-loop+variable | 4, -122.00000000000001 | CausalLoopVariablePayload { \"display\": \"Motivation\", \"id\": \"motivation\", \"width\": 105, \"height\": 39.599999999999994 }",
+        "variable:salesProductivity | systems/causal-loop+variable | 233, 19 | CausalLoopVariablePayload { \"display\": \"Sales productivity\", \"id\": \"salesProductivity\", \"width\": 166.60000000000002, \"height\": 39.599999999999994 }",
+        "variable:sellingTime | systems/causal-loop+variable | 374, 350 | CausalLoopVariablePayload { \"display\": \"Salesperson's time available for selling vs. administration\", \"id\": \"sellingTime\", \"width\": 482.3, \"height\": 39.599999999999994 }",
+        "variable:orphanedPolicies | systems/causal-loop+variable | -1034, -228 | CausalLoopVariablePayload { \"display\": \"Orphaned policies\", \"id\": \"orphanedPolicies\", \"width\": 158.9, \"height\": 39.599999999999994 }",
+        "variable:lapses | systems/causal-loop+variable | -1285, -182 | CausalLoopVariablePayload { \"display\": \"Lapses\", \"id\": \"lapses\", \"width\": 90, \"height\": 39.599999999999994 }",
+        "variable:clawback | systems/causal-loop+variable | -1012, -570 | CausalLoopVariablePayload { \"display\": \"Clawback\", \"id\": \"clawback\", \"width\": 90, \"height\": 39.599999999999994 }",
+        "variable:policyAppropriateness | systems/causal-loop+variable | -1162, 27 | CausalLoopVariablePayload { \"display\": \"Policy appropriateness for customer\", \"id\": \"policyAppropriateness\", \"width\": 297.5, \"height\": 39.599999999999994 }",
+        "variable:surrenderValue | systems/causal-loop+variable | -1109, 513 | CausalLoopVariablePayload { \"display\": \"Ability to offer high surrender value early on\", \"id\": \"surrenderValue\", \"width\": 382.20000000000005, \"height\": 39.599999999999994 }",
+        "variable:highNetWorth | systems/causal-loop+variable | 145, 608 | CausalLoopVariablePayload { \"display\": \"Ability to target high net worth individuals\", \"id\": \"highNetWorth\", \"width\": 366.8, \"height\": 39.599999999999994 }",
+        "variable:caseSize | systems/causal-loop+variable | 1038, 391 | CausalLoopVariablePayload { \"display\": \"Average case size\", \"id\": \"caseSize\", \"width\": 158.9, \"height\": 39.599999999999994 }",
+        "variable:sales | systems/causal-loop+variable | 519, -125.00000000000001 | CausalLoopVariablePayload { \"display\": \"Sales\", \"id\": \"sales\", \"width\": 90, \"height\": 39.599999999999994 }",
+        "variable:lowerCommissions | systems/causal-loop+variable | 343, -619 | CausalLoopVariablePayload { \"display\": \"Lower commissions as compensation increases\", \"id\": \"lowerCommissions\", \"width\": 359.1, \"height\": 39.599999999999994 }",
+        "variable:salesforceCosts | systems/causal-loop+variable | 770, -646 | CausalLoopVariablePayload { \"display\": \"Salesforce costs\", \"id\": \"salesforceCosts\", \"width\": 151.20000000000002, \"height\": 39.599999999999994 }",
+        "variable:profits | systems/causal-loop+variable | 915, -543 | CausalLoopVariablePayload { \"display\": \"Profits\", \"id\": \"profits\", \"width\": 90, \"height\": 39.599999999999994 }",
+        "variable:investmentPerformance | systems/causal-loop+variable | 598, -540 | CausalLoopVariablePayload { \"display\": \"Investment performance\", \"id\": \"investmentPerformance\", \"width\": 197.4, \"height\": 39.599999999999994 }",
+        "variable:portfolioMismatch | systems/causal-loop+variable | 400, -361 | CausalLoopVariablePayload { \"display\": \"Portfolio mismatch\", \"id\": \"portfolioMismatch\", \"width\": 166.60000000000002, \"height\": 39.599999999999994 }",
+        "variable:capital | systems/causal-loop+variable | 950, -391 | CausalLoopVariablePayload { \"display\": \"Capital available\", \"id\": \"capital\", \"width\": 158.9, \"height\": 39.599999999999994 }",
+        "variable:solvencyMargin | systems/causal-loop+variable | 629, -277 | CausalLoopVariablePayload { \"display\": \"Solvency margin\", \"id\": \"solvencyMargin\", \"width\": 143.5, \"height\": 39.599999999999994 }",
+        "variable:financialReturns | systems/causal-loop+variable | 1179, -312 | CausalLoopVariablePayload { \"display\": \"Financial returns to policyholders\", \"id\": \"financialReturns\", \"width\": 289.8, \"height\": 39.599999999999994 }",
+        "variable:reputation | systems/causal-loop+variable | 1016, -95 | CausalLoopVariablePayload { \"display\": \"Reputation\", \"id\": \"reputation\", \"width\": 105, \"height\": 39.599999999999994 }",
+        "variable:adminExpenses | systems/causal-loop+variable | 1342, -152 | CausalLoopVariablePayload { \"display\": \"Administrative expenses\", \"id\": \"adminExpenses\", \"width\": 205.10000000000002, \"height\": 39.599999999999994 }",
+        "variable:expenseRatio | systems/causal-loop+variable | 1298, 179 | CausalLoopVariablePayload { \"display\": \"Expense ratio\", \"id\": \"expenseRatio\", \"width\": 128.10000000000002, \"height\": 39.599999999999994 }",
+        "variable:backOfficeCapacity | systems/causal-loop+variable | 1126, 76 | CausalLoopVariablePayload { \"display\": \"Back office capacity\", \"id\": \"backOfficeCapacity\", \"width\": 182, \"height\": 39.599999999999994 }",
+        "variable:backOfficeLoading | systems/causal-loop+variable | 739, 209 | CausalLoopVariablePayload { \"display\": \"Back office loading\", \"id\": \"backOfficeLoading\", \"width\": 174.3, \"height\": 39.599999999999994 }",
+        "link:individualCompensation|attrition | systems/causal-loop+link | -455.5, -338 | CausalLoopLinkPayload { \"fromElementId\": \"variable:individualCompensation\", \"toElementId\": \"variable:attrition\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\", \"delayed\": true, \"label\": \"printed\" }",
+        "link:attrition|recruits | systems/causal-loop+link | -763.5, -260.5 | CausalLoopLinkPayload { \"fromElementId\": \"variable:attrition\", \"toElementId\": \"variable:recruits\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"label\": \"printed\" }",
+        "link:attrition|salesPeople | systems/causal-loop+link | -631.5, -260.5 | CausalLoopLinkPayload { \"fromElementId\": \"variable:attrition\", \"toElementId\": \"variable:salesPeople\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\", \"label\": \"printed\" }",
+        "link:recruits|salesPeople | systems/causal-loop+link | -572, -217 | CausalLoopLinkPayload { \"fromElementId\": \"variable:recruits\", \"toElementId\": \"variable:salesPeople\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"label\": \"printed\" }",
+        "link:recruits|managementTime | systems/causal-loop+link | -697.5, -150.5 | CausalLoopLinkPayload { \"fromElementId\": \"variable:recruits\", \"toElementId\": \"variable:managementTime\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\", \"label\": \"printed\" }",
+        "link:managementTime|coachingQuality | systems/causal-loop+link | -669, -8 | CausalLoopLinkPayload { \"fromElementId\": \"variable:managementTime\", \"toElementId\": \"variable:coachingQuality\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"label\": \"printed\" }",
+        "link:attrition|salespersonSkills | systems/causal-loop+link | -871.5, -38 | CausalLoopLinkPayload { \"fromElementId\": \"variable:attrition\", \"toElementId\": \"variable:salespersonSkills\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\", \"delayed\": true }",
+        "link:coachingQuality|salespersonSkills | systems/causal-loop+link | -783.5, 148 | CausalLoopLinkPayload { \"fromElementId\": \"variable:coachingQuality\", \"toElementId\": \"variable:salespersonSkills\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
+        "link:recruitQuality|salespersonSkills | systems/causal-loop+link | -601, 199.5 | CausalLoopLinkPayload { \"fromElementId\": \"variable:recruitQuality\", \"toElementId\": \"variable:salespersonSkills\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
+        "link:salespersonSkills|managementSkill | systems/causal-loop+link | -717.5, 289 | CausalLoopLinkPayload { \"fromElementId\": \"variable:salespersonSkills\", \"toElementId\": \"variable:managementSkill\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
+        "link:managementSkill|coachingQuality | systems/causal-loop+link | -581, 209 | CausalLoopLinkPayload { \"fromElementId\": \"variable:managementSkill\", \"toElementId\": \"variable:coachingQuality\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
+        "link:managementSkill|recruitQuality | systems/causal-loop+link | -398.5, 260.5 | CausalLoopLinkPayload { \"fromElementId\": \"variable:managementSkill\", \"toElementId\": \"variable:recruitQuality\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
+        "link:individualCompensation|companyAttractiveness | systems/causal-loop+link | -114.5, -195.5 | CausalLoopLinkPayload { \"fromElementId\": \"variable:individualCompensation\", \"toElementId\": \"variable:companyAttractiveness\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
+        "link:companyAttractiveness|recruitQuality | systems/causal-loop+link | -211.5, 76 | CausalLoopLinkPayload { \"fromElementId\": \"variable:companyAttractiveness\", \"toElementId\": \"variable:recruitQuality\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
+        "link:individualCompensation|motivation | systems/causal-loop+link | -42, -247 | CausalLoopLinkPayload { \"fromElementId\": \"variable:individualCompensation\", \"toElementId\": \"variable:motivation\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
+        "link:motivation|salesProductivity | systems/causal-loop+link | 118.5, -51.50000000000001 | CausalLoopLinkPayload { \"fromElementId\": \"variable:motivation\", \"toElementId\": \"variable:salesProductivity\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
+        "link:salespersonSkills|salesProductivity | systems/causal-loop+link | -343.5, 123.5 | CausalLoopLinkPayload { \"fromElementId\": \"variable:salespersonSkills\", \"toElementId\": \"variable:salesProductivity\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
+        "link:salesProductivity|individualCompensation | systems/causal-loop+link | 72.5, -176.5 | CausalLoopLinkPayload { \"fromElementId\": \"variable:salesProductivity\", \"toElementId\": \"variable:individualCompensation\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
+        "link:attrition|orphanedPolicies | systems/causal-loop+link | -928.5, -266 | CausalLoopLinkPayload { \"fromElementId\": \"variable:attrition\", \"toElementId\": \"variable:orphanedPolicies\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
+        "link:orphanedPolicies|lapses | systems/causal-loop+link | -1159.5, -205 | CausalLoopLinkPayload { \"fromElementId\": \"variable:orphanedPolicies\", \"toElementId\": \"variable:lapses\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"delayed\": true }",
+        "link:lapses|clawback | systems/causal-loop+link | -1148.5, -376 | CausalLoopLinkPayload { \"fromElementId\": \"variable:lapses\", \"toElementId\": \"variable:clawback\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
+        "link:clawback|individualCompensation | systems/causal-loop+link | -550, -471 | CausalLoopLinkPayload { \"fromElementId\": \"variable:clawback\", \"toElementId\": \"variable:individualCompensation\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\" }",
+        "link:salespersonSkills|policyAppropriateness | systems/causal-loop+link | -1041, 127.5 | CausalLoopLinkPayload { \"fromElementId\": \"variable:salespersonSkills\", \"toElementId\": \"variable:policyAppropriateness\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
+        "link:policyAppropriateness|lapses | systems/causal-loop+link | -1223.5, -77.5 | CausalLoopLinkPayload { \"fromElementId\": \"variable:policyAppropriateness\", \"toElementId\": \"variable:lapses\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\" }",
+        "link:lapses|surrenderValue | systems/causal-loop+link | -1197, 165.5 | CausalLoopLinkPayload { \"fromElementId\": \"variable:lapses\", \"toElementId\": \"variable:surrenderValue\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\" }",
+        "link:surrenderValue|salesProductivity | systems/causal-loop+link | -438, 266 | CausalLoopLinkPayload { \"fromElementId\": \"variable:surrenderValue\", \"toElementId\": \"variable:salesProductivity\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
+        "link:salespersonSkills|highNetWorth | systems/causal-loop+link | -387.5, 418 | CausalLoopLinkPayload { \"fromElementId\": \"variable:salespersonSkills\", \"toElementId\": \"variable:highNetWorth\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
+        "link:highNetWorth|caseSize | systems/causal-loop+link | 591.5, 499.5 | CausalLoopLinkPayload { \"fromElementId\": \"variable:highNetWorth\", \"toElementId\": \"variable:caseSize\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
+        "link:caseSize|salesProductivity | systems/causal-loop+link | 635.5, 205 | CausalLoopLinkPayload { \"fromElementId\": \"variable:caseSize\", \"toElementId\": \"variable:salesProductivity\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
+        "link:caseSize|expenseRatio | systems/causal-loop+link | 1168, 285 | CausalLoopLinkPayload { \"fromElementId\": \"variable:caseSize\", \"toElementId\": \"variable:expenseRatio\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\" }",
+        "link:salesPeople|sales | systems/causal-loop+link | 39.5, -171 | CausalLoopLinkPayload { \"fromElementId\": \"variable:salesPeople\", \"toElementId\": \"variable:sales\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"label\": \"printed\" }",
+        "link:salesProductivity|sales | systems/causal-loop+link | 376, -53.00000000000001 | CausalLoopLinkPayload { \"fromElementId\": \"variable:salesProductivity\", \"toElementId\": \"variable:sales\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"label\": \"printed\" }",
+        "link:individualCompensation|lowerCommissions | systems/causal-loop+link | 127.5, -495.5 | CausalLoopLinkPayload { \"fromElementId\": \"variable:individualCompensation\", \"toElementId\": \"variable:lowerCommissions\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
+        "link:lowerCommissions|salesforceCosts | systems/causal-loop+link | 556.5, -632.5 | CausalLoopLinkPayload { \"fromElementId\": \"variable:lowerCommissions\", \"toElementId\": \"variable:salesforceCosts\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\" }",
+        "link:salesPeople|salesforceCosts | systems/causal-loop+link | 165, -431.5 | CausalLoopLinkPayload { \"fromElementId\": \"variable:salesPeople\", \"toElementId\": \"variable:salesforceCosts\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"label\": \"printed\" }",
+        "link:salesforceCosts|profits | systems/causal-loop+link | 842.5, -594.5 | CausalLoopLinkPayload { \"fromElementId\": \"variable:salesforceCosts\", \"toElementId\": \"variable:profits\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\" }",
+        "link:sales|profits | systems/causal-loop+link | 717, -334 | CausalLoopLinkPayload { \"fromElementId\": \"variable:sales\", \"toElementId\": \"variable:profits\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"label\": \"printed\" }",
+        "link:sales|capital | systems/causal-loop+link | 734.5, -258 | CausalLoopLinkPayload { \"fromElementId\": \"variable:sales\", \"toElementId\": \"variable:capital\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\", \"label\": \"printed: new business consumes capital\" }",
+        "link:profits|capital | systems/causal-loop+link | 932.5, -467 | CausalLoopLinkPayload { \"fromElementId\": \"variable:profits\", \"toElementId\": \"variable:capital\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
+        "link:capital|solvencyMargin | systems/causal-loop+link | 789.5, -334 | CausalLoopLinkPayload { \"fromElementId\": \"variable:capital\", \"toElementId\": \"variable:solvencyMargin\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
+        "link:solvencyMargin|sales | systems/causal-loop+link | 574, -201 | CausalLoopLinkPayload { \"fromElementId\": \"variable:solvencyMargin\", \"toElementId\": \"variable:sales\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
+        "link:solvencyMargin|portfolioMismatch | systems/causal-loop+link | 514.5, -319 | CausalLoopLinkPayload { \"fromElementId\": \"variable:solvencyMargin\", \"toElementId\": \"variable:portfolioMismatch\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"label\": \"printed\" }",
+        "link:portfolioMismatch|investmentPerformance | systems/causal-loop+link | 499, -450.5 | CausalLoopLinkPayload { \"fromElementId\": \"variable:portfolioMismatch\", \"toElementId\": \"variable:investmentPerformance\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"delayed\": true, \"label\": \"printed\" }",
+        "link:investmentPerformance|profits | systems/causal-loop+link | 756.5, -541.5 | CausalLoopLinkPayload { \"fromElementId\": \"variable:investmentPerformance\", \"toElementId\": \"variable:profits\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
+        "link:profits|financialReturns | systems/causal-loop+link | 1047, -427.5 | CausalLoopLinkPayload { \"fromElementId\": \"variable:profits\", \"toElementId\": \"variable:financialReturns\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
+        "link:financialReturns|reputation | systems/causal-loop+link | 1097.5, -203.5 | CausalLoopLinkPayload { \"fromElementId\": \"variable:financialReturns\", \"toElementId\": \"variable:reputation\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"delayed\": true }",
+        "link:reputation|salesProductivity | systems/causal-loop+link | 624.5, -38 | CausalLoopLinkPayload { \"fromElementId\": \"variable:reputation\", \"toElementId\": \"variable:salesProductivity\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
+        "link:sales|backOfficeLoading | systems/causal-loop+link | 629, 41.99999999999999 | CausalLoopLinkPayload { \"fromElementId\": \"variable:sales\", \"toElementId\": \"variable:backOfficeLoading\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"label\": \"printed\" }",
+        "link:backOfficeCapacity|backOfficeLoading | systems/causal-loop+link | 932.5, 142.5 | CausalLoopLinkPayload { \"fromElementId\": \"variable:backOfficeCapacity\", \"toElementId\": \"variable:backOfficeLoading\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\", \"label\": \"printed\" }",
+        "link:backOfficeLoading|sellingTime | systems/causal-loop+link | 556.5, 279.5 | CausalLoopLinkPayload { \"fromElementId\": \"variable:backOfficeLoading\", \"toElementId\": \"variable:sellingTime\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\", \"label\": \"printed\" }",
+        "link:sellingTime|salesProductivity | systems/causal-loop+link | 303.5, 184.5 | CausalLoopLinkPayload { \"fromElementId\": \"variable:sellingTime\", \"toElementId\": \"variable:salesProductivity\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"label\": \"printed\" }",
+        "link:backOfficeCapacity|adminExpenses | systems/causal-loop+link | 1234, -38 | CausalLoopLinkPayload { \"fromElementId\": \"variable:backOfficeCapacity\", \"toElementId\": \"variable:adminExpenses\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"label\": \"printed\" }",
+        "link:adminExpenses|profits | systems/causal-loop+link | 1128.5, -347.5 | CausalLoopLinkPayload { \"fromElementId\": \"variable:adminExpenses\", \"toElementId\": \"variable:profits\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\", \"label\": \"printed\" }",
+        "link:adminExpenses|expenseRatio | systems/causal-loop+link | 1320, 13.5 | CausalLoopLinkPayload { \"fromElementId\": \"variable:adminExpenses\", \"toElementId\": \"variable:expenseRatio\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"label\": \"printed\" }",
+        "link:expenseRatio|reputation | systems/causal-loop+link | 1157, 42 | CausalLoopLinkPayload { \"fromElementId\": \"variable:expenseRatio\", \"toElementId\": \"variable:reputation\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\", \"delayed\": true }",
+        "loop:R1 | systems/causal-loop+loop | -848.4, -331.2 | CausalLoopLoopPayload { \"identifier\": \"R1\", \"name\": \"Orphaned policies claw back pay\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:attrition\", \"variable:orphanedPolicies\", \"variable:lapses\", \"variable:clawback\", \"variable:individualCompensation\" ] }",
+        "loop:R2 | systems/causal-loop+loop | -520, -94.57142857142857 | CausalLoopLoopPayload { \"identifier\": \"R2\", \"name\": \"Recruits dilute coaching\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:attrition\", \"variable:recruits\", \"variable:managementTime\", \"variable:coachingQuality\", \"variable:salespersonSkills\", \"variable:salesProductivity\", \"variable:individualCompensation\" ] }",
+        "loop:B1 | systems/causal-loop+loop | 699.3333333333334, -264.3333333333333 | CausalLoopLoopPayload { \"identifier\": \"B1\", \"name\": \"New business strains capital\", \"computed\": \"LOOP_POLARITY_PROTO_BALANCING\", \"memberElementIds\": [ \"variable:sales\", \"variable:capital\", \"variable:solvencyMargin\" ] }",
+        "loop:B2 | systems/causal-loop+loop | 466.25, 113.25 | CausalLoopLoopPayload { \"identifier\": \"B2\", \"name\": \"Administration crowds out selling\", \"computed\": \"LOOP_POLARITY_PROTO_BALANCING\", \"memberElementIds\": [ \"variable:sales\", \"variable:backOfficeLoading\", \"variable:sellingTime\", \"variable:salesProductivity\" ] }",
+        "loop:R3 | systems/causal-loop+loop | -684.3333333333334, -92.33333333333333 | CausalLoopLoopPayload { \"identifier\": \"R3\", \"name\": \"Orphaned lapses cost the surrender offer\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:attrition\", \"variable:orphanedPolicies\", \"variable:lapses\", \"variable:surrenderValue\", \"variable:salesProductivity\", \"variable:individualCompensation\" ] }",
+        "loop:B3 | systems/causal-loop+loop | 256.1666666666667, -209.5 | CausalLoopLoopPayload { \"identifier\": \"B3\", \"name\": \"Recruiting costs slow sales and free selling time\", \"computed\": \"LOOP_POLARITY_PROTO_BALANCING\", \"memberElementIds\": [ \"variable:attrition\", \"variable:recruits\", \"variable:salesPeople\", \"variable:salesforceCosts\", \"variable:profits\", \"variable:capital\", \"variable:solvencyMargin\", \"variable:sales\", \"variable:backOfficeLoading\", \"variable:sellingTime\", \"variable:salesProductivity\", \"variable:individualCompensation\" ] }",
+        "loop:R4 | systems/causal-loop+loop | 228.66666666666666, -298.55555555555554 | CausalLoopLoopPayload { \"identifier\": \"R4\", \"name\": \"Recruiting costs dent the reputation\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:attrition\", \"variable:recruits\", \"variable:salesPeople\", \"variable:salesforceCosts\", \"variable:profits\", \"variable:financialReturns\", \"variable:reputation\", \"variable:salesProductivity\", \"variable:individualCompensation\" ] }",
+        "loop:B4 | systems/causal-loop+loop | 200.77777777777777, -240.66666666666666 | CausalLoopLoopPayload { \"identifier\": \"B4\", \"name\": \"Recruits' sales lift the reputation\", \"computed\": \"LOOP_POLARITY_PROTO_BALANCING\", \"memberElementIds\": [ \"variable:attrition\", \"variable:recruits\", \"variable:salesPeople\", \"variable:sales\", \"variable:profits\", \"variable:financialReturns\", \"variable:reputation\", \"variable:salesProductivity\", \"variable:individualCompensation\" ] }",
+        "loop:R5 | systems/causal-loop+loop | 337.2307692307692, -287.3076923076923 | CausalLoopLoopPayload { \"identifier\": \"R5\", \"name\": \"Recruits' sales strain the portfolio\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:attrition\", \"variable:recruits\", \"variable:salesPeople\", \"variable:sales\", \"variable:capital\", \"variable:solvencyMargin\", \"variable:portfolioMismatch\", \"variable:investmentPerformance\", \"variable:profits\", \"variable:financialReturns\", \"variable:reputation\", \"variable:salesProductivity\", \"variable:individualCompensation\" ] }",
+        "loop:R6 | systems/causal-loop+loop | -23.75, -82.125 | CausalLoopLoopPayload { \"identifier\": \"R6\", \"name\": \"Recruits' sales load the back office\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:attrition\", \"variable:recruits\", \"variable:salesPeople\", \"variable:sales\", \"variable:backOfficeLoading\", \"variable:sellingTime\", \"variable:salesProductivity\", \"variable:individualCompensation\" ] }",
+        "loop:R7 | systems/causal-loop+loop | -814.6666666666666, -156.22222222222223 | CausalLoopLoopPayload { \"identifier\": \"R7\", \"name\": \"Thin coaching sells lapsing policies\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:attrition\", \"variable:recruits\", \"variable:managementTime\", \"variable:coachingQuality\", \"variable:salespersonSkills\", \"variable:policyAppropriateness\", \"variable:lapses\", \"variable:clawback\", \"variable:individualCompensation\" ] }",
+        "loop:R8 | systems/causal-loop+loop | -719.6, -30.4 | CausalLoopLoopPayload { \"identifier\": \"R8\", \"name\": \"Thin coaching costs the surrender offer\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:attrition\", \"variable:recruits\", \"variable:managementTime\", \"variable:coachingQuality\", \"variable:salespersonSkills\", \"variable:policyAppropriateness\", \"variable:lapses\", \"variable:surrenderValue\", \"variable:salesProductivity\", \"variable:individualCompensation\" ] }",
+        "loop:R9 | systems/causal-loop+loop | -273, 37.44444444444444 | CausalLoopLoopPayload { \"identifier\": \"R9\", \"name\": \"Thin coaching shrinks the cases\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:attrition\", \"variable:recruits\", \"variable:managementTime\", \"variable:coachingQuality\", \"variable:salespersonSkills\", \"variable:highNetWorth\", \"variable:caseSize\", \"variable:salesProductivity\", \"variable:individualCompensation\" ] }",
+        "loop:R10 | systems/causal-loop+loop | -13, 38.27272727272727 | CausalLoopLoopPayload { \"identifier\": \"R10\", \"name\": \"Thin coaching raises the expense ratio\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:attrition\", \"variable:recruits\", \"variable:managementTime\", \"variable:coachingQuality\", \"variable:salespersonSkills\", \"variable:highNetWorth\", \"variable:caseSize\", \"variable:expenseRatio\", \"variable:reputation\", \"variable:salesProductivity\", \"variable:individualCompensation\" ] }",
+        "loop:R11 | systems/causal-loop+loop | 343.45454545454544, -208.8181818181818 | CausalLoopLoopPayload { \"identifier\": \"R11\", \"name\": \"Leavers cut costs and selling time\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:attrition\", \"variable:salesPeople\", \"variable:salesforceCosts\", \"variable:profits\", \"variable:capital\", \"variable:solvencyMargin\", \"variable:sales\", \"variable:backOfficeLoading\", \"variable:sellingTime\", \"variable:salesProductivity\", \"variable:individualCompensation\" ] }",
+        "loop:B5 | systems/causal-loop+loop | 345.25, -308.75 | CausalLoopLoopPayload { \"identifier\": \"B5\", \"name\": \"Leavers cut costs and lift returns\", \"computed\": \"LOOP_POLARITY_PROTO_BALANCING\", \"memberElementIds\": [ \"variable:attrition\", \"variable:salesPeople\", \"variable:salesforceCosts\", \"variable:profits\", \"variable:financialReturns\", \"variable:reputation\", \"variable:salesProductivity\", \"variable:individualCompensation\" ] }",
+        "loop:R12 | systems/causal-loop+loop | 313.875, -243.625 | CausalLoopLoopPayload { \"identifier\": \"R12\", \"name\": \"Leavers cut sales and returns\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:attrition\", \"variable:salesPeople\", \"variable:sales\", \"variable:profits\", \"variable:financialReturns\", \"variable:reputation\", \"variable:salesProductivity\", \"variable:individualCompensation\" ] }",
+        "loop:B6 | systems/causal-loop+loop | 424, -293.1666666666667 | CausalLoopLoopPayload { \"identifier\": \"B6\", \"name\": \"Leavers ease the portfolio\", \"computed\": \"LOOP_POLARITY_PROTO_BALANCING\", \"memberElementIds\": [ \"variable:attrition\", \"variable:salesPeople\", \"variable:sales\", \"variable:capital\", \"variable:solvencyMargin\", \"variable:portfolioMismatch\", \"variable:investmentPerformance\", \"variable:profits\", \"variable:financialReturns\", \"variable:reputation\", \"variable:salesProductivity\", \"variable:individualCompensation\" ] }",
+        "loop:B7 | systems/causal-loop+loop | 73.42857142857143, -62.857142857142854 | CausalLoopLoopPayload { \"identifier\": \"B7\", \"name\": \"Leavers ease the back office\", \"computed\": \"LOOP_POLARITY_PROTO_BALANCING\", \"memberElementIds\": [ \"variable:attrition\", \"variable:salesPeople\", \"variable:sales\", \"variable:backOfficeLoading\", \"variable:sellingTime\", \"variable:salesProductivity\", \"variable:individualCompensation\" ] }",
+        "loop:R13 | systems/causal-loop+loop | -881.6666666666666, -195.5 | CausalLoopLoopPayload { \"identifier\": \"R13\", \"name\": \"Lost skills sell lapsing policies\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:attrition\", \"variable:salespersonSkills\", \"variable:policyAppropriateness\", \"variable:lapses\", \"variable:clawback\", \"variable:individualCompensation\" ] }",
+        "loop:R14 | systems/causal-loop+loop | -736.2857142857143, -10.142857142857142 | CausalLoopLoopPayload { \"identifier\": \"R14\", \"name\": \"Lost skills cost the surrender offer\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:attrition\", \"variable:salespersonSkills\", \"variable:policyAppropriateness\", \"variable:lapses\", \"variable:surrenderValue\", \"variable:salesProductivity\", \"variable:individualCompensation\" ] }",
+        "loop:R15 | systems/causal-loop+loop | -399.5, -107.25 | CausalLoopLoopPayload { \"identifier\": \"R15\", \"name\": \"Skills leave with the people\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:attrition\", \"variable:salespersonSkills\", \"variable:salesProductivity\", \"variable:individualCompensation\" ] }",
+        "loop:R16 | systems/causal-loop+loop | -69.16666666666667, 95 | CausalLoopLoopPayload { \"identifier\": \"R16\", \"name\": \"Lost skills shrink the cases\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:attrition\", \"variable:salespersonSkills\", \"variable:highNetWorth\", \"variable:caseSize\", \"variable:salesProductivity\", \"variable:individualCompensation\" ] }",
+        "loop:R17 | systems/causal-loop+loop | 237.375, 81.75 | CausalLoopLoopPayload { \"identifier\": \"R17\", \"name\": \"Lost skills raise the expense ratio\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:attrition\", \"variable:salespersonSkills\", \"variable:highNetWorth\", \"variable:caseSize\", \"variable:expenseRatio\", \"variable:reputation\", \"variable:salesProductivity\", \"variable:individualCompensation\" ] }",
+        "loop:B8 | systems/causal-loop+loop | 538.4, -239.5 | CausalLoopLoopPayload { \"identifier\": \"B8\", \"name\": \"Commissions fall as pay rises\", \"computed\": \"LOOP_POLARITY_PROTO_BALANCING\", \"memberElementIds\": [ \"variable:backOfficeLoading\", \"variable:sellingTime\", \"variable:salesProductivity\", \"variable:individualCompensation\", \"variable:lowerCommissions\", \"variable:salesforceCosts\", \"variable:profits\", \"variable:capital\", \"variable:solvencyMargin\", \"variable:sales\" ] }",
+        "loop:R18 | systems/causal-loop+loop | 753.25, -334 | CausalLoopLoopPayload { \"identifier\": \"R18\", \"name\": \"Profitable sales build capital\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:capital\", \"variable:solvencyMargin\", \"variable:sales\", \"variable:profits\" ] }",
+        "loop:R19 | systems/causal-loop+loop | 698.4, -422.4 | CausalLoopLoopPayload { \"identifier\": \"R19\", \"name\": \"Mismatch earns on capital\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:capital\", \"variable:solvencyMargin\", \"variable:portfolioMismatch\", \"variable:investmentPerformance\", \"variable:profits\" ] }",
+        "loop:B9 | systems/causal-loop+loop | 715.4444444444445, -291.6666666666667 | CausalLoopLoopPayload { \"identifier\": \"B9\", \"name\": \"Returns sell policies\", \"computed\": \"LOOP_POLARITY_PROTO_BALANCING\", \"memberElementIds\": [ \"variable:capital\", \"variable:solvencyMargin\", \"variable:portfolioMismatch\", \"variable:investmentPerformance\", \"variable:profits\", \"variable:financialReturns\", \"variable:reputation\", \"variable:salesProductivity\", \"variable:sales\" ] }",
+        "loop:R20 | systems/causal-loop+loop | -2.142857142857143, 146.57142857142858 | CausalLoopLoopPayload { \"identifier\": \"R20\", \"name\": \"Large cases attract good recruits\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:caseSize\", \"variable:salesProductivity\", \"variable:individualCompensation\", \"variable:companyAttractiveness\", \"variable:recruitQuality\", \"variable:salespersonSkills\", \"variable:highNetWorth\" ] }",
+        "loop:R21 | systems/causal-loop+loop | 255.44444444444446, 123.33333333333333 | CausalLoopLoopPayload { \"identifier\": \"R21\", \"name\": \"Large cases keep expenses low\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:caseSize\", \"variable:expenseRatio\", \"variable:reputation\", \"variable:salesProductivity\", \"variable:individualCompensation\", \"variable:companyAttractiveness\", \"variable:recruitQuality\", \"variable:salespersonSkills\", \"variable:highNetWorth\" ] }",
+        "loop:R22 | systems/causal-loop+loop | -698.5714285714286, -102.42857142857143 | CausalLoopLoopPayload { \"identifier\": \"R22\", \"name\": \"Clawback deters good recruits\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:clawback\", \"variable:individualCompensation\", \"variable:companyAttractiveness\", \"variable:recruitQuality\", \"variable:salespersonSkills\", \"variable:policyAppropriateness\", \"variable:lapses\" ] }",
+        "loop:R23 | systems/causal-loop+loop | -694, 215.33333333333334 | CausalLoopLoopPayload { \"identifier\": \"R23\", \"name\": \"Skilled managers coach\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:coachingQuality\", \"variable:salespersonSkills\", \"variable:managementSkill\" ] }",
+        "loop:R24 | systems/causal-loop+loop | -594.25, 48.125 | CausalLoopLoopPayload { \"identifier\": \"R24\", \"name\": \"Good recruits keep policies in force\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:companyAttractiveness\", \"variable:recruitQuality\", \"variable:salespersonSkills\", \"variable:policyAppropriateness\", \"variable:lapses\", \"variable:surrenderValue\", \"variable:salesProductivity\", \"variable:individualCompensation\" ] }",
+        "loop:R25 | systems/causal-loop+loop | -239.6, 5.4 | CausalLoopLoopPayload { \"identifier\": \"R25\", \"name\": \"Pay attracts good recruits\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:companyAttractiveness\", \"variable:recruitQuality\", \"variable:salespersonSkills\", \"variable:salesProductivity\", \"variable:individualCompensation\" ] }",
+        "loop:R26 | systems/causal-loop+loop | 624, -366.85714285714283 | CausalLoopLoopPayload { \"identifier\": \"R26\", \"name\": \"Lower commissions fund returns\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:financialReturns\", \"variable:reputation\", \"variable:salesProductivity\", \"variable:individualCompensation\", \"variable:lowerCommissions\", \"variable:salesforceCosts\", \"variable:profits\" ] }",
+        "loop:R27 | systems/causal-loop+loop | 772.4, -211.2 | CausalLoopLoopPayload { \"identifier\": \"R27\", \"name\": \"Reputation sells\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:financialReturns\", \"variable:reputation\", \"variable:salesProductivity\", \"variable:sales\", \"variable:profits\" ] }",
+        "loop:R28 | systems/causal-loop+loop | 49.666666666666664, -158.33333333333334 | CausalLoopLoopPayload { \"identifier\": \"R28\", \"name\": \"Pay motivates\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:individualCompensation\", \"variable:motivation\", \"variable:salesProductivity\" ] }",
+        "loop:R29 | systems/causal-loop+loop | -572.3333333333334, 249.66666666666666 | CausalLoopLoopPayload { \"identifier\": \"R29\", \"name\": \"Skilled managers recruit well\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:managementSkill\", \"variable:recruitQuality\", \"variable:salespersonSkills\" ] }"
+      ],
+      "edits": [
+        {
+          "do": "execute causal-loop.toggle-delay on link:individualCompensation|attrition",
+          "answer": "ok",
+          "hunks": [
+            "@70 -1 +\"link individualCompensation -> attrition - \\\"printed\\\"\\r\\n\""
+          ],
+          "sha256": "1ad3841e7c9127081d85f421f3360ba6ec611c820d071478d5416b5358cb7375"
+        },
+        {
+          "do": "execute causal-loop.flip-curvature on link:individualCompensation|attrition",
+          "answer": "ok",
+          "hunks": [
+            "@70 -1 +\"link individualCompensation -> attrition - flipped \\\"printed\\\"\\r\\n\""
+          ],
+          "sha256": "534ab6a5b6bb53acf30e9f07f4a62bb2cd3ffa09ca607c16a9566b5d72640721"
+        },
+        {
+          "do": "set link:individualCompensation|attrition causal-loop.link-label = \"Parity note\"",
+          "answer": "ok",
+          "hunks": [
+            "@70 -1 +\"link individualCompensation -> attrition - flipped \\\"Parity note\\\"\\r\\n\""
+          ],
+          "sha256": "ed2c6f18370f028175f156b44f5245b4c00767e0061b1a73d75c78281ea23a5f"
+        },
+        {
+          "do": "set link:individualCompensation|attrition causal-loop.link-weight = \"heavy\"",
+          "answer": "refused: 'heavy' is not a number. A weight is this link's starting strength in a flow page; leave it empty to remove it.",
+          "unchanged": true
+        },
+        {
+          "do": "set link:individualCompensation|attrition causal-loop.link-weight = \"1e21\"",
+          "answer": "ok",
+          "hunks": [
+            "@70 -1 +\"link individualCompensation -> attrition - flipped weight=1e+21 \\\"Parity note\\\"\\r\\n\""
+          ],
+          "sha256": "f1b1af23bde9a5d5f02f1355196e3066a254426775fb05eac852c4717d75551b"
+        },
+        {
+          "do": "describe link:individualCompensation|attrition",
+          "answer": "causal-loop.link-from | Cause (from) | \"individualCompensation\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity || causal-loop.link-to | Effect (to) | \"attrition\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity || causal-loop.link-label | Note | \"Parity note\" | Line | editable | group Identity || causal-loop.link-polarity | Polarity | \"negative\" | Choice | editable | group Causality | choices [\"positive\", \"negative\", \"unstated\"] || causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality || causal-loop.link-weight | Weight | \"1E+21\" | Line | editable | group Causality",
+          "unchanged": true
+        },
+        {
+          "do": "set link:individualCompensation|attrition causal-loop.link-weight = \"0.000001\"",
+          "answer": "ok",
+          "hunks": [
+            "@70 -1 +\"link individualCompensation -> attrition - flipped weight=0.000001 \\\"Parity note\\\"\\r\\n\""
+          ],
+          "sha256": "4f1319f75d8504361f91efb0cfc8484dc758f3268b6b2eb2a607a0cef90d001c"
+        },
+        {
+          "do": "set link:individualCompensation|attrition causal-loop.link-weight = \"\"",
+          "answer": "ok",
+          "hunks": [
+            "@70 -1 +\"link individualCompensation -> attrition - flipped \\\"Parity note\\\"\\r\\n\""
+          ],
+          "sha256": "ed2c6f18370f028175f156b44f5245b4c00767e0061b1a73d75c78281ea23a5f"
+        },
+        {
+          "do": "set link:individualCompensation|attrition causal-loop.link-polarity = \"sideways\"",
+          "answer": "refused: 'sideways' is not a polarity a link can state.",
+          "unchanged": true
+        },
+        {
+          "do": "set link:individualCompensation|attrition causal-loop.link-polarity = \"unstated\"",
+          "answer": "ok",
+          "hunks": [
+            "@70 -1 +\"link individualCompensation -> attrition flipped \\\"Parity note\\\"\\r\\n\""
+          ],
+          "sha256": "8f361c64ecd6af84f3957de8367515cd46414a27e96bdcf9dfdbe9922925b39e"
+        },
+        {
+          "do": "set link:individualCompensation|attrition causal-loop.link-delayed = \"true\"",
+          "answer": "ok",
+          "hunks": [
+            "@70 -1 +\"link individualCompensation -> attrition delayed flipped \\\"Parity note\\\"\\r\\n\""
+          ],
+          "sha256": "4904c98766833137c619e9a0574790f5ff334d6009328bf773f7065a672615bc"
+        },
+        {
+          "do": "set link:individualCompensation|attrition causal-loop.link-from = \"nobody\"",
+          "answer": "refused: 'causal-loop.link-from' cannot be edited on this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute causal-loop.make-positive on link:individualCompensation|attrition",
+          "answer": "ok",
+          "hunks": [
+            "@70 -1 +\"link individualCompensation -> attrition + delayed flipped \\\"Parity note\\\"\\r\\n\""
+          ],
+          "sha256": "d6f16033a3848b4ccf1355c24fa11ce463637f3b16a4fa4ac5ee145051bd828a"
+        },
+        {
+          "do": "execute causal-loop.make-negative on link:individualCompensation|attrition",
+          "answer": "ok",
+          "hunks": [
+            "@70 -1 +\"link individualCompensation -> attrition - delayed flipped \\\"Parity note\\\"\\r\\n\""
+          ],
+          "sha256": "a9f65ae774040a6b9d5f4cdb8630a6ac8a19b24fc4bb3e4d55243dcbaf894240"
+        },
+        {
+          "do": "execute causal-loop.make-negative on link:individualCompensation|attrition",
+          "answer": "ok",
+          "unchanged": true
+        },
+        {
+          "do": "execute causal-loop.rename-loop on loop:R1",
+          "answer": "asks: ContextInputRequest { Title = Rename loop, Icon = mdi-rename-outline, FieldLabel = Name, InitialValue = Orphaned policies claw back pay, ConfirmLabel = Apply, InlineLabelElementId = , CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "commit causal-loop.rename-loop on loop:R1 = \"Parity loop\"",
+          "answer": "ok",
+          "hunks": [
+            "@141 -1 +\"loop R1 \\\"Parity loop\\\" attrition orphanedPolicies lapses clawback individualCompensation\\r\\n\""
+          ],
+          "sha256": "fd688b51a749c0a9152733a3341a9a41dfdd2fec5cb1ee4d4c21bd2f614fc0d5"
+        },
+        {
+          "do": "set loop:R1 causal-loop.loop-name = \"Parity name\"",
+          "answer": "ok",
+          "hunks": [
+            "@141 -1 +\"loop R1 \\\"Parity name\\\" attrition orphanedPolicies lapses clawback individualCompensation\\r\\n\""
+          ],
+          "sha256": "904770bf94f2e3be4ca5cd5a93e643a05ab64be1c750593f26565d0488399794"
+        },
+        {
+          "do": "set loop:R1 causal-loop.loop-name = \"Has \\\"quote\\\"\"",
+          "answer": "refused: A label or loop name cannot hold a double quote, because it is written between double quotes.",
+          "unchanged": true
+        },
+        {
+          "do": "set loop:R1 causal-loop.loop-variables = \"attrition → orphanedPolicies → lapses → clawback → individualCompensation\"",
+          "answer": "ok",
+          "unchanged": true
+        },
+        {
+          "do": "set loop:R1 causal-loop.loop-variables = \"nobody → nowhere\"",
+          "answer": "refused: 'nobody → nowhere' is not a cycle this loop can run through: choose one the arrows form through its variables that no other loop claims.",
+          "unchanged": true
+        },
+        {
+          "do": "set loop:R1 causal-loop.loop-identifier = \"R2\"",
+          "answer": "refused: A loop of that identifier is already stated in this diagram.",
+          "unchanged": true
+        },
+        {
+          "do": "set loop:R1 causal-loop.loop-identifier = \"\"",
+          "answer": "refused: A name needs at least one character and no whitespace, because a statement is read as words on one line.",
+          "unchanged": true
+        },
+        {
+          "do": "set loop:R1 causal-loop.loop-identifier = \"B99\"",
+          "answer": "ok",
+          "hunks": [
+            "@141 -1 +\"loop B99 \\\"Parity name\\\" attrition orphanedPolicies lapses clawback individualCompensation\\r\\n\""
+          ],
+          "sha256": "41a644385bc7a95ec94a9a29215632890d3d6b0eabe5b5602397ebd71922df47"
+        },
+        {
+          "do": "execute causal-loop.rename-variable on variable:attrition",
+          "answer": "asks: ContextInputRequest { Title = Rename variable, Icon = mdi-rename-outline, FieldLabel = Name, InitialValue = Attrition, ConfirmLabel = Apply, InlineLabelElementId = variable:attrition, CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "validate causal-loop.rename-variable on variable:attrition = \"Say \\\"hi\\\"\"",
+          "answer": "rejected: A name needs at least one character, and cannot contain a quote or a line break.",
+          "unchanged": true
+        },
+        {
+          "do": "validate causal-loop.rename-variable on variable:attrition = \"\"",
+          "answer": "rejected: A name needs at least one character, and cannot contain a quote or a line break.",
+          "unchanged": true
+        },
+        {
+          "do": "commit causal-loop.rename-variable on variable:attrition = \"Parity renamed\"",
+          "answer": "ok",
+          "hunks": [
+            "@26 -1 +\"variable attrition \\\"Parity renamed\\\"\\r\\n\""
+          ],
+          "sha256": "99d0a09677ee67bc3afe73c5cb437a7a38f050f1bd73d31ab45b55ad8e87beb1"
+        },
+        {
+          "do": "set variable:attrition causal-loop.variable-label = \"Say \\\"hi\\\"\"",
+          "answer": "refused: A label or loop name cannot hold a double quote, because it is written between double quotes.",
+          "unchanged": true
+        },
+        {
+          "do": "describe variable:attrition",
+          "answer": "causal-loop.variable-label | Label | \"Parity renamed\" | Line | editable | group Identity || causal-loop.variable-id | Identifier | \"attrition\" | Line | editable | group Identity || causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page || causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page",
+          "unchanged": true
+        },
+        {
+          "do": "set variable:attrition causal-loop.variable-label = \"Parity label\"",
+          "answer": "ok",
+          "hunks": [
+            "@26 -1 +\"variable attrition \\\"Parity label\\\"\\r\\n\""
+          ],
+          "sha256": "375261c678ac921f72dae8cd1eb97b7f8e7ef12a2d9feab7835fdfeb95a80232"
+        },
+        {
+          "do": "validate causal-loop.add-link on variable:attrition = \"nobody\"",
+          "answer": "rejected: 'nobody' is not a variable in this diagram.",
+          "unchanged": true
+        },
+        {
+          "do": "validate causal-loop.add-link on variable:attrition = \"recruits\"",
+          "answer": "accepted",
+          "unchanged": true
+        },
+        {
+          "do": "execute causal-loop.add-link on variable:attrition",
+          "answer": "asks: ContextInputRequest { Title = Add link, Icon = mdi-arrow-right-thin, FieldLabel = To variable, InitialValue = , ConfirmLabel = Apply, InlineLabelElementId = , CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "commit causal-loop.add-link on variable:attrition = \"recruits\"",
+          "answer": "refused: That link is already stated in this diagram.",
+          "unchanged": true
+        },
+        {
+          "do": "commit causal-loop.add-link on variable:attrition = \"nobody\"",
+          "answer": "refused: No variable of that name is in this diagram, so there is nothing to change.",
+          "unchanged": true
+        },
+        {
+          "do": "execute causal-loop.add-loop on variable:attrition",
+          "answer": "asks: ContextInputRequest { Title = Claim a loop, Icon = mdi-sync, FieldLabel = Identifier, InitialValue = R1, ConfirmLabel = Apply, InlineLabelElementId = , CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "validate causal-loop.add-loop on variable:attrition = \"B99\"",
+          "answer": "rejected: A loop of that identifier is already stated in this diagram.",
+          "unchanged": true
+        },
+        {
+          "do": "commit causal-loop.add-loop on variable:attrition = \"R99\"",
+          "answer": "ok",
+          "hunks": [
+            "@185 -0 +\"loop R99 \\\"R99\\\" attrition salespersonSkills salesProductivity individualCompensation\\r\\n\""
+          ],
+          "sha256": "18b1856e92d4a40255335a2b9f6cddf09e9634bd4d8c47ea9d2d98fd26f335cb"
+        },
+        {
+          "do": "set variable:attrition causal-loop.variable-id = \"recruits\"",
+          "answer": "refused: A variable of that name is already declared in this diagram.",
+          "unchanged": true
+        },
+        {
+          "do": "set variable:attrition causal-loop.variable-id = \"has space\"",
+          "answer": "refused: A name needs at least one character and no whitespace, because a statement is read as words on one line.",
+          "unchanged": true
+        },
+        {
+          "do": "set variable:attrition causal-loop.variable-id = \"\"",
+          "answer": "refused: A name needs at least one character and no whitespace, because a statement is read as words on one line.",
+          "unchanged": true
+        },
+        {
+          "do": "set variable:attrition causal-loop.variable-id = \"parityId\"",
+          "answer": "ok",
+          "hunks": [
+            "@26 -1 +\"variable parityId \\\"Parity label\\\"\\r\\n\"",
+            "@70 -3 +\"link individualCompensation -> parityId - delayed flipped \\\"Parity note\\\"\\r\\nlink parityId -> recruits + \\\"printed\\\"\\r\\nlink parityId -> salesPeople - \\\"printed\\\"\\r\\n\"",
+            "@76 -1 +\"link parityId -> salespersonSkills - delayed\\r\\n\"",
+            "@94 -1 +\"link parityId -> orphanedPolicies +\\r\\n\"",
+            "@141 -2 +\"loop B99 \\\"Parity name\\\" parityId orphanedPolicies lapses clawback individualCompensation\\r\\nloop R2 \\\"Recruits dilute coaching\\\" parityId recruits managementTime coachingQuality salespersonSkills salesProductivity individualCompensation\\r\\n\"",
+            "@151 -20 +\"loop R3 \\\"Orphaned lapses cost the surrender offer\\\" parityId orphanedPolicies lapses surrenderValue salesProductivity individualCompensation\\r\\nloop B3 \\\"Recruiting costs slow sales and free selling time\\\" parityId recruits salesPeople salesforceCosts profits capital solvencyMargin sales backOfficeLoading sellingTime salesProductivity individualCompensation\\r\\nloop R4 \\\"Recruiting costs dent the reputation\\\" parityId recruits salesPeople salesforceCosts profits financialReturns reputation salesProductivity individualCompensation\\r\\nloop B4 \\\"Recruits' sales lift the reputation\\\" parityId recruits salesPeople sales profits financialReturns reputation salesProductivity individualCompensation\\r\\nloop R5 \\\"Recruits' sales strain the portfolio\\\" parityId recruits salesPeople sales capital solvencyMargin portfolioMismatch investmentPerformance profits financialReturns reputation salesProductivity individualCompensation\\r\\nloop R6 \\\"Recruits' sales load the back office\\\" parityId recruits salesPeople sales backOfficeLoading sellingTime salesProductivity individualCompensation\\r\\nloop R7 \\\"Thin coaching sells lapsing policies\\\" parityId recruits managementTime coachingQuality salespersonSkills policyAppropriateness lapses clawback individualCompensation\\r\\nloop R8 \\\"Thin coaching costs the surrender offer\\\" parityId recruits managementTime coachingQuality salespersonSkills policyAppropriateness lapses surrenderValue salesProductivity individualCompensation\\r\\nloop R9 \\\"Thin coaching shrinks the cases\\\" parityId recruits managementTime coachingQuality salespersonSkills highNetWorth caseSize salesProductivity individualCompensation\\r\\nloop R10 \\\"Thin coaching raises the expense ratio\\\" parityId recruits managementTime coachingQuality salespersonSkills highNetWorth caseSize expenseRatio reputation salesProductivity individualCompensation\\r\\nloop R11 \\\"Leavers cut costs and selling time\\\" parityId salesPeople salesforceCosts profits capital solvencyMargin sales backOfficeLoading sellingTime salesProductivity individualCompensation\\r\\nloop B5 \\\"Leavers cut costs and lift returns\\\" parityId salesPeople salesforceCosts profits financialReturns reputation salesProductivity individualCompensation\\r\\nloop R12 \\\"Leavers cut sales and returns\\\" parityId salesPeople sales profits financialReturns reputation salesProductivity individualCompensation\\r\\nloop B6 \\\"Leavers ease the portfolio\\\" parityId salesPeople sales capital solvencyMargin portfolioMismatch investmentPerformance profits financialReturns reputation salesProductivity individualCompensation\\r\\nloop B7 \\\"Leavers ease the back office\\\" parityId salesPeople sales backOfficeLoading sellingTime salesProductivity individualCompensation\\r\\nloop R13 \\\"Lost skills sell lapsing policies\\\" parityId salespersonSkills policyAppropriateness lapses clawback individualCompensation\\r\\nloop R14 \\\"Lost skills cost the surrender offer\\\" parityId salespersonSkills policyAppropriateness lapses surrenderValue salesProductivity individualCompensation\\r\\nloop R15 \\\"Skills leave with the people\\\" parityId salespersonSkills salesProductivity individualCompensation\\r\\nloop R16 \\\"Lost skills shrink the cases\\\" parityId salespersonSkills highNetWorth caseSize salesProductivity individualCompensation\\r\\nloop R17 \\\"Lost skills raise the expense ratio\\\" parityId salespersonSkills highNetWorth caseSize expenseRatio reputation salesProductivity individualCompensation\\r\\n\"",
+            "@185 -1 +\"loop R99 \\\"R99\\\" parityId salespersonSkills salesProductivity individualCompensation\\r\\n\""
+          ],
+          "sha256": "0606384e572cb94b46ce7c24126a73be0504fe319fb9ee80b39c9ba3d4eff0b7"
+        },
+        {
+          "do": "execute causal-loop.connect on rel:recruits->parityId",
+          "answer": "ok",
+          "hunks": [
+            "@138 -0 +\"link recruits -> parityId +\\r\\n\"",
+            "@186 -0 +\"loop R100 \\\"\\\" parityId recruits\\r\\n\""
+          ],
+          "sha256": "950d6a04f85a490f0eb73ba4c850c84d41ebe0907876db1577ed25b607fb7be7"
+        },
+        {
+          "do": "execute causal-loop.connect on rel:recruits->parityId",
+          "answer": "refused: That link is already stated in this diagram.",
+          "unchanged": true
+        },
+        {
+          "do": "execute causal-loop.connect on rel:parityId->parityId",
+          "answer": "ok",
+          "hunks": [
+            "@139 -0 +\"link parityId -> parityId +\\r\\n\"",
+            "@188 -0 +\"loop R101 \\\"\\\" parityId\\r\\n\""
+          ],
+          "sha256": "8d6fb791ccabb79c994f82e7f8e17a461f7b47a347db865cbe41370d94736a5d"
+        },
+        {
+          "do": "execute causal-loop.connect on rel:parityId->nobody",
+          "answer": "refused: No variable of that name is in this diagram, so there is nothing to change.",
+          "unchanged": true
+        },
+        {
+          "do": "execute causal-loop.add-variable on new:240,160",
+          "answer": "ok",
+          "hunks": [
+            "@64 -0 +\"variable variable1 \\\"Variable 1\\\"\\r\\n\""
+          ],
+          "sha256": "23d1249a6bfa48c03727411ef322c769948eb6ef71a80323d77d62bac6582a5d",
+          "registration": {
+            "hunks": [
+              "@37 -0 +\"  variable:variable1: 240 160\\r\\n\""
+            ],
+            "sha256": "0419d53c6a15e640f587f17078117d306b802e253d73db470597bab9c353f6d4"
+          }
+        },
+        {
+          "do": "execute causal-loop.add-variable on ",
+          "answer": "ok",
+          "hunks": [
+            "@65 -0 +\"variable variable2 \\\"Variable 2\\\"\\r\\n\""
+          ],
+          "sha256": "b994e25d269274ea88be0ef1e6f2a0252b65684d64543f633b8e3f1e2c792144"
+        },
+        {
+          "do": "move variable:recruits to (100, 200)",
+          "answer": "ok",
+          "unchanged": true,
+          "registration": {
+            "hunks": [
+              "@27 -1 +\"  variable:recruits: 100 200\\r\\n\""
+            ],
+            "sha256": "9dfab911604d3d8191901c3a1933a3fae232e419612052b1464a20df12df2c60"
+          }
+        },
+        {
+          "do": "move link:individualCompensation|parityId to (100, 200)",
+          "answer": "refused: Only a variable can be moved; a link is drawn between its ends and a loop label among its members.",
+          "unchanged": true
+        },
+        {
+          "do": "execute causal-loop.arrange on new:240,160",
+          "answer": "ok",
+          "unchanged": true,
+          "registration": {
+            "hunks": [
+              "@3 -1 +\"  variable:adminExpenses: -995.716 1384.053\\r\\n\"",
+              "@5 -33 +\"  variable:backOfficeCapacity: -1399.862 1479.723\\r\\n  variable:backOfficeLoading: -1318.342 1081.244\\r\\n  variable:capital: -885.212 196.953\\r\\n  variable:caseSize: 113.585 1496.425\\r\\n  variable:clawback: 126.627 -695.34\\r\\n  variable:coachingQuality: 1598.125 902.799\\r\\n  variable:companyAttractiveness: 690.464 818.776\\r\\n  variable:expenseRatio: -407.89 1545.975\\r\\n  variable:financialReturns: -707.791 837.362\\r\\n  variable:highNetWorth: 613.089 1500.149\\r\\n  variable:individualCompensation: 220.571 33.939\\r\\n  variable:investmentPerformance: -1471.786 96.353\\r\\n  variable:lapses: 442.144 -250.245\\r\\n  variable:lowerCommissions: -141.648 87.915\\r\\n  variable:managementSkill: 1553.045 1401.23\\r\\n  variable:managementTime: 1642.506 277.879\\r\\n  variable:motivation: 133.492 557.065\\r\\n  variable:orphanedPolicies: 753.192 100.245\\r\\n  variable:parityId: 954.032 309.821\\r\\n  variable:policyAppropriateness: 873.659 644.449\\r\\n  variable:portfolioMismatch: -1430.86 -392.11\\r\\n  variable:profits: -1012.226 585.257\\r\\n  variable:recruitQuality: 1210.386 1393.469\\r\\n  variable:recruits: 1370.652 -61.133\\r\\n  variable:reputation: -255.02 1194.988\\r\\n  variable:sales: -739.119 449.521\\r\\n  variable:salesPeople: 476.983 218.223\\r\\n  variable:salesProductivity: 112.69 903.448\\r\\n  variable:salesforceCosts: -363.668 327.911\\r\\n  variable:salespersonSkills: 1093.41 1162.313\\r\\n  variable:sellingTime: -638.874 1036.025\\r\\n  variable:solvencyMargin: -1007.657 -250.367\\r\\n  variable:surrenderValue: 307.016 476.465\\r\\n  variable:variable1: 1233.142 -1249.686\\r\\n  variable:variable2: -946.837 -1375.382\\r\\n\""
+            ],
+            "sha256": "e57f36f1902dc59435bb8777abf8ecd2798853730103a12d4322b22b598309ac"
+          }
+        },
+        {
+          "do": "execute causal-loop.make-positive on parity:unknown",
+          "answer": "refused: That action does not apply to this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute causal-loop.remove-variable on parity:unknown",
+          "answer": "confirms: ContextConfirmationRequest { Title = Remove variable, Icon = mdi-delete-outline, Message = Remove ''?, ConfirmLabel = Remove, Danger = True }",
+          "unchanged": true
+        },
+        {
+          "do": "commit causal-loop.rename-variable on parity:unknown = \"Nobody\"",
+          "answer": "refused: 'causal-loop.rename-variable' does not apply to this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "set parity:unknown causal-loop.variable-label = \"Nobody\"",
+          "answer": "refused: 'causal-loop.variable-label' cannot be edited on this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.not-ours on parity:unknown",
+          "answer": "refused: That action is not this diagram's.",
+          "unchanged": true
+        },
+        {
+          "do": "execute causal-loop.remove-link on link:individualCompensation|parityId",
+          "answer": "ok",
+          "hunks": [
+            "@72 -1 +\"\""
+          ],
+          "sha256": "9e5992b30d5a9cde07c6c28144b39c18d14b492bde1ecf5ec181d87e257c57eb"
+        },
+        {
+          "do": "execute causal-loop.remove-loop on loop:B99",
+          "answer": "ok",
+          "hunks": [
+            "@144 -1 +\"\""
+          ],
+          "sha256": "9e5e562ec6727e5951b48a8b272d4aae925a347df3bd8d563d7692aee67fc1e1"
+        },
+        {
+          "do": "execute causal-loop.remove-variable on variable:parityId",
+          "answer": "confirms: ContextConfirmationRequest { Title = Remove variable, Icon = mdi-delete-outline, Message = Removing 'parityId' also removes the 30 links and loops that name it., ConfirmLabel = Remove, Danger = True }",
+          "unchanged": true
+        },
+        {
+          "do": "commit causal-loop.remove-variable on variable:parityId = \"\"",
+          "answer": "ok",
+          "hunks": [
+            "@25 -2 +\"\"",
+            "@72 -2 +\"\"",
+            "@77 -1 +\"\"",
+            "@95 -1 +\"\"",
+            "@139 -2 +\"\"",
+            "@144 -1 +\"\"",
+            "@153 -20 +\"\"",
+            "@187 -3 +\"\""
+          ],
+          "sha256": "6b45f7ee2faafc5679d5bc38cf41f51541f50d8eb04b4e74a3e758a3b49ff675"
+        }
+      ],
+      "undoAll": "27 undone; the original text is back"
+    },
+    {
       "document": "diagrams/causal-loop-diagram/examples/mental-health/mental-health.cld",
       "sha256": "047f1d21ef62fa14bd28c94d457cbbb6de6438c5bde59b21f73ded315fdf152a",
       "registration": "mental-health.adp, sha256 5a33260d6ecb4e78330f18c1be256c52be04cb23dca59dd1e094c35cbe1d4272",
@@ -9655,6 +11991,11 @@
       "document": "examples/diagrams/causal-loop-diagram/business-philosophy/business-philosophy.cld",
       "sha256": "1a18451e1b893c40de31a9f85f6f7bf1f56b60ed276592996503156f57c221c6",
       "sameAs": "diagrams/causal-loop-diagram/examples/business-philosophy/business-philosophy.cld"
+    },
+    {
+      "document": "examples/diagrams/causal-loop-diagram/life-insurance/life-insurance.cld",
+      "sha256": "11b91e21868089dd25fa1d4c8b0683acab1555ac246283b0b34d7bc0d5c4766e",
+      "sameAs": "diagrams/causal-loop-diagram/examples/life-insurance/life-insurance.cld"
     },
     {
       "document": "examples/diagrams/causal-loop-diagram/mental-health/mental-health.cld",
