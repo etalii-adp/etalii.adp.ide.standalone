@@ -12,7 +12,7 @@ namespace EtAlii.Adp.Diagram.CausalLoopDiagram.Tests.Parity;
 /// <remarks>
 /// <para>
 /// <b>The two find the same cycles and differ in their order.</b> On every document of the corpus the
-/// cycles are the same, and on two of them the order is not: the library sorts the successors of a
+/// cycles are the same, and on three of them the order is not: the library sorts the successors of a
 /// variable by model order, the tool walks them in the order the links are declared. The order decides
 /// the order of the unlabelled-loop findings and which cycle Claim a loop picks, so the module's finder
 /// stays as the plugin function and the difference is a finding for etalii.adp (the definition's
@@ -28,7 +28,7 @@ public class CausalLoopCyclesAgainstTheLibraryTests
     private const int Bound = 1000;
 
     /// <summary>The documents of the corpus on which the two orders differ.</summary>
-    private static readonly string[] OrderDiffers = ["lenient-spellings.cld", "weight-forms.cld"];
+    private static readonly string[] OrderDiffers = ["lenient-spellings.cld", "uk-cod-population.cld", "weight-forms.cld"];
 
     public static TheoryData<string> Documents() => [.. CausalLoopCorpus.Paths()];
 
