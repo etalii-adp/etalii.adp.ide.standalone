@@ -362,6 +362,9 @@ public record Slot
 
     public bool Flag { get; init; }
 
+    /// <summary>A <c>{node}</c> slot's <c>match</c> (FBL 0.9 §5.2): its named group <c>value</c> is the value, and its span the value's.</summary>
+    public string? Match { get; init; }
+
     public override string ToString() => Kind.ToString();
 }
 
@@ -412,6 +415,12 @@ public abstract record SlotKind
     public sealed record Continuation : SlotKind
     {
         public override string ToString() => "continuation";
+    }
+
+    /// <summary>The node or token of the grammar family that a selector relative to the entry reaches (FBL 0.9 §4.9).</summary>
+    public sealed record Node(string Selector) : SlotKind
+    {
+        public override string ToString() => $"node {Selector}";
     }
 
     /// <summary>A value computed by CEL, read-only.</summary>
