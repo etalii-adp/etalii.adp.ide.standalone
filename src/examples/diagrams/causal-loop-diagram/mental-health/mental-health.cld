@@ -140,7 +140,7 @@ link emotionExpression -> visibleComplaints +
 link legalFrame -> conversationalSafety - "employers may not discuss complaints"
 link insurerDependence -> selfDirection -
 link insurerDependence -> conversationalSafety -
-link ageing -> selfDirection -
+link ageing -> selfDirection - flipped
 
 # ---- invisibility ------------------------------------------------------------
 # Where it is not safe to talk, nobody opens up; complaints nobody voices are
