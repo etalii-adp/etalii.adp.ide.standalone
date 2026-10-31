@@ -2,6 +2,15 @@ using EtAlii.Adp.Specification.Cel;
 
 namespace EtAlii.Adp.Specification.Disl;
 
+/// <summary>What a commit to a row of the diagram's own form does: the attributes it assigns, or why it is refused.</summary>
+/// <param name="Assigned">The attributes in the order the row's write gives them, each in its stored form or null where it is forgotten.</param>
+/// <param name="Refusal">The sentence it is refused with; null when it is not.</param>
+public sealed record DiagramRowCommit(IReadOnlyList<(string Name, object? Value)> Assigned, string? Refusal)
+{
+    /// <summary>A commit refused for <paramref name="reason"/>.</summary>
+    public static DiagramRowCommit Refused(string reason) => new([], reason);
+}
+
 /// <summary>A dialog a params form asks a host to show (DISL 0.3 §7.5): its title, icon, confirming label and fields.</summary>
 /// <param name="Label">The form's <c>label</c>.</param>
 /// <param name="Icon">The form's <c>icon</c>, or null when it states none.</param>
@@ -113,6 +122,54 @@ public static class FormCommit
             ? bounds.Transaction
             : new DislTransaction([new DislChange.Set(self.Id, self.Type.Name, new Dictionary<string, object?>(StringComparer.Ordinal) { [declared.Name] = DislWrite.StoredForm(specification, self.Type.Name, declared.Name, values[declared.Name]) })], [], null);
     }
+
+    /// <summary>
+    /// What committing <paramref name="value"/> to the row <paramref name="row"/> of the diagram's own form does: refused with
+    /// the sentence the definition gives, or the attributes to assign, each in its stored form, or null where it is forgotten.
+    /// A diagram is no element a <c>set</c> can name, so a row's <c>write</c> here holds only <c>set</c> and <c>unset</c>.
+    /// </summary>
+    public static DiagramRowCommit DiagramRow(DislSpecification specification, DislDiagram diagram, string row, string value, DislEnv env, string usage = "inspector")
+    {
+        ArgumentNullException.ThrowIfNull(specification);
+        ArgumentNullException.ThrowIfNull(diagram);
+        ArgumentNullException.ThrowIfNull(row);
+        ArgumentNullException.ThrowIfNull(value);
+        ArgumentNullException.ThrowIfNull(env);
+
+        if (specification.Forms.ForDiagram(usage) is not { } form || Find(form.Items, row) is not { } item)
+        {
+            return DiagramRowCommit.Refused($"'{row}' is not a row of this diagram's form.");
+        }
+        var declared = item.Attribute is null ? null : specification.Metamodel.DiagramAttributes.GetValueOrDefault(item.Attribute);
+        var cel = env.ToCel();
+        var current = DiagramVariables(diagram, declared is null ? null : diagram.ValueOf(declared.Name), cel);
+        if (FormDerivation.ReadOnlyReason(specification, item, declared, current, env) is { } reason) return DiagramRowCommit.Refused(reason);
+
+        var text = DiagramVariables(diagram, value, cel);
+        if (item.Parse is not { } parse)
+        {
+            if (declared is null || item.Kind == "computed") return DiagramRowCommit.Refused($"'{row}' cannot be edited here.");
+            return DislValues.TryFromRead(value, declared, specification.Metamodel, out var written)
+                ? new DiagramRowCommit([(declared.Name, DislWrite.StoredOfType(specification, declared.Type, written))], null)
+                : DiagramRowCommit.Refused($"'{value}' is not a value of {declared.Name}.");
+        }
+        if (parse.NotAnObject is { } malformed) throw new InvalidOperationException(malformed);
+        if (parse.Accepts is { } accepts && !accepts.Holds(text))
+        {
+            return DiagramRowCommit.Refused(parse.Refusal?.Text(text, $"'{value}' cannot be written here.") ?? $"'{value}' cannot be written here.");
+        }
+        if (parse.Write is not { } write) return new DiagramRowCommit([], null);
+        var runner = new ActionRunner(specification, diagram, DislIds.Fixed()) { Typed = true };
+        var assigned = runner.DiagramAssignments(write, text);
+        return runner.Transaction.Refusal is { } refusal
+            ? DiagramRowCommit.Refused(refusal)
+            : new DiagramRowCommit(
+                [.. assigned.Select(pair => (pair.Name, specification.Metamodel.DiagramAttributes.TryGetValue(pair.Name, out var attribute) ? DislWrite.StoredOfType(specification, attribute.Type, pair.Value) : pair.Value))],
+                null);
+    }
+
+    private static Dictionary<string, object?> DiagramVariables(DislDiagram diagram, object? value, CelMap env) =>
+        new(StringComparer.Ordinal) { ["self"] = diagram, ["value"] = value, ["diagram"] = diagram, ["env"] = env };
 
     /// <summary>
     /// The dialog the params form <paramref name="form"/> asks a host to show for <paramref name="self"/> (null for a

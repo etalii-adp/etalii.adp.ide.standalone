@@ -123,6 +123,8 @@ internal static class HandWrittenCausalLoop
             [
                 new ContextPropertyDefinition(CausalLoopContextPropertyProvider.VariableLabelProperty, "Label", variable.Label, Group: IdentityGroup),
                 new ContextPropertyDefinition(CausalLoopContextPropertyProvider.VariableIdProperty, "Identifier", variable.Id, Group: IdentityGroup),
+                new ContextPropertyDefinition(CausalLoopContextPropertyProvider.VariableStartProperty, "Starting level", "0.5", Group: "Flow page"),
+                new ContextPropertyDefinition(CausalLoopContextPropertyProvider.VariablePushProperty, "Outside push", "0", Group: "Flow page"),
             ];
         }
 
@@ -358,7 +360,7 @@ internal static class HandWrittenCausalLoop
         if (propertyId == CausalLoopContextPropertyProvider.LinkWeightProperty && ParseWeight(value) is null && value.Trim().Length > 0)
         {
             return DiagramPropertyChange.Refused(
-                $"'{value}' is not a number. A weight is an annotation this diagram records and never evaluates; leave it empty to remove it.");
+                $"'{value}' is not a number. A weight is this link's starting strength in a flow page; leave it empty to remove it.");
         }
 
         if (propertyId == CausalLoopContextPropertyProvider.LinkPolarityProperty && ParsePolarity(value) is null)

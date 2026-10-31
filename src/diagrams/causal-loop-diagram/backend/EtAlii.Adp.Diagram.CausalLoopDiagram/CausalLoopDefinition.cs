@@ -266,6 +266,26 @@ internal static class CausalLoopDefinition
         return [.. Definition.Rows(element, Env).Select(row => WithNumbersShownAsTheToolShowsThem(element, row))];
     }
 
+    /// <summary>The property rows of the diagram itself in <paramref name="entry"/>, which an empty selection shows (etalii.adp spec 074, FR-025); none on a document that could not be read.</summary>
+    public static IReadOnlyList<ContextPropertyDefinition> DiagramRows(DocumentEntry<CausalLoopBody, CausalLoopModel> entry)
+    {
+        ArgumentNullException.ThrowIfNull(entry);
+        return entry.IsUsable ? [.. FormDerivation.Derive(Specification, DiagramOf(entry), Env, Ids).Select(DislDiagramDefinition.Row)] : [];
+    }
+
+    /// <summary>What committing <paramref name="value"/> to the row <paramref name="propertyId"/> of the diagram itself does: the definition's form item at commit.</summary>
+    public static DiagramRowCommit DiagramRow(CausalLoopBody body, string propertyId, string value)
+    {
+        ArgumentNullException.ThrowIfNull(body);
+        var attribute = Specification.Metamodel.DiagramAttributes.Keys.FirstOrDefault(name => Ids.PropertyId(name == "title" ? DiagramTitleRow : name) == propertyId);
+        return attribute is null
+            ? DiagramRowCommit.Refused($"'{propertyId}' is not a row of this diagram's form.")
+            : FormCommit.DiagramRow(Specification, body.Working(), attribute == "title" ? DiagramTitleRow : attribute, value, Env);
+    }
+
+    /// <summary>The id the diagram's form gives its title's row, since a loop's title row has the plain one.</summary>
+    private const string DiagramTitleRow = "diagramTitle";
+
     /// <summary>The confirmation removing the element <paramref name="elementId"/> asks for; null when it names none, or asks nothing.</summary>
     public static DislConfirmation? RemovalConfirmation(DocumentEntry<CausalLoopBody, CausalLoopModel> entry, string? elementId)
     {

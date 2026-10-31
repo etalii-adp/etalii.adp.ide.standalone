@@ -78,6 +78,26 @@ internal static class BindingChecker
         if (rule.Source is not null) CheckSlot(rule, rule.Source, context, at + "/source", problems);
         if (rule.Target is not null) CheckSlot(rule, rule.Target, context, at + "/target", problems);
         if (rule.Insert?.Constant is { } constant) CheckConstant(rule, constant, scalars, at + "/insert/constant", problems);
+        if (rule.Insert is { } insert && scalars) CheckMember(rule, insert, at + "/insert", problems);
+    }
+
+    /// <summary>
+    /// FBL 0.14 §14.1 step 6: an insert of the yaml or json family whose rule's <c>at</c> ends in a capture adds a member
+    /// named by its key, so the rule binds an attribute to that capture; and <c>refusals.key</c> and
+    /// <c>refusals.duplicate</c>, the sentences of that key, stand on no other insert.
+    /// </summary>
+    private static void CheckMember(Rule rule, InsertSettings insert, string pointer, List<LoadDiagnostic> problems)
+    {
+        if (rule.MemberCapture is { } capture)
+        {
+            if (rule.MemberKeyAttribute is null)
+            {
+                problems.Add(new LoadDiagnostic(pointer, LoadSeverity.Error, $"The rule '{rule.Name}' adds a member named by {{{capture}}}, and binds no attribute to that capture (FBL 0.14 14.1)."));
+            }
+            return;
+        }
+        if (insert.KeyRefusal is not null) problems.Add(new LoadDiagnostic(pointer + "/refusals/key", LoadSeverity.Error, $"The rule '{rule.Name}' adds no member, since its at does not end in a capture (FBL 0.14 14.1)."));
+        if (insert.DuplicateRefusal is not null) problems.Add(new LoadDiagnostic(pointer + "/refusals/duplicate", LoadSeverity.Error, $"The rule '{rule.Name}' adds no member, since its at does not end in a capture (FBL 0.14 14.1)."));
     }
 
     /// <summary>

@@ -181,6 +181,11 @@ internal sealed class JsonFamily(BodyText text, FblBinding binding, FblOptions o
         // FBL §5's place: {before: key} is not implemented here yet; refused, as the lines family does, rather than placed at the end.
         if (insert.Place == InsertPlace.Before) Plan.Refuse($"A {FamilyName} body cannot place a new entry '{WireName.Of(insert.Place)}'.");
         var container = insert.Container is null ? null : Container(insert.Container, request.Parent?.Entry, CapturesOf(plan));
+        if (MemberKey(request) is { } member)
+        {
+            InsertMember(plan, request, container, member);
+            return;
+        }
         string text;
         if (insert.Emit is { } emit)
         {
@@ -229,6 +234,50 @@ internal sealed class JsonFamily(BodyText text, FblBinding binding, FblOptions o
         }
         (int offset, string inserted) = NewMember(container.Value, text);
         plan.Add(SpliceOperation.InsertEntry, offset, offset, inserted);
+    }
+
+    /// <summary>
+    /// A new member of an object, named by its key (FBL 0.14 §6.2): the key as a json string, <c>: </c> and an object of
+    /// the entry's keys, one member per line as its siblings' are, after the rule's last member for <c>after-last</c>,
+    /// else after the last member or before the first, with the separator its place needs. A container that is missing
+    /// is not created here, as this family creates no missing level (FBL 0.4); and a skeleton, which is text of another
+    /// family's, is not written into a json body, so an insert that has one is refused rather than left incomplete.
+    /// </summary>
+    private void InsertMember(Plan plan, InsertRequest request, TreeEntry? container, string key)
+    {
+        var insert = request.Rule.Insert!;
+        if (container is null)
+        {
+            Plan.Refuse(insert.ContainerRefusal ?? $"The {Binding.Name} file has no {insert.Container} to add the {request.Rule.Type} to.");
+            return;
+        }
+        if (container.Value.Kind != ValueKind.Mapping) Plan.Refuse($"The {insert.Container} of this file is not an object a {request.Rule.Type} can be added to.");
+        if (insert.Skeleton is not null) Plan.Refuse($"A new {request.Rule.Type} is written with a skeleton, which a {FamilyName} file cannot hold.");
+        RefuseDuplicate(request, container.Value, key);
+        var siblings = container.Value.Entries;
+        var previous = Preceding(plan, request.Rule, insert.Place, siblings);
+        var members = InsertValues(request).Select(Member).ToList();
+        var text = Quote(key) + ": " + NewObject(members, previous ?? siblings.FirstOrDefault());
+        if (previous is null && siblings.Count > 0)
+        {
+            var first = siblings[0];
+            plan.Add(SpliceOperation.InsertEntry, first.Own.Start, first.Own.Start, text + (first.LineSpan is not null ? "," + NewlineAt(first.Own.Start) + Indentation(first.Indent) : ", "));
+            return;
+        }
+        if (previous is null)
+        {
+            plan.Add(SpliceOperation.InsertEntry, container.Value.Span.Start + 1, container.Value.Span.Start + 1, text);
+            return;
+        }
+        var separator = previous.LineSpan is not null ? "," + NewlineAt(previous.Own.End) + Indentation(previous.Indent) : ", ";
+        plan.Add(SpliceOperation.InsertEntry, previous.Own.End, previous.Own.End, separator + text);
+    }
+
+    /// <summary>The member a new one follows by <paramref name="place"/> (FBL 0.14 §6.2): none at the start or in an empty object.</summary>
+    private static TreeEntry? Preceding(Plan plan, Rule rule, InsertPlace place, List<TreeEntry> siblings)
+    {
+        if (siblings.Count == 0 || place == InsertPlace.Start) return null;
+        return place == InsertPlace.AfterLast ? siblings.LastOrDefault(s => plan.Reading.ClaimedBy(s) == rule.Name) ?? siblings[^1] : siblings[^1];
     }
 
     /// <summary>A member of a new entry's object: a key with its value, or a level of child (FBL 0.10 §6.2) as a member whose value is an object of what it holds.</summary>

@@ -1,9 +1,11 @@
 using System.Text;
 using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.History;
 using EtAlii.Adp.Specification.Fbl;
 using EtAlii.Adp.Specification.Fbl.Documents;
 using EtAlii.Adp.Specification.Fbl.History;
+using EtAlii.Adp.Specification.Fbl.Planning;
 using EtAlii.Adp.Specification.Fbl.Registration;
 
 namespace EtAlii.Adp.Diagram.Databricks;
@@ -18,6 +20,11 @@ namespace EtAlii.Adp.Diagram.Databricks;
 /// <b>Nothing in this module parses the file any more.</b> Each reading is the library's reading of the rules its
 /// origin admits; a job's and a pipeline's select one resource by the binding's capture for that origin, and the
 /// bundle's selects none.
+/// </para>
+/// <para>
+/// <b>Nothing in this module writes the file either</b>: every edit is a <see cref="ModelChange"/> the library plans as
+/// splices in the file's own conventions (FBL section 6, Requirement 6), in the reading the edit is made in, so a value
+/// changes only its span and comments, unknown keys and blank lines survive because no splice touches them.
 /// </para>
 /// <para>
 /// <b>A text read recently is not read again</b>: reading is a pure function of the bytes, so <see cref="Open"/> forks
@@ -40,8 +47,8 @@ internal sealed class DatabricksBody
     private static readonly RecentBodies Recent = new();
 
     private readonly OpenBody _body;
-    private readonly List<int> _lineStarts;
-    private readonly string[] _lines;
+    private List<int> _lineStarts;
+    private string[] _lines;
 
     private DatabricksBody(OpenBody body)
     {
@@ -50,8 +57,11 @@ internal sealed class DatabricksBody
         _lines = Encoding.UTF8.GetString(body.Bytes).Split('\n');
     }
 
-    /// <summary>The binding every Databricks file is read with.</summary>
+    /// <summary>The binding every Databricks file is read and written with.</summary>
     public static FblBinding Binding => LoadedBinding.Value;
+
+    /// <summary>The body's text after every change made to it.</summary>
+    public string Text => Encoding.UTF8.GetString(_body.Bytes);
 
     /// <summary>A body for <paramref name="text"/>. Never throws on content: a body that is not read reads as unreadable.</summary>
     public static DatabricksBody Open(string text)
@@ -90,6 +100,22 @@ internal sealed class DatabricksBody
     /// <summary>The reading of <paramref name="origin"/> that selects <paramref name="resource"/>, or the first of its capture for null.</summary>
     public FblModel Reading(string origin, string? resource = null) => _body.ModelOf(origin, resource);
 
+    /// <summary>
+    /// Plans <paramref name="change"/> in the reading of <paramref name="origin"/> that selects <paramref name="resource"/>
+    /// and applies it as splices (FBL 0.10 sections 6 and 9.1): the refusal's sentence when the library refuses it, and
+    /// nothing written then.
+    /// </summary>
+    public EditOutcome Change(ModelChange change, string origin, string? resource)
+    {
+        ArgumentNullException.ThrowIfNull(change);
+        if (_body.Change(change, origin, resource) is PlanResult.Refused refused) return EditOutcome.Refused(refused.Reason);
+
+        _lineStarts = LineStarts(_body.Bytes);
+        _lines = Text.Split('\n');
+        Recent.Remember(_body.Fork());
+        return EditOutcome.Applied;
+    }
+
     /// <summary>The resources the reading of <paramref name="origin"/> selects among, in document order.</summary>
     public IReadOnlyList<string> Resources(string origin) => Reading(origin).Resources;
 
@@ -102,8 +128,8 @@ internal sealed class DatabricksBody
 
     /// <summary>The 0-based lines <paramref name="span"/> is written on, as the module has always addressed an entry.</summary>
     /// <remarks>
-    /// The writers splice by these lines, so they keep the shape the module has always given them
-    /// (<c>YamlNodeRange</c>): an entry ends on its last line that says something, so a line that only closes a
+    /// They keep the shape the module has always given them (<c>YamlNodeRange</c>), which the validator's line locations
+    /// and the source resolver read: an entry ends on its last line that says something, so a line that only closes a
     /// flow collection, or is blank or a comment, is not its end.
     /// </remarks>
     public LineRange LinesOf(Span span)

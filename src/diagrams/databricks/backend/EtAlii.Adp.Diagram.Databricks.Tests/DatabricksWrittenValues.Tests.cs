@@ -11,9 +11,9 @@ using IoPath = System.IO.Path;
 namespace EtAlii.Adp.Diagram.Databricks.Tests;
 
 /// <summary>
-/// What the three writers write: a value reads back as the same text (databricks-disl-fbl finding B9),
-/// a key is found among its entry's own keys only (B10), and an edit into a list written on one line is
-/// refused before any splice (B12) - Requirement 6.4.
+/// What the commands write through the binding: a value reads back as the same text (databricks-disl-fbl finding B9),
+/// a key is found among its entry's own keys only (B10), and a list written on one line is edited where it is written
+/// (B12, which the writers refused before task 12) - Requirement 6.4.
 /// </summary>
 public sealed class DatabricksWrittenValuesTests : IDisposable
 {
@@ -59,8 +59,8 @@ public sealed class DatabricksWrittenValuesTests : IDisposable
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
-        var document = LineDocument.Parse(await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken));
-        Assert.Equal("[x", TaskOf(document, "plain").RunIf);
+        var text = await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken);
+        Assert.Equal("[x", DatabricksModel.Read(LineDocument.Parse(text)).Jobs.SelectMany(job => job.Tasks).Single(task => task.Key == "plain").RunIf);
     }
 
     [Theory]
@@ -73,18 +73,18 @@ public sealed class DatabricksWrittenValuesTests : IDisposable
     [InlineData("!tag")]
     [InlineData("%percent")]
     [InlineData("@at")]
-    public void ARunIf_IsWrittenSoThatItReadsBackAsTheSameText(string value)
+    public async Task ARunIf_IsWrittenSoThatItReadsBackAsTheSameText(string value)
     {
         // Arrange.
-        var document = Load("raw-values.yml");
+        using var editing = DatabricksEditing.Of("raw-values.yml");
 
         // Act.
-        var refusal = JobWriter.SetRunIf(document, Job(document), "plain", value);
+        var result = await editing.RunAsync(body => new SetDatabricksRunIfCommand(body, "", "plain", value));
 
         // Assert.
-        Assert.Equal("", refusal);
-        AssertReadsBackAsText(document, value, "run_if");
-        Assert.Equal(value, TaskOf(document, "plain").RunIf);
+        Assert.True(result.IsSuccess, result.Error);
+        AssertReadsBackAsText(await editing.TextAsync(), value, "run_if");
+        Assert.Equal(value, (await editing.TaskAsync("plain")).RunIf);
     }
 
     [Theory]
@@ -92,234 +92,245 @@ public sealed class DatabricksWrittenValuesTests : IDisposable
     [InlineData("yes")]
     [InlineData("null")]
     [InlineData("@at")]
-    public void ARenamedTaskKey_AndEveryReferenceToIt_ReadBackAsTheSameText(string value)
+    public async Task ARenamedTaskKey_AndEveryReferenceToIt_ReadBackAsTheSameText(string value)
     {
         // Arrange.
-        var document = Load("raw-values.yml");
+        using var editing = DatabricksEditing.Of("raw-values.yml");
 
         // Act.
-        var refusal = JobWriter.RenameTask(document, Job(document), "plain", value);
+        var result = await editing.RunAsync(body => new RenameDatabricksTaskCommand(body, "", "plain", value));
 
         // Assert.
-        Assert.Equal("", refusal);
-        AssertReadsBackAsText(document, value, "task_key");
-        Assert.Equal(value, Assert.Single(TaskOf(document, "follower").DependsOn).TaskKey);
-        Assert.Equal(value, Job(document).Tasks[0].Key);
+        Assert.True(result.IsSuccess, result.Error);
+        AssertReadsBackAsText(await editing.TextAsync(), value, "task_key");
+        Assert.Equal(value, Assert.Single((await editing.TaskAsync("follower")).DependsOn).TaskKey);
+        Assert.Equal(value, (await editing.JobAsync()).Tasks[0].Key);
     }
 
     [Fact]
-    public void AClusterKey_IsWrittenSoThatItReadsBackAsTheSameText()
+    public async Task AClusterKey_IsWrittenSoThatItReadsBackAsTheSameText()
     {
         // Arrange.
-        var document = LineDocument.Parse(
+        using var editing = DatabricksEditing.Holding(
+            "databricks.yml",
             "resources:\n  jobs:\n    j:\n      job_clusters:\n        - job_cluster_key: \"true\"\n      tasks:\n        - task_key: t\n          notebook_task:\n            notebook_path: n\n");
 
         // Act.
-        var refusal = JobWriter.SetCluster(document, Job(document), "t", "true");
+        var result = await editing.RunAsync(body => new SetDatabricksClusterCommand(body, "", "t", "true"));
 
         // Assert.
-        Assert.Equal("", refusal);
-        AssertReadsBackAsText(document, "true", "job_cluster_key");
-        Assert.Equal("true", TaskOf(document, "t").ClusterKey);
+        Assert.True(result.IsSuccess, result.Error);
+        AssertReadsBackAsText(await editing.TextAsync(), "true", "job_cluster_key");
+        Assert.Equal("true", (await editing.TaskAsync("t")).ClusterKey);
     }
 
     [Fact]
-    public void ANewJobResource_HasItsNameWrittenSoThatItReadsBackAsTheSameText()
+    public async Task ANewJobResource_HasItsNameWrittenSoThatItReadsBackAsTheSameText()
     {
         // Arrange.
-        var document = Load("raw-values.yml");
+        using var editing = DatabricksEditing.Of("raw-values.yml");
 
         // Act.
-        var refusal = BundleWriter.AddResourceSkeleton(document, DatabricksModel.Read(document).Bundle, "jobs", "yes");
+        var result = await editing.RunAsync(body => new AddDatabricksResourceCommand(body, "jobs", "yes"));
 
         // Assert.
-        Assert.Equal("", refusal);
-        AssertReadsBackAsText(document, "yes", "name");
+        Assert.True(result.IsSuccess, result.Error);
+        AssertReadsBackAsText(await editing.TextAsync(), "yes", "name");
+    }
+
+    [Theory]
+    [InlineData("notebook", "notebook_path", "yes")]
+    [InlineData("notebook", "notebook_path", "123")]
+    [InlineData("notebook", "notebook_path", "notebooks/a: b")]
+    [InlineData("python", "python_file", "*nothing")]
+    [InlineData("sql", "query_id", "null")]
+    public async Task ANewTasksSource_IsWrittenSoThatItReadsBackAsTheSameText(string type, string key, string value)
+    {
+        // Arrange.
+        using var editing = DatabricksEditing.Of("raw-values.yml");
+
+        // Act.
+        var result = await editing.RunAsync(body => new InsertDatabricksTaskCommand(body, "", "added", type, value));
+
+        // Assert.
+        Assert.True(result.IsSuccess, result.Error);
+        AssertReadsBackAsText(await editing.TextAsync(), value, key);
+        Assert.Equal(value, (await editing.TaskAsync("added")).Source);
     }
 
     // B10: a key is found among its entry's own keys only.
 
     [Fact]
-    public void RenamingATaskWhoseNestedTaskComesFirst_RenamesItsOwnKey_NotTheNestedOne()
+    public async Task RenamingATaskWhoseNestedTaskComesFirst_RenamesItsOwnKey_NotTheNestedOne()
     {
         // Arrange.
-        var document = Load("for-each-before-key.yml");
+        using var editing = DatabricksEditing.Of("for-each-before-key.yml");
 
         // Act.
-        var refusal = JobWriter.RenameTask(document, Job(document), "outer", "renamed");
+        var result = await editing.RunAsync(body => new RenameDatabricksTaskCommand(body, "", "outer", "renamed"));
 
         // Assert.
-        Assert.Equal("", refusal);
-        Assert.Contains("              task_key: inner", document.Text, StringComparison.Ordinal);
-        Assert.Equal(["renamed", "mapping_first"], Job(document).Tasks.Select(task => task.Key));
-        Assert.Equal("renamed", Assert.Single(TaskOf(document, "mapping_first").DependsOn).TaskKey);
+        Assert.True(result.IsSuccess, result.Error);
+        Assert.Contains("              task_key: inner", await editing.TextAsync(), StringComparison.Ordinal);
+        Assert.Equal(["renamed", "mapping_first"], (await editing.JobAsync()).Tasks.Select(task => task.Key));
+        Assert.Equal("renamed", Assert.Single((await editing.TaskAsync("mapping_first")).DependsOn).TaskKey);
     }
 
     [Fact]
-    public void ARunIfAddedToATaskWhoseFirstKeyIsAMapping_IsTheTasksOwnKey()
+    public async Task ARunIfAddedToATaskWhoseFirstKeyIsAMapping_IsTheTasksOwnKey()
     {
         // Arrange.
-        var document = Load("for-each-before-key.yml");
+        using var editing = DatabricksEditing.Of("for-each-before-key.yml");
 
         // Act.
-        var refusal = JobWriter.SetRunIf(document, Job(document), "mapping_first", "ALL_DONE");
+        var result = await editing.RunAsync(body => new SetDatabricksRunIfCommand(body, "", "mapping_first", "ALL_DONE"));
 
         // Assert.
-        Assert.Equal("", refusal);
-        Assert.Equal("ALL_DONE", TaskOf(document, "mapping_first").RunIf);
-        Assert.Equal("notebooks/mapping_first", TaskOf(document, "mapping_first").Source);
+        Assert.True(result.IsSuccess, result.Error);
+        var task = await editing.TaskAsync("mapping_first");
+        Assert.Equal("ALL_DONE", task.RunIf);
+        Assert.Equal("notebooks/mapping_first", task.Source);
     }
 
     [Fact]
-    public void ADependencyAddedToATaskWhoseFirstKeyIsAMapping_IsTheTasksOwnKey()
+    public async Task ADependencyAddedToATaskWhoseFirstKeyIsAMapping_IsTheTasksOwnKey()
     {
         // Arrange.
-        var document = Load("for-each-before-key.yml");
+        using var editing = DatabricksEditing.Of("for-each-before-key.yml");
 
         // Act.
-        var refusal = JobWriter.Connect(document, Job(document), "mapping_first", "outer");
+        var result = await editing.RunAsync(body => new ConnectDatabricksTasksCommand(body, "", "mapping_first", "outer"));
 
         // Assert.
-        Assert.Equal("", refusal);
-        Assert.Equal("mapping_first", Assert.Single(TaskOf(document, "outer").DependsOn).TaskKey);
-        Assert.Equal("for-each", TaskOf(document, "outer").Type);
+        Assert.True(result.IsSuccess, result.Error);
+        var outer = await editing.TaskAsync("outer");
+        Assert.Equal("mapping_first", Assert.Single(outer.DependsOn).TaskKey);
+        Assert.Equal("for-each", outer.Type);
     }
 
-    // B12: an edit into a list written on one line is refused before any splice.
+    // B12: a list written on one line is edited where it is written, as FBL writes a flow collection (FBL 0.10
+    // sections 4.3 and 6.2), where the writers refused the edit; one undo gives the bytes back.
 
     [Fact]
-    public void ATaskAddedToTasksWrittenAsAnEmptyFlowSequence_IsRefused_AndNothingIsWritten()
+    public async Task ATaskAddedToTasksWrittenAsAnEmptyFlowSequence_IsWritten_AndOneUndoGivesTheBytesBack()
     {
         // Arrange.
-        var document = Load("flow-collections.yml");
-        var before = document.Text;
-        var job = DatabricksModel.Read(document).Jobs.Single(candidate => candidate.Key == "empty_flow");
+        using var editing = DatabricksEditing.Of("flow-collections.yml");
+        var before = await editing.BytesAsync();
 
         // Act.
-        var refusal = JobWriter.InsertTask(document, job, "added", "notebook", "notebooks/added");
+        var result = await editing.RunAsync(body => new InsertDatabricksTaskCommand(body, "empty_flow", "added", "notebook", "notebooks/added"));
+        var model = await editing.ModelAsync();
+        var undone = await editing.UndoAsync(result);
 
         // Assert.
-        Assert.Equal(DatabricksSplices.OneLineListRefusal, refusal);
-        Assert.Equal(before, document.Text);
-    }
-
-    [Fact]
-    public void ADependencyAddedToDependsOnWrittenOnOneLine_IsRefused_AndNothingIsWritten()
-    {
-        // Arrange.
-        var document = Load("flow-dependencies.yml");
-        var before = document.Text;
-
-        // Act.
-        var refusal = JobWriter.Connect(document, Job(document), "c", "b");
-
-        // Assert.
-        Assert.Equal(DatabricksSplices.OneLineListRefusal, refusal);
-        Assert.Equal(before, document.Text);
+        Assert.True(result.IsSuccess, result.Error);
+        var added = Assert.Single(model.Jobs.Single(job => job.Key == "empty_flow").Tasks);
+        Assert.Equal(("added", "notebook", "notebooks/added"), (added.Key, added.Type, added.Source));
+        Assert.True(undone.IsSuccess, undone.Error);
+        Assert.Equal(before, await editing.BytesAsync());
     }
 
     [Fact]
-    public void ADependencyRemovedFromDependsOnWrittenOnOneLine_IsRefused_AndNothingIsWritten()
+    public async Task ADependencyAddedToDependsOnWrittenOnOneLine_IsWritten()
     {
         // Arrange.
-        var document = Load("flow-dependencies.yml");
-        var before = document.Text;
+        using var editing = DatabricksEditing.Of("flow-dependencies.yml");
 
         // Act.
-        var refusal = JobWriter.Disconnect(document, Job(document), "a", "b");
+        var result = await editing.RunAsync(body => new ConnectDatabricksTasksCommand(body, "", "c", "b"));
 
         // Assert.
-        Assert.Equal(DatabricksSplices.OneLineListRefusal, refusal);
-        Assert.Equal(before, document.Text);
+        Assert.True(result.IsSuccess, result.Error);
+        Assert.Equal(["a", "c"], (await editing.TaskAsync("b")).DependsOn.Select(dependency => dependency.TaskKey));
     }
 
     [Fact]
-    public void ALibraryRemovedFromAJsonArrayWrittenOnOneLine_IsRefused_AndNothingIsWritten()
+    public async Task ADependencyRemovedFromDependsOnWrittenOnOneLine_IsRemoved()
     {
         // Arrange.
-        var document = Load("settings-one-line.json");
-        var before = document.Text;
-        var pipeline = Assert.Single(DatabricksModel.Read(document).Pipelines);
+        using var editing = DatabricksEditing.Of("flow-dependencies.yml");
 
         // Act.
-        var refusal = PipelineWriter.RemoveLibrary(document, pipeline, "file", "transformations/b.py");
+        var result = await editing.RunAsync(body => new DisconnectDatabricksTasksCommand(body, "", "a", "b"));
 
         // Assert.
-        Assert.Equal(DatabricksSplices.OneLineListRefusal, refusal);
-        Assert.Equal(before, document.Text);
+        Assert.True(result.IsSuccess, result.Error);
+        Assert.Empty((await editing.TaskAsync("b")).DependsOn);
     }
 
     [Fact]
-    public void ALibraryAddedToAYamlListWrittenOnOneLine_IsRefused_AndNothingIsWritten()
+    public async Task ALibraryRemovedFromAJsonArrayWrittenOnOneLine_IsRemoved()
     {
         // Arrange.
-        var document = Load("flow-collections.yml");
-        var before = document.Text;
-        var pipeline = Assert.Single(DatabricksModel.Read(document).Pipelines);
+        using var editing = DatabricksEditing.Of("settings-one-line.json");
 
         // Act.
-        var refusal = PipelineWriter.InsertLibrary(document, pipeline, "notebook", "transformations/three");
+        var result = await editing.RunAsync(body => new RemoveDatabricksLibraryCommand(body, "", "file", "transformations/b.py"));
 
         // Assert.
-        Assert.Equal(DatabricksSplices.OneLineListRefusal, refusal);
-        Assert.Equal(before, document.Text);
+        Assert.True(result.IsSuccess, result.Error);
+        Assert.Equal([("notebook", "transformations/a")], (await editing.PipelineAsync()).Libraries.Select(library => (library.Kind, library.Path)));
     }
 
-    private static string Fixture(string name) => IoPath.Combine(AppContext.BaseDirectory, "Fixtures", name);
+    [Fact]
+    public async Task ALibraryAddedToAYamlListWrittenOnOneLine_IsWritten()
+    {
+        // Arrange.
+        using var editing = DatabricksEditing.Of("flow-collections.yml");
 
-    private static LineDocument Load(string name) => LineDocument.Parse(File.ReadAllText(Fixture(name)));
+        // Act.
+        var result = await editing.RunAsync(body => new InsertDatabricksLibraryCommand(body, "flow_pipeline", "notebook", "transformations/three"));
 
-    private static JobModel Job(LineDocument document) =>
-        Assert.Single(DatabricksModel.Read(document).Jobs);
+        // Assert.
+        Assert.True(result.IsSuccess, result.Error);
+        Assert.Equal(
+            ["transformations/one", "transformations/two.py", "transformations/three"],
+            (await editing.PipelineAsync()).Libraries.Select(library => library.Path));
+    }
 
-    private static JobTask TaskOf(LineDocument document, string key) =>
-        DatabricksModel.Read(document).Jobs.SelectMany(job => job.Tasks).Single(task => task.Key == key);
+    private static string Fixture(string name) => DatabricksEditing.Fixture(name);
 
     /// <summary>
     /// That <paramref name="value"/> is the text of a <paramref name="key"/> in the written document, and is
     /// written plain nowhere: a plain scalar is typed by the YAML core schema, so <c>123</c> would read back
     /// as a number and <c>*nothing</c> as an alias.
     /// </summary>
-    private static void AssertReadsBackAsText(LineDocument document, string value, string key)
+    private static void AssertReadsBackAsText(string text, string value, string key)
     {
-        var written = Scalars(document, key).Where(node => node.Value == value).ToList();
+        var stream = new YamlStream();
+        stream.Load(new StringReader(text));
+        var found = new List<YamlScalarNode>();
+        Collect(stream.Documents[0].RootNode, key, found);
+        var written = found.Where(node => node.Value == value).ToList();
         Assert.NotEmpty(written);
         Assert.All(written, node => Assert.NotEqual(ScalarStyle.Plain, node.Style));
     }
 
-    /// <summary>Every scalar value of a <paramref name="key"/> anywhere in the document.</summary>
-    private static List<YamlScalarNode> Scalars(LineDocument document, string key)
+    /// <summary>Every scalar value of a <paramref name="key"/> under <paramref name="node"/>, into <paramref name="found"/>.</summary>
+    private static void Collect(YamlNode node, string key, List<YamlScalarNode> found)
     {
-        var stream = new YamlStream();
-        stream.Load(new StringReader(document.Text));
-        var found = new List<YamlScalarNode>();
-        Visit(stream.Documents[0].RootNode);
-        return found;
-
-        void Visit(YamlNode node)
+        switch (node)
         {
-            switch (node)
-            {
-                case YamlMappingNode mapping:
-                    foreach ((YamlNode name, YamlNode child) in mapping.Children)
+            case YamlMappingNode mapping:
+                foreach ((YamlNode name, YamlNode child) in mapping.Children)
+                {
+                    if (name is YamlScalarNode { Value: { } text } && text == key && child is YamlScalarNode scalar)
                     {
-                        if (name is YamlScalarNode { Value: { } text } && text == key && child is YamlScalarNode scalar)
-                        {
-                            found.Add(scalar);
-                        }
-
-                        Visit(child);
+                        found.Add(scalar);
                     }
 
-                    break;
-                case YamlSequenceNode sequence:
-                    foreach (var child in sequence.Children)
-                    {
-                        Visit(child);
-                    }
+                    Collect(child, key, found);
+                }
 
-                    break;
-            }
+                break;
+            case YamlSequenceNode sequence:
+                foreach (var child in sequence.Children)
+                {
+                    Collect(child, key, found);
+                }
+
+                break;
         }
     }
 }

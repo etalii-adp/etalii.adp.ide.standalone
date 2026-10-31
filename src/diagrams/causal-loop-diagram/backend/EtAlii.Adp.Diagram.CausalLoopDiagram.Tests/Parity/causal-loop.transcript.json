@@ -72,7 +72,9 @@
           "target": "variable:a",
           "rows": [
             "causal-loop.variable-label | Label | \"A\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"a\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"a\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -80,7 +82,9 @@
           "target": "variable:b",
           "rows": [
             "causal-loop.variable-label | Label | \"B\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"b\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"b\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -159,7 +163,7 @@
         },
         {
           "do": "set link:a|b causal-loop.link-weight = \"heavy\"",
-          "answer": "refused: 'heavy' is not a number. A weight is an annotation this diagram records and never evaluates; leave it empty to remove it.",
+          "answer": "refused: 'heavy' is not a number. A weight is this link's starting strength in a flow page; leave it empty to remove it.",
           "unchanged": true
         },
         {
@@ -265,7 +269,7 @@
         },
         {
           "do": "describe variable:a",
-          "answer": "causal-loop.variable-label | Label | \"Parity renamed\" | Line | editable | group Identity || causal-loop.variable-id | Identifier | \"a\" | Line | editable | group Identity",
+          "answer": "causal-loop.variable-label | Label | \"Parity renamed\" | Line | editable | group Identity || causal-loop.variable-id | Identifier | \"a\" | Line | editable | group Identity || causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page || causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page",
           "unchanged": true
         },
         {
@@ -510,7 +514,9 @@
           "target": "variable:a",
           "rows": [
             "causal-loop.variable-label | Label | \"First\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"a\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"a\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -518,7 +524,9 @@
           "target": "variable:b",
           "rows": [
             "causal-loop.variable-label | Label | \"B\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"b\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"b\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -593,7 +601,7 @@
         },
         {
           "do": "set link:a|b causal-loop.link-weight = \"heavy\"",
-          "answer": "refused: 'heavy' is not a number. A weight is an annotation this diagram records and never evaluates; leave it empty to remove it.",
+          "answer": "refused: 'heavy' is not a number. A weight is this link's starting strength in a flow page; leave it empty to remove it.",
           "unchanged": true
         },
         {
@@ -748,7 +756,7 @@
         },
         {
           "do": "describe variable:a",
-          "answer": "causal-loop.variable-label | Label | \"Parity renamed\" | Line | editable | group Identity || causal-loop.variable-id | Identifier | \"a\" | Line | editable | group Identity",
+          "answer": "causal-loop.variable-label | Label | \"Parity renamed\" | Line | editable | group Identity || causal-loop.variable-id | Identifier | \"a\" | Line | editable | group Identity || causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page || causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page",
           "unchanged": true
         },
         {
@@ -995,7 +1003,9 @@
           "target": "variable:a",
           "rows": [
             "causal-loop.variable-label | Label | \"A\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"a\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"a\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -1003,7 +1013,9 @@
           "target": "variable:b",
           "rows": [
             "causal-loop.variable-label | Label | \"B\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"b\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"b\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -1078,7 +1090,7 @@
         },
         {
           "do": "set link:a|b causal-loop.link-weight = \"heavy\"",
-          "answer": "refused: 'heavy' is not a number. A weight is an annotation this diagram records and never evaluates; leave it empty to remove it.",
+          "answer": "refused: 'heavy' is not a number. A weight is this link's starting strength in a flow page; leave it empty to remove it.",
           "unchanged": true
         },
         {
@@ -1233,7 +1245,7 @@
         },
         {
           "do": "describe variable:a",
-          "answer": "causal-loop.variable-label | Label | \"Parity renamed\" | Line | editable | group Identity || causal-loop.variable-id | Identifier | \"a\" | Line | editable | group Identity",
+          "answer": "causal-loop.variable-label | Label | \"Parity renamed\" | Line | editable | group Identity || causal-loop.variable-id | Identifier | \"a\" | Line | editable | group Identity || causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page || causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page",
           "unchanged": true
         },
         {
@@ -1472,7 +1484,9 @@
           "target": "variable:a",
           "rows": [
             "causal-loop.variable-label | Label | \"Say \" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"a\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"a\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -1480,7 +1494,9 @@
           "target": "variable:b",
           "rows": [
             "causal-loop.variable-label | Label | \"B\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"b\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"b\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -1546,7 +1562,7 @@
         },
         {
           "do": "set link:a|b causal-loop.link-weight = \"heavy\"",
-          "answer": "refused: 'heavy' is not a number. A weight is an annotation this diagram records and never evaluates; leave it empty to remove it.",
+          "answer": "refused: 'heavy' is not a number. A weight is this link's starting strength in a flow page; leave it empty to remove it.",
           "unchanged": true
         },
         {
@@ -1652,7 +1668,7 @@
         },
         {
           "do": "describe variable:a",
-          "answer": "causal-loop.variable-label | Label | \"Parity renamed\" | Line | editable | group Identity || causal-loop.variable-id | Identifier | \"a\" | Line | editable | group Identity",
+          "answer": "causal-loop.variable-label | Label | \"Parity renamed\" | Line | editable | group Identity || causal-loop.variable-id | Identifier | \"a\" | Line | editable | group Identity || causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page || causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page",
           "unchanged": true
         },
         {
@@ -1920,7 +1936,9 @@
           "target": "variable:a",
           "rows": [
             "causal-loop.variable-label | Label | \"Label\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"a\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"a\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -1928,7 +1946,9 @@
           "target": "variable:my id",
           "rows": [
             "causal-loop.variable-label | Label | \"My id\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"my id\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"my id\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -1936,7 +1956,9 @@
           "target": "variable:indented",
           "rows": [
             "causal-loop.variable-label | Label | \"Indented\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"indented\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"indented\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -1944,7 +1966,9 @@
           "target": "variable:b",
           "rows": [
             "causal-loop.variable-label | Label | \"B\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"b\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"b\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -2074,7 +2098,7 @@
         },
         {
           "do": "set link:a|b causal-loop.link-weight = \"heavy\"",
-          "answer": "refused: 'heavy' is not a number. A weight is an annotation this diagram records and never evaluates; leave it empty to remove it.",
+          "answer": "refused: 'heavy' is not a number. A weight is this link's starting strength in a flow page; leave it empty to remove it.",
           "unchanged": true
         },
         {
@@ -2234,7 +2258,7 @@
         },
         {
           "do": "describe variable:a",
-          "answer": "causal-loop.variable-label | Label | \"Parity renamed\" | Line | editable | group Identity || causal-loop.variable-id | Identifier | \"a\" | Line | editable | group Identity",
+          "answer": "causal-loop.variable-label | Label | \"Parity renamed\" | Line | editable | group Identity || causal-loop.variable-id | Identifier | \"a\" | Line | editable | group Identity || causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page || causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page",
           "unchanged": true
         },
         {
@@ -2491,7 +2515,9 @@
           "target": "variable:a",
           "rows": [
             "causal-loop.variable-label | Label | \"A\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"a\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"a\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -2499,7 +2525,9 @@
           "target": "variable:b",
           "rows": [
             "causal-loop.variable-label | Label | \"B\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"b\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"b\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -2574,7 +2602,7 @@
         },
         {
           "do": "set link:a|b causal-loop.link-weight = \"heavy\"",
-          "answer": "refused: 'heavy' is not a number. A weight is an annotation this diagram records and never evaluates; leave it empty to remove it.",
+          "answer": "refused: 'heavy' is not a number. A weight is this link's starting strength in a flow page; leave it empty to remove it.",
           "unchanged": true
         },
         {
@@ -2729,7 +2757,7 @@
         },
         {
           "do": "describe variable:a",
-          "answer": "causal-loop.variable-label | Label | \"Parity renamed\" | Line | editable | group Identity || causal-loop.variable-id | Identifier | \"a\" | Line | editable | group Identity",
+          "answer": "causal-loop.variable-label | Label | \"Parity renamed\" | Line | editable | group Identity || causal-loop.variable-id | Identifier | \"a\" | Line | editable | group Identity || causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page || causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page",
           "unchanged": true
         },
         {
@@ -2990,7 +3018,9 @@
           "target": "variable:a",
           "rows": [
             "causal-loop.variable-label | Label | \"A\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"a\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"a\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -2998,7 +3028,9 @@
           "target": "variable:b",
           "rows": [
             "causal-loop.variable-label | Label | \"B\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"b\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"b\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -3006,7 +3038,9 @@
           "target": "variable:c",
           "rows": [
             "causal-loop.variable-label | Label | \"C\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"c\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"c\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -3084,7 +3118,7 @@
         },
         {
           "do": "set link:a|b causal-loop.link-weight = \"heavy\"",
-          "answer": "refused: 'heavy' is not a number. A weight is an annotation this diagram records and never evaluates; leave it empty to remove it.",
+          "answer": "refused: 'heavy' is not a number. A weight is this link's starting strength in a flow page; leave it empty to remove it.",
           "unchanged": true
         },
         {
@@ -3242,7 +3276,7 @@
         },
         {
           "do": "describe variable:a",
-          "answer": "causal-loop.variable-label | Label | \"Parity renamed\" | Line | editable | group Identity || causal-loop.variable-id | Identifier | \"a\" | Line | editable | group Identity",
+          "answer": "causal-loop.variable-label | Label | \"Parity renamed\" | Line | editable | group Identity || causal-loop.variable-id | Identifier | \"a\" | Line | editable | group Identity || causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page || causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page",
           "unchanged": true
         },
         {
@@ -3483,7 +3517,9 @@
           "target": "variable:a",
           "rows": [
             "causal-loop.variable-label | Label | \"A\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"a\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"a\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -3491,7 +3527,9 @@
           "target": "variable:b",
           "rows": [
             "causal-loop.variable-label | Label | \"B\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"b\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"b\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -3542,7 +3580,7 @@
         },
         {
           "do": "set link:a|b causal-loop.link-weight = \"heavy\"",
-          "answer": "refused: 'heavy' is not a number. A weight is an annotation this diagram records and never evaluates; leave it empty to remove it.",
+          "answer": "refused: 'heavy' is not a number. A weight is this link's starting strength in a flow page; leave it empty to remove it.",
           "unchanged": true
         },
         {
@@ -3648,7 +3686,7 @@
         },
         {
           "do": "describe variable:a",
-          "answer": "causal-loop.variable-label | Label | \"Parity renamed\" | Line | editable | group Identity || causal-loop.variable-id | Identifier | \"a\" | Line | editable | group Identity",
+          "answer": "causal-loop.variable-label | Label | \"Parity renamed\" | Line | editable | group Identity || causal-loop.variable-id | Identifier | \"a\" | Line | editable | group Identity || causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page || causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page",
           "unchanged": true
         },
         {
@@ -3890,7 +3928,9 @@
           "target": "variable:a",
           "rows": [
             "causal-loop.variable-label | Label | \"A\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"a\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"a\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -3898,7 +3938,9 @@
           "target": "variable:b",
           "rows": [
             "causal-loop.variable-label | Label | \"B\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"b\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"b\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -3964,7 +4006,7 @@
         },
         {
           "do": "set link:a|b causal-loop.link-weight = \"heavy\"",
-          "answer": "refused: 'heavy' is not a number. A weight is an annotation this diagram records and never evaluates; leave it empty to remove it.",
+          "answer": "refused: 'heavy' is not a number. A weight is this link's starting strength in a flow page; leave it empty to remove it.",
           "unchanged": true
         },
         {
@@ -4070,7 +4112,7 @@
         },
         {
           "do": "describe variable:a",
-          "answer": "causal-loop.variable-label | Label | \"Parity renamed\" | Line | editable | group Identity || causal-loop.variable-id | Identifier | \"a\" | Line | editable | group Identity",
+          "answer": "causal-loop.variable-label | Label | \"Parity renamed\" | Line | editable | group Identity || causal-loop.variable-id | Identifier | \"a\" | Line | editable | group Identity || causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page || causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page",
           "unchanged": true
         },
         {
@@ -4301,7 +4343,9 @@
           "target": "variable:a",
           "rows": [
             "causal-loop.variable-label | Label | \"A\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"a\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"a\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -4309,7 +4353,9 @@
           "target": "variable:b",
           "rows": [
             "causal-loop.variable-label | Label | \"B\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"b\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"b\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -4365,7 +4411,7 @@
         },
         {
           "do": "set link:a|b causal-loop.link-weight = \"heavy\"",
-          "answer": "refused: 'heavy' is not a number. A weight is an annotation this diagram records and never evaluates; leave it empty to remove it.",
+          "answer": "refused: 'heavy' is not a number. A weight is this link's starting strength in a flow page; leave it empty to remove it.",
           "unchanged": true
         },
         {
@@ -4471,7 +4517,7 @@
         },
         {
           "do": "describe variable:a",
-          "answer": "causal-loop.variable-label | Label | \"Parity renamed\" | Line | editable | group Identity || causal-loop.variable-id | Identifier | \"a\" | Line | editable | group Identity",
+          "answer": "causal-loop.variable-label | Label | \"Parity renamed\" | Line | editable | group Identity || causal-loop.variable-id | Identifier | \"a\" | Line | editable | group Identity || causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page || causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page",
           "unchanged": true
         },
         {
@@ -4728,7 +4774,9 @@
           "target": "variable:a",
           "rows": [
             "causal-loop.variable-label | Label | \"A\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"a\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"a\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -4736,7 +4784,9 @@
           "target": "variable:b",
           "rows": [
             "causal-loop.variable-label | Label | \"B\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"b\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"b\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -4744,7 +4794,9 @@
           "target": "variable:c",
           "rows": [
             "causal-loop.variable-label | Label | \"C\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"c\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"c\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -4752,7 +4804,9 @@
           "target": "variable:d",
           "rows": [
             "causal-loop.variable-label | Label | \"D\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"d\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"d\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -4919,7 +4973,7 @@
         },
         {
           "do": "set link:a|b causal-loop.link-weight = \"heavy\"",
-          "answer": "refused: 'heavy' is not a number. A weight is an annotation this diagram records and never evaluates; leave it empty to remove it.",
+          "answer": "refused: 'heavy' is not a number. A weight is this link's starting strength in a flow page; leave it empty to remove it.",
           "unchanged": true
         },
         {
@@ -5022,7 +5076,7 @@
         },
         {
           "do": "describe variable:a",
-          "answer": "causal-loop.variable-label | Label | \"Parity renamed\" | Line | editable | group Identity || causal-loop.variable-id | Identifier | \"a\" | Line | editable | group Identity",
+          "answer": "causal-loop.variable-label | Label | \"Parity renamed\" | Line | editable | group Identity || causal-loop.variable-id | Identifier | \"a\" | Line | editable | group Identity || causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page || causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page",
           "unchanged": true
         },
         {
@@ -5414,7 +5468,9 @@
           "target": "variable:applicability",
           "rows": [
             "causal-loop.variable-label | Label | \"Applicability in practice\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"applicability\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"applicability\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -5422,7 +5478,9 @@
           "target": "variable:fieldEngagement",
           "rows": [
             "causal-loop.variable-label | Label | \"Engagement of organizations\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"fieldEngagement\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"fieldEngagement\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -5430,7 +5488,9 @@
           "target": "variable:expertDiversity",
           "rows": [
             "causal-loop.variable-label | Label | \"Diversity of expertise\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"expertDiversity\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"expertDiversity\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -5438,7 +5498,9 @@
           "target": "variable:insight",
           "rows": [
             "causal-loop.variable-label | Label | \"Depth of shared insight\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"insight\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"insight\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -5446,7 +5508,9 @@
           "target": "variable:practicalTools",
           "rows": [
             "causal-loop.variable-label | Label | \"Practical tools in use\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"practicalTools\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"practicalTools\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -5454,7 +5518,9 @@
           "target": "variable:practiceGap",
           "rows": [
             "causal-loop.variable-label | Label | \"Distance from daily practice\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"practiceGap\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"practiceGap\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -5462,7 +5528,9 @@
           "target": "variable:openInquiry",
           "rows": [
             "causal-loop.variable-label | Label | \"Room for open inquiry\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"openInquiry\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"openInquiry\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -5470,7 +5538,9 @@
           "target": "variable:recipeUse",
           "rows": [
             "causal-loop.variable-label | Label | \"Tools used as recipes\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"recipeUse\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"recipeUse\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -5478,7 +5548,9 @@
           "target": "variable:coreValues",
           "rows": [
             "causal-loop.variable-label | Label | \"Curiosity, transparency, ethics\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"coreValues\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"coreValues\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -5486,7 +5558,9 @@
           "target": "variable:philosophy",
           "rows": [
             "causal-loop.variable-label | Label | \"Philosophical depth\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"philosophy\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"philosophy\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -5494,7 +5568,9 @@
           "target": "variable:trust",
           "rows": [
             "causal-loop.variable-label | Label | \"Trust and openness\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"trust\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"trust\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -5502,7 +5578,9 @@
           "target": "variable:latentWisdom",
           "rows": [
             "causal-loop.variable-label | Label | \"Latent wisdom made explicit\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"latentWisdom\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"latentWisdom\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -5510,7 +5588,9 @@
           "target": "variable:narratives",
           "rows": [
             "causal-loop.variable-label | Label | \"Stories and narratives\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"narratives\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"narratives\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -5518,7 +5598,9 @@
           "target": "variable:polarization",
           "rows": [
             "causal-loop.variable-label | Label | \"Polarization\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"polarization\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"polarization\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -5526,7 +5608,9 @@
           "target": "variable:creativeExpression",
           "rows": [
             "causal-loop.variable-label | Label | \"Art and creative expression\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"creativeExpression\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"creativeExpression\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -5534,7 +5618,9 @@
           "target": "variable:communicationRange",
           "rows": [
             "causal-loop.variable-label | Label | \"Communication beyond words\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"communicationRange\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"communicationRange\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -5542,7 +5628,9 @@
           "target": "variable:wickedProblems",
           "rows": [
             "causal-loop.variable-label | Label | \"Weight of wicked problems\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"wickedProblems\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"wickedProblems\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -5550,7 +5638,9 @@
           "target": "variable:quickFixPressure",
           "rows": [
             "causal-loop.variable-label | Label | \"Pressure for quick solutions\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"quickFixPressure\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"quickFixPressure\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -6078,7 +6168,7 @@
         },
         {
           "do": "set link:insight|applicability causal-loop.link-weight = \"heavy\"",
-          "answer": "refused: 'heavy' is not a number. A weight is an annotation this diagram records and never evaluates; leave it empty to remove it.",
+          "answer": "refused: 'heavy' is not a number. A weight is this link's starting strength in a flow page; leave it empty to remove it.",
           "unchanged": true
         },
         {
@@ -6238,7 +6328,7 @@
         },
         {
           "do": "describe variable:applicability",
-          "answer": "causal-loop.variable-label | Label | \"Parity renamed\" | Line | editable | group Identity || causal-loop.variable-id | Identifier | \"applicability\" | Line | editable | group Identity",
+          "answer": "causal-loop.variable-label | Label | \"Parity renamed\" | Line | editable | group Identity || causal-loop.variable-id | Identifier | \"applicability\" | Line | editable | group Identity || causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page || causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page",
           "unchanged": true
         },
         {
@@ -6661,7 +6751,9 @@
           "target": "variable:selfDirection",
           "rows": [
             "causal-loop.variable-label | Label | \"Experienced self-direction\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"selfDirection\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"selfDirection\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -6669,7 +6761,9 @@
           "target": "variable:emotionSuppression",
           "rows": [
             "causal-loop.variable-label | Label | \"Emotion suppression (downplaying as coping)\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"emotionSuppression\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"emotionSuppression\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -6677,7 +6771,9 @@
           "target": "variable:meaning",
           "rows": [
             "causal-loop.variable-label | Label | \"Experienced meaning and perspective\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"meaning\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"meaning\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -6685,7 +6781,9 @@
           "target": "variable:goalOrientation",
           "rows": [
             "causal-loop.variable-label | Label | \"Goal orientation\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"goalOrientation\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"goalOrientation\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -6693,7 +6791,9 @@
           "target": "variable:goalsAchieved",
           "rows": [
             "causal-loop.variable-label | Label | \"Goals achieved\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"goalsAchieved\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"goalsAchieved\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -6701,7 +6801,9 @@
           "target": "variable:satisfaction",
           "rows": [
             "causal-loop.variable-label | Label | \"Satisfaction\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"satisfaction\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"satisfaction\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -6709,7 +6811,9 @@
           "target": "variable:bigPicture",
           "rows": [
             "causal-loop.variable-label | Label | \"Sight of the bigger picture\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"bigPicture\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"bigPicture\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -6717,7 +6821,9 @@
           "target": "variable:sacrifice",
           "rows": [
             "causal-loop.variable-label | Label | \"Willingness to sacrifice\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"sacrifice\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"sacrifice\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -6725,7 +6831,9 @@
           "target": "variable:progress",
           "rows": [
             "causal-loop.variable-label | Label | \"Progress\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"progress\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"progress\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -6733,7 +6841,9 @@
           "target": "variable:confidence",
           "rows": [
             "causal-loop.variable-label | Label | \"Confidence\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"confidence\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"confidence\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -6741,7 +6851,9 @@
           "target": "variable:shortTermFunctioning",
           "rows": [
             "causal-loop.variable-label | Label | \"Functioning in the short term\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"shortTermFunctioning\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"shortTermFunctioning\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -6749,7 +6861,9 @@
           "target": "variable:copingConfirmation",
           "rows": [
             "causal-loop.variable-label | Label | \"Confirmation of the coping strategy\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"copingConfirmation\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"copingConfirmation\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -6757,7 +6871,9 @@
           "target": "variable:exhaustion",
           "rows": [
             "causal-loop.variable-label | Label | \"Exhaustion\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"exhaustion\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"exhaustion\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -6765,7 +6881,9 @@
           "target": "variable:dropout",
           "rows": [
             "causal-loop.variable-label | Label | \"Mental health dropout\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"dropout\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"dropout\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -6773,7 +6891,9 @@
           "target": "variable:toughNorm",
           "rows": [
             "causal-loop.variable-label | Label | \"Norm: don't make a fuss\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"toughNorm\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"toughNorm\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -6781,7 +6901,9 @@
           "target": "variable:emotionExpression",
           "rows": [
             "causal-loop.variable-label | Label | \"Expression of emotion\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"emotionExpression\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"emotionExpression\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -6789,7 +6911,9 @@
           "target": "variable:legalFrame",
           "rows": [
             "causal-loop.variable-label | Label | \"Legal limits on discussing mental health\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"legalFrame\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"legalFrame\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -6797,7 +6921,9 @@
           "target": "variable:insurerDependence",
           "rows": [
             "causal-loop.variable-label | Label | \"Dependence on insurers and premiums\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"insurerDependence\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"insurerDependence\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -6805,7 +6931,9 @@
           "target": "variable:ageing",
           "rows": [
             "causal-loop.variable-label | Label | \"Ageing population\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"ageing\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"ageing\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -6813,7 +6941,9 @@
           "target": "variable:conversationalSafety",
           "rows": [
             "causal-loop.variable-label | Label | \"Safety to talk\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"conversationalSafety\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"conversationalSafety\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -6821,7 +6951,9 @@
           "target": "variable:openness",
           "rows": [
             "causal-loop.variable-label | Label | \"Openness and vulnerability\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"openness\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"openness\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -6829,7 +6961,9 @@
           "target": "variable:visibleComplaints",
           "rows": [
             "causal-loop.variable-label | Label | \"Visible mental health complaints\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"visibleComplaints\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"visibleComplaints\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -6837,7 +6971,9 @@
           "target": "variable:preventionUrgency",
           "rows": [
             "causal-loop.variable-label | Label | \"Perceived need for prevention\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"preventionUrgency\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"preventionUrgency\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -6845,7 +6981,9 @@
           "target": "variable:systemChange",
           "rows": [
             "causal-loop.variable-label | Label | \"System change\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"systemChange\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"systemChange\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -6853,7 +6991,9 @@
           "target": "variable:preventionInvestment",
           "rows": [
             "causal-loop.variable-label | Label | \"Investment in prevention\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"preventionInvestment\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"preventionInvestment\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -6861,7 +7001,9 @@
           "target": "variable:premiumPressure",
           "rows": [
             "causal-loop.variable-label | Label | \"Costs and premium pressure\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"premiumPressure\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"premiumPressure\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -6869,7 +7011,9 @@
           "target": "variable:generationalLabels",
           "rows": [
             "causal-loop.variable-label | Label | \"Limiting stories and labels of older generations\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"generationalLabels\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"generationalLabels\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -6877,7 +7021,9 @@
           "target": "variable:youthSelfImage",
           "rows": [
             "causal-loop.variable-label | Label | \"Self-image of young people\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"youthSelfImage\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"youthSelfImage\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -6885,7 +7031,9 @@
           "target": "variable:withdrawal",
           "rows": [
             "causal-loop.variable-label | Label | \"Withdrawal and behaviour\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"withdrawal\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"withdrawal\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -6893,7 +7041,9 @@
           "target": "variable:vulnerability",
           "rows": [
             "causal-loop.variable-label | Label | \"Showing vulnerability\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"vulnerability\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"vulnerability\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -7567,7 +7717,7 @@
         },
         {
           "do": "set link:emotionSuppression|shortTermFunctioning causal-loop.link-weight = \"heavy\"",
-          "answer": "refused: 'heavy' is not a number. A weight is an annotation this diagram records and never evaluates; leave it empty to remove it.",
+          "answer": "refused: 'heavy' is not a number. A weight is this link's starting strength in a flow page; leave it empty to remove it.",
           "unchanged": true
         },
         {
@@ -7727,7 +7877,7 @@
         },
         {
           "do": "describe variable:selfDirection",
-          "answer": "causal-loop.variable-label | Label | \"Parity renamed\" | Line | editable | group Identity || causal-loop.variable-id | Identifier | \"selfDirection\" | Line | editable | group Identity",
+          "answer": "causal-loop.variable-label | Label | \"Parity renamed\" | Line | editable | group Identity || causal-loop.variable-id | Identifier | \"selfDirection\" | Line | editable | group Identity || causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page || causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page",
           "unchanged": true
         },
         {
@@ -8082,7 +8232,9 @@
           "target": "variable:incidents",
           "rows": [
             "causal-loop.variable-label | Label | \"Incidents\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"incidents\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"incidents\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -8090,7 +8242,9 @@
           "target": "variable:onCallLoad",
           "rows": [
             "causal-loop.variable-label | Label | \"On-call load\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"onCallLoad\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"onCallLoad\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -8098,7 +8252,9 @@
           "target": "variable:fatigue",
           "rows": [
             "causal-loop.variable-label | Label | \"Fatigue\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"fatigue\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"fatigue\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -8106,7 +8262,9 @@
           "target": "variable:mistakes",
           "rows": [
             "causal-loop.variable-label | Label | \"Mistakes\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"mistakes\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"mistakes\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -8114,7 +8272,9 @@
           "target": "variable:attrition",
           "rows": [
             "causal-loop.variable-label | Label | \"Attrition\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"attrition\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"attrition\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -8122,7 +8282,9 @@
           "target": "variable:teamSize",
           "rows": [
             "causal-loop.variable-label | Label | \"Team size\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"teamSize\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"teamSize\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -8130,7 +8292,9 @@
           "target": "variable:automation",
           "rows": [
             "causal-loop.variable-label | Label | \"Automation work\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"automation\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"automation\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -8138,7 +8302,9 @@
           "target": "variable:toil",
           "rows": [
             "causal-loop.variable-label | Label | \"Manual toil\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"toil\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"toil\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -8345,7 +8511,7 @@
         },
         {
           "do": "set link:incidents|onCallLoad causal-loop.link-weight = \"heavy\"",
-          "answer": "refused: 'heavy' is not a number. A weight is an annotation this diagram records and never evaluates; leave it empty to remove it.",
+          "answer": "refused: 'heavy' is not a number. A weight is this link's starting strength in a flow page; leave it empty to remove it.",
           "unchanged": true
         },
         {
@@ -8505,7 +8671,7 @@
         },
         {
           "do": "describe variable:incidents",
-          "answer": "causal-loop.variable-label | Label | \"Parity renamed\" | Line | editable | group Identity || causal-loop.variable-id | Identifier | \"incidents\" | Line | editable | group Identity",
+          "answer": "causal-loop.variable-label | Label | \"Parity renamed\" | Line | editable | group Identity || causal-loop.variable-id | Identifier | \"incidents\" | Line | editable | group Identity || causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page || causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page",
           "unchanged": true
         },
         {
@@ -8843,7 +9009,9 @@
           "target": "variable:population",
           "rows": [
             "causal-loop.variable-label | Label | \"Population\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"population\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"population\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -8851,7 +9019,9 @@
           "target": "variable:births",
           "rows": [
             "causal-loop.variable-label | Label | \"Births\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"births\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"births\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -8859,7 +9029,9 @@
           "target": "variable:deaths",
           "rows": [
             "causal-loop.variable-label | Label | \"Deaths\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"deaths\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"deaths\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -8867,7 +9039,9 @@
           "target": "variable:crowding",
           "rows": [
             "causal-loop.variable-label | Label | \"Crowding\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"crowding\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"crowding\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -8875,7 +9049,9 @@
           "target": "variable:sanitation",
           "rows": [
             "causal-loop.variable-label | Label | \"Sanitation\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"sanitation\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"sanitation\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -8883,7 +9059,9 @@
           "target": "variable:foodPerCapita",
           "rows": [
             "causal-loop.variable-label | Label | \"Food per capita\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"foodPerCapita\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"foodPerCapita\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -9090,7 +9268,7 @@
         },
         {
           "do": "set link:population|births causal-loop.link-weight = \"heavy\"",
-          "answer": "refused: 'heavy' is not a number. A weight is an annotation this diagram records and never evaluates; leave it empty to remove it.",
+          "answer": "refused: 'heavy' is not a number. A weight is this link's starting strength in a flow page; leave it empty to remove it.",
           "unchanged": true
         },
         {
@@ -9250,7 +9428,7 @@
         },
         {
           "do": "describe variable:population",
-          "answer": "causal-loop.variable-label | Label | \"Parity renamed\" | Line | editable | group Identity || causal-loop.variable-id | Identifier | \"population\" | Line | editable | group Identity",
+          "answer": "causal-loop.variable-label | Label | \"Parity renamed\" | Line | editable | group Identity || causal-loop.variable-id | Identifier | \"population\" | Line | editable | group Identity || causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page || causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page",
           "unchanged": true
         },
         {
@@ -9708,7 +9886,9 @@
           "target": "variable:selfDirection",
           "rows": [
             "causal-loop.variable-label | Label | \"Experienced self-direction\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"selfDirection\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"selfDirection\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -9716,7 +9896,9 @@
           "target": "variable:emotionSuppression",
           "rows": [
             "causal-loop.variable-label | Label | \"Emotion suppression (downplaying as coping)\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"emotionSuppression\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"emotionSuppression\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -9724,7 +9906,9 @@
           "target": "variable:meaning",
           "rows": [
             "causal-loop.variable-label | Label | \"Experienced meaning and perspective\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"meaning\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"meaning\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -9732,7 +9916,9 @@
           "target": "variable:goalOrientation",
           "rows": [
             "causal-loop.variable-label | Label | \"Goal orientation\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"goalOrientation\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"goalOrientation\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -9740,7 +9926,9 @@
           "target": "variable:goalsAchieved",
           "rows": [
             "causal-loop.variable-label | Label | \"Goals achieved\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"goalsAchieved\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"goalsAchieved\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -9748,7 +9936,9 @@
           "target": "variable:satisfaction",
           "rows": [
             "causal-loop.variable-label | Label | \"Satisfaction\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"satisfaction\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"satisfaction\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -9756,7 +9946,9 @@
           "target": "variable:bigPicture",
           "rows": [
             "causal-loop.variable-label | Label | \"Sight of the bigger picture\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"bigPicture\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"bigPicture\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -9764,7 +9956,9 @@
           "target": "variable:sacrifice",
           "rows": [
             "causal-loop.variable-label | Label | \"Willingness to sacrifice\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"sacrifice\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"sacrifice\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -9772,7 +9966,9 @@
           "target": "variable:progress",
           "rows": [
             "causal-loop.variable-label | Label | \"Progress\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"progress\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"progress\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -9780,7 +9976,9 @@
           "target": "variable:confidence",
           "rows": [
             "causal-loop.variable-label | Label | \"Confidence\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"confidence\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"confidence\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -9788,7 +9986,9 @@
           "target": "variable:shortTermFunctioning",
           "rows": [
             "causal-loop.variable-label | Label | \"Functioning in the short term\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"shortTermFunctioning\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"shortTermFunctioning\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -9796,7 +9996,9 @@
           "target": "variable:copingConfirmation",
           "rows": [
             "causal-loop.variable-label | Label | \"Confirmation of the coping strategy\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"copingConfirmation\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"copingConfirmation\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -9804,7 +10006,9 @@
           "target": "variable:exhaustion",
           "rows": [
             "causal-loop.variable-label | Label | \"Exhaustion\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"exhaustion\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"exhaustion\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -9812,7 +10016,9 @@
           "target": "variable:dropout",
           "rows": [
             "causal-loop.variable-label | Label | \"Mental health dropout\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"dropout\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"dropout\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -9820,7 +10026,9 @@
           "target": "variable:toughNorm",
           "rows": [
             "causal-loop.variable-label | Label | \"Norm: don't make a fuss\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"toughNorm\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"toughNorm\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -9828,7 +10036,9 @@
           "target": "variable:emotionExpression",
           "rows": [
             "causal-loop.variable-label | Label | \"Expression of emotion\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"emotionExpression\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"emotionExpression\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -9836,7 +10046,9 @@
           "target": "variable:legalFrame",
           "rows": [
             "causal-loop.variable-label | Label | \"Legal limits on discussing mental health\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"legalFrame\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"legalFrame\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -9844,7 +10056,9 @@
           "target": "variable:insurerDependence",
           "rows": [
             "causal-loop.variable-label | Label | \"Dependence on insurers and premiums\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"insurerDependence\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"insurerDependence\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -9852,7 +10066,9 @@
           "target": "variable:ageing",
           "rows": [
             "causal-loop.variable-label | Label | \"Ageing population\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"ageing\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"ageing\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -9860,7 +10076,9 @@
           "target": "variable:conversationalSafety",
           "rows": [
             "causal-loop.variable-label | Label | \"Safety to talk\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"conversationalSafety\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"conversationalSafety\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -9868,7 +10086,9 @@
           "target": "variable:openness",
           "rows": [
             "causal-loop.variable-label | Label | \"Openness and vulnerability\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"openness\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"openness\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -9876,7 +10096,9 @@
           "target": "variable:visibleComplaints",
           "rows": [
             "causal-loop.variable-label | Label | \"Visible mental health complaints\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"visibleComplaints\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"visibleComplaints\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -9884,7 +10106,9 @@
           "target": "variable:preventionUrgency",
           "rows": [
             "causal-loop.variable-label | Label | \"Perceived need for prevention\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"preventionUrgency\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"preventionUrgency\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -9892,7 +10116,9 @@
           "target": "variable:systemChange",
           "rows": [
             "causal-loop.variable-label | Label | \"System change\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"systemChange\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"systemChange\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -9900,7 +10126,9 @@
           "target": "variable:preventionInvestment",
           "rows": [
             "causal-loop.variable-label | Label | \"Investment in prevention\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"preventionInvestment\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"preventionInvestment\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -9908,7 +10136,9 @@
           "target": "variable:premiumPressure",
           "rows": [
             "causal-loop.variable-label | Label | \"Costs and premium pressure\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"premiumPressure\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"premiumPressure\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -9916,7 +10146,9 @@
           "target": "variable:generationalLabels",
           "rows": [
             "causal-loop.variable-label | Label | \"Limiting stories and labels of older generations\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"generationalLabels\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"generationalLabels\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -9924,7 +10156,9 @@
           "target": "variable:youthSelfImage",
           "rows": [
             "causal-loop.variable-label | Label | \"Self-image of young people\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"youthSelfImage\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"youthSelfImage\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -9932,7 +10166,9 @@
           "target": "variable:withdrawal",
           "rows": [
             "causal-loop.variable-label | Label | \"Withdrawal and behaviour\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"withdrawal\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"withdrawal\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -9940,7 +10176,9 @@
           "target": "variable:vulnerability",
           "rows": [
             "causal-loop.variable-label | Label | \"Showing vulnerability\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"vulnerability\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"vulnerability\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -10614,7 +10852,7 @@
         },
         {
           "do": "set link:emotionSuppression|shortTermFunctioning causal-loop.link-weight = \"heavy\"",
-          "answer": "refused: 'heavy' is not a number. A weight is an annotation this diagram records and never evaluates; leave it empty to remove it.",
+          "answer": "refused: 'heavy' is not a number. A weight is this link's starting strength in a flow page; leave it empty to remove it.",
           "unchanged": true
         },
         {
@@ -10774,7 +11012,7 @@
         },
         {
           "do": "describe variable:selfDirection",
-          "answer": "causal-loop.variable-label | Label | \"Parity renamed\" | Line | editable | group Identity || causal-loop.variable-id | Identifier | \"selfDirection\" | Line | editable | group Identity",
+          "answer": "causal-loop.variable-label | Label | \"Parity renamed\" | Line | editable | group Identity || causal-loop.variable-id | Identifier | \"selfDirection\" | Line | editable | group Identity || causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page || causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page",
           "unchanged": true
         },
         {
@@ -11124,7 +11362,9 @@
           "target": "variable:incidents",
           "rows": [
             "causal-loop.variable-label | Label | \"Incidents\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"incidents\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"incidents\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -11132,7 +11372,9 @@
           "target": "variable:onCallLoad",
           "rows": [
             "causal-loop.variable-label | Label | \"On-call load\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"onCallLoad\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"onCallLoad\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -11140,7 +11382,9 @@
           "target": "variable:fatigue",
           "rows": [
             "causal-loop.variable-label | Label | \"Fatigue\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"fatigue\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"fatigue\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -11148,7 +11392,9 @@
           "target": "variable:mistakes",
           "rows": [
             "causal-loop.variable-label | Label | \"Mistakes\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"mistakes\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"mistakes\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -11156,7 +11402,9 @@
           "target": "variable:attrition",
           "rows": [
             "causal-loop.variable-label | Label | \"Attrition\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"attrition\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"attrition\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -11164,7 +11412,9 @@
           "target": "variable:teamSize",
           "rows": [
             "causal-loop.variable-label | Label | \"Team size\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"teamSize\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"teamSize\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -11172,7 +11422,9 @@
           "target": "variable:automation",
           "rows": [
             "causal-loop.variable-label | Label | \"Automation work\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"automation\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"automation\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -11180,7 +11432,9 @@
           "target": "variable:toil",
           "rows": [
             "causal-loop.variable-label | Label | \"Manual toil\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"toil\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"toil\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -11387,7 +11641,7 @@
         },
         {
           "do": "set link:incidents|onCallLoad causal-loop.link-weight = \"heavy\"",
-          "answer": "refused: 'heavy' is not a number. A weight is an annotation this diagram records and never evaluates; leave it empty to remove it.",
+          "answer": "refused: 'heavy' is not a number. A weight is this link's starting strength in a flow page; leave it empty to remove it.",
           "unchanged": true
         },
         {
@@ -11547,7 +11801,7 @@
         },
         {
           "do": "describe variable:incidents",
-          "answer": "causal-loop.variable-label | Label | \"Parity renamed\" | Line | editable | group Identity || causal-loop.variable-id | Identifier | \"incidents\" | Line | editable | group Identity",
+          "answer": "causal-loop.variable-label | Label | \"Parity renamed\" | Line | editable | group Identity || causal-loop.variable-id | Identifier | \"incidents\" | Line | editable | group Identity || causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page || causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page",
           "unchanged": true
         },
         {
@@ -11879,7 +12133,9 @@
           "target": "variable:population",
           "rows": [
             "causal-loop.variable-label | Label | \"Population\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"population\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"population\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -11887,7 +12143,9 @@
           "target": "variable:births",
           "rows": [
             "causal-loop.variable-label | Label | \"Births\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"births\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"births\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -11895,7 +12153,9 @@
           "target": "variable:deaths",
           "rows": [
             "causal-loop.variable-label | Label | \"Deaths\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"deaths\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"deaths\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -11903,7 +12163,9 @@
           "target": "variable:crowding",
           "rows": [
             "causal-loop.variable-label | Label | \"Crowding\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"crowding\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"crowding\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -11911,7 +12173,9 @@
           "target": "variable:sanitation",
           "rows": [
             "causal-loop.variable-label | Label | \"Sanitation\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"sanitation\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"sanitation\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -11919,7 +12183,9 @@
           "target": "variable:foodPerCapita",
           "rows": [
             "causal-loop.variable-label | Label | \"Food per capita\" | Line | editable | group Identity",
-            "causal-loop.variable-id | Identifier | \"foodPerCapita\" | Line | editable | group Identity"
+            "causal-loop.variable-id | Identifier | \"foodPerCapita\" | Line | editable | group Identity",
+            "causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page",
+            "causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page"
           ],
           "rowsReadOnly": []
         },
@@ -12122,7 +12388,7 @@
         },
         {
           "do": "set link:population|births causal-loop.link-weight = \"heavy\"",
-          "answer": "refused: 'heavy' is not a number. A weight is an annotation this diagram records and never evaluates; leave it empty to remove it.",
+          "answer": "refused: 'heavy' is not a number. A weight is this link's starting strength in a flow page; leave it empty to remove it.",
           "unchanged": true
         },
         {
@@ -12282,7 +12548,7 @@
         },
         {
           "do": "describe variable:population",
-          "answer": "causal-loop.variable-label | Label | \"Parity renamed\" | Line | editable | group Identity || causal-loop.variable-id | Identifier | \"population\" | Line | editable | group Identity",
+          "answer": "causal-loop.variable-label | Label | \"Parity renamed\" | Line | editable | group Identity || causal-loop.variable-id | Identifier | \"population\" | Line | editable | group Identity || causal-loop.variable-start | Starting level | \"0.5\" | Line | editable | group Flow page || causal-loop.variable-push | Outside push | \"0\" | Line | editable | group Flow page",
           "unchanged": true
         },
         {

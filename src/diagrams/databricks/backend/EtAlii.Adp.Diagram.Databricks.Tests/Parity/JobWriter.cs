@@ -1,7 +1,7 @@
 using System.Globalization;
 using EtAlii.Adp.Documents;
 
-namespace EtAlii.Adp.Diagram.Databricks;
+namespace EtAlii.Adp.Diagram.Databricks.Tests.Parity;
 
 /// <summary>
 /// The named splice operations on a job: tasks in and out, edges connected and disconnected,
@@ -13,6 +13,11 @@ namespace EtAlii.Adp.Diagram.Databricks;
 /// a refusal happens <b>before</b> any splice, never write-then-repair, so a refused document is
 /// untouched by construction (Requirement 6.4). A successful splice invalidates the model that
 /// located it; callers re-parse.
+/// <para>
+/// <b>The oracle</b>: the module's hand-written code, moved here as it was, its namespace aside and with <c>ReferencesTo</c> moved to <see cref="HandWrittenDatabricks"/>, from the product code when
+/// databricks-disl-fbl task 12 planned every edit through the binding, so that <see cref="DatabricksDerivedOperationsTests"/>
+/// can compare what the commands write with what the module wrote by hand.
+/// </para>
 /// </remarks>
 internal static class JobWriter
 {
@@ -76,7 +81,7 @@ internal static class JobWriter
     /// Descending order matters: removing a range shifts every line after it, so removing
     /// top-down would leave every later range pointing at the wrong lines. The references go with
     /// the task because an edge to something that no longer exists is not a diagram anybody
-    /// wants; <see cref="ReferencesTo"/> answers how many, before anything runs.
+    /// wants; <see cref="HandWrittenDatabricks.ReferencesTo"/> answers how many, before anything runs.
     /// </remarks>
     public static string RemoveTask(LineDocument document, JobModel job, string taskKey)
     {
@@ -109,17 +114,6 @@ internal static class JobWriter
         }
 
         return "";
-    }
-
-    /// <summary>The dependencies that would go with a task, so an action can say how many before it runs.</summary>
-    public static IReadOnlyList<JobDependency> ReferencesTo(JobModel job, string taskKey)
-    {
-        ArgumentNullException.ThrowIfNull(job);
-        return job.Tasks
-            .Where(task => task.Key != taskKey)
-            .SelectMany(task => task.DependsOn)
-            .Where(dependency => dependency.TaskKey == taskKey)
-            .ToList();
     }
 
     /// <summary>Adds a <c>depends_on</c> entry: <paramref name="toKey"/> comes to depend on <paramref name="fromKey"/>.</summary>

@@ -1,6 +1,6 @@
 using EtAlii.Adp.Documents;
 
-namespace EtAlii.Adp.Diagram.Databricks;
+namespace EtAlii.Adp.Diagram.Databricks.Tests.Parity;
 
 /// <summary>
 /// The named splice operations on a <c>databricks.yml</c>: resource skeletons in, scalars
@@ -9,6 +9,11 @@ namespace EtAlii.Adp.Diagram.Databricks;
 /// <remarks>
 /// Every operation answers with an empty string, or the sentence explaining why it refused -
 /// before any splice, never write-then-repair (Requirement 6.4).
+/// <para>
+/// <b>The oracle</b>: the module's hand-written code, moved here as it was, its namespace aside, from the product code when
+/// databricks-disl-fbl task 12 planned every edit through the binding, so that <see cref="DatabricksDerivedOperationsTests"/>
+/// can compare what the commands write with what the module wrote by hand.
+/// </para>
 /// </remarks>
 internal static class BundleWriter
 {

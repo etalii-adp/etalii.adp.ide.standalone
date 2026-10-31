@@ -252,11 +252,14 @@ internal static class DatabricksReadings
             ? overridden
             : overridden with { Attributes = overridden.Attributes.Where(attribute => attribute.Key != "to").ToDictionary(attribute => attribute.Key, attribute => attribute.Value, StringComparer.Ordinal) };
 
-    /// <summary>A library per entry of the pipeline's <c>libraries</c>, and the pipeline's own elements.</summary>
+    /// <summary>
+    /// A library per entry of the pipeline's <c>libraries</c>, and the pipeline's own elements. The binding reads a library
+    /// under its pipeline, so that an add names the pipeline it goes in; the definition draws it beside it.
+    /// </summary>
     private static List<FblElement> PipelineElements(PipelineModel pipeline, FblModel reading)
     {
         var elements = new List<FblElement>();
-        elements.AddRange(reading.Elements.Where(element => element.Type == "Library"));
+        elements.AddRange(reading.Elements.Where(element => element.Type == "Library").Select(library => library with { ParentId = null }));
         elements.AddRange(FixedPipeline(pipeline, reading));
         return elements;
     }
