@@ -60,7 +60,7 @@ internal sealed class GrammarFamily(BodyText text, FblBinding binding, FblOption
     private void ReportSkipped(GrammarSkipped skipped)
     {
         var unit = Binding.Body.Grammar?.Recover?.Unit;
-        Report(FindingCodes.UnparsedText, FindingSeverity.Warning, $"This text does not read as a {unit} of the grammar; it is kept as it is and binds nothing.", new Span(skipped.Stop, skipped.Text.End));
+        Report(FindingCodes.UnparsedText, FindingSeverity.Warning, $"This text does not read as a {unit} of the grammar; it is kept as it is and binds nothing.", skipped.Text with { Start = skipped.Stop });
     }
 
     private void RememberComment(Span comment)
