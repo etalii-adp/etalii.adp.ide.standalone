@@ -19,10 +19,6 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}  # to check out the actual pull request commit, not the merge commit
           fetch-depth: 0  # a full history is required for pull request analysis, and Nerdbank.GitVersioning refuses a shallow clone
-      # qodana.yaml runs the .NET linter natively (ide: QDNET), so the SDK src/global.json names has to be on the runner.
-      - uses: actions/setup-dotnet@v6
-        with:
-          global-json-file: src/global.json
       - name: 'Qodana Scan'
         uses: JetBrains/qodana-action@v2026.1
         with:
