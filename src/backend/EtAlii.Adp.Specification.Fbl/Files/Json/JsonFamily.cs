@@ -255,12 +255,7 @@ internal sealed class JsonFamily(BodyText text, FblBinding binding, FblOptions o
         if (insert.Skeleton is not null) Plan.Refuse($"A new {request.Rule.Type} is written with a skeleton, which a {FamilyName} file cannot hold.");
         RefuseDuplicate(request, container.Value, key);
         var siblings = container.Value.Entries;
-        var previous = siblings.Count == 0 ? null : insert.Place switch
-        {
-            InsertPlace.Start => null,
-            InsertPlace.AfterLast => siblings.LastOrDefault(s => plan.Reading.ClaimedBy(s) == request.Rule.Name) ?? siblings[^1],
-            _ => siblings[^1],
-        };
+        var previous = Preceding(plan, request.Rule, insert.Place, siblings);
         var members = InsertValues(request).Select(Member).ToList();
         var text = Quote(key) + ": " + NewObject(members, previous ?? siblings.FirstOrDefault());
         if (previous is null && siblings.Count > 0)
@@ -276,6 +271,13 @@ internal sealed class JsonFamily(BodyText text, FblBinding binding, FblOptions o
         }
         var separator = previous.LineSpan is not null ? "," + NewlineAt(previous.Own.End) + Indentation(previous.Indent) : ", ";
         plan.Add(SpliceOperation.InsertEntry, previous.Own.End, previous.Own.End, separator + text);
+    }
+
+    /// <summary>The member a new one follows by <paramref name="place"/> (FBL 0.14 §6.2): none at the start or in an empty object.</summary>
+    private static TreeEntry? Preceding(Plan plan, Rule rule, InsertPlace place, List<TreeEntry> siblings)
+    {
+        if (siblings.Count == 0 || place == InsertPlace.Start) return null;
+        return place == InsertPlace.AfterLast ? siblings.LastOrDefault(s => plan.Reading.ClaimedBy(s) == rule.Name) ?? siblings[^1] : siblings[^1];
     }
 
     /// <summary>A member of a new entry's object: a key with its value, or a level of child (FBL 0.10 §6.2) as a member whose value is an object of what it holds.</summary>

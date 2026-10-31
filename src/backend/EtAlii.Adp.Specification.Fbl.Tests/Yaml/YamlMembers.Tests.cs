@@ -37,7 +37,7 @@ public class YamlMembersTests
     public void AContainerWrittenAsItsKeyAlone_TakesTheMemberAsTheFirstOfABlockMapping()
     {
         // Arrange.
-        var body = OpenBody.Open(Encoding.UTF8.GetBytes("board: x\nlanes:\n"), Load("yaml", "after-last"));
+        var body = OpenBody.Open("board: x\nlanes:\n"u8.ToArray(), Load("yaml", "after-last"));
 
         // Act.
         var result = Add(body, "todo");
@@ -51,7 +51,7 @@ public class YamlMembersTests
     public void AContainerWrittenInFlowForm_TakesNoMember()
     {
         // Arrange.
-        var body = OpenBody.Open(Encoding.UTF8.GetBytes("lanes: {}\n"), Load("yaml", "after-last"));
+        var body = OpenBody.Open("lanes: {}\n"u8.ToArray(), Load("yaml", "after-last"));
 
         // Act.
         var result = Add(body, "todo");
@@ -65,7 +65,7 @@ public class YamlMembersTests
     public void AMemberPlacedAtTheStart_GoesBeforeTheFirst_WithItsKeyQuotedWhenItIsNotPlainSafe()
     {
         // Arrange.
-        var body = OpenBody.Open(Encoding.UTF8.GetBytes("lanes:\n  todo:\n    title: To do\n"), Load("yaml", "start"));
+        var body = OpenBody.Open("lanes:\n  todo:\n    title: To do\n"u8.ToArray(), Load("yaml", "start"));
 
         // Act.
         var result = Add(body, "yes");
@@ -73,7 +73,7 @@ public class YamlMembersTests
         // Assert: "yes" written plain would read as a boolean, not as the key the add gave.
         Assert.IsType<PlanResult.Planned>(result);
         Assert.Equal("lanes:\n  \"yes\":\n    title: T\n  todo:\n    title: To do\n", Text(body));
-        Assert.Contains(body.Model.Elements, element => element.Type == "Lane" && element.Id == "yes");
+        Assert.Contains(body.Model.Elements, element => element is { Type: "Lane", Id: "yes" });
     }
 
     [Fact]
@@ -95,7 +95,7 @@ public class YamlMembersTests
     public void AJsonMemberPlacedAtTheStart_TakesTheSeparatorAfterIt()
     {
         // Arrange.
-        var body = OpenBody.Open(Encoding.UTF8.GetBytes("{\n  \"lanes\": {\n    \"todo\": {\n      \"title\": \"To do\"\n    }\n  }\n}\n"), Load("json", "start"));
+        var body = OpenBody.Open("{\n  \"lanes\": {\n    \"todo\": {\n      \"title\": \"To do\"\n    }\n  }\n}\n"u8.ToArray(), Load("json", "start"));
 
         // Act.
         var result = Add(body, "first");
