@@ -27,7 +27,7 @@ internal static class CausalLoopCorpus
     }
 
     /// <summary>The most variables a document of <see cref="WalkedElementByElement"/> has.</summary>
-    public const int MostWalkedVariables = 30;
+    private const int MostWalkedVariables = 30;
 
     /// <summary>
     /// The corpus, less its documents of more than <see cref="MostWalkedVariables"/> variables: what the tests that
