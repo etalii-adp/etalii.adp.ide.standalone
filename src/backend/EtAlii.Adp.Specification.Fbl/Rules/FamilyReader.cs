@@ -511,7 +511,7 @@ internal sealed record InsertedValue(string Key, object? Value, AttributeBinding
 }
 
 /// <summary>What adding an element or relation needs to know (FBL §6.2); <paramref name="Index"/> is the position among its siblings, for a family that <see cref="FamilyReader.PlacesByPosition"/>.</summary>
-internal sealed record InsertRequest(Rule Rule, string? Id, IReadOnlyDictionary<string, object?> Values, ReadElement? Parent, ReadElement? Source, ReadElement? Target, int? Index = null);
+internal sealed record InsertRequest(Rule Rule, string? Id, IReadOnlyDictionary<string, object?> Values, ReadElement? Parent, ReadElement? Source, ReadElement? Target, int? Index = null, ReadElement? After = null);
 
 /// <summary>Thrown inside planning when a change cannot be made; the edit is refused with its message (FBL §6.4).</summary>
 internal sealed class RefusedException(string reason) : Exception(reason);

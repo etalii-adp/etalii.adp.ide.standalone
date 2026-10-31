@@ -8,6 +8,9 @@ import { useContextConnection, useContextSelection } from "../context/ContextCon
 import { PropertyRow } from "./PropertyRow";
 import { answerPropertyPreview, usePropertyPreview } from "./propertyPreview";
 import { selectedElementIdOf } from "../../canvas/selection";
+import { useFocusedDiagram } from "../../canvas/focusedDiagram";
+import { create } from "@bufbuild/protobuf";
+import { ContextSourceSchema, type ContextSource } from "../../generated/context-contract_pb";
 import { PanelEmptyState } from "./PanelEmptyState";
 
 const SOURCE_LABELS: Record<number, string> = {
@@ -126,16 +129,22 @@ export function PropertyGridPanel() {
   // what makes an edit show up: committing a value changes the document, the document change
   // is pushed, and the properties are read again - so the grid never shows its own optimistic
   // guess about what the backend did.
+  const focused = useFocusedDiagram();
+  const focusedVersion = selection ? undefined : focused?.version;
+  const focusedSource = useRef<ContextSource | undefined>(undefined);
+  focusedSource.current =
+    !selection && focused ? create(ContextSourceSchema, { source: { case: "entryId", value: { value: focused.entryId } } }) : undefined;
   const pushedDetail = levels.map((detail) => detail.detail.case + ":" + JSON.stringify(detail.detail.value ?? null)).join("|");
   useEffect(() => {
     let cancelled = false;
-    if (!selection) {
+    // Nothing selected: the rows of the diagram showing, when its type has any (etalii.adp spec 074).
+    if (!selection && !focusedSource.current) {
       setProperties([]);
       setDescribeError("");
       return;
     }
 
-    void describeRef.current().then((described) => {
+    void describeRef.current(focusedSource.current).then((described) => {
       if (!cancelled) {
         setProperties(described.properties);
         setDescribeError(described.error);
@@ -147,14 +156,14 @@ export function PropertyGridPanel() {
     return () => {
       cancelled = true;
     };
-  }, [selection, pushedDetail]);
+  }, [selection, pushedDetail, focusedVersion]);
 
   const setRef = useRef(setProperty);
   setRef.current = setProperty;
 
   const commit = useCallback(
     async (propertyId: string, value: string): Promise<string> => {
-      const outcome = await setRef.current(propertyId, value);
+      const outcome = await setRef.current(propertyId, value, focusedSource.current);
       if (outcome.accepted) {
         // Nothing to set here: the change lands on the document, the document change is
         // pushed, and the effect above reads the properties again.
@@ -164,6 +173,26 @@ export function PropertyGridPanel() {
     },
     [],
   );
+
+  const renderDiagramGroup = (group: { name: string; properties: ContextProperty[] }) => (
+    <div className="property-grid-group" key={group.name}>
+      {group.name.length > 0 && <h4 className="property-grid-group-title">{group.name}</h4>}
+      {group.properties.map((property) => (
+        <PropertyRow key={property.id} property={property} onCommit={(value) => commit(property.id, value)} />
+      ))}
+    </div>
+  );
+
+  if (!selection && focused && properties.length > 0) {
+    return (
+      <div className="property-grid">
+        <section className="property-grid-level">
+          <h3 className="property-grid-level-title">This diagram</h3>
+          <dl className="property-grid-rows">{groupsOf(properties).map(renderDiagramGroup)}</dl>
+        </section>
+      </div>
+    );
+  }
 
   if (!selection) {
     return (

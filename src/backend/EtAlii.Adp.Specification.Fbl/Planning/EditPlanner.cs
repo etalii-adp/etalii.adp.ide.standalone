@@ -1,4 +1,5 @@
 using EtAlii.Adp.Specification.Fbl.Documents;
+using EtAlii.Adp.Specification.Fbl.Lines;
 using EtAlii.Adp.Specification.Fbl.Rules;
 
 namespace EtAlii.Adp.Specification.Fbl.Planning;
@@ -27,6 +28,9 @@ internal static class EditPlanner
                     break;
                 case ModelChange.Add add:
                     PlanAdd(plan, add);
+                    break;
+                case ModelChange.AddAfter added:
+                    PlanAddAfter(plan, added);
                     break;
                 case ModelChange.Remove remove:
                     PlanRemove(plan, remove);
@@ -238,7 +242,15 @@ internal static class EditPlanner
 
     // ---- add ----
 
-    private static void PlanAdd(Plan plan, ModelChange.Add add)
+    /// <summary>An add put on a line of its own right after the entry it names. Only the lines family's statements can be, and a statement of any other family is refused.</summary>
+    private static void PlanAddAfter(Plan plan, ModelChange.AddAfter added)
+    {
+        var anchor = Element(plan.Reading, added.After);
+        if (plan.Reading.Family is not LinesFamily) Planning.Plan.Refuse($"This file's binding cannot add a {added.Type} at that position.");
+        PlanAdd(plan, new ModelChange.Add(added.Type, null, added.Attributes), anchor);
+    }
+
+    private static void PlanAdd(Plan plan, ModelChange.Add add, ReadElement? after = null)
     {
         var reading = plan.Reading;
         // A declared binding appends where its insert rule says; a position among siblings is a plugin's to honour,
@@ -301,7 +313,7 @@ internal static class EditPlanner
             Planning.Plan.Refuse($"Another element already has the id '{id}'.");
             _ = from;
         }
-        reading.Family.Insert(plan, new InsertRequest(rule, add.Id, values, parent, source, target, add.Index));
+        reading.Family.Insert(plan, new InsertRequest(rule, add.Id, values, parent, source, target, add.Index, after));
         if (rule.SnapshotUndo) plan.Snapshot = true;
     }
 

@@ -20,6 +20,13 @@ public abstract record ModelChange
     public sealed record Add(string Type, string? Id, IReadOnlyDictionary<string, object?> Attributes, string? ParentId = null, int? Index = null, string? Slot = null) : ModelChange;
 
     /// <summary>
+    /// Adds an entry on a line of its own right after the entry <paramref name="After"/>, whatever that entry's type
+    /// (FBL §11.2, the position <c>{after}</c>; etalii.adp spec 074): a statement that belongs beside a header it is not a
+    /// sibling of.
+    /// </summary>
+    public sealed record AddAfter(string Type, IReadOnlyDictionary<string, object?> Attributes, string After) : ModelChange;
+
+    /// <summary>
     /// Moves an element, with everything it contains, under <paramref name="NewParentId"/> (to the top
     /// level when it is null), before the child now at <paramref name="Index"/> there, or after the last
     /// when the index is negative or past them.

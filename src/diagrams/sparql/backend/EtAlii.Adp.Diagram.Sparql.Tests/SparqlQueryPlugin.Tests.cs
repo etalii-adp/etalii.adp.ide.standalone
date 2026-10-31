@@ -146,6 +146,7 @@ public class SparqlQueryPluginTests
     public static TheoryData<ModelChange> Changes() =>
     [
         new ModelChange.Add("Pattern", null, new Dictionary<string, object?>()),
+        new ModelChange.AddAfter("Pattern", new Dictionary<string, object?>(), "pattern-0"),
         new ModelChange.Move("pattern-0", null, 0),
         new ModelChange.Retype("pattern-0", "Constraint", new Dictionary<string, object?>()),
         new ModelChange.Set("pattern-0", new Dictionary<string, object?> { ["predicate"] = "ex:q" }),
