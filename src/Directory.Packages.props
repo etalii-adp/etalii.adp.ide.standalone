@@ -38,6 +38,12 @@
       EtAlii.Adp.Documents.YamlNodeRange: use it rather than writing another copy.
     -->
     <PackageVersion Include="YamlDotNet" Version="18.1.0" />
+    <!--
+      EtAlii.Lark (MIT) builds, lexes and parses the grammar a binding of FBL 0.9's grammar family carries, in
+      EtAlii.Adp.Specification.Fbl alone: Peter's rule of 2026-10-23 is that every Lark and LALR(1) use goes through
+      the EtAlii Lark packages, so that a grammar has one verdict in every host (etalii.adp spec 072).
+    -->
+    <PackageVersion Include="EtAlii.Lark" Version="0.4.0" />
     <PackageVersion Include="xunit.v3" Version="4.0.1" />
     <!-- The *.Tests.Support projects hold abstract test classes (the store and reloader contracts), so they
          need xUnit's attributes and assertions without becoming test projects themselves. -->

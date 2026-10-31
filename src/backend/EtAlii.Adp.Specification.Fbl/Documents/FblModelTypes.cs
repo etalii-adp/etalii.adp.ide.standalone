@@ -1,6 +1,7 @@
 using System.Text.Json;
 using EtAlii.Adp.Specification.Cel;
 using EtAlii.Adp.Specification.Fbl.Expressions;
+using EtAlii.Adp.Specification.Fbl.Grammar;
 
 namespace EtAlii.Adp.Specification.Fbl.Documents;
 
@@ -20,6 +21,9 @@ public enum Family
     Lines,
     Blocks,
     Bullets,
+
+    /// <summary>FBL 0.9 §4.9: a body that the context-free grammar the binding carries reads.</summary>
+    Grammar,
 }
 
 /// <summary>One binding (FBL §3): how one format maps to a language's model.</summary>
@@ -152,6 +156,9 @@ public sealed class BodySettings
 
     public IReadOnlyList<string> Ignore { get; init; } = [];
 
+    /// <summary>The grammar of a body of the <c>grammar</c> family (FBL 0.9 §4.9); null for every other family.</summary>
+    internal GrammarBody? Grammar { get; init; }
+
     /// <summary>How long, in milliseconds, a watched folder must be quiet before it is read again (FBL §10.3).</summary>
     public int Settle { get; init; } = DefaultSettle;
 
@@ -160,6 +167,27 @@ public sealed class BodySettings
 }
 
 public sealed record FileRule(string? Name, string Glob, Family? Family);
+
+/// <summary>
+/// A body's grammar (FBL 0.9 §3.2, §4.9): its text, or the name of the <c>.lark</c> file beside the FBL document that
+/// holds it; its start rule; and how a body that does not parse is read in part. <see cref="Built"/> is the parser,
+/// built once as the binding loads.
+/// </summary>
+internal sealed class GrammarBody
+{
+    public string? Text { get; init; }
+
+    public string? File { get; init; }
+
+    public string Start { get; init; } = "start";
+
+    public GrammarRecover? Recover { get; init; }
+
+    public GrammarBuild? Built { get; set; }
+}
+
+/// <summary><c>body.recover</c> (FBL 0.9 §4.9): the rule a body is read unit by unit by, and the terminals a skip ends at.</summary>
+internal sealed record GrammarRecover(string Unit, IReadOnlyList<string> Sync);
 
 public sealed record PluginReader(string Plugin, string? Version)
 {

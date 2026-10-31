@@ -22,7 +22,7 @@ public class ConformanceFixturesTests
     /// <summary>
     /// The fixtures of FBL 0.9's grammar family and of FBL 0.13's split slot (etalii.adp spec 072), vendored before the
     /// library reads the family and held out of the theories until it does. Each task of the specification takes its
-    /// fixtures out of this set; <see cref="TheGrammarFixturesAreRefusedForTheirFamily"/> holds what is left.
+    /// fixtures out of this set; <see cref="TheGrammarFixturesAreRefusedForTheirSlots"/> holds what is left.
     /// </summary>
     private static readonly HashSet<string> Pending = new(StringComparer.Ordinal) { "grammar-split-slot", "w3c-turtle-grammar", "w3c-turtle-grammar-partial" };
 
@@ -66,12 +66,13 @@ public class ConformanceFixturesTests
     }
 
     /// <summary>
-    /// Requirement 1.1 of etalii.adp spec 072: the gap is seen before it is closed. Every fixture still held out of the
-    /// theories is a fixture whose binding this library refuses for its family, <c>grammar</c>, which it does not read
-    /// yet; a pending fixture that loads, or that is refused for no reason of its family, fails here.
+    /// Requirement 1.1 of etalii.adp spec 072: the gap is seen before it is closed. The library reads the family's
+    /// <c>body</c> since task T002, so every fixture still held out of the theories is a fixture whose binding it refuses
+    /// for its <c>{node}</c> slots, which it does not read yet; a pending fixture that loads, or that is refused for no
+    /// reason of its slots, fails here.
     /// </summary>
     [Fact]
-    public void TheGrammarFixturesAreRefusedForTheirFamily()
+    public void TheGrammarFixturesAreRefusedForTheirSlots()
     {
         foreach (var name in Pending)
         {
@@ -86,7 +87,8 @@ public class ConformanceFixturesTests
 
             // Assert.
             Assert.Null(document);
-            Assert.Contains(problems, p => p is { Severity: LoadSeverity.Error, Message: "A declared file body names its family." } && p.Pointer.EndsWith("/body/family", StringComparison.Ordinal));
+            Assert.Contains(problems, p => p is { Severity: LoadSeverity.Error, Message: "A slot names exactly one place (FBL §3.3)." });
+            Assert.DoesNotContain(problems, p => p.Severity == LoadSeverity.Error && p.Pointer.Contains("/body", StringComparison.Ordinal));
         }
     }
 
