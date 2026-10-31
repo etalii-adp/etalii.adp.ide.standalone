@@ -14,21 +14,21 @@ Where an option is recommended, say which and why in its own text rather than in
 
 ## Roles and chat naming
 
-The team is **one Scrum master, four Developers, two Testers and two Architects**. Responsibilities are defined in [roles.md](.spec-workflow/steering/roles.md) — read it; this section only says how sessions are named.
+The team is **one Scrum master, four Developers, two Testers and two Architects**. Responsibilities are defined in [roles.md](docs/steering/roles.md) — read it; this section only says how sessions are named.
 
 Rename this session to `<Role> N - <topic/specification>` whenever its topic changes — `Developer 2 - causal-loop implementation`, `Architect 1 - diagram-layout requirements`, `Tester 1 - inline rename pass`. Keep the number you already hold and take the next free one within your role otherwise. When finished, rename to `<Role> N - Idle`. The Scrum master session is named `Scrum master` and never renames.
 
 **Your role decides what you are given, not what you fancy.** Developers implement tasks in a worktree and **own a specification until every one of its tasks is done — no other Developer works on that specification, and the owner becomes available only when it is finished.** That is exclusive per *specification*, not per task: a spec whose tasks are independently landable is still worked by one Developer, in whatever order suits, rather than fanned out across several. The independence buys ordering freedom and clean merges, not extra hands. Architects write specifications and documentation, and pursue structural improvement. Testers exercise the running application and write the procedures they follow. A session whose role does not fit the work says so rather than taking it.
 
-Full rules and reasoning: [processes.md, *Chat naming*](.spec-workflow/steering/processes.md#chat-naming).
+Full rules and reasoning: [processes.md, *Chat naming*](docs/steering/processes.md#chat-naming).
 
 ## Git worktrees
 
 **Anything that changes the repository's files happens in a dedicated worktree** (`.claude/worktrees/<name>/`, short name) on a branch named `features/<name>`, never in the main checkout, because several sessions share its index. That is implementation, documentation fixes under `docs/`, and structural or complexity work alike — all of it goes through a branch, the four gates and a pull request. The one branch name outside `features/` is `claude/<name>`, which Claude's cloud sessions are handed by their harness; it follows the same pull-request rule.
 
-**The one exception is a specification document.** Requirements, designs and tasks, and the approvals, snapshots and logs beside them, are written on `develop` in the main checkout, because the dashboard reads `.spec-workflow/` from there and nowhere else. `roles.md` draws the same line: an Architect's structural and documentation work is on a worktree, its specification writing is on development. Retire a worktree with `bash C:/git/EtAlii.Adp/.github/tools/gate/retire.sh <name>` once its pull request is merged — never one another session is working in, and never with `--force`. It refuses uncommitted or unlanded work and removes `node_modules` first, so no husk is left.
+**Specification documents are not written here at all**: they are Spec Kit features in etalii.adp (see *Specifications*). Retire a worktree with `bash C:/git/EtAlii.Adp/.github/tools/gate/retire.sh <name>` once its pull request is merged — never one another session is working in, and never with `--force`. It refuses uncommitted or unlanded work and removes `node_modules` first, so no husk is left.
 
-Full rules and reasoning, including the half-removed-worktree hazard: [processes.md, *Where work happens*](.spec-workflow/steering/processes.md#where-work-happens) and [*Retiring a worktree*](.spec-workflow/steering/processes.md#retiring-a-worktree).
+Full rules and reasoning, including the half-removed-worktree hazard: [processes.md, *Where work happens*](docs/steering/processes.md#where-work-happens) and [*Retiring a worktree*](docs/steering/processes.md#retiring-a-worktree).
 
 ## Committing and merging in the shared main checkout
 
@@ -42,7 +42,7 @@ Commit with an explicit pathspec - `git commit -F msg -- <paths>` - naming files
 
 Nothing reaches `develop` except through a merged pull request, apart from the specification documents named under *Git worktrees*. The local-merge rules in processes.md - `gate.sh`, `land.sh`, the scratch `mrg<N>` trees - describe the process this replaces and no longer apply.
 
-Previous rules, the four incidents behind them and the recovery: [processes.md, *Committing and merging in the shared main checkout*](.spec-workflow/steering/processes.md#committing-and-merging-in-the-shared-main-checkout).
+Previous rules, the four incidents behind them and the recovery: [processes.md, *Committing and merging in the shared main checkout*](docs/steering/processes.md#committing-and-merging-in-the-shared-main-checkout).
 
 ## Git identity
 
@@ -55,7 +55,7 @@ Commit under a per-task identity `agent-<N>-<task>`. **Nothing is set locally in
 - **The two read-backs answer different questions.** Plain `git config user.name` answers *who will sign my next commit here*. `git config --local user.name` answers *did I leak a value into the shared file*. Recommending only the first makes a borrowed identity invisible; only the second makes a correct identity look like a leak. Both happened today.
 - **Never `--global`, and never touch `user.email`.**
 
-A *wrong* name is worse than an ambiguous one. Full reasoning, and why an identity rather than a `Co-Authored-By` trailer: [processes.md, *Git identity*](.spec-workflow/steering/processes.md#git-identity).
+A *wrong* name is worse than an ambiguous one. Full reasoning, and why an identity rather than a `Co-Authored-By` trailer: [processes.md, *Git identity*](docs/steering/processes.md#git-identity).
 
 ## Checking that a command answered your question
 
@@ -67,7 +67,7 @@ A *wrong* name is worse than an ambiguous one. Full reasoning, and why an identi
 
 **A test written for a bug must be seen to fail against that bug before it is trusted.** Three written in one sitting passed against the broken code — React batched one window away, jsdom detached an input for another, and a third omitted `StrictMode`, outside which the defect cannot occur. **A test that passes against the defect is worse than no test**: it converts "unverified" into "verified" while nothing has changed. Perturb it and watch it fail, or delete it.
 
-Six worked instances and the reasoning: [processes.md, *Checking that a command answered your question*](.spec-workflow/steering/processes.md#checking-that-a-command-answered-your-question).
+Six worked instances and the reasoning: [processes.md, *Checking that a command answered your question*](docs/steering/processes.md#checking-that-a-command-answered-your-question).
 
 ## Checking that a specification's tasks cover its requirements
 
@@ -77,29 +77,29 @@ Six worked instances and the reasoning: [processes.md, *Checking that a command 
 
 **An unclaimed requirement is not necessarily a gap, and saying which kind it is finishes the job.** *No task claimed it* is a real gap - add the claim or add the task. *No task can claim it* is satisfied by the document's own shape, as when the in-scope set follows from the criteria rather than a list; state that in the tasks document, naming the requirements it covers. The two are identical in the diff's output. Ten unclaimed on one specification were seven and three, and a reader meeting an unexplained silence will either add pointless claims or write the diff off as noisy.
 
-Reasoning: [processes.md, *Checking that a specification's tasks cover its requirements*](.spec-workflow/steering/processes.md#checking-that-a-specifications-tasks-cover-its-requirements).
+Reasoning: [processes.md, *Checking that a specification's tasks cover its requirements*](docs/steering/processes.md#checking-that-a-specifications-tasks-cover-its-requirements).
 
-## spec-workflow
+## Specifications
 
-Commit any set of files added or removed under `.spec-workflow/` immediately, in its own commit — implementation logs included. Commit a document and its approval-lifecycle files when it is approved. **Approval comes from the dashboard and nowhere else - verbal approval of a card is never accepted, from anyone - except that a small amendment gets no card at all** (ruled by the user, 2026-09-25). A small amendment is a word, a sentence, a count, an ordering, or the reading of an ambiguous criterion. Whoever finds one sends the Scrum master the question already shaped as a selection, the Scrum master asks the user in chat, and **the document's owner applies the chosen answer**, committing it with a message that names the chat ruling and its date. **That is the one place an owner acts on the Scrum master's report of the user's answer.** Anything larger - a change of scope, a new requirement, a rewritten design section - still gets a card. **And nothing is edited under a pending card, whatever the chat said.**
+**This repository's specifications are GitHub Spec Kit features in [etalii.adp](https://github.com/etalii-adp/etalii.adp), under its `specs/`, and nowhere here.** A change starts there as `specs/NNN-standalone-<name>/`, specified, planned and split into tasks with etalii.adp's Spec Kit skills, as its `CLAUDE.md` describes; the code arrives here in pull requests of its own. Each pull request names the feature's folder and the etalii.adp commit its tasks were taken from, and a task is ticked in etalii.adp's `tasks.md` only once its pull request here is merged. This repository's principles, which every plan for it is checked against, are etalii.adp's [`.specify/memory/repositories/etalii.adp.ide.standalone.md`](https://github.com/etalii-adp/etalii.adp/blob/develop/.specify/memory/repositories/etalii.adp.ide.standalone.md), beside the steering documents in `docs/steering/`.
 
-**Do not amend a document under a pending card unless you are willing to ask the user to reject it.** The tool refuses to delete a pending approval, so an agent cannot clean up after itself: the card is left pointing at a snapshot that no longer matches the file, and only the user can break that by rejecting it. **Disclosure is not sufficient** — disclosing an amendment tells the user it happened; it does not restore the record.
+**spec-workflow is no longer used** (the user, 2026-10-31). Its unfinished specifications moved to etalii.adp as `specs/068-standalone-*` to `specs/073-standalone-*`, ticks and implementation logs included; the finished ones, their approvals and the old steering location remain in this repository's history at [`bd7e2ea`](https://github.com/etalii-adp/etalii.adp.ide.standalone/tree/bd7e2ea95b8e4195bf6f8d97f7aede9ab4dc3ad8/.spec-workflow). `.claude/settings.json` denies the spec-workflow MCP server and `.gitignore` keeps `.spec-workflow/` and its dashboard's `audit.log` out of the tree, because the server is configured at user scope on some machines and recreates them wherever it starts.
 
-**Verdict snapshots arrive already staged and belong to nobody.** The dashboard writes them under `.spec-workflow/approvals/*/.snapshots/` when a card is answered, staged in the shared index — and any staged entry makes an in-place merge unsafe here, so they block whoever merges next. **Staged is the hazard; modified is somebody working.** **Commit them before a gate, and again after a landing** — not only before a merge: if `git diff --cached` is non-empty, commit **precisely those staged paths and nothing else**, in their own commit, whether or not they are yours. **The two moments are the same files in the opposite order, and the discriminator is which operation comes next:** the merge happens inside `gate.sh` at the START of a run, while a fast-forward writes no commit and cannot be invalidated by ownerless files in the index — so committing them first at the landing moves `develop` and invalidates the landing you were about to run. Never extend that to modified-but-unstaged files — sweeping those into your commit under your message is the exact failure that produced three misattributed commits in one day. If you raised the card, check for staged snapshots when its verdict lands.
+**A small amendment to a specification still needs no new approval round** (ruled by the user, 2026-09-25): a word, a sentence, a count, an ordering, or the reading of an ambiguous criterion. Whoever finds one sends the Scrum master the question already shaped as a selection, the Scrum master asks the user in chat, and the specification's owner applies the chosen answer in etalii.adp, with a commit message naming the chat ruling and its date. Anything larger - a change of scope, a new requirement, a rewritten design section - goes back through the user's approval.
 
-Full rules and reasoning: [processes.md, *Specification bookkeeping*](.spec-workflow/steering/processes.md#specification-bookkeeping).
+Full rules and reasoning: [processes.md, *Specification bookkeeping*](docs/steering/processes.md#specification-bookkeeping).
 
 ## Vendored example data
 
 Test diagram modules against **real published example data**, not hand-written toys. Permissive licences only - **share-alike is refused**. Vendor the licence file itself beside the data as `LICENSE.md`, verbatim; a link or a readme line is not enough. **Read the licence from the dataset's own statement, not from the page around it**, and re-verify at acquisition rather than trusting what a spec recorded. Record in the folder's readme what the corpus does *not* demonstrate.
 
-Full rules and reasoning, including the source that carried three conflicting licence signals at once: [processes.md, *Vendored example data*](.spec-workflow/steering/processes.md#vendored-example-data).
+Full rules and reasoning, including the source that carried three conflicting licence signals at once: [processes.md, *Vendored example data*](docs/steering/processes.md#vendored-example-data).
 
 ## Tool type catalog
 
 Move a tool type's row in `docs/tools.md` as its state changes, with the state icon, its kind (Diagram, Designer or Editor), its display name and the `<vendor>/<type>` origin tag.
 
-Full rules and reasoning: [processes.md, *Keeping documentation true*](.spec-workflow/steering/processes.md#keeping-documentation-true).
+Full rules and reasoning: [processes.md, *Keeping documentation true*](docs/steering/processes.md#keeping-documentation-true).
 
 ## The architecture pages
 
@@ -118,7 +118,7 @@ Two documents say what the system is and where its code lives, so a session does
 
 A change that moves a touch point named in `docs/creating-a-diagram-module.md`, `docs/creating-a-designer-module.md` or `docs/creating-an-editor-module.md` updates that document in the same change; a UI change that makes a `docs/screenshots/` image misleading means retaking it.
 
-Full rules and reasoning: [processes.md, *Keeping documentation true*](.spec-workflow/steering/processes.md#keeping-documentation-true).
+Full rules and reasoning: [processes.md, *Keeping documentation true*](docs/steering/processes.md#keeping-documentation-true).
 
 ## Backend code style
 
@@ -126,7 +126,7 @@ Full rules and reasoning: [processes.md, *Keeping documentation true*](.spec-wor
 
 Run `dotnet format style --verify-no-changes --severity info` (from `src/backend/`, against `EtAlii.Adp.slnx`) to check backend code against these conventions and surface style warnings/errors — always allow this command to run, without asking for confirmation first.
 
-**Before pushing a worktree's branch for a pull request into `develop`, run that command and make it exit zero** — it is one of the four gates. A finding it reports is either code to fix or a rule to downgrade with a note; leaving it reported is not an option. Why, and the second tool that sees what this one does not: [processes.md, *Checking that the conventions are actually followed*](.spec-workflow/steering/processes.md#checking-that-the-conventions-are-actually-followed).
+**Before pushing a worktree's branch for a pull request into `develop`, run that command and make it exit zero** — it is one of the four gates. A finding it reports is either code to fix or a rule to downgrade with a note; leaving it reported is not an option. Why, and the second tool that sees what this one does not: [processes.md, *Checking that the conventions are actually followed*](docs/steering/processes.md#checking-that-the-conventions-are-actually-followed).
 
 **Three rules the user enforced by hand on 2026-09-27, and the gates now refuse:**
 
@@ -168,7 +168,7 @@ Some documents are exempt because their **bytes are the test subject**: a module
 
 Run the suite as `dotnet test --solution EtAlii.Adp.slnx` from `src/backend/`, with `MSBUILDDISABLENODEREUSE=1` and `DOTNET_CLI_USE_MSBUILD_SERVER=0` set. **Judge every gate by an exit code captured into a variable before any *subsequent command* — not merely before a pipe — never by grepping output, and read `Zero tests ran` as a broken build.** A pipe is not the only way to lose the status and it is not the common one: any command after the one you care about overwrites `$?`. End the command with the status you captured. All four gates — `npm test`, `npm run typecheck`, `dotnet format style --verify-no-changes --severity info`, `dotnet test` — must exit zero before a worktree's branch is pushed for a pull request into `develop`.
 
-Full rules and reasoning, including the `MAX_PATH` failure and the fresh-worktree codegen trap: [processes.md, *Running the backend tests*](.spec-workflow/steering/processes.md#running-the-backend-tests).
+Full rules and reasoning, including the `MAX_PATH` failure and the fresh-worktree codegen trap: [processes.md, *Running the backend tests*](docs/steering/processes.md#running-the-backend-tests).
 
 ## Logging
 
@@ -180,13 +180,13 @@ The client's conventions live in the same `src/.editorconfig` (see *Backend code
 
 ## Worktrees
 
-**Specification documents are never worktree work**: requirements, designs, tasks, approvals, snapshots and implementation logs are written and committed on `develop` in the main checkout, with `git -C C:\git\EtAlii.Adp` and an explicit pathspec — the dashboard reads only from there. Implementation takes one worktree per specification, or one per agent when its tasks are independently landable and are being worked in parallel; never share a worktree between sessions. Running the app from a worktree means changing both dev-server ports and reverting them before opening the pull request.
+**Specification documents are not written in this repository**: they are Spec Kit features in etalii.adp (see *Specifications*). Implementation takes one worktree per specification, or one per agent when its tasks are independently landable and are being worked in parallel; never share a worktree between sessions. Running the app from a worktree means changing both dev-server ports and reverting them before opening the pull request.
 
-Full rules and reasoning: [processes.md, *Where work happens*](.spec-workflow/steering/processes.md#where-work-happens).
+Full rules and reasoning: [processes.md, *Where work happens*](docs/steering/processes.md#where-work-happens).
 
 ## Bugs found during implementation or verification
 
 **Every bug found leaves a guard behind** — a test written to fail before the fix and pass after it, or a step-by-step entry in `tests.md` when only a running app can reproduce it. **A guard is accepted when it has been seen to fail for the right reason, never on a green run.** Signing in with the checked-in `admin`/`changeme` placeholder against a local build is part of running those checks; a check recorded `pending` because of the sign-in form alone is a check that was not run.
 
-Full rules and reasoning, including three ways a sabotage comes back green for the wrong reason: [processes.md, *Bugs found during implementation or verification*](.spec-workflow/steering/processes.md#bugs-found-during-implementation-or-verification) and [*Verifying that a test actually tests something*](.spec-workflow/steering/processes.md#verifying-that-a-test-actually-tests-something).
+Full rules and reasoning, including three ways a sabotage comes back green for the wrong reason: [processes.md, *Bugs found during implementation or verification*](docs/steering/processes.md#bugs-found-during-implementation-or-verification) and [*Verifying that a test actually tests something*](docs/steering/processes.md#verifying-that-a-test-actually-tests-something).
 

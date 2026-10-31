@@ -3435,8 +3435,9 @@ below stays either way.
 - **Preconditions**: the two pages exist - `docs/architecture.md` (one `flowchart LR`) and
   `docs/solution-structure.md` (one `flowchart LR`). No running app is needed; this check is
   about documents, not the product.
-- **Reader 1, the spec-workflow dashboard**: open the dashboard and view both pages through it.
-  This is the reader that matters most, because it is where a session reads documentation.
+- **Reader 1, the IDE's Markdown preview**: open both pages in Rider's or Visual Studio Code's
+  Markdown preview with its mermaid support. This is where a session's user reads documentation
+  (until 2026-10-31 this reader was the spec-workflow dashboard, which is no longer used).
 - **Reader 2, the repository host**: view both pages on GitHub, which renders mermaid in
   markdown natively. A block can parse in one renderer and not the other; two readers is the
   point of the check, not redundancy.

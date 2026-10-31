@@ -74,5 +74,5 @@ hand-written one did not. The user ruled that it is offered (chat ruling of 2026
 `FdgCanvas.test.tsx` holds the canvas to it.
 
 See [../../readme.md](../../readme.md) for what this folder is for, and
-[`functional-decomposition-graph`](../../../../.spec-workflow/specs/functional-decomposition-graph/)
+[`functional-decomposition-graph`](https://github.com/etalii-adp/etalii.adp.ide.standalone/tree/bd7e2ea95b8e4195bf6f8d97f7aede9ab4dc3ad8/.spec-workflow/specs/functional-decomposition-graph)
 for the specification.
