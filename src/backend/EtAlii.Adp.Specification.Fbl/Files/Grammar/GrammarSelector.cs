@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Specification.Fbl.Files.Grammar;
+namespace EtAlii.Adp.Specification.Fbl.Grammar;
 
 /// <summary>The kinds of segment of a selector of the grammar family (FBL 0.9 §4.9).</summary>
 internal enum GrammarSegmentKind

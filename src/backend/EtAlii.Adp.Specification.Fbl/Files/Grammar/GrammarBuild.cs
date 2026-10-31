@@ -3,7 +3,7 @@ using EtAlii.Adp.Specification.Json;
 using EtAlii.Lark;
 using LarkParser = EtAlii.Lark.Lark;
 
-namespace EtAlii.Adp.Specification.Fbl.Files.Grammar;
+namespace EtAlii.Adp.Specification.Fbl.Grammar;
 
 /// <summary>
 /// The grammar of a binding of the <c>grammar</c> family (FBL 0.9 §4.9), built once when the binding loads: checked as
@@ -111,7 +111,7 @@ internal sealed class GrammarBuild
                 problems.Add(Error(at + "/file", $"The grammar file '{file}' is not a file beside the FBL document (FBL 0.9 4.9)."));
                 return null;
             }
-            text = File.ReadAllText(Path.Combine(folder, file));
+            text = ReadText(Path.Combine(folder, file));
             source = file;
         }
         if (text is null) return null;
@@ -238,7 +238,7 @@ internal sealed class GrammarBuild
                 problems.Add(Error(at, $"The grammar imports '{name}', which is no grammar file beside the FBL document (FBL 0.9 4.9)."));
                 return false;
             }
-            var imported = File.ReadAllText(Path.Combine(folder, name + ".lark"));
+            var imported = ReadText(Path.Combine(folder, name + ".lark"));
             texts.Add((name + ".lark", imported));
             foreach (var next in GrammarNotation.Imports(imported)) pending.Enqueue(next);
         }
@@ -257,6 +257,14 @@ internal sealed class GrammarBuild
 
     private static string UnitIsNoRule(string unit) => $"recover.unit names '{unit}', which is no rule of the grammar (FBL 0.9 4.9).";
 
+    /// <summary>A grammar file's text, read at the sharing the loader reads an FBL document with, without its BOM.</summary>
+    private static string ReadText(string path)
+    {
+        var bytes = FblDocumentLoader.ReadShared(path);
+        var bom = bytes.AsSpan().StartsWith(System.Text.Encoding.UTF8.Preamble) ? 3 : 0;
+        return System.Text.Encoding.UTF8.GetString(bytes, bom, bytes.Length - bom);
+    }
+
     private static string OneLine(string message) => string.Join(" ", message.Split((char[])['\r', '\n', '\t'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
 
     private static LoadDiagnostic Error(string pointer, string message) => new(pointer, LoadSeverity.Error, message);
@@ -272,7 +280,7 @@ internal sealed class GrammarBuild
             var path = Path.Combine(folder, grammarPath);
             if (!File.Exists(path)) return false;
             fullPath = path;
-            text = File.ReadAllText(path);
+            text = ReadText(path);
             return true;
         }
     }

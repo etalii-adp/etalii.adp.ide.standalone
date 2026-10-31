@@ -1,7 +1,7 @@
 using System.Text;
 using System.Text.Json;
 using EtAlii.Adp.Specification.Fbl.Documents;
-using EtAlii.Adp.Specification.Fbl.Files.Grammar;
+using EtAlii.Adp.Specification.Fbl.Grammar;
 using EtAlii.Adp.Specification.Json;
 using Xunit;
 
