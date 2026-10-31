@@ -218,14 +218,14 @@
           "do": "move bundle on databricks/bundle through bundle.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes bundle.parity.adp": "databricks/bundle\nbody: anchors-and-merge.yml\nlayout:\r\n  bundle: 120 80.5\r\n",
+          "writes bundle.parity.adp": "databricks/bundle\nbody: anchors-and-merge.yml\nlayout:\n  bundle: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
           "do": "move task:shared_first on databricks/job through job.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes job.parity.adp": "databricks/job\nbody: anchors-and-merge.yml\nlayout:\r\n  task:shared_first: 120 80.5\r\n",
+          "writes job.parity.adp": "databricks/job\nbody: anchors-and-merge.yml\nlayout:\n  task:shared_first: 120 80.5\n",
           "undo": "ok; restores the text",
           "redo": "ok; reapplies the text",
           "undoAgain": "ok; restores the text"
@@ -249,7 +249,7 @@
           "do": "move task:shared_first on databricks/job through job.parity.adp to 200, 100",
           "answer": "ok",
           "unchanged": true,
-          "writes job.parity.adp": "databricks/job\nbody: anchors-and-merge.yml\nlayout:\r\n  task:shared_first: 200 100\r\n"
+          "writes job.parity.adp": "databricks/job\nbody: anchors-and-merge.yml\nlayout:\n  task:shared_first: 200 100\n"
         },
         {
           "do": "commit databricks.rename-task on task:shared_first = \"parity_moved\"",
@@ -819,7 +819,7 @@
           "do": "move bundle on databricks/bundle through bundle.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes bundle.parity.adp": "databricks/bundle\nbody: broken.yml\nlayout:\r\n  bundle: 120 80.5\r\n",
+          "writes bundle.parity.adp": "databricks/bundle\nbody: broken.yml\nlayout:\n  bundle: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
@@ -1036,14 +1036,14 @@
           "do": "move bundle on databricks/bundle through bundle.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes bundle.parity.adp": "databricks/bundle\nbody: bundle.json\nlayout:\r\n  bundle: 120 80.5\r\n",
+          "writes bundle.parity.adp": "databricks/bundle\nbody: bundle.json\nlayout:\n  bundle: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
           "do": "move task:only on databricks/job through job.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes job.parity.adp": "databricks/job\nbody: bundle.json\nlayout:\r\n  task:only: 120 80.5\r\n",
+          "writes job.parity.adp": "databricks/job\nbody: bundle.json\nlayout:\n  task:only: 120 80.5\n",
           "undo": "ok; restores the text",
           "redo": "ok; reapplies the text",
           "undoAgain": "ok; restores the text"
@@ -1062,7 +1062,7 @@
           "do": "move task:only on databricks/job through job.parity.adp to 200, 100",
           "answer": "ok",
           "unchanged": true,
-          "writes job.parity.adp": "databricks/job\nbody: bundle.json\nlayout:\r\n  task:only: 200 100\r\n"
+          "writes job.parity.adp": "databricks/job\nbody: bundle.json\nlayout:\n  task:only: 200 100\n"
         },
         {
           "do": "commit databricks.rename-task on task:only = \"parity_moved\"",
@@ -1667,7 +1667,7 @@
           "do": "move bundle on databricks/bundle through bundle.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes bundle.parity.adp": "databricks/bundle\nbody: bundle.yml\nlayout:\r\n  bundle: 120 80.5\r\n",
+          "writes bundle.parity.adp": "databricks/bundle\nbody: bundle.yml\nlayout:\n  bundle: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
@@ -1679,7 +1679,7 @@
           "do": "move pipeline on databricks/pipeline through pipeline.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes pipeline.parity.adp": "databricks/pipeline\nbody: bundle.yml\nlayout:\r\n  pipeline: 120 80.5\r\n",
+          "writes pipeline.parity.adp": "databricks/pipeline\nbody: bundle.yml\nlayout:\n  pipeline: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
@@ -2170,14 +2170,14 @@
           "do": "move bundle on databricks/bundle through bundle.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes bundle.parity.adp": "databricks/bundle\nbody: comments-and-quotes.yml\nlayout:\r\n  bundle: 120 80.5\r\n",
+          "writes bundle.parity.adp": "databricks/bundle\nbody: comments-and-quotes.yml\nlayout:\n  bundle: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
           "do": "move task:quoted_task on databricks/job through job.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes job.parity.adp": "databricks/job\nbody: comments-and-quotes.yml\nlayout:\r\n  task:quoted_task: 120 80.5\r\n",
+          "writes job.parity.adp": "databricks/job\nbody: comments-and-quotes.yml\nlayout:\n  task:quoted_task: 120 80.5\n",
           "undo": "ok; restores the text",
           "redo": "ok; reapplies the text",
           "undoAgain": "ok; restores the text"
@@ -2191,7 +2191,7 @@
           "do": "move library:transformations/commented on databricks/pipeline through pipeline.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes pipeline.parity.adp": "databricks/pipeline\nbody: comments-and-quotes.yml\nlayout:\r\n  library:transformations/commented: 120 80.5\r\n",
+          "writes pipeline.parity.adp": "databricks/pipeline\nbody: comments-and-quotes.yml\nlayout:\n  library:transformations/commented: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
@@ -2213,7 +2213,7 @@
           "do": "move task:quoted_task on databricks/job through job.parity.adp to 200, 100",
           "answer": "ok",
           "unchanged": true,
-          "writes job.parity.adp": "databricks/job\nbody: comments-and-quotes.yml\nlayout:\r\n  task:quoted_task: 200 100\r\n"
+          "writes job.parity.adp": "databricks/job\nbody: comments-and-quotes.yml\nlayout:\n  task:quoted_task: 200 100\n"
         },
         {
           "do": "commit databricks.rename-task on task:quoted_task = \"parity_moved\"",
@@ -2950,7 +2950,7 @@
           "do": "move bundle on databricks/bundle through bundle.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes bundle.parity.adp": "databricks/bundle\nbody: crlf-line-endings.yml\nlayout:\r\n  bundle: 120 80.5\r\n",
+          "writes bundle.parity.adp": "databricks/bundle\nbody: crlf-line-endings.yml\nlayout:\n  bundle: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
@@ -3274,14 +3274,14 @@
           "do": "move bundle on databricks/bundle through bundle.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes bundle.parity.adp": "databricks/bundle\nbody: cycle-downstream.yml\nlayout:\r\n  bundle: 120 80.5\r\n",
+          "writes bundle.parity.adp": "databricks/bundle\nbody: cycle-downstream.yml\nlayout:\n  bundle: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
           "do": "move task:left on databricks/job through job.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes job.parity.adp": "databricks/job\nbody: cycle-downstream.yml\nlayout:\r\n  task:left: 120 80.5\r\n",
+          "writes job.parity.adp": "databricks/job\nbody: cycle-downstream.yml\nlayout:\n  task:left: 120 80.5\n",
           "undo": "ok; restores the text",
           "redo": "ok; reapplies the text",
           "undoAgain": "ok; restores the text"
@@ -3305,7 +3305,7 @@
           "do": "move task:left on databricks/job through job.parity.adp to 200, 100",
           "answer": "ok",
           "unchanged": true,
-          "writes job.parity.adp": "databricks/job\nbody: cycle-downstream.yml\nlayout:\r\n  task:left: 200 100\r\n"
+          "writes job.parity.adp": "databricks/job\nbody: cycle-downstream.yml\nlayout:\n  task:left: 200 100\n"
         },
         {
           "do": "commit databricks.rename-task on task:left = \"parity_moved\"",
@@ -3964,14 +3964,14 @@
           "do": "move bundle on databricks/bundle through bundle.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes bundle.parity.adp": "databricks/bundle\nbody: duplicate-key-on-a-circle.yml\nlayout:\r\n  bundle: 120 80.5\r\n",
+          "writes bundle.parity.adp": "databricks/bundle\nbody: duplicate-key-on-a-circle.yml\nlayout:\n  bundle: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
           "do": "move task:twin on databricks/job through job.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes job.parity.adp": "databricks/job\nbody: duplicate-key-on-a-circle.yml\nlayout:\r\n  task:twin: 120 80.5\r\n",
+          "writes job.parity.adp": "databricks/job\nbody: duplicate-key-on-a-circle.yml\nlayout:\n  task:twin: 120 80.5\n",
           "undo": "ok; restores the text",
           "redo": "ok; reapplies the text",
           "undoAgain": "ok; restores the text"
@@ -3995,7 +3995,7 @@
           "do": "move task:twin on databricks/job through job.parity.adp to 200, 100",
           "answer": "ok",
           "unchanged": true,
-          "writes job.parity.adp": "databricks/job\nbody: duplicate-key-on-a-circle.yml\nlayout:\r\n  task:twin: 200 100\r\n"
+          "writes job.parity.adp": "databricks/job\nbody: duplicate-key-on-a-circle.yml\nlayout:\n  task:twin: 200 100\n"
         },
         {
           "do": "commit databricks.rename-task on task:twin = \"parity_moved\"",
@@ -4571,7 +4571,7 @@
           "do": "move bundle on databricks/bundle through bundle.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes bundle.parity.adp": "databricks/bundle\nbody: empty.yml\nlayout:\r\n  bundle: 120 80.5\r\n",
+          "writes bundle.parity.adp": "databricks/bundle\nbody: empty.yml\nlayout:\n  bundle: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
@@ -4933,14 +4933,14 @@
           "do": "move bundle on databricks/bundle through bundle.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes bundle.parity.adp": "databricks/bundle\nbody: every-task-type.yml\nlayout:\r\n  bundle: 120 80.5\r\n",
+          "writes bundle.parity.adp": "databricks/bundle\nbody: every-task-type.yml\nlayout:\n  bundle: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
           "do": "move task:a_notebook on databricks/job through job.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes job.parity.adp": "databricks/job\nbody: every-task-type.yml\nlayout:\r\n  task:a_notebook: 120 80.5\r\n",
+          "writes job.parity.adp": "databricks/job\nbody: every-task-type.yml\nlayout:\n  task:a_notebook: 120 80.5\n",
           "undo": "ok; restores the text",
           "redo": "ok; reapplies the text",
           "undoAgain": "ok; restores the text"
@@ -4949,7 +4949,7 @@
           "do": "move task:not_declared on databricks/job through job.parity.adp to 300, 40",
           "answer": "ok",
           "unchanged": true,
-          "writes job.parity.adp": "databricks/job\nbody: every-task-type.yml\nlayout:\r\n  task:not_declared: 300 40\r\n",
+          "writes job.parity.adp": "databricks/job\nbody: every-task-type.yml\nlayout:\n  task:not_declared: 300 40\n",
           "undo": "ok; restores the text"
         },
         {
@@ -4971,7 +4971,7 @@
           "do": "move task:a_notebook on databricks/job through job.parity.adp to 200, 100",
           "answer": "ok",
           "unchanged": true,
-          "writes job.parity.adp": "databricks/job\nbody: every-task-type.yml\nlayout:\r\n  task:a_notebook: 200 100\r\n"
+          "writes job.parity.adp": "databricks/job\nbody: every-task-type.yml\nlayout:\n  task:a_notebook: 200 100\n"
         },
         {
           "do": "commit databricks.rename-task on task:a_notebook = \"parity_moved\"",
@@ -5692,14 +5692,14 @@
           "do": "move bundle on databricks/bundle through bundle.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes bundle.parity.adp": "databricks/bundle\nbody: finding-order.yml\nlayout:\r\n  bundle: 120 80.5\r\n",
+          "writes bundle.parity.adp": "databricks/bundle\nbody: finding-order.yml\nlayout:\n  bundle: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
           "do": "move task:both on databricks/job through job.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes job.parity.adp": "databricks/job\nbody: finding-order.yml\nlayout:\r\n  task:both: 120 80.5\r\n",
+          "writes job.parity.adp": "databricks/job\nbody: finding-order.yml\nlayout:\n  task:both: 120 80.5\n",
           "undo": "ok; restores the text",
           "redo": "ok; reapplies the text",
           "undoAgain": "ok; restores the text"
@@ -5708,7 +5708,7 @@
           "do": "move task:first_missing on databricks/job through job.parity.adp to 300, 40",
           "answer": "ok",
           "unchanged": true,
-          "writes job.parity.adp": "databricks/job\nbody: finding-order.yml\nlayout:\r\n  task:first_missing: 300 40\r\n",
+          "writes job.parity.adp": "databricks/job\nbody: finding-order.yml\nlayout:\n  task:first_missing: 300 40\n",
           "undo": "ok; restores the text"
         },
         {
@@ -5730,7 +5730,7 @@
           "do": "move task:both on databricks/job through job.parity.adp to 200, 100",
           "answer": "ok",
           "unchanged": true,
-          "writes job.parity.adp": "databricks/job\nbody: finding-order.yml\nlayout:\r\n  task:both: 200 100\r\n"
+          "writes job.parity.adp": "databricks/job\nbody: finding-order.yml\nlayout:\n  task:both: 200 100\n"
         },
         {
           "do": "commit databricks.rename-task on task:both = \"parity_moved\"",
@@ -6361,7 +6361,7 @@
           "do": "move bundle on databricks/bundle through bundle.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes bundle.parity.adp": "databricks/bundle\nbody: findings-bundle.yml\nlayout:\r\n  bundle: 120 80.5\r\n",
+          "writes bundle.parity.adp": "databricks/bundle\nbody: findings-bundle.yml\nlayout:\n  bundle: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
@@ -6729,14 +6729,14 @@
           "do": "move bundle on databricks/bundle through bundle.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes bundle.parity.adp": "databricks/bundle\nbody: findings-job.yml\nlayout:\r\n  bundle: 120 80.5\r\n",
+          "writes bundle.parity.adp": "databricks/bundle\nbody: findings-job.yml\nlayout:\n  bundle: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
           "do": "move task:loop_a on databricks/job through job.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes job.parity.adp": "databricks/job\nbody: findings-job.yml\nlayout:\r\n  task:loop_a: 120 80.5\r\n",
+          "writes job.parity.adp": "databricks/job\nbody: findings-job.yml\nlayout:\n  task:loop_a: 120 80.5\n",
           "undo": "ok; restores the text",
           "redo": "ok; reapplies the text",
           "undoAgain": "ok; restores the text"
@@ -6745,7 +6745,7 @@
           "do": "move task:nowhere on databricks/job through job.parity.adp to 300, 40",
           "answer": "ok",
           "unchanged": true,
-          "writes job.parity.adp": "databricks/job\nbody: findings-job.yml\nlayout:\r\n  task:nowhere: 300 40\r\n",
+          "writes job.parity.adp": "databricks/job\nbody: findings-job.yml\nlayout:\n  task:nowhere: 300 40\n",
           "undo": "ok; restores the text"
         },
         {
@@ -6767,7 +6767,7 @@
           "do": "move task:loop_a on databricks/job through job.parity.adp to 200, 100",
           "answer": "ok",
           "unchanged": true,
-          "writes job.parity.adp": "databricks/job\nbody: findings-job.yml\nlayout:\r\n  task:loop_a: 200 100\r\n"
+          "writes job.parity.adp": "databricks/job\nbody: findings-job.yml\nlayout:\n  task:loop_a: 200 100\n"
         },
         {
           "do": "commit databricks.rename-task on task:loop_a = \"parity_moved\"",
@@ -7397,14 +7397,14 @@
           "do": "move bundle on databricks/bundle through bundle.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes bundle.parity.adp": "databricks/bundle\nbody: findings-pipeline.json\nlayout:\r\n  bundle: 120 80.5\r\n",
+          "writes bundle.parity.adp": "databricks/bundle\nbody: findings-pipeline.json\nlayout:\n  bundle: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
           "do": "move pipeline on databricks/pipeline through pipeline.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes pipeline.parity.adp": "databricks/pipeline\nbody: findings-pipeline.json\nlayout:\r\n  pipeline: 120 80.5\r\n",
+          "writes pipeline.parity.adp": "databricks/pipeline\nbody: findings-pipeline.json\nlayout:\n  pipeline: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
@@ -7805,14 +7805,14 @@
           "do": "move bundle on databricks/bundle through bundle.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes bundle.parity.adp": "databricks/bundle\nbody: flow-collections.yml\nlayout:\r\n  bundle: 120 80.5\r\n",
+          "writes bundle.parity.adp": "databricks/bundle\nbody: flow-collections.yml\nlayout:\n  bundle: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
           "do": "move library:transformations/one on databricks/pipeline through pipeline.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes pipeline.parity.adp": "databricks/pipeline\nbody: flow-collections.yml\nlayout:\r\n  library:transformations/one: 120 80.5\r\n",
+          "writes pipeline.parity.adp": "databricks/pipeline\nbody: flow-collections.yml\nlayout:\n  library:transformations/one: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
@@ -8316,14 +8316,14 @@
           "do": "move bundle on databricks/bundle through bundle.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes bundle.parity.adp": "databricks/bundle\nbody: flow-dependencies.yml\nlayout:\r\n  bundle: 120 80.5\r\n",
+          "writes bundle.parity.adp": "databricks/bundle\nbody: flow-dependencies.yml\nlayout:\n  bundle: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
           "do": "move task:b on databricks/job through job.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes job.parity.adp": "databricks/job\nbody: flow-dependencies.yml\nlayout:\r\n  task:b: 120 80.5\r\n",
+          "writes job.parity.adp": "databricks/job\nbody: flow-dependencies.yml\nlayout:\n  task:b: 120 80.5\n",
           "undo": "ok; restores the text",
           "redo": "ok; reapplies the text",
           "undoAgain": "ok; restores the text"
@@ -8347,7 +8347,7 @@
           "do": "move task:b on databricks/job through job.parity.adp to 200, 100",
           "answer": "ok",
           "unchanged": true,
-          "writes job.parity.adp": "databricks/job\nbody: flow-dependencies.yml\nlayout:\r\n  task:b: 200 100\r\n"
+          "writes job.parity.adp": "databricks/job\nbody: flow-dependencies.yml\nlayout:\n  task:b: 200 100\n"
         },
         {
           "do": "commit databricks.rename-task on task:b = \"parity_moved\"",
@@ -8996,14 +8996,14 @@
           "do": "move bundle on databricks/bundle through bundle.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes bundle.parity.adp": "databricks/bundle\nbody: for-each-before-key.yml\nlayout:\r\n  bundle: 120 80.5\r\n",
+          "writes bundle.parity.adp": "databricks/bundle\nbody: for-each-before-key.yml\nlayout:\n  bundle: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
           "do": "move task:outer on databricks/job through job.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes job.parity.adp": "databricks/job\nbody: for-each-before-key.yml\nlayout:\r\n  task:outer: 120 80.5\r\n",
+          "writes job.parity.adp": "databricks/job\nbody: for-each-before-key.yml\nlayout:\n  task:outer: 120 80.5\n",
           "undo": "ok; restores the text",
           "redo": "ok; reapplies the text",
           "undoAgain": "ok; restores the text"
@@ -9027,7 +9027,7 @@
           "do": "move task:outer on databricks/job through job.parity.adp to 200, 100",
           "answer": "ok",
           "unchanged": true,
-          "writes job.parity.adp": "databricks/job\nbody: for-each-before-key.yml\nlayout:\r\n  task:outer: 200 100\r\n"
+          "writes job.parity.adp": "databricks/job\nbody: for-each-before-key.yml\nlayout:\n  task:outer: 200 100\n"
         },
         {
           "do": "commit databricks.rename-task on task:outer = \"parity_moved\"",
@@ -9681,14 +9681,14 @@
           "do": "move bundle on databricks/bundle through bundle.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes bundle.parity.adp": "databricks/bundle\nbody: fresh-key.yml\nlayout:\r\n  bundle: 120 80.5\r\n",
+          "writes bundle.parity.adp": "databricks/bundle\nbody: fresh-key.yml\nlayout:\n  bundle: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
           "do": "move task:notebook_2 on databricks/job through job.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes job.parity.adp": "databricks/job\nbody: fresh-key.yml\nlayout:\r\n  task:notebook_2: 120 80.5\r\n",
+          "writes job.parity.adp": "databricks/job\nbody: fresh-key.yml\nlayout:\n  task:notebook_2: 120 80.5\n",
           "undo": "ok; restores the text",
           "redo": "ok; reapplies the text",
           "undoAgain": "ok; restores the text"
@@ -9712,7 +9712,7 @@
           "do": "move task:notebook_2 on databricks/job through job.parity.adp to 200, 100",
           "answer": "ok",
           "unchanged": true,
-          "writes job.parity.adp": "databricks/job\nbody: fresh-key.yml\nlayout:\r\n  task:notebook_2: 200 100\r\n"
+          "writes job.parity.adp": "databricks/job\nbody: fresh-key.yml\nlayout:\n  task:notebook_2: 200 100\n"
         },
         {
           "do": "commit databricks.rename-task on task:notebook_2 = \"parity_moved\"",
@@ -10419,14 +10419,14 @@
           "do": "move bundle on databricks/bundle through bundle.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes bundle.parity.adp": "databricks/bundle\nbody: job.yml\nlayout:\r\n  bundle: 120 80.5\r\n",
+          "writes bundle.parity.adp": "databricks/bundle\nbody: job.yml\nlayout:\n  bundle: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
           "do": "move task:ingest on databricks/job through job.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes job.parity.adp": "databricks/job\nbody: job.yml\nlayout:\r\n  task:ingest: 120 80.5\r\n",
+          "writes job.parity.adp": "databricks/job\nbody: job.yml\nlayout:\n  task:ingest: 120 80.5\n",
           "undo": "ok; restores the text",
           "redo": "ok; reapplies the text",
           "undoAgain": "ok; restores the text"
@@ -10450,7 +10450,7 @@
           "do": "move task:ingest on databricks/job through job.parity.adp to 200, 100",
           "answer": "ok",
           "unchanged": true,
-          "writes job.parity.adp": "databricks/job\nbody: job.yml\nlayout:\r\n  task:ingest: 200 100\r\n"
+          "writes job.parity.adp": "databricks/job\nbody: job.yml\nlayout:\n  task:ingest: 200 100\n"
         },
         {
           "do": "commit databricks.rename-task on task:ingest = \"parity_moved\"",
@@ -11020,7 +11020,7 @@
           "do": "move bundle on databricks/bundle through bundle.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes bundle.parity.adp": "databricks/bundle\nbody: key-written-twice.yml\nlayout:\r\n  bundle: 120 80.5\r\n",
+          "writes bundle.parity.adp": "databricks/bundle\nbody: key-written-twice.yml\nlayout:\n  bundle: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
@@ -11261,14 +11261,14 @@
           "do": "move bundle on databricks/bundle through bundle.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes bundle.parity.adp": "databricks/bundle\nbody: leading-comments.yml\nlayout:\r\n  bundle: 120 80.5\r\n",
+          "writes bundle.parity.adp": "databricks/bundle\nbody: leading-comments.yml\nlayout:\n  bundle: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
           "do": "move task:land on databricks/job through job.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes job.parity.adp": "databricks/job\nbody: leading-comments.yml\nlayout:\r\n  task:land: 120 80.5\r\n",
+          "writes job.parity.adp": "databricks/job\nbody: leading-comments.yml\nlayout:\n  task:land: 120 80.5\n",
           "undo": "ok; restores the text",
           "redo": "ok; reapplies the text",
           "undoAgain": "ok; restores the text"
@@ -11292,7 +11292,7 @@
           "do": "move task:land on databricks/job through job.parity.adp to 200, 100",
           "answer": "ok",
           "unchanged": true,
-          "writes job.parity.adp": "databricks/job\nbody: leading-comments.yml\nlayout:\r\n  task:land: 200 100\r\n"
+          "writes job.parity.adp": "databricks/job\nbody: leading-comments.yml\nlayout:\n  task:land: 200 100\n"
         },
         {
           "do": "commit databricks.rename-task on task:land = \"parity_moved\"",
@@ -11934,14 +11934,14 @@
           "do": "move bundle on databricks/bundle through bundle.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes bundle.parity.adp": "databricks/bundle\nbody: legacy-target.json\nlayout:\r\n  bundle: 120 80.5\r\n",
+          "writes bundle.parity.adp": "databricks/bundle\nbody: legacy-target.json\nlayout:\n  bundle: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
           "do": "move library:transformations/legacy on databricks/pipeline through pipeline.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes pipeline.parity.adp": "databricks/pipeline\nbody: legacy-target.json\nlayout:\r\n  library:transformations/legacy: 120 80.5\r\n",
+          "writes pipeline.parity.adp": "databricks/pipeline\nbody: legacy-target.json\nlayout:\n  library:transformations/legacy: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
@@ -12275,14 +12275,14 @@
           "do": "move bundle on databricks/bundle through bundle.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes bundle.parity.adp": "databricks/bundle\nbody: legacy-target.yml\nlayout:\r\n  bundle: 120 80.5\r\n",
+          "writes bundle.parity.adp": "databricks/bundle\nbody: legacy-target.yml\nlayout:\n  bundle: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
           "do": "move library:transformations/legacy on databricks/pipeline through pipeline.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes pipeline.parity.adp": "databricks/pipeline\nbody: legacy-target.yml\nlayout:\r\n  library:transformations/legacy: 120 80.5\r\n",
+          "writes pipeline.parity.adp": "databricks/pipeline\nbody: legacy-target.yml\nlayout:\n  library:transformations/legacy: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
@@ -12612,7 +12612,7 @@
           "do": "move bundle on databricks/bundle through bundle.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes bundle.parity.adp": "databricks/bundle\nbody: lf-line-endings.yml\nlayout:\r\n  bundle: 120 80.5\r\n",
+          "writes bundle.parity.adp": "databricks/bundle\nbody: lf-line-endings.yml\nlayout:\n  bundle: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
@@ -12880,14 +12880,14 @@
           "do": "move bundle on databricks/bundle through bundle.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes bundle.parity.adp": "databricks/bundle\nbody: library-ids.json\nlayout:\r\n  bundle: 120 80.5\r\n",
+          "writes bundle.parity.adp": "databricks/bundle\nbody: library-ids.json\nlayout:\n  bundle: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
           "do": "move library:shared/x on databricks/pipeline through pipeline.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes pipeline.parity.adp": "databricks/pipeline\nbody: library-ids.json\nlayout:\r\n  library:shared/x: 120 80.5\r\n",
+          "writes pipeline.parity.adp": "databricks/pipeline\nbody: library-ids.json\nlayout:\n  library:shared/x: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
@@ -13268,14 +13268,14 @@
           "do": "move bundle on databricks/bundle through bundle.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes bundle.parity.adp": "databricks/bundle\nbody: missing-upstream.yml\nlayout:\r\n  bundle: 120 80.5\r\n",
+          "writes bundle.parity.adp": "databricks/bundle\nbody: missing-upstream.yml\nlayout:\n  bundle: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
           "do": "move task:first_waiter on databricks/job through job.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes job.parity.adp": "databricks/job\nbody: missing-upstream.yml\nlayout:\r\n  task:first_waiter: 120 80.5\r\n",
+          "writes job.parity.adp": "databricks/job\nbody: missing-upstream.yml\nlayout:\n  task:first_waiter: 120 80.5\n",
           "undo": "ok; restores the text",
           "redo": "ok; reapplies the text",
           "undoAgain": "ok; restores the text"
@@ -13284,7 +13284,7 @@
           "do": "move task:ghost on databricks/job through job.parity.adp to 300, 40",
           "answer": "ok",
           "unchanged": true,
-          "writes job.parity.adp": "databricks/job\nbody: missing-upstream.yml\nlayout:\r\n  task:ghost: 300 40\r\n",
+          "writes job.parity.adp": "databricks/job\nbody: missing-upstream.yml\nlayout:\n  task:ghost: 300 40\n",
           "undo": "ok; restores the text"
         },
         {
@@ -13306,7 +13306,7 @@
           "do": "move task:first_waiter on databricks/job through job.parity.adp to 200, 100",
           "answer": "ok",
           "unchanged": true,
-          "writes job.parity.adp": "databricks/job\nbody: missing-upstream.yml\nlayout:\r\n  task:first_waiter: 200 100\r\n"
+          "writes job.parity.adp": "databricks/job\nbody: missing-upstream.yml\nlayout:\n  task:first_waiter: 200 100\n"
         },
         {
           "do": "commit databricks.rename-task on task:first_waiter = \"parity_moved\"",
@@ -13946,14 +13946,14 @@
           "do": "move bundle on databricks/bundle through bundle.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes bundle.parity.adp": "databricks/bundle\nbody: new-key-placement.yml\nlayout:\r\n  bundle: 120 80.5\r\n",
+          "writes bundle.parity.adp": "databricks/bundle\nbody: new-key-placement.yml\nlayout:\n  bundle: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
           "do": "move task:upstream on databricks/job through job.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes job.parity.adp": "databricks/job\nbody: new-key-placement.yml\nlayout:\r\n  task:upstream: 120 80.5\r\n",
+          "writes job.parity.adp": "databricks/job\nbody: new-key-placement.yml\nlayout:\n  task:upstream: 120 80.5\n",
           "undo": "ok; restores the text",
           "redo": "ok; reapplies the text",
           "undoAgain": "ok; restores the text"
@@ -13977,7 +13977,7 @@
           "do": "move task:upstream on databricks/job through job.parity.adp to 200, 100",
           "answer": "ok",
           "unchanged": true,
-          "writes job.parity.adp": "databricks/job\nbody: new-key-placement.yml\nlayout:\r\n  task:upstream: 200 100\r\n"
+          "writes job.parity.adp": "databricks/job\nbody: new-key-placement.yml\nlayout:\n  task:upstream: 200 100\n"
         },
         {
           "do": "commit databricks.rename-task on task:upstream = \"parity_moved\"",
@@ -14624,14 +14624,14 @@
           "do": "move bundle on databricks/bundle through bundle.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes bundle.parity.adp": "databricks/bundle\nbody: no-bundle-key.yml\nlayout:\r\n  bundle: 120 80.5\r\n",
+          "writes bundle.parity.adp": "databricks/bundle\nbody: no-bundle-key.yml\nlayout:\n  bundle: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
           "do": "move library:transformations/bare on databricks/pipeline through pipeline.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes pipeline.parity.adp": "databricks/pipeline\nbody: no-bundle-key.yml\nlayout:\r\n  library:transformations/bare: 120 80.5\r\n",
+          "writes pipeline.parity.adp": "databricks/pipeline\nbody: no-bundle-key.yml\nlayout:\n  library:transformations/bare: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
@@ -14961,7 +14961,7 @@
           "do": "move bundle on databricks/bundle through bundle.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes bundle.parity.adp": "databricks/bundle\nbody: no-resources.yml\nlayout:\r\n  bundle: 120 80.5\r\n",
+          "writes bundle.parity.adp": "databricks/bundle\nbody: no-resources.yml\nlayout:\n  bundle: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
@@ -15180,7 +15180,7 @@
           "do": "move bundle on databricks/bundle through bundle.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes bundle.parity.adp": "databricks/bundle\nbody: no-trailing-newline.yml\nlayout:\r\n  bundle: 120 80.5\r\n",
+          "writes bundle.parity.adp": "databricks/bundle\nbody: no-trailing-newline.yml\nlayout:\n  bundle: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
@@ -15454,14 +15454,14 @@
           "do": "move bundle on databricks/bundle through bundle.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes bundle.parity.adp": "databricks/bundle\nbody: pipeline.json\nlayout:\r\n  bundle: 120 80.5\r\n",
+          "writes bundle.parity.adp": "databricks/bundle\nbody: pipeline.json\nlayout:\n  bundle: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
           "do": "move library:transformations/bronze on databricks/pipeline through pipeline.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes pipeline.parity.adp": "databricks/pipeline\nbody: pipeline.json\nlayout:\r\n  library:transformations/bronze: 120 80.5\r\n",
+          "writes pipeline.parity.adp": "databricks/pipeline\nbody: pipeline.json\nlayout:\n  library:transformations/bronze: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
@@ -15891,14 +15891,14 @@
           "do": "move bundle on databricks/bundle through bundle.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes bundle.parity.adp": "databricks/bundle\nbody: raw-values.yml\nlayout:\r\n  bundle: 120 80.5\r\n",
+          "writes bundle.parity.adp": "databricks/bundle\nbody: raw-values.yml\nlayout:\n  bundle: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
           "do": "move task:plain on databricks/job through job.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes job.parity.adp": "databricks/job\nbody: raw-values.yml\nlayout:\r\n  task:plain: 120 80.5\r\n",
+          "writes job.parity.adp": "databricks/job\nbody: raw-values.yml\nlayout:\n  task:plain: 120 80.5\n",
           "undo": "ok; restores the text",
           "redo": "ok; reapplies the text",
           "undoAgain": "ok; restores the text"
@@ -15912,7 +15912,7 @@
           "do": "move library:transformations/raw on databricks/pipeline through pipeline.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes pipeline.parity.adp": "databricks/pipeline\nbody: raw-values.yml\nlayout:\r\n  library:transformations/raw: 120 80.5\r\n",
+          "writes pipeline.parity.adp": "databricks/pipeline\nbody: raw-values.yml\nlayout:\n  library:transformations/raw: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
@@ -15934,7 +15934,7 @@
           "do": "move task:plain on databricks/job through job.parity.adp to 200, 100",
           "answer": "ok",
           "unchanged": true,
-          "writes job.parity.adp": "databricks/job\nbody: raw-values.yml\nlayout:\r\n  task:plain: 200 100\r\n"
+          "writes job.parity.adp": "databricks/job\nbody: raw-values.yml\nlayout:\n  task:plain: 200 100\n"
         },
         {
           "do": "commit databricks.rename-task on task:plain = \"parity_moved\"",
@@ -16733,14 +16733,14 @@
           "do": "move bundle on databricks/bundle through bundle.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes bundle.parity.adp": "databricks/bundle\nbody: settings-one-line.json\nlayout:\r\n  bundle: 120 80.5\r\n",
+          "writes bundle.parity.adp": "databricks/bundle\nbody: settings-one-line.json\nlayout:\n  bundle: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
           "do": "move library:transformations/a on databricks/pipeline through pipeline.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes pipeline.parity.adp": "databricks/pipeline\nbody: settings-one-line.json\nlayout:\r\n  library:transformations/a: 120 80.5\r\n",
+          "writes pipeline.parity.adp": "databricks/pipeline\nbody: settings-one-line.json\nlayout:\n  library:transformations/a: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
@@ -17064,7 +17064,7 @@
           "do": "move bundle on databricks/bundle through bundle.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes bundle.parity.adp": "databricks/bundle\nbody: tied-line-endings.yml\nlayout:\r\n  bundle: 120 80.5\r\n",
+          "writes bundle.parity.adp": "databricks/bundle\nbody: tied-line-endings.yml\nlayout:\n  bundle: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
@@ -17476,14 +17476,14 @@
           "do": "move bundle on databricks/bundle through bundle.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes bundle.parity.adp": "databricks/bundle\nbody: two-jobs-two-pipelines.yml\nlayout:\r\n  bundle: 120 80.5\r\n",
+          "writes bundle.parity.adp": "databricks/bundle\nbody: two-jobs-two-pipelines.yml\nlayout:\n  bundle: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
           "do": "move task:ingest on databricks/job through job.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes job.parity.adp": "databricks/job\nbody: two-jobs-two-pipelines.yml\nlayout:\r\n  task:ingest: 120 80.5\r\n",
+          "writes job.parity.adp": "databricks/job\nbody: two-jobs-two-pipelines.yml\nlayout:\n  task:ingest: 120 80.5\n",
           "undo": "ok; restores the text",
           "redo": "ok; reapplies the text",
           "undoAgain": "ok; restores the text"
@@ -17497,7 +17497,7 @@
           "do": "move library:transformations/a on databricks/pipeline through pipeline.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes pipeline.parity.adp": "databricks/pipeline\nbody: two-jobs-two-pipelines.yml\nlayout:\r\n  library:transformations/a: 120 80.5\r\n",
+          "writes pipeline.parity.adp": "databricks/pipeline\nbody: two-jobs-two-pipelines.yml\nlayout:\n  library:transformations/a: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
@@ -17519,7 +17519,7 @@
           "do": "move task:ingest on databricks/job through job.parity.adp to 200, 100",
           "answer": "ok",
           "unchanged": true,
-          "writes job.parity.adp": "databricks/job\nbody: two-jobs-two-pipelines.yml\nlayout:\r\n  task:ingest: 200 100\r\n"
+          "writes job.parity.adp": "databricks/job\nbody: two-jobs-two-pipelines.yml\nlayout:\n  task:ingest: 200 100\n"
         },
         {
           "do": "commit databricks.rename-task on task:ingest = \"parity_moved\"",
@@ -18386,14 +18386,14 @@
           "do": "move bundle on databricks/bundle through bundle.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes bundle.parity.adp": "databricks/bundle\nbody: typed-scalars.yml\nlayout:\r\n  bundle: 120 80.5\r\n",
+          "writes bundle.parity.adp": "databricks/bundle\nbody: typed-scalars.yml\nlayout:\n  bundle: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
           "do": "move task:01 on databricks/job through job.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes job.parity.adp": "databricks/job\nbody: typed-scalars.yml\nlayout:\r\n  task:01: 120 80.5\r\n",
+          "writes job.parity.adp": "databricks/job\nbody: typed-scalars.yml\nlayout:\n  task:01: 120 80.5\n",
           "undo": "ok; restores the text",
           "redo": "ok; reapplies the text",
           "undoAgain": "ok; restores the text"
@@ -18407,7 +18407,7 @@
           "do": "move library:transformations/typed on databricks/pipeline through pipeline.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes pipeline.parity.adp": "databricks/pipeline\nbody: typed-scalars.yml\nlayout:\r\n  library:transformations/typed: 120 80.5\r\n",
+          "writes pipeline.parity.adp": "databricks/pipeline\nbody: typed-scalars.yml\nlayout:\n  library:transformations/typed: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
@@ -18429,7 +18429,7 @@
           "do": "move task:01 on databricks/job through job.parity.adp to 200, 100",
           "answer": "ok",
           "unchanged": true,
-          "writes job.parity.adp": "databricks/job\nbody: typed-scalars.yml\nlayout:\r\n  task:01: 200 100\r\n"
+          "writes job.parity.adp": "databricks/job\nbody: typed-scalars.yml\nlayout:\n  task:01: 200 100\n"
         },
         {
           "do": "commit databricks.rename-task on task:01 = \"parity_moved\"",
@@ -19132,7 +19132,7 @@
           "do": "move bundle on databricks/bundle through bundle.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes bundle.parity.adp": "databricks/bundle\nbody: unreadable.json\nlayout:\r\n  bundle: 120 80.5\r\n",
+          "writes bundle.parity.adp": "databricks/bundle\nbody: unreadable.json\nlayout:\n  bundle: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
@@ -19395,14 +19395,14 @@
           "do": "move bundle on databricks/bundle through bundle.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes bundle.parity.adp": "databricks/bundle\nbody: variables-in-typed-places.yml\nlayout:\r\n  bundle: 120 80.5\r\n",
+          "writes bundle.parity.adp": "databricks/bundle\nbody: variables-in-typed-places.yml\nlayout:\n  bundle: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
           "do": "move task:run on databricks/job through job.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes job.parity.adp": "databricks/job\nbody: variables-in-typed-places.yml\nlayout:\r\n  task:run: 120 80.5\r\n",
+          "writes job.parity.adp": "databricks/job\nbody: variables-in-typed-places.yml\nlayout:\n  task:run: 120 80.5\n",
           "undo": "ok; restores the text",
           "redo": "ok; reapplies the text",
           "undoAgain": "ok; restores the text"
@@ -19411,7 +19411,7 @@
           "do": "move library:transformations/variable on databricks/pipeline through pipeline.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes pipeline.parity.adp": "databricks/pipeline\nbody: variables-in-typed-places.yml\nlayout:\r\n  library:transformations/variable: 120 80.5\r\n",
+          "writes pipeline.parity.adp": "databricks/pipeline\nbody: variables-in-typed-places.yml\nlayout:\n  library:transformations/variable: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
@@ -19433,7 +19433,7 @@
           "do": "move task:run on databricks/job through job.parity.adp to 200, 100",
           "answer": "ok",
           "unchanged": true,
-          "writes job.parity.adp": "databricks/job\nbody: variables-in-typed-places.yml\nlayout:\r\n  task:run: 200 100\r\n"
+          "writes job.parity.adp": "databricks/job\nbody: variables-in-typed-places.yml\nlayout:\n  task:run: 200 100\n"
         },
         {
           "do": "commit databricks.rename-task on task:run = \"parity_moved\"",
@@ -20225,7 +20225,7 @@
           "do": "move bundle on databricks/bundle through bundle.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes bundle.parity.adp": "databricks/bundle\nbody: databricks.yml\nlayout:\r\n  bundle: 120 80.5\r\n",
+          "writes bundle.parity.adp": "databricks/bundle\nbody: databricks.yml\nlayout:\n  bundle: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
@@ -20237,7 +20237,7 @@
           "do": "move library:transformations/bronze on databricks/pipeline through pipeline.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes pipeline.parity.adp": "databricks/pipeline\nbody: databricks.yml\nlayout:\r\n  library:transformations/bronze: 120 80.5\r\n",
+          "writes pipeline.parity.adp": "databricks/pipeline\nbody: databricks.yml\nlayout:\n  library:transformations/bronze: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
@@ -20742,14 +20742,14 @@
           "do": "move bundle on databricks/bundle through bundle.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes bundle.parity.adp": "databricks/bundle\nbody: nightly-ingest.yml\nlayout:\r\n  bundle: 120 80.5\r\n",
+          "writes bundle.parity.adp": "databricks/bundle\nbody: nightly-ingest.yml\nlayout:\n  bundle: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
           "do": "move task:land_raw on databricks/job through job.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes job.parity.adp": "databricks/job\nbody: nightly-ingest.yml\nlayout:\r\n  task:land_raw: 120 80.5\r\n",
+          "writes job.parity.adp": "databricks/job\nbody: nightly-ingest.yml\nlayout:\n  task:land_raw: 120 80.5\n",
           "undo": "ok; restores the text",
           "redo": "ok; reapplies the text",
           "undoAgain": "ok; restores the text"
@@ -20773,7 +20773,7 @@
           "do": "move task:land_raw on databricks/job through job.parity.adp to 200, 100",
           "answer": "ok",
           "unchanged": true,
-          "writes job.parity.adp": "databricks/job\nbody: nightly-ingest.yml\nlayout:\r\n  task:land_raw: 200 100\r\n"
+          "writes job.parity.adp": "databricks/job\nbody: nightly-ingest.yml\nlayout:\n  task:land_raw: 200 100\n"
         },
         {
           "do": "commit databricks.rename-task on task:land_raw = \"parity_moved\"",
@@ -21480,7 +21480,7 @@
           "do": "move bundle on databricks/bundle through bundle.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes bundle.parity.adp": "databricks/bundle\nbody: databricks.yml\nlayout:\r\n  bundle: 120 80.5\r\n",
+          "writes bundle.parity.adp": "databricks/bundle\nbody: databricks.yml\nlayout:\n  bundle: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
@@ -21492,7 +21492,7 @@
           "do": "move library:transformations/bronze on databricks/pipeline through pipeline.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes pipeline.parity.adp": "databricks/pipeline\nbody: databricks.yml\nlayout:\r\n  library:transformations/bronze: 120 80.5\r\n",
+          "writes pipeline.parity.adp": "databricks/pipeline\nbody: databricks.yml\nlayout:\n  library:transformations/bronze: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
@@ -21865,7 +21865,7 @@
           "do": "move bundle on databricks/bundle through bundle.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes bundle.parity.adp": "databricks/bundle\nbody: parity.yml\nlayout:\r\n  bundle: 120 80.5\r\n",
+          "writes bundle.parity.adp": "databricks/bundle\nbody: parity.yml\nlayout:\n  bundle: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
@@ -22105,14 +22105,14 @@
           "do": "move bundle on databricks/bundle through bundle.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes bundle.parity.adp": "databricks/bundle\nbody: parity.yml\nlayout:\r\n  bundle: 120 80.5\r\n",
+          "writes bundle.parity.adp": "databricks/bundle\nbody: parity.yml\nlayout:\n  bundle: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
           "do": "move task:main on databricks/job through job.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes job.parity.adp": "databricks/job\nbody: parity.yml\nlayout:\r\n  task:main: 120 80.5\r\n",
+          "writes job.parity.adp": "databricks/job\nbody: parity.yml\nlayout:\n  task:main: 120 80.5\n",
           "undo": "ok; restores the text",
           "redo": "ok; reapplies the text",
           "undoAgain": "ok; restores the text"
@@ -22131,7 +22131,7 @@
           "do": "move task:main on databricks/job through job.parity.adp to 200, 100",
           "answer": "ok",
           "unchanged": true,
-          "writes job.parity.adp": "databricks/job\nbody: parity.yml\nlayout:\r\n  task:main: 200 100\r\n"
+          "writes job.parity.adp": "databricks/job\nbody: parity.yml\nlayout:\n  task:main: 200 100\n"
         },
         {
           "do": "commit databricks.rename-task on task:main = \"parity_moved\"",
@@ -22702,14 +22702,14 @@
           "do": "move bundle on databricks/bundle through bundle.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes bundle.parity.adp": "databricks/bundle\nbody: parity.json\nlayout:\r\n  bundle: 120 80.5\r\n",
+          "writes bundle.parity.adp": "databricks/bundle\nbody: parity.json\nlayout:\n  bundle: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
           "do": "move library:transformations/parity on databricks/pipeline through pipeline.parity.adp to 120, 80.5",
           "answer": "ok",
           "unchanged": true,
-          "writes pipeline.parity.adp": "databricks/pipeline\nbody: parity.json\nlayout:\r\n  library:transformations/parity: 120 80.5\r\n",
+          "writes pipeline.parity.adp": "databricks/pipeline\nbody: parity.json\nlayout:\n  library:transformations/parity: 120 80.5\n",
           "undo": "ok; restores the text"
         },
         {
