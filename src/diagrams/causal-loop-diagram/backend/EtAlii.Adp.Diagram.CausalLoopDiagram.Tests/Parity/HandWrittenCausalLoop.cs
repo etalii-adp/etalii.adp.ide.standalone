@@ -356,7 +356,7 @@ internal static class HandWrittenCausalLoop
     private static string? WordOf(string text, string variable, string key) =>
         text.Split('\n')
             .Select(line => line.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries))
-            .Where(words => words.Length >= 2 && words[0] == "variable" && words[1] == variable)
+            .Where(words => words is ["variable", var name, ..] && name == variable)
             .SelectMany(words => words)
             .FirstOrDefault(word => word.StartsWith(key + "=", StringComparison.Ordinal))?[(key.Length + 1)..];
 
