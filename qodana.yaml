@@ -33,7 +33,9 @@ profile:
 #      - <path/where/not/run/inspection>
 
 #Execute shell command before Qodana execution (Applied in CI/CD pipeline)
-#bootstrap: sh ./prepare-qodana.sh
+#The container's own .NET SDK is older than the one src/global.json names, and MSBuild refuses to load the solution
+#without it, so the SDK global.json names is installed beside the container's own
+bootstrap: curl -fsSL https://dot.net/v1/dotnet-install.sh -o /tmp/dotnet-install.sh && bash /tmp/dotnet-install.sh --jsonfile src/global.json --install-dir "$(dirname "$(readlink -f "$(command -v dotnet)")")"
 
 #Install IDE plugins before Qodana execution (Applied in CI/CD pipeline)
 #plugins:
