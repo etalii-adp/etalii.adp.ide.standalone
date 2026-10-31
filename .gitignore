@@ -23,3 +23,6 @@ Thumbs.db
 # when started here, so keep them out of the tree; .claude/settings.json denies the server.
 .spec-workflow/
 audit.log
+
+# Qodana's local output: a baseline from a Rider run is 232 MB, past GitHub's 100 MB limit.
+.qodana/
