@@ -10,7 +10,8 @@
 version: "1.0"
 
 #Specify IDE code to run analysis without container (Applied in CI/CD pipeline)
-ide: QDNET
+#QDNETC is Qodana Community for .NET: the Qodana Cloud organization has a Community licence, which refuses QDNET
+ide: QDNETC
 
 #The solution to analyse; the repository holds other .slnx files (test fixtures, examples) that must not be picked
 dotnet:
