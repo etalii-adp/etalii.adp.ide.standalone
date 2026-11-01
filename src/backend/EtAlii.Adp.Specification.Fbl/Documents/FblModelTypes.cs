@@ -14,6 +14,11 @@ public sealed class FblDocument
     public required IReadOnlyDictionary<string, FblBinding> Bindings { get; init; }
 }
 
+/// <summary>
+/// The format families a declared binding's body is read in (FBL §4). The library reads all seven: the six of FBL 0.7 and
+/// FBL 0.9's <see cref="Grammar"/>, with the <c>split</c> of FBL 0.13 and the three constructs of FBL 0.11 it uses
+/// (<c>escape</c>, <c>create</c> with <c>after</c>, and the items of a <c>many</c> attribute read from several nodes).
+/// </summary>
 public enum Family
 {
     Yaml,
