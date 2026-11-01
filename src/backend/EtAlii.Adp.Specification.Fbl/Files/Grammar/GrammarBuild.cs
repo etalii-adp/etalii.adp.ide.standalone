@@ -139,7 +139,7 @@ internal sealed class GrammarBuild
     private static UnitRead ReadUnit(LarkParser reader, string text, int position, string unit)
     {
         var parser = reader.ParseInteractive(new TextSlice(text, position), unit);
-        var before = parser.Copy(false);
+        var before = ParserSnapshot.Of(parser);
         Token? last = null;
         int? first = null;
         int? stop = null;
@@ -154,7 +154,7 @@ internal sealed class GrammarBuild
                     shifted++;
                     end = last.EndPos ?? end;
                 }
-                before = parser.Copy(false);
+                before = ParserSnapshot.Of(parser);
                 first ??= token.StartPos;
                 last = token;
             }

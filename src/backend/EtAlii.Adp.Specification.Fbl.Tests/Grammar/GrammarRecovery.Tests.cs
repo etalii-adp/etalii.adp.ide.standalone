@@ -201,6 +201,50 @@ public class GrammarRecoveryTests
         Assert.Equal(whole.Comments, inPart.Comments);
     }
 
+    /// <summary>
+    /// Entries of a key and any number of parts, a left-recursive repetition the tree builder extends in place: the token
+    /// that ends a unit makes the parser reduce before it refuses the token, and the unit is accepted from the state before.
+    /// </summary>
+    private const string Parts = "start: statement*\n?statement: entry\n          | _NL\nentry: KEY _part*\n_part: plus\n     | mark\n     | block\nplus: \"+\" KEY\nmark: \"!\"\nblock: OPEN KEY* CLOSE\nOPEN: \"{\"\nCLOSE: \"}\"\nKEY: /[a-z]+/\n_NL: /\\n/\nWS: /[ \\t]+/\n%ignore WS\n";
+
+    [Theory]
+    [InlineData("""{ "unit": "statement", "sync": ["_NL"] }""")]
+    [InlineData("""{ "unit": "statement", "sync": ["_NL"], "nested": { "open": "OPEN", "close": "CLOSE" } }""")]
+    public void AUnitTheParserReducedInBeforeRefusingItsNextToken_HoldsEachPartOnce(string recover)
+    {
+        // Arrange: a mark and a plus after it, and a plus and a mark after it.
+        const string body = "k !+a\nm +b!\n";
+        var json = JsonNode.Parse($$"""{ "fbl": "0.9", "bindings": { "b": { "claims": { "extensions": [".t"] }, "body": { "kind": "file", "family": "grammar", "grammar": {{JsonSerializer.Serialize(Parts)}}, "recover": {{recover}} }, "reader": "declared", "elements": [ { "name": "entry", "type": "Entry", "at": "/entry" } ], "relations": [] } } }""")!;
+        var withRecover = Built(json, "b", Repository.Conformance);
+        json["bindings"]!["b"]!["body"]!.AsObject().Remove("recover");
+        var withoutRecover = Built(json, "b", Repository.Conformance);
+
+        // Act.
+        var inPart = new GrammarParser(withRecover, new BodyText(Encoding.UTF8.GetBytes(body))).Parse();
+        var whole = new GrammarParser(withoutRecover, new BodyText(Encoding.UTF8.GetBytes(body))).Parse();
+
+        // Assert: the same tree as the body read whole, the part after the first one not read a second time.
+        Assert.Empty(inPart.Skipped);
+        Assert.Equal(Shape(whole.Root), Shape(inPart.Root));
+    }
+
+    [Fact]
+    public void AStopInsideABlock_ResumesFromItsBoundary_WithEveryLineBeforeItOnce()
+    {
+        // Arrange: a block of a line per key, its fourth line two keys it does not take, after the parser reduced the third into the block.
+        const string grammar = "start: statement*\n?statement: entry\n          | _NL\nentry: KEY [block]\nblock: OPEN _line* CLOSE\n_line: KEY _NL\n     | _NL\nOPEN: \"{\"\nCLOSE: \"}\"\nKEY: /[a-z]+/\n_NL: /\\n/\nWS: /[ \\t]+/\n%ignore WS\n";
+        const string body = "k {\na\nb\nc\nd d\ne\n}\n";
+        var json = JsonNode.Parse($$"""{ "fbl": "0.9", "bindings": { "b": { "claims": { "extensions": [".t"] }, "body": { "kind": "file", "family": "grammar", "grammar": {{JsonSerializer.Serialize(grammar)}}, "recover": { "unit": "statement", "sync": ["_NL"], "nested": { "open": "OPEN", "close": "CLOSE" } } }, "reader": "declared", "elements": [ { "name": "entry", "type": "Entry", "at": "/entry" } ], "relations": [] } } }""")!;
+
+        // Act.
+        var reading = new GrammarParser(Built(json, "b", Repository.Conformance), new BodyText(Encoding.UTF8.GetBytes(body))).Parse();
+
+        // Assert: the fourth line skipped, and the block holding each other line once.
+        Assert.Single(reading.Skipped);
+        var block = reading.Nodes.Single(node => node.Name == "block");
+        Assert.Equal("a b c e", string.Join(" ", block.Children.Where(child => child.Name == "KEY").Select(child => Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(body), child.Own.Start, child.Own.End - child.Own.Start))));
+    }
+
     private static Finding Unparsed(FblModel model) => Assert.Single(model.Findings, f => f.Code == FindingCodes.UnparsedText);
 
     private static FblModel Read(string body, string? recover, string grammar = Statements) =>
