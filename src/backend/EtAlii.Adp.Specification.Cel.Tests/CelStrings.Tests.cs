@@ -5,6 +5,21 @@ namespace EtAlii.Adp.Specification.Cel.Tests;
 /// <summary>The strings library, after cel-spec's string_ext tests; indexes count code points.</summary>
 public class CelStringsTests
 {
+    /// <summary>The escapes of a string literal, cel-spec's langdef: each resolved to the one code point it names.</summary>
+    [Theory]
+    [InlineData("size('\\u001f') == 1 && '\\u001f' == '\\x1f' && '\\x1f' == '\\037' && '\\u001F' == '\\X1F'")]
+    [InlineData("'a\\U0001F600b' == 'a😀b' && '\\u00e9' == 'é'")]
+    [InlineData("size('\\a\\b\\f\\v\\?') == 5 && '\\a' != 'a' && '\\v' != 'v'")]
+    [InlineData("size('\\\\\\'\\\"\\`') == 4 && '\\n\\r\\t' == '\\012\\015\\011'")]
+    public void AStringLiteralsEscapesAreResolved(string expression)
+    {
+        // Act.
+        var value = Evaluate.Expression(expression);
+
+        // Assert.
+        Assert.Equal("true", Evaluate.Text(value));
+    }
+
     [Theory]
     [InlineData("'tacocat'.charAt(3)", "o")]
     [InlineData("'tacocat'.charAt(7)", "")]

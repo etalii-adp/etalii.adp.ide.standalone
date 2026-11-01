@@ -376,11 +376,16 @@ internal sealed class CelParser(string source, CelEnvironment environment)
             if (source[i] == '\\' && i + 1 < source.Length)
             {
                 i++;
-                builder.Append(source[i] switch
+                if (Escaped(source, ref i) is { } code) builder.Append(char.ConvertFromUtf32(code));
+                else builder.Append(source[i] switch
                 {
+                    'a' => '\a',
+                    'b' => '\b',
+                    'f' => '\f',
                     'n' => '\n',
-                    't' => '\t',
                     'r' => '\r',
+                    't' => '\t',
+                    'v' => '\v',
                     _ => source[i],
                 });
             }
@@ -393,5 +398,33 @@ internal sealed class CelParser(string source, CelEnvironment environment)
         if (i >= source.Length) throw new CelException($"A string is not closed in '{source}'.");
         i++;
         return builder.ToString();
+    }
+
+    /// <summary>
+    /// The code point of a numeric escape whose letter or first digit is at <paramref name="i"/> (cel-spec, langdef): <c>\\x</c>
+    /// or <c>\\X</c> and two hex digits, <c>\\u</c> and four, <c>\\U</c> and eight, or three octal digits; <paramref name="i"/> is
+    /// left on its last character. Null for any other escape.
+    /// </summary>
+    private static int? Escaped(string source, ref int i)
+    {
+        (int digits, int radix, int from) = source[i] switch
+        {
+            'x' or 'X' => (2, 16, i + 1),
+            'u' => (4, 16, i + 1),
+            'U' => (8, 16, i + 1),
+            >= '0' and <= '3' => (3, 8, i),
+            _ => (0, 0, i),
+        };
+        if (digits == 0 || from + digits > source.Length) return null;
+        var code = 0;
+        for (var at = from; at < from + digits; at++)
+        {
+            var digit = radix == 16 && char.IsAsciiHexDigit(source[at]) ? Convert.ToInt32(source[at].ToString(), 16) : radix == 8 && source[at] is >= '0' and <= '7' ? source[at] - '0' : -1;
+            if (digit < 0) throw new CelException($"The escape at {i - 1} of '{source}' is not complete.");
+            code = code * radix + digit;
+        }
+        if (code > 0x10FFFF || code is >= 0xD800 and <= 0xDFFF) throw new CelException($"The escape at {i - 1} of '{source}' names no code point.");
+        i = from + digits - 1;
+        return code;
     }
 }
