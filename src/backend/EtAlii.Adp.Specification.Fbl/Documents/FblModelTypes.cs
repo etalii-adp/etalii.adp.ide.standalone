@@ -99,6 +99,11 @@ public sealed class FblBinding
                     problems.Add(new LoadDiagnostic(place + "/gather", LoadSeverity.Error,
                         $"The attribute {name} of a {rule.Type} is single-valued, so the values its gather reads have nothing to hold them (FBL 0.11 14.1)."));
                 }
+                if (binding.Items is not null)
+                {
+                    problems.Add(new LoadDiagnostic(place + "/items", LoadSeverity.Error,
+                        $"The attribute {name} of a {rule.Type} is single-valued, so the structured values its items read have nothing to hold them (FBL 0.12 14.1)."));
+                }
             }
         }
         return problems;
@@ -453,6 +458,13 @@ public record Slot
 
     /// <summary>The text written between two items (FBL 0.12 §5.2), <c>", "</c> when the binding gives none.</summary>
     public string? Separator { get; init; }
+
+    /// <summary>
+    /// A <c>{node}</c> slot's <c>items</c> (FBL 0.12 §5.2): each item attribute of a structured value, in the order the
+    /// binding names them, with the <c>{node}</c> slot that reads it relative to each node the selector reaches; null when
+    /// the slot's items are not structured.
+    /// </summary>
+    internal IReadOnlyList<KeyValuePair<string, Slot>>? Items { get; init; }
 
     /// <summary>
     /// An attribute's <c>gather</c> (FBL 0.11 §5.2): further <c>{node}</c> slots of the same entry, whose items follow
