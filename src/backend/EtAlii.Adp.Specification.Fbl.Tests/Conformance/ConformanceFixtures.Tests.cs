@@ -19,13 +19,6 @@ public class ConformanceFixturesTests
     /// <summary>The number of fixtures vendored: fewer means the enumeration broke.</summary>
     private const int MinimumFixtures = 50;
 
-    /// <summary>
-    /// The fixtures of FBL 0.9's grammar family and of FBL 0.13's split slot (etalii.adp spec 072), vendored before the
-    /// library reads the family and held out of the theories until it does. Each task of the specification takes its
-    /// fixtures out of this set; <see cref="ThePendingGrammarFixturesDoNotPassYet"/> holds what is left.
-    /// </summary>
-    private static readonly HashSet<string> Pending = new(StringComparer.Ordinal);
-
     /// <summary>The fixtures copied in etalii.adp's own layout, beside the Knowledge designer's.</summary>
     private const string AdpFixtures = "etalii.adp/specifications/fbl/fixtures";
 
@@ -40,7 +33,6 @@ public class ConformanceFixturesTests
         var data = new TheoryData<string>();
         foreach (var name in Under("fixtures", "").Concat(Under(AdpFixtures, AdpFixtures + "/")).Order(StringComparer.Ordinal))
         {
-            if (Pending.Contains(name)) continue;
             if (!name.StartsWith(AdpFixtures + "/knowledge-", StringComparison.Ordinal) && !name.StartsWith(AdpFixtures + "/hierarchical-requirement-", StringComparison.Ordinal)) data.Add(name);
         }
         return data;
@@ -63,32 +55,6 @@ public class ConformanceFixturesTests
     public void TheFixturesAreFound()
     {
         Assert.True(Fixtures().Count >= MinimumFixtures, $"Only {Fixtures().Count} fixtures were found; {MinimumFixtures} are vendored.");
-    }
-
-    /// <summary>
-    /// Requirement 1.1 of etalii.adp spec 072: the gap is seen before it is closed. The library loads a binding of the
-    /// family since task T003 and reads its bodies since task T004, so every fixture still held out of the theories is one
-    /// whose binding loads and that does not pass whole yet; a pending fixture that is refused, or that passes, fails here.
-    /// </summary>
-    [Fact]
-    public void ThePendingGrammarFixturesDoNotPassYet()
-    {
-        foreach (var name in Pending)
-        {
-            // Arrange.
-            var folder = Path.Combine(Repository.Conformance, "fixtures", name);
-            using var fixture = JsonDocument.Parse(File.ReadAllBytes(Path.Combine(folder, "fixture.json")));
-            var reference = BindingReference(fixture.RootElement.GetProperty("binding").GetString()!, folder);
-            var path = Path.GetFullPath(Path.Combine(folder, reference[..reference.LastIndexOf('#')]));
-
-            // Act.
-            var problems = FblDocumentLoader.Load(path, out _);
-            var failure = Record.Exception(() => Run(name, folder, File.ReadAllBytes(Path.Combine(folder, "fixture.json"))));
-
-            // Assert.
-            Assert.DoesNotContain(problems, p => p.Severity == LoadSeverity.Error);
-            Assert.True(failure is not null, $"The pending fixture {name} passes; take it out of Pending.");
-        }
     }
 
     [Fact]
@@ -375,7 +341,7 @@ public class ConformanceFixturesTests
         JsonValueKind.Number => actual is long or int or double or decimal && Convert.ToDouble(actual, System.Globalization.CultureInfo.InvariantCulture).Equals(expected.GetDouble()),
         JsonValueKind.True or JsonValueKind.False => actual is bool flag && flag == expected.GetBoolean(),
         JsonValueKind.Null => actual is null,
-        JsonValueKind.Array => actual is IEnumerable<object?> list && list.Count() == expected.GetArrayLength() && list.Zip(expected.EnumerateArray()).All(pair => Same(pair.First, pair.Second)),
+        JsonValueKind.Array => actual is IEnumerable<object?> list && list.ToList() is var items && items.Count == expected.GetArrayLength() && items.Zip(expected.EnumerateArray()).All(pair => Same(pair.First, pair.Second)),
         _ => false,
     };
 

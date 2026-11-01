@@ -327,9 +327,10 @@ internal sealed class GrammarFamily(BodyText text, FblBinding binding, FblOption
                 if (survives[places[at]]) continue;
                 var last = at;
                 while (last + 1 < places.Count && !survives[places[last + 1]]) last++;
-                var run = (First: items.Items[places[at]].Span, Last: items.Items[places[last]].Span);
-                if (at > 0) plan.Add(SpliceOperation.RemoveKey, items.Items[places[at - 1]].Span.End, run.Last.End, "");
-                else plan.Add(SpliceOperation.RemoveKey, run.First.Start, items.Items[places[last + 1]].Span.Start, "");
+                var first = items.Items[places[at]].Span;
+                var end = items.Items[places[last]].Span.End;
+                if (at > 0) plan.Add(SpliceOperation.RemoveKey, items.Items[places[at - 1]].Span.End, end, "");
+                else plan.Add(SpliceOperation.RemoveKey, first.Start, items.Items[places[last + 1]].Span.Start, "");
                 at = last;
             }
         }
