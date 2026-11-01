@@ -84,11 +84,12 @@ public static class NaturalIds
 
     /// <summary>
     /// Whether a binding's tool type gives an attribute of a binding type <c>many</c> (DISL), which a binding does not
-    /// carry: the C4 types' tags, and a view's include and exclude members.
+    /// carry: the C4 types' tags, and a view's include and exclude members; a Wardley map element's decorators.
     /// </summary>
     public static Func<string, string, bool>? Many(string binding) => binding switch
     {
         "workspace" => (type, attribute) => attribute == "tags" || (type == "ViewInclude" && attribute is "members" or "excludes"),
+        "map" => (_, attribute) => attribute == "decorators",
         _ => null,
     };
 

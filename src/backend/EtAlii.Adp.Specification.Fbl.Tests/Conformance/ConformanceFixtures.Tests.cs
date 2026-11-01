@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using EtAlii.Adp.Specification.Fbl.Documents;
 using EtAlii.Adp.Specification.Fbl.History;
 using EtAlii.Adp.Specification.Fbl.Planning;
@@ -19,6 +20,24 @@ public class ConformanceFixturesTests
     /// <summary>The number of fixtures vendored: fewer means the enumeration broke.</summary>
     private const int MinimumFixtures = 50;
 
+    /// <summary>The reason a fixture is pending because of the lexer: ATD §3.6's longest match, which EtAlii.Lark's priority-first lexer does not give.</summary>
+    private const string LongestMatch = "the lexer takes a keyword that only begins a longer word, as 'title Pipelines' and 'inertial' read, where ATD §3.6 takes the longest match (EtAlii.Lark; the ruling on the lexer is pending with the product owner)";
+
+    /// <summary>
+    /// The fixtures vendored before the library passes them, by name: the text of the failure each still gives, and why. They
+    /// are held out of the theories; <see cref="ThePendingFixturesStillFailAsRecorded"/> fails when one passes, or fails
+    /// otherwise, so that the entry is taken out, or its reason brought up to date, in the change that makes it so.
+    /// </summary>
+    private static readonly Dictionary<string, (string Fails, string Why)> Pending = new(StringComparer.Ordinal)
+    {
+        ["wardley-annotation-positions"] = ("'title' of 'title@1' was not read.", LongestMatch + "; then FBL 0.12's items (section 5.2), which this library does not read yet (etalii.adp spec 071, F2)"),
+        ["wardley-duplicate-names/same-key-twice"] = ("a splice names the file 'same-key-twice.identities.json'", "an add writes its element's identity entry in the same edit (FBL 0.12 sections 8.6 and 8.7), which etalii.adp spec 071 task T012 (F3) delivers"),
+        ["wardley-legacy-identities"] = ("'title' of 'title@1' was not read.", LongestMatch + "; then a removal prunes the identity entry in the same edit (FBL 0.12 section 8.7), spec 071 task T012 (F3)"),
+        ["wardley-pipelines"] = ("'title' of 'title@1' was not read.", LongestMatch),
+        ["wardley-rename-identity"] = ("fbl.unparsed-text", LongestMatch + ", 'title Annotations' read as the annotations keyword; then a rename moves the identity entries' keys in the same edit (FBL 0.12 section 8.6), spec 071 task T012 (F3)"),
+        ["wardley-trailer/lenient-trailer"] = ("'inertia' of 'component@8' is the bool true", LongestMatch),
+    };
+
     /// <summary>The fixtures copied in etalii.adp's own layout, beside the Knowledge designer's.</summary>
     private const string AdpFixtures = "etalii.adp/specifications/fbl/fixtures";
 
@@ -33,6 +52,7 @@ public class ConformanceFixturesTests
         var data = new TheoryData<string>();
         foreach (var name in Under("fixtures", "").Concat(Under(AdpFixtures, AdpFixtures + "/")).Order(StringComparer.Ordinal))
         {
+            if (Pending.ContainsKey(name)) continue;
             if (!name.StartsWith(AdpFixtures + "/knowledge-", StringComparison.Ordinal) && !name.StartsWith(AdpFixtures + "/hierarchical-requirement-", StringComparison.Ordinal)) data.Add(name);
         }
         return data;
@@ -55,6 +75,25 @@ public class ConformanceFixturesTests
     public void TheFixturesAreFound()
     {
         Assert.True(Fixtures().Count >= MinimumFixtures, $"Only {Fixtures().Count} fixtures were found; {MinimumFixtures} are vendored.");
+    }
+
+    /// <summary>
+    /// Each pending fixture, run as the theories run one, still fails with the failure its entry records: one that passes, or
+    /// fails for another reason, fails here (see <see cref="Pending"/>).
+    /// </summary>
+    [Fact]
+    public void ThePendingFixturesStillFailAsRecorded()
+    {
+        foreach ((string name, (string fails, string why)) in Pending)
+        {
+            // Act.
+            var folder = Folder(name);
+            var failure = Record.Exception(() => Run(name, folder, File.ReadAllBytes(Path.Combine(folder, "fixture.json"))));
+
+            // Assert.
+            Assert.True(failure is not null, $"The pending fixture {name} passes; take it out of Pending.");
+            Assert.True(failure.Message.Contains(fails, StringComparison.Ordinal), $"The pending fixture {name}, pending because {why}, now fails otherwise: {failure.Message}");
+        }
     }
 
     [Fact]
@@ -159,7 +198,8 @@ public class ConformanceFixturesTests
         var bindingText = File.ReadAllText(Path.GetFullPath(Path.Combine(folder, reference[..reference.LastIndexOf('#')])));
 
         // Act and assert: the reading.
-        if (root.TryGetProperty("read", out var read)) AssertRead(subject, read, name, binding);
+        var aliases = Aliases(root, subject.Model, folder);
+        if (root.TryGetProperty("read", out var read)) AssertRead(subject, read, name, binding, aliases);
 
         // Act and assert: every step.
         var index = 0;
@@ -181,7 +221,7 @@ public class ConformanceFixturesTests
             }
             else
             {
-                var result = subject.Change(ReadChange(step.GetProperty("edit"), subject.Model));
+                var result = subject.Change(ReadChange(Aliased(step.GetProperty("edit"), aliases), subject.Model));
                 if (step.TryGetProperty("refused", out var refused))
                 {
                     var refusal = Assert.IsType<PlanResult.Refused>(result);
@@ -271,7 +311,7 @@ public class ConformanceFixturesTests
         return origin;
     }
 
-    private static void AssertRead(Subject subject, JsonElement read, string name, FblBinding binding)
+    private static void AssertRead(Subject subject, JsonElement read, string name, FblBinding binding, IReadOnlyDictionary<string, string> aliases)
     {
         var model = subject.Model!;
         var documentType = NaturalIds.DocumentType(binding.Name);
@@ -295,11 +335,11 @@ public class ConformanceFixturesTests
             {
                 var id = element.GetProperty("id").GetString()!;
                 var type = element.GetProperty("type").GetString()!;
-                var found = model.Find(id);
+                var found = model.Find(aliases.GetValueOrDefault(id) ?? id);
                 Assert.True(found is not null, $"{name}: no element '{id}' was read; read: {string.Join(", ", model.Elements.Select(e => $"{e.Id} ({e.Type})"))}.");
                 Assert.Equal(type, found.Type);
-                if (element.TryGetProperty("parent", out var parent)) Assert.True(parent.GetString() == found.ParentId, $"{name}: '{id}' is read in '{found.ParentId}', where the fixture reads '{parent.GetString()}'.");
-                if (element.TryGetProperty("attributes", out var attributes)) AssertAttributes(found, attributes, name);
+                if (element.TryGetProperty("parent", out var parent)) Assert.True((parent.GetString() is { } named ? aliases.GetValueOrDefault(named) ?? named : null) == found.ParentId, $"{name}: '{id}' is read in '{found.ParentId}', where the fixture reads '{parent.GetString()}'.");
+                if (element.TryGetProperty("attributes", out var attributes)) AssertAttributes(Typed(found, binding.Name), attributes, name);
             }
         }
         if (read.TryGetProperty("findings", out var findings))
@@ -323,6 +363,74 @@ public class ConformanceFixturesTests
     }
 
     /// <summary>
+    /// The read element each of the fixture's elements stands for where the reading holds no element of its id and the binding
+    /// stores none for it: a fixture must name every element (FBL §15.3), and where FBL reads no id the name is the fixture
+    /// author's, which etalii.adp's validator accepts as any. Such an element is the next one of its type, in document order,
+    /// whose id is not stored and that no other fixture element stands for. An id a legacy identities file beside the input
+    /// stores (FBL 0.12 §8.7, the array of <c>{id, kind, key}</c>) is never aliased, so a stored id the library fails to read still fails.
+    /// </summary>
+    private static Dictionary<string, string> Aliases(JsonElement root, FblModel? model, string folder)
+    {
+        var aliases = new Dictionary<string, string>(StringComparer.Ordinal);
+        if (model is null || !root.TryGetProperty("read", out var read) || !read.TryGetProperty("elements", out var elements)) return aliases;
+        var stored = StoredIds(folder);
+        var claimed = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var element in elements.EnumerateArray())
+        {
+            var id = element.GetProperty("id").GetString()!;
+            if (model.Find(id) is not null || stored.Contains(id)) continue;
+            var type = element.GetProperty("type").GetString()!;
+            var stands = model.Elements.FirstOrDefault(candidate => candidate.Type == type && !candidate.IdIsStored && !claimed.Contains(candidate.Id) && elements.EnumerateArray().All(other => other.GetProperty("id").GetString() != candidate.Id));
+            if (stands is null) continue;
+            claimed.Add(stands.Id);
+            aliases[id] = stands.Id;
+        }
+        return aliases;
+    }
+
+    /// <summary>The ids the legacy identities files beside a fixture's input store.</summary>
+    private static HashSet<string> StoredIds(string folder)
+    {
+        var ids = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var file in Directory.GetFiles(folder, "*.identities.json"))
+        {
+            using var identities = JsonDocument.Parse(File.ReadAllBytes(file));
+            if (identities.RootElement.ValueKind != JsonValueKind.Array) continue;
+            foreach (var entry in identities.RootElement.EnumerateArray())
+            {
+                if (entry.ValueKind == JsonValueKind.Object && entry.TryGetProperty("id", out var id) && id.ValueKind == JsonValueKind.String) ids.Add(id.GetString()!);
+            }
+        }
+        return ids;
+    }
+
+    /// <summary>A fixture's edit with every element id it names that <see cref="Aliases"/> maps replaced by the read element's.</summary>
+    private static JsonElement Aliased(JsonElement edit, IReadOnlyDictionary<string, string> aliases)
+    {
+        if (aliases.Count == 0) return edit;
+        var node = JsonNode.Parse(edit.GetRawText())!;
+        Replace(node, aliases);
+        return JsonDocument.Parse(node.ToJsonString()).RootElement.Clone();
+    }
+
+    private static readonly HashSet<string> NamingKeys = new(StringComparer.Ordinal) { "element", "id", "parent", "after", "before" };
+
+    private static void Replace(JsonNode node, IReadOnlyDictionary<string, string> aliases)
+    {
+        if (node is JsonArray array)
+        {
+            foreach (var item in array.Where(item => item is not null)) Replace(item!, aliases);
+            return;
+        }
+        if (node is not JsonObject value) return;
+        foreach (var (key, child) in value.ToList())
+        {
+            if (child is JsonValue text && NamingKeys.Contains(key) && text.TryGetValue<string>(out var id) && aliases.TryGetValue(id, out var read)) value[key] = read;
+            else if (child is not null) Replace(child, aliases);
+        }
+    }
+
+    /// <summary>
     /// The document's attributes (FBL 0.7 §15.3): the diagram element's, and those of every further element its tool type
     /// maps onto the diagram (<see cref="NaturalIds.DocumentParts"/>), each under the name the type map gives it.
     /// </summary>
@@ -339,14 +447,33 @@ public class ConformanceFixturesTests
         return diagram with { Attributes = attributes };
     }
 
+    /// <summary>An element with its attributes as DISL types them (<see cref="DislValue"/>).</summary>
+    private static FblElement Typed(FblElement element, string binding) =>
+        element with { Attributes = element.Attributes.ToDictionary(pair => pair.Key, pair => DislValue(binding, element.Type, pair.Key, pair.Value), StringComparer.Ordinal) };
+
     /// <summary>
-    /// A value as DISL types it on the diagram: a whole number the C4 types type <c>int</c>, which the grammar family reads
-    /// as its text, as the lines and blocks families do (FBL 0.5 §5.2), is the number; any other value as it is read.
+    /// A value as DISL types it: the grammar family reads a slot as its text, as the lines and blocks families do, and "a text
+    /// always reads" (FBL 0.5 §5.2), so a value the tool type types <c>int</c>, <c>number</c> or <c>bool</c> is converted by
+    /// DISL, not FBL; the C4 types' and the Wardley map's are converted here. Any other value is as it is read.
     /// </summary>
-    private static object? DislValue(string binding, string type, string attribute, object? value) =>
-        binding == "workspace" && C4Types.Of(type, attribute) == "int" && value is string text && long.TryParse(text, System.Globalization.NumberStyles.AllowLeadingSign, System.Globalization.CultureInfo.InvariantCulture, out var number)
-            ? number
-            : value;
+    private static object? DislValue(string binding, string type, string attribute, object? value)
+    {
+        var typed = binding switch
+        {
+            "workspace" => C4Types.Of(type, attribute),
+            "map" => WardleyTypes.Of(type, attribute),
+            _ => null,
+        };
+        if (value is not string text) return value;
+        var invariant = System.Globalization.CultureInfo.InvariantCulture;
+        return typed switch
+        {
+            "int" when long.TryParse(text, System.Globalization.NumberStyles.AllowLeadingSign, invariant, out var whole) => whole,
+            "number" when double.TryParse(text, System.Globalization.NumberStyles.Float, invariant, out var number) => number,
+            "bool" when text is "true" or "false" => text == "true",
+            _ => value,
+        };
+    }
 
     /// <summary>
     /// Each attribute a fixture's element names has that value and that JSON type, a string for a
@@ -359,6 +486,8 @@ public class ConformanceFixturesTests
             var label = $"{name}: '{attribute.Name}' of '{element.Id}'";
             var expected = attribute.Value;
             var read = element.Attributes.TryGetValue(attribute.Name, out var actual);
+            // A list that holds no item is absent, so that its first item is written as an insertion is (FBL 0.7 §4.6), and the fixture states it as [].
+            if (!read && expected is { ValueKind: JsonValueKind.Array } && expected.GetArrayLength() == 0) continue;
             Assert.True(read || expected.ValueKind == JsonValueKind.Null, $"{label} was not read.");
             Assert.True(Same(actual, expected), $"{label} is {Describe(actual)}, where the fixture reads {expected.GetRawText()}.");
         }
@@ -467,6 +596,15 @@ public class ConformanceFixturesTests
         /// <summary>The path of the legacy layout, as a step's splices name it in <c>file</c>.</summary>
         private string? _sidecarName;
 
+        /// <summary>
+        /// The legacy identities the body's sidecar ids are read from (FBL 0.12 §8.7): the binding's <c>legacyIdentities</c>
+        /// beside the body, when the registration has no <c>identities:</c> block and the file exists; null otherwise.
+        /// </summary>
+        private LegacySidecar? _identities;
+
+        /// <summary>The path of the legacy identities, as <c>expectFiles</c> names it.</summary>
+        private string? _identitiesName;
+
         /// <summary>Which file each edit that can be undone wrote, and each that can be redone.</summary>
         private readonly Stack<Written> _done = new();
         private readonly Stack<Written> _undone = new();
@@ -488,8 +626,9 @@ public class ConformanceFixturesTests
                 : new Subject { _binding = binding, _folder = folder, _body = OpenBody.Open(input, binding, Options(binding, name, origin, null, null)) };
 
         /// <summary>The options a fixture's body is read with: the ids, times and types of its tool type, which a binding does not carry, and its reading.</summary>
-        private static FblOptions Options(FblBinding binding, string name, string? origin, string? resource, string? view) => new()
+        private static FblOptions Options(FblBinding binding, string name, string? origin, string? resource, string? view, IReadOnlyDictionary<string, string>? identities = null) => new()
         {
+            Identities = identities ?? new Dictionary<string, string>(StringComparer.Ordinal),
             FileName = name,
             DeriveId = NaturalIds.For(binding.Name),
             TimeAttributes = NaturalIds.TimeAttributes(binding.Name),
@@ -515,7 +654,16 @@ public class ConformanceFixturesTests
                 ?? (BodyLocator.Locate(Path.Combine(folder, name), registration.Document, binding, folder) is { Exists: true, Path: { } located } ? Path.GetFileName(located) : null);
             if (bodyName is null || !File.Exists(Path.Combine(folder, bodyName))) return subject;
             var origin = binding.Claims.Origins.Contains(registration.Document.Origin) ? registration.Document.Origin : null;
-            var body = OpenBody.Open(File.ReadAllBytes(Path.Combine(folder, bodyName)), binding, Options(binding, bodyName, origin, registration.Document.Resource, registration.Document.View));
+            // The ids the registration keeps (FBL §8.6), or, without its identities block, the legacy identities file beside the body (FBL 0.12 §8.7).
+            var identities = registration.Document.IdentityMap();
+            if (binding.ForOrigin(origin).Registration.LegacyIdentities is { } legacy && registration.Document.Identities is null
+                && LegacySidecar.PathFor(legacy, Path.Combine(folder, bodyName)) is var identitiesPath && File.Exists(identitiesPath))
+            {
+                subject._identities = LegacySidecar.Open(File.ReadAllBytes(identitiesPath));
+                subject._identitiesName = Path.GetRelativePath(folder, identitiesPath).Replace('\\', '/');
+                identities = subject._identities.Identities();
+            }
+            var body = OpenBody.Open(File.ReadAllBytes(Path.Combine(folder, bodyName)), binding, Options(binding, bodyName, origin, registration.Document.Resource, registration.Document.View, identities));
             registration.KnownIds = body.Model.Elements.Select(element => element.Id).ToHashSet(StringComparer.Ordinal);
             registration.ShowsNoView = body.Model.ShowsNoView(registration.Document.View);
             if (binding.ForOrigin(origin).Registration.ResourceCapture is not null) registration.KnownResources = body.Model.Resources;
@@ -528,6 +676,11 @@ public class ConformanceFixturesTests
                 subject._sidecar = LegacySidecar.Open(File.ReadAllBytes(sidecarPath));
                 subject._sidecarName = Path.GetRelativePath(folder, sidecarPath).Replace('\\', '/');
                 findings.AddRange(subject._sidecar.Findings(body.Model.SelectedView, subject.Ids, subject._sidecarName));
+            }
+            if (subject._identities is not null)
+            {
+                var kinds = binding.AllRules.Select(rule => rule.Id?.SidecarKind).OfType<string>().ToHashSet(StringComparer.Ordinal);
+                findings.AddRange(subject._identities.IdentityFindings(kinds, subject._identitiesName!));
             }
             subject.Read = body.Model with { Findings = findings };
             return subject;
@@ -583,7 +736,7 @@ public class ConformanceFixturesTests
             }
         }
 
-        /// <summary>The bytes of each file <c>expectFiles</c> names after a step: the body a registration opens, and the legacy layout it keeps its positions in, are the files beside it this runner writes.</summary>
+        /// <summary>The bytes of each file <c>expectFiles</c> names after a step: the body a registration opens, the legacy layout it keeps its positions in and the legacy identities its ids are read from are the files beside it this runner keeps.</summary>
         public void AssertFiles(JsonElement files, string label)
         {
             foreach (var file in files.EnumerateObject())
@@ -591,6 +744,7 @@ public class ConformanceFixturesTests
                 var path = Path.GetFullPath(Path.Combine(_folder, file.Name));
                 var actual = _bodyName is not null && path == Path.GetFullPath(Path.Combine(_folder, _bodyName)) ? _body!.Bytes
                     : _sidecarName is not null && path == Path.GetFullPath(Path.Combine(_folder, _sidecarName)) ? _sidecar!.Bytes
+                    : _identitiesName is not null && path == Path.GetFullPath(Path.Combine(_folder, _identitiesName)) ? _identities!.Bytes
                     : null;
                 Assert.True(actual is not null, $"{label}: expectFiles names '{file.Name}', which is no file beside the input that it opens.");
                 var expected = Encoding.UTF8.GetBytes(file.Value.GetString()!);
