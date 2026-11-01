@@ -61,6 +61,10 @@ internal sealed class BodyReading
     /// <summary>The views the body's view blocks define (FBL §4.7), in document order.</summary>
     private List<FblView> Views { get; } = [];
 
+    /// <summary>The entry of the view the reading shows (FBL 0.11 §9.3); null when it shows none.</summary>
+    private Entry? _selectedView;
+    private string? _selectedViewName;
+
     /// <summary>The values of the binding's resource capture (FBL §8.2) in document order: the resources the body holds.</summary>
     private List<string> Resources { get; } = [];
 
@@ -265,6 +269,7 @@ internal sealed class BodyReading
         {
             foreach (var candidate in Family.Candidates(rule)) Offer(offered, candidate);
         }
+        ReadViews();
         foreach (var entry in Family.Entries)
         {
             if (!offered.TryGetValue(entry, out var candidates)) continue;
@@ -276,6 +281,7 @@ internal sealed class BodyReading
                 if (candidate.Rule is { } rule)
                 {
                     if (!SelectedResource(candidate)) continue;
+                    if (rule.SelectedView && !InSelectedView(entry)) continue;
                     if (rule.When is { } when)
                     {
                         var holds = Evaluate(when, candidate, out var problem);
@@ -322,6 +328,53 @@ internal sealed class BodyReading
                 Family.Report(FindingCodes.UnreadableEntry, FindingSeverity.Warning, $"This entry cannot be read: {error}", entry.Own);
             }
         }
+    }
+
+    /// <summary>
+    /// The views of a grammar body (FBL 0.11 §4.9, §9.3): each entry of a block rule with a <c>view</c> slot, named by the
+    /// slot's value, and the one the reading shows: the one the registration's <c>view</c> header names, ignoring the case
+    /// of ASCII letters, else the first in document order of the blocks whose <c>origins</c> admit the reading's origin, or
+    /// of every view block when none has <c>origins</c>. A header that names no view selects none.
+    /// </summary>
+    private void ReadViews()
+    {
+        var views = new List<(FblView View, Entry Entry, BlockRule Block)>();
+        foreach (var block in Binding.Blocks.Where(block => block.ViewSlot is not null))
+        {
+            foreach (var candidate in Family.BlockCandidates(block))
+            {
+                if (ViewName(candidate, block.ViewSlot!) is not { } name) continue;
+                views.Add((new FblView(name, block.Name, candidate.Entry.Own, Text.Position(candidate.Entry.Own.Start).Line), candidate.Entry, block));
+            }
+        }
+        if (views.Count == 0) return;
+        views.Sort((a, b) => a.Entry.Own.Start.CompareTo(b.Entry.Own.Start));
+        Views.AddRange(views.Select(view => view.View));
+        var ofOrigin = views.Any(view => view.Block.Origins is not null)
+            ? views.Where(view => view.Block.Origins is { } origins && Options.Origin is { } origin && origins.Contains(origin)).ToList()
+            : views;
+        var selected = Options.View is { } header
+            ? views.FirstOrDefault(view => string.Equals(view.View.Name, header, StringComparison.OrdinalIgnoreCase))
+            : ofOrigin.FirstOrDefault();
+        _selectedView = selected.Entry;
+        _selectedViewName = selected.View?.Name;
+    }
+
+    /// <summary>The name a view's slot gives it: the value of its <c>{node}</c> slot, or of its <c>{value}</c> expression; null when it gives none.</summary>
+    private string? ViewName(Candidate candidate, Slot slot)
+    {
+        if (slot.Kind is SlotKind.Value(var expression)) return Evaluate(expression, candidate, out _) is { } value ? NewText.Plain(value, null) : null;
+        return Family.Read(candidate, slot) is { Present: true, Value: { } read } ? NewText.Plain(read, null) : null;
+    }
+
+    /// <summary>Whether <paramref name="entry"/> is the entry of the view the reading shows, or inside it (FBL 0.11 §4.9).</summary>
+    private bool InSelectedView(Entry entry)
+    {
+        for (var at = entry; at is not null; at = at.Parent)
+        {
+            if (at == _selectedView) return true;
+        }
+        return false;
     }
 
     private static void Offer(Dictionary<Entry, List<Candidate>> offered, Candidate candidate)
@@ -800,6 +853,7 @@ internal sealed class BodyReading
         Unreadable is not null)
     {
         Views = Views.ToList(),
+        SelectedView = _selectedViewName,
         Resources = Resources.ToList(),
     };
 }

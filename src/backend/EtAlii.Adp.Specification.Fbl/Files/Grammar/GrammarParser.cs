@@ -8,10 +8,20 @@ namespace EtAlii.Adp.Specification.Fbl.Grammar;
 /// What reading a body by its grammar gave: the tree, its nodes in document order, its tokens and its comments, and the
 /// text a body read in part skipped, in bytes.
 /// </summary>
-internal sealed record GrammarReading(GrammarNode Root, IReadOnlyList<GrammarNode> Nodes, IReadOnlyList<Span> Tokens, IReadOnlyList<Span> Comments, IReadOnlyList<GrammarSkipped> Skipped);
+internal sealed record GrammarReading(GrammarNode Root, IReadOnlyList<GrammarNode> Nodes, IReadOnlyList<Span> Tokens, IReadOnlyList<Span> Comments, IReadOnlyList<GrammarSkipped> Skipped)
+{
+    /// <summary>The byte offset of the <c>open</c> token of each block the body ends inside (FBL 0.11 §4.9, rule 6).</summary>
+    public IReadOnlyList<int> Unclosed { get; init; } = [];
 
-/// <summary>Text a body read in part skipped (FBL 0.9 §4.9), in bytes: all of it, and where reading stopped in it.</summary>
-internal sealed record GrammarSkipped(Span Text, int Stop);
+    /// <summary>The tokens of an ignored terminal of <c>recover.unclosed</c> that do not end with its text (FBL 0.11 §4.9, rule 8).</summary>
+    public IReadOnlyList<Span> UnclosedComments { get; init; } = [];
+}
+
+/// <summary>
+/// Text a body read in part skipped (FBL 0.9 §4.9), in bytes: all of it, and where reading stopped in it;
+/// <paramref name="Unmatched"/> for a close token that closes no block (FBL 0.11 §4.9, rule 7).
+/// </summary>
+internal sealed record GrammarSkipped(Span Text, int Stop, bool Unmatched);
 
 /// <summary>A body that does not read by its grammar (FBL §7.5): where, in bytes, and why.</summary>
 internal sealed class GrammarSyntaxException(int offset, string message) : Exception(message)
@@ -67,8 +77,14 @@ internal sealed class GrammarParser
     {
         var read = _grammar.ParseUnits(_source);
         var root = Node(_grammar.Start, read.Units, null, new Span(_text.BomLength, _text.Length));
-        var skipped = read.Skips.Select(skip => new GrammarSkipped(new Span(_bytes[skip.Start], _bytes[skip.End]), _bytes[skip.Stop])).ToList();
-        return Reading(root, read.Tokens, skipped);
+        var skipped = read.Skips.Select(skip => new GrammarSkipped(new Span(_bytes[skip.Start], _bytes[skip.End]), _bytes[skip.Stop], skip.Unmatched)).ToList();
+        var unclosed = _grammar.Recover?.Unclosed ?? new Dictionary<string, string>(StringComparer.Ordinal);
+        var comments = read.Tokens.Values
+            .Where(token => unclosed.TryGetValue(token.Type, out var closing) && !token.Value.EndsWith(closing, StringComparison.Ordinal))
+            .OrderBy(token => token.StartPos)
+            .Select(Span)
+            .ToList();
+        return Reading(root, read.Tokens, skipped) with { Unclosed = [.. read.Unclosed.Select(at => _bytes[at])], UnclosedComments = comments };
     }
 
     /// <summary>The reading of a tree: every token cut a leaf but whitespace, an ignored one a comment, and skipped text a leaf.</summary>

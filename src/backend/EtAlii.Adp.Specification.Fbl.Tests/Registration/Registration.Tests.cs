@@ -153,11 +153,11 @@ public class RegistrationTests
         var moved = sidecar.Change(s => s.PlanPlace("systemContext", "a", 41.25, 60));
         var added = sidecar.Change(s => s.PlanPlace("SystemContext", "b", 10, 20.0004));
 
-        // Assert: numbers replaced in place, a new member written as the file writes them.
+        // Assert: numbers replaced in place, a new member written as the file writes them, each number in its shortest form (FBL 0.11 §8.7).
         Assert.IsType<PlanResult.Planned>(moved);
         Assert.IsType<PlanResult.Planned>(added);
-        Assert.Equal("{\n  \"SystemContext\": {\n    \"a\": {\n      \"x\": 41.25,\n      \"y\": 60\n    },\n    \"b\": {\n      \"x\": 10,\n      \"y\": 20\n    }\n  }\n}\n", Encoding.UTF8.GetString(sidecar.Bytes));
-        Assert.Equal((10d, 20d), sidecar.Positions("SystemContext")["b"]);
+        Assert.Equal("{\n  \"SystemContext\": {\n    \"a\": {\n      \"x\": 41.25,\n      \"y\": 60\n    },\n    \"b\": {\n      \"x\": 10,\n      \"y\": 20.0004\n    }\n  }\n}\n", Encoding.UTF8.GetString(sidecar.Bytes));
+        Assert.Equal((10d, 20.0004d), sidecar.Positions("SystemContext")["b"]);
         Assert.IsType<UndoResult.Done>(sidecar.Undo());
         Assert.IsType<UndoResult.Done>(sidecar.Undo());
         Assert.Equal(original, Encoding.UTF8.GetString(sidecar.Bytes));

@@ -281,7 +281,7 @@ public class ConformanceFixturesTests
             // FBL 0.7 §15.3: the attributes of the document, the element of the type the tool type maps as the diagram.
             var diagram = model.Elements.FirstOrDefault(element => element.Type == documentType);
             Assert.True(diagram is not null, $"{name}: no {documentType} was read as the document.");
-            if (document.TryGetProperty("attributes", out var attributes)) AssertAttributes(diagram, attributes, name);
+            if (document.TryGetProperty("attributes", out var attributes)) AssertAttributes(Document(model, diagram, binding.Name), attributes, name);
         }
         if (read.TryGetProperty("elements", out var elements))
         {
@@ -306,9 +306,12 @@ public class ConformanceFixturesTests
         {
             // A fixture that lists no finding says the reading has none: a reference that does not
             // resolve, an entry without its id, would each be one.
+            // The findings the tool type turns off are DISL's, not the library's to compare (DISL constraints).
+            var disabled = NaturalIds.DisabledFindings(binding.Name);
+            var reported = model.Findings.Where(f => !disabled.Contains(f.Code)).ToList();
             if (findings.GetArrayLength() == 0)
             {
-                Assert.True(model.Findings.Count == 0, $"{name}: the fixture expects no finding; read: {string.Join("; ", model.Findings.Select(f => $"{f.Code} {f.Message}"))}");
+                Assert.True(reported.Count == 0, $"{name}: the fixture expects no finding; read: {string.Join("; ", reported.Select(f => $"{f.Code} {f.Message}"))}");
             }
             foreach (var finding in findings.EnumerateArray())
             {
@@ -320,16 +323,43 @@ public class ConformanceFixturesTests
     }
 
     /// <summary>
+    /// The document's attributes (FBL 0.7 §15.3): the diagram element's, and those of every further element its tool type
+    /// maps onto the diagram (<see cref="NaturalIds.DocumentParts"/>), each under the name the type map gives it.
+    /// </summary>
+    private static FblElement Document(FblModel model, FblElement diagram, string binding)
+    {
+        var parts = NaturalIds.DocumentParts(binding);
+        if (parts.Count == 0) return diagram;
+        var attributes = new Dictionary<string, object?>(StringComparer.Ordinal);
+        foreach (var element in model.Elements.Where(element => element == diagram || (element.Type != diagram.Type && parts.ContainsKey(element.Type))).Prepend(diagram).Distinct())
+        {
+            var renames = parts.GetValueOrDefault(element.Type) ?? new Dictionary<string, string>(StringComparer.Ordinal);
+            foreach ((string attribute, object? value) in element.Attributes) attributes[renames.GetValueOrDefault(attribute) ?? attribute] = DislValue(binding, element.Type, attribute, value);
+        }
+        return diagram with { Attributes = attributes };
+    }
+
+    /// <summary>
+    /// A value as DISL types it on the diagram: a whole number the C4 types type <c>int</c>, which the grammar family reads
+    /// as its text, as the lines and blocks families do (FBL 0.5 §5.2), is the number; any other value as it is read.
+    /// </summary>
+    private static object? DislValue(string binding, string type, string attribute, object? value) =>
+        binding == "workspace" && C4Types.Of(type, attribute) == "int" && value is string text && long.TryParse(text, System.Globalization.NumberStyles.AllowLeadingSign, System.Globalization.CultureInfo.InvariantCulture, out var number)
+            ? number
+            : value;
+
+    /// <summary>
     /// Each attribute a fixture's element names has that value and that JSON type, a string for a
-    /// text (FBL 0.5 section 15.3); an attribute it does not name is not compared.
+    /// text (FBL 0.5 section 15.3); an attribute it does not name is not compared, and one it names null is absent.
     /// </summary>
     private static void AssertAttributes(FblElement element, JsonElement attributes, string name)
     {
         foreach (var attribute in attributes.EnumerateObject())
         {
             var label = $"{name}: '{attribute.Name}' of '{element.Id}'";
-            Assert.True(element.Attributes.TryGetValue(attribute.Name, out var actual), $"{label} was not read.");
             var expected = attribute.Value;
+            var read = element.Attributes.TryGetValue(attribute.Name, out var actual);
+            Assert.True(read || expected.ValueKind == JsonValueKind.Null, $"{label} was not read.");
             Assert.True(Same(actual, expected), $"{label} is {Describe(actual)}, where the fixture reads {expected.GetRawText()}.");
         }
     }
@@ -428,9 +458,26 @@ public class ConformanceFixturesTests
         /// <summary>The input's folder, which the names of <c>expectFiles</c> are relative to.</summary>
         private string _folder = "";
 
-        /// <summary>Which file each edit that can be undone wrote, and each that can be redone: true for the body a registration opens.</summary>
-        private readonly Stack<bool> _done = new();
-        private readonly Stack<bool> _undone = new();
+        /// <summary>
+        /// The legacy layout the registration's positions are kept in (FBL §8.7): the binding's <c>legacyLayout</c> beside the
+        /// body, when the registration has no <c>layout:</c> block and the file exists; null otherwise.
+        /// </summary>
+        private LegacySidecar? _sidecar;
+
+        /// <summary>The path of the legacy layout, as a step's splices name it in <c>file</c>.</summary>
+        private string? _sidecarName;
+
+        /// <summary>Which file each edit that can be undone wrote, and each that can be redone.</summary>
+        private readonly Stack<Written> _done = new();
+        private readonly Stack<Written> _undone = new();
+
+        /// <summary>The files a step can write: the input, the body a registration opens, and the legacy layout it keeps positions in.</summary>
+        private enum Written
+        {
+            Input,
+            Body,
+            Sidecar,
+        }
 
         /// <summary>A registration's reading: the elements of its body and the findings of both (FBL §8.1, §8.5).</summary>
         private FblModel? Read { get; set; }
@@ -438,17 +485,19 @@ public class ConformanceFixturesTests
         public static Subject Open(byte[] input, string name, FblBinding binding, string folder, string? origin = null) =>
             name.EndsWith(".adp", StringComparison.OrdinalIgnoreCase)
                 ? Registration(input, name, binding, folder)
-                : new Subject { _binding = binding, _folder = folder, _body = OpenBody.Open(input, binding, Options(binding, name, origin, null)) };
+                : new Subject { _binding = binding, _folder = folder, _body = OpenBody.Open(input, binding, Options(binding, name, origin, null, null)) };
 
         /// <summary>The options a fixture's body is read with: the ids, times and types of its tool type, which a binding does not carry, and its reading.</summary>
-        private static FblOptions Options(FblBinding binding, string name, string? origin, string? resource) => new()
+        private static FblOptions Options(FblBinding binding, string name, string? origin, string? resource, string? view) => new()
         {
             FileName = name,
             DeriveId = NaturalIds.For(binding.Name),
             TimeAttributes = NaturalIds.TimeAttributes(binding.Name),
             AttributeType = AttributeTypes(binding.Name),
+            Many = NaturalIds.Many(binding.Name),
             Origin = origin,
             Resource = resource,
+            View = view,
         };
 
         /// <summary>
@@ -461,22 +510,56 @@ public class ConformanceFixturesTests
         {
             var registration = OpenRegistration.Open(input, binding);
             var subject = new Subject { _registration = registration, _binding = binding, _folder = folder };
-            if (registration.Document.Body is not { } bodyName || !File.Exists(Path.Combine(folder, bodyName))) return subject;
+            // Without a body header, the body is the sibling of the registration's base name (FBL §8.2).
+            var bodyName = registration.Document.Body
+                ?? (BodyLocator.Locate(Path.Combine(folder, name), registration.Document, binding, folder) is { Exists: true, Path: { } located } ? Path.GetFileName(located) : null);
+            if (bodyName is null || !File.Exists(Path.Combine(folder, bodyName))) return subject;
             var origin = binding.Claims.Origins.Contains(registration.Document.Origin) ? registration.Document.Origin : null;
-            var body = OpenBody.Open(File.ReadAllBytes(Path.Combine(folder, bodyName)), binding, Options(binding, bodyName, origin, registration.Document.Resource));
+            var body = OpenBody.Open(File.ReadAllBytes(Path.Combine(folder, bodyName)), binding, Options(binding, bodyName, origin, registration.Document.Resource, registration.Document.View));
             registration.KnownIds = body.Model.Elements.Select(element => element.Id).ToHashSet(StringComparer.Ordinal);
+            registration.ShowsNoView = body.Model.ShowsNoView(registration.Document.View);
             if (binding.ForOrigin(origin).Registration.ResourceCapture is not null) registration.KnownResources = body.Model.Resources;
             subject._body = body;
             subject._bodyName = bodyName;
-            subject.Read = body.Model with { Findings = [.. body.Model.Findings, .. registration.Findings(name)] };
+            var findings = new List<Finding>([.. body.Model.Findings, .. registration.Findings(name)]);
+            if (binding.ForOrigin(origin).Registration.LegacyLayout is { } pattern && registration.Document.Layout is null
+                && LegacySidecar.PathFor(pattern, Path.Combine(folder, bodyName)) is var sidecarPath && File.Exists(sidecarPath))
+            {
+                subject._sidecar = LegacySidecar.Open(File.ReadAllBytes(sidecarPath));
+                subject._sidecarName = Path.GetRelativePath(folder, sidecarPath).Replace('\\', '/');
+                findings.AddRange(subject._sidecar.Findings(body.Model.SelectedView, subject.Ids, subject._sidecarName));
+            }
+            subject.Read = body.Model with { Findings = findings };
             return subject;
         }
 
         /// <summary>The attribute types of a binding's tool type, which a binding does not carry (FBL 0.5 section 5.2): the timeline's, from its specification.</summary>
-        private static Func<string, string, string?>? AttributeTypes(string binding) => binding == "timeline" ? TimelineTypes.Of : null;
+        private static Func<string, string, string?>? AttributeTypes(string binding) => binding switch
+        {
+            "timeline" => TimelineTypes.Of,
+            "workspace" => C4Types.Of,
+            _ => null,
+        };
 
         /// <summary>Whether the input is a registration that opened its body, whose model edits go to that body.</summary>
         private bool OpensItsBody => _registration is not null && _body is not null;
+
+        /// <summary>The ids of the body's reading, which a legacy layout's keys are matched with (FBL 0.11 §8.7).</summary>
+        private HashSet<string> Ids => _body!.Model.Elements.Select(element => element.Id).ToHashSet(StringComparer.Ordinal);
+
+        /// <summary>The file a change writes: the body a registration opens for a model change, the legacy layout for a placement while it is kept there, else the input.</summary>
+        private Written Target(ModelChange change) =>
+            _registration is null ? Written.Input
+            : OpensItsBody && change is not (ModelChange.Place or ModelChange.Setting or ModelChange.Identify) ? Written.Body
+            : _sidecar is not null && change is ModelChange.Place && !_registration.ShowsNoView ? Written.Sidecar
+            : Written.Input;
+
+        private string? FileOf(Written written) => written switch
+        {
+            Written.Body => _bodyName,
+            Written.Sidecar => _sidecarName,
+            _ => null,
+        };
 
         /// <summary>The input's bytes: the body, or the registration.</summary>
         public byte[] Bytes => _registration?.Bytes ?? _body!.Bytes;
@@ -489,38 +572,44 @@ public class ConformanceFixturesTests
         /// </summary>
         public void Expect(JsonElement step, string label)
         {
-            var writesBody = step.TryGetProperty("undo", out var undo) && undo.GetBoolean() ? _done.Count > 0 && _done.Peek()
-                : step.TryGetProperty("redo", out var redo) && redo.GetBoolean() ? _undone.Count > 0 && _undone.Peek()
-                : OpensItsBody && step.TryGetProperty("edit", out var edit) && IsBodyEdit(edit);
+            var writes = step.TryGetProperty("undo", out var undo) && undo.GetBoolean() ? (_done.Count > 0 ? _done.Peek() : Written.Input)
+                : step.TryGetProperty("redo", out var redo) && redo.GetBoolean() ? (_undone.Count > 0 ? _undone.Peek() : Written.Input)
+                : step.TryGetProperty("edit", out var edit) ? Target(ReadChange(edit, Model)) : Written.Input;
+            var expected = FileOf(writes);
             foreach (var splice in step.GetProperty("splices").EnumerateArray())
             {
                 var file = splice.TryGetProperty("file", out var named) ? named.GetString() : null;
-                Assert.True(writesBody ? file == _bodyName : file is null, $"{label}: a splice names the file '{file}', where the step writes {(writesBody ? $"'{_bodyName}'" : "the input")}.");
+                Assert.True(file == expected, $"{label}: a splice names the file '{file}', where the step writes {(expected is null ? "the input" : $"'{expected}'")}.");
             }
         }
 
-        /// <summary>The bytes of each file <c>expectFiles</c> names after a step: the body a registration opens is the one file beside it this runner writes.</summary>
+        /// <summary>The bytes of each file <c>expectFiles</c> names after a step: the body a registration opens, and the legacy layout it keeps its positions in, are the files beside it this runner writes.</summary>
         public void AssertFiles(JsonElement files, string label)
         {
             foreach (var file in files.EnumerateObject())
             {
-                Assert.True(_bodyName is not null && Path.GetFullPath(Path.Combine(_folder, file.Name)) == Path.GetFullPath(Path.Combine(_folder, _bodyName)), $"{label}: expectFiles names '{file.Name}', which is not the body the input opens.");
+                var path = Path.GetFullPath(Path.Combine(_folder, file.Name));
+                var actual = _bodyName is not null && path == Path.GetFullPath(Path.Combine(_folder, _bodyName)) ? _body!.Bytes
+                    : _sidecarName is not null && path == Path.GetFullPath(Path.Combine(_folder, _sidecarName)) ? _sidecar!.Bytes
+                    : null;
+                Assert.True(actual is not null, $"{label}: expectFiles names '{file.Name}', which is no file beside the input that it opens.");
                 var expected = Encoding.UTF8.GetBytes(file.Value.GetString()!);
-                Assert.True(expected.AsSpan().SequenceEqual(_body!.Bytes), $"{label}: '{file.Name}' differs from expectFiles.\nExpected:\n{file.Value.GetString()}\nActual:\n{Encoding.UTF8.GetString(_body.Bytes)}");
+                Assert.True(expected.AsSpan().SequenceEqual(actual), $"{label}: '{file.Name}' differs from expectFiles.\nExpected:\n{file.Value.GetString()}\nActual:\n{Encoding.UTF8.GetString(actual)}");
             }
         }
 
-        /// <summary>A change of the model, which a registration that opened its body hands that body; a placement and a setting are the registration's.</summary>
-        private static bool IsBodyEdit(JsonElement edit) => !edit.TryGetProperty("place", out _) && !edit.TryGetProperty("setting", out _);
-
         public PlanResult Change(ModelChange change)
         {
-            var toBody = _registration is null || (OpensItsBody && change is not (ModelChange.Place or ModelChange.Setting or ModelChange.Identify));
-            var result = !toBody ? _registration!.Change(change)
-                : change is ModelChange.Remove remove && Unsets(remove.Id) is { Count: > 0 } unsets ? RemoveWith(remove, unsets) : _body!.Change(change);
+            var target = Target(change);
+            var result = target switch
+            {
+                Written.Sidecar => _sidecar!.Change(sidecar => sidecar.PlanPlace(_body!.Model.SelectedView, ((ModelChange.Place)change).Id, ((ModelChange.Place)change).X, ((ModelChange.Place)change).Y, Ids)),
+                Written.Input when _registration is not null => _registration.Change(change),
+                _ => change is ModelChange.Remove remove && Unsets(remove.Id) is { Count: > 0 } unsets ? RemoveWith(remove, unsets) : _body!.Change(change),
+            };
             if (result is PlanResult.Planned { Edit.Splices.Count: > 0 })
             {
-                _done.Push(toBody && _registration is not null);
+                _done.Push(target);
                 _undone.Clear();
             }
             return result;
@@ -567,17 +656,25 @@ public class ConformanceFixturesTests
 
         public IReadOnlyList<Splice> Undo(string label)
         {
-            var toBody = _done.Count > 0 ? _done.Pop() : _registration is null;
-            _undone.Push(toBody);
-            return Done(toBody || _registration is null ? _body!.Undo() : _registration.Undo(), label);
+            var written = _done.Count > 0 ? _done.Pop() : Written.Input;
+            _undone.Push(written);
+            return Done(FileWritten(written).Undo(), label);
         }
 
         public IReadOnlyList<Splice> Redo(string label)
         {
-            var toBody = _undone.Count > 0 ? _undone.Pop() : _registration is null;
-            _done.Push(toBody);
-            return Done(toBody || _registration is null ? _body!.Redo() : _registration.Redo(), label);
+            var written = _undone.Count > 0 ? _undone.Pop() : Written.Input;
+            _done.Push(written);
+            return Done(FileWritten(written).Redo(), label);
         }
+
+        /// <summary>The file an edit wrote, which its undo and redo write again.</summary>
+        private SplicedFile FileWritten(Written written) => written switch
+        {
+            Written.Sidecar => _sidecar!,
+            Written.Body => _body!,
+            _ => (SplicedFile?)_registration ?? _body!,
+        };
 
         private static IReadOnlyList<Splice> Done(UndoResult result, string label)
         {

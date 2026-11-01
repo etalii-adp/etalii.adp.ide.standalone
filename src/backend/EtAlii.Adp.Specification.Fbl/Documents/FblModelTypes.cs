@@ -74,9 +74,10 @@ public sealed class FblBinding
     public IEnumerable<Rule> AllRules => Elements.Concat(Relations);
 
     /// <summary>
-    /// The check of FBL 0.13 §14.1 step 6 that needs the tool type's attribute types: a slot with <c>split</c> stands only on
-    /// an attribute that <paramref name="many"/>, given the rule's type and the attribute's name, says is <c>many</c>. Each
-    /// refusal is a problem at the slot's <c>split</c>; none when every such attribute is <c>many</c>.
+    /// The check of FBL 0.11 and 0.13 §14.1 step 6 that needs the tool type's attribute types: a slot with <c>split</c> or
+    /// <c>gather</c> stands only on an attribute that <paramref name="many"/>, given the rule's type and the attribute's name,
+    /// says is <c>many</c>. Each refusal is a problem at the slot's <c>split</c> or <c>gather</c>; none when every such
+    /// attribute is <c>many</c>.
     /// </summary>
     public IReadOnlyList<LoadDiagnostic> CheckManyAttributes(Func<string, string, bool> many)
     {
@@ -86,9 +87,18 @@ public sealed class FblBinding
         {
             foreach ((string name, AttributeBinding binding) in rule.Attributes)
             {
-                if (binding.Split is null || many(rule.Type, name)) continue;
-                problems.Add(new LoadDiagnostic($"/bindings/{JsonPointer.Token(Name)}/{at}/attributes/{JsonPointer.Token(name)}/split", LoadSeverity.Error,
-                    $"The attribute {name} of a {rule.Type} is single-valued, so the items its split cuts have nothing to hold them (FBL 0.13 14.1)."));
+                if (many(rule.Type, name)) continue;
+                var place = $"/bindings/{JsonPointer.Token(Name)}/{at}/attributes/{JsonPointer.Token(name)}";
+                if (binding.Split is not null)
+                {
+                    problems.Add(new LoadDiagnostic(place + "/split", LoadSeverity.Error,
+                        $"The attribute {name} of a {rule.Type} is single-valued, so the items its split cuts have nothing to hold them (FBL 0.13 14.1)."));
+                }
+                if (binding.Gather.Count > 0)
+                {
+                    problems.Add(new LoadDiagnostic(place + "/gather", LoadSeverity.Error,
+                        $"The attribute {name} of a {rule.Type} is single-valued, so the values its gather reads have nothing to hold them (FBL 0.11 14.1)."));
+                }
             }
         }
         return problems;
@@ -214,7 +224,17 @@ internal sealed class GrammarBody
 }
 
 /// <summary><c>body.recover</c> (FBL 0.9 §4.9): the rule a body is read unit by unit by, and the terminals a skip ends at.</summary>
-internal sealed record GrammarRecover(string Unit, IReadOnlyList<string> Sync);
+internal sealed record GrammarRecover(string Unit, IReadOnlyList<string> Sync)
+{
+    /// <summary>
+    /// <c>recover.nested</c> (FBL 0.11 §4.9, rules 4 to 9): the tokens that open and close a block, each a terminal or the
+    /// text of an anonymous string terminal, so that a unit is read in part inside its blocks too; null without it.
+    /// </summary>
+    public (string Open, string Close)? Nested { get; init; }
+
+    /// <summary><c>recover.unclosed</c> (FBL 0.11 §4.9, rule 8): per ignored terminal, the text a token of it ends with when it is closed.</summary>
+    public IReadOnlyDictionary<string, string> Unclosed { get; init; } = new Dictionary<string, string>(StringComparer.Ordinal);
+}
 
 public sealed record PluginReader(string Plugin, string? Version)
 {
@@ -236,7 +256,20 @@ internal sealed class TextDefaults
 
 internal sealed record HeaderSettings(string? Key, JsonElement? Value, string? Line, bool Required);
 
-internal sealed record BlockRule(string Name, string Line, IReadOnlyList<string>? Within, bool CaseInsensitive, string? View);
+internal sealed record BlockRule(string Name, string Line, IReadOnlyList<string>? Within, bool CaseInsensitive, string? View)
+{
+    /// <summary>grammar (FBL 0.11 §4.9): the selector of the block's entries, in place of <see cref="Line"/>.</summary>
+    public string? At { get; init; }
+
+    /// <summary>grammar (FBL 0.11 §4.9): the <c>{node}</c> or <c>{value}</c> slot whose value names each of the block's entries as a view.</summary>
+    public Slot? ViewSlot { get; init; }
+
+    /// <summary>grammar (FBL 0.11 §4.9): how one of the block's entries is added, from its <c>emit</c>; null when it cannot be.</summary>
+    public InsertSettings? Insert { get; init; }
+
+    /// <summary>The readings the block's views are views for, as origins (FBL 0.11 §4.9); null for every reading.</summary>
+    public IReadOnlyList<string>? Origins { get; init; }
+}
 
 /// <summary>A section of a <c>bullets</c> body (FBL 0.7 §4.8): its name, and the expression its heading's text matches.</summary>
 internal sealed record SectionRule(string Name, string Heading, bool CaseInsensitive);
@@ -257,6 +290,15 @@ public sealed partial class Rule
     public IReadOnlyList<string>? Within { get; init; }
 
     public bool Opens { get; init; }
+
+    /// <summary>
+    /// grammar (FBL 0.11 §4.9): the block an add with <c>place: "last-child"</c> writes around a first child of an entry
+    /// that has none, its <c>open</c> and its <c>close</c>; null when the rule gives none.
+    /// </summary>
+    internal (string Open, string Close)? OpensWith { get; init; }
+
+    /// <summary>grammar (FBL 0.11 §4.9): the rule matches only the entry of the view the reading shows and the entries inside it.</summary>
+    public bool SelectedView { get; init; }
 
     public bool CaseInsensitive { get; init; }
 
@@ -401,6 +443,12 @@ public record Slot
     /// <summary>The text written between two items (FBL 0.12 §5.2), <c>", "</c> when the binding gives none.</summary>
     public string? Separator { get; init; }
 
+    /// <summary>
+    /// An attribute's <c>gather</c> (FBL 0.11 §5.2): further <c>{node}</c> slots of the same entry, whose items follow
+    /// this slot's in document order, for a read-only <c>many</c> attribute of the grammar family; empty when it has none.
+    /// </summary>
+    internal IReadOnlyList<Slot> Gather { get; init; } = [];
+
     public override string ToString() => Kind.ToString();
 }
 
@@ -535,6 +583,12 @@ internal sealed record CreateChild(string Emit, ChildPlace Place, string? Before
     /// is written right after the first of them that is present; null when the binding gives none.
     /// </summary>
     public IReadOnlyList<string>? After { get; init; }
+
+    /// <summary>
+    /// grammar (FBL 0.11 §4.9): the part is positional, so each attribute of <see cref="After"/> before the first present one
+    /// is written too, before it, with its own <c>create.emit</c> and the empty value, nearest last, in the same splice.
+    /// </summary>
+    public bool Pad { get; init; }
 }
 
 /// <summary>

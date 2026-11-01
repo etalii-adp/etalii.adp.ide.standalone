@@ -256,7 +256,7 @@ public class ReadingTests
         // Assert: the view block on line 9, from its first byte to the brace that closes it.
         var view = Assert.Single(model.Views);
         Assert.Equal("containers", view.Name);
-        Assert.Equal("view", view.Block);
+        Assert.Equal("containerView", view.Block);
         Assert.Equal(9, view.Line);
         Assert.Equal(new Span(start, end), view.Span);
     }
