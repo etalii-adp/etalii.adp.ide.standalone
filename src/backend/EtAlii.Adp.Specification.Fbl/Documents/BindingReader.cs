@@ -284,8 +284,9 @@ internal static partial class BindingReader
     {
         if (Object(json, "id", pointer, "A rule's id", problems) is not { } id) return null;
         var from = Object(id, "from", pointer + "/id", "An id's from", problems) is { } slot ? ReadSlot(slot, pointer + "/id/from", problems) : null;
-        if (Object(id, "sidecar", pointer + "/id", "An id's sidecar", problems) is not { } sidecar) return new IdBinding(from, null);
-        return new IdBinding(from, JsonProperties.String(sidecar, "key"), JsonProperties.String(sidecar, "kind"), JsonProperties.String(sidecar, "ordinal"));
+        return Object(id, "sidecar", pointer + "/id", "An id's sidecar", problems) is not { } sidecar
+            ? new IdBinding(from, null)
+            : new IdBinding(from, JsonProperties.String(sidecar, "key"), JsonProperties.String(sidecar, "kind"), JsonProperties.String(sidecar, "ordinal"));
     }
 
     private static List<KeyValuePair<string, AttributeBinding>> ReadAttributes(JsonElement json, string pointer, List<LoadDiagnostic> problems)

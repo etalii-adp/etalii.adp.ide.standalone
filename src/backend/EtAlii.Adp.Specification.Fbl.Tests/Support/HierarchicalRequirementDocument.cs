@@ -173,7 +173,7 @@ internal sealed partial class HierarchicalRequirementDocument
             if (planned is not PlanResult.Planned { Edit: var part }) return planned;
             splices.AddRange(part.Splices);
         }
-        var combined = new Edit([.. splices.Select((splice, at) => (splice, at)).OrderBy(listed => listed.splice.Start).ThenBy(listed => listed.at).Select(listed => listed.splice)]);
+        var combined = new SpliceEdit([.. splices.Select((splice, at) => (splice, at)).OrderBy(listed => listed.splice.Start).ThenBy(listed => listed.at).Select(listed => listed.splice)]);
         if (combined.Splices.Count > 0) _body.Apply(combined);
         return new PlanResult.Planned(combined);
     }

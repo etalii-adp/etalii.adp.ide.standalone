@@ -1,5 +1,5 @@
 using EtAlii.Adp.History;
-using EtAlii.Adp.Specification.Fbl.History;
+using EtAlii.Adp.Specification.Fbl;
 using Xunit;
 using IoPath = System.IO.Path;
 

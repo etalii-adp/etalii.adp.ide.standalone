@@ -14,7 +14,7 @@ internal static class EditPlanner
     public static PlanResult Plan(BodyReading reading, ModelChange change)
     {
         // A save writes the bytes that were read, which an unreadable body keeps (FBL §6.6, §7.5): nothing to splice.
-        if (reading.Unreadable is not null) return change is ModelChange.Save ? new PlanResult.Planned(Edit.Empty) : new PlanResult.Refused("The file could not be read, so it is never written.");
+        if (reading.Unreadable is not null) return change is ModelChange.Save ? new PlanResult.Planned(SpliceEdit.Empty) : new PlanResult.Refused("The file could not be read, so it is never written.");
         if (reading.Binding.ReadOnly is { } reason) return new PlanResult.Refused(reason.Length > 0 ? reason : "This file is read-only.");
         var plan = new Plan(reading);
         try
@@ -49,7 +49,7 @@ internal static class EditPlanner
                     throw new ArgumentOutOfRangeException(nameof(change));
             }
             var splices = plan.Ordered();
-            return Governed(reading, splices) is { } governed ? new PlanResult.Refused(governed) : new PlanResult.Planned(new Edit(splices, plan.Snapshot));
+            return Governed(reading, splices) is { } governed ? new PlanResult.Refused(governed) : new PlanResult.Planned(new SpliceEdit(splices, plan.Snapshot));
         }
         catch (RefusedException refused)
         {

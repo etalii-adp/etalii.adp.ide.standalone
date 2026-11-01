@@ -136,7 +136,7 @@ public sealed class FdgBody : ITextBody<FdgBody>
     internal PlanResult Plan(ModelChange change) => _body.Plan(change);
 
     /// <summary>Applies an edit planned against the body as it is now.</summary>
-    internal void Apply(Edit edit)
+    internal void Apply(SpliceEdit edit)
     {
         ArgumentNullException.ThrowIfNull(edit);
         _body.Apply(edit);

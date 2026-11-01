@@ -2,7 +2,7 @@ namespace EtAlii.Adp.Specification.Fbl.Planning;
 
 /// <summary>
 /// One model change, as a DISL transaction makes it and as a conformance fixture's step names it
-/// (FBL §6.4, §15.3). Planning turns it into one <see cref="Edit"/> or a refusal.
+/// (FBL §6.4, §15.3). Planning turns it into one <see cref="SpliceEdit"/> or a refusal.
 /// </summary>
 public abstract record ModelChange
 {

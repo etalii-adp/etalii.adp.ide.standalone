@@ -643,7 +643,7 @@ public class PipelinePlannerTests
     private static Result Describe(byte[] before, IReadOnlyList<Splice> splices) =>
         new(
             [.. splices.Select(splice => new Planned(splice.Operation, Encoding.UTF8.GetString(before, splice.Start, splice.End - splice.Start), splice.Text))],
-            Encoding.UTF8.GetString(Edit.Apply(before, splices)));
+            Encoding.UTF8.GetString(SpliceEdit.Apply(before, splices)));
 
     private static string IdOf(PipelineBody body, string type, string name) =>
         body.Reading.Elements.Single(element => element.Type == type && Equals(element.Attributes.GetValueOrDefault("name"), name)).Id;
