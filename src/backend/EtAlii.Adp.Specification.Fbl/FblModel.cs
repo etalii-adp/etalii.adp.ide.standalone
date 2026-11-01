@@ -30,6 +30,15 @@ public sealed record FblElement(
     /// span of its own, as one written once for several elements does not; empty when the reader reports none.
     /// </summary>
     public IReadOnlyDictionary<string, Span> ValueSpans { get; init; } = new Dictionary<string, Span>();
+
+    /// <summary>The <c>sidecar.kind</c> of the element's rule, the key space its stored id is kept in (FBL 0.12 §8.6); null without one.</summary>
+    public string? IdentityKind { get; init; }
+
+    /// <summary>
+    /// The key the element's stored id is kept under (FBL §5.3, 0.12 §8.6): its rule's <c>sidecar.key</c>, followed for a later
+    /// holder of one key by the rule's <c>ordinal</c>; null for a rule without a sidecar id, or a key that does not evaluate.
+    /// </summary>
+    public string? IdentityKey { get; init; }
 }
 
 /// <summary>What reading a body gives: its elements and relations in document order, and its findings.</summary>

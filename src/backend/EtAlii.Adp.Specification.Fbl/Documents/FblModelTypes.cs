@@ -413,7 +413,12 @@ public sealed partial class Rule
     }
 }
 
-internal sealed record IdBinding(Slot? From, string? SidecarKey);
+/// <summary>
+/// Where a rule's id is stored (FBL §5.3): a slot, or the registration's identities by the value of <paramref name="SidecarKey"/>;
+/// <paramref name="SidecarKind"/> names the key space of the rule's identities and <paramref name="SidecarOrdinal"/>, a text holding
+/// <c>{n}</c> once, follows the natural key of each later holder of one key (FBL 0.12 §5.3, §8.6).
+/// </summary>
+internal sealed record IdBinding(Slot? From, string? SidecarKey, string? SidecarKind = null, string? SidecarOrdinal = null);
 
 internal sealed record ParentBinding(IReadOnlyList<string> Rules, string? Slot);
 
@@ -684,6 +689,9 @@ internal sealed class RegistrationSettings
 
     public string? LegacyLayout { get; init; }
 
+    /// <summary><c>registration.legacyIdentities</c> (FBL 0.12 §8.7): the identities file hosts wrote before FBL, such as <c>{base}.identities.json</c>.</summary>
+    public string? LegacyIdentities { get; init; }
+
     /// <summary>These settings as the reading of <paramref name="origin"/> sees them: its own resource capture, or none (FBL 0.10 §8.2).</summary>
     public RegistrationSettings ForOrigin(string origin) => ResourceByOrigin is not { } byOrigin
         ? this
@@ -694,6 +702,7 @@ internal sealed class RegistrationSettings
             Blocks = Blocks,
             ResourceCapture = byOrigin.GetValueOrDefault(origin),
             LegacyLayout = LegacyLayout,
+            LegacyIdentities = LegacyIdentities,
         };
 }
 
