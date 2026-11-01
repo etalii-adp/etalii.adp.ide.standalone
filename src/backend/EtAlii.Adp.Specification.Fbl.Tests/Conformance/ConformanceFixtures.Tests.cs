@@ -341,7 +341,7 @@ public class ConformanceFixturesTests
         JsonValueKind.Number => actual is long or int or double or decimal && Convert.ToDouble(actual, System.Globalization.CultureInfo.InvariantCulture).Equals(expected.GetDouble()),
         JsonValueKind.True or JsonValueKind.False => actual is bool flag && flag == expected.GetBoolean(),
         JsonValueKind.Null => actual is null,
-        JsonValueKind.Array => actual is IEnumerable<object?> list && list.Count() == expected.GetArrayLength() && list.Zip(expected.EnumerateArray()).All(pair => Same(pair.First, pair.Second)),
+        JsonValueKind.Array => actual is IEnumerable<object?> list && list.ToList() is var items && items.Count == expected.GetArrayLength() && items.Zip(expected.EnumerateArray()).All(pair => Same(pair.First, pair.Second)),
         _ => false,
     };
 
