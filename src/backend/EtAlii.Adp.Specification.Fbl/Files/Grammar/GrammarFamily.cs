@@ -746,7 +746,11 @@ internal sealed class GrammarFamily(BodyText text, FblBinding binding, FblOption
         foreach (var splice in splices) plan.Add(splice.Operation, splice.Start, splice.End, splice.Text);
     }
 
-    /// <summary>The span of the token that opens <paramref name="node"/>'s block, when the node ends in its <c>close</c>; null for a node without a block.</summary>
+    /// <summary>
+    /// The span of the token that opens <paramref name="node"/>'s block, when the node ends in its <c>close</c>; null for a
+    /// node without a block. The token is the <c>open</c> with any white space around it, line ends included, since a
+    /// grammar may read a brace on the line below its statement as one token with the line end before it.
+    /// </summary>
     private Span? BlockOpen(GrammarNode node, (string Open, string Close) opens)
     {
         var open = opens.Open.Trim();
@@ -756,7 +760,7 @@ internal sealed class GrammarFamily(BodyText text, FblBinding binding, FblOption
         {
             if (token.Start < node.Own.Start) continue;
             if (token.Start >= node.Own.End) break;
-            if (Text.Text(token) == open && !InsideChild(node, token.Start)) return token;
+            if (Text.Text(token).Trim() == open && !InsideChild(node, token.Start)) return token;
         }
         return null;
     }

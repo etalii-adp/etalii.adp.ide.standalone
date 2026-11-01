@@ -2,6 +2,8 @@ using System.Text;
 using System.Text.Json;
 using EtAlii.Adp.Specification.Fbl.Documents;
 using EtAlii.Adp.Specification.Fbl.Grammar;
+using EtAlii.Adp.Specification.Fbl.History;
+using EtAlii.Adp.Specification.Fbl.Rules;
 using EtAlii.Adp.Specification.Json;
 using Xunit;
 
@@ -51,6 +53,8 @@ public class GrammarLoadingTests
     [InlineData("word: NAME [VALUE]", "!word: NAME [VALUE]", "keep-all-tokens rule")]
     [InlineData("word: NAME [VALUE]", "word.2: NAME [VALUE]", "rule priority")]
     [InlineData("NAME: /[a-z]+/", "NAME: /[a-z]+/i", "the flag 'i'")]
+    [InlineData("word: NAME [VALUE]", "word: NAME [\"is\"l VALUE]", "the string flag 'l'")]
+    [InlineData("word: NAME [VALUE]", "word: NAME [\"été\"i VALUE]", "outside ASCII")]
     [InlineData("NAME: /[a-z]+/", "NAME: /^[a-z]+/", "the anchor '^'")]
     [InlineData("NAME: /[a-z]+/", "NAME: /[a-z]+?/", "lazy or possessive quantifier")]
     [InlineData("NAME: /[a-z]+/", "NAME: /[a-z].+/", "'.' outside a character class")]
@@ -71,6 +75,27 @@ public class GrammarLoadingTests
         var problem = Assert.Single(problems, p => p.Severity == LoadSeverity.Error);
         Assert.Equal("/bindings/b/body/grammar", problem.Pointer);
         Assert.Contains(named, problem.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AKeywordMatchedInAnyCase_IsReadWhereItIsSpelled_AndAWordItBeginsIsTheWord()
+    {
+        // Arrange: a keyword with the flag i beside the pattern of words (ATD 0.1 amendment of 2026-11-01, sections 3.6 and 4.1).
+        const string grammar = "start: unit*\n?unit: word\n     | setting\n     | _NL\nword: NAME\nsetting: _SET NAME\n_SET: \"set\"i\nNAME: /[A-Za-z]+/\n_NL: /(\\r?\\n[ \\t]*)+/\nWHITESPACE: /[ \\t]+/\n%ignore WHITESPACE\n";
+        var json = $$"""{ "fbl": "0.13", "bindings": { "b": { "claims": { "extensions": [".t"] }, "body": { "kind": "file", "family": "grammar", "grammar": {{JsonSerializer.Serialize(grammar)}} }, "reader": "declared", "elements": [ { "name": "word", "type": "Word", "at": "/word", "id": { "from": { "node": "NAME" } } }, { "name": "setting", "type": "Setting", "at": "/setting", "id": { "from": { "node": "NAME" } } } ] } } }""";
+        var problems = FblDocumentLoader.Load(Encoding.UTF8.GetBytes(json), null, out var document);
+        Assert.True(document is not null, string.Join("\n", problems));
+
+        var bytes = "settle\nSET x\nSet y\n"u8.ToArray();
+
+        // Act.
+        var model = OpenBody.Open(bytes, document.Bindings["b"], new FblOptions { FileName = "body.t" }).Model;
+        var reading = BodyReading.Read(bytes, document.Bindings["b"], new FblOptions { FileName = "body.t" });
+
+        // Assert: 'settle' is a word, the keyword in any case a setting, and the keyword's bytes are the reading's (FBL 4.1).
+        Assert.False(model.Unreadable);
+        Assert.Equal(["Word settle", "Setting x", "Setting y"], model.Elements.Select(element => $"{element.Type} {element.Id}"));
+        Assert.Empty(reading.Family.Unaccounted());
     }
 
     [Fact]

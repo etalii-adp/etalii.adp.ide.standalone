@@ -143,7 +143,9 @@ internal static class EditPlanner
             {
                 Planning.Plan.Refuse(read.Reason is { Length: > 0 } reason ? reason : $"The {attribute} of a {element.Rule.Type} cannot be changed in this file.");
             }
-            var empty = NewText.IsEmpty(value) || (binding.Flag && value is false);
+            // A value the binding's map writes as the empty text sets the slot to its empty value (FBL 5.2, empty and map),
+            // as the Wardley map's inertia is cleared by false (fixture wardley-trailer/lenient-trailer).
+            var empty = NewText.IsEmpty(value) || (binding.Flag && value is false) || (binding.Map is not null && NewText.Wire(binding, value, null) == "");
             if (empty && binding is { Flag: false, Empty: EmptyRule.Refuse }) Planning.Plan.Refuse(binding.EmptyRefusal ?? $"The {attribute} of a {element.Rule.Type} cannot be empty.");
 
             // FBL 0.10 §5.2: a value read from the secondary slot is written to the attribute's own slot, and the

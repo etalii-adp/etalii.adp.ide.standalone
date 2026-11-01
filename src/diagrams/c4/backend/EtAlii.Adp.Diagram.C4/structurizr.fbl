@@ -368,7 +368,14 @@
           },
           "parent": {
             "rules": [
-              "softwareSystem"
+              "softwareSystem",
+              "person",
+              "container",
+              "component",
+              "deploymentNode",
+              "infrastructureNode",
+              "containerInstance",
+              "softwareSystemInstance"
             ],
             "slot": "containers"
           },
@@ -463,7 +470,14 @@
           },
           "parent": {
             "rules": [
-              "container"
+              "container",
+              "softwareSystem",
+              "person",
+              "component",
+              "deploymentNode",
+              "infrastructureNode",
+              "containerInstance",
+              "softwareSystemInstance"
             ]
           },
           "id": {
@@ -837,7 +851,7 @@
         {
           "name": "relationship",
           "type": "Relationship",
-          "doc": "A relationship is read as an entry with two reference attributes, which the tool types map onto a relation, so that an end that names nothing is kept with that end unset. A relationship written without a source inside an element's block has that element as its source.",
+          "doc": "A relationship is read as an entry with two reference attributes, which the tool types map onto a relation, so that an end that names nothing is kept with that end unset. A relationship written without a source inside an element's block has that element as its source in Structurizr; this binding does not read it yet, since a further slot (`or`, `../identifier`) would also be written by a set of `from`, so its `from` is unset.",
           "at": "/workspace/model/**/relationship",
           "attributes": {
             "from": {
