@@ -64,7 +64,7 @@ public class AbmPluginParityTests
         foreach ((string label, ModelChange change, Func<LineDocument, AbmModel, EditOutcome> edit) in Edits(model))
         {
             count++;
-            var (expectedEdit, expectedBytes, _) = Writer(bytes, edit);
+            (EditOutcome expectedEdit, byte[] expectedBytes, _) = Writer(bytes, edit);
             var body = AbmBody.Open(bytes);
             var outcome = body.Change(change);
             if (outcome.Refusal != expectedEdit.Refusal) differences.Add($"{label}: refused '{outcome.Refusal}' where the writer said '{expectedEdit.Refusal}'");
