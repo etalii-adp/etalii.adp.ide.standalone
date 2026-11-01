@@ -1,6 +1,7 @@
 using EtAlii.Adp.Specification.Fbl.Documents;
 using EtAlii.Adp.Specification.Json;
 using EtAlii.Lark;
+using EtAlii.Lark.Parsers;
 using LarkParser = EtAlii.Lark.Lark;
 
 namespace EtAlii.Adp.Specification.Fbl.Grammar;
@@ -38,7 +39,8 @@ internal sealed class GrammarBuild
 
     public string Start { get; }
 
-    private GrammarRecover? Recover { get; }
+    /// <summary><c>body.recover</c>: with it a body is read unit by unit (FBL 0.9 §4.9, <i>Reading in part</i>).</summary>
+    public GrammarRecover? Recover { get; }
 
     /// <summary>The names of the grammar's terminals, the anonymous ones under the names Lark gives them.</summary>
     private IReadOnlySet<string> Terminals { get; }
@@ -57,6 +59,7 @@ internal sealed class GrammarBuild
 
     private readonly Lock _gate = new();
     private LarkParser? _reader;
+    private GrammarScanner? _scanner;
     private Dictionary<int, Token> _cut = [];
 
     /// <summary>
@@ -74,6 +77,104 @@ internal sealed class GrammarBuild
             return (tree, _cut);
         }
     }
+
+    /// <summary>
+    /// Reads <paramref name="text"/> unit by unit, by <c>recover</c> (FBL 0.9 §4.9, <i>Reading in part</i>; research R9):
+    /// from the start, and after each unit or skipped text, one unit is parsed with <c>recover.unit</c> as the start symbol.
+    /// Where the parser can neither shift nor accept, reading stopped, and the text from the unit's first token to the end of
+    /// the first <c>sync</c> token lexed from there is skipped, or to the end of the body when none follows. The tokens cut
+    /// inside skipped text are not given. Positions are UTF-16 offsets of <paramref name="text"/>.
+    /// </summary>
+    public GrammarUnits ParseUnits(string text)
+    {
+        var recover = Recover ?? throw new InvalidOperationException("The grammar has no recover to read a body in part by.");
+        lock (_gate)
+        {
+            _reader ??= Reader();
+            _scanner ??= new GrammarScanner(Lark.Terminals, Lark.LexerConf.RegexOptions);
+            _cut = [];
+            var sync = recover.Sync.Select(Terminal).OfType<string>().ToHashSet(StringComparer.Ordinal);
+            var units = new List<object?>();
+            var skips = new List<GrammarSkip>();
+            var position = 0;
+            while (position < text.Length)
+            {
+                var unit = ReadUnit(_reader, text, position, recover.Unit);
+                if (unit.Tree is { } tree)
+                {
+                    units.Add(tree);
+                    position = unit.End;
+                    continue;
+                }
+                if (unit.Stop is not { } stop) break;
+                var end = _scanner.EndOfSync(text, stop, sync) ?? text.Length;
+                skips.Add(new GrammarSkip(unit.Start, stop, end));
+                position = end;
+            }
+            foreach (var skip in skips)
+            {
+                foreach (var at in _cut.Keys.Where(at => at >= skip.Start && at < skip.End).ToList()) _cut.Remove(at);
+            }
+            return new GrammarUnits(units, skips, _cut);
+        }
+    }
+
+    /// <summary>
+    /// One unit from <paramref name="position"/>: its tree and where it ends when the parser accepts it after its last
+    /// token, else where it starts and where reading stopped; neither when only trivia is left. The state before each
+    /// token is kept, since a token the parser cannot shift may first make it reduce.
+    /// </summary>
+    private static UnitRead ReadUnit(LarkParser reader, string text, int position, string unit)
+    {
+        var parser = reader.ParseInteractive(new TextSlice(text, position), unit);
+        var before = parser.Copy(false);
+        Token? last = null;
+        int? first = null;
+        int? stop = null;
+        var shifted = 0;
+        var end = position;
+        try
+        {
+            foreach (var token in parser.IterParse())
+            {
+                if (last is not null)
+                {
+                    shifted++;
+                    end = last.EndPos ?? end;
+                }
+                before = parser.Copy(false);
+                first ??= token.StartPos;
+                last = token;
+            }
+            if (last is not null) (shifted, end, before) = (shifted + 1, last.EndPos ?? end, parser);
+        }
+        catch (UnexpectedInputException e)
+        {
+            stop = e.PosInStream ?? text.Length;
+            // The lexer failing after the last token means the parser shifted it; the parser failing on it means it did not.
+            if (last is { StartPos: { } from } && stop > from) (shifted, end, before) = (shifted + 1, last.EndPos ?? end, parser);
+        }
+        if (shifted > 0 && Accepted(before) is { } tree) return new UnitRead(tree, first ?? position, null, end);
+        if (last is null && stop is null) return new UnitRead(null, position, null, position);
+        var at = stop ?? text.Length;
+        return new UnitRead(null, Math.Min(first ?? at, at), at, end);
+    }
+
+    /// <summary>The unit's tree, when the parser accepts it where it is; null when it does not.</summary>
+    private static object? Accepted(InteractiveParser parser)
+    {
+        try
+        {
+            return parser.FeedEof();
+        }
+        catch (UnexpectedInputException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>What reading one unit gave: its tree, or where reading stopped; <paramref name="End"/> is the end of its last token shifted.</summary>
+    private sealed record UnitRead(object? Tree, int Start, int? Stop, int End);
 
     /// <summary>
     /// The parser reading bodies: the built one, saved and loaded again with a lexer callback on each of its terminals,
@@ -285,3 +386,9 @@ internal sealed class GrammarBuild
         }
     }
 }
+
+/// <summary>A body read unit by unit (FBL 0.9 §4.9): the units, in order, the text skipped, and the tokens cut outside it.</summary>
+internal sealed record GrammarUnits(IReadOnlyList<object?> Units, IReadOnlyList<GrammarSkip> Skips, IReadOnlyDictionary<int, Token> Tokens);
+
+/// <summary>Skipped text, in UTF-16 offsets: from the unit's first token, through <paramref name="Stop"/>, where reading stopped, to its end.</summary>
+internal readonly record struct GrammarSkip(int Start, int Stop, int End);

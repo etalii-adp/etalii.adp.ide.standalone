@@ -51,6 +51,14 @@ internal sealed class GrammarFamily(BodyText text, FblBinding binding, FblOption
         _leaves = [.. reading.Tokens];
         foreach (var comment in reading.Comments) RememberComment(comment);
         foreach (var entry in _entries) entry.LineSpan = LineSpanOf((GrammarNode)entry);
+        foreach (var skipped in reading.Skipped) ReportSkipped(skipped);
+    }
+
+    /// <summary>Skipped text, reported once where reading stopped, with the length of the text skipped from there (FBL 0.9 §4.9, §7.4).</summary>
+    private void ReportSkipped(GrammarSkipped skipped)
+    {
+        var unit = Binding.Body.Grammar?.Recover?.Unit;
+        Report(FindingCodes.UnparsedText, FindingSeverity.Warning, $"This text does not read as a {unit} of the grammar; it is kept as it is and binds nothing.", skipped.Text with { Start = skipped.Stop });
     }
 
     private void RememberComment(Span comment)
