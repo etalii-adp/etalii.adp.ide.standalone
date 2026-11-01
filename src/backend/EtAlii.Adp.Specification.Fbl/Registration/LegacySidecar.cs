@@ -1,5 +1,4 @@
 using EtAlii.Adp.Specification.Fbl.Documents;
-using EtAlii.Adp.Specification.Fbl.History;
 using EtAlii.Adp.Specification.Fbl.Json;
 using EtAlii.Adp.Specification.Fbl.Planning;
 using EtAlii.Adp.Specification.Fbl.Rules;

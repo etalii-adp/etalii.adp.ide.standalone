@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
+using EtAlii.Adp.Specification.Fbl.History;
 
-namespace EtAlii.Adp.Specification.Fbl.History;
+namespace EtAlii.Adp.Specification.Fbl;
 
 /// <summary>
 /// A file written only by splices, with the one history of its edits (FBL §7.1): a body, or a
@@ -147,12 +148,4 @@ public abstract class SplicedFile
     }
 
     private static bool Matches(byte[] bytes, byte[] digest) => SHA256.HashData(bytes).AsSpan().SequenceEqual(digest);
-}
-
-/// <summary>What an undo or a redo did: the splices it applied, or why it was refused.</summary>
-internal abstract record UndoResult
-{
-    public sealed record Done(IReadOnlyList<Splice> Splices) : UndoResult;
-
-    public sealed record Refused(string Reason) : UndoResult;
 }
