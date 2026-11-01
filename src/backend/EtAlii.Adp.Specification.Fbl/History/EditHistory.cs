@@ -118,5 +118,3 @@ internal sealed class EditHistory
         _redo.Clear();
     }
 }
-
-internal sealed record HistoryEntry(SpliceEdit Edit, IReadOnlyList<Splice> Inverse, byte[] BeforeDigest, byte[] AfterDigest, byte[]? Snapshot);
