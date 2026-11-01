@@ -182,6 +182,36 @@ public class GrammarWritingTests
     }
 
     [Fact]
+    public void EmptyingAnAttributeWhosePartIsRemovedWhenEmpty_RemovesThePartWithTheWhitespaceBeforeIt()
+    {
+        // Arrange: a tag that empty: "remove" takes away, after a value and before a comment.
+        var body = Open("a = 1  @t # note\nb = 2\n", "after-last", tag: """{ "node": "TAG", "empty": "remove" }""");
+
+        // Act.
+        var result = body.Change(new ModelChange.Set("a", new Dictionary<string, object?> { ["tag"] = "" }));
+
+        // Assert: one remove-key of the part and the whitespace between it and the token before it (FBL 0.11 4.9).
+        var splice = Assert.Single(Assert.IsType<PlanResult.Planned>(result).Edit.Splices);
+        Assert.Equal((SpliceOperation.RemoveKey, 5, 9), (splice.Operation, splice.Start, splice.End));
+        Assert.Equal("a = 1 # note\nb = 2\n", Text(body));
+        Assert.False(body.Model.Elements[0].Attributes.ContainsKey("tag"));
+    }
+
+    [Fact]
+    public void APartsCreate_WritesItsEmitAsText_ItsBracketsIncluded()
+    {
+        // Arrange: a tag written in brackets, which 'a' lacks.
+        var body = Open("a = 1\n", "after-last", tag: """{ "node": "TAG", "match": "\\[(?<value>[a-z]*)\\]", "create": { "emit": " [{value}]", "after": ["value"] } }""", tagPattern: @"/\[[a-z]*\]/");
+
+        // Act.
+        var result = body.Change(new ModelChange.Set("a", new Dictionary<string, object?> { ["tag"] = "x" }));
+
+        // Assert: a create's emit is its text with {value} replaced (FBL 0.11 5.2), not an insert's emit with optional segments.
+        Assert.IsType<PlanResult.Planned>(result);
+        Assert.Equal("a = 1 [x]\n", Text(body));
+    }
+
+    [Fact]
     public void ASetThatWouldNotReadBack_IsRefusedAndWritesNothing()
     {
         // Arrange.
@@ -250,12 +280,12 @@ public class GrammarWritingTests
     private static ModelChange.Add Add(string key, string value) =>
         new("Item", key, new Dictionary<string, object?> { ["key"] = key, ["value"] = value });
 
-    private static OpenBody Open(string text, string place, string emit = "{key} = {value}", string valuePattern = "/[a-z0-9.]+/")
+    private static OpenBody Open(string text, string place, string emit = "{key} = {value}", string valuePattern = "/[a-z0-9.]+/", string tag = """{ "node": "TAG" }""", string tagPattern = "/@[a-z]*/")
     {
-        var grammar = Items.Replace("VALUE: /[a-z0-9.]+/", "VALUE: " + valuePattern, StringComparison.Ordinal);
+        var grammar = Items.Replace("VALUE: /[a-z0-9.]+/", "VALUE: " + valuePattern, StringComparison.Ordinal).Replace("TAG: /@[a-z]*/", "TAG: " + tagPattern, StringComparison.Ordinal);
         var elements = $$"""
             [ { "name": "item", "type": "Item", "at": "/item", "id": { "from": { "node": "KEY" } },
-                "attributes": { "key": { "node": "KEY" }, "value": { "node": "VALUE" }, "tag": { "node": "TAG" } },
+                "attributes": { "key": { "node": "KEY" }, "value": { "node": "VALUE" }, "tag": {{tag}} },
                 "insert": { "place": "{{place}}", "emit": {{JsonSerializer.Serialize(emit)}} }, "remove": {} },
               { "name": "note", "type": "Note", "at": "/note", "id": { "from": { "node": "KEY" } } } ]
             """;
