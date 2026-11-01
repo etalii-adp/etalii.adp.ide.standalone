@@ -163,19 +163,73 @@ public class RegistrationTests
         Assert.Equal(original, Encoding.UTF8.GetString(sidecar.Bytes));
     }
 
+    /// <summary>A legacy identities file as the Wardley map's tool writes it (FBL 0.12 §8.7): an array of entries, one of a kind no rule declares last.</summary>
+    private const string Identities = "[\n  {\n    \"id\": \"c1\",\n    \"kind\": \"component\",\n    \"key\": \"Tea\"\n  },\n  {\n    \"id\": \"c2\",\n    \"kind\": \"component\",\n    \"key\": \"Tea\\u001F2\\t\"\n  },\n  {\n    \"id\": \"n1\",\n    \"kind\": \"note\",\n    \"key\": \"Tea\"\n  },\n  {\n    \"id\": \"e1\",\n    \"kind\": \"evolution\",\n    \"key\": \"Tea\"\n  }\n]\n";
+
     [Fact]
-    public void LegacyIdentitiesAreReadAndWritten()
+    public void LegacyIdentitiesAreReadByKindAndKey_AndAnUndeclaredKindIsReported()
     {
         // Arrange.
+        var sidecar = LegacySidecar.Open(Encoding.UTF8.GetBytes(Identities));
+
+        // Act.
+        var identities = sidecar.Identities();
+        var findings = sidecar.IdentityFindings(new HashSet<string>(["component", "note"], StringComparer.Ordinal), "map.identities.json");
+
+        // Assert: each entry under its kind and key, the ordinal's escapes resolved (FBL 0.12 §8.6, §8.7).
+        Assert.Equal("c1", identities["component:Tea"]);
+        Assert.Equal("c2", identities["component:Tea\u001f2\t"]);
+        Assert.Equal("n1", identities["note:Tea"]);
+        var finding = Assert.Single(findings);
+        Assert.Equal(FindingCodes.StaleViewData, finding.Code);
+        Assert.Equal(new SourceLocation("map.identities.json", 17, 3, 63), finding.Location);
+    }
+
+    [Fact]
+    public void LegacyIdentitiesAreWrittenInTheirShape_AKeyMoved_AnEntryPruned_AndANewOneAdded()
+    {
+        // Arrange: the second Tea renamed to Cup, the note gone, and a new component.
+        var sidecar = LegacySidecar.Open(Encoding.UTF8.GetBytes(Identities));
+        LegacyIdentity[] wanted = [new("c1", "component", "Tea"), new("c2", "component", "Cup"), new("c3", "component", "Tea\u001f2\t")];
+
+        // Act.
+        var result = sidecar.Change(file => file.PlanIdentities(wanted, new HashSet<string>(["component", "note"], StringComparer.Ordinal)));
+
+        // Assert: the key replaced, the note's entry removed with the separator before it, the new entry after the last item and
+        // laid out as it is, with RFC 8785's escapes; the entry of the undeclared kind kept as written (FBL 0.12 §8.7).
+        var planned = Assert.IsType<PlanResult.Planned>(result);
+        Assert.Equal([SpliceOperation.ReplaceValue, SpliceOperation.RemoveEntry, SpliceOperation.InsertEntry], planned.Edit.Splices.Select(splice => splice.Operation));
+        Assert.Equal("[\n  {\n    \"id\": \"c1\",\n    \"kind\": \"component\",\n    \"key\": \"Tea\"\n  },\n  {\n    \"id\": \"c2\",\n    \"kind\": \"component\",\n    \"key\": \"Cup\"\n  },\n  {\n    \"id\": \"e1\",\n    \"kind\": \"evolution\",\n    \"key\": \"Tea\"\n  },\n  {\n    \"id\": \"c3\",\n    \"kind\": \"component\",\n    \"key\": \"Tea\\u001f2\\t\"\n  }\n]\n", Encoding.UTF8.GetString(sidecar.Bytes));
+        Assert.IsType<UndoResult.Done>(sidecar.Undo());
+        Assert.Equal(Identities, Encoding.UTF8.GetString(sidecar.Bytes));
+    }
+
+    [Fact]
+    public void LegacyIdentitiesThatHoldWhatIsWanted_WriteNothing()
+    {
+        // Arrange.
+        var sidecar = LegacySidecar.Open(Encoding.UTF8.GetBytes(Identities));
+        LegacyIdentity[] wanted = [new("c1", "component", "Tea"), new("c2", "component", "Tea\u001f2\t"), new("n1", "note", "Tea")];
+
+        // Act.
+        var result = sidecar.Change(file => file.PlanIdentities(wanted, new HashSet<string>(["component", "note"], StringComparer.Ordinal)));
+
+        // Assert: an escape written in capitals is the same key.
+        Assert.Empty(Assert.IsType<PlanResult.Planned>(result).Edit.Splices);
+    }
+
+    [Fact]
+    public void ALegacyIdentitiesFileOfTheFormNoToolWrote_IsNotRead()
+    {
+        // Arrange: FBL 0.9's object from natural key to id (FBL 0.12 §8.7).
         var sidecar = LegacySidecar.Open("{\r\n  \"Tea\": \"c1\"\r\n}\r\n"u8.ToArray());
 
         // Act.
-        var result = sidecar.Change(s => s.PlanIdentify("Cup", "c2"));
+        var result = sidecar.Change(file => file.PlanIdentities([new LegacyIdentity("c1", "component", "Tea")], new HashSet<string>(["component"], StringComparer.Ordinal)));
 
         // Assert.
-        Assert.IsType<PlanResult.Planned>(result);
-        Assert.Equal("{\r\n  \"Tea\": \"c1\",\r\n  \"Cup\": \"c2\"\r\n}\r\n", Encoding.UTF8.GetString(sidecar.Bytes));
-        Assert.Equal("c2", sidecar.Identities()["Cup"]);
+        Assert.Empty(sidecar.Identities());
+        Assert.Equal("The identities file could not be read, so it is not written.", Assert.IsType<PlanResult.Refused>(result).Reason);
     }
 
     [Fact]

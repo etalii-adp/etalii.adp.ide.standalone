@@ -35,7 +35,7 @@ internal sealed class NestedUnitReader(LarkParser reader, GrammarScanner scanner
         var tokens = parser.LexerThread.Lex(parser.ParserState).GetEnumerator();
         while (true)
         {
-            var before = parser.Copy(false);
+            var before = ParserSnapshot.Of(parser);
             int stop;
             if (Next(tokens) is not { } next) break;
             if (next.Token is null)
@@ -58,7 +58,7 @@ internal sealed class NestedUnitReader(LarkParser reader, GrammarScanner scanner
             }
             if (blocks.Count == 0)
             {
-                if (shifted > 0 && Accepted(parser.Copy(false)) is { } tree) return new UnitRead(tree, first ?? position, null, end);
+                if (shifted > 0 && Accepted(ParserSnapshot.Of(parser)) is { } tree) return new UnitRead(tree, first ?? position, null, end);
                 return new UnitRead(null, Math.Min(first ?? stop, stop), stop, end);
             }
             var top = blocks[^1];
@@ -71,7 +71,7 @@ internal sealed class NestedUnitReader(LarkParser reader, GrammarScanner scanner
         if (blocks.Count == 0)
         {
             if (shifted == 0) return new UnitRead(null, position, null, position);
-            return Accepted(parser.Copy(false)) is { } whole ? new UnitRead(whole, first ?? position, null, end) : new UnitRead(null, first ?? position, text.Length, end);
+            return Accepted(ParserSnapshot.Of(parser)) is { } whole ? new UnitRead(whole, first ?? position, null, end) : new UnitRead(null, first ?? position, text.Length, end);
         }
         parser = CloseAll(parser, blocks, end);
         return Accepted(parser) is { } closed ? new UnitRead(closed, first ?? position, null, end) : new UnitRead(null, first ?? position, text.Length, end);
@@ -108,9 +108,9 @@ internal sealed class NestedUnitReader(LarkParser reader, GrammarScanner scanner
     /// <summary>A boundary after a shifted token (rule 4): a block opened, a block closed, or a <c>sync</c> token at the innermost block's depth.</summary>
     private void Mark(List<Boundary> blocks, InteractiveParser parser, Token token, int end)
     {
-        if (token.Type == open) blocks.Add(new Boundary(parser.ParserState.Copy(false), end, token.StartPos ?? end));
+        if (token.Type == open) blocks.Add(new Boundary(ParserSnapshot.Of(parser.ParserState), end, token.StartPos ?? end));
         else if (token.Type == close && blocks.Count > 0) blocks.RemoveAt(blocks.Count - 1);
-        else if (blocks.Count > 0 && sync.Contains(token.Type)) blocks[^1] = blocks[^1] with { State = parser.ParserState.Copy(false), Position = end };
+        else if (blocks.Count > 0 && sync.Contains(token.Type)) blocks[^1] = blocks[^1] with { State = ParserSnapshot.Of(parser.ParserState), Position = end };
     }
 
     /// <summary>
@@ -124,14 +124,15 @@ internal sealed class NestedUnitReader(LarkParser reader, GrammarScanner scanner
         return scanner.TokenAt(text, stop) is { } token ? stop + token.Length : Math.Min(stop + 1, text.Length);
     }
 
-    /// <summary>A parser in the boundary's state, lexing from <paramref name="at"/>.</summary>
+    /// <summary>A parser in the boundary's state, lexing from <paramref name="at"/>; the boundary is left as it is, as a later stop in the same block resumes from it again.</summary>
     private InteractiveParser Resume(ParserState state, int at)
     {
         var parser = reader.ParseInteractive(new TextSlice(text, at), unit);
+        var boundary = ParserSnapshot.Of(state);
         parser.ParserState.StateStack.Clear();
-        parser.ParserState.StateStack.AddRange(state.StateStack);
+        parser.ParserState.StateStack.AddRange(boundary.StateStack);
         parser.ParserState.ValueStack.Clear();
-        parser.ParserState.ValueStack.AddRange(state.ValueStack);
+        parser.ParserState.ValueStack.AddRange(boundary.ValueStack);
         return parser;
     }
 
@@ -159,7 +160,7 @@ internal sealed class NestedUnitReader(LarkParser reader, GrammarScanner scanner
         var accepts = parser.Accepts();
         if (accepts.Contains(close)) return Shift(parser, Synthetic(close, at));
         if (sync.FirstOrDefault(accepts.Contains) is not { } needed) return false;
-        var trial = parser.Copy(false);
+        var trial = ParserSnapshot.Of(parser);
         if (!Shift(trial, Synthetic(needed, at)) || !trial.Accepts().Contains(close)) return false;
         return Shift(parser, Synthetic(needed, at)) && Shift(parser, Synthetic(close, at));
     }

@@ -103,6 +103,9 @@ internal sealed class ReadElement
 
     public SlotRead? IdRead { get; set; }
 
+    /// <summary>The key the element's id is kept under in the identities, its ordinal included (FBL 0.12 §8.6); null without a sidecar id.</summary>
+    public string? IdentityKey { get; set; }
+
     /// <summary>The value references name this element by: its stored id, or the attribute its own rules reference it by.</summary>
     public string Key { get; set; } = "";
 

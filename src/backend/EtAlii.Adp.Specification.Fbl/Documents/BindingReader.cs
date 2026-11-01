@@ -272,9 +272,9 @@ internal static partial class BindingReader
     private static IdBinding? ReadId(JsonElement json, string pointer, List<LoadDiagnostic> problems)
     {
         if (Object(json, "id", pointer, "A rule's id", problems) is not { } id) return null;
-        return new IdBinding(
-            Object(id, "from", pointer + "/id", "An id's from", problems) is { } from ? ReadSlot(from, pointer + "/id/from", problems) : null,
-            Object(id, "sidecar", pointer + "/id", "An id's sidecar", problems) is { } sidecar ? JsonProperties.String(sidecar, "key") : null);
+        var from = Object(id, "from", pointer + "/id", "An id's from", problems) is { } slot ? ReadSlot(slot, pointer + "/id/from", problems) : null;
+        if (Object(id, "sidecar", pointer + "/id", "An id's sidecar", problems) is not { } sidecar) return new IdBinding(from, null);
+        return new IdBinding(from, JsonProperties.String(sidecar, "key"), JsonProperties.String(sidecar, "kind"), JsonProperties.String(sidecar, "ordinal"));
     }
 
     private static List<KeyValuePair<string, AttributeBinding>> ReadAttributes(JsonElement json, string pointer, List<LoadDiagnostic> problems)
@@ -535,6 +535,7 @@ internal static partial class BindingReader
             ResourceCapture = Object(r, "resource", pointer + "/registration", "A registration's resource", problems) is { } res ? JsonProperties.String(res, "capture") : null,
             ResourceByOrigin = Object(r, "resource", pointer + "/registration", "A registration's resource", problems) is { } resource ? ReadByOrigin(resource, pointer + "/registration/resource", problems) : null,
             LegacyLayout = JsonProperties.String(r, "legacyLayout"),
+            LegacyIdentities = JsonProperties.String(r, "legacyIdentities"),
         };
     }
 

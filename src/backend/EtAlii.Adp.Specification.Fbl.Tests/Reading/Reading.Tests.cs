@@ -87,6 +87,25 @@ public class ReadingTests
     }
 
     [Fact]
+    public void ASidecarKindKeysTheIdentities_AndEachLaterHolderOfOneKeyIsKeyedWithItsOrdinal()
+    {
+        // Arrange: two rules of one kind, a rule of another, and the ordinal the Wardley map's tool writes (FBL 0.12 §8.6).
+        var binding = Inline("""[{ "name": "item", "type": "Item", "at": "/items/*", "id": { "sidecar": { "key": "entry.label", "kind": "thing", "ordinal": "\u001f{n}\t" } }, "attributes": { "label": { "key": "label" } } }, { "name": "other", "type": "Other", "at": "/others/*", "id": { "sidecar": { "key": "entry.label", "kind": "thing", "ordinal": "\u001f{n}\t" } }, "attributes": { "label": { "key": "label" } } }, { "name": "note", "type": "Note", "at": "/notes/*", "id": { "sidecar": { "key": "entry.label", "kind": "note", "ordinal": "\u001f{n}\t" } }, "attributes": { "label": { "key": "label" } } }]""");
+        var identities = new Dictionary<string, string> { ["thing:Tea"] = "t1", ["thing:Tea\u001f2\t"] = "t2", ["thing:Tea\u001f3\t"] = "t3", ["note:Tea"] = "n1" };
+        var options = new FblOptions { FileName = "plan.t", Identities = identities };
+
+        // Act.
+        var model = Read("items:\n  - label: Tea\n  - label: Tea\nothers:\n  - label: Tea\nnotes:\n  - label: Tea\n  - label: Cup\n", binding, options);
+
+        // Assert: the holders of one kind are counted in document order across its rules; the other kind has its own key space.
+        Assert.Equal(["t1", "t2", "t3", "n1"], model.Elements.Take(4).Select(element => element.Id));
+        Assert.All(model.Elements.Take(4), element => Assert.True(element.IdIsStored));
+        Assert.False(model.Elements[4].IdIsStored);
+        Assert.Equal(["thing", "thing", "thing", "note", "note"], model.Elements.Select(element => element.IdentityKind));
+        Assert.Equal(["Tea", "Tea\u001f2\t", "Tea\u001f3\t", "Tea", "Cup"], model.Elements.Select(element => element.IdentityKey));
+    }
+
+    [Fact]
     public void TheSecondOfTwoEqualIdsIsReportedAndNotStored()
     {
         // Act.

@@ -9,9 +9,9 @@ namespace EtAlii.Adp.Specification.Fbl.Registration;
 
 /// <summary>
 /// A sidecar file hosts wrote before FBL (FBL §8.7): a legacy layout, keyed by view key and then by
-/// element id with <c>{"x", "y"}</c>, or legacy identities, a natural key mapped to an id. It is read
-/// when the registration has no matching block and written back by json splices while it exists;
-/// this library never creates one.
+/// element id with <c>{"x", "y"}</c>, or legacy identities, an array of entries <c>{"id", "kind", "key"}</c>
+/// (FBL 0.12). It is read when the registration has no matching block and written back by json splices
+/// while it exists; this library never creates one.
 /// </summary>
 internal sealed class LegacySidecar : SplicedFile
 {
@@ -87,17 +87,120 @@ internal sealed class LegacySidecar : SplicedFile
         return findings;
     }
 
-    /// <summary>Legacy identities: natural key to id.</summary>
+    /// <summary>
+    /// Legacy identities (FBL 0.12 §8.7): each entry's id under its kind and key as the reading looks it up, <c>kind:key</c>,
+    /// or the key alone for an entry without a kind; of two entries of one kind and key, the first. A file that is not an
+    /// array, as FBL 0.9's object from natural key to id, which no tool wrote, holds none.
+    /// </summary>
     public IReadOnlyDictionary<string, string> Identities()
     {
         var identities = new Dictionary<string, string>(StringComparer.Ordinal);
-        if (IsUnreadable) return identities;
-        foreach (var entry in _reading.Root!.Value.Entries)
+        foreach (var item in IdentityItems())
         {
-            if (entry.Name is not null && entry.Value.Typed is string id) identities[entry.Name] = id;
+            if (item is { Id: { } id, Key: { } key }) identities.TryAdd(item.Kind is { } kind ? $"{kind}:{key}" : key, id);
         }
         return identities;
     }
+
+    /// <summary>The entries of a kind no rule of the binding declares, among <paramref name="kinds"/>: each kept as written and reported as <c>fbl.stale-view-data</c> (FBL 0.12 §8.7).</summary>
+    public IReadOnlyList<Finding> IdentityFindings(IReadOnlySet<string> kinds, string fileName)
+    {
+        ArgumentNullException.ThrowIfNull(kinds);
+        return [.. IdentityItems()
+            .Where(item => item.Kind is { } kind && !kinds.Contains(kind))
+            .Select(item => Located(FindingCodes.StaleViewData, $"The identities file keeps an id of the kind '{item.Kind}', which no rule of the binding declares; it is kept as it is.", item.Entry, fileName))];
+    }
+
+    /// <summary>
+    /// Writes the identities the reading wants (FBL 0.12 §8.7), by json splices: an entry whose id is wanted under another key
+    /// has its key replaced; an entry of one of <paramref name="kinds"/> whose id is not wanted is pruned, with the separator
+    /// before it, or after it for the first; a wanted id the file does not hold is a new entry after the array's last item,
+    /// laid out as that item is, its texts written with RFC 8785's escapes. An entry of any other kind is kept as written.
+    /// </summary>
+    public PlanResult PlanIdentities(IReadOnlyCollection<LegacyIdentity> wanted, IReadOnlySet<string> kinds)
+    {
+        ArgumentNullException.ThrowIfNull(wanted);
+        ArgumentNullException.ThrowIfNull(kinds);
+        if (!HoldsIdentities) return new PlanResult.Refused("The identities file could not be read, so it is not written.");
+        var byId = wanted.GroupBy(identity => identity.Id, StringComparer.Ordinal).ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
+        var items = IdentityItems();
+        var splices = new List<Splice>();
+        var pruned = items.Select(item => item is { Id: { } id, Kind: { } kind } && kinds.Contains(kind) && !byId.ContainsKey(id)).ToArray();
+        var leading = pruned.TakeWhile(prune => prune).Count();
+        for (var i = 0; i < items.Count; i++)
+        {
+            if (pruned[i])
+            {
+                splices.Add(Pruning(items, i, leading));
+                continue;
+            }
+            if (items[i] is not { Id: { } id, Key: { } key, KeySpan: { } span } || !byId.TryGetValue(id, out var identity) || identity.Key == key) continue;
+            splices.Add(new Splice(SpliceOperation.ReplaceValue, span.Start, span.End, JsonFamily.Quote(identity.Key)));
+        }
+        var held = items.Select(item => item.Id).OfType<string>().ToHashSet(StringComparer.Ordinal);
+        var added = byId.Values.Where(identity => !held.Contains(identity.Id)).ToList();
+        if (added.Count > 0) splices.Add(Added(items, added));
+        return new PlanResult.Planned(new Edit([.. splices.OrderBy(splice => splice.Start).ThenBy(splice => splice.End)]));
+    }
+
+    /// <summary>Whether the file is an array, the form legacy identities are written in (FBL 0.12 §8.7).</summary>
+    private bool HoldsIdentities => _reading.Unreadable is null && _reading.Root?.Value.Kind == ValueKind.Sequence;
+
+    /// <summary>The items of a legacy identities file, each with its texts, and the span of its key's value.</summary>
+    private List<IdentityItem> IdentityItems()
+    {
+        if (!HoldsIdentities) return [];
+        return [.. _reading.Root!.Value.Entries.Select(entry => new IdentityItem(
+            entry,
+            entry.Value.Member("id")?.Value.Typed as string,
+            entry.Value.Member("kind")?.Value.Typed as string,
+            entry.Value.Member("key")?.Value.Typed as string,
+            entry.Value.Member("key")?.Value.Span))];
+    }
+
+    /// <summary>
+    /// The removal of a pruned item with one separator: the one before it, or, for an item of the run of pruned items the
+    /// array starts with, the one after it; the last item of an array whose items are all pruned goes alone.
+    /// </summary>
+    private static Splice Pruning(List<IdentityItem> items, int at, int leading)
+    {
+        var item = items[at].Entry;
+        var span = at >= leading ? item.Own with { Start = items[at - 1].Entry.Own.End }
+            : at + 1 < items.Count ? item.Own with { End = items[at + 1].Entry.Own.Start }
+            : item.Own;
+        return new Splice(SpliceOperation.RemoveEntry, span.Start, span.End, "");
+    }
+
+    /// <summary>New items after the array's last, laid out as it is: on a line of its own or after it, its members each on a line of their own or on its brace's; in an empty array, one per line.</summary>
+    private Splice Added(List<IdentityItem> items, List<LegacyIdentity> added)
+    {
+        var root = _reading.Root!.Value;
+        if (items.Count == 0)
+        {
+            var outer = Column(root.Span.Start);
+            var text = string.Concat(added.Select((identity, i) => (i > 0 ? "," : "") + Newline + new string(' ', outer + Step) + Item(identity, outer + Step, outer + 2 * Step, true))) + Newline + new string(' ', outer);
+            return new Splice(SpliceOperation.InsertEntry, root.Span.Start + 1, root.Span.Start + 1, text);
+        }
+        var last = items[^1].Entry;
+        var indent = Column(last.Own.Start);
+        var first = last.Value.Entries.FirstOrDefault();
+        var lines = first is not null && _reading.Text.LineIndexAt(first.Own.Start) != _reading.Text.LineIndexAt(last.Own.Start);
+        var members = first is null ? indent + Step : Column(first.KeySpan?.Start ?? first.Own.Start);
+        var onItsLine = items.Count == 1 ? lines : _reading.Text.LineIndexAt(last.Own.Start) != _reading.Text.LineIndexAt(items[^2].Entry.Own.End);
+        var separator = onItsLine ? "," + Newline + new string(' ', indent) : ", ";
+        return new Splice(SpliceOperation.InsertEntry, last.Own.End, last.Own.End, string.Concat(added.Select(identity => separator + Item(identity, indent, members, lines))));
+    }
+
+    /// <summary>An entry of the identities file: its id, its kind when it has one, and its key, each member on a line of its own or all on the brace's.</summary>
+    private string Item(LegacyIdentity identity, int indent, int members, bool lines)
+    {
+        List<string> parts = [$"\"id\": {JsonFamily.Quote(identity.Id)}", .. identity.Kind is { } kind ? [$"\"kind\": {JsonFamily.Quote(kind)}"] : Array.Empty<string>(), $"\"key\": {JsonFamily.Quote(identity.Key)}"];
+        if (!lines) return "{" + string.Join(", ", parts) + "}";
+        return "{" + string.Concat(parts.Select((part, i) => (i > 0 ? "," : "") + Newline + new string(' ', members) + part)) + Newline + new string(' ', indent) + "}";
+    }
+
+    /// <summary>An item of a legacy identities file, with its texts and the span of its key's value.</summary>
+    private sealed record IdentityItem(TreeEntry Entry, string? Id, string? Kind, string? Key, Span? KeySpan);
 
     /// <summary>
     /// Places an element in a view: its numbers replaced in place, or a new member at the end of the view's object, each
@@ -174,20 +277,6 @@ internal sealed class LegacySidecar : SplicedFile
         var span = member.KeySpan ?? member.Own;
         (int line, int column) = _reading.Text.Position(span.Start);
         return new Finding(code, FindingSeverity.Warning, message, new SourceLocation(fileName, line, column, _reading.Text.CodePoints(span.Start, span.End)));
-    }
-
-    /// <summary>Stores an id for a natural key: replaced in place, or a new member at the end of the object.</summary>
-    public PlanResult PlanIdentify(string key, string id)
-    {
-        ArgumentNullException.ThrowIfNull(key);
-        ArgumentNullException.ThrowIfNull(id);
-        if (IsUnreadable) return new PlanResult.Refused("The identities file could not be read, so it is not written.");
-        if (_reading.Root!.Value.Member(key) is { } existing)
-        {
-            var text = JsonFamily.Quote(id);
-            return new PlanResult.Planned(new Edit(_reading.Text.Text(existing.Value.Span) == text ? [] : [new Splice(SpliceOperation.ReplaceValue, existing.Value.Span.Start, existing.Value.Span.End, text)]));
-        }
-        return Insert(_reading.Root.Value, JsonFamily.Quote(key), _ => JsonFamily.Quote(id));
     }
 
     public PlanResult Change(Func<LegacySidecar, PlanResult> plan)

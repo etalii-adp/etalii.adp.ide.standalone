@@ -1,3 +1,4 @@
+using System.Globalization;
 using EtAlii.Adp.Specification.Cel;
 using EtAlii.Adp.Specification.Fbl.Bullets;
 using EtAlii.Adp.Specification.Fbl.Documents;
@@ -681,6 +682,8 @@ internal sealed class BodyReading
             element.PositionInSlot = positions.GetValueOrDefault(slot);
             positions[slot] = element.PositionInSlot + 1;
         }
+        var holders = new Dictionary<(string? Kind, string Key), int>();
+        foreach (var element in Elements.Where(e => !e.IsRelation)) IdentityKeyOf(element, holders);
         foreach (var element in Elements.Where(e => !e.IsRelation)) AssignId(element);
         foreach (var element in Elements.Where(e => !e.IsRelation)) element.Key = KeyOf(element);
         var dangling = new List<ReadElement>();
@@ -695,6 +698,7 @@ internal sealed class BodyReading
             Elements.Remove(relation);
             _byEntry.Remove(relation.Entry);
         }
+        foreach (var relation in Elements.Where(e => e.IsRelation)) IdentityKeyOf(relation, holders);
         foreach (var relation in Elements.Where(e => e.IsRelation))
         {
             AssignId(relation);
@@ -728,10 +732,9 @@ internal sealed class BodyReading
             element.Id = PlaceId(element);
             return;
         }
-        if (rule.Id?.SidecarKey is { } keyExpression)
+        if (element.IdentityKey is { } key)
         {
-            var key = Evaluate(keyExpression, element.Candidate, out _);
-            if (key is not null && Options.Identities.TryGetValue(NewText.Plain(key, null), out var stored))
+            if (Options.Identities.TryGetValue(rule.Id?.SidecarKind is { } kind ? $"{kind}:{key}" : key, out var stored))
             {
                 element.Id = stored;
                 element.IdStored = true;
@@ -745,6 +748,20 @@ internal sealed class BodyReading
             PositionInSlot = element.PositionInSlot,
         };
         element.Id = Options.DeriveId?.Invoke(request) ?? PlaceId(element);
+    }
+
+    /// <summary>
+    /// The key the element's id is kept under (FBL §5.3, 0.12 §8.6): its rule's <c>sidecar.key</c>; with <c>ordinal</c>, each
+    /// later holder of one key in the rule's kind, or in the binding without one, counted in document order, followed by the
+    /// ordinal with <c>{n}</c> replaced by its place, 2 for the second. The relations follow the elements, as they are read.
+    /// </summary>
+    private void IdentityKeyOf(ReadElement element, Dictionary<(string? Kind, string Key), int> holders)
+    {
+        if (element.Rule.Id is not { SidecarKey: { } expression } id || Evaluate(expression, element.Candidate, out _) is not { } value) return;
+        var key = NewText.Plain(value, null);
+        var holder = holders.GetValueOrDefault((id.SidecarKind, key)) + 1;
+        holders[(id.SidecarKind, key)] = holder;
+        element.IdentityKey = holder > 1 && id.SidecarOrdinal is { } ordinal ? key + ordinal.Replace("{n}", holder.ToString(CultureInfo.InvariantCulture), StringComparison.Ordinal) : key;
     }
 
     private static string PlaceId(ReadElement element) => $"{element.Rule.Name}@{element.Line}";
@@ -848,7 +865,11 @@ internal sealed class BodyReading
             e.SourceElement?.Id,
             e.TargetElement?.Id,
             e.Entry.Own,
-            e.Line)).ToList(),
+            e.Line)
+        {
+            IdentityKind = e.Rule.Id?.SidecarKind,
+            IdentityKey = e.IdentityKey,
+        }).ToList(),
         _findings.ToList(),
         Unreadable is not null)
     {

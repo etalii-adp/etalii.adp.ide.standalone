@@ -293,8 +293,17 @@ internal sealed class GrammarFamily(BodyText text, FblBinding binding, FblOption
 
     private static string Separator(Slot? slot) => slot?.Separator ?? ", ";
 
-    /// <summary>The family removes no part of an entry (FBL 0.9 §4.9, <i>Writing</i>): an emptied value is set, as any other.</summary>
-    protected override bool RemoveSlot(Plan plan, ReadElement element, SlotChange change) => false;
+    /// <summary>
+    /// An emptied value under <c>empty: "remove"</c> (FBL 0.11 §4.9, <i>An absent part</i>): a <c>remove-key</c> of the part's
+    /// span and the whitespace between it and the token before it. A list's items are written as its difference instead.
+    /// </summary>
+    protected override bool RemoveSlot(Plan plan, ReadElement element, SlotChange change)
+    {
+        if (change.Read.Node is not GrammarNode { HasSpan: true } node) return false;
+        var start = _leaves.Where(leaf => leaf.End <= node.Own.Start).Select(leaf => leaf.End).DefaultIfEmpty(node.Own.Start).Max();
+        plan.Add(SpliceOperation.RemoveKey, start, node.Own.End, "");
+        return true;
+    }
 
     /// <summary>
     /// A changed value: a <c>replace-value</c> of the value's span, the group <c>value</c> of the slot's <c>match</c> or the
@@ -329,7 +338,7 @@ internal sealed class GrammarFamily(BodyText text, FblBinding binding, FblOption
             return true;
         }
         var values = change.Read.Node is GrammarItems && change.Binding.Split is null ? Wanted(change).Select(object? (value) => value).ToList() : [change.Value];
-        var text = string.Concat(values.Select(value => NewText.Render(create.Emit, name => name == "value" ? Format(change.Read, change.Binding, value) : null)));
+        var text = string.Concat(values.Select(value => NewText.Fill(create.Emit, name => name == "value" ? Format(change.Read, change.Binding, value) : null)));
         if ((create.Pad ? Padding(element.Rule, after.Take(present)) : "") is not { } padding)
         {
             Plan.Refuse($"The binding gives no form to write the empty parts before a {element.Rule.Type}'s {change.Attribute} in.");
@@ -349,7 +358,7 @@ internal sealed class GrammarFamily(BodyText text, FblBinding binding, FblOption
         foreach (var name in absent)
         {
             if (rule.Attribute(name) is not { Create.Emit: { Length: > 0 } emit } binding) return null;
-            parts.Insert(0, NewText.Render(emit, placeholder => placeholder == "value" ? Format(SlotRead.Absent, binding, "") : null));
+            parts.Insert(0, NewText.Fill(emit, placeholder => placeholder == "value" ? Format(SlotRead.Absent, binding, "") : null));
         }
         return string.Concat(parts);
     }
@@ -455,7 +464,7 @@ internal sealed class GrammarFamily(BodyText text, FblBinding binding, FblOption
             return;
         }
         var offset = (last?.Node ?? items.Values[^1].Node).Own.End;
-        var text = string.Concat(added.Select(value => NewText.Render(create.Emit, name => name == "value" ? Escaped(change.Binding, value) : null)));
+        var text = string.Concat(added.Select(value => NewText.Fill(create.Emit, name => name == "value" ? Escaped(change.Binding, value) : null)));
         plan.Add(SpliceOperation.InsertKey, offset, offset, text);
     }
 
@@ -480,9 +489,10 @@ internal sealed class GrammarFamily(BodyText text, FblBinding binding, FblOption
         return again.Count == before.Count && changes.All(change => ReadsAgain(after, again[place], change));
     }
 
-    /// <summary>Whether <paramref name="after"/> reads the changed value as it was written: a list holding the new items, in any order, and any other value as written.</summary>
+    /// <summary>Whether <paramref name="after"/> reads the changed value as it was written: a list holding the new items, in any order, a removed part as absent, and any other value as written.</summary>
     private bool ReadsAgain(GrammarFamily after, Candidate candidate, SlotChange change)
     {
+        if (change is { IsEmpty: true, Binding.Empty: EmptyRule.Remove, Read.Node: GrammarNode }) return after.Read(candidate, change.Binding) is { Present: false };
         if (change.Read.Node is not GrammarItems) return after.Read(candidate, change.Binding) is { Present: true } read && read.Wire == Format(change.Read, change.Binding, change.Value);
         var items = (after.ReadMany(candidate, change.Binding).Value as IEnumerable<object?> ?? []).Select(value => NewText.Plain(value, null));
         return items.Order(StringComparer.Ordinal).SequenceEqual(Wanted(change).Order(StringComparer.Ordinal), StringComparer.Ordinal);
