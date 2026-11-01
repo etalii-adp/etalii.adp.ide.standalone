@@ -131,6 +131,42 @@ public class C4CommandsTests : IDisposable
         Assert.Equal(before, OnDisk());
     }
 
+    [Theory]
+    [InlineData("wi")]
+    [InlineData("si")]
+    public async Task SetName_OnAnInstance_IsRefused_BecauseItsFirstArgumentIsWhatItIsAnInstanceOf(string instance)
+    {
+        // Arrange.
+        // An instance takes (what it is an instance of, deployment groups, tags) and has no name: writing
+        // one into position 0 replaced the container or software system it names, which C4Parser hid by
+        // reading the quoted text as a reference, and which the binding rightly does not read at all.
+        var path = IoPath.Combine(_root, "deployment.dsl");
+        await File.WriteAllTextAsync(path, """
+            workspace "Bank" {
+                model {
+                    s = softwareSystem "Banking" {
+                        web = container "Web"
+                    }
+                    live = deploymentEnvironment "Live" {
+                        n = deploymentNode "Server" {
+                            wi = containerInstance web
+                            si = softwareSystemInstance s
+                        }
+                    }
+                }
+            }
+            """, TestContext.Current.CancellationToken);
+        var before = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
+
+        // Act.
+        var result = await _history.ExecuteAsync(new SetElementNameCommand(path, instance, "Renamed"), TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.False(result.IsSuccess);
+        Assert.Contains("has no name", result.Error, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(before, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
+    }
+
     [Fact]
     public async Task SetRelationshipDescription_RelabelsTheRelationship()
     {
@@ -186,7 +222,7 @@ public class C4CommandsTests : IDisposable
         // Act and assert, step by step.
         var after = OnDisk();
         Assert.Equal(2, DifferingLines(before, after));
-        var workspace = C4Parser.Parse(LineDocument.Parse(after));
+        var workspace = C4Body.Read(after).Workspace;
         Assert.Equal("Internet Banking", workspace.Find("s")!.Name);
         Assert.Equal("Delivers the app.", workspace.Find("web")!.Description);
     }
