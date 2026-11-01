@@ -27,7 +27,7 @@ internal sealed class NestedUnitReader(LarkParser reader, GrammarScanner scanner
     /// </summary>
     public UnitRead Read(int position)
     {
-        var parser = reader.ParseInteractive(new TextSlice(text, position, null), unit);
+        var parser = reader.ParseInteractive(new TextSlice(text, position), unit);
         var blocks = new List<Boundary>();
         int? first = null;
         var end = position;
@@ -127,7 +127,7 @@ internal sealed class NestedUnitReader(LarkParser reader, GrammarScanner scanner
     /// <summary>A parser in the boundary's state, lexing from <paramref name="at"/>.</summary>
     private InteractiveParser Resume(ParserState state, int at)
     {
-        var parser = reader.ParseInteractive(new TextSlice(text, at, null), unit);
+        var parser = reader.ParseInteractive(new TextSlice(text, at), unit);
         parser.ParserState.StateStack.Clear();
         parser.ParserState.StateStack.AddRange(state.StateStack);
         parser.ParserState.ValueStack.Clear();

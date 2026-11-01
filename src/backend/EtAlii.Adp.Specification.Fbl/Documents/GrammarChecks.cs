@@ -32,9 +32,9 @@ internal static class GrammarChecks
             {
                 problems.Add(Error(at, "A block rule's 'at', a view slot and an insert stand only in the grammar family (FBL 0.11 4.9)."));
             }
-            if (block.ViewSlot is { } view && view.Kind is not (SlotKind.Node or SlotKind.Value)) problems.Add(Error(at + "/view", "A block's view is a {node} or a {value} slot (FBL 0.11 4.9)."));
+            if (block.ViewSlot is { Kind: not (SlotKind.Node or SlotKind.Value) }) problems.Add(Error(at + "/view", "A block's view is a {node} or a {value} slot (FBL 0.11 4.9)."));
             if (block.ViewSlot?.Match is { } match) CheckMatch(match, at + "/view/match", problems);
-            if (block.Insert is { } insert && insert.Emit is null) problems.Add(Error(at + "/insert/emit", "A block's insert writes its entry from an emit (FBL 0.11 4.9)."));
+            if (block.Insert is { Emit: null }) problems.Add(Error(at + "/insert/emit", "A block's insert writes its entry from an emit (FBL 0.11 4.9)."));
         }
         foreach ((Rule rule, string at) in Rules(binding, pointer))
         {

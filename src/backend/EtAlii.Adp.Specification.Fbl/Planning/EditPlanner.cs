@@ -324,7 +324,7 @@ internal static class EditPlanner
     /// element's is while it produces no element; the add's attributes are the values of the emit's placeholders.
     /// </summary>
     private static Rule? BlockInsert(FblBinding binding, string type) =>
-        binding.Body.Family == Documents.Family.Grammar && binding.Blocks.FirstOrDefault(block => block.Name == type && block is { Insert: not null, At: not null }) is { } named
+        binding.Body.Family == Family.Grammar && binding.Blocks.FirstOrDefault(block => block.Name == type && block is { Insert: not null, At: not null }) is { } named
             ? new Rule { Name = named.Name, Type = named.Name, At = named.At, Insert = named.Insert }
             : null;
 

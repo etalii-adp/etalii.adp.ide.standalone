@@ -4,8 +4,6 @@ using EtAlii.Adp.Documents;
 using EtAlii.Adp.Specification.Fbl;
 using EtAlii.Adp.Specification.Fbl.Documents;
 using EtAlii.Adp.Specification.Fbl.History;
-using EtAlii.Adp.Specification.Fbl.Tests.Support;
-using EtAlii.Adp.Tests.Support;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.C4.Tests;
@@ -64,7 +62,7 @@ public partial class C4BindingBesideParserTests
     {
         var read = new Dictionary<string, SortedSet<string>>(StringComparer.Ordinal);
         var stored = model.Elements.Where(element => element.IdIsStored).Select(element => element.Id).ToHashSet(StringComparer.Ordinal);
-        foreach (var element in model.Elements.Where(element => element.IdIsStored && element.ParentId is { } parent && stored.Contains(parent))) ModuleCrossCheck.Add(read, "Parent", $"{element.Id} in {element.ParentId}");
+        foreach (var element in model.Elements.Where(element => element is { IdIsStored: true, ParentId: { } parent } && stored.Contains(parent))) ModuleCrossCheck.Add(read, "Parent", $"{element.Id} in {element.ParentId}");
         foreach (var view in model.ViewNames) ModuleCrossCheck.Add(read, "View", view);
         foreach (var include in model.Elements.Where(element => element.Type == "IncludedFile")) ModuleCrossCheck.Add(read, "Include", include.Attributes.GetValueOrDefault("path") as string ?? "");
         return read;

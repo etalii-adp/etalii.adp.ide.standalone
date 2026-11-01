@@ -82,7 +82,7 @@ internal sealed class GrammarParser
         var comments = read.Tokens.Values
             .Where(token => unclosed.TryGetValue(token.Type, out var closing) && !token.Value.EndsWith(closing, StringComparison.Ordinal))
             .OrderBy(token => token.StartPos)
-            .Select(token => Span(token))
+            .Select(Span)
             .ToList();
         return Reading(root, read.Tokens, skipped) with { Unclosed = [.. read.Unclosed.Select(at => _bytes[at])], UnclosedComments = comments };
     }

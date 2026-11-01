@@ -574,7 +574,7 @@ internal sealed class GrammarFamily(BodyText text, FblBinding binding, FblOption
         }
         else
         {
-            var last = parent.Children.OfType<GrammarNode>().LastOrDefault(child => !child.IsToken && child.HasSpan && child.Own.Start > open.End && child.LineSpan is not null);
+            var last = parent.Children.OfType<GrammarNode>().LastOrDefault(child => child is { IsToken: false, HasSpan: true, LineSpan: not null } && child.Own.Start > open.End);
             (int offset, string entry) = last is not null ? After(last, text) : AfterOpen(parent, open, text);
             splices.Add(new Splice(SpliceOperation.InsertEntry, offset, offset, entry));
             written = new Span(offset, offset + Encoding.UTF8.GetByteCount(entry));
@@ -605,7 +605,7 @@ internal sealed class GrammarFamily(BodyText text, FblBinding binding, FblOption
 
     /// <summary>Whether <paramref name="offset"/> lies inside a node that <paramref name="node"/> holds rather than in its own tokens.</summary>
     private static bool InsideChild(GrammarNode node, int offset) =>
-        node.Children.OfType<GrammarNode>().Any(child => !child.IsToken && child.HasSpan && child.Own.Start <= offset && offset < child.Own.End);
+        node.Children.OfType<GrammarNode>().Any(child => child is { IsToken: false, HasSpan: true } && child.Own.Start <= offset && offset < child.Own.End);
 
     /// <summary>A new entry as the first of an empty block: on the line after the one its <c>open</c> ends, one indentation step deeper than the block's entry.</summary>
     private (int Offset, string Text) AfterOpen(GrammarNode parent, Span open, string text)

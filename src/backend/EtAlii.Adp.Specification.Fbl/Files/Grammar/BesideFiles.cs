@@ -30,7 +30,7 @@ internal abstract class BesideFiles
     public static BesideFiles Embedded(Assembly assembly) => new Resources(assembly);
 
     /// <summary>A text without its UTF-8 BOM.</summary>
-    protected static string Decode(byte[] bytes)
+    private static string Decode(byte[] bytes)
     {
         var bom = bytes.AsSpan().StartsWith(System.Text.Encoding.UTF8.Preamble) ? 3 : 0;
         return System.Text.Encoding.UTF8.GetString(bytes, bom, bytes.Length - bom);
