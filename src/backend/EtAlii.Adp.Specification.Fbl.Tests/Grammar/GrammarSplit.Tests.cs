@@ -185,7 +185,7 @@ public class GrammarSplitTests
                                 "tags": { "node": "TAG", "match": "#(?<value>[a-z]+)", "create": { "emit": " #{value}", "after": ["name"] } } } } ]
             """);
         var options = new FblOptions { FileName = "body.t", Many = (type, name) => type == "Label" && name == "tags" };
-        var body = OpenBody.Open(Encoding.UTF8.GetBytes("a #x #y\nb\n"), binding, options);
+        var body = OpenBody.Open("a #x #y\nb\n"u8.ToArray(), binding, options);
 
         // Act.
         var read = Tags(body, "a");
