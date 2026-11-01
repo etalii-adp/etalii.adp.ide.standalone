@@ -376,18 +376,7 @@ internal sealed class CelParser(string source, CelEnvironment environment)
             if (source[i] == '\\' && i + 1 < source.Length)
             {
                 i++;
-                if (Escaped(source, ref i) is { } code) builder.Append(char.ConvertFromUtf32(code));
-                else builder.Append(source[i] switch
-                {
-                    'a' => '\a',
-                    'b' => '\b',
-                    'f' => '\f',
-                    'n' => '\n',
-                    'r' => '\r',
-                    't' => '\t',
-                    'v' => '\v',
-                    _ => source[i],
-                });
+                builder.Append(Escaped(source, ref i) is { } code ? char.ConvertFromUtf32(code) : Unescaped(source[i]).ToString());
             }
             else
             {
@@ -400,9 +389,22 @@ internal sealed class CelParser(string source, CelEnvironment environment)
         return builder.ToString();
     }
 
+    /// <summary>The character a one-letter escape stands for (cel-spec, langdef); any other character stands for itself, as <c>\\</c> and the quotes do.</summary>
+    private static char Unescaped(char letter) => letter switch
+    {
+        'a' => '\a',
+        'b' => '\b',
+        'f' => '\f',
+        'n' => '\n',
+        'r' => '\r',
+        't' => '\t',
+        'v' => '\v',
+        _ => letter,
+    };
+
     /// <summary>
-    /// The code point of a numeric escape whose letter or first digit is at <paramref name="i"/> (cel-spec, langdef): <c>\\x</c>
-    /// or <c>\\X</c> and two hex digits, <c>\\u</c> and four, <c>\\U</c> and eight, or three octal digits; <paramref name="i"/> is
+    /// The code point of a numeric escape whose letter or first digit is at <paramref name="i"/> (cel-spec, langdef): <c>\x</c>
+    /// or <c>\X</c> and two hex digits, <c>\u</c> and four, <c>\U</c> and eight, or three octal digits; <paramref name="i"/> is
     /// left on its last character. Null for any other escape.
     /// </summary>
     private static int? Escaped(string source, ref int i)

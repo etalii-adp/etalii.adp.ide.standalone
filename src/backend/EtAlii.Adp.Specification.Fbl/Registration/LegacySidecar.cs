@@ -97,7 +97,7 @@ internal sealed class LegacySidecar : SplicedFile
         var identities = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var item in IdentityItems())
         {
-            if (item.Id is { } id && item.Key is { } key) identities.TryAdd(item.Kind is { } kind ? $"{kind}:{key}" : key, id);
+            if (item is { Id: { } id, Key: { } key }) identities.TryAdd(item.Kind is { } kind ? $"{kind}:{key}" : key, id);
         }
         return identities;
     }
@@ -125,7 +125,7 @@ internal sealed class LegacySidecar : SplicedFile
         var byId = wanted.GroupBy(identity => identity.Id, StringComparer.Ordinal).ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
         var items = IdentityItems();
         var splices = new List<Splice>();
-        var pruned = items.Select(item => item.Id is { } id && item.Kind is { } kind && kinds.Contains(kind) && !byId.ContainsKey(id)).ToArray();
+        var pruned = items.Select(item => item is { Id: { } id, Kind: { } kind } && kinds.Contains(kind) && !byId.ContainsKey(id)).ToArray();
         var leading = pruned.TakeWhile(prune => prune).Count();
         for (var i = 0; i < items.Count; i++)
         {
@@ -165,9 +165,9 @@ internal sealed class LegacySidecar : SplicedFile
     private static Splice Pruning(List<IdentityItem> items, int at, int leading)
     {
         var item = items[at].Entry;
-        var span = at >= leading ? new Span(items[at - 1].Entry.Own.End, item.Own.End)
-            : at + 1 < items.Count ? new Span(item.Own.Start, items[at + 1].Entry.Own.Start)
-            : new Span(item.Own.Start, item.Own.End);
+        var span = at >= leading ? item.Own with { Start = items[at - 1].Entry.Own.End }
+            : at + 1 < items.Count ? item.Own with { End = items[at + 1].Entry.Own.Start }
+            : item.Own;
         return new Splice(SpliceOperation.RemoveEntry, span.Start, span.End, "");
     }
 

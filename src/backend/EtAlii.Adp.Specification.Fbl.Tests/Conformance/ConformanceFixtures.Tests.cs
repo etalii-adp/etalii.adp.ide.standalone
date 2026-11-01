@@ -423,7 +423,7 @@ public class ConformanceFixturesTests
             return;
         }
         if (node is not JsonObject value) return;
-        foreach (var (key, child) in value.ToList())
+        foreach ((string key, JsonNode? child) in value.ToList())
         {
             if (child is JsonValue text && NamingKeys.Contains(key) && text.TryGetValue<string>(out var id) && aliases.TryGetValue(id, out var read)) value[key] = read;
             else if (child is not null) Replace(child, aliases);
