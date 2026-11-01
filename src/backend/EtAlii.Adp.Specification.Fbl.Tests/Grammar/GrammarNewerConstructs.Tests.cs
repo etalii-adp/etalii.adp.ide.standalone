@@ -26,7 +26,6 @@ public class GrammarNewerConstructsTests
     [InlineData("\"insert\": { \"place\": \"end\",", "\"insert\": { \"continues\": { \"at\": \"/item\", \"same\": { \"value\": { \"node\": \"VALUE\" } }, \"separator\": \";\" }, \"place\": \"end\",", "/bindings/b/elements/0/insert/continues", "insert.continues")]
     [InlineData("\"remove\": {}", "\"remove\": { \"parts\": [ { \"item\": \".\", \"separator\": \",\" } ] }", "/bindings/b/elements/0/remove/parts", "remove.parts")]
     [InlineData("\"remove\": {}", "\"remove\": { \"parts\": [ { \"item\": \".\", \"separator\": \",\" } ], \"whole\": \".\" }", "/bindings/b/elements/0/remove/whole", "remove.whole")]
-    [InlineData("\"value\": { \"node\": \"VALUE\" }", "\"value\": { \"node\": \"VALUE\", \"or\": [ { \"node\": \"KEY\" } ] }", "/bindings/b/elements/0/attributes/value/or", "or")]
     [InlineData("\"value\": { \"node\": \"VALUE\" }", "\"value\": { \"node\": \"VALUE\", \"expand\": true }", "/bindings/b/elements/0/attributes/value/expand", "expand")]
     [InlineData("\"value\": { \"node\": \"VALUE\" }", "\"value\": { \"node\": \"VALUE\", \"ordinal\": \"items\" }", "/bindings/b/elements/0/attributes/value/ordinal", "ordinal")]
     [InlineData("\"value\": { \"node\": \"VALUE\" }", "\"value\": { \"node\": \"VALUE\", \"name\": true }", "/bindings/b/elements/0/attributes/value/name", "name")]
@@ -63,8 +62,8 @@ public class GrammarNewerConstructsTests
     [Fact]
     public void ARuleWithAConstructNotRead_IsReadAndEditedNoWhereItsTextIs()
     {
-        // Arrange: the note's label has an 'or', which this library does not read.
-        var body = Open("a = 1 !x\nb = 2\n", NoteRule.Replace("\"label\": { \"node\": \"KEY\" }", "\"label\": { \"node\": \"KEY\", \"or\": [ { \"node\": \"KEY\" } ] }", StringComparison.Ordinal));
+        // Arrange: the note's label has an 'expand', which this library does not read.
+        var body = Open("a = 1 !x\nb = 2\n", NoteRule.Replace("\"label\": { \"node\": \"KEY\" }", "\"label\": { \"node\": \"KEY\", \"expand\": true }", StringComparison.Ordinal));
 
         // Act.
         var setNote = body.Change(new ModelChange.Set("x", new Dictionary<string, object?> { ["label"] = "y" }));
@@ -74,8 +73,8 @@ public class GrammarNewerConstructsTests
 
         // Assert: the note is read, and neither it nor the item that holds it is spliced through its text.
         Assert.False(body.IsReadOnly);
-        Assert.Contains("'or'", Assert.IsType<PlanResult.Refused>(setNote).Reason, StringComparison.Ordinal);
-        Assert.Contains("'or'", Assert.IsType<PlanResult.Refused>(removeHolder).Reason, StringComparison.Ordinal);
+        Assert.Contains("'expand'", Assert.IsType<PlanResult.Refused>(setNote).Reason, StringComparison.Ordinal);
+        Assert.Contains("'expand'", Assert.IsType<PlanResult.Refused>(removeHolder).Reason, StringComparison.Ordinal);
         Assert.IsType<PlanResult.Planned>(setHolder);
         Assert.IsType<PlanResult.Planned>(removeOther);
         Assert.Equal("a = 7 !x\n", Text(body));

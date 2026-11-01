@@ -411,6 +411,26 @@ internal static partial class BindingReader
         return gather;
     }
 
+    /// <summary>An attribute's <c>or</c> (FBL 0.15 §4.9): further slots of the same entry, each with its <c>match</c>, <c>escape</c> and <c>split</c>.</summary>
+    private static List<Slot> ReadFurther(JsonElement json, string pointer, List<LoadDiagnostic> problems)
+    {
+        var further = new List<Slot>();
+        if (!json.TryGetProperty("or", out var slots)) return further;
+        if (slots.ValueKind != JsonValueKind.Array)
+        {
+            problems.Add(new LoadDiagnostic(pointer + "/or", LoadSeverity.Error, "An attribute's or is a list of slots (FBL 0.15 4.9)."));
+            return further;
+        }
+        var index = 0;
+        foreach (var slot in slots.EnumerateArray())
+        {
+            var at = $"{pointer}/or/{index++}";
+            if (slot.ValueKind != JsonValueKind.Object) problems.Add(new LoadDiagnostic(at, LoadSeverity.Error, "A further slot is an object."));
+            else if (ReadSlot(slot, at, problems) is { } read) further.Add(read);
+        }
+        return further;
+    }
+
     /// <summary>A slot's <c>items</c> (FBL 0.12 §5.2): an object from each item attribute to the slot that reads it; null when it has none.</summary>
     private static List<KeyValuePair<string, Slot>>? ReadItems(JsonElement json, string pointer, List<LoadDiagnostic> problems)
     {
@@ -461,6 +481,7 @@ internal static partial class BindingReader
             Escape = ReadEscape(json, pointer, problems),
             Split = ReadSplit(json, pointer, problems),
             Gather = ReadGather(json, pointer, problems),
+            Or = ReadFurther(json, pointer, problems),
             Separator = JsonProperties.String(json, "separator"),
             Items = ReadItems(json, pointer, problems),
             Empty = Setting<EmptyRule>(json, "empty", pointer, "An attribute's empty", problems) ?? EmptyRule.Keep,

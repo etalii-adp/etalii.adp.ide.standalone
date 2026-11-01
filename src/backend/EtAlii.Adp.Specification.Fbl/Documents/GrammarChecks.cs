@@ -121,7 +121,7 @@ internal static class GrammarChecks
     {
         if (GrammarSelector.Parse(selector, slot) is not { } segments)
         {
-            var dot = slot ? ", or '.' alone" : "";
+            var dot = slot ? ", '..' (FBL 0.15) in a relative selector, or '.' alone" : "";
             problems.Add(Error(pointer, $"'{selector}' is not a selector of the grammar family: names, '*', '**' and name[path='v']{dot} (FBL 0.9 4.9)."));
             return;
         }
@@ -164,7 +164,7 @@ internal static class GrammarChecks
         for (var i = 0; i < binding.Relations.Count; i++) yield return (binding.Relations[i], $"{pointer}/relations/{i}");
     }
 
-    /// <summary>Every slot of <paramref name="rule"/>, each with its JSON Pointer: the id's, the attributes' with their overrides, secondaries, gathered slots and items, the source's and the target's.</summary>
+    /// <summary>Every slot of <paramref name="rule"/>, each with its JSON Pointer: the id's, the attributes' with their overrides, secondaries, gathered slots, further slots and items, the source's and the target's.</summary>
     private static IEnumerable<(Slot Slot, string At)> Slots(Rule rule, string at)
     {
         if (rule.Id?.From is { } from) yield return (from, at + "/id/from");
@@ -175,6 +175,7 @@ internal static class GrammarChecks
             if (attribute.Override is { } o) yield return (o, a + "/override");
             if (attribute.Secondary is { } s) yield return (s, a + "/secondary");
             for (var i = 0; i < attribute.Gather.Count; i++) yield return (attribute.Gather[i], $"{a}/gather/{i}");
+            for (var i = 0; i < attribute.Or.Count; i++) yield return (attribute.Or[i], $"{a}/or/{i}");
             foreach ((string item, Slot slot) in attribute.Items ?? []) yield return (slot, JsonPointer.Append(a + "/items", item));
         }
         if (rule.Source is { } source) yield return (source, at + "/source");

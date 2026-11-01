@@ -164,6 +164,7 @@ internal static class BindingChecker
             }
             if (attribute.Override is { } o) CheckSlot(rule, o, context, a + "/override", problems);
             if (attribute.Secondary is { } s) CheckSlot(rule, s, context, a + "/secondary", problems);
+            for (var i = 0; i < attribute.Or.Count; i++) CheckSlot(rule, attribute.Or[i], context, $"{a}/or/{i}", problems);
             if (attribute is { Secondary: not null, Override: not null })
             {
                 problems.Add(new LoadDiagnostic(a + "/secondary", LoadSeverity.Error, "An attribute binding has a secondary or an override, not both (FBL 0.10 14.1)."));

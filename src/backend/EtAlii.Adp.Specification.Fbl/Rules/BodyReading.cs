@@ -649,8 +649,27 @@ internal sealed class BodyReading
             var second = Family.Read(candidate, SecondarySlot(secondary));
             return second.Present ? second with { Own = own } : own;
         }
-        return Family.Read(candidate, slot);
+        var first = Family.Read(candidate, slot);
+        if (first.Present || slot is not AttributeBinding { Or.Count: > 0 } binding) return first;
+        foreach (var further in binding.Or)
+        {
+            // FBL 0.15 §4.9 (Further slots): the first slot present is the value, written as that slot writes.
+            var by = FurtherSlot(binding, further);
+            var other = ReadSlotUnchecked(candidate, by, element);
+            if (other.Present) return other with { By = by };
+        }
+        return first;
     }
+
+    /// <summary>
+    /// A further slot of <paramref name="binding"/> (FBL 0.15 §4.9) as an attribute binding of its own: the place, its
+    /// <c>match</c>, <c>escape</c> and <c>split</c> the further slot's, every other option the attribute's.
+    /// </summary>
+    internal static AttributeBinding FurtherSlot(AttributeBinding binding, Slot further) => binding with
+    {
+        Kind = further.Kind, Child = further.Child, Word = further.Word, Flag = further.Flag, Match = further.Match,
+        Escape = further.Escape, Split = further.Split, Items = further.Items, Gather = [], Or = [], Override = null, Secondary = null,
+    };
 
     /// <summary>An attribute's <c>secondary</c> as a slot of its own (FBL 0.10 §5.2), read as it is written, and removed, never given a value, when the attribute is written.</summary>
     internal static AttributeBinding SecondarySlot(Slot secondary) =>

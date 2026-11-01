@@ -14,6 +14,9 @@ internal enum GrammarSegmentKind
 
     /// <summary><c>.</c>, as the whole selector of a <c>{node}</c> slot: the entry itself.</summary>
     Self,
+
+    /// <summary><c>..</c> (FBL 0.15), in a <c>{node}</c> slot only: the node that holds this one, and nothing from the root.</summary>
+    Up,
 }
 
 /// <summary>
@@ -27,7 +30,8 @@ internal static class GrammarSelector
 {
     /// <summary>
     /// The segments of <paramref name="selector"/>, absolute or relative; null when it is not a selector of the family.
-    /// <paramref name="slot"/> admits <c>.</c>, which only a <c>{node}</c> slot may write, and then as its whole selector.
+    /// <paramref name="slot"/> admits <c>.</c>, which only a <c>{node}</c> slot may write, and then as its whole selector, and
+    /// <c>..</c> (FBL 0.15), which only a relative selector of such a slot may write.
     /// </summary>
     public static IReadOnlyList<GrammarSegment>? Parse(string selector, bool slot)
     {
@@ -37,6 +41,12 @@ internal static class GrammarSelector
         var segments = new List<GrammarSegment>();
         foreach (var text in Split(body))
         {
+            if (text == "..")
+            {
+                if (!slot || selector.StartsWith('/')) return null;
+                segments.Add(new GrammarSegment(GrammarSegmentKind.Up, ".."));
+                continue;
+            }
             if (ParseSegment(text, tests: true) is not { } segment) return null;
             segments.Add(segment);
         }
@@ -73,6 +83,9 @@ internal static class GrammarSelector
         {
             case GrammarSegmentKind.Self:
                 Walk(node, selector, index + 1, textOf, found);
+                return;
+            case GrammarSegmentKind.Up:
+                if (node.Parent is GrammarNode holder) Walk(holder, selector, index + 1, textOf, found);
                 return;
             case GrammarSegmentKind.Descendants:
                 Walk(node, selector, index + 1, textOf, found);
