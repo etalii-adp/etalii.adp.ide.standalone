@@ -665,7 +665,7 @@ internal sealed class BodyReading
     /// A further slot of <paramref name="binding"/> (FBL 0.15 §4.9) as an attribute binding of its own: the place, its
     /// <c>match</c>, <c>escape</c> and <c>split</c> the further slot's, every other option the attribute's.
     /// </summary>
-    internal static AttributeBinding FurtherSlot(AttributeBinding binding, Slot further) => binding with
+    private static AttributeBinding FurtherSlot(AttributeBinding binding, Slot further) => binding with
     {
         Kind = further.Kind, Child = further.Child, Word = further.Word, Flag = further.Flag, Match = further.Match,
         Escape = further.Escape, Split = further.Split, Items = further.Items, Gather = [], Or = [], Override = null, Secondary = null,
