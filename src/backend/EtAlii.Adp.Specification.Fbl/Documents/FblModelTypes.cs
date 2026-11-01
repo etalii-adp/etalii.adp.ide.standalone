@@ -472,6 +472,13 @@ public record Slot
     /// </summary>
     internal IReadOnlyList<Slot> Gather { get; init; } = [];
 
+    /// <summary>
+    /// An attribute's <c>or</c> (FBL 0.15 §4.9, <i>Further slots</i>): further slots of the same entry, read in order when
+    /// the attribute's own slot is absent, the first present being the value, which is then written as that slot writes;
+    /// empty when it has none.
+    /// </summary>
+    internal IReadOnlyList<Slot> Or { get; init; } = [];
+
     public override string ToString() => Kind.ToString();
 }
 

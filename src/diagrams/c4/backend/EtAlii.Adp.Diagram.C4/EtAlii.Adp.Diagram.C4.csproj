@@ -43,9 +43,10 @@
     <!--
       The module's own FBL binding of a Structurizr DSL workspace, which the six definitions name as
       their persistence.binding, and the grammar beside it that it names (FBL 0.11, the grammar family).
-      Both are etalii.adp's specifications/fbl/structurizr.fbl and structurizr.lark as of commit 55b62e1
-      (the merge of etalii.adp #684, keywords written as "x"i strings by the ATD 0.1 amendment of 2026-11-01, with
-      #679's nearest enclosing parent before it), byte for byte: a change goes to etalii.adp and is copied
+      structurizr.fbl is etalii.adp's specifications/fbl/structurizr.fbl as of commit 1428ae2 (the merge of
+      etalii.adp #685, FBL 0.15: a relationship with no source reads its enclosing element as from), and
+      structurizr.lark is etalii.adp's as of commit 55b62e1 (the merge of etalii.adp #684, keywords written as "x"i
+      strings by the ATD 0.1 amendment of 2026-11-01, with #679's nearest enclosing parent before it), byte for byte: a change goes to etalii.adp and is copied
       again. Embedded and loaded by tests only: C4Parser still reads every body (c4-disl-fbl
       Requirement 4.1, design Amendment 2).
     -->

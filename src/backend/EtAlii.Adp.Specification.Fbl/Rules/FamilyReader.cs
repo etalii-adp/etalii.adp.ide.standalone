@@ -63,6 +63,12 @@ internal sealed record SlotRead(object? Value, Span? Span, bool Present, bool Wr
     /// <summary>The quote the value is written in on the wire, when the span includes one.</summary>
     public string? Quote { get; init; }
 
+    /// <summary>
+    /// The further slot of an attribute's <c>or</c> the value was read from (FBL 0.15 §4.9), as the binding a set of it
+    /// is written by; null when the attribute's own slot was read.
+    /// </summary>
+    public AttributeBinding? By { get; init; }
+
     /// <summary>The value as written, before maps or conversion, for keeping a map's wire value.</summary>
     public string? Wire { get; init; }
 

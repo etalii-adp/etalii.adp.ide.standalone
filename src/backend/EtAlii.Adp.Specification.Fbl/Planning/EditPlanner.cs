@@ -139,6 +139,8 @@ internal static class EditPlanner
                 Planning.Plan.Refuse($"A {element.Rule.Type} keeps no '{attribute}' in this file.");
                 return;
             }
+            // FBL 0.15 §4.9: a value read from a further slot of the attribute's or is written as that slot writes.
+            if (read.By is { } by) binding = by;
             if (binding.Kind is SlotKind.Value or SlotKind.Parent || !read.Writable)
             {
                 Planning.Plan.Refuse(read.Reason is { Length: > 0 } reason ? reason : $"The {attribute} of a {element.Rule.Type} cannot be changed in this file.");

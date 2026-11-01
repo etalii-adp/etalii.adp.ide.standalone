@@ -121,13 +121,6 @@
       "reason": "'web->api', written without spaces around the arrow, is a relationship to Structurizr and to structurizr.lark, whose WORD holds no '->'; C4Parser splits a statement at white space and reads '->' only as a word of its own, so it reads no relationship there. The binding is right; the module is lenient elsewhere (finding B6) but not here."
     },
     {
-      "property": "cross-check",
-      "binding": "structurizr",
-      "file": "src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/Fixtures/findings/nested-relationships.dsl",
-      "observed": "Relationship: the binding lacks 2 (u->s, web->api); the binding adds 2 (->api, ->s)",
-      "reason": "A relationship written without a source inside an element's block ('-> s' in u's block) has that element as its source, as C4Parser reads it. structurizr.fbl says so in the rule's doc only: its relationship rule has no parent and its 'from' slot reads the source node, which such a statement does not have, so the binding reads the relationship with 'from' absent. Candidate follow-up for etalii.adp: give the relationship's 'from' the enclosing element when the source is absent (a parent of the relationship rule, or an 'or' to the enclosing element's identifier)."
-    },
-    {
       "property": "unreadable",
       "binding": "databricks-pipeline",
       "file": "src/diagrams/databricks/backend/EtAlii.Adp.Diagram.Databricks.Tests/Fixtures/unreadable.json",
