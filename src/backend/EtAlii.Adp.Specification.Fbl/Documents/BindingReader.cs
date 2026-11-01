@@ -23,6 +23,9 @@ internal static partial class BindingReader
         var claims = Object(json, "claims", pointer, "A binding's claims", problems);
         var body = Object(json, "body", pointer, "A binding's body", problems);
         if (problems.Any(p => p.Severity == LoadSeverity.Error && p.Pointer.StartsWith(pointer, StringComparison.Ordinal))) return null;
+        // FBL 0.17 §15.1: what this library does not read of the grammar family is named, and the text it governs kept.
+        var grammar = ParseFamily(JsonProperties.String(body!.Value, "family")) == Family.Grammar;
+        var unread = grammar ? UnreadConstructs.InBody(body.Value, pointer + "/body", problems) : null;
 
         PluginReader? plugin = null;
         if (reader.ValueKind == JsonValueKind.Object)
@@ -39,9 +42,9 @@ internal static partial class BindingReader
             Name = name,
             Title = Localized(json, "title", pointer, problems),
             Claims = ReadClaims(claims!.Value, pointer + "/claims", problems),
-            Body = ReadBody(body!.Value, pointer + "/body", problems),
+            Body = ReadBody(body.Value, pointer + "/body", problems),
             Plugin = plugin,
-            ReadOnly = ReadOnly(json),
+            ReadOnly = unread ?? ReadOnly(json),
             Text = ReadText(json, pointer, problems),
             Header = Object(json, "header", pointer, "A binding's header", problems) is { } h
                 ? new HeaderSettings(JsonProperties.String(h, "key"), h.TryGetProperty("value", out var hv) ? hv.Clone() : null, JsonProperties.String(h, "line"), JsonProperties.Bool(h, "required"))
@@ -50,8 +53,8 @@ internal static partial class BindingReader
             ReportUnmatched = JsonProperties.String(json, "unmatched") == "report",
             Blocks = Array(json, "blocks").Select((b, i) => ReadBlockRule(b, $"{pointer}/blocks/{i}", problems)).ToList(),
             Sections = Array(json, "sections").Select(section => new SectionRule(JsonProperties.String(section, "name") ?? "", JsonProperties.String(section, "heading") ?? "", JsonProperties.Bool(section, "caseInsensitive"))).ToList(),
-            Elements = ReadRules(json, "elements", false, pointer, problems),
-            Relations = ReadRules(json, "relations", true, pointer, problems),
+            Elements = ReadRules(json, "elements", false, grammar, pointer, problems),
+            Relations = ReadRules(json, "relations", true, grammar, pointer, problems),
             Registration = ReadRegistration(json, pointer, problems),
             Template = Object(json, "template", pointer, "A binding's template", problems) is { } t
                 ? new TemplateSettings(JsonProperties.String(t, "text") ?? "", Strings(t, "byOrigin", pointer + "/template", "A template's byOrigin", problems))
@@ -221,23 +224,30 @@ internal static partial class BindingReader
         };
     }
 
-    private static List<Rule> ReadRules(JsonElement json, string name, bool relation, string pointer, List<LoadDiagnostic> problems)
+    private static List<Rule> ReadRules(JsonElement json, string name, bool relation, bool grammar, string pointer, List<LoadDiagnostic> problems)
     {
         var rules = new List<Rule>();
         var index = 0;
         foreach (var item in Array(json, name))
         {
             var at = $"{pointer}/{name}/{index++}";
-            if (item.ValueKind == JsonValueKind.Object) rules.Add(ReadRule(item, relation, at, problems));
+            if (item.ValueKind == JsonValueKind.Object) rules.Add(ReadRule(item, relation, grammar, at, problems));
             else problems.Add(new LoadDiagnostic(at, LoadSeverity.Error, "A rule is an object."));
         }
         return rules;
     }
 
-    private static Rule ReadRule(JsonElement json, bool relation, string pointer, List<LoadDiagnostic> problems) => new()
+    private static Rule ReadRule(JsonElement json, bool relation, bool grammar, string pointer, List<LoadDiagnostic> problems)
+    {
+        var type = JsonProperties.String(json, "type") ?? "";
+        var unread = grammar ? UnreadConstructs.InRule(json, type, pointer, problems) : null;
+        return ReadRule(json, relation, type, unread, pointer, problems);
+    }
+
+    private static Rule ReadRule(JsonElement json, bool relation, string type, string? unread, string pointer, List<LoadDiagnostic> problems) => new()
     {
         Name = JsonProperties.String(json, "name") ?? "",
-        Type = JsonProperties.String(json, "type") ?? "",
+        Type = type,
         IsRelation = relation,
         At = JsonProperties.String(json, "at"),
         Line = JsonProperties.String(json, "line"),
@@ -257,7 +267,8 @@ internal static partial class BindingReader
         Insert = Object(json, "insert", pointer, "A rule's insert", problems) is { } i ? ReadInsert(i, pointer + "/insert", problems) : null,
         Remove = Object(json, "remove", pointer, "A rule's remove", problems) is { } r ? ReadRemove(r) : null,
         SnapshotUndo = JsonProperties.String(json, "undo") == "snapshot",
-        ReadOnly = ReadOnly(json),
+        ReadOnly = unread ?? ReadOnly(json),
+        Unread = unread,
         Origins = OptionalStrings(json, "origins"),
     };
 

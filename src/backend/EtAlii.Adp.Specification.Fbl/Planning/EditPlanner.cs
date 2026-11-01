@@ -48,12 +48,29 @@ internal static class EditPlanner
                 default:
                     throw new ArgumentOutOfRangeException(nameof(change));
             }
-            return new PlanResult.Planned(new SpliceEdit(plan.Ordered(), plan.Snapshot));
+            var splices = plan.Ordered();
+            return Governed(reading, splices) is { } governed ? new PlanResult.Refused(governed) : new PlanResult.Planned(new SpliceEdit(splices, plan.Snapshot));
         }
         catch (RefusedException refused)
         {
             return new PlanResult.Refused(refused.Message);
         }
+    }
+
+    /// <summary>
+    /// FBL 0.17 §15.1: no splice touches the text of an entry whose rule uses a construct this library does not read, as a
+    /// removal that takes it with another, or a move of what holds it, would; an insert right before or after it does not.
+    /// The reason names the construct.
+    /// </summary>
+    private static string? Governed(BodyReading reading, IReadOnlyList<Splice> splices)
+    {
+        foreach (var element in reading.Elements)
+        {
+            if (element.Rule.Unread is not { } reason) continue;
+            var own = element.Entry.Own;
+            if (splices.Any(splice => splice.Start < own.End && own.Start < splice.End)) return reason;
+        }
+        return null;
     }
 
     private static ReadElement Element(BodyReading reading, string id) =>
