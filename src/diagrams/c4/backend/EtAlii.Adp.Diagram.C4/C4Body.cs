@@ -77,9 +77,6 @@ internal sealed class C4Body
         _bodies.AddOrUpdate(Workspace, this);
     }
 
-    /// <summary>The binding every <c>.dsl</c> body is read with.</summary>
-    public static FblBinding Binding => _binding.Value;
-
     /// <summary>What the binding reads from the body: its model, its views and the files it does not follow.</summary>
     public C4Workspace Workspace { get; }
 
@@ -275,16 +272,24 @@ internal sealed class C4Body
     };
 
     /// <summary>The kind of view the binding's block rule <paramref name="block"/> reads, with its key or without one; null for none.</summary>
-    private static C4ViewKind? KindOfBlock(string block) => block.EndsWith(WithoutKey, StringComparison.Ordinal) ? KindOfBlock(block[..^WithoutKey.Length]) : block switch
+    private static C4ViewKind? KindOfBlock(string block)
     {
-        "systemLandscapeView" => C4ViewKind.SystemLandscape,
-        "systemContextView" => C4ViewKind.SystemContext,
-        "containerView" => C4ViewKind.Container,
-        "componentView" => C4ViewKind.Component,
-        "dynamicView" => C4ViewKind.Dynamic,
-        "deploymentView" => C4ViewKind.Deployment,
-        _ => null,
-    };
+        if (block.EndsWith(WithoutKey, StringComparison.Ordinal))
+        {
+            return KindOfBlock(block[..^WithoutKey.Length]);
+        }
+
+        return block switch
+        {
+            "systemLandscapeView" => C4ViewKind.SystemLandscape,
+            "systemContextView" => C4ViewKind.SystemContext,
+            "containerView" => C4ViewKind.Container,
+            "componentView" => C4ViewKind.Component,
+            "dynamicView" => C4ViewKind.Dynamic,
+            "deploymentView" => C4ViewKind.Deployment,
+            _ => null,
+        };
+    }
 
     /// <summary>A view's own statements as the attributes of a view of the model (DISL §12.2), which a rule about the model reads.</summary>
     private static Dictionary<string, object?> ViewAttributes(C4View view)
@@ -340,7 +345,7 @@ internal sealed class C4Body
 
     /// <summary>The binding's reading of the body with the view <paramref name="header"/> names selected.</summary>
     private FblModel Reading(string header) =>
-        _readings.GetOrAdd(header, selected => OpenBody.Open(_bytes, Binding, new FblOptions { FileName = "body.dsl", View = selected, Many = Many }).Model);
+        _readings.GetOrAdd(header, selected => OpenBody.Open(_bytes, _binding.Value, new FblOptions { FileName = "body.dsl", View = selected, Many = Many }).Model);
 
     /// <summary>The attributes the tool types hold as lists (DISL): an element's tags and a view's included and excluded members.</summary>
     private static bool Many(string type, string attribute) => attribute == "tags" || (type == "ViewInclude" && attribute is "members" or "excludes");
