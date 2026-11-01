@@ -217,7 +217,7 @@ public class GrammarWritingTests
         var binding = Binding(grammar,
             """[ { "name": "node", "type": "Node", "at": "/node", "id": { "from": { "node": "NAME" } }, "attributes": { "name": { "node": "NAME" } } } ]""",
             """[ { "name": "link", "type": "Link", "at": "/link", "source": { "node": "NAME", "reference": { "to": ["node"] } }, "target": { "node": "target", "reference": { "to": ["node"] } } } ]""");
-        var body = OpenBody.Open(Encoding.UTF8.GetBytes("node a\nnode b\na -> b\nb -> a\n"), binding, new FblOptions { FileName = "body.t" });
+        var body = OpenBody.Open("node a\nnode b\na -> b\nb -> a\n"u8.ToArray(), binding, new FblOptions { FileName = "body.t" });
 
         // Act.
         var result = body.Change(new ModelChange.Set("a", new Dictionary<string, object?> { ["name"] = "c" }));
@@ -236,13 +236,13 @@ public class GrammarWritingTests
         var body = Open(text, "after-last");
         Assert.IsType<PlanResult.Planned>(body.Change(Add("c", "9")));
         var added = body.Bytes.ToArray();
-        var drifted = Encoding.UTF8.GetBytes("a = 1\nb = 3\nc = 9\n");
+        var drifted = "a = 1\nb = 3\nc = 9\n"u8.ToArray();
 
         // Act and assert: undo refused on drift, then done; redo refused on drift, then done.
         Assert.Equal(SplicedFile.DriftUndo, Assert.IsType<UndoResult.Refused>(body.Undo(drifted)).Reason);
         Assert.IsType<UndoResult.Done>(body.Undo());
         Assert.Equal(text, Text(body));
-        Assert.Equal(SplicedFile.DriftRedo, Assert.IsType<UndoResult.Refused>(body.Redo(Encoding.UTF8.GetBytes("a = 0\nb = 2\n"))).Reason);
+        Assert.Equal(SplicedFile.DriftRedo, Assert.IsType<UndoResult.Refused>(body.Redo("a = 0\nb = 2\n"u8.ToArray())).Reason);
         Assert.IsType<UndoResult.Done>(body.Redo());
         Assert.Equal(added, body.Bytes);
     }
