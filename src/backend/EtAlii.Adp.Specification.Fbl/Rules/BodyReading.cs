@@ -491,7 +491,7 @@ internal sealed class BodyReading
         var rule = element.Rule;
         foreach ((string name, AttributeBinding binding) in rule.Attributes)
         {
-            var many = binding is { Word: not null, Flag: false } && Options.Many?.Invoke(rule.Type, name) == true;
+            var many = binding is { Flag: false } && (binding.Word is not null || binding.Kind is SlotKind.Node) && Options.Many?.Invoke(rule.Type, name) == true;
             var read = ReadSlot(element.Candidate, binding, element, many);
             element.Slots[name] = read;
             object? value = read.Present ? read.Value : null;
