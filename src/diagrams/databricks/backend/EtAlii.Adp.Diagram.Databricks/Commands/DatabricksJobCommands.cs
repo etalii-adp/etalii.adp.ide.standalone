@@ -106,12 +106,9 @@ public sealed class RemoveDatabricksTaskCommandHandler(IDatabricksDocumentStore 
             return EditOutcome.Refused("There is no job in this file any more.");
         }
 
-        if (job.Tasks.All(task => task.Key != command.TaskKey))
-        {
-            return EditOutcome.Refused($"There is no task named '{command.TaskKey}' any more.");
-        }
-
-        return DatabricksEdits.Job(body, job, reading => new ModelChange.Remove(DatabricksEdits.TaskId(reading, command.TaskKey)));
+        return job.Tasks.All(task => task.Key != command.TaskKey)
+            ? EditOutcome.Refused($"There is no task named '{command.TaskKey}' any more.")
+            : DatabricksEdits.Job(body, job, reading => new ModelChange.Remove(DatabricksEdits.TaskId(reading, command.TaskKey)));
     }
 }
 

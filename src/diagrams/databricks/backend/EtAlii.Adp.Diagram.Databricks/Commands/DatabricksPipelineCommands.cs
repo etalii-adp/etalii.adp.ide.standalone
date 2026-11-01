@@ -73,12 +73,9 @@ public sealed class RemoveDatabricksLibraryCommandHandler(IDatabricksDocumentSto
             return EditOutcome.Refused($"There is no {command.Kind} library '{command.Path}' any more.");
         }
 
-        if (pipeline.Libraries.Count == 1)
-        {
-            return EditOutcome.Refused("A pipeline needs at least one library; removing the last one is not allowed.");
-        }
-
-        return DatabricksEdits.Pipeline(body, pipeline, reading => new ModelChange.Remove(DatabricksEdits.LibraryId(reading, command.Kind, command.Path)));
+        return pipeline.Libraries.Count == 1
+            ? EditOutcome.Refused("A pipeline needs at least one library; removing the last one is not allowed.")
+            : DatabricksEdits.Pipeline(body, pipeline, reading => new ModelChange.Remove(DatabricksEdits.LibraryId(reading, command.Kind, command.Path)));
     }
 }
 
