@@ -79,6 +79,11 @@ internal static class GrammarChecks
             }
         }
         if (slot.Escape is not null && !node) problems.Add(Error(place + "/escape", "An escape stands only on a {node} slot of the grammar family (FBL 0.11 14.1)."));
+        if (slot.Separator is not null && !node) problems.Add(Error(place + "/separator", "A separator stands only on a {node} slot of the grammar family (FBL 0.12 14.1)."));
+        if (slot.Items is { } items && (!node || items.Count == 0 || items.Any(item => item.Value.Kind is not SlotKind.Node)))
+        {
+            problems.Add(Error(place + "/items", "Items stand only on a {node} slot of the grammar family, and map each item attribute to a {node} slot (FBL 0.12 5.2, 14.1)."));
+        }
         if (slot.Gather.Count > 0)
         {
             if (!node || slot.Gather.Any(gathered => gathered.Kind is not SlotKind.Node)) problems.Add(Error(place + "/gather", "A gather stands only on a {node} slot of the grammar family, and gathers {node} slots (FBL 0.11 14.1)."));
@@ -159,7 +164,7 @@ internal static class GrammarChecks
         for (var i = 0; i < binding.Relations.Count; i++) yield return (binding.Relations[i], $"{pointer}/relations/{i}");
     }
 
-    /// <summary>Every slot of <paramref name="rule"/>, each with its JSON Pointer: the id's, the attributes' with their overrides and secondaries, the source's and the target's.</summary>
+    /// <summary>Every slot of <paramref name="rule"/>, each with its JSON Pointer: the id's, the attributes' with their overrides, secondaries, gathered slots and items, the source's and the target's.</summary>
     private static IEnumerable<(Slot Slot, string At)> Slots(Rule rule, string at)
     {
         if (rule.Id?.From is { } from) yield return (from, at + "/id/from");
@@ -170,6 +175,7 @@ internal static class GrammarChecks
             if (attribute.Override is { } o) yield return (o, a + "/override");
             if (attribute.Secondary is { } s) yield return (s, a + "/secondary");
             for (var i = 0; i < attribute.Gather.Count; i++) yield return (attribute.Gather[i], $"{a}/gather/{i}");
+            foreach ((string item, Slot slot) in attribute.Items ?? []) yield return (slot, JsonPointer.Append(a + "/items", item));
         }
         if (rule.Source is { } source) yield return (source, at + "/source");
         if (rule.Target is { } target) yield return (target, at + "/target");

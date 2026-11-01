@@ -5,7 +5,9 @@ namespace EtAlii.Adp.Specification.Fbl.Tests.Support;
 /// <c>wardley-*</c> fixtures, under the type names of <c>wardley-map.fbl</c>: <c>definitions/diagrams/wardley-map.dis</c> in
 /// etalii.adp types a position's two numbers <c>Fraction</c> (a number), a size <c>MapSize</c> (two whole numbers), an
 /// annotation's number <c>int</c> and a component's <c>inertia</c> <c>bool</c>. Its binding's types are mapped onto that
-/// metamodel by the typeMap of the specification's first appendix, which the definition does not declare yet.
+/// metamodel by the typeMap of the specification's first appendix, which the definition does not declare yet. An item
+/// attribute of a structured value (FBL 0.12 section 5.2) is typed under its attribute's type and name joined by a dot,
+/// <c>Annotation.positions</c>.
 /// </summary>
 internal static class WardleyTypes
 {
@@ -17,6 +19,7 @@ internal static class WardleyTypes
         ("Note" or "AnnotationsPosition" or "Accelerator", "visibility" or "maturity") => "number",
         ("Attitude", "visibility1" or "maturity1" or "visibility2" or "maturity2") => "number",
         ("Annotation", "number") => "int",
+        ("Annotation.positions", "visibility" or "maturity") => "number",
         ("Size", "width" or "height") => "int",
         _ => null,
     };

@@ -400,6 +400,25 @@ internal static partial class BindingReader
         return gather;
     }
 
+    /// <summary>A slot's <c>items</c> (FBL 0.12 §5.2): an object from each item attribute to the slot that reads it; null when it has none.</summary>
+    private static List<KeyValuePair<string, Slot>>? ReadItems(JsonElement json, string pointer, List<LoadDiagnostic> problems)
+    {
+        if (!json.TryGetProperty("items", out var items)) return null;
+        var read = new List<KeyValuePair<string, Slot>>();
+        if (items.ValueKind != JsonValueKind.Object)
+        {
+            problems.Add(new LoadDiagnostic(pointer + "/items", LoadSeverity.Error, "A slot's items is an object from each item attribute to its slot (FBL 0.12 5.2)."));
+            return read;
+        }
+        foreach (var item in items.EnumerateObject())
+        {
+            var at = JsonPointer.Append(pointer + "/items", item.Name);
+            if (item.Value.ValueKind != JsonValueKind.Object) problems.Add(new LoadDiagnostic(at, LoadSeverity.Error, "An item attribute's slot is an object."));
+            else if (ReadSlot(item.Value, at, problems) is { } slot) read.Add(new KeyValuePair<string, Slot>(item.Name, slot));
+        }
+        return read;
+    }
+
     /// <summary>The one kind of slot <paramref name="json"/> names; none or several are reported as <paramref name="problem"/>.</summary>
     private static SlotKind? ReadKind(JsonElement json, string pointer, string problem, List<LoadDiagnostic> problems)
     {
@@ -432,6 +451,7 @@ internal static partial class BindingReader
             Split = ReadSplit(json, pointer, problems),
             Gather = ReadGather(json, pointer, problems),
             Separator = JsonProperties.String(json, "separator"),
+            Items = ReadItems(json, pointer, problems),
             Empty = Setting<EmptyRule>(json, "empty", pointer, "An attribute's empty", problems) ?? EmptyRule.Keep,
             Absent = ReadAbsent(json, pointer, problems),
             Default = json.TryGetProperty("default", out var def) ? def.Clone() : null,
