@@ -242,7 +242,7 @@ internal static class C4ViewBlock
     {
         var entry = await documents.GetOrLoadAsync(bodyPath, cancellationToken);
         var copy = LineDocument.Parse(entry.Document.Text);
-        if (C4Parser.Parse(copy).FindView(viewKey) is not { } view)
+        if (C4Body.Read(copy.Text).Workspace.FindView(viewKey) is not { } view)
         {
             return;
         }

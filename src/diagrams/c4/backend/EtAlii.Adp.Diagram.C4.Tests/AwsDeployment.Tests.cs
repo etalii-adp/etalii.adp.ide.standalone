@@ -18,7 +18,7 @@ namespace EtAlii.Adp.Diagram.C4.Tests;
 public class AwsDeploymentTests
 {
     private static readonly C4Workspace Workspace =
-        C4Parser.Parse(LineDocument.Parse(File.ReadAllText(IoPath.Combine("Fixtures", "aws-deployment.dsl"))));
+        C4Body.Read(File.ReadAllText(IoPath.Combine("Fixtures", "aws-deployment.dsl"))).Workspace;
 
     private static C4Element Node(string name) => Workspace.Elements.Single(element =>
         element.Kind is C4ElementKind.DeploymentNode or C4ElementKind.InfrastructureNode && element.Name == name);

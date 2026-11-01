@@ -46,8 +46,11 @@ public sealed record FblModel(IReadOnlyList<FblElement> Elements, IReadOnlyList<
 {
     public FblElement? Find(string id) => Elements.FirstOrDefault(e => e.Id == id);
 
-    /// <summary>The views a blocks body defines (FBL §4.7), in document order.</summary>
-    internal IReadOnlyList<FblView> Views { get; init; } = [];
+    /// <summary>
+    /// The views the body defines (FBL §4.7, FBL 0.11 §4.9), in document order, each with the block rule that matched it,
+    /// so that a host whose tool types tell views apart by their kind reads the kind from the rule (a C4 view's).
+    /// </summary>
+    public IReadOnlyList<FblView> Views { get; init; } = [];
 
     /// <summary>The names of the views the body defines (FBL §4.7, FBL 0.11 §4.9), in document order.</summary>
     public IReadOnlyList<string> ViewNames => [.. Views.Select(view => view.Name)];
@@ -77,7 +80,7 @@ public sealed record FblModel(IReadOnlyList<FblElement> Elements, IReadOnlyList<
 }
 
 /// <summary>A view a block of the body defines (FBL §4.7): its name, the block rule that matched it, and where it is.</summary>
-internal sealed record FblView(string Name, string Block, Span Span, int Line);
+public sealed record FblView(string Name, string Block, Span Span, int Line);
 
 /// <summary>What a DISL id strategy is asked when a rule stores no id (FBL §5.3, DISL §11.5).</summary>
 public sealed record IdRequest(

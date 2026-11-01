@@ -57,7 +57,7 @@ public class C4FindingOrderTests
         }
         """;
 
-    private static C4Workspace Workspace => C4Parser.Parse(LineDocument.Parse(Dsl));
+    private static C4Workspace Workspace => C4Body.Read(Dsl).Workspace;
 
     [Fact]
     public void TheDocument_HasAFindingOfEveryCode_AndTheEvaluatorsOrderIsNotTodays()

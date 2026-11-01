@@ -22,12 +22,12 @@ public class C4LiftedLinesAtScaleTests
     public void AViewWithFiveHundredLiftedRelationships_DerivesEveryLine()
     {
         // Arrange.
-        var workspace = C4Parser.Parse(LineDocument.Parse(Dsl()));
+        var workspace = C4Body.Read(Dsl()).Workspace;
         var view = workspace.FindView("Landscape")!;
         const string file = "lifted.dsl";
 
         // Act.
-        var failures = C4Disl.Of(workspace, view, C4Definitions.For(view.Kind).Specification, file).Findings
+        var failures = C4Body.Of(workspace, view, C4Definitions.For(view.Kind).Specification, file).Findings
             .Where(finding => string.Equals(finding.Code, "std.derivedFailed", StringComparison.Ordinal))
             .Select(finding => $"{finding.Code} {finding.Message}")
             .ToList();

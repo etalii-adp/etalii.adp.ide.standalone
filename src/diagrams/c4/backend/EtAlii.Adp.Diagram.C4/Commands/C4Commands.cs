@@ -29,7 +29,7 @@ public abstract class C4EditHandler<TCommand>(IC4DocumentStore documents)
     where TCommand : IDocumentEditCommand
 {
     /// <inheritdoc />
-    protected sealed override C4Workspace Parse(LineDocument body) => C4Parser.Parse(body);
+    protected sealed override C4Workspace Parse(LineDocument body) => C4Body.Read(body.Text).Workspace;
 
     /// <summary>
     /// Rewrites one argument of the line an element was declared on. Everything else on that

@@ -18,7 +18,7 @@ namespace EtAlii.Adp.Diagram.C4.Tests;
 public class C4FindingsTests
 {
     private static IReadOnlyList<DiagramProblem> Validate(string dsl) =>
-        C4Findings.Of(C4Parser.Parse(LineDocument.Parse(dsl)));
+        C4Findings.Of(C4Body.Read(dsl).Workspace);
 
     private static string[] RuleIds(string dsl) => Validate(dsl).Select(problem => problem.RuleId).ToArray();
 
@@ -650,7 +650,7 @@ public class C4FindingsTests
                 }
             }
             """;
-        var workspace = C4Parser.Parse(LineDocument.Parse(dsl));
+        var workspace = C4Body.Read(dsl).Workspace;
 
         // Act.
 

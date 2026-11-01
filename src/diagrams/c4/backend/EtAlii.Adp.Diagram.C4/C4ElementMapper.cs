@@ -49,7 +49,7 @@ public sealed class C4ElementMapper
         ArgumentNullException.ThrowIfNull(workspace);
         ArgumentNullException.ThrowIfNull(view);
 
-        var drawing = C4Definitions.Drawing(workspace, C4Disl.FileOf(bodyPath ?? ""), view);
+        var drawing = C4Definitions.Drawing(workspace, C4Body.FileOf(bodyPath ?? ""), view);
 
         // Whatever the user arranged by hand, layered over the computed arrangement.
         var authored = bodyPath is { Length: > 0 } ? _sidecar.Read(bodyPath, view.Key) : null;
@@ -141,7 +141,7 @@ public sealed class C4ElementMapper
     {
         ArgumentNullException.ThrowIfNull(workspace);
         ArgumentNullException.ThrowIfNull(view);
-        return C4Definitions.Drawing(workspace, C4Disl.FileOf(""), view).Title;
+        return C4Definitions.Drawing(workspace, C4Body.FileOf(""), view).Title;
     }
 
     private DiagramElement ToElement(C4Element element, Rect box, IReadOnlyList<C4ElementStyle> styles)

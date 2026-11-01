@@ -66,7 +66,7 @@ public sealed class C4ContextActionProvider(IHistoryStackStore historyStacks, IC
         ArgumentNullException.ThrowIfNull(target);
         ArgumentNullException.ThrowIfNull(entry);
         return entry.IsUsable
-            ? C4Definitions.Menus(entry.Model, C4Disl.FileOf(target.ResolvedFullPath), C4Definitions.ViewOf(entry.Model, target.Origin), target.Origin, ElementOrCanvas(target.ElementId))
+            ? C4Definitions.Menus(entry.Model, C4Body.FileOf(target.ResolvedFullPath), C4Definitions.ViewOf(entry.Model, target.Origin), target.Origin, ElementOrCanvas(target.ElementId))
             : [];
     }
 
@@ -89,7 +89,7 @@ public sealed class C4ContextActionProvider(IHistoryStackStore historyStacks, IC
 
         var entry = await LoadAsync(target, cancellationToken);
         return entry.IsUsable
-            ? C4Definitions.Drop(entry.Model, C4Disl.FileOf(target.ResolvedFullPath), C4Definitions.ViewOf(entry.Model, target.Origin), target.Origin, ElementOrCanvas(target.ElementId), dropActionId)
+            ? C4Definitions.Drop(entry.Model, C4Body.FileOf(target.ResolvedFullPath), C4Definitions.ViewOf(entry.Model, target.Origin), target.Origin, ElementOrCanvas(target.ElementId), dropActionId)
             : null;
     }
 
@@ -218,7 +218,7 @@ public sealed class C4ContextActionProvider(IHistoryStackStore historyStacks, IC
     {
         var identifier = C4Placement.IdentifierFor(model, value.Trim());
         var operation = AddableKinds.First(addable => addable.Kind == kind).Operation;
-        var created = C4Definitions.Creation(model, C4Disl.FileOf(bodyPath), C4Definitions.ViewOf(model, origin), origin, operation, parentId, value, identifier);
+        var created = C4Definitions.Creation(model, C4Body.FileOf(bodyPath), C4Definitions.ViewOf(model, origin), origin, operation, parentId, value, identifier);
         return created is { } creation && creation.Id == identifier
             ? new AddC4ElementCommand(bodyPath, kind, value, creation.ParentId is null ? "" : parentId, identifier)
             : new AddC4ElementCommand(bodyPath, kind, value, parentId);

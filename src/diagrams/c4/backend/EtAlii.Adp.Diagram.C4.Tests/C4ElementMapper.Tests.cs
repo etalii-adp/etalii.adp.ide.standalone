@@ -39,7 +39,7 @@ public class C4ElementMapperTests
 
     private static (C4Workspace Workspace, C4View View) Load(string key, string dsl = Sample)
     {
-        var workspace = C4Parser.Parse(LineDocument.Parse(dsl));
+        var workspace = C4Body.Read(dsl).Workspace;
         return (workspace, workspace.FindView(key)!);
     }
 
@@ -155,7 +155,7 @@ public class C4ElementMapperTests
     }
 
     [Fact]
-    public void ADocumentsOwnStyles_OverrideTheDefaultTheme()
+    public void ADocumentsOwnStyles_AreKeptUnread_SoTheDefaultThemeStands()
     {
         // Arrange.
         // Requirement 4.8: the palette is ADP's default, not something a document can be wrong
@@ -175,9 +175,12 @@ public class C4ElementMapperTests
                 }
         """, StringComparison.Ordinal);
 
-        // Act and assert, step by step.
-        var workspace = C4Parser.Parse(LineDocument.Parse(dsl));
-        Assert.Contains(workspace.Styles, style => style.Tag == "Person");
+        // Act.
+        var workspace = C4Body.Read(dsl).Workspace;
+
+        // Assert: the binding binds no style (finding A15, c4-disl-fbl task 14), and the block is still the document's.
+        Assert.Empty(workspace.Styles);
+        Assert.Contains("background #ff0000", dsl, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -313,14 +316,14 @@ public class C4ElementMapperTests
     }
 
     [Theory]
-    [InlineData(C4ViewKind.SystemContext, "System Context diagram for S")]
-    [InlineData(C4ViewKind.Container, "Container diagram for S")]
-    [InlineData(C4ViewKind.Component, "Component diagram for S")]
-    public void TheTitleNamesTheDiagramTypeAndItsScope(C4ViewKind kind, string expected)
+    [InlineData("systemContext", "System Context diagram for S")]
+    [InlineData("container", "Container diagram for S")]
+    [InlineData("component", "Component diagram for S")]
+    public void TheTitleNamesTheDiagramTypeAndItsScope(string kind, string expected)
     {
         // Arrange and act.
-        var workspace = new C4Workspace("W", [new C4Element("s", C4ElementKind.SoftwareSystem, "S", "d", "", [], null, 1)], [], [], [], []);
-        var view = new C4View(kind, "k", "s", null, null, true, [], [], null, [], 1);
+        var workspace = C4Body.Read($"workspace \"W\" {{\n    model {{\n        s = softwareSystem \"S\" \"d\"\n    }}\n    views {{\n        {kind} s \"k\" {{\n            include *\n        }}\n    }}\n}}\n").Workspace;
+        var view = Assert.Single(workspace.Views);
 
         // Assert.
         Assert.Equal(expected, C4ElementMapper.TitleOf(workspace, view));
@@ -330,8 +333,8 @@ public class C4ElementMapperTests
     public void ATitleTheDocumentDeclares_Wins()
     {
         // Arrange and act.
-        var workspace = new C4Workspace("W", [], [], [], [], []);
-        var view = new C4View(C4ViewKind.SystemContext, "k", null, null, "Our own title", true, [], [], null, [], 1);
+        var workspace = C4Body.Read("workspace \"W\" {\n    model {\n        s = softwareSystem \"S\" \"d\"\n    }\n    views {\n        systemContext s \"k\" {\n            title \"Our own title\"\n            include *\n        }\n    }\n}\n").Workspace;
+        var view = Assert.Single(workspace.Views);
 
         // Assert.
         Assert.Equal("Our own title", C4ElementMapper.TitleOf(workspace, view));
@@ -381,7 +384,7 @@ public class C4ElementMapperTests
         // The same missing description, reported the one way it should be.
         var dsl = Sample.Replace("person \"Customer\" \"A retail banking customer.\"", "person \"Customer\"", StringComparison.Ordinal);
 
-        var problems = C4Findings.Of(C4Parser.Parse(LineDocument.Parse(dsl)));
+        var problems = C4Findings.Of(C4Body.Read(dsl).Workspace);
 
         // Act and assert, step by step.
         var problem = Assert.Single(problems, p => p.RuleId == C4Rules.MissingDescription);

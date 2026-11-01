@@ -218,7 +218,7 @@ public class AddC4ViewTests : IDisposable
         await _history.ExecuteAsync(AddContainers(), TestContext.Current.CancellationToken);
 
         // Act.
-        var workspace = C4Parser.Parse(LineDocument.Parse(await File.ReadAllTextAsync(_bodyPath, TestContext.Current.CancellationToken)));
+        var workspace = C4Body.Read(await File.ReadAllTextAsync(_bodyPath, TestContext.Current.CancellationToken)).Workspace;
         var view = workspace.FindView("containers")!;
         var layout = C4LayoutEngine.Compute(workspace, view, C4Metrics.Default);
 

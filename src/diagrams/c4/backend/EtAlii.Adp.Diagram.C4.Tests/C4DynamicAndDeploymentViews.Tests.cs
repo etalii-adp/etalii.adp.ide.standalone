@@ -18,7 +18,7 @@ public class C4DynamicAndDeploymentViewsTests
 
     private static (C4Workspace Workspace, C4View View) LoadFixture(string name)
     {
-        var workspace = C4Parser.Parse(LineDocument.Parse(File.ReadAllText(IoPath.Combine("Fixtures", name))));
+        var workspace = C4Body.Read(File.ReadAllText(IoPath.Combine("Fixtures", name))).Workspace;
         return (workspace, workspace.Views[0]);
     }
 
@@ -79,7 +79,7 @@ public class C4DynamicAndDeploymentViewsTests
             """;
 
         // Act.
-        var problems = C4Findings.Of(C4Parser.Parse(LineDocument.Parse(dsl)));
+        var problems = C4Findings.Of(C4Body.Read(dsl).Workspace);
 
         // Assert.
         Assert.Contains(problems, problem => problem.RuleId == C4Rules.EmptyView);
@@ -198,7 +198,7 @@ public class C4DynamicAndDeploymentViewsTests
     public void ADeploymentView_DrawsContainerRelationships_BetweenTheirInstances()
     {
         // Arrange.
-        var workspace = C4Parser.Parse(LineDocument.Parse(Deployed));
+        var workspace = C4Body.Read(Deployed).Workspace;
         var view = workspace.Views[0];
         var web = InstanceOf(workspace, "web", "node").Id;
         var api = InstanceOf(workspace, "api", "node").Id;
