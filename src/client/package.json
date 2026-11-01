@@ -46,7 +46,7 @@
     "mermaid": "11.17.2",
     "typescript": "^5.7.2",
     "vite": "^8.2.2",
-    "vitest": "^4.1.11"
+    "vitest": "^4.1.12"
   },
   "allowScripts": {
     "@bufbuild/buf@1.72.0": true,
