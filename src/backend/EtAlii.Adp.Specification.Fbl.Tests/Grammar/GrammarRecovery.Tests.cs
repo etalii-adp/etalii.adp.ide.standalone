@@ -4,6 +4,7 @@ using System.Text.Json.Nodes;
 using EtAlii.Adp.Specification.Fbl.Documents;
 using EtAlii.Adp.Specification.Fbl.Grammar;
 using EtAlii.Adp.Specification.Fbl.History;
+using EtAlii.Adp.Specification.Fbl.Planning;
 using EtAlii.Adp.Specification.Fbl.Text;
 using Xunit;
 
@@ -158,6 +159,22 @@ public class GrammarRecoveryTests
         Assert.DoesNotContain(reading.Elements, e => e.Entry.Own is { Start: < 19, End: > 10 });
     }
 
+    [Fact]
+    public void AnEditOfABodyReadInPart_KeepsTheSkippedText_AndStillReportsIt()
+    {
+        // Arrange.
+        var body = OpenBody.Open("a: \"one\".\nb: \"two.\nc: \"three\".\n"u8.ToArray(), Binding(Recover), new FblOptions { FileName = "body.t" });
+
+        // Act: the statement before the skipped text is removed.
+        var result = body.Change(new ModelChange.Remove("a"));
+
+        // Assert: the skipped text is kept byte for byte and still reported, where it now stands (Requirement 5.5).
+        Assert.IsType<PlanResult.Planned>(result);
+        Assert.Equal("b: \"two.\nc: \"three\".\n", Encoding.UTF8.GetString(body.Bytes));
+        Assert.Equal(["c"], body.Model.Elements.Select(e => e.Id));
+        Assert.Equal(new SourceLocation("body.t", 1, 4, 5), Unparsed(body.Model).Location);
+    }
+
     [Theory]
     [InlineData("w3c-turtle-grammar.fbl", "turtle", "fixtures/w3c-turtle-grammar/people.ttl")]
     [InlineData("fixtures/grammar-split-slot/labels.fbl", "labels", "fixtures/grammar-split-slot/labels.txt")]
@@ -192,7 +209,7 @@ public class GrammarRecoveryTests
     private static FblBinding Binding(string? recover, string grammar = Statements)
     {
         var recovering = recover is null ? "" : $$""", "recover": {{recover}}""";
-        var json = $$"""{ "fbl": "0.9", "bindings": { "b": { "claims": { "extensions": [".t"] }, "body": { "kind": "file", "family": "grammar", "grammar": {{JsonSerializer.Serialize(grammar)}}{{recovering}} }, "reader": "declared", "elements": [ { "name": "entry", "type": "Entry", "at": "/entry", "id": { "from": { "node": "KEY" } } } ], "relations": [] } } }""";
+        var json = $$"""{ "fbl": "0.9", "bindings": { "b": { "claims": { "extensions": [".t"] }, "body": { "kind": "file", "family": "grammar", "grammar": {{JsonSerializer.Serialize(grammar)}}{{recovering}} }, "reader": "declared", "elements": [ { "name": "entry", "type": "Entry", "at": "/entry", "id": { "from": { "node": "KEY" } }, "remove": {} } ], "relations": [] } } }""";
         var problems = FblDocumentLoader.Load(Encoding.UTF8.GetBytes(json), null, out var document);
         Assert.True(document is not null, string.Join("\n", problems));
         return document.Bindings["b"];
