@@ -161,7 +161,7 @@ internal abstract class FamilyReader(BodyText text, FblBinding binding, FblOptio
 
     protected FblBinding Binding { get; } = binding;
 
-    private FblOptions Options { get; } = options;
+    protected FblOptions Options { get; } = options;
 
     /// <summary>Where and why the body is unreadable (FBL §7.5), or null.</summary>
     public (int Offset, string Message)? Unreadable { get; protected set; }

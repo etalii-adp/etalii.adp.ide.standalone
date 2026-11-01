@@ -21,6 +21,7 @@ internal sealed class GrammarFamily(BodyText text, FblBinding binding, FblOption
     private List<Entry> _entries = [];
     private List<Span> _leaves = [];
     private GrammarNode? _root;
+    private int _skipped;
 
     public override string FamilyName => "grammar";
 
@@ -52,6 +53,7 @@ internal sealed class GrammarFamily(BodyText text, FblBinding binding, FblOption
         foreach (var comment in reading.Comments) RememberComment(comment);
         foreach (var entry in _entries) entry.LineSpan = LineSpanOf((GrammarNode)entry);
         foreach (var skipped in reading.Skipped) ReportSkipped(skipped);
+        _skipped = reading.Skipped.Count;
     }
 
     /// <summary>Skipped text, reported once where reading stopped, with the length of the text skipped from there (FBL 0.9 §4.9, §7.4).</summary>
@@ -167,27 +169,201 @@ internal sealed class GrammarFamily(BodyText text, FblBinding binding, FblOption
     public override bool HeaderHolds(HeaderSettings header) =>
         header.Line is null || (Text.Lines.Count > 0 && Regex(header.Line, false).IsMatch(Text.Text(Text.Lines[0].Start, Text.Lines[0].ContentEnd)));
 
-    // ---- writing (FBL §6): task T006 of etalii.adp spec 072 ----
+    // ---- writing (FBL 0.9 §4.9, §6.3) ----
 
-    private const string NotYet = "This host does not write a body of the grammar family yet.";
+    /// <summary>A value as the family writes it: as text, through the binding's <c>map</c> when it has one, numbers and booleans as FBL §6.3 writes them.</summary>
+    public override string Format(SlotRead read, AttributeBinding? binding, object? value) =>
+        (binding is null ? null : NewText.Wire(binding, value, read.Wire)) ?? NewText.Plain(value, binding);
 
-    public override string Format(SlotRead read, AttributeBinding? binding, object? value) => NewText.Plain(value, binding);
-
+    /// <summary>The family removes no part of an entry (FBL 0.9 §4.9, <i>Writing</i>): an emptied value is set, as any other.</summary>
     protected override bool RemoveSlot(Plan plan, ReadElement element, SlotChange change) => false;
 
+    /// <summary>A changed value: a <c>replace-value</c> of the value's span, the group <c>value</c> of the slot's <c>match</c> or the node's own span.</summary>
     protected override bool ReplaceSlot(Plan plan, SlotChange change)
     {
-        Plan.Refuse(NotYet);
+        if (change.Read.Span is not { } span) return false;
+        plan.Add(SpliceOperation.ReplaceValue, span, Format(change.Read, change.Binding, change.Value));
         return true;
     }
 
+    /// <summary>The family writes no part an entry lacks (FBL 0.9 §4.9, <i>Writing</i>): a set of an attribute whose node is absent is refused.</summary>
     protected override bool InsertSlot(Plan plan, ReadElement element, SlotChange change)
     {
-        Plan.Refuse(NotYet);
+        Plan.Refuse($"This {element.Rule.Type} has no {change.Attribute} in this file to set, and a body read by its grammar is given no part an entry lacks.");
         return true;
     }
 
-    public override void Insert(Plan plan, InsertRequest request) => Plan.Refuse(NotYet);
+    /// <summary>
+    /// The read-again check (FBL 0.9 §4.9, research R12): the body with <paramref name="planned"/> applied reads with no
+    /// more text that does not parse, holds as many entries of the rule, and the entry at the changed one's place reads
+    /// every changed value as it was written.
+    /// </summary>
+    protected override bool ReadsBack(IReadOnlyList<Splice> planned, ReadElement element, IReadOnlyList<SlotChange> changes)
+    {
+        var before = Candidates(element.Rule).Select(candidate => candidate.Entry).ToList();
+        var place = before.IndexOf(element.Entry);
+        if (place < 0 || ReadAgain(planned) is not { } after) return false;
+        var again = after.Candidates(element.Rule).ToList();
+        return again.Count == before.Count
+            && changes.All(change => after.Read(again[place], change.Binding) is { Present: true } read && read.Wire == Format(change.Read, change.Binding, change.Value));
+    }
 
-    public override void Remove(Plan plan, ReadElement element, IReadOnlySet<ReadElement> removed) => Plan.Refuse(NotYet);
+    /// <summary>A set that would not read back is refused, and nothing is written (FBL 0.9 §4.9, §6.4).</summary>
+    protected override void Rewrite(Plan plan, ReadElement element, IReadOnlyList<SlotChange> changes) =>
+        Plan.Refuse($"The new {string.Join(" and ", changes.Select(change => change.Attribute))} would not read back from the text.");
+
+    /// <summary>
+    /// A new entry (FBL 0.9 §6.3): its rule's <c>emit</c>, each line feed written as the body's line ending and the new
+    /// entry's indentation, placed by <c>insert.place</c> in the container <c>insert.container</c> selects, the root when it
+    /// is absent, and read again before it is planned: the body then holds one more entry of the rule, with the add's values.
+    /// </summary>
+    public override void Insert(Plan plan, InsertRequest request)
+    {
+        var rule = request.Rule;
+        if (rule.Insert?.Emit is not { } emit || _root is null)
+        {
+            Plan.Refuse($"The binding gives no form to write a new {rule.Type} in.");
+            return;
+        }
+        var container = Container(rule);
+        var text = NewText.Render(emit, name => Placeholder(request, name));
+        (int offset, string written) = Place(plan, request, container, text);
+        var count = Candidates(rule).Count();
+        var splice = new Splice(SpliceOperation.InsertEntry, offset, offset, written);
+        if (ReadAgain([splice]) is not { } after || !HoldsTheNewEntry(after, request, emit, count, new Span(offset, offset + Encoding.UTF8.GetByteCount(written))))
+        {
+            Plan.Refuse($"The new {rule.Type} would not read back from the text.");
+            return;
+        }
+        plan.Add(SpliceOperation.InsertEntry, offset, offset, written);
+    }
+
+    /// <summary>A removed entry: a <c>remove-entry</c> of its line span, its leading comments included, or of its own span when it does not start and end its lines.</summary>
+    public override void Remove(Plan plan, ReadElement element, IReadOnlySet<ReadElement> removed) =>
+        plan.Add(SpliceOperation.RemoveEntry, element.Entry.RemovalSpan, "");
+
+    private GrammarNode Container(Rule rule)
+    {
+        if (rule.Insert?.Container is not { } selector) return _root!;
+        var container = GrammarSelector.Match(_root!, Selector(selector, slot: false), TextOf).FirstOrDefault();
+        if (container is null) Plan.Refuse($"The file has no {selector} to add the {rule.Type} to.");
+        return container!;
+    }
+
+    private string? Placeholder(InsertRequest request, string name) => name switch
+    {
+        "id" => request.Id,
+        "source" => request.Source?.Key,
+        "target" => request.Target?.Key,
+        _ => request.Values.GetValueOrDefault(name) is { } value ? Format(SlotRead.Absent, request.Rule.Attribute(name), value) : null,
+    };
+
+    /// <summary>Where a new entry goes, and the text written there (FBL 0.9 §6.3, <i>Where it goes</i>).</summary>
+    private (int Offset, string Text) Place(Plan plan, InsertRequest request, GrammarNode container, string text)
+    {
+        var children = container.Children.OfType<GrammarNode>().Where(child => child.HasSpan && child.Own.End > child.Own.Start).ToList();
+        var ofRule = plan.Reading.Elements.Where(element => element.Rule == request.Rule && Within(element.Entry, container)).Select(element => (GrammarNode)element.Entry).LastOrDefault();
+        if (request.After?.Entry is GrammarNode anchor) return After(anchor, text);
+        var place = request.Rule.Insert!.Place;
+        GrammarNode? followed = place switch
+        {
+            InsertPlace.AfterLast => ofRule ?? children.LastOrDefault(),
+            InsertPlace.NextSibling => ofRule ?? children.LastOrDefault(),
+            InsertPlace.End => children.LastOrDefault(),
+            InsertPlace.Start or InsertPlace.EndOfDocument => null,
+            _ => Refused(place),
+        };
+        if (followed is not null) return After(followed, text);
+        if (place == InsertPlace.Start && children.FirstOrDefault() is { } first) return Before(first, text);
+        return AtEndOfBody(text);
+    }
+
+    private GrammarNode? Refused(InsertPlace place)
+    {
+        Plan.Refuse($"A {FamilyName} body cannot place a new entry '{WireName.Of(place)}'.");
+        return null;
+    }
+
+    private static bool Within(Entry entry, GrammarNode container)
+    {
+        for (var at = entry.Parent; at is not null; at = at.Parent)
+        {
+            if (at == container) return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// A new entry after <paramref name="entry"/>: after its line span, on a line of its own with its indentation and a
+    /// line ending; when it does not end its line, right after its own span, after a line ending and the indentation of
+    /// the line it ends on.
+    /// </summary>
+    private (int Offset, string Text) After(GrammarNode entry, string text)
+    {
+        if (entry.LineSpan is { } line)
+        {
+            var indent = IndentationOf(entry.Own.Start);
+            var newline = NewlineAt(line.End);
+            var lines = Indented(text, indent, newline);
+            return line.End == Text.Length && !EndsWithLineEnding() ? (line.End, newline + indent + lines) : (line.End, indent + lines + newline);
+        }
+        var lineIndent = IndentationOf(Text.Lines[Text.LineIndexAt(Math.Max(entry.Own.Start, entry.Own.End - 1))].ContentEnd);
+        var ending = NewlineAt(entry.Own.End);
+        return (entry.Own.End, ending + lineIndent + Indented(text, lineIndent, ending));
+    }
+
+    /// <summary>A new entry before <paramref name="entry"/>: at the start of its line span, with its indentation, followed by a line ending.</summary>
+    private (int Offset, string Text) Before(GrammarNode entry, string text)
+    {
+        var indent = IndentationOf(entry.Own.Start);
+        var start = entry.LineSpan?.Start ?? entry.Own.Start;
+        var newline = NewlineAt(start);
+        return (start, indent + Indented(text, indent, newline) + newline);
+    }
+
+    /// <summary>A new entry after the last byte of the body: on a line of its own when the body is empty or ends a line, else after a line ending.</summary>
+    private (int Offset, string Text) AtEndOfBody(string text)
+    {
+        var end = Text.Length;
+        var newline = NewlineAt(end);
+        var line = Indented(text, "", newline);
+        return end == Text.BomLength || EndsWithLineEnding() ? (end, line + newline) : (end, newline + line);
+    }
+
+    private bool EndsWithLineEnding() => Text.Length > Text.BomLength && Text.Bytes[Text.Length - 1] == (byte)'\n';
+
+    /// <summary>The whitespace that starts the line <paramref name="offset"/> stands on, up to it.</summary>
+    private string IndentationOf(int offset)
+    {
+        var line = Text.Lines[Text.LineIndexAt(offset)];
+        var start = Math.Max(line.Start, Text.BomLength);
+        var end = start;
+        while (end < offset && Text.Bytes[end] is (byte)' ' or (byte)'\t') end++;
+        return Text.Text(start, end);
+    }
+
+    /// <summary><paramref name="text"/> with each line feed written as <paramref name="newline"/> and <paramref name="indent"/>.</summary>
+    private static string Indented(string text, string indent, string newline) => text.Replace("\n", newline + indent, StringComparison.Ordinal);
+
+    /// <summary>Whether <paramref name="after"/> holds one more entry of the rule than now, one of them in <paramref name="written"/>, reading every value the add placed in it.</summary>
+    private static bool HoldsTheNewEntry(GrammarFamily after, InsertRequest request, string emit, int count, Span written)
+    {
+        var rule = request.Rule;
+        var candidates = after.Candidates(rule).ToList();
+        if (candidates.Count != count + 1) return false;
+        var placed = NewText.Parts(emit).Select(part => part.Placeholder).OfType<string>().ToHashSet(StringComparer.Ordinal);
+        return candidates.Any(candidate => written.Start <= candidate.Entry.Own.Start && candidate.Entry.Own.Start < written.End
+            && (!placed.Contains("id") || request.Id is null || rule.Id?.From is not { } from || after.Read(candidate, from).Wire == request.Id)
+            && request.Values.All(pair => !placed.Contains(pair.Key) || pair.Value is null || rule.Attribute(pair.Key) is not { Kind: SlotKind.Node } binding
+                || after.Read(candidate, binding).Wire == after.Format(SlotRead.Absent, binding, pair.Value)));
+    }
+
+    /// <summary>The family's reading of the body with <paramref name="splices"/> applied, when it reads and no more of it is skipped than now.</summary>
+    private GrammarFamily? ReadAgain(IReadOnlyList<Splice> splices)
+    {
+        var ordered = splices.Select((splice, index) => (splice, index)).OrderBy(pair => pair.splice.Start).ThenBy(pair => pair.index).Select(pair => pair.splice).ToList();
+        var after = new GrammarFamily(new BodyText(Edit.Apply(Text.Bytes, ordered)), Binding, Options);
+        after.Parse();
+        return after.Unreadable is null && after._skipped <= _skipped ? after : null;
+    }
 }
