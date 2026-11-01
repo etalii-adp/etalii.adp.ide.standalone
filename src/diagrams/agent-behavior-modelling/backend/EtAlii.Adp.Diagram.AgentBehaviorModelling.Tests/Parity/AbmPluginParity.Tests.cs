@@ -64,12 +64,12 @@ public class AbmPluginParityTests
         foreach ((string label, ModelChange change, Func<LineDocument, AbmModel, EditOutcome> edit) in Edits(model))
         {
             count++;
-            var expected = Writer(bytes, edit);
+            var (expectedEdit, expectedBytes, _) = Writer(bytes, edit);
             var body = AbmBody.Open(bytes);
             var outcome = body.Change(change);
-            if (outcome.Refusal != expected.Edit.Refusal) differences.Add($"{label}: refused '{outcome.Refusal}' where the writer said '{expected.Edit.Refusal}'");
-            else if (!body.Bytes.AsSpan().SequenceEqual(expected.Bytes)) differences.Add($"{label}: bytes differ\n{Encoding.UTF8.GetString(body.Bytes)}\n---\n{Encoding.UTF8.GetString(expected.Bytes)}");
-            else if (Reread(body) != Parsed(expected.Bytes)) differences.Add($"{label}: the reading differs from the parser's");
+            if (outcome.Refusal != expectedEdit.Refusal) differences.Add($"{label}: refused '{outcome.Refusal}' where the writer said '{expectedEdit.Refusal}'");
+            else if (!body.Bytes.AsSpan().SequenceEqual(expectedBytes)) differences.Add($"{label}: bytes differ\n{Encoding.UTF8.GetString(body.Bytes)}\n---\n{Encoding.UTF8.GetString(expectedBytes)}");
+            else if (Reread(body) != Parsed(expectedBytes)) differences.Add($"{label}: the reading differs from the parser's");
         }
 
         // Assert.
