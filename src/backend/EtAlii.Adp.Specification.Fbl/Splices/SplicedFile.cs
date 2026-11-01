@@ -34,12 +34,12 @@ public abstract class SplicedFile
     public bool CanUndo => _history.CanUndo;
 
     /// <summary>Applies an edit planned against the current bytes, records it, and reads the file again.</summary>
-    public void Apply(Edit edit)
+    public void Apply(SpliceEdit edit)
     {
         ArgumentNullException.ThrowIfNull(edit);
         if (edit.Splices.Count == 0) return;
         var before = Bytes;
-        var after = Edit.Apply(before, edit.Splices);
+        var after = SpliceEdit.Apply(before, edit.Splices);
         if (_groupBefore is null) _history.Record(before, after, edit);
         Replace(after);
     }
@@ -50,12 +50,12 @@ public abstract class SplicedFile
     /// and writes its own splices at the offsets the edit moved. An entry whose splices the edit overlaps cannot be
     /// carried, and the history is cleared instead.
     /// </summary>
-    protected void ApplyOutsideHistory(Edit edit)
+    protected void ApplyOutsideHistory(SpliceEdit edit)
     {
         ArgumentNullException.ThrowIfNull(edit);
         if (edit.Splices.Count == 0) return;
         if (_groupBefore is not null) throw new InvalidOperationException("An edit outside the history cannot be applied inside a group.");
-        var after = Edit.Apply(Bytes, edit.Splices);
+        var after = SpliceEdit.Apply(Bytes, edit.Splices);
         _history.CarryOver(after, edit.Splices);
         Replace(after);
     }
@@ -80,7 +80,7 @@ public abstract class SplicedFile
         {
             var before = _groupBefore;
             _groupBefore = null;
-            if (!before.AsSpan().SequenceEqual(Bytes)) _history.Record(before, Bytes, new Edit([Difference(before, Bytes)]));
+            if (!before.AsSpan().SequenceEqual(Bytes)) _history.Record(before, Bytes, new SpliceEdit([Difference(before, Bytes)]));
         }
     }
 
@@ -116,7 +116,7 @@ public abstract class SplicedFile
         var entry = _history.PeekUndo();
         if (!Matches(current ?? Bytes, entry.AfterDigest)) return new UndoResult.Refused(DriftUndo);
         _history.Undone();
-        Replace(entry.Snapshot ?? Edit.Apply(Bytes, entry.Inverse));
+        Replace(entry.Snapshot ?? SpliceEdit.Apply(Bytes, entry.Inverse));
         return new UndoResult.Done(entry.Inverse);
     }
 
@@ -127,7 +127,7 @@ public abstract class SplicedFile
         var entry = _history.PeekRedo();
         if (!Matches(current ?? Bytes, entry.BeforeDigest)) return new UndoResult.Refused(DriftRedo);
         _history.Redone();
-        Replace(Edit.Apply(Bytes, entry.Edit.Splices));
+        Replace(SpliceEdit.Apply(Bytes, entry.Edit.Splices));
         return new UndoResult.Done(entry.Edit.Splices);
     }
 

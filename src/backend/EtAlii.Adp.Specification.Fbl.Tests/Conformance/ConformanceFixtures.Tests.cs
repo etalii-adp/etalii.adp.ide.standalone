@@ -809,7 +809,7 @@ public class ConformanceFixturesTests
                 if (planned is not PlanResult.Planned { Edit: var part }) return planned;
                 splices.AddRange(part.Splices);
             }
-            var edit = new Edit([.. splices.OrderBy(splice => splice.Start)]);
+            var edit = new SpliceEdit([.. splices.OrderBy(splice => splice.Start)]);
             _body!.Apply(edit);
             return new PlanResult.Planned(edit);
         }

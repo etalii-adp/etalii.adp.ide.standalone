@@ -139,7 +139,7 @@ internal sealed class LegacySidecar : SplicedFile
         var held = items.Select(item => item.Id).OfType<string>().ToHashSet(StringComparer.Ordinal);
         var added = byId.Values.Where(identity => !held.Contains(identity.Id)).ToList();
         if (added.Count > 0) splices.Add(Added(items, added));
-        return new PlanResult.Planned(new Edit([.. splices.OrderBy(splice => splice.Start).ThenBy(splice => splice.End)]));
+        return new PlanResult.Planned(new SpliceEdit([.. splices.OrderBy(splice => splice.Start).ThenBy(splice => splice.End)]));
     }
 
     /// <summary>Whether the file is an array, the form legacy identities are written in (FBL 0.12 §8.7).</summary>
@@ -230,7 +230,7 @@ internal sealed class LegacySidecar : SplicedFile
             if (_reading.Text.Text(xMember.Value.Span) != xText) splices.Add(new Splice(SpliceOperation.ReplaceValue, xMember.Value.Span.Start, xMember.Value.Span.End, xText));
             if (_reading.Text.Text(yMember.Value.Span) != yText) splices.Add(new Splice(SpliceOperation.ReplaceValue, yMember.Value.Span.Start, yMember.Value.Span.End, yText));
             splices.AddRange(stale);
-            return new PlanResult.Planned(new Edit([.. splices.OrderBy(splice => splice.Start)]));
+            return new PlanResult.Planned(new SpliceEdit([.. splices.OrderBy(splice => splice.Start)]));
         }
         if (stale.Count == 0) return Insert(viewEntry.Value, Quoted(id), indent => Position(indent, xText, yText));
         // The new member follows the last member that is kept, before the removals; with none kept it takes the first's place.
@@ -239,7 +239,7 @@ internal sealed class LegacySidecar : SplicedFile
         var added = kept.Count > 0
             ? Inserted(kept[^1], Quoted(id), indent => Position(indent, xText, yText))
             : new Splice(SpliceOperation.InsertEntry, first.Own.Start, first.Own.Start, $"{Quoted(id)}: {Position(first.Indent, xText, yText)}");
-        return new PlanResult.Planned(new Edit([.. stale.Prepend(added).OrderBy(splice => splice.Start).ThenBy(splice => splice.End)]));
+        return new PlanResult.Planned(new SpliceEdit([.. stale.Prepend(added).OrderBy(splice => splice.Start).ThenBy(splice => splice.End)]));
     }
 
     /// <summary>
@@ -339,9 +339,9 @@ internal sealed class LegacySidecar : SplicedFile
         {
             var indent = Column(container.Span.Start) + Step;
             var text = Newline + new string(' ', indent) + $"{key}: {value(indent)}" + Newline + new string(' ', Column(container.Span.Start));
-            return new PlanResult.Planned(new Edit([new Splice(SpliceOperation.InsertEntry, container.Span.Start + 1, container.Span.Start + 1, text)]));
+            return new PlanResult.Planned(new SpliceEdit([new Splice(SpliceOperation.InsertEntry, container.Span.Start + 1, container.Span.Start + 1, text)]));
         }
-        return new PlanResult.Planned(new Edit([Inserted(container.Entries[^1], key, value)]));
+        return new PlanResult.Planned(new SpliceEdit([Inserted(container.Entries[^1], key, value)]));
     }
 
     /// <summary>A new member right after <paramref name="last"/>, laid out as it is: on its own line, or on the line it shares.</summary>

@@ -71,7 +71,7 @@ internal sealed partial class BodyEdit
         }
 
         // Every change was planned against the bytes as read, so their splices are made together, in the file's order.
-        var combined = new Edit([.. splices.Select((splice, at) => (splice, at)).OrderBy(listed => listed.splice.Start).ThenBy(listed => listed.at).Select(listed => listed.splice)]);
+        var combined = new SpliceEdit([.. splices.Select((splice, at) => (splice, at)).OrderBy(listed => listed.splice.Start).ThenBy(listed => listed.at).Select(listed => listed.splice)]);
         if (combined.Splices.Count > 0) _read.Body.Apply(combined);
         return (_read.Body.Bytes, "");
     }

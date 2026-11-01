@@ -48,7 +48,7 @@ internal static class FdgCommentKeeper
             }
         }
 
-        body.Apply(new Edit([.. Merged(spans).Select(span => new Splice(SpliceOperation.RemoveEntry, span.Start, span.End, ""))]));
+        body.Apply(new SpliceEdit([.. Merged(spans).Select(span => new Splice(SpliceOperation.RemoveEntry, span.Start, span.End, ""))]));
         return EditOutcome.Applied;
     }
 

@@ -4,9 +4,9 @@
 /// One edit: the splices one model change (one DISL transaction) was planned as, applied together,
 /// recorded together and undone together (FBL §6.4). Offsets refer to the body before the edit.
 /// </summary>
-public sealed record Edit(IReadOnlyList<Splice> Splices, bool Snapshot = false)
+public sealed record SpliceEdit(IReadOnlyList<Splice> Splices, bool Snapshot = false)
 {
-    public static Edit Empty { get; } = new([]);
+    public static SpliceEdit Empty { get; } = new([]);
 
     /// <summary>Applies the splices to <paramref name="bytes"/>, in order, offsets referring to the bytes before.</summary>
     public static byte[] Apply(byte[] bytes, IReadOnlyList<Splice> splices)
