@@ -51,6 +51,7 @@ internal static class FixtureEdits
         JsonValueKind.True => true,
         JsonValueKind.False => false,
         JsonValueKind.Array => value.EnumerateArray().Select(Value).ToList(),
+        JsonValueKind.Object => Attributes(value),
         _ => null,
     };
 }

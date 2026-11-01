@@ -30,7 +30,7 @@ public class ConformanceFixturesTests
     /// </summary>
     private static readonly Dictionary<string, (string Fails, string Why)> Pending = new(StringComparer.Ordinal)
     {
-        ["wardley-annotation-positions"] = ("'title' of 'title@1' was not read.", LongestMatch + "; then FBL 0.12's items (section 5.2), which this library does not read yet (etalii.adp spec 071, F2)"),
+        ["wardley-annotation-positions"] = ("'title' of 'title@1' was not read.", LongestMatch + "; its items (FBL 0.12 section 5.2) are read and written, as GrammarItemsTests show"),
         ["wardley-duplicate-names/same-key-twice"] = ("a splice names the file 'same-key-twice.identities.json'", "an add writes its element's identity entry in the same edit (FBL 0.12 sections 8.6 and 8.7), which etalii.adp spec 071 task T012 (F3) delivers"),
         ["wardley-legacy-identities"] = ("'title' of 'title@1' was not read.", LongestMatch + "; then a removal prunes the identity entry in the same edit (FBL 0.12 section 8.7), spec 071 task T012 (F3)"),
         ["wardley-pipelines"] = ("'title' of 'title@1' was not read.", LongestMatch),
@@ -464,6 +464,10 @@ public class ConformanceFixturesTests
             "map" => WardleyTypes.Of(type, attribute),
             _ => null,
         };
+        if (value is IEnumerable<object?> list && list.ToList() is var items && items.All(item => item is IReadOnlyDictionary<string, object?>))
+        {
+            return items.Cast<IReadOnlyDictionary<string, object?>>().Select(object? (item) => item.ToDictionary(pair => pair.Key, pair => DislValue(binding, $"{type}.{attribute}", pair.Key, pair.Value), StringComparer.Ordinal)).ToList();
+        }
         if (value is not string text) return value;
         var invariant = System.Globalization.CultureInfo.InvariantCulture;
         return typed switch
@@ -501,6 +505,7 @@ public class ConformanceFixturesTests
         JsonValueKind.True or JsonValueKind.False => actual is bool flag && flag == expected.GetBoolean(),
         JsonValueKind.Null => actual is null,
         JsonValueKind.Array => actual is IEnumerable<object?> list && list.ToList() is var items && items.Count == expected.GetArrayLength() && items.Zip(expected.EnumerateArray()).All(pair => Same(pair.First, pair.Second)),
+        JsonValueKind.Object => actual is IReadOnlyDictionary<string, object?> map && map.Count == expected.EnumerateObject().Count() && expected.EnumerateObject().All(member => map.TryGetValue(member.Name, out var item) && Same(item, member.Value)),
         _ => false,
     };
 
@@ -510,6 +515,7 @@ public class ConformanceFixturesTests
         string text => $"the text \"{text}\"",
         bool flag => $"the bool {(flag ? "true" : "false")}",
         IEnumerable<object?> list => $"the list [{string.Join(", ", list.Select(Describe))}]",
+        IReadOnlyDictionary<string, object?> map => $"the map {{{string.Join(", ", map.Select(pair => $"{pair.Key}: {Describe(pair.Value)}"))}}}",
         _ => $"the {value.GetType().Name} {Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture)}",
     };
 

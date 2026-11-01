@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using EtAlii.Adp.Specification.Cel;
 using EtAlii.Adp.Specification.Fbl.Documents;
@@ -208,6 +209,7 @@ internal sealed class GrammarFamily(BodyText text, FblBinding binding, FblOption
     public override SlotRead Read(Candidate candidate, Slot slot)
     {
         if (slot.Kind is not SlotKind.Node(var selector)) return SlotRead.ReadOnlyAbsent($"A grammar entry has no {slot}.");
+        if (slot.Items is not null) return ReadRecords(candidate, slot, selector);
         if (slot.Split is not null || slot.Gather.Count > 0) return ReadItems(candidate, slot, selector);
         var node = GrammarSelector.Match((GrammarNode)candidate.Entry, Selector(selector, slot: true), TextOf).FirstOrDefault();
         return node is null ? SlotRead.Absent : ReadNode(node, slot);
@@ -218,7 +220,35 @@ internal sealed class GrammarFamily(BodyText text, FblBinding binding, FblOption
     /// each one item, or, with <c>split</c>, each holding the items its value is cut into (FBL 0.13 §4.9).
     /// </summary>
     public override SlotRead ReadMany(Candidate candidate, Slot slot) =>
-        slot.Kind is SlotKind.Node(var selector) ? ReadItems(candidate, slot, selector) : Read(candidate, slot);
+        slot is { Kind: SlotKind.Node(var selector), Items: null } ? ReadItems(candidate, slot, selector) : Read(candidate, slot);
+
+    /// <summary>
+    /// The structured values of a slot with <c>items</c> (FBL 0.12 §5.2): one for each node its selector reaches, in document
+    /// order, a map from each item attribute to what its own <c>{node}</c> slot reads relative to that node; an item attribute
+    /// a node does not hold is absent from its map, and one whose <c>match</c> its text does not match makes the slot read-only.
+    /// </summary>
+    private SlotRead ReadRecords(Candidate candidate, Slot slot, string selector)
+    {
+        var records = new List<GrammarRecord>();
+        string? reason = null;
+        foreach (var node in GrammarSelector.Match((GrammarNode)candidate.Entry, Selector(selector, slot: true), TextOf))
+        {
+            var values = new Dictionary<string, SlotRead>(StringComparer.Ordinal);
+            foreach ((string name, Slot item) in slot.Items!)
+            {
+                var read = ReadItem(node, item);
+                if (read.Present) values[name] = read;
+                else if (!read.Writable) reason ??= read.Reason;
+            }
+            records.Add(new GrammarRecord(node, values));
+        }
+        var list = records.Select(object? (record) => record.Values.ToDictionary(pair => pair.Key, pair => pair.Value.Value, StringComparer.Ordinal)).ToList();
+        return new SlotRead(list, null, records.Count > 0, reason is null, reason) { Node = new GrammarRecords(records) };
+    }
+
+    /// <summary>An item attribute of the structured value <paramref name="node"/> holds: the first node its slot's selector reaches from it.</summary>
+    private SlotRead ReadItem(GrammarNode node, Slot item) =>
+        item.Kind is SlotKind.Node(var selector) && GrammarSelector.Match(node, Selector(selector, slot: true), TextOf).FirstOrDefault() is { } found ? ReadNode(found, item) : SlotRead.Absent;
 
     /// <summary>
     /// The items of a slot (FBL 0.13 §4.9): with <c>split</c>, the slot is present even where it reaches no node or no
@@ -285,6 +315,7 @@ internal sealed class GrammarFamily(BodyText text, FblBinding binding, FblOption
     /// </summary>
     public override string Format(SlotRead read, AttributeBinding? binding, object? value)
     {
+        if (binding?.Items is not null && value is IEnumerable<object?> records) return string.Join(Separator(binding), records.Select(record => RecordText(binding, record)));
         if (value is IEnumerable<object?> list) return string.Join(Separator(binding), list.Select(item => Escaped(binding, NewText.Plain(item, binding))));
         return (binding is null ? null : NewText.Wire(binding, value, read.Wire)) ?? Escaped(binding, NewText.Plain(value, binding));
     }
@@ -292,6 +323,33 @@ internal sealed class GrammarFamily(BodyText text, FblBinding binding, FblOption
     private static string Escaped(Slot? slot, string text) => slot?.Escape?.Write(text) ?? text;
 
     private static string Separator(Slot? slot) => slot?.Separator ?? ", ";
+
+    /// <summary>A structured value as its slot's <c>create.emit</c> writes it (FBL 0.12 §6.3): each placeholder the value of that item attribute.</summary>
+    private static string RecordText(AttributeBinding binding, object? record) =>
+        NewText.Fill(binding.Create?.Emit ?? "", name => binding.Items!.FirstOrDefault(item => item.Key == name).Value is { } slot ? Escaped(slot, NewText.Plain(ItemValue(record, name), null)) : null);
+
+    /// <summary>The value a structured value gives an item attribute; null when it gives none.</summary>
+    private static object? ItemValue(object? record, string name) => record switch
+    {
+        IReadOnlyDictionary<string, object?> map => map.GetValueOrDefault(name),
+        IDictionary<string, object?> map => map.TryGetValue(name, out var value) ? value : null,
+        _ => null,
+    };
+
+    /// <summary>A value as it is compared with another: a number as the number it is, so that <c>0.30</c> and <c>0.3</c> are one value, and any other text as it is.</summary>
+    private static string Comparable(string text) =>
+        double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var number) ? number.ToString("R", CultureInfo.InvariantCulture) : text;
+
+    /// <summary>A structured value as one text, for the difference of two lists: its item attributes' values in the binding's order, an absent one apart from every text.</summary>
+    private static string RecordKey(IEnumerable<string?> values) => string.Join('\u001f', values.Select(value => value is null ? "\u0000" : Comparable(value)));
+
+    /// <summary>The structured values a slot reads, each as <see cref="RecordKey"/> writes it.</summary>
+    private static List<string> HeldKeys(IReadOnlyList<KeyValuePair<string, Slot>> items, IEnumerable<GrammarRecord> records) =>
+        [.. records.Select(record => RecordKey(items.Select(item => record.Values.TryGetValue(item.Key, out var read) ? read.Value as string : null)))];
+
+    /// <summary>The structured values a set gives a slot, each as <see cref="RecordKey"/> writes it.</summary>
+    private static List<string> WantedKeys(IReadOnlyList<KeyValuePair<string, Slot>> items, IEnumerable<object?> wanted) =>
+        [.. wanted.Select(record => RecordKey(items.Select(item => NewText.Plain(ItemValue(record, item.Key), null))))];
 
     /// <summary>
     /// An emptied value under <c>empty: "remove"</c> (FBL 0.11 §4.9, <i>An absent part</i>): a <c>remove-key</c> of the part's
@@ -311,6 +369,12 @@ internal sealed class GrammarFamily(BodyText text, FblBinding binding, FblOption
     /// </summary>
     protected override bool ReplaceSlot(Plan plan, SlotChange change)
     {
+        if (change.Read.Node is GrammarRecords records)
+        {
+            if (records.Records.Count == 0) return false;
+            WriteRecords(plan, change, records);
+            return true;
+        }
         if (change.Read.Node is GrammarItems items)
         {
             if (items.Values.Count == 0) return false;
@@ -331,6 +395,11 @@ internal sealed class GrammarFamily(BodyText text, FblBinding binding, FblOption
     /// </summary>
     protected override bool InsertSlot(Plan plan, ReadElement element, SlotChange change)
     {
+        if (change.Read.Node is GrammarRecords)
+        {
+            if (!NewText.IsEmpty(change.Value)) Plan.Refuse($"This {element.Rule.Type} has no {change.Attribute} in this file to write an item after.");
+            return true;
+        }
         if (change.Read.Node is GrammarItems && NewText.IsEmpty(change.Value)) return true;
         if (change.Binding.Create is not { After: { } after } create || PartEnd(element, after) is not ({ } offset, var present))
         {
@@ -374,6 +443,7 @@ internal sealed class GrammarFamily(BodyText text, FblBinding binding, FblOption
             if (!element.Slots.TryGetValue(after[i], out var read) || !read.Present) continue;
             if (read.Node is GrammarNode node) return (node.Own.End, i);
             if (read.Node is GrammarItems { Values.Count: > 0 } items) return (items.Values[^1].Node.Own.End, i);
+            if (read.Node is GrammarRecords { Records.Count: > 0 } records) return (records.Records[^1].Node.Own.End, i);
         }
         return (null, after.Count);
     }
@@ -468,6 +538,74 @@ internal sealed class GrammarFamily(BodyText text, FblBinding binding, FblOption
         plan.Add(SpliceOperation.InsertKey, offset, offset, text);
     }
 
+    /// <summary>
+    /// A set of a list of structured values (FBL 0.12 §6.3): the values of the longest common subsequence of the old list and
+    /// the new one stay; a value removed and one added at the same place are a <c>replace-value</c> of each item attribute
+    /// whose value differs, and nothing else of the item; a removed value is a <c>remove-key</c> of its span and one
+    /// separator, the one before it or, at the start, the one after it; new values are one <c>insert-key</c>, right after
+    /// the last value the set keeps, of the separator and each value written by the slot's <c>create.emit</c>.
+    /// </summary>
+    private static void WriteRecords(Plan plan, SlotChange change, GrammarRecords records)
+    {
+        var wanted = (change.Value as IEnumerable<object?> ?? []).ToList();
+        var held = HeldKeys(change.Binding.Items!, records.Records);
+        var keys = WantedKeys(change.Binding.Items!, wanted);
+        var kept = ListDifference.CommonSubsequence(held, keys);
+        var survives = new bool[held.Count];
+        var added = new List<object?>();
+        int i = 0, j = 0;
+        foreach ((int Held, int Wanted) anchor in kept.Append((held.Count, keys.Count)))
+        {
+            var paired = Math.Min(anchor.Held - i, anchor.Wanted - j);
+            for (var k = 0; k < paired; k++)
+            {
+                survives[i + k] = true;
+                WriteRecord(plan, change, records.Records[i + k], wanted[j + k]);
+            }
+            added.AddRange(wanted.Skip(j + paired).Take(anchor.Wanted - j - paired));
+            if (anchor.Held < held.Count) survives[anchor.Held] = true;
+            i = anchor.Held + 1;
+            j = anchor.Wanted + 1;
+        }
+        RemoveRecords(plan, records, survives);
+        if (added.Count == 0) return;
+        if (change.Binding.Create is null) Plan.Refuse($"The binding gives no form to write a new item of {change.Attribute} in.");
+        var last = Enumerable.Range(0, survives.Length).Where(place => survives[place]).Select(place => records.Records[place]).LastOrDefault() ?? records.Records[^1];
+        var separator = Separator(change.Binding);
+        plan.Add(SpliceOperation.InsertKey, last.Node.Own.End, last.Node.Own.End, separator + string.Join(separator, added.Select(record => RecordText(change.Binding, record))));
+    }
+
+    /// <summary>A structured value set in place of another: a <c>replace-value</c> of each item attribute whose value differs, refused for one the node does not hold.</summary>
+    private static void WriteRecord(Plan plan, SlotChange change, GrammarRecord record, object? wanted)
+    {
+        foreach ((string name, Slot slot) in change.Binding.Items!)
+        {
+            var value = NewText.Plain(ItemValue(wanted, name), null);
+            if (record.Values.TryGetValue(name, out var read) && read.Value is string text && Comparable(text) == Comparable(value)) continue;
+            if (read?.Span is not { } span) Plan.Refuse($"An item of {change.Attribute} has no {name} in this file to set.");
+            else plan.Add(SpliceOperation.ReplaceValue, span, Escaped(slot, value));
+        }
+    }
+
+    /// <summary>
+    /// The removed structured values: a run after a value the set keeps goes from the end of that value to the end of the run,
+    /// a run at the start to the start of the value kept after it, and a list whose every value goes from the start of the
+    /// first to the end of the last.
+    /// </summary>
+    private static void RemoveRecords(Plan plan, GrammarRecords records, bool[] survives)
+    {
+        var spans = records.Records.Select(record => record.Node.Own).ToList();
+        for (var at = 0; at < spans.Count; at++)
+        {
+            if (survives[at]) continue;
+            var last = at;
+            while (last + 1 < spans.Count && !survives[last + 1]) last++;
+            if (at > 0) plan.Add(SpliceOperation.RemoveKey, spans[at - 1].End, spans[last].End, "");
+            else plan.Add(SpliceOperation.RemoveKey, spans[at].Start, last + 1 < spans.Count ? spans[last + 1].Start : spans[last].End, "");
+            at = last;
+        }
+    }
+
     /// <summary>The start of the spaces and tabs that stand right before <paramref name="offset"/>.</summary>
     private int SpaceBefore(int offset)
     {
@@ -493,9 +631,19 @@ internal sealed class GrammarFamily(BodyText text, FblBinding binding, FblOption
     private bool ReadsAgain(GrammarFamily after, Candidate candidate, SlotChange change)
     {
         if (change is { IsEmpty: true, Binding.Empty: EmptyRule.Remove, Read.Node: GrammarNode }) return after.Read(candidate, change.Binding) is { Present: false };
+        if (change.Read.Node is GrammarRecords) return ReadsRecordsAgain(after, candidate, change);
         if (change.Read.Node is not GrammarItems) return after.Read(candidate, change.Binding) is { Present: true } read && read.Wire == Format(change.Read, change.Binding, change.Value);
         var items = (after.ReadMany(candidate, change.Binding).Value as IEnumerable<object?> ?? []).Select(value => NewText.Plain(value, null));
         return items.Order(StringComparer.Ordinal).SequenceEqual(Wanted(change).Order(StringComparer.Ordinal), StringComparer.Ordinal);
+    }
+
+    /// <summary>Whether <paramref name="after"/> reads the structured values that were set, in any order, each value compared as <see cref="Comparable"/> does.</summary>
+    private static bool ReadsRecordsAgain(GrammarFamily after, Candidate candidate, SlotChange change)
+    {
+        IReadOnlyList<GrammarRecord> read = after.Read(candidate, change.Binding).Node is GrammarRecords records ? records.Records : [];
+        var again = HeldKeys(change.Binding.Items!, read);
+        var wanted = WantedKeys(change.Binding.Items!, change.Value as IEnumerable<object?> ?? []);
+        return again.Order(StringComparer.Ordinal).SequenceEqual(wanted.Order(StringComparer.Ordinal), StringComparer.Ordinal);
     }
 
     /// <summary>A set that would not read back is refused, and nothing is written (FBL 0.9 §4.9, §6.4).</summary>
