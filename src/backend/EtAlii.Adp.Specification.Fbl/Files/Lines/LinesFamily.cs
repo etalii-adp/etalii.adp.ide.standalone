@@ -526,7 +526,7 @@ internal class LinesFamily(BodyText text, FblBinding binding, FblOptions options
     {
         var wanted = (change.Value as IEnumerable<object?> ?? []).Select(value => NewText.Plain(value, null)).ToList();
         var held = items.Select(item => item.Value).ToList();
-        var kept = CommonSubsequence(held, wanted);
+        var kept = ListDifference.CommonSubsequence(held, wanted);
         var added = new List<string>();
         int i = 0, j = 0;
         foreach ((int Held, int Wanted) anchor in kept.Append((held.Count, wanted.Count)))
@@ -541,28 +541,6 @@ internal class LinesFamily(BodyText text, FblBinding binding, FblOptions options
             j = anchor.Wanted + 1;
         }
         foreach (var value in added) plan.Add(SpliceOperation.InsertKey, offset, offset, " " + WordText(change.Binding.Word!, value));
-    }
-
-    /// <summary>The pairs of places, in <paramref name="held"/> and in <paramref name="wanted"/>, of a longest common subsequence of the two.</summary>
-    private static List<(int Held, int Wanted)> CommonSubsequence(IReadOnlyList<string> held, IReadOnlyList<string> wanted)
-    {
-        var lengths = new int[held.Count + 1, wanted.Count + 1];
-        for (var a = held.Count - 1; a >= 0; a--)
-        {
-            for (var b = wanted.Count - 1; b >= 0; b--)
-            {
-                lengths[a, b] = held[a] == wanted[b] ? lengths[a + 1, b + 1] + 1 : Math.Max(lengths[a + 1, b], lengths[a, b + 1]);
-            }
-        }
-        var pairs = new List<(int, int)>();
-        int x = 0, y = 0;
-        while (x < held.Count && y < wanted.Count)
-        {
-            if (held[x] == wanted[y]) pairs.Add((x++, y++));
-            else if (lengths[x + 1, y] >= lengths[x, y + 1]) x++;
-            else y++;
-        }
-        return pairs;
     }
 
     /// <summary>

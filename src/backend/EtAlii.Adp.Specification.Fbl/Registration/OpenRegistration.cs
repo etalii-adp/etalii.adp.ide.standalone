@@ -40,6 +40,12 @@ public sealed class OpenRegistration : SplicedFile
     /// </summary>
     public IReadOnlySet<string>? KnownIds { get; set; }
 
+    /// <summary>
+    /// Whether the registration's <c>view</c> header names no view of its body (FBL 0.11 §9.3): the reading then shows no
+    /// view's content, and a placement is refused with nothing written. Set by the host, which reads the body.
+    /// </summary>
+    public bool ShowsNoView { get; set; }
+
     /// <summary>Whether DISL marks an id ephemeral: such an element's position is never stored (FBL §8.5).</summary>
     public Func<string, bool>? IsEphemeral { get; set; }
 
@@ -104,6 +110,8 @@ public sealed class OpenRegistration : SplicedFile
         {
             case ModelChange.Save:
                 return new PlanResult.Planned(Edit.Empty);
+            case ModelChange.Place when ShowsNoView:
+                return new PlanResult.Refused("This view is not in the document, so its positions cannot be stored.");
             case ModelChange.Place place:
                 if (IsEphemeral?.Invoke(place.Id) == true)
                 {

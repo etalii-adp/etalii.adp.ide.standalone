@@ -2,6 +2,7 @@ using System.Text.Json;
 using EtAlii.Adp.Specification.Cel;
 using EtAlii.Adp.Specification.Fbl.Expressions;
 using EtAlii.Adp.Specification.Fbl.Grammar;
+using EtAlii.Adp.Specification.Json;
 
 namespace EtAlii.Adp.Specification.Fbl.Documents;
 
@@ -13,6 +14,11 @@ public sealed class FblDocument
     public required IReadOnlyDictionary<string, FblBinding> Bindings { get; init; }
 }
 
+/// <summary>
+/// The format families a declared binding's body is read in (FBL §4). The library reads all seven: the six of FBL 0.7 and
+/// FBL 0.9's <see cref="Grammar"/>, with the <c>split</c> of FBL 0.13 and the three constructs of FBL 0.11 it uses
+/// (<c>escape</c>, <c>create</c> with <c>after</c>, and the items of a <c>many</c> attribute read from several nodes).
+/// </summary>
 public enum Family
 {
     Yaml,
@@ -66,6 +72,42 @@ public sealed class FblBinding
 
     /// <summary>Elements before relations, in binding order: the order rules are offered an entry (FBL §5.1).</summary>
     public IEnumerable<Rule> AllRules => Elements.Concat(Relations);
+
+    /// <summary>
+    /// The check of FBL 0.11 and 0.13 §14.1 step 6 that needs the tool type's attribute types: a slot with <c>split</c> or
+    /// <c>gather</c> stands only on an attribute that <paramref name="many"/>, given the rule's type and the attribute's name,
+    /// says is <c>many</c>. Each refusal is a problem at the slot's <c>split</c> or <c>gather</c>; none when every such
+    /// attribute is <c>many</c>.
+    /// </summary>
+    public IReadOnlyList<LoadDiagnostic> CheckManyAttributes(Func<string, string, bool> many)
+    {
+        var problems = new List<LoadDiagnostic>();
+        var rules = Elements.Select((rule, i) => (rule, $"elements/{i}")).Concat(Relations.Select((rule, i) => (rule, $"relations/{i}")));
+        foreach ((Rule rule, string at) in rules)
+        {
+            foreach ((string name, AttributeBinding binding) in rule.Attributes)
+            {
+                if (many(rule.Type, name)) continue;
+                var place = $"/bindings/{JsonPointer.Token(Name)}/{at}/attributes/{JsonPointer.Token(name)}";
+                if (binding.Split is not null)
+                {
+                    problems.Add(new LoadDiagnostic(place + "/split", LoadSeverity.Error,
+                        $"The attribute {name} of a {rule.Type} is single-valued, so the items its split cuts have nothing to hold them (FBL 0.13 14.1)."));
+                }
+                if (binding.Gather.Count > 0)
+                {
+                    problems.Add(new LoadDiagnostic(place + "/gather", LoadSeverity.Error,
+                        $"The attribute {name} of a {rule.Type} is single-valued, so the values its gather reads have nothing to hold them (FBL 0.11 14.1)."));
+                }
+                if (binding.Items is not null)
+                {
+                    problems.Add(new LoadDiagnostic(place + "/items", LoadSeverity.Error,
+                        $"The attribute {name} of a {rule.Type} is single-valued, so the structured values its items read have nothing to hold them (FBL 0.12 14.1)."));
+                }
+            }
+        }
+        return problems;
+    }
 
     // The binding as each reading sees it, made once per origin (FBL 0.10 §5.1, §8.2).
     private readonly Dictionary<string, FblBinding> _readings = new(StringComparer.Ordinal);
@@ -187,7 +229,17 @@ internal sealed class GrammarBody
 }
 
 /// <summary><c>body.recover</c> (FBL 0.9 §4.9): the rule a body is read unit by unit by, and the terminals a skip ends at.</summary>
-internal sealed record GrammarRecover(string Unit, IReadOnlyList<string> Sync);
+internal sealed record GrammarRecover(string Unit, IReadOnlyList<string> Sync)
+{
+    /// <summary>
+    /// <c>recover.nested</c> (FBL 0.11 §4.9, rules 4 to 9): the tokens that open and close a block, each a terminal or the
+    /// text of an anonymous string terminal, so that a unit is read in part inside its blocks too; null without it.
+    /// </summary>
+    public (string Open, string Close)? Nested { get; init; }
+
+    /// <summary><c>recover.unclosed</c> (FBL 0.11 §4.9, rule 8): per ignored terminal, the text a token of it ends with when it is closed.</summary>
+    public IReadOnlyDictionary<string, string> Unclosed { get; init; } = new Dictionary<string, string>(StringComparer.Ordinal);
+}
 
 public sealed record PluginReader(string Plugin, string? Version)
 {
@@ -209,7 +261,20 @@ internal sealed class TextDefaults
 
 internal sealed record HeaderSettings(string? Key, JsonElement? Value, string? Line, bool Required);
 
-internal sealed record BlockRule(string Name, string Line, IReadOnlyList<string>? Within, bool CaseInsensitive, string? View);
+internal sealed record BlockRule(string Name, string Line, IReadOnlyList<string>? Within, bool CaseInsensitive, string? View)
+{
+    /// <summary>grammar (FBL 0.11 §4.9): the selector of the block's entries, in place of <see cref="Line"/>.</summary>
+    public string? At { get; init; }
+
+    /// <summary>grammar (FBL 0.11 §4.9): the <c>{node}</c> or <c>{value}</c> slot whose value names each of the block's entries as a view.</summary>
+    public Slot? ViewSlot { get; init; }
+
+    /// <summary>grammar (FBL 0.11 §4.9): how one of the block's entries is added, from its <c>emit</c>; null when it cannot be.</summary>
+    public InsertSettings? Insert { get; init; }
+
+    /// <summary>The readings the block's views are views for, as origins (FBL 0.11 §4.9); null for every reading.</summary>
+    public IReadOnlyList<string>? Origins { get; init; }
+}
 
 /// <summary>A section of a <c>bullets</c> body (FBL 0.7 §4.8): its name, and the expression its heading's text matches.</summary>
 internal sealed record SectionRule(string Name, string Heading, bool CaseInsensitive);
@@ -230,6 +295,15 @@ public sealed partial class Rule
     public IReadOnlyList<string>? Within { get; init; }
 
     public bool Opens { get; init; }
+
+    /// <summary>
+    /// grammar (FBL 0.11 §4.9): the block an add with <c>place: "last-child"</c> writes around a first child of an entry
+    /// that has none, its <c>open</c> and its <c>close</c>; null when the rule gives none.
+    /// </summary>
+    internal (string Open, string Close)? OpensWith { get; init; }
+
+    /// <summary>grammar (FBL 0.11 §4.9): the rule matches only the entry of the view the reading shows and the entries inside it.</summary>
+    public bool SelectedView { get; init; }
 
     public bool CaseInsensitive { get; init; }
 
@@ -344,7 +418,12 @@ public sealed partial class Rule
     }
 }
 
-internal sealed record IdBinding(Slot? From, string? SidecarKey);
+/// <summary>
+/// Where a rule's id is stored (FBL §5.3): a slot, or the registration's identities by the value of <paramref name="SidecarKey"/>;
+/// <paramref name="SidecarKind"/> names the key space of the rule's identities and <paramref name="SidecarOrdinal"/>, a text holding
+/// <c>{n}</c> once, follows the natural key of each later holder of one key (FBL 0.12 §5.3, §8.6).
+/// </summary>
+internal sealed record IdBinding(Slot? From, string? SidecarKey, string? SidecarKind = null, string? SidecarOrdinal = null);
 
 internal sealed record ParentBinding(IReadOnlyList<string> Rules, string? Slot);
 
@@ -361,6 +440,31 @@ public record Slot
     public string? Word { get; init; }
 
     public bool Flag { get; init; }
+
+    /// <summary>A <c>{node}</c> slot's <c>match</c> (FBL 0.9 §5.2): its named group <c>value</c> is the value, and its span the value's.</summary>
+    public string? Match { get; init; }
+
+    /// <summary>A <c>{node}</c> slot's <c>escape</c> (FBL 0.11 §5.2): how a quoted value escapes its quotes.</summary>
+    internal SlotEscape? Escape { get; init; }
+
+    /// <summary>A <c>{node}</c> slot's <c>split</c> (FBL 0.13 §4.9): the text its value is cut into items at.</summary>
+    public string? Split { get; init; }
+
+    /// <summary>The text written between two items (FBL 0.12 §5.2), <c>", "</c> when the binding gives none.</summary>
+    public string? Separator { get; init; }
+
+    /// <summary>
+    /// A <c>{node}</c> slot's <c>items</c> (FBL 0.12 §5.2): each item attribute of a structured value, in the order the
+    /// binding names them, with the <c>{node}</c> slot that reads it relative to each node the selector reaches; null when
+    /// the slot's items are not structured.
+    /// </summary>
+    internal IReadOnlyList<KeyValuePair<string, Slot>>? Items { get; init; }
+
+    /// <summary>
+    /// An attribute's <c>gather</c> (FBL 0.11 §5.2): further <c>{node}</c> slots of the same entry, whose items follow
+    /// this slot's in document order, for a read-only <c>many</c> attribute of the grammar family; empty when it has none.
+    /// </summary>
+    internal IReadOnlyList<Slot> Gather { get; init; } = [];
 
     public override string ToString() => Kind.ToString();
 }
@@ -412,6 +516,12 @@ public abstract record SlotKind
     public sealed record Continuation : SlotKind
     {
         public override string ToString() => "continuation";
+    }
+
+    /// <summary>The node or token of the grammar family that a selector relative to the entry reaches (FBL 0.9 §4.9).</summary>
+    public sealed record Node(string Selector) : SlotKind
+    {
+        public override string ToString() => $"node {Selector}";
     }
 
     /// <summary>A value computed by CEL, read-only.</summary>
@@ -483,7 +593,50 @@ internal sealed record FallbackBinding(JsonElement Value, bool Report);
 /// (FBL 0.4): <see cref="AtEnd"/>, each missing level of the mapping <c>child</c> reaches created at
 /// the end of the level above it.
 /// </summary>
-internal sealed record CreateChild(string Emit, ChildPlace Place, string? Before, bool AtEnd = false);
+internal sealed record CreateChild(string Emit, ChildPlace Place, string? Before, bool AtEnd = false)
+{
+    /// <summary>
+    /// grammar (FBL 0.11 §5.2): the attributes of the same rule, nearest first, whose parts precede an absent part, which
+    /// is written right after the first of them that is present; null when the binding gives none.
+    /// </summary>
+    public IReadOnlyList<string>? After { get; init; }
+
+    /// <summary>
+    /// grammar (FBL 0.11 §4.9): the part is positional, so each attribute of <see cref="After"/> before the first present one
+    /// is written too, before it, with its own <c>create.emit</c> and the empty value, nearest last, in the same splice.
+    /// </summary>
+    public bool Pad { get; init; }
+}
+
+/// <summary>
+/// A <c>{node}</c> slot's <c>escape</c> (FBL 0.11 §5.2): reading replaces <paramref name="With"/> before
+/// <paramref name="Quote"/> or before itself by that character and keeps it before any other; writing escapes both.
+/// </summary>
+internal sealed record SlotEscape(char With, char Quote)
+{
+    public string Read(string text)
+    {
+        if (text.IndexOf(With) < 0) return text;
+        var read = new System.Text.StringBuilder(text.Length);
+        for (var i = 0; i < text.Length; i++)
+        {
+            if (text[i] == With && i + 1 < text.Length && (text[i + 1] == Quote || text[i + 1] == With)) i++;
+            read.Append(text[i]);
+        }
+        return read.ToString();
+    }
+
+    public string Write(string value)
+    {
+        var written = new System.Text.StringBuilder(value.Length);
+        foreach (var c in value)
+        {
+            if (c == With || c == Quote) written.Append(With);
+            written.Append(c);
+        }
+        return written.ToString();
+    }
+}
 
 internal sealed class InsertSettings
 {
@@ -548,6 +701,9 @@ internal sealed class RegistrationSettings
 
     public string? LegacyLayout { get; init; }
 
+    /// <summary><c>registration.legacyIdentities</c> (FBL 0.12 §8.7): the identities file hosts wrote before FBL, such as <c>{base}.identities.json</c>.</summary>
+    public string? LegacyIdentities { get; init; }
+
     /// <summary>These settings as the reading of <paramref name="origin"/> sees them: its own resource capture, or none (FBL 0.10 §8.2).</summary>
     public RegistrationSettings ForOrigin(string origin) => ResourceByOrigin is not { } byOrigin
         ? this
@@ -558,6 +714,7 @@ internal sealed class RegistrationSettings
             Blocks = Blocks,
             ResourceCapture = byOrigin.GetValueOrDefault(origin),
             LegacyLayout = LegacyLayout,
+            LegacyIdentities = LegacyIdentities,
         };
 }
 

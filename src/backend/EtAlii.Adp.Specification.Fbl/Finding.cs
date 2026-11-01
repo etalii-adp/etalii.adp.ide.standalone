@@ -40,6 +40,16 @@ public static class FindingCodes
     public const string RegexTimeout = "fbl.regex-timeout";
     public const string UnconvertedValue = "fbl.unconverted-value";
     public const string MissingResource = "fbl.missing-resource";
+    public const string UnparsedText = "fbl.unparsed-text";
+
+    /// <summary>A block a body read in part leaves open at its end (FBL 0.11 §4.9, rule 6), at its opening token.</summary>
+    public const string UnclosedBlock = "fbl.unclosed-block";
+
+    /// <summary>A closing token that closes no block (FBL 0.11 §4.9, rule 7), skipped alone.</summary>
+    public const string UnmatchedClose = "fbl.unmatched-close";
+
+    /// <summary>A comment of <c>recover.unclosed</c> that is never closed (FBL 0.11 §4.9, rule 8): trivia to the end of the body.</summary>
+    public const string UnclosedComment = "fbl.unclosed-comment";
     public const string Unparseable = "std.unparseable";
     public const string UnreadableEntry = "std.unreadableEntry";
     public const string MissingId = "std.missingId";

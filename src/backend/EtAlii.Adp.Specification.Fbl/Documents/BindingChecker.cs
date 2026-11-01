@@ -23,6 +23,7 @@ internal static class BindingChecker
             CheckRule(binding, rule, rules, ruleNames, names, at, problems);
         }
         CheckBinding(binding, rules.Count, pointer, problems);
+        GrammarChecks.Check(binding, pointer, problems);
     }
 
     private static void CheckBlocks(FblBinding binding, HashSet<string> ruleNames, HashSet<string> names, string pointer, List<LoadDiagnostic> problems)
@@ -32,7 +33,8 @@ internal static class BindingChecker
             var block = binding.Blocks[i];
             var at = $"{pointer}/blocks/{i}";
             if (!names.Add(block.Name)) problems.Add(new LoadDiagnostic(at + "/name", LoadSeverity.Error, $"The rule name '{block.Name}' is used twice."));
-            CheckRegex(block.Line, at + "/line", problems);
+            // A block of the grammar family selects its entries with at, in place of a line (FBL 0.11 4.9).
+            if (block.At is null) CheckRegex(block.Line, at + "/line", problems);
             CheckWithin(block.Within, ruleNames, at + "/within", problems);
         }
     }

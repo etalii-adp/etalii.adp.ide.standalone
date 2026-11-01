@@ -42,10 +42,14 @@
   <ItemGroup>
     <!--
       The module's own FBL binding of a Structurizr DSL workspace, which the six definitions name as
-      their persistence.binding. Embedded and loaded by a test only: C4Parser still reads every body
-      (c4-disl-fbl Requirement 4.1, design Amendment 2).
+      their persistence.binding, and the grammar beside it that it names (FBL 0.11, the grammar family).
+      Since etalii.adp spec 068 task 13 both are etalii.adp's specifications/fbl/structurizr.fbl and
+      structurizr.lark as of commit 8fbfde0 (the merge of etalii.adp #677), byte for byte: a change goes to etalii.adp and is copied
+      again. Embedded and loaded by tests only: C4Parser still reads every body (c4-disl-fbl
+      Requirement 4.1, design Amendment 2).
     -->
     <EmbeddedResource Include="structurizr.fbl" LogicalName="structurizr.fbl" />
+    <EmbeddedResource Include="structurizr.lark" LogicalName="structurizr.lark" />
   </ItemGroup>
 
   <ItemGroup>

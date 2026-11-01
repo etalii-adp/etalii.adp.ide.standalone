@@ -48,7 +48,7 @@ internal static partial class BindingReader
                 : null,
             Comment = JsonProperties.String(json, "comment"),
             ReportUnmatched = JsonProperties.String(json, "unmatched") == "report",
-            Blocks = Array(json, "blocks").Select(b => new BlockRule(JsonProperties.String(b, "name") ?? "", JsonProperties.String(b, "line") ?? "", OptionalStrings(b, "within"), JsonProperties.Bool(b, "caseInsensitive"), JsonProperties.String(b, "view"))).ToList(),
+            Blocks = Array(json, "blocks").Select((b, i) => ReadBlockRule(b, $"{pointer}/blocks/{i}", problems)).ToList(),
             Sections = Array(json, "sections").Select(section => new SectionRule(JsonProperties.String(section, "name") ?? "", JsonProperties.String(section, "heading") ?? "", JsonProperties.Bool(section, "caseInsensitive"))).ToList(),
             Elements = ReadRules(json, "elements", false, pointer, problems),
             Relations = ReadRules(json, "relations", true, pointer, problems),
@@ -148,10 +148,25 @@ internal static partial class BindingReader
         GrammarRecover? recover = null;
         if (Object(json, "recover", pointer, "A body's recover", problems) is { } r)
         {
-            if (JsonProperties.String(r, "unit") is { } unit) recover = new GrammarRecover(unit, JsonProperties.Strings(r, "sync"));
+            if (JsonProperties.String(r, "unit") is { } unit)
+            {
+                recover = new GrammarRecover(unit, JsonProperties.Strings(r, "sync"))
+                {
+                    Nested = Object(r, "nested", pointer + "/recover", "A recover's nested", problems) is { } nested ? ReadNested(nested, pointer + "/recover/nested", problems) : null,
+                    Unclosed = Strings(r, "unclosed", pointer + "/recover", "A recover's unclosed", problems),
+                };
+            }
             else problems.Add(new LoadDiagnostic(pointer + "/recover/unit", LoadSeverity.Error, "A body's recover names its unit (FBL 0.9 4.9)."));
         }
         return new GrammarBody { Text = text, File = file, Start = JsonProperties.String(json, "start") ?? "start", Recover = recover };
+    }
+
+    /// <summary><c>recover.nested</c> (FBL 0.11 §4.9): <c>{"open": o, "close": c}</c>, each a text.</summary>
+    private static (string Open, string Close)? ReadNested(JsonElement json, string pointer, List<LoadDiagnostic> problems)
+    {
+        if (JsonProperties.String(json, "open") is { Length: > 0 } open && JsonProperties.String(json, "close") is { Length: > 0 } close) return (open, close);
+        problems.Add(new LoadDiagnostic(pointer, LoadSeverity.Error, "A recover's nested names its open and its close (FBL 0.11 4.9)."));
+        return null;
     }
 
     private static Family? ParseFamily(string? name) => name switch
@@ -189,6 +204,23 @@ internal static partial class BindingReader
         };
     }
 
+    /// <summary>
+    /// A block rule (FBL §4.7): its <c>line</c>, or in the grammar family (FBL 0.11 §4.9) its <c>at</c>; a <c>view</c> that is
+    /// a group's name, or in the grammar family a slot; and in the grammar family its <c>insert</c> and <c>origins</c>.
+    /// </summary>
+    private static BlockRule ReadBlockRule(JsonElement json, string pointer, List<LoadDiagnostic> problems)
+    {
+        var view = json.TryGetProperty("view", out var v) ? v : default;
+        return new BlockRule(JsonProperties.String(json, "name") ?? "", JsonProperties.String(json, "line") ?? "", OptionalStrings(json, "within"), JsonProperties.Bool(json, "caseInsensitive"),
+            view.ValueKind == JsonValueKind.String ? view.GetString() : null)
+        {
+            At = JsonProperties.String(json, "at"),
+            ViewSlot = view.ValueKind == JsonValueKind.Object ? ReadSlot(view, pointer + "/view", problems) : null,
+            Insert = Object(json, "insert", pointer, "A block's insert", problems) is { } insert ? ReadInsert(insert, pointer + "/insert", problems) : null,
+            Origins = OptionalStrings(json, "origins"),
+        };
+    }
+
     private static List<Rule> ReadRules(JsonElement json, string name, bool relation, string pointer, List<LoadDiagnostic> problems)
     {
         var rules = new List<Rule>();
@@ -210,7 +242,10 @@ internal static partial class BindingReader
         At = JsonProperties.String(json, "at"),
         Line = JsonProperties.String(json, "line"),
         Within = OptionalStrings(json, "within"),
-        Opens = JsonProperties.Bool(json, "opens"),
+        // The grammar family's object form (FBL 0.11 §4.9) says the entry may open a block too, and how one is written.
+        Opens = JsonProperties.Bool(json, "opens") || (json.TryGetProperty("opens", out var opening) && opening.ValueKind == JsonValueKind.Object),
+        OpensWith = json.TryGetProperty("opens", out var opens) && opens.ValueKind == JsonValueKind.Object ? ReadOpens(opens, pointer + "/opens", problems) : null,
+        SelectedView = JsonProperties.Bool(json, "selectedView"),
         CaseInsensitive = JsonProperties.Bool(json, "caseInsensitive"),
         Files = JsonProperties.Strings(json, "files"),
         When = JsonProperties.String(json, "when"),
@@ -226,12 +261,20 @@ internal static partial class BindingReader
         Origins = OptionalStrings(json, "origins"),
     };
 
+    /// <summary>A rule's <c>opens</c> in the grammar family (FBL 0.11 §4.9): <c>{"open": " {", "close": "}"}</c>.</summary>
+    private static (string Open, string Close)? ReadOpens(JsonElement json, string pointer, List<LoadDiagnostic> problems)
+    {
+        if (JsonProperties.String(json, "open") is { Length: > 0 } open && JsonProperties.String(json, "close") is { Length: > 0 } close) return (open, close);
+        problems.Add(new LoadDiagnostic(pointer, LoadSeverity.Error, "A rule's opens gives its open and its close, each a text (FBL 0.11 4.9)."));
+        return null;
+    }
+
     private static IdBinding? ReadId(JsonElement json, string pointer, List<LoadDiagnostic> problems)
     {
         if (Object(json, "id", pointer, "A rule's id", problems) is not { } id) return null;
-        return new IdBinding(
-            Object(id, "from", pointer + "/id", "An id's from", problems) is { } from ? ReadSlot(from, pointer + "/id/from", problems) : null,
-            Object(id, "sidecar", pointer + "/id", "An id's sidecar", problems) is { } sidecar ? JsonProperties.String(sidecar, "key") : null);
+        var from = Object(id, "from", pointer + "/id", "An id's from", problems) is { } slot ? ReadSlot(slot, pointer + "/id/from", problems) : null;
+        if (Object(id, "sidecar", pointer + "/id", "An id's sidecar", problems) is not { } sidecar) return new IdBinding(from, null);
+        return new IdBinding(from, JsonProperties.String(sidecar, "key"), JsonProperties.String(sidecar, "kind"), JsonProperties.String(sidecar, "ordinal"));
     }
 
     private static List<KeyValuePair<string, AttributeBinding>> ReadAttributes(JsonElement json, string pointer, List<LoadDiagnostic> problems)
@@ -330,8 +373,51 @@ internal static partial class BindingReader
 
     private static Slot? ReadSlot(JsonElement json, string pointer, List<LoadDiagnostic> problems) =>
         ReadKind(json, pointer, "A slot names exactly one place (FBL §3.3).", problems) is { } kind
-            ? new Slot { Kind = kind, Child = JsonProperties.String(json, "child"), Word = JsonProperties.String(json, "word"), Flag = JsonProperties.Bool(json, "flag") }
+            ? new Slot
+            {
+                Kind = kind, Child = JsonProperties.String(json, "child"), Word = JsonProperties.String(json, "word"), Flag = JsonProperties.Bool(json, "flag"), Match = JsonProperties.String(json, "match"),
+                Escape = ReadEscape(json, pointer, problems), Split = ReadSplit(json, pointer, problems),
+            }
             : null;
+
+    /// <summary>An attribute's <c>gather</c> (FBL 0.11 §5.2): further <c>{node}</c> slots of the same entry, each with its <c>match</c>, <c>escape</c> and <c>split</c>.</summary>
+    private static List<Slot> ReadGather(JsonElement json, string pointer, List<LoadDiagnostic> problems)
+    {
+        var gather = new List<Slot>();
+        if (!json.TryGetProperty("gather", out var slots)) return gather;
+        if (slots.ValueKind != JsonValueKind.Array)
+        {
+            problems.Add(new LoadDiagnostic(pointer + "/gather", LoadSeverity.Error, "An attribute's gather is a list of slots (FBL 0.11 5.2)."));
+            return gather;
+        }
+        var index = 0;
+        foreach (var slot in slots.EnumerateArray())
+        {
+            var at = $"{pointer}/gather/{index++}";
+            if (slot.ValueKind != JsonValueKind.Object) problems.Add(new LoadDiagnostic(at, LoadSeverity.Error, "A gathered slot is an object."));
+            else if (ReadSlot(slot, at, problems) is { } read) gather.Add(read);
+        }
+        return gather;
+    }
+
+    /// <summary>A slot's <c>items</c> (FBL 0.12 §5.2): an object from each item attribute to the slot that reads it; null when it has none.</summary>
+    private static List<KeyValuePair<string, Slot>>? ReadItems(JsonElement json, string pointer, List<LoadDiagnostic> problems)
+    {
+        if (!json.TryGetProperty("items", out var items)) return null;
+        var read = new List<KeyValuePair<string, Slot>>();
+        if (items.ValueKind != JsonValueKind.Object)
+        {
+            problems.Add(new LoadDiagnostic(pointer + "/items", LoadSeverity.Error, "A slot's items is an object from each item attribute to its slot (FBL 0.12 5.2)."));
+            return read;
+        }
+        foreach (var item in items.EnumerateObject())
+        {
+            var at = JsonPointer.Append(pointer + "/items", item.Name);
+            if (item.Value.ValueKind != JsonValueKind.Object) problems.Add(new LoadDiagnostic(at, LoadSeverity.Error, "An item attribute's slot is an object."));
+            else if (ReadSlot(item.Value, at, problems) is { } slot) read.Add(new KeyValuePair<string, Slot>(item.Name, slot));
+        }
+        return read;
+    }
 
     /// <summary>The one kind of slot <paramref name="json"/> names; none or several are reported as <paramref name="problem"/>.</summary>
     private static SlotKind? ReadKind(JsonElement json, string pointer, string problem, List<LoadDiagnostic> problems)
@@ -345,6 +431,7 @@ internal static partial class BindingReader
         if (JsonProperties.String(json, "capture") is { } capture) kinds.Add(new SlotKind.Capture(capture));
         if (JsonProperties.String(json, "value") is { } value) kinds.Add(new SlotKind.Value(value));
         if (JsonProperties.Bool(json, "continuation")) kinds.Add(new SlotKind.Continuation());
+        if (JsonProperties.String(json, "node") is { } node) kinds.Add(new SlotKind.Node(node));
         if (kinds is [var kind]) return kind;
         problems.Add(new LoadDiagnostic(pointer, LoadSeverity.Error, problem));
         return null;
@@ -359,6 +446,12 @@ internal static partial class BindingReader
             Child = JsonProperties.String(json, "child"),
             Word = JsonProperties.String(json, "word"),
             Flag = JsonProperties.Bool(json, "flag"),
+            Match = JsonProperties.String(json, "match"),
+            Escape = ReadEscape(json, pointer, problems),
+            Split = ReadSplit(json, pointer, problems),
+            Gather = ReadGather(json, pointer, problems),
+            Separator = JsonProperties.String(json, "separator"),
+            Items = ReadItems(json, pointer, problems),
             Empty = Setting<EmptyRule>(json, "empty", pointer, "An attribute's empty", problems) ?? EmptyRule.Keep,
             Absent = ReadAbsent(json, pointer, problems),
             Default = json.TryGetProperty("default", out var def) ? def.Clone() : null,
@@ -397,9 +490,33 @@ internal static partial class BindingReader
     {
         var place = json.TryGetProperty("place", out var p) ? p : default;
         if (JsonProperties.String(json, "at") == "end") return new CreateChild("", ChildPlace.Last, null, true);
+        var after = json.TryGetProperty("after", out var a) && a.ValueKind == JsonValueKind.Array ? JsonProperties.Strings(json, "after") : null;
+        var pad = JsonProperties.Bool(json, "pad");
         return place.ValueKind == JsonValueKind.Object
-            ? new CreateChild(JsonProperties.String(json, "emit") ?? "", ChildPlace.Before, JsonProperties.String(place, "before"))
-            : new CreateChild(JsonProperties.String(json, "emit") ?? "", Setting<ChildPlace>(json, "place", pointer, "A child's place", problems) ?? ChildPlace.Last, null);
+            ? new CreateChild(JsonProperties.String(json, "emit") ?? "", ChildPlace.Before, JsonProperties.String(place, "before")) { After = after, Pad = pad }
+            : new CreateChild(JsonProperties.String(json, "emit") ?? "", Setting<ChildPlace>(json, "place", pointer, "A child's place", problems) ?? ChildPlace.Last, null) { After = after, Pad = pad };
+    }
+
+    /// <summary>A slot's <c>escape</c> (FBL 0.11 §5.2), <c>{"with": "\\", "quote": "\""}</c>, one character each.</summary>
+    private static SlotEscape? ReadEscape(JsonElement json, string pointer, List<LoadDiagnostic> problems)
+    {
+        if (Object(json, "escape", pointer, "A slot's escape", problems) is not { } escape) return null;
+        if (JsonProperties.String(escape, "with") is { Length: 1 } with && JsonProperties.String(escape, "quote") is { Length: 1 } quote) return new SlotEscape(with[0], quote[0]);
+        problems.Add(new LoadDiagnostic(pointer + "/escape", LoadSeverity.Error, "A slot's escape gives 'with' and 'quote', one character each (FBL 0.11 5.2)."));
+        return null;
+    }
+
+    /// <summary>A slot's <c>split</c> (FBL 0.13 §4.9): a text of one character or more, never beside <c>items</c>.</summary>
+    private static string? ReadSplit(JsonElement json, string pointer, List<LoadDiagnostic> problems)
+    {
+        if (!json.TryGetProperty("split", out var split)) return null;
+        if (split.ValueKind != JsonValueKind.String || split.GetString() is not { Length: > 0 } text)
+        {
+            problems.Add(new LoadDiagnostic(pointer + "/split", LoadSeverity.Error, "A slot's split is a text of one character or more (FBL 0.13 4.9)."));
+            return null;
+        }
+        if (json.TryGetProperty("items", out _)) problems.Add(new LoadDiagnostic(pointer + "/split", LoadSeverity.Error, "A slot's split never stands beside items (FBL 0.13 14.1)."));
+        return text;
     }
 
     /// <summary>
@@ -438,6 +555,7 @@ internal static partial class BindingReader
             ResourceCapture = Object(r, "resource", pointer + "/registration", "A registration's resource", problems) is { } res ? JsonProperties.String(res, "capture") : null,
             ResourceByOrigin = Object(r, "resource", pointer + "/registration", "A registration's resource", problems) is { } resource ? ReadByOrigin(resource, pointer + "/registration/resource", problems) : null,
             LegacyLayout = JsonProperties.String(r, "legacyLayout"),
+            LegacyIdentities = JsonProperties.String(r, "legacyIdentities"),
         };
     }
 

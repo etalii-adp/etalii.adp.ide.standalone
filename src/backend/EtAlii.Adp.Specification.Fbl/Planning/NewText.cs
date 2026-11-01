@@ -195,6 +195,12 @@ internal static class NewText
         return -1;
     }
 
+    /// <summary>
+    /// Fills a <c>create.emit</c> of a part (FBL 0.11 §5.2): its placeholders <c>{name}</c> replaced by <paramref name="value"/>,
+    /// and every other character, a bracket included, written as it is, <c>\[</c> and <c>\]</c> as a bracket.
+    /// </summary>
+    public static string Fill(string template, Func<string, string?> value) => RenderPart(template, value);
+
     private static string RenderPart(string part, Func<string, string?> value)
     {
         var output = new StringBuilder();

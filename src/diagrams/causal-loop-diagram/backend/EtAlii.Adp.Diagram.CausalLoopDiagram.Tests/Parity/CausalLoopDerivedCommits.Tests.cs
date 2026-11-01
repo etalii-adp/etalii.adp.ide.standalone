@@ -33,7 +33,7 @@ public class CausalLoopDerivedCommitsTests
     /// <summary>A record's JSON, with a weight that is not finite written as its name rather than refused.</summary>
     private static readonly JsonSerializerOptions JsonOptions = new() { NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals };
 
-    public static TheoryData<string> Documents() => [.. CausalLoopCorpus.Paths()];
+    public static TheoryData<string> Documents() => [.. CausalLoopCorpus.WalkedElementByElement()];
 
     [Theory]
     [MemberData(nameof(Documents))]

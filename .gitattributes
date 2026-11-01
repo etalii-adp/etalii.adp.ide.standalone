@@ -210,7 +210,12 @@ src/backend/EtAlii.Adp.Specification.Fbl.Tests/Conformance/fixtures/**/*.yaml -t
 # other (`.ttl` is exempt by its own rule above), and a grammar beside its binding is kept as the
 # source holds it, since the binding's own bytes are the fixture's subject too.
 src/backend/EtAlii.Adp.Specification.Fbl.Tests/Conformance/fixtures/**/*.txt -text
+# The Wardley map's fixtures (etalii.adp spec 071, task 11): their `.owm` inputs are byte-compared too.
+src/backend/EtAlii.Adp.Specification.Fbl.Tests/Conformance/fixtures/**/*.owm -text
 src/backend/EtAlii.Adp.Specification.Fbl.Tests/Conformance/**/*.lark -text
+# The C4 module's grammar (etalii.adp spec 068, task 13), copied from etalii.adp byte for byte beside the
+# binding that names it and embedded as it is: kept as the source holds it, as the vendored grammars are.
+src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4/*.lark -text
 
 # `.owm` and the ansible-structure fixture tree are covered by `.gitattributes` files inside those
 # modules rather than from here. Both are scoped more narrowly than an extension rule would be -

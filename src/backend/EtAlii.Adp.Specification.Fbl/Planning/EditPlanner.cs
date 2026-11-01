@@ -242,11 +242,11 @@ internal static class EditPlanner
 
     // ---- add ----
 
-    /// <summary>An add put on a line of its own right after the entry it names. Only the lines family's statements can be, and a statement of any other family is refused.</summary>
+    /// <summary>An add put on a line of its own right after the entry it names. Only the lines and grammar families' entries can be, and an entry of any other family is refused.</summary>
     private static void PlanAddAfter(Plan plan, ModelChange.AddAfter added)
     {
         var anchor = Element(plan.Reading, added.After);
-        if (plan.Reading.Family is not LinesFamily) Planning.Plan.Refuse($"This file's binding cannot add a {added.Type} at that position.");
+        if (plan.Reading.Family is not (LinesFamily or Grammar.GrammarFamily)) Planning.Plan.Refuse($"This file's binding cannot add a {added.Type} at that position.");
         PlanAdd(plan, new ModelChange.Add(added.Type, null, added.Attributes), anchor);
     }
 
@@ -257,6 +257,7 @@ internal static class EditPlanner
         // or a family's whose nesting is its indentation (FBL 0.7 §6.3).
         if (add.Index is not null && !reading.Family.PlacesByPosition) Planning.Plan.Refuse($"This file's binding cannot add a {add.Type} at a position; only a persistence plugin can.");
         var rules = reading.Binding.AllRules.Where(r => r.Type == add.Type && (add.Slot is null || r.Parent?.Slot == add.Slot)).ToList();
+        if (rules.Count == 0 && BlockInsert(reading.Binding, add.Type) is { } block) rules.Add(block);
         if (rules.Count == 0) Planning.Plan.Refuse($"This file has no place for a {add.Type}.");
         // Several rules may write one type (a cell's items are options or rows; a filter's
         // conditions are written at each level of nesting). The one meant is a rule the parent
@@ -316,6 +317,16 @@ internal static class EditPlanner
         reading.Family.Insert(plan, new InsertRequest(rule, add.Id, values, parent, source, target, add.Index, after));
         if (rule.SnapshotUndo) plan.Snapshot = true;
     }
+
+    /// <summary>
+    /// A block rule of the grammar family that an add names as its type, with its <c>insert</c> (FBL 0.11 §4.9): a rule of
+    /// that name that selects the block's entries and binds no attribute, so that its entry is planned and undone as an
+    /// element's is while it produces no element; the add's attributes are the values of the emit's placeholders.
+    /// </summary>
+    private static Rule? BlockInsert(FblBinding binding, string type) =>
+        binding.Body.Family == Family.Grammar && binding.Blocks.FirstOrDefault(block => block.Name == type && block is { Insert: not null, At: not null }) is { } named
+            ? new Rule { Name = named.Name, Type = named.Name, At = named.At, Insert = named.Insert }
+            : null;
 
     /// <summary>The attributes an add gives, as a rule's insert <c>when</c> sees them: a relation's ends are not among them.</summary>
     private static Dictionary<string, object?> InsertedAttributes(Rule rule, ModelChange.Add add) =>
