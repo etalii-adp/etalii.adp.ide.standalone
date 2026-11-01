@@ -1,36 +1,6 @@
 using EtAlii.Adp.Documents;
 
-namespace EtAlii.Adp.Diagram.C4;
-
-/// <summary>What a document parsed to: its model, its relationships, its views and its styles.</summary>
-/// <param name="Name">The workspace name, for a title that wants to say it.</param>
-/// <param name="Elements">Every declared element, in document order.</param>
-/// <param name="Relationships">Every declared relationship, in document order.</param>
-/// <param name="Views">Every declared view, in document order - the first is what a bare document opens.</param>
-/// <param name="Styles">Tag-based element styles, which override ADP's default theme.</param>
-/// <param name="Includes">
-/// The files this document pulls in with <c>!include</c>. ADP does not follow them, so whatever
-/// they declare is missing from the model - which the rule set reports, rather than leaving the
-/// user to wonder where half their diagram went.
-/// </param>
-public sealed record C4Workspace(
-    string Name,
-    IReadOnlyList<C4Element> Elements,
-    IReadOnlyList<C4Relationship> Relationships,
-    IReadOnlyList<C4View> Views,
-    IReadOnlyList<C4ElementStyle> Styles,
-    IReadOnlyList<string> Includes)
-{
-    public static C4Workspace Empty { get; } = new("", [], [], [], [], []);
-
-    /// <summary>The element with this id, or null. Ids are case-insensitive in the DSL.</summary>
-    public C4Element? Find(string id) =>
-        Elements.FirstOrDefault(element => string.Equals(element.Id, id, StringComparison.OrdinalIgnoreCase));
-
-    /// <summary>The view with this key, or null.</summary>
-    public C4View? FindView(string key) =>
-        Views.FirstOrDefault(view => string.Equals(view.Key, key, StringComparison.OrdinalIgnoreCase));
-}
+namespace EtAlii.Adp.Diagram.C4.Tests;
 
 /// <summary>
 /// Reads the subset of the Structurizr DSL that ADP models. Everything it does not model - and
@@ -39,11 +9,18 @@ public sealed record C4Workspace(
 /// representation here (c4-diagrams Requirement 3.3).
 /// </summary>
 /// <remarks>
+/// <para>
+/// No longer the product's reader: <see cref="C4Body"/> reads every body through the binding (c4-disl-fbl task 14).
+/// It is kept here as the oracle the binding's reading is compared with (<c>C4BindingBesideParser.Tests</c>,
+/// <c>C4CrossCheck.Tests</c>) and that <c>C4Parser.Tests</c> pins.
+/// </para>
+/// <para>
 /// Hand-written rather than a generated grammar, and deliberately forgiving. This is not a
 /// validating parser: what a document *means* is the definitions' question (<c>C4Definitions</c>), and reporting a
 /// missing description as a parse failure would stop a mid-edit document from opening at all.
+/// </para>
 /// </remarks>
-public static class C4Parser
+internal static class C4Parser
 {
     /// <summary>The keywords that declare an element, and the kind each declares.</summary>
     private static readonly Dictionary<string, C4ElementKind> ElementKeywords = new(StringComparer.OrdinalIgnoreCase)

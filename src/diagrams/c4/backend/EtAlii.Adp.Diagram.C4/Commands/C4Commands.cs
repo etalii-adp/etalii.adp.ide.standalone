@@ -29,7 +29,7 @@ public abstract class C4EditHandler<TCommand>(IC4DocumentStore documents)
     where TCommand : IDocumentEditCommand
 {
     /// <inheritdoc />
-    protected sealed override C4Workspace Parse(LineDocument body) => C4Parser.Parse(body);
+    protected sealed override C4Workspace Parse(LineDocument body) => C4Body.Read(body.Text).Workspace;
 
     /// <summary>
     /// Rewrites one argument of the line an element was declared on. Everything else on that
@@ -121,8 +121,19 @@ public abstract class C4EditHandler<TCommand>(IC4DocumentStore documents)
 internal sealed class SetElementNameCommandHandler(IC4DocumentStore documents) : C4EditHandler<SetElementNameCommand>(documents)
 {
     /// <inheritdoc />
-    protected override EditOutcome Apply(LineDocument body, C4Workspace model, SetElementNameCommand command) =>
-        EditElement(body, model, command.ElementId, 0, command.Name, element => element.Name, was => command with { Name = was });
+    protected override EditOutcome Apply(LineDocument body, C4Workspace model, SetElementNameCommand command)
+    {
+        var element = model.Find(command.ElementId);
+        if (element is not null && element.Kind is C4ElementKind.ContainerInstance or C4ElementKind.SoftwareSystemInstance)
+        {
+            // An instance takes (what it is an instance of, deployment groups, tags) - writing a name
+            // into position 0 would replace the container or software system it is an instance of.
+            return EditOutcome.Refused(
+                $"A {element.Kind.ToString().ToLowerInvariant()} has no name in C4; it stands for what it is an instance of.");
+        }
+
+        return EditElement(body, model, command.ElementId, 0, command.Name, e => e.Name, was => command with { Name = was });
+    }
 }
 
 internal sealed class SetElementDescriptionCommandHandler(IC4DocumentStore documents) : C4EditHandler<SetElementDescriptionCommand>(documents)

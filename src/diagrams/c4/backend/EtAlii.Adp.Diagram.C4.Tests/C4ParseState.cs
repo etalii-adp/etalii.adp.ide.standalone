@@ -1,5 +1,5 @@
 
-namespace EtAlii.Adp.Diagram.C4;
+namespace EtAlii.Adp.Diagram.C4.Tests;
 
 /// <summary>The parser's running state: the scope stack, the element chain, and what has been read.</summary>
 internal sealed class C4ParseState

@@ -12,9 +12,16 @@ namespace EtAlii.Adp.Diagram.C4.Tests.Parity;
 /// over the members <see cref="C4RuleSet.MembersOf"/> gives.
 /// </summary>
 /// <remarks>
+/// <para>
+/// One amendment, of 2026-11-01 (c4-disl-fbl task 14): an instance has no name in C4, so it is offered neither
+/// "Rename…" nor a Name row (<see cref="IsInstance"/>). The hand-written providers offered both, and the name they
+/// wrote replaced what the instance is an instance of.
+/// </para>
+/// <para>
 /// The hand-written menus and rows read the parsed workspace alone: they did not depend on the view a
 /// target is drawn on, nor on the type it was opened as, which is why the derived ones are compared
 /// with the same answer under every view.
+/// </para>
 /// </remarks>
 internal static class HandWrittenC4
 {
@@ -80,11 +87,13 @@ internal static class HandWrittenC4
             ])];
         }
 
-        var actions = new List<ContextActionDefinition>
+        var actions = new List<ContextActionDefinition>();
+        if (!IsInstance(element!))
         {
-            new(RenameActionId, "Rename…", "mdi-pencil-outline", new ContextShortcutDefinition("F2")),
-            new(EditDescriptionActionId, element!.Description.Length > 0 ? "Edit description…" : "Add description…", "mdi-text-box-outline"),
-        };
+            actions.Add(new ContextActionDefinition(RenameActionId, "Rename…", "mdi-pencil-outline", new ContextShortcutDefinition("F2")));
+        }
+
+        actions.Add(new ContextActionDefinition(EditDescriptionActionId, element!.Description.Length > 0 ? "Edit description…" : "Add description…", "mdi-text-box-outline"));
 
         if (element.Kind is C4ElementKind.Container or C4ElementKind.Component
             or C4ElementKind.DeploymentNode or C4ElementKind.InfrastructureNode)
@@ -110,13 +119,19 @@ internal static class HandWrittenC4
             : [];
     }
 
+    /// <summary>Whether <paramref name="element"/> is an instance, which has no name of its own in C4.</summary>
+    private static bool IsInstance(C4Element element) =>
+        element.Kind is C4ElementKind.ContainerInstance or C4ElementKind.SoftwareSystemInstance;
+
     private static IReadOnlyList<ContextPropertyDefinition> Describe(C4Element element)
     {
-        var properties = new List<ContextPropertyDefinition>
+        var properties = new List<ContextPropertyDefinition>();
+        if (!IsInstance(element))
         {
-            new(NamePropertyId, "Name", element.Name),
-            new(DescriptionPropertyId, "Description", element.Description, ContextPropertyEditor.Text),
-        };
+            properties.Add(new ContextPropertyDefinition(NamePropertyId, "Name", element.Name));
+        }
+
+        properties.Add(new ContextPropertyDefinition(DescriptionPropertyId, "Description", element.Description, ContextPropertyEditor.Text));
 
         if (element.Kind is C4ElementKind.Container or C4ElementKind.Component
             or C4ElementKind.DeploymentNode or C4ElementKind.InfrastructureNode)

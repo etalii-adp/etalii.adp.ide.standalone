@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
@@ -17,7 +16,7 @@ namespace EtAlii.Adp.Diagram.C4.Tests;
 public class BigBankPlcTests
 {
     private static readonly C4Workspace Workspace =
-        C4Parser.Parse(LineDocument.Parse(File.ReadAllText(IoPath.Combine("Fixtures", "big-bank-plc.dsl"))));
+        C4Body.Read(File.ReadAllText(IoPath.Combine("Fixtures", "big-bank-plc.dsl"))).Workspace;
 
     [Fact]
     public void TheFourStaticLevels_AllParse()
@@ -120,16 +119,12 @@ public class BigBankPlcTests
     }
 
     [Fact]
-    public void TheStylesBlock_IsRead_SoTheDocumentsPaletteWins()
+    public void TheStylesBlock_IsKeptUnread_SoTheDefaultPaletteStands()
     {
-        // Arrange, act and assert.
-        Assert.Contains(Workspace.Styles, style =>
-        {
-            ArgumentNullException.ThrowIfNull(style);
-            return style.Tag == "Person";
-        });
-        Assert.Contains(Workspace.Styles, style => style.Tag == "Existing System");
-        Assert.Contains(Workspace.Styles, style => style.Tag == "Database");
+        // Arrange, act and assert: the binding binds no style (finding A15, c4-disl-fbl task 14), so the document's styles
+        // block, which the parser read only the headers of, changes nothing that is read.
+        Assert.Empty(Workspace.Styles);
+        Assert.Contains("element \"Existing System\"", File.ReadAllText(IoPath.Combine("Fixtures", "big-bank-plc.dsl")), StringComparison.Ordinal);
     }
 
     [Fact]

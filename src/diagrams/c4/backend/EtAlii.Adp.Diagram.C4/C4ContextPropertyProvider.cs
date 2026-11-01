@@ -56,7 +56,7 @@ public sealed class C4ContextPropertyProvider(IHistoryStackStore historyStacks, 
     {
         ArgumentNullException.ThrowIfNull(target);
         ArgumentNullException.ThrowIfNull(entry);
-        return C4Definitions.Rows(entry.Model, C4Disl.FileOf(target.ResolvedFullPath), C4Definitions.ViewOf(entry.Model, target.Origin), target.Origin, target.ElementId);
+        return C4Definitions.Rows(entry.Model, C4Body.FileOf(target.ResolvedFullPath), C4Definitions.ViewOf(entry.Model, target.Origin), target.Origin, target.ElementId);
     }
 
     /// <inheritdoc />

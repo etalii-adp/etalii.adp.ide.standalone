@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 namespace EtAlii.Adp.Diagram.C4;
 
 /// <summary>
@@ -27,7 +26,7 @@ public sealed class C4Validator : IDiagramValidator
         ArgumentNullException.ThrowIfNull(request);
 
         cancellationToken.ThrowIfCancellationRequested();
-        var workspace = C4Parser.Parse(LineDocument.Parse(request.Document));
-        return ValueTask.FromResult(C4Definitions.Problems(workspace, C4Disl.FileOf(request.BodyPath), Origin));
+        var workspace = C4Body.Read(request.Document).Workspace;
+        return ValueTask.FromResult(C4Definitions.Problems(workspace, C4Body.FileOf(request.BodyPath), Origin));
     }
 }

@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
@@ -223,7 +222,7 @@ public class AddC4ElementTests : IDisposable
         await _history.UndoAsync(TestContext.Current.CancellationToken);
 
         // Act.
-        var workspace = C4Parser.Parse(LineDocument.Parse(OnDisk()));
+        var workspace = C4Body.Read(OnDisk()).Workspace;
 
         // Assert.
         // The point: braces balance whatever order the edits happened in.

@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
@@ -41,7 +40,7 @@ public class C4ReconciliationTests
     public static TheoryData<string> Corpus() => C4LinesTests.Corpus();
 
     private static C4Workspace Parse(string fixture) =>
-        C4Parser.Parse(LineDocument.Parse(File.ReadAllText(IoPath.Combine("Fixtures", fixture))));
+        C4Body.Read(File.ReadAllText(IoPath.Combine("Fixtures", fixture))).Workspace;
 
     [Theory]
     [MemberData(nameof(Corpus))]

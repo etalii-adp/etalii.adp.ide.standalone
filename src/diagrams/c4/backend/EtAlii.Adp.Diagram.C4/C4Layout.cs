@@ -59,7 +59,7 @@ public static class C4LayoutEngine
         ArgumentNullException.ThrowIfNull(view);
         ArgumentNullException.ThrowIfNull(metrics);
 
-        members ??= C4Definitions.Members(workspace, C4Disl.FileOf(""), view);
+        members ??= C4Definitions.Members(workspace, C4Body.FileOf(""), view);
         if (members.Count == 0)
         {
             return new C4Layout(new Dictionary<string, Rect>(StringComparer.OrdinalIgnoreCase), []);
