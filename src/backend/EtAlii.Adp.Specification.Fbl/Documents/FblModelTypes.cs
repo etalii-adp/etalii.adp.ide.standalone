@@ -325,6 +325,12 @@ public sealed partial class Rule
 
     public string? ReadOnly { get; init; }
 
+    /// <summary>
+    /// The reason, naming them, when the rule uses constructs this library does not read (FBL 0.17 §15.1): the rule is
+    /// read-only, and no edit of another rule may touch the text of its entries.
+    /// </summary>
+    internal string? Unread { get; init; }
+
     /// <summary>The readings the rule is read for, as origins (FBL 0.10 §5.1); null for every reading.</summary>
     public IReadOnlyList<string>? Origins { get; init; }
 
