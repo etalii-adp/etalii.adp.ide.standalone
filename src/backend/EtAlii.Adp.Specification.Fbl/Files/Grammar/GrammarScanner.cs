@@ -35,6 +35,37 @@ internal sealed class GrammarScanner
         return null;
     }
 
+    /// <summary>
+    /// The end of text a body read in part inside a block skips (FBL 0.11 §4.9, rule 5), lexed from <paramref name="from"/>:
+    /// the end of the first token of a terminal of <paramref name="sync"/>, or the start of a <paramref name="close"/> token
+    /// at the block's own depth when one comes first, <paramref name="open"/> and <paramref name="close"/> tokens before it
+    /// counted as the blocks they open and close; null when neither follows.
+    /// </summary>
+    public int? EndOfSkip(string text, int from, IReadOnlySet<string> sync, string open, string close)
+    {
+        var position = from;
+        var depth = 0;
+        while (position < text.Length)
+        {
+            if (Longest(text, position) is not { } token)
+            {
+                position += char.IsHighSurrogate(text[position]) && position + 1 < text.Length && char.IsLowSurrogate(text[position + 1]) ? 2 : 1;
+                continue;
+            }
+            var name = token.Terminal.Name;
+            if (name == close && depth == 0) return position;
+            if (name == open) depth++;
+            else if (name == close) depth--;
+            position += token.Length;
+            if (sync.Contains(name)) return position;
+        }
+        return null;
+    }
+
+    /// <summary>The terminal and the length of the token lexed at <paramref name="position"/>, with every terminal a candidate; null for a character no terminal matches.</summary>
+    public (string Terminal, int Length)? TokenAt(string text, int position) =>
+        position < text.Length && Longest(text, position) is { } token ? (token.Terminal.Name, token.Length) : null;
+
     private (ScannedTerminal Terminal, int Length)? Longest(string text, int position)
     {
         (ScannedTerminal Terminal, int Length)? best = null;

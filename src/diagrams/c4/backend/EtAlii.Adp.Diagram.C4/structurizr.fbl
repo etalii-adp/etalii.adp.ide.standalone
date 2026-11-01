@@ -1,295 +1,1151 @@
 {
   "$schema": "https://etalii.net/adp/fbl/schema/0.1/fbl.schema.json#/$defs/Document",
-  "fbl": "0.2",
-  "doc": "The C4 module's own binding of a Structurizr DSL workspace, which the six bundled definitions name as persistence.binding (c4-disl-fbl Requirement 4.1, design Amendment 2). It is written in the state FBL 0.2 can express: findings B1, B2, B8, B10, B11 and B23 are repaired, and what needs a language change waits for it (gaps C1 to C6: a comment after a statement or a brace, block comments, an escaped quote, positional optional arguments, an unbalanced body, and the statements of the selected view only). It is on no reading path yet: C4Parser reads every body. Quoted arguments are written as \"[^\"]*\" and identifiers as any run without whitespace, quotes, braces or '='; the lenient spellings of finding B6 are not read yet. Which elements a view shows, and relationships lifted to the nearest drawn ancestor, are the viewpoint's and DISL's; this binding says only how the model is read and written. !script and the other directives, styles, properties and tags written on a line of their own are unbound statements: kept byte for byte, never followed.",
+  "fbl": "0.13",
+  "doc": "A Structurizr DSL workspace (definitions/diagrams/c4-*.dis, c4-container.md), read by the grammar structurizr.lark beside this document: FBL 0.11's grammar family (section 4.9), one binding shared by six readings. Every C4 specification names 'structurizr.fbl#workspace' as its binding, so a host opens one model and one history per .dsl file however many C4 views of it are open (section 9). Comments are owned and kept wherever they stand; a statement that does not parse is skipped to its line's end, inside blocks too, and a block that is never closed ends at the end of the body (recover). Elements, relationships and the declaration's positional arguments are read by name, quoted or bare, with their escapes; a tags argument holds the tags its text is cut into at its commas (FBL 0.13, split), as Structurizr reads it; an absent argument is written in its place, padded with empty ones. Each view kind is a view of the body, which a reading of any tool type shows (spec 067, FR-015), and the selected view's include, exclude, title and autoLayout statements, its scope and environment, which the tool types map onto the diagram's attributes, and its interactions are read for it alone. Which elements a view shows, and relationships lifted to the nearest drawn ancestor, are the viewpoint's and DISL's. An !include is read as the file it names and never followed; !script and the other directives, styles and properties are unbound statements: kept byte for byte, never followed.",
   "bindings": {
     "workspace": {
       "title": "Structurizr DSL workspace",
       "claims": {
-        "extensions": [".dsl"],
-        "origins": ["c4/system-landscape", "c4/context", "c4/container", "c4/component", "c4/dynamic", "c4/deployment"]
+        "extensions": [
+          ".dsl"
+        ],
+        "origins": [
+          "c4/context",
+          "c4/container",
+          "c4/component",
+          "c4/deployment",
+          "c4/dynamic",
+          "c4/system-landscape"
+        ]
       },
-      "body": { "kind": "file", "family": "blocks" },
+      "body": {
+        "kind": "file",
+        "family": "grammar",
+        "grammar": {
+          "file": "structurizr.lark"
+        },
+        "recover": {
+          "unit": "unit",
+          "sync": [
+            "_NL"
+          ],
+          "nested": {
+            "open": "{",
+            "close": "}"
+          },
+          "unclosed": {
+            "BLOCK_COMMENT": "*/"
+          }
+        }
+      },
       "reader": "declared",
-      "text": { "newline": "lf", "indent": 4, "finalNewline": true },
-      "comment": "^\\s*(#|//)",
+      "text": {
+        "newline": "lf",
+        "indent": 4,
+        "finalNewline": true
+      },
       "registration": {
         "legacyLayout": "{base}.layout.json",
         "createOnFirstPlacement": true
       },
       "blocks": [
-        { "name": "model", "line": "^model\\s*\\{\\s*$", "caseInsensitive": true },
-        { "name": "group", "line": "^group\\s+\"[^\"]*\"\\s*\\{\\s*$", "caseInsensitive": true },
         {
-          "name": "environment",
-          "doc": "[identifier =] deploymentEnvironment \"name\": its nodes are top-level elements, as C4Parser reads them (finding B1).",
-          "line": "^(?:[^\\s\"{}=]+\\s*=\\s*)?deploymentEnvironment\\s+\"[^\"]*\"\\s*\\{\\s*$",
-          "caseInsensitive": true
-        },
-        { "name": "views", "line": "^views\\s*\\{\\s*$", "caseInsensitive": true },
-        {
-          "name": "landscapeView",
-          "doc": "systemLandscape \"key\" [\"description\"]: the key is the first string (finding B2).",
-          "line": "^systemLandscape\\s+\"(?<key>[^\"]*)\"(?:\\s+\"[^\"]*\")*\\s*\\{\\s*$",
-          "within": ["views"],
-          "caseInsensitive": true,
-          "view": "key"
-        },
-        {
-          "name": "landscapeViewWithoutKey",
-          "doc": "systemLandscape without a key is the view 'landscape', as C4Parser names it; the key is read from the keyword, and a registration's view header is matched ignoring case (FBL 9.3).",
-          "line": "^system(?<key>Landscape)\\s*\\{\\s*$",
-          "within": ["views"],
-          "caseInsensitive": true,
-          "view": "key"
+          "name": "systemLandscapeView",
+          "at": "/workspace/views/system_landscape_view",
+          "view": {
+            "node": "key",
+            "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+            "escape": {
+              "with": "\\",
+              "quote": "\""
+            }
+          },
+          "insert": {
+            "place": "end",
+            "container": "/workspace/views",
+            "emit": "systemLandscape \"{key}\" {\n    include *\n    autoLayout lr\n}"
+          }
         },
         {
-          "name": "scopedView",
-          "doc": "systemContext, container, component and dynamic <scope> \"key\" [\"description\"]: the key is the first string after the scope (finding B2).",
-          "line": "^(?:systemContext|container|component|dynamic)\\s+(?<scope>\\*|\"[^\"]*\"|[^\\s\"{}]+)\\s+\"(?<key>[^\"]*)\"(?:\\s+\"[^\"]*\")*\\s*\\{\\s*$",
-          "within": ["views"],
-          "caseInsensitive": true,
-          "view": "key"
+          "name": "systemLandscapeViewWithoutKey",
+          "at": "/workspace/views/system_landscape_view_default",
+          "view": {
+            "value": "'landscape'"
+          }
         },
         {
-          "name": "scopedViewWithoutKey",
-          "doc": "A view of these kinds without a key is named by its kind in lower case, as C4Parser names it; the key is read from the keyword and matched ignoring case (FBL 9.3).",
-          "line": "^(?<key>systemContext|container|component|dynamic)(?:\\s+(?<scope>\\*|\"[^\"]*\"|[^\\s\"{}]+))?\\s*\\{\\s*$",
-          "within": ["views"],
-          "caseInsensitive": true,
-          "view": "key"
+          "name": "systemContextView",
+          "at": "/workspace/views/system_context_view",
+          "view": {
+            "node": "key",
+            "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+            "escape": {
+              "with": "\\",
+              "quote": "\""
+            }
+          },
+          "insert": {
+            "place": "end",
+            "container": "/workspace/views",
+            "emit": "systemContext {scope} \"{key}\" {\n    include *\n    autoLayout lr\n}"
+          }
+        },
+        {
+          "name": "systemContextViewWithoutKey",
+          "at": "/workspace/views/system_context_view_default",
+          "view": {
+            "value": "'systemcontext'"
+          }
+        },
+        {
+          "name": "containerView",
+          "at": "/workspace/views/container_view",
+          "view": {
+            "node": "key",
+            "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+            "escape": {
+              "with": "\\",
+              "quote": "\""
+            }
+          },
+          "insert": {
+            "place": "end",
+            "container": "/workspace/views",
+            "emit": "container {scope} \"{key}\" {\n    include *\n    autoLayout lr\n}"
+          }
+        },
+        {
+          "name": "containerViewWithoutKey",
+          "at": "/workspace/views/container_view_default",
+          "view": {
+            "value": "'container'"
+          }
+        },
+        {
+          "name": "componentView",
+          "at": "/workspace/views/component_view",
+          "view": {
+            "node": "key",
+            "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+            "escape": {
+              "with": "\\",
+              "quote": "\""
+            }
+          },
+          "insert": {
+            "place": "end",
+            "container": "/workspace/views",
+            "emit": "component {scope} \"{key}\" {\n    include *\n    autoLayout lr\n}"
+          }
+        },
+        {
+          "name": "componentViewWithoutKey",
+          "at": "/workspace/views/component_view_default",
+          "view": {
+            "value": "'component'"
+          }
+        },
+        {
+          "name": "dynamicView",
+          "at": "/workspace/views/dynamic_view",
+          "view": {
+            "node": "key",
+            "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+            "escape": {
+              "with": "\\",
+              "quote": "\""
+            }
+          },
+          "insert": {
+            "place": "end",
+            "container": "/workspace/views",
+            "emit": "dynamic {scope} \"{key}\" {\n    include *\n    autoLayout lr\n}"
+          }
+        },
+        {
+          "name": "dynamicViewWithoutKey",
+          "at": "/workspace/views/dynamic_view_default",
+          "view": {
+            "value": "'dynamic'"
+          }
         },
         {
           "name": "deploymentView",
-          "doc": "deployment <scope> \"environment\" \"key\" [\"description\"]: the key is the first string after the environment (finding B2).",
-          "line": "^deployment\\s+(?<scope>\\*|\"[^\"]*\"|[^\\s\"{}]+)\\s+\"(?<environment>[^\"]*)\"\\s+\"(?<key>[^\"]*)\"(?:\\s+\"[^\"]*\")*\\s*\\{\\s*$",
-          "within": ["views"],
-          "caseInsensitive": true,
-          "view": "key"
+          "at": "/workspace/views/deployment_view",
+          "view": {
+            "node": "key",
+            "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+            "escape": {
+              "with": "\\",
+              "quote": "\""
+            }
+          },
+          "insert": {
+            "place": "end",
+            "container": "/workspace/views",
+            "emit": "deployment {scope} \"{environment}\" \"{key}\" {\n    include *\n    autoLayout lr\n}"
+          }
         },
         {
           "name": "deploymentViewWithoutKey",
-          "doc": "A deployment view without a key is named by its environment, as C4Parser names it.",
-          "line": "^deployment\\s+(?<scope>\\*|\"[^\"]*\"|[^\\s\"{}]+)\\s+\"(?<key>[^\"]*)\"\\s*\\{\\s*$",
-          "within": ["views"],
-          "caseInsensitive": true,
-          "view": "key"
-        },
-        {
-          "name": "deploymentViewWithoutEnvironment",
-          "doc": "A deployment view without an environment is the view 'deployment', as C4Parser names it; the key is read from the keyword.",
-          "line": "^(?<key>deployment)(?:\\s+(?<scope>\\*|\"[^\"]*\"|[^\\s\"{}]+))?\\s*\\{\\s*$",
-          "within": ["views"],
-          "caseInsensitive": true,
-          "view": "key"
+          "at": "/workspace/views/deployment_view_default",
+          "view": {
+            "node": "environment",
+            "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+            "escape": {
+              "with": "\\",
+              "quote": "\""
+            }
+          }
         }
       ],
       "elements": [
         {
           "name": "workspace",
           "type": "Workspace",
-          "doc": "The workspace statement, read as the diagram's attributes (typeMap Workspace).",
-          "line": "^workspace(?:\\s+\"(?<name>[^\"]*)\")?(?:\\s+\"[^\"]*\")*\\s*(?:\\{\\s*)?$",
-          "opens": true,
-          "caseInsensitive": true,
-          "readOnly": true,
+          "doc": "The workspace's name, which the tool types map onto the diagram's workspaceName.",
+          "at": "/workspace",
           "attributes": {
-            "name": { "group": "name" }
-          }
-        },
-        {
-          "name": "include",
-          "type": "IncludedFile",
-          "doc": "!include is read, never followed, so that a rule of the definition reports it as c4.include-not-followed; IncludedFile is a type no viewpoint draws (finding B11).",
-          "line": "^!include\\s+(?<path>\\S+)",
-          "caseInsensitive": true,
-          "readOnly": true,
-          "attributes": {
-            "path": { "group": "path" }
+            "name": {
+              "node": "name",
+              "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+              "escape": {
+                "with": "\\",
+                "quote": "\""
+              },
+              "readOnly": true
+            }
           }
         },
         {
           "name": "person",
           "type": "Person",
-          "doc": "[identifier =] person \"name\" [\"description\"] [\"tags\"]. Like every element rule it is read in any block but the views, where C4Parser reads an element, so a misplaced one is read and reported (finding B10).",
-          "line": "^(?:(?<id>[^\\s\"{}=]+)\\s*=\\s*)?person(?:\\s+\"(?<name>[^\"]*)\")?(?:\\s+\"(?<description>[^\"]*)\")?(?:\\s+\"(?<tags>[^\"]*)\")?(?<rest>(?:\\s+[^\\s{]+)*)\\s*(?:\\{\\s*)?$",
-          "within": ["^", "workspace", "model", "group", "environment", "person", "softwareSystem", "container", "component", "deploymentNode", "infrastructureNode", "containerInstance", "softwareSystemInstance"],
-          "opens": true,
-          "caseInsensitive": true,
-          "id": { "from": { "group": "id" } },
-          "parent": { "rules": ["person", "softwareSystem", "container", "component", "deploymentNode", "infrastructureNode", "containerInstance", "softwareSystemInstance"], "slot": "children" },
-          "attributes": {
-            "identifier": { "group": "id", "readOnly": true },
-            "name": { "group": "name", "empty": "refuse" },
-            "description": { "group": "description", "empty": "keep" },
-            "tags": { "group": "tags", "readOnly": true }
+          "at": "/workspace/model/**/person",
+          "id": {
+            "from": {
+              "node": "identifier"
+            }
           },
-          "insert": { "place": "end", "container": "model", "emit": "{id} = person \"{name}\" \"{description}\"" }
+          "attributes": {
+            "name": {
+              "node": "name",
+              "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+              "escape": {
+                "with": "\\",
+                "quote": "\""
+              },
+              "empty": "keep"
+            },
+            "description": {
+              "node": "description",
+              "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+              "escape": {
+                "with": "\\",
+                "quote": "\""
+              },
+              "empty": "keep",
+              "create": {
+                "emit": " \"{value}\"",
+                "after": [
+                  "name"
+                ],
+                "pad": true
+              }
+            },
+            "tags": {
+              "node": "tags",
+              "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+              "escape": {
+                "with": "\\",
+                "quote": "\""
+              },
+              "split": ",",
+              "gather": [
+                {
+                  "node": "tags_statement/tag",
+                  "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+                  "escape": {
+                    "with": "\\",
+                    "quote": "\""
+                  },
+                  "split": ","
+                }
+              ],
+              "readOnly": true
+            }
+          },
+          "insert": {
+            "place": "end",
+            "container": "/workspace/model",
+            "emit": "{id} = person \"{name}\" \"{description}\""
+          },
+          "remove": {
+            "cascade": [
+              "relationship"
+            ]
+          }
         },
         {
           "name": "softwareSystem",
           "type": "SoftwareSystem",
-          "doc": "[identifier =] softwareSystem \"name\" [\"description\"] [\"tags\"].",
-          "line": "^(?:(?<id>[^\\s\"{}=]+)\\s*=\\s*)?softwareSystem(?:\\s+\"(?<name>[^\"]*)\")?(?:\\s+\"(?<description>[^\"]*)\")?(?:\\s+\"(?<tags>[^\"]*)\")?(?<rest>(?:\\s+[^\\s{]+)*)\\s*(?:\\{\\s*)?$",
-          "within": ["^", "workspace", "model", "group", "environment", "person", "softwareSystem", "container", "component", "deploymentNode", "infrastructureNode", "containerInstance", "softwareSystemInstance"],
-          "opens": true,
-          "caseInsensitive": true,
-          "id": { "from": { "group": "id" } },
-          "parent": { "rules": ["person", "softwareSystem", "container", "component", "deploymentNode", "infrastructureNode", "containerInstance", "softwareSystemInstance"], "slot": "children" },
-          "attributes": {
-            "identifier": { "group": "id", "readOnly": true },
-            "name": { "group": "name", "empty": "refuse" },
-            "description": { "group": "description", "empty": "keep" },
-            "tags": { "group": "tags", "readOnly": true }
+          "at": "/workspace/model/**/software_system",
+          "opens": {
+            "open": " {",
+            "close": "}"
           },
-          "insert": { "place": "end", "container": "model", "emit": "{id} = softwareSystem \"{name}\" \"{description}\"" }
+          "id": {
+            "from": {
+              "node": "identifier"
+            }
+          },
+          "attributes": {
+            "name": {
+              "node": "name",
+              "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+              "escape": {
+                "with": "\\",
+                "quote": "\""
+              },
+              "empty": "keep"
+            },
+            "description": {
+              "node": "description",
+              "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+              "escape": {
+                "with": "\\",
+                "quote": "\""
+              },
+              "empty": "keep",
+              "create": {
+                "emit": " \"{value}\"",
+                "after": [
+                  "name"
+                ],
+                "pad": true
+              }
+            },
+            "tags": {
+              "node": "tags",
+              "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+              "escape": {
+                "with": "\\",
+                "quote": "\""
+              },
+              "split": ",",
+              "gather": [
+                {
+                  "node": "tags_statement/tag",
+                  "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+                  "escape": {
+                    "with": "\\",
+                    "quote": "\""
+                  },
+                  "split": ","
+                }
+              ],
+              "readOnly": true
+            }
+          },
+          "insert": {
+            "place": "end",
+            "container": "/workspace/model",
+            "emit": "{id} = softwareSystem \"{name}\" \"{description}\""
+          },
+          "remove": {
+            "cascade": [
+              "container",
+              "relationship"
+            ]
+          }
         },
         {
           "name": "container",
           "type": "Container",
-          "doc": "[identifier =] container \"name\" [\"description\"] [\"technology\"] [\"tags\"].",
-          "line": "^(?:(?<id>[^\\s\"{}=]+)\\s*=\\s*)?container(?:\\s+\"(?<name>[^\"]*)\")?(?:\\s+\"(?<description>[^\"]*)\")?(?:\\s+\"(?<technology>[^\"]*)\")?(?:\\s+\"(?<tags>[^\"]*)\")?(?<rest>(?:\\s+[^\\s{]+)*)\\s*(?:\\{\\s*)?$",
-          "within": ["^", "workspace", "model", "group", "environment", "person", "softwareSystem", "container", "component", "deploymentNode", "infrastructureNode", "containerInstance", "softwareSystemInstance"],
-          "opens": true,
-          "caseInsensitive": true,
-          "id": { "from": { "group": "id" } },
-          "parent": { "rules": ["person", "softwareSystem", "container", "component", "deploymentNode", "infrastructureNode", "containerInstance", "softwareSystemInstance"], "slot": "children" },
-          "attributes": {
-            "identifier": { "group": "id", "readOnly": true },
-            "name": { "group": "name", "empty": "refuse" },
-            "description": { "group": "description", "empty": "keep" },
-            "technology": { "group": "technology", "empty": "keep" },
-            "tags": { "group": "tags", "readOnly": true }
+          "at": "/workspace/model/**/container",
+          "opens": {
+            "open": " {",
+            "close": "}"
           },
-          "insert": { "place": "last-child", "emit": "{id} = container \"{name}\" \"{description}\" \"{technology}\"" }
+          "parent": {
+            "rules": [
+              "softwareSystem"
+            ],
+            "slot": "containers"
+          },
+          "id": {
+            "from": {
+              "node": "identifier"
+            }
+          },
+          "attributes": {
+            "name": {
+              "node": "name",
+              "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+              "escape": {
+                "with": "\\",
+                "quote": "\""
+              },
+              "empty": "keep"
+            },
+            "description": {
+              "node": "description",
+              "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+              "escape": {
+                "with": "\\",
+                "quote": "\""
+              },
+              "empty": "keep",
+              "create": {
+                "emit": " \"{value}\"",
+                "after": [
+                  "name"
+                ],
+                "pad": true
+              }
+            },
+            "technology": {
+              "node": "technology",
+              "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+              "escape": {
+                "with": "\\",
+                "quote": "\""
+              },
+              "empty": "keep",
+              "create": {
+                "emit": " \"{value}\"",
+                "after": [
+                  "description",
+                  "name"
+                ],
+                "pad": true
+              }
+            },
+            "tags": {
+              "node": "tags",
+              "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+              "escape": {
+                "with": "\\",
+                "quote": "\""
+              },
+              "split": ",",
+              "gather": [
+                {
+                  "node": "tags_statement/tag",
+                  "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+                  "escape": {
+                    "with": "\\",
+                    "quote": "\""
+                  },
+                  "split": ","
+                }
+              ],
+              "readOnly": true
+            }
+          },
+          "insert": {
+            "place": "last-child",
+            "emit": "{id} = container \"{name}\" \"{description}\" \"{technology}\""
+          },
+          "remove": {
+            "cascade": [
+              "component",
+              "relationship"
+            ]
+          }
         },
         {
           "name": "component",
           "type": "Component",
-          "doc": "[identifier =] component \"name\" [\"description\"] [\"technology\"] [\"tags\"] (finding B1).",
-          "line": "^(?:(?<id>[^\\s\"{}=]+)\\s*=\\s*)?component(?:\\s+\"(?<name>[^\"]*)\")?(?:\\s+\"(?<description>[^\"]*)\")?(?:\\s+\"(?<technology>[^\"]*)\")?(?:\\s+\"(?<tags>[^\"]*)\")?(?<rest>(?:\\s+[^\\s{]+)*)\\s*(?:\\{\\s*)?$",
-          "within": ["^", "workspace", "model", "group", "environment", "person", "softwareSystem", "container", "component", "deploymentNode", "infrastructureNode", "containerInstance", "softwareSystemInstance"],
-          "opens": true,
-          "caseInsensitive": true,
-          "id": { "from": { "group": "id" } },
-          "parent": { "rules": ["person", "softwareSystem", "container", "component", "deploymentNode", "infrastructureNode", "containerInstance", "softwareSystemInstance"], "slot": "children" },
-          "attributes": {
-            "identifier": { "group": "id", "readOnly": true },
-            "name": { "group": "name", "empty": "refuse" },
-            "description": { "group": "description", "empty": "keep" },
-            "technology": { "group": "technology", "empty": "keep" },
-            "tags": { "group": "tags", "readOnly": true }
+          "at": "/workspace/model/**/component",
+          "opens": {
+            "open": " {",
+            "close": "}"
           },
-          "insert": { "place": "last-child", "emit": "{id} = component \"{name}\" \"{description}\" \"{technology}\"" }
+          "parent": {
+            "rules": [
+              "container"
+            ]
+          },
+          "id": {
+            "from": {
+              "node": "identifier"
+            }
+          },
+          "attributes": {
+            "name": {
+              "node": "name",
+              "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+              "escape": {
+                "with": "\\",
+                "quote": "\""
+              },
+              "empty": "keep"
+            },
+            "description": {
+              "node": "description",
+              "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+              "escape": {
+                "with": "\\",
+                "quote": "\""
+              },
+              "empty": "keep",
+              "create": {
+                "emit": " \"{value}\"",
+                "after": [
+                  "name"
+                ],
+                "pad": true
+              }
+            },
+            "technology": {
+              "node": "technology",
+              "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+              "escape": {
+                "with": "\\",
+                "quote": "\""
+              },
+              "empty": "keep",
+              "create": {
+                "emit": " \"{value}\"",
+                "after": [
+                  "description",
+                  "name"
+                ],
+                "pad": true
+              }
+            },
+            "tags": {
+              "node": "tags",
+              "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+              "escape": {
+                "with": "\\",
+                "quote": "\""
+              },
+              "split": ",",
+              "gather": [
+                {
+                  "node": "tags_statement/tag",
+                  "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+                  "escape": {
+                    "with": "\\",
+                    "quote": "\""
+                  },
+                  "split": ","
+                }
+              ],
+              "readOnly": true
+            }
+          },
+          "insert": {
+            "place": "last-child",
+            "emit": "{id} = component \"{name}\" \"{description}\" \"{technology}\""
+          },
+          "remove": {
+            "cascade": [
+              "relationship"
+            ]
+          }
         },
         {
           "name": "deploymentNode",
           "type": "DeploymentNode",
-          "doc": "[identifier =] deploymentNode \"name\" [\"description\"] [\"technology\"] [\"tags\"] [instances]: the instance count comes after the tags (finding B1).",
-          "line": "^(?:(?<id>[^\\s\"{}=]+)\\s*=\\s*)?deploymentNode(?:\\s+\"(?<name>[^\"]*)\")?(?:\\s+\"(?<description>[^\"]*)\")?(?:\\s+\"(?<technology>[^\"]*)\")?(?:\\s+\"(?<tags>[^\"]*)\")?(?<rest>(?:\\s+[^\\s{]+)*)\\s*(?:\\{\\s*)?$",
-          "within": ["^", "workspace", "model", "group", "environment", "person", "softwareSystem", "container", "component", "deploymentNode", "infrastructureNode", "containerInstance", "softwareSystemInstance"],
-          "opens": true,
-          "caseInsensitive": true,
-          "id": { "from": { "group": "id" } },
-          "parent": { "rules": ["person", "softwareSystem", "container", "component", "deploymentNode", "infrastructureNode", "containerInstance", "softwareSystemInstance"], "slot": "children" },
+          "at": "/workspace/model/**/deployment_node",
+          "opens": {
+            "open": " {",
+            "close": "}"
+          },
+          "parent": {
+            "rules": [
+              "deploymentNode"
+            ]
+          },
+          "id": {
+            "from": {
+              "node": "identifier"
+            }
+          },
           "attributes": {
-            "identifier": { "group": "id", "readOnly": true },
-            "name": { "group": "name", "empty": "refuse" },
-            "description": { "group": "description", "empty": "keep" },
-            "technology": { "group": "technology", "empty": "keep" },
-            "tags": { "group": "tags", "readOnly": true }
+            "name": {
+              "node": "name",
+              "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+              "escape": {
+                "with": "\\",
+                "quote": "\""
+              },
+              "empty": "keep"
+            },
+            "description": {
+              "node": "description",
+              "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+              "escape": {
+                "with": "\\",
+                "quote": "\""
+              },
+              "empty": "keep",
+              "create": {
+                "emit": " \"{value}\"",
+                "after": [
+                  "name"
+                ],
+                "pad": true
+              }
+            },
+            "technology": {
+              "node": "technology",
+              "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+              "escape": {
+                "with": "\\",
+                "quote": "\""
+              },
+              "empty": "keep",
+              "create": {
+                "emit": " \"{value}\"",
+                "after": [
+                  "description",
+                  "name"
+                ],
+                "pad": true
+              }
+            },
+            "tags": {
+              "node": "tags",
+              "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+              "escape": {
+                "with": "\\",
+                "quote": "\""
+              },
+              "split": ",",
+              "gather": [
+                {
+                  "node": "tags_statement/tag",
+                  "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+                  "escape": {
+                    "with": "\\",
+                    "quote": "\""
+                  },
+                  "split": ","
+                }
+              ],
+              "readOnly": true
+            }
+          },
+          "remove": {
+            "cascade": [
+              "relationship"
+            ]
           }
         },
         {
           "name": "infrastructureNode",
           "type": "InfrastructureNode",
-          "doc": "[identifier =] infrastructureNode \"name\" [\"description\"] [\"technology\"] [\"tags\"] (finding B1).",
-          "line": "^(?:(?<id>[^\\s\"{}=]+)\\s*=\\s*)?infrastructureNode(?:\\s+\"(?<name>[^\"]*)\")?(?:\\s+\"(?<description>[^\"]*)\")?(?:\\s+\"(?<technology>[^\"]*)\")?(?:\\s+\"(?<tags>[^\"]*)\")?(?<rest>(?:\\s+[^\\s{]+)*)\\s*(?:\\{\\s*)?$",
-          "within": ["^", "workspace", "model", "group", "environment", "person", "softwareSystem", "container", "component", "deploymentNode", "infrastructureNode", "containerInstance", "softwareSystemInstance"],
-          "opens": true,
-          "caseInsensitive": true,
-          "id": { "from": { "group": "id" } },
-          "parent": { "rules": ["person", "softwareSystem", "container", "component", "deploymentNode", "infrastructureNode", "containerInstance", "softwareSystemInstance"], "slot": "children" },
+          "at": "/workspace/model/**/infrastructure_node",
+          "parent": {
+            "rules": [
+              "deploymentNode"
+            ]
+          },
+          "id": {
+            "from": {
+              "node": "identifier"
+            }
+          },
           "attributes": {
-            "identifier": { "group": "id", "readOnly": true },
-            "name": { "group": "name", "empty": "refuse" },
-            "description": { "group": "description", "empty": "keep" },
-            "technology": { "group": "technology", "empty": "keep" },
-            "tags": { "group": "tags", "readOnly": true }
+            "name": {
+              "node": "name",
+              "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+              "escape": {
+                "with": "\\",
+                "quote": "\""
+              },
+              "empty": "keep"
+            },
+            "description": {
+              "node": "description",
+              "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+              "escape": {
+                "with": "\\",
+                "quote": "\""
+              },
+              "empty": "keep",
+              "create": {
+                "emit": " \"{value}\"",
+                "after": [
+                  "name"
+                ],
+                "pad": true
+              }
+            },
+            "technology": {
+              "node": "technology",
+              "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+              "escape": {
+                "with": "\\",
+                "quote": "\""
+              },
+              "empty": "keep",
+              "create": {
+                "emit": " \"{value}\"",
+                "after": [
+                  "description",
+                  "name"
+                ],
+                "pad": true
+              }
+            },
+            "tags": {
+              "node": "tags",
+              "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+              "escape": {
+                "with": "\\",
+                "quote": "\""
+              },
+              "split": ",",
+              "gather": [
+                {
+                  "node": "tags_statement/tag",
+                  "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+                  "escape": {
+                    "with": "\\",
+                    "quote": "\""
+                  },
+                  "split": ","
+                }
+              ],
+              "readOnly": true
+            }
+          },
+          "remove": {
+            "cascade": [
+              "relationship"
+            ]
           }
         },
         {
           "name": "containerInstance",
           "type": "ContainerInstance",
-          "doc": "[identifier =] containerInstance <container> [\"tags\"]: no name, description or technology; the container it is an instance of is a reference (finding B1).",
-          "line": "^(?:(?<id>[^\\s\"{}=]+)\\s*=\\s*)?containerInstance\\s+(?<of>[^\\s\"{}]+)(?:\\s+\"(?<tags>[^\"]*)\")?(?<rest>(?:\\s+[^\\s{]+)*)\\s*(?:\\{\\s*)?$",
-          "within": ["^", "workspace", "model", "group", "environment", "person", "softwareSystem", "container", "component", "deploymentNode", "infrastructureNode", "containerInstance", "softwareSystemInstance"],
-          "opens": true,
-          "caseInsensitive": true,
-          "id": { "from": { "group": "id" } },
-          "parent": { "rules": ["person", "softwareSystem", "container", "component", "deploymentNode", "infrastructureNode", "containerInstance", "softwareSystemInstance"], "slot": "children" },
+          "at": "/workspace/model/**/container_instance",
+          "parent": {
+            "rules": [
+              "deploymentNode"
+            ]
+          },
+          "id": {
+            "from": {
+              "node": "identifier"
+            }
+          },
           "attributes": {
-            "identifier": { "group": "id", "readOnly": true },
-            "container": { "group": "of", "readOnly": true, "reference": { "to": ["container"], "by": "identifier" } },
-            "tags": { "group": "tags", "readOnly": true }
+            "container": {
+              "node": "instance_of",
+              "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+              "escape": {
+                "with": "\\",
+                "quote": "\""
+              },
+              "reference": {
+                "to": [
+                  "container"
+                ],
+                "by": "id"
+              }
+            },
+            "tags": {
+              "node": "tags",
+              "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+              "escape": {
+                "with": "\\",
+                "quote": "\""
+              },
+              "split": ",",
+              "gather": [
+                {
+                  "node": "tags_statement/tag",
+                  "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+                  "escape": {
+                    "with": "\\",
+                    "quote": "\""
+                  },
+                  "split": ","
+                }
+              ],
+              "readOnly": true
+            }
+          },
+          "remove": {
+            "cascade": [
+              "relationship"
+            ]
           }
         },
         {
           "name": "softwareSystemInstance",
           "type": "SoftwareSystemInstance",
-          "doc": "[identifier =] softwareSystemInstance <softwareSystem> [\"tags\"] (finding B1).",
-          "line": "^(?:(?<id>[^\\s\"{}=]+)\\s*=\\s*)?softwareSystemInstance\\s+(?<of>[^\\s\"{}]+)(?:\\s+\"(?<tags>[^\"]*)\")?(?<rest>(?:\\s+[^\\s{]+)*)\\s*(?:\\{\\s*)?$",
-          "within": ["^", "workspace", "model", "group", "environment", "person", "softwareSystem", "container", "component", "deploymentNode", "infrastructureNode", "containerInstance", "softwareSystemInstance"],
-          "opens": true,
-          "caseInsensitive": true,
-          "id": { "from": { "group": "id" } },
-          "parent": { "rules": ["person", "softwareSystem", "container", "component", "deploymentNode", "infrastructureNode", "containerInstance", "softwareSystemInstance"], "slot": "children" },
+          "at": "/workspace/model/**/software_system_instance",
+          "parent": {
+            "rules": [
+              "deploymentNode"
+            ]
+          },
+          "id": {
+            "from": {
+              "node": "identifier"
+            }
+          },
           "attributes": {
-            "identifier": { "group": "id", "readOnly": true },
-            "softwareSystem": { "group": "of", "readOnly": true, "reference": { "to": ["softwareSystem"], "by": "identifier" } },
-            "tags": { "group": "tags", "readOnly": true }
+            "softwareSystem": {
+              "node": "instance_of",
+              "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+              "escape": {
+                "with": "\\",
+                "quote": "\""
+              },
+              "reference": {
+                "to": [
+                  "softwareSystem"
+                ],
+                "by": "id"
+              }
+            },
+            "tags": {
+              "node": "tags",
+              "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+              "escape": {
+                "with": "\\",
+                "quote": "\""
+              },
+              "split": ",",
+              "gather": [
+                {
+                  "node": "tags_statement/tag",
+                  "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+                  "escape": {
+                    "with": "\\",
+                    "quote": "\""
+                  },
+                  "split": ","
+                }
+              ],
+              "readOnly": true
+            }
+          },
+          "remove": {
+            "cascade": [
+              "relationship"
+            ]
           }
         },
         {
           "name": "relationship",
           "type": "Relationship",
-          "doc": "[identifier =] source -> destination [\"description\"] [\"technology\"] [\"tags\"], in any block but the views, a deployment node and an environment included, on one line or opening a block (finding B8). An element with two reference attributes rather than a relation, so that one whose end names nothing is kept and reported (FBL 5.4; typeMap Relationship).",
-          "line": "^(?:[^\\s\"{}=]+\\s*=\\s*)?(?<source>[^\\s\"{}=]+)\\s+->\\s+(?<destination>[^\\s\"{}]+)(?:\\s+\"(?<description>[^\"]*)\")?(?:\\s+\"(?<technology>[^\"]*)\")?(?:\\s+\"(?<tags>[^\"]*)\")?(?<rest>(?:\\s+[^\\s{]+)*)\\s*(?:\\{\\s*)?$",
-          "within": ["^", "workspace", "model", "group", "environment", "person", "softwareSystem", "container", "component", "deploymentNode", "infrastructureNode", "containerInstance", "softwareSystemInstance"],
-          "opens": true,
+          "doc": "A relationship is read as an entry with two reference attributes, which the tool types map onto a relation, so that an end that names nothing is kept with that end unset. A relationship written without a source inside an element's block has that element as its source.",
+          "at": "/workspace/model/**/relationship",
           "attributes": {
-            "from": { "group": "source", "readOnly": true, "reference": { "to": ["person", "softwareSystem", "container", "component", "deploymentNode", "infrastructureNode", "containerInstance", "softwareSystemInstance"], "by": "identifier" } },
-            "to": { "group": "destination", "readOnly": true, "reference": { "to": ["person", "softwareSystem", "container", "component", "deploymentNode", "infrastructureNode", "containerInstance", "softwareSystemInstance"], "by": "identifier" } },
-            "description": { "group": "description", "empty": "keep" },
-            "technology": { "group": "technology", "empty": "keep" },
-            "tags": { "group": "tags", "readOnly": true }
+            "from": {
+              "node": "source",
+              "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+              "escape": {
+                "with": "\\",
+                "quote": "\""
+              },
+              "reference": {
+                "to": [
+                  "person",
+                  "softwareSystem",
+                  "container",
+                  "component",
+                  "deploymentNode",
+                  "infrastructureNode",
+                  "containerInstance",
+                  "softwareSystemInstance"
+                ],
+                "by": "id"
+              }
+            },
+            "to": {
+              "node": "destination",
+              "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+              "escape": {
+                "with": "\\",
+                "quote": "\""
+              },
+              "reference": {
+                "to": [
+                  "person",
+                  "softwareSystem",
+                  "container",
+                  "component",
+                  "deploymentNode",
+                  "infrastructureNode",
+                  "containerInstance",
+                  "softwareSystemInstance"
+                ],
+                "by": "id"
+              }
+            },
+            "description": {
+              "node": "description",
+              "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+              "escape": {
+                "with": "\\",
+                "quote": "\""
+              },
+              "empty": "keep",
+              "create": {
+                "emit": " \"{value}\"",
+                "after": [
+                  "to"
+                ],
+                "pad": true
+              }
+            },
+            "technology": {
+              "node": "technology",
+              "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+              "escape": {
+                "with": "\\",
+                "quote": "\""
+              },
+              "empty": "keep",
+              "create": {
+                "emit": " \"{value}\"",
+                "after": [
+                  "description",
+                  "to"
+                ],
+                "pad": true
+              }
+            },
+            "tags": {
+              "node": "tags",
+              "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+              "escape": {
+                "with": "\\",
+                "quote": "\""
+              },
+              "split": ",",
+              "gather": [
+                {
+                  "node": "tags_statement/tag",
+                  "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+                  "escape": {
+                    "with": "\\",
+                    "quote": "\""
+                  },
+                  "split": ","
+                }
+              ],
+              "readOnly": true
+            }
+          },
+          "insert": {
+            "place": "end",
+            "container": "/workspace/model",
+            "emit": "{from} -> {to} \"{description}\""
+          },
+          "remove": {}
+        },
+        {
+          "name": "viewInclude",
+          "type": "ViewInclude",
+          "doc": "The selected view's include statements, which the tool types map onto the diagram's includes.",
+          "at": "/workspace/views/*/include_statement",
+          "selectedView": true,
+          "attributes": {
+            "members": {
+              "node": "member",
+              "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+              "escape": {
+                "with": "\\",
+                "quote": "\""
+              },
+              "readOnly": true
+            }
           }
         },
         {
-          "name": "nestedRelationship",
-          "type": "Relationship",
-          "doc": "-> destination [\"description\"] [\"technology\"] [\"tags\"] inside an element's block: its source is the enclosing element (finding B8).",
-          "line": "^->\\s+(?<destination>[^\\s\"{}]+)(?:\\s+\"(?<description>[^\"]*)\")?(?:\\s+\"(?<technology>[^\"]*)\")?(?:\\s+\"(?<tags>[^\"]*)\")?(?<rest>(?:\\s+[^\\s{]+)*)\\s*(?:\\{\\s*)?$",
-          "within": ["group", "person", "softwareSystem", "container", "component", "deploymentNode", "infrastructureNode", "containerInstance", "softwareSystemInstance"],
-          "opens": true,
+          "name": "viewExclude",
+          "type": "ViewInclude",
+          "at": "/workspace/views/*/exclude_statement",
+          "selectedView": true,
           "attributes": {
-            "from": { "parent": "identifier", "readOnly": true },
-            "to": { "group": "destination", "readOnly": true, "reference": { "to": ["person", "softwareSystem", "container", "component", "deploymentNode", "infrastructureNode", "containerInstance", "softwareSystemInstance"], "by": "identifier" } },
-            "description": { "group": "description", "empty": "keep" },
-            "technology": { "group": "technology", "empty": "keep" },
-            "tags": { "group": "tags", "readOnly": true }
+            "excludes": {
+              "node": "member",
+              "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+              "escape": {
+                "with": "\\",
+                "quote": "\""
+              },
+              "readOnly": true
+            }
+          }
+        },
+        {
+          "name": "viewTitle",
+          "type": "ViewInclude",
+          "at": "/workspace/views/*/title_statement",
+          "selectedView": true,
+          "attributes": {
+            "title": {
+              "node": "title",
+              "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+              "escape": {
+                "with": "\\",
+                "quote": "\""
+              },
+              "readOnly": true
+            }
+          }
+        },
+        {
+          "name": "viewAutoLayout",
+          "type": "ViewInclude",
+          "doc": "autoLayout with no direction lays out top to bottom.",
+          "at": "/workspace/views/*/auto_layout_statement",
+          "selectedView": true,
+          "attributes": {
+            "autoLayout": {
+              "node": "direction",
+              "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+              "escape": {
+                "with": "\\",
+                "quote": "\""
+              },
+              "default": "tb",
+              "readOnly": true
+            },
+            "rankSeparation": {
+              "node": "rank_separation",
+              "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+              "escape": {
+                "with": "\\",
+                "quote": "\""
+              },
+              "readOnly": true
+            },
+            "nodeSeparation": {
+              "node": "node_separation",
+              "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+              "escape": {
+                "with": "\\",
+                "quote": "\""
+              },
+              "readOnly": true
+            }
+          }
+        },
+        {
+          "name": "viewScope",
+          "type": "ViewInclude",
+          "at": "/workspace/views/*/scope",
+          "selectedView": true,
+          "attributes": {
+            "scope": {
+              "node": ".",
+              "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+              "escape": {
+                "with": "\\",
+                "quote": "\""
+              },
+              "readOnly": true
+            }
+          }
+        },
+        {
+          "name": "viewEnvironment",
+          "type": "ViewInclude",
+          "at": "/workspace/views/*/environment",
+          "selectedView": true,
+          "attributes": {
+            "environment": {
+              "node": ".",
+              "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+              "escape": {
+                "with": "\\",
+                "quote": "\""
+              },
+              "readOnly": true
+            }
+          }
+        },
+        {
+          "name": "interaction",
+          "type": "Interaction",
+          "doc": "A dynamic view's interactions, read for the selected view only.",
+          "at": "/workspace/views/*/interaction",
+          "selectedView": true,
+          "attributes": {
+            "from": {
+              "node": "source",
+              "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+              "escape": {
+                "with": "\\",
+                "quote": "\""
+              },
+              "reference": {
+                "to": [
+                  "person",
+                  "softwareSystem",
+                  "container",
+                  "component",
+                  "deploymentNode",
+                  "infrastructureNode",
+                  "containerInstance",
+                  "softwareSystemInstance"
+                ],
+                "by": "id"
+              }
+            },
+            "to": {
+              "node": "destination",
+              "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+              "escape": {
+                "with": "\\",
+                "quote": "\""
+              },
+              "reference": {
+                "to": [
+                  "person",
+                  "softwareSystem",
+                  "container",
+                  "component",
+                  "deploymentNode",
+                  "infrastructureNode",
+                  "containerInstance",
+                  "softwareSystemInstance"
+                ],
+                "by": "id"
+              }
+            },
+            "description": {
+              "node": "description",
+              "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
+              "escape": {
+                "with": "\\",
+                "quote": "\""
+              },
+              "readOnly": true
+            }
+          }
+        },
+        {
+          "name": "include",
+          "type": "IncludedFile",
+          "doc": "An !include directive, in any case and at any depth, is read as the file it names and never followed, so that the tool types report it (c4.include-not-followed); IncludedFile is a type no viewpoint draws. Its path is the directive's first argument, without the quotes of a quoted one.",
+          "at": "/**/directive",
+          "when": "entry.children[0].text.lowerAscii() == '!include'",
+          "readOnly": true,
+          "attributes": {
+            "path": {
+              "value": "entry.children.size() < 2 || entry.children[1] == null ? '' : entry.children[1].type == 'STRING' ? entry.children[1].text.substring(1, entry.children[1].text.size() - 1) : entry.children[1].text"
+            }
           }
         }
       ],
       "template": {
-        "doc": "The six texts C4's document factory writes (ServiceCollection.AddC4.EmptyDocument), the container view's as the default (finding B23). {base} stands for the factory's name and {key} for its identifier: the factory keeps every Unicode letter and falls back to 'system', {key} keeps ASCII and falls back to 'untitled', and the factory escapes a quote in the name, which {base} does not (gap C4).",
-        "text": "workspace \"{base}\" {\n\n    model {\n        {key} = softwareSystem \"{base}\"\n    }\n\n    views {\n        container {key} \"containers\" {\n            include *\n            autoLayout lr\n        }\n    }\n\n}\n",
+        "text": "workspace \"{base}\" {\n    model {\n        {key} = softwareSystem \"{base}\" \"Describe {base}.\"\n    }\n    views {\n        container {key} \"containers\" {\n            include *\n            autoLayout lr\n        }\n    }\n}\n",
         "byOrigin": {
-          "c4/system-landscape": "workspace \"{base}\" {\n\n    model {\n        {key} = softwareSystem \"{base}\"\n    }\n\n    views {\n        systemLandscape \"landscape\" {\n            include *\n            autoLayout lr\n        }\n    }\n\n}\n",
-          "c4/context": "workspace \"{base}\" {\n\n    model {\n        {key} = softwareSystem \"{base}\"\n    }\n\n    views {\n        systemContext {key} \"context\" {\n            include *\n            autoLayout lr\n        }\n    }\n\n}\n",
-          "c4/component": "workspace \"{base}\" {\n\n    model {\n        {key} = softwareSystem \"{base}\" {\n            application = container \"Application\" \"\" \"Technology\"\n        }\n    }\n\n    views {\n        component application \"components\" {\n            include *\n            autoLayout lr\n        }\n    }\n\n}\n",
-          "c4/dynamic": "workspace \"{base}\" {\n\n    model {\n        {key} = softwareSystem \"{base}\"\n    }\n\n    views {\n        dynamic {key} \"scenario\" {\n            autoLayout lr\n        }\n    }\n\n}\n",
-          "c4/deployment": "workspace \"{base}\" {\n\n    model {\n        {key} = softwareSystem \"{base}\"\n\n        deploymentEnvironment \"Production\" {\n            deploymentNode \"Server\" {\n            }\n        }\n    }\n\n    views {\n        deployment {key} \"Production\" \"deployment\" {\n            include *\n            autoLayout lr\n        }\n    }\n\n}\n"
+          "c4/context": "workspace \"{base}\" {\n    model {\n        {key} = softwareSystem \"{base}\" \"Describe {base}.\"\n    }\n    views {\n        systemContext {key} \"context\" {\n            include *\n            autoLayout lr\n        }\n    }\n}\n",
+          "c4/system-landscape": "workspace \"{base}\" {\n    model {\n        {key} = softwareSystem \"{base}\" \"Describe {base}.\"\n    }\n    views {\n        systemLandscape \"landscape\" {\n            include *\n            autoLayout lr\n        }\n    }\n}\n"
         }
       }
     }

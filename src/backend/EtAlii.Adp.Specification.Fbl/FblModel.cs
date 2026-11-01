@@ -40,6 +40,16 @@ public sealed record FblModel(IReadOnlyList<FblElement> Elements, IReadOnlyList<
     /// <summary>The views a blocks body defines (FBL §4.7), in document order.</summary>
     internal IReadOnlyList<FblView> Views { get; init; } = [];
 
+    /// <summary>The names of the views the body defines (FBL §4.7, FBL 0.11 §4.9), in document order.</summary>
+    public IReadOnlyList<string> ViewNames => [.. Views.Select(view => view.Name)];
+
+    /// <summary>
+    /// The name of the view the reading shows (FBL §9.3, FBL 0.11 §4.9): the one the registration's <c>view</c> header names,
+    /// matched ignoring case, or without it the first of the reading's origin; null when the body defines no view or the
+    /// header names none. A legacy layout keeps its positions under this name (FBL §8.7).
+    /// </summary>
+    public string? SelectedView { get; init; }
+
     /// <summary>The resources a body holds (FBL §8.2): the values of the binding's resource capture, in document order.</summary>
     public IReadOnlyList<string> Resources { get; init; } = [];
 
@@ -49,6 +59,12 @@ public sealed record FblModel(IReadOnlyList<FblElement> Elements, IReadOnlyList<
     /// </summary>
     internal FblView? SelectView(string? header) =>
         header is null ? Views.FirstOrDefault() : Views.FirstOrDefault(v => string.Equals(v.Name, header, StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>
+    /// Whether a registration's <c>view</c> header names no view of this body (FBL 0.11 §9.3): false without a header, and
+    /// for a body that defines no views, whose reading shows the body as before.
+    /// </summary>
+    public bool ShowsNoView(string? header) => header is not null && Views.Count > 0 && SelectView(header) is null;
 }
 
 /// <summary>A view a block of the body defines (FBL §4.7): its name, the block rule that matched it, and where it is.</summary>
@@ -152,6 +168,12 @@ public sealed class FblOptions
     public string? Resource { get; init; }
 
     /// <summary>
+    /// The registration's <c>view</c> header (FBL §9.3): which view of the body the reading shows, matched ignoring the case
+    /// of ASCII letters; null for the first view in document order. A header that names no view shows none (FBL 0.11).
+    /// </summary>
+    public string? View { get; init; }
+
+    /// <summary>
     /// The origin of the reading (FBL 0.10 §5.1, §9.1): the tool type the body is read as, which decides the rules it
     /// is read by and the resource capture it selects by (§8.2). Null reads by every rule, as before 0.10.
     /// </summary>
@@ -183,6 +205,7 @@ public sealed class FblOptions
         RegistrationHeaders = RegistrationHeaders,
         Resource = resource,
         Origin = origin,
+        View = View,
         SupplementaryEntries = SupplementaryEntries,
         Identities = Identities,
     };

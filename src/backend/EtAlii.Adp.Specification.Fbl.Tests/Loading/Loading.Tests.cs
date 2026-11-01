@@ -417,7 +417,7 @@ public class LoadingTests
         Assert.Equal("0.2", helmVersion);
         Assert.Equal("Helm chart", helm.Title);
         Assert.Empty(helm.Claims.Suggest);
-        Assert.Equal(["person", "softwareSystem", "container"], structurizr.AllRules.Where(r => r.Opens).Select(r => r.Name));
+        Assert.Equal(["softwareSystem", "container", "component", "deploymentNode"], structurizr.AllRules.Where(r => r.Opens).Select(r => r.Name));
         Assert.Equal(["language"], turtle.Registration.Headers);
         Assert.False(helm.Registration.CreateOnFirstPlacement);
         Assert.False(timeline.Registration.CreateOnFirstPlacement);

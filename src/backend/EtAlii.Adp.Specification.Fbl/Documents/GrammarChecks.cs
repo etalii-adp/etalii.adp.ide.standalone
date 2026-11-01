@@ -23,11 +23,28 @@ internal static class GrammarChecks
         {
             problems.Add(Error(pointer + "/body", "A body of the grammar family carries its grammar (FBL 0.9 4.9)."));
         }
+        for (var i = 0; i < binding.Blocks.Count; i++)
+        {
+            var block = binding.Blocks[i];
+            var at = $"{pointer}/blocks/{i}";
+            if (family && (block.At is null || block.Line.Length > 0)) problems.Add(Error(at, "A block rule of the grammar family has 'at' and no 'line' (FBL 0.11 4.9)."));
+            if (!family && (block.At is not null || block.ViewSlot is not null || block.Insert is not null))
+            {
+                problems.Add(Error(at, "A block rule's 'at', a view slot and an insert stand only in the grammar family (FBL 0.11 4.9)."));
+            }
+            if (block.ViewSlot is { } view && view.Kind is not (SlotKind.Node or SlotKind.Value)) problems.Add(Error(at + "/view", "A block's view is a {node} or a {value} slot (FBL 0.11 4.9)."));
+            if (block.ViewSlot?.Match is { } match) CheckMatch(match, at + "/view/match", problems);
+            if (block.Insert is { } insert && insert.Emit is null) problems.Add(Error(at + "/insert/emit", "A block's insert writes its entry from an emit (FBL 0.11 4.9)."));
+        }
         foreach ((Rule rule, string at) in Rules(binding, pointer))
         {
             if (family && (rule.At is null || rule.Line is not null))
             {
                 problems.Add(Error(at, "A rule of the grammar family has 'at' and no 'line' (FBL 0.9 4.9)."));
+            }
+            if (!family && (rule.SelectedView || rule.OpensWith is not null))
+            {
+                problems.Add(Error(at, "A rule's selectedView, and an opens with its open and close, stand only in the grammar family (FBL 0.11 4.9)."));
             }
             foreach ((Slot slot, string place) in Slots(rule, at))
             {
@@ -62,6 +79,11 @@ internal static class GrammarChecks
             }
         }
         if (slot.Escape is not null && !node) problems.Add(Error(place + "/escape", "An escape stands only on a {node} slot of the grammar family (FBL 0.11 14.1)."));
+        if (slot.Gather.Count > 0)
+        {
+            if (!node || slot.Gather.Any(gathered => gathered.Kind is not SlotKind.Node)) problems.Add(Error(place + "/gather", "A gather stands only on a {node} slot of the grammar family, and gathers {node} slots (FBL 0.11 14.1)."));
+            else if (slot is AttributeBinding { ReadOnly: null } && rule.ReadOnly is null) problems.Add(Error(place + "/gather", "A gathered attribute is read-only, since it is never written (FBL 0.11 3.3, 14.1)."));
+        }
         if (slot is not AttributeBinding { Create.After: { } after }) return;
         if (!family) problems.Add(Error(place + "/create/after", "A create's after stands only in the grammar family (FBL 0.11 14.1)."));
         foreach (var name in after.Where(name => rule.Attribute(name) is null || ReferenceEquals(rule.Attribute(name), slot)))
@@ -73,6 +95,13 @@ internal static class GrammarChecks
     /// <summary>Every segment of a rule's <c>at</c> and of a <c>{node}</c> slot names a rule, alias or terminal of <paramref name="grammar"/>.</summary>
     public static void CheckSelectors(FblBinding binding, GrammarBuild grammar, string pointer, List<LoadDiagnostic> problems)
     {
+        for (var i = 0; i < binding.Blocks.Count; i++)
+        {
+            var block = binding.Blocks[i];
+            if (block.At is { } selector) CheckSelector(selector, slot: false, grammar.Names, $"{pointer}/blocks/{i}/at", problems);
+            if (block.ViewSlot?.Kind is SlotKind.Node(var node)) CheckSelector(node, slot: true, grammar.Names, $"{pointer}/blocks/{i}/view/node", problems);
+            if (block.Insert?.Container is { } container) CheckSelector(container, slot: false, grammar.Names, $"{pointer}/blocks/{i}/insert/container", problems);
+        }
         foreach ((Rule rule, string at) in Rules(binding, pointer))
         {
             if (rule.At is { } selector) CheckSelector(selector, slot: false, grammar.Names, at + "/at", problems);
@@ -140,6 +169,7 @@ internal static class GrammarChecks
             yield return (attribute, a);
             if (attribute.Override is { } o) yield return (o, a + "/override");
             if (attribute.Secondary is { } s) yield return (s, a + "/secondary");
+            for (var i = 0; i < attribute.Gather.Count; i++) yield return (attribute.Gather[i], $"{a}/gather/{i}");
         }
         if (rule.Source is { } source) yield return (source, at + "/source");
         if (rule.Target is { } target) yield return (target, at + "/target");

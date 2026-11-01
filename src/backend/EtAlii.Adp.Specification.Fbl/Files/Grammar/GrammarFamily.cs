@@ -16,10 +16,13 @@ internal sealed class GrammarFamily(BodyText text, FblBinding binding, FblOption
 {
     private readonly Dictionary<string, IReadOnlyList<GrammarSegment>> _selectors = new(StringComparer.Ordinal);
     private readonly Dictionary<GrammarNode, CelMap> _cel = [];
-    private readonly Dictionary<int, Span> _commentLines = [];
+    // The lines that hold only comments, each by the last of them to the first (FBL 0.11 §4.9, rules 1 and 3).
+    private readonly Dictionary<int, int> _commentLines = [];
     private readonly Dictionary<int, int> _commentEnds = [];
     private List<Entry> _entries = [];
     private List<Span> _leaves = [];
+    private List<Span> _tokens = [];
+    private readonly HashSet<GrammarNode> _unclosed = [];
     private GrammarNode? _root;
     private int _skipped;
 
@@ -50,28 +53,63 @@ internal sealed class GrammarFamily(BodyText text, FblBinding binding, FblOption
         _root = reading.Root;
         _entries = [.. reading.Nodes];
         _leaves = [.. reading.Tokens];
+        _tokens = [.. reading.Tokens.OrderBy(token => token.Start)];
         foreach (var comment in reading.Comments) RememberComment(comment);
         foreach (var entry in _entries) entry.LineSpan = LineSpanOf((GrammarNode)entry);
         foreach (var skipped in reading.Skipped) ReportSkipped(skipped);
         _skipped = reading.Skipped.Count;
+        foreach (var open in reading.Unclosed) ReportUnclosed(open);
+        foreach (var comment in reading.UnclosedComments)
+        {
+            Report(FindingCodes.UnclosedComment, FindingSeverity.Warning, "This comment is never closed, so it runs to the end of the file.", comment with { End = Math.Min(comment.End, Text.Lines[Text.LineIndexAt(comment.Start)].ContentEnd) });
+        }
+    }
+
+    /// <summary>
+    /// A block the body ends inside (FBL 0.11 §4.9, rule 6), reported at its <c>open</c> token; the deepest node that holds
+    /// that token is the block, into which nothing can be added (rule 9).
+    /// </summary>
+    private void ReportUnclosed(int open)
+    {
+        var block = _entries.OfType<GrammarNode>().Where(node => node is { IsToken: false, HasSpan: true } && node.Own.Start <= open && open < node.Own.End).MaxBy(Depth);
+        if (block is not null) _unclosed.Add(block);
+        Report(FindingCodes.UnclosedBlock, FindingSeverity.Warning, "This block is never closed, so it runs to the end of the file.", new Span(open, open + 1));
+    }
+
+    private static int Depth(GrammarNode node)
+    {
+        var depth = 0;
+        for (var parent = node.Parent; parent is not null; parent = parent.Parent) depth++;
+        return depth;
     }
 
     /// <summary>Skipped text, reported once where reading stopped, with the length of the text skipped from there (FBL 0.9 §4.9, §7.4).</summary>
     private void ReportSkipped(GrammarSkipped skipped)
     {
         var unit = Binding.Body.Grammar?.Recover?.Unit;
+        if (skipped.Unmatched)
+        {
+            Report(FindingCodes.UnmatchedClose, FindingSeverity.Warning, "This closes no block; it is kept as it is and binds nothing.", skipped.Text);
+            return;
+        }
         Report(FindingCodes.UnparsedText, FindingSeverity.Warning, $"This text does not read as a {unit} of the grammar; it is kept as it is and binds nothing.", skipped.Text with { Start = skipped.Stop });
     }
 
+    /// <summary>
+    /// A comment (FBL 0.11 §4.9, rules 1 and 3): where it ends, and, when it starts its line and only whitespace or comments
+    /// follow it, the first line of the lines it fills, by its last, so that the entry below it takes it as a leading comment.
+    /// </summary>
     private void RememberComment(Span comment)
     {
         _commentEnds[comment.Start] = comment.End;
-        if (OnlyWhitespaceBefore(comment.Start) && OnlyCommentsAfter(comment.End)) _commentLines[Text.LineIndexAt(comment.Start)] = comment;
+        var last = Text.LineIndexAt(Math.Max(comment.Start, comment.End - 1));
+        if (OnlyWhitespaceBefore(comment.Start) && OnlyCommentsAfter(comment.End)) _commentLines[last] = Text.LineIndexAt(comment.Start);
     }
 
     /// <summary>
-    /// The line span (FBL §4.1.1, research R6): the entry's first line to its last, when only whitespace stands before it and
-    /// only whitespace or a comment after it, extended upwards over the lines directly above it that hold only a comment.
+    /// The line span (FBL §4.1.1, FBL 0.11 §4.9): the entry's first line to its last, when only whitespace stands before it
+    /// and only whitespace or a comment after it, extended upwards over the lines directly above it that hold only comments
+    /// (rule 1), and downwards to the last line of a trailing comment that closes on a later line (rule 3).
     /// </summary>
     private Span? LineSpanOf(GrammarNode node)
     {
@@ -81,8 +119,23 @@ internal sealed class GrammarFamily(BodyText text, FblBinding binding, FblOption
         if (!OnlyWhitespaceBefore(node.Own.Start) || (!endsItsLine && !OnlyCommentsAfter(node.Own.End))) return null;
         var first = Text.LineIndexAt(node.Own.Start);
         var last = Text.LineIndexAt(node.Own.End - 1);
-        while (first > 0 && _commentLines.ContainsKey(first - 1)) first--;
+        while (first > 0 && _commentLines.TryGetValue(first - 1, out var above)) first = above;
+        if (!endsItsLine) last = Math.Max(last, LastLineOfTrailingComments(node.Own.End));
         return new Span(Text.Lines[first].Start, Text.Lines[last].End);
+    }
+
+    /// <summary>The line the comments after <paramref name="offset"/> on its line end on: a later one for a comment that closes there.</summary>
+    private int LastLineOfTrailingComments(int offset)
+    {
+        var line = Text.LineIndexAt(offset);
+        var last = line;
+        for (var i = offset; i < Text.Lines[line].ContentEnd; i++)
+        {
+            if (!_commentEnds.TryGetValue(i, out var end)) continue;
+            last = Math.Max(last, Text.LineIndexAt(Math.Max(i, end - 1)));
+            i = end - 1;
+        }
+        return last;
     }
 
     /// <summary>Whether only whitespace and comments follow <paramref name="offset"/> on its line.</summary>
@@ -121,6 +174,13 @@ internal sealed class GrammarFamily(BodyText text, FblBinding binding, FblOption
         return GrammarSelector.Match(_root, Selector(rule.At, slot: false), TextOf).Select(node => new Candidate(rule, null, node, new Dictionary<string, string>()));
     }
 
+    /// <summary>The nodes a block rule's <c>at</c> selects (FBL 0.11 §4.9): entries that produce no element, such as views.</summary>
+    public override IEnumerable<Candidate> BlockCandidates(BlockRule block)
+    {
+        if (block.At is null || _root is null) return [];
+        return GrammarSelector.Match(_root, Selector(block.At, slot: false), TextOf).Select(node => new Candidate(null, block, node, new Dictionary<string, string>()));
+    }
+
     /// <summary>A node as CEL sees it (FBL §4.1.4): its <c>type</c>, <c>text</c> and <c>children</c>, an empty part null and a token's children none.</summary>
     public override object? CelValue(Candidate candidate) => Cel((GrammarNode)candidate.Entry);
 
@@ -148,7 +208,7 @@ internal sealed class GrammarFamily(BodyText text, FblBinding binding, FblOption
     public override SlotRead Read(Candidate candidate, Slot slot)
     {
         if (slot.Kind is not SlotKind.Node(var selector)) return SlotRead.ReadOnlyAbsent($"A grammar entry has no {slot}.");
-        if (slot.Split is not null) return ReadItems(candidate, slot, selector);
+        if (slot.Split is not null || slot.Gather.Count > 0) return ReadItems(candidate, slot, selector);
         var node = GrammarSelector.Match((GrammarNode)candidate.Entry, Selector(selector, slot: true), TextOf).FirstOrDefault();
         return node is null ? SlotRead.Absent : ReadNode(node, slot);
     }
@@ -163,26 +223,39 @@ internal sealed class GrammarFamily(BodyText text, FblBinding binding, FblOption
     /// <summary>
     /// The items of a slot (FBL 0.13 §4.9): with <c>split</c>, the slot is present even where it reaches no node or no
     /// item, as a list holds no item; a node whose text its <c>match</c> does not match holds none, and makes the slot read-only.
+    /// With <c>gather</c> (FBL 0.11 §5.2), the nodes its further slots reach follow, each read by its own slot, and every
+    /// node's items stand in document order.
     /// </summary>
     private SlotRead ReadItems(Candidate candidate, Slot slot, string selector)
     {
         var values = new List<(GrammarNode Node, Span Span)>();
         var items = new List<GrammarItem>();
         string? reason = null;
-        foreach (var node in GrammarSelector.Match((GrammarNode)candidate.Entry, Selector(selector, slot: true), TextOf))
+        foreach ((GrammarNode node, Slot by) in Reached(candidate, slot, selector))
         {
-            var read = ReadNode(node, slot);
+            var read = ReadNode(node, by);
             if (read is not { Present: true, Span: { } span, Wire: { } wire })
             {
                 reason ??= read.Reason;
                 continue;
             }
             values.Add((node, span));
-            if (slot.Split is not { } split) items.Add(new GrammarItem((string)read.Value!, span, node));
-            else items.AddRange(SplitItems.Cut(wire, span.Start, split).Select(item => new GrammarItem(slot.Escape?.Read(item.Text) ?? item.Text, item.Span, node)));
+            if (by.Split is not { } split) items.Add(new GrammarItem((string)read.Value!, span, node));
+            else items.AddRange(SplitItems.Cut(wire, span.Start, split).Select(item => new GrammarItem(by.Escape?.Read(item.Text) ?? item.Text, item.Span, node)));
         }
         var list = items.Select(object? (item) => item.Value).ToList();
-        return new SlotRead(list, null, slot.Split is not null || items.Count > 0, reason is null, reason) { Node = new GrammarItems(values, items) };
+        var listed = slot.Split is not null || slot.Gather.Count > 0;
+        return new SlotRead(list, null, listed || items.Count > 0, reason is null, reason) { Node = new GrammarItems(values, items) };
+    }
+
+    /// <summary>Every node a slot's selector reaches from the entry, with those of its <c>gather</c>, in document order, each with the slot that reads it.</summary>
+    private IEnumerable<(GrammarNode Node, Slot By)> Reached(Candidate candidate, Slot slot, string selector)
+    {
+        var entry = (GrammarNode)candidate.Entry;
+        var reached = GrammarSelector.Match(entry, Selector(selector, slot: true), TextOf).Select(node => (Node: node, By: slot));
+        if (slot.Gather.Count == 0) return reached;
+        var gathered = slot.Gather.Where(by => by.Kind is SlotKind.Node).SelectMany(by => GrammarSelector.Match(entry, Selector(((SlotKind.Node)by.Kind).Selector, slot: true), TextOf).Select(node => (Node: node, By: by)));
+        return reached.Concat(gathered).OrderBy(pair => pair.Node.Own.Start).ThenBy(pair => pair.Node.Order);
     }
 
     /// <summary>A node's value: its text, or the group <c>value</c> of the slot's <c>match</c>, its escapes resolved by the slot's <c>escape</c> (FBL 0.11 §5.2), the text as written its wire.</summary>
@@ -244,32 +317,56 @@ internal sealed class GrammarFamily(BodyText text, FblBinding binding, FblOption
     /// An attribute whose node is absent (FBL 0.11 §5.2, <i>An absent part</i>): written by its binding's <c>create</c>, its
     /// <c>emit</c> by one <c>insert-key</c> right after the last token of the first attribute of <c>after</c> that is
     /// present, the items of a list joined by the slot's separator, or each emitted in turn without <c>split</c>; refused
-    /// without <c>create.after</c> or when no attribute it lists is present. A list set to no item writes nothing.
+    /// without <c>create.after</c> or when no attribute it lists is present. A list set to no item writes nothing. With
+    /// <c>pad</c>, each attribute of <c>after</c> before the present one is written first, empty, by its own <c>create</c>.
     /// </summary>
     protected override bool InsertSlot(Plan plan, ReadElement element, SlotChange change)
     {
         if (change.Read.Node is GrammarItems && NewText.IsEmpty(change.Value)) return true;
-        if (change.Binding.Create is not { After: { } after } create || PartEnd(element, after) is not { } offset)
+        if (change.Binding.Create is not { After: { } after } create || PartEnd(element, after) is not ({ } offset, var present))
         {
             Plan.Refuse($"This {element.Rule.Type} has no {change.Attribute} in this file to set, and a body read by its grammar is given no part an entry lacks.");
             return true;
         }
         var values = change.Read.Node is GrammarItems && change.Binding.Split is null ? Wanted(change).Select(object? (value) => value).ToList() : [change.Value];
         var text = string.Concat(values.Select(value => NewText.Render(create.Emit, name => name == "value" ? Format(change.Read, change.Binding, value) : null)));
-        plan.Add(SpliceOperation.InsertKey, offset, offset, text);
+        if ((create.Pad ? Padding(element.Rule, after.Take(present)) : "") is not { } padding)
+        {
+            Plan.Refuse($"The binding gives no form to write the empty parts before a {element.Rule.Type}'s {change.Attribute} in.");
+            return true;
+        }
+        plan.Add(SpliceOperation.InsertKey, offset, offset, padding + text);
         return true;
     }
 
-    /// <summary>The end of the last token of the first attribute of <paramref name="after"/> the entry holds a part of.</summary>
-    private static int? PartEnd(ReadElement element, IReadOnlyList<string> after)
+    /// <summary>
+    /// The empty parts a positional part is padded with (FBL 0.11 §4.9, <c>pad</c>): each of <paramref name="absent"/>, which
+    /// are nearest first, written by its own <c>create.emit</c> with the empty value, nearest last; null when one has no emit.
+    /// </summary>
+    private string? Padding(Rule rule, IEnumerable<string> absent)
     {
-        foreach (var name in after)
+        var parts = new List<string>();
+        foreach (var name in absent)
         {
-            if (!element.Slots.TryGetValue(name, out var read) || !read.Present) continue;
-            if (read.Node is GrammarNode node) return node.Own.End;
-            if (read.Node is GrammarItems { Values.Count: > 0 } items) return items.Values[^1].Node.Own.End;
+            if (rule.Attribute(name) is not { Create.Emit: { Length: > 0 } emit } binding) return null;
+            parts.Insert(0, NewText.Render(emit, placeholder => placeholder == "value" ? Format(SlotRead.Absent, binding, "") : null));
         }
-        return null;
+        return string.Concat(parts);
+    }
+
+    /// <summary>
+    /// The end of the last token of the first attribute of <paramref name="after"/> the entry holds a part of, and how many
+    /// attributes of <paramref name="after"/> stand before it, absent.
+    /// </summary>
+    private static (int? Offset, int Before) PartEnd(ReadElement element, IReadOnlyList<string> after)
+    {
+        for (var i = 0; i < after.Count; i++)
+        {
+            if (!element.Slots.TryGetValue(after[i], out var read) || !read.Present) continue;
+            if (read.Node is GrammarNode node) return (node.Own.End, i);
+            if (read.Node is GrammarItems { Values.Count: > 0 } items) return (items.Values[^1].Node.Own.End, i);
+        }
+        return (null, after.Count);
     }
 
     /// <summary>The items a set gives a list, as text.</summary>
@@ -408,8 +505,18 @@ internal sealed class GrammarFamily(BodyText text, FblBinding binding, FblOption
             Plan.Refuse($"The binding gives no form to write a new {rule.Type} in.");
             return;
         }
-        var container = Container(rule);
         var text = NewText.Render(emit, name => Placeholder(request, name));
+        if (rule.Insert.Place == InsertPlace.LastChild)
+        {
+            InsertChild(plan, request, text);
+            return;
+        }
+        var container = Container(rule);
+        if (_unclosed.Contains(container))
+        {
+            Plan.Refuse("The block is not closed, so nothing can be added to it.");
+            return;
+        }
         (int offset, string written) = Place(plan, request, container, text);
         var count = Candidates(rule).Count();
         var splice = new Splice(SpliceOperation.InsertEntry, offset, offset, written);
@@ -419,6 +526,94 @@ internal sealed class GrammarFamily(BodyText text, FblBinding binding, FblOption
             return;
         }
         plan.Add(SpliceOperation.InsertEntry, offset, offset, written);
+    }
+
+    /// <summary>
+    /// A new entry as the last child of the add's parent (FBL 0.11 §4.9, <i>A block written around a first child</i>): after
+    /// the last entry of its block, before the closing line; into a parent without a block, its rule's <c>opens</c> written
+    /// right after the parent's last token, then the child one indentation step deeper, then the closing line indented
+    /// like the parent, as <c>open-block</c>, <c>insert-entry</c> and <c>open-block</c>. Read again before it is planned.
+    /// </summary>
+    private void InsertChild(Plan plan, InsertRequest request, string text)
+    {
+        var rule = request.Rule;
+        if (request.Parent?.Entry is not GrammarNode parent)
+        {
+            Plan.Refuse($"A new {rule.Type} is added inside the element that holds it.");
+            return;
+        }
+        if (_unclosed.Contains(parent))
+        {
+            Plan.Refuse("The block is not closed, so nothing can be added to it.");
+            return;
+        }
+        var splices = new List<Splice>();
+        var opens = request.Parent.Rule.OpensWith ?? (" {", "}");
+        Span written;
+        if (BlockOpen(parent, opens) is not { } open)
+        {
+            var indent = IndentationOf(parent.Own.Start);
+            var child = indent + Indentation(Step);
+            var newline = NewlineAt(parent.Own.End);
+            var lineEnd = Text.Lines[Text.LineIndexAt(Math.Max(parent.Own.Start, parent.Own.End - 1))];
+            var opening = opens.Open.Replace("\n", newline + indent, StringComparison.Ordinal);
+            splices.Add(new Splice(SpliceOperation.OpenBlock, parent.Own.End, parent.Own.End, opening));
+            var line = child + Indented(text, child, newline);
+            if (lineEnd.Ending.Length == 0)
+            {
+                splices.Add(new Splice(SpliceOperation.InsertEntry, lineEnd.End, lineEnd.End, newline + line));
+                splices.Add(new Splice(SpliceOperation.OpenBlock, lineEnd.End, lineEnd.End, newline + indent + opens.Close));
+            }
+            else
+            {
+                splices.Add(new Splice(SpliceOperation.InsertEntry, lineEnd.End, lineEnd.End, line + newline));
+                splices.Add(new Splice(SpliceOperation.OpenBlock, lineEnd.End, lineEnd.End, indent + opens.Close + newline));
+            }
+            var shift = Encoding.UTF8.GetByteCount(opening);
+            written = new Span(lineEnd.End + shift, lineEnd.End + shift + Encoding.UTF8.GetByteCount(splices[1].Text));
+        }
+        else
+        {
+            var last = parent.Children.OfType<GrammarNode>().LastOrDefault(child => !child.IsToken && child.HasSpan && child.Own.Start > open.End && child.LineSpan is not null);
+            (int offset, string entry) = last is not null ? After(last, text) : AfterOpen(parent, open, text);
+            splices.Add(new Splice(SpliceOperation.InsertEntry, offset, offset, entry));
+            written = new Span(offset, offset + Encoding.UTF8.GetByteCount(entry));
+        }
+        var count = Candidates(rule).Count();
+        if (ReadAgain(splices) is not { } after || !HoldsTheNewEntry(after, request, rule.Insert!.Emit!, count, written))
+        {
+            Plan.Refuse($"The new {rule.Type} would not read back from the text.");
+            return;
+        }
+        foreach (var splice in splices) plan.Add(splice.Operation, splice.Start, splice.End, splice.Text);
+    }
+
+    /// <summary>The span of the token that opens <paramref name="node"/>'s block, when the node ends in its <c>close</c>; null for a node without a block.</summary>
+    private Span? BlockOpen(GrammarNode node, (string Open, string Close) opens)
+    {
+        var open = opens.Open.Trim();
+        var close = opens.Close.Trim();
+        if (!node.HasSpan || !TextOf(node).EndsWith(close, StringComparison.Ordinal)) return null;
+        foreach (var token in _tokens)
+        {
+            if (token.Start < node.Own.Start) continue;
+            if (token.Start >= node.Own.End) break;
+            if (Text.Text(token) == open && !InsideChild(node, token.Start)) return token;
+        }
+        return null;
+    }
+
+    /// <summary>Whether <paramref name="offset"/> lies inside a node that <paramref name="node"/> holds rather than in its own tokens.</summary>
+    private static bool InsideChild(GrammarNode node, int offset) =>
+        node.Children.OfType<GrammarNode>().Any(child => !child.IsToken && child.HasSpan && child.Own.Start <= offset && offset < child.Own.End);
+
+    /// <summary>A new entry as the first of an empty block: on the line after the one its <c>open</c> ends, one indentation step deeper than the block's entry.</summary>
+    private (int Offset, string Text) AfterOpen(GrammarNode parent, Span open, string text)
+    {
+        var line = Text.Lines[Text.LineIndexAt(open.End)];
+        var indent = IndentationOf(parent.Own.Start) + Indentation(Step);
+        var newline = NewlineAt(line.End);
+        return line.Ending.Length == 0 ? (line.End, newline + indent + Indented(text, indent, newline)) : (line.End, indent + Indented(text, indent, newline) + newline);
     }
 
     /// <summary>A removed entry: a <c>remove-entry</c> of its line span, its leading comments included, or of its own span when it does not start and end its lines.</summary>
