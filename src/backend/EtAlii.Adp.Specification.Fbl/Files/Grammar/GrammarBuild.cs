@@ -188,7 +188,9 @@ internal sealed class GrammarBuild
     /// <summary>
     /// The parser reading bodies: the built one, saved and loaded again with a lexer callback on each of its terminals,
     /// since <c>EtAlii.Lark</c> takes lexer callbacks only when a parser is made and the terminals' names are known only
-    /// once it is built. Loading needs no second build.
+    /// once it is built. Loading needs no second build. A token a pattern cut and its keyword's callback then retyped
+    /// (ATD 0.1 §3.6 rule 3, a keyword with <c>i</c>) reaches neither terminal's callback, as in Lark, so every token the
+    /// parser is given is recorded after the lexer as well; the callbacks still see the ignored tokens, which it is not given.
     /// </summary>
     private LarkParser Reader()
     {
@@ -196,7 +198,13 @@ internal sealed class GrammarBuild
         Lark.Save(saved);
         saved.Position = 0;
         var callbacks = Terminals.ToDictionary(name => name, _ => (Func<Token, Token>)Record, StringComparer.Ordinal);
-        return LarkParser.Load(saved, new LarkOptions { LexerCallbacks = callbacks, PropagatePositions = true });
+        return LarkParser.Load(saved, new LarkOptions { LexerCallbacks = callbacks, PostLex = new Recorder(Record), PropagatePositions = true });
+    }
+
+    /// <summary>Records each token the lexer gives the parser, and passes it on unchanged.</summary>
+    private sealed class Recorder(Func<Token, Token> record) : PostLex
+    {
+        public override IEnumerable<Token> Process(IEnumerable<Token> stream) => stream.Select(record);
     }
 
     private Token Record(Token token)

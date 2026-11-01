@@ -20,9 +20,6 @@ public class ConformanceFixturesTests
     /// <summary>The number of fixtures vendored: fewer means the enumeration broke.</summary>
     private const int MinimumFixtures = 50;
 
-    /// <summary>The reason a fixture is pending because of the lexer: ATD §3.6's longest match, which EtAlii.Lark's priority-first lexer does not give.</summary>
-    private const string LongestMatch = "the lexer takes a keyword that only begins a longer word, as 'title Pipelines' and 'inertial' read, where ATD §3.6 takes the longest match (EtAlii.Lark; the ruling on the lexer is pending with the product owner)";
-
     /// <summary>
     /// The fixtures vendored before the library passes them, by name: the text of the failure each still gives, and why. They
     /// are held out of the theories; <see cref="ThePendingFixturesStillFailAsRecorded"/> fails when one passes, or fails
@@ -30,12 +27,9 @@ public class ConformanceFixturesTests
     /// </summary>
     private static readonly Dictionary<string, (string Fails, string Why)> Pending = new(StringComparer.Ordinal)
     {
-        ["wardley-annotation-positions"] = ("'title' of 'title@1' was not read.", LongestMatch + "; its items (FBL 0.12 section 5.2) are read and written, as GrammarItemsTests show"),
         ["wardley-duplicate-names/same-key-twice"] = ("a splice names the file 'same-key-twice.identities.json'", "an add writes its element's identity entry in the same edit (FBL 0.12 sections 8.6 and 8.7), which etalii.adp spec 071 task T012 (F3) delivers"),
-        ["wardley-legacy-identities"] = ("'title' of 'title@1' was not read.", LongestMatch + "; then a removal prunes the identity entry in the same edit (FBL 0.12 section 8.7), spec 071 task T012 (F3)"),
-        ["wardley-pipelines"] = ("'title' of 'title@1' was not read.", LongestMatch),
-        ["wardley-rename-identity"] = ("fbl.unparsed-text", LongestMatch + ", 'title Annotations' read as the annotations keyword; then a rename moves the identity entries' keys in the same edit (FBL 0.12 section 8.6), spec 071 task T012 (F3)"),
-        ["wardley-trailer/lenient-trailer"] = ("'inertia' of 'component@8' is the bool true", LongestMatch),
+        ["wardley-legacy-identities"] = ("a splice names the file 'annotations-and-labels.identities.json'", "a removal prunes the identity entry in the same edit (FBL 0.12 section 8.7), spec 071 task T012 (F3)"),
+        ["wardley-rename-identity"] = ("a splice names the file 'annotations-and-labels.identities.json'", "a rename moves the identity entries' keys in the same edit (FBL 0.12 section 8.6), spec 071 task T012 (F3)"),
     };
 
     /// <summary>The fixtures copied in etalii.adp's own layout, beside the Knowledge designer's.</summary>

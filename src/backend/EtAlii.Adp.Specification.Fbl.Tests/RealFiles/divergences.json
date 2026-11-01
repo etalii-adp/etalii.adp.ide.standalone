@@ -123,13 +123,6 @@
     {
       "property": "cross-check",
       "binding": "structurizr",
-      "file": "src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/Fixtures/findings/misplaced-container.dsl",
-      "observed": "Container: the binding lacks 1 (grouped)",
-      "reason": "The identifier 'grouped' begins with the keyword 'group'. structurizr.lark gives its keywords priority 2 over WORD, and EtAlii.Lark's contextual lexer, as Lark's, takes the terminal of the higher priority before the longer match, so 'grouped' lexes as _GROUP followed by 'ed' and the statement is skipped as unparsed text; ATD section 3.6 has the longest match win first, which would read it as a WORD. Candidate follow-up: keywords in structurizr.lark that cannot match the start of a longer word (a lookahead), or a lexer that applies ATD 3.6's order."
-    },
-    {
-      "property": "cross-check",
-      "binding": "structurizr",
       "file": "src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/Fixtures/findings/nested-relationships.dsl",
       "observed": "Relationship: the binding lacks 2 (u->s, web->api); the binding adds 2 (->api, ->s)",
       "reason": "A relationship written without a source inside an element's block ('-> s' in u's block) has that element as its source, as C4Parser reads it. structurizr.fbl says so in the rule's doc only: its relationship rule has no parent and its 'from' slot reads the source node, which such a statement does not have, so the binding reads the relationship with 'from' absent. Candidate follow-up for etalii.adp: give the relationship's 'from' the enclosing element when the source is absent (a parent of the relationship rule, or an 'or' to the enclosing element's identifier)."
@@ -259,13 +252,6 @@
       "file": "src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/Fixtures/findings/lenient-spellings.dsl",
       "observed": "User.name: The new name would not read back from the text.",
       "reason": "The person's name is written bare ('Person User'), a WORD. The binding writes a value as it is inside the token it replaces (FBL 0.11 section 4.9), so 'User edited' would be two words, and the set is refused because the entry would not read back with it (section 6.4). C4Parser writes a quoted name. Candidate follow-up for etalii.adp: a slot that requotes a bare value it cannot write as one word (the 'requote' of FBL 0.15's escape)."
-    },
-    {
-      "property": "beside-parser",
-      "binding": "structurizr",
-      "file": "src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/Fixtures/findings/misplaced-container.dsl",
-      "observed": "Parent: the binding lacks 1 (inside in p)",
-      "reason": "A container written inside a person's block has no parent the binding gives: structurizr.fbl's container rule takes a software system as its only parent (parent.rules), so 'inside' is read at the top of the model, while C4Parser records the person as its parent and reports the misplacement. Which of the two the tool shows is the definition's (finding B10), not the binding's."
     },
     {
       "property": "beside-parser",

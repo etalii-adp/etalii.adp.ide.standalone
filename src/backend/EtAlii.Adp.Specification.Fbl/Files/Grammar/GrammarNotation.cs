@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace EtAlii.Adp.Specification.Fbl.Grammar;
@@ -34,9 +35,13 @@ internal static partial class GrammarNotation
             }
             var value = match.Value;
             var where = $"line {line}";
-            if (match.Groups["string"].Success && match.Groups["stringflags"].Length > 0)
+            if (match.Groups["string"].Success && match.Groups["stringflags"].Value is not ("" or "i") and var stringFlags)
             {
-                problems.Add($"{where}: the string flag '{match.Groups["stringflags"].Value}' of {value} is not admitted (ATD §4.1).");
+                problems.Add($"{where}: the string flag '{stringFlags}' of {value} is not admitted; only 'i' is (ATD §4.1).");
+            }
+            else if (match.Groups["string"].Success && match.Groups["stringflags"].Value == "i" && !Ascii.IsValid(value))
+            {
+                problems.Add($"{where}: {value} is matched in any case and holds a character outside ASCII (ATD §4.1).");
             }
             if (match.Groups["regexp"].Success)
             {
