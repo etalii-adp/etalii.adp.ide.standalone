@@ -1,6 +1,6 @@
 using System.Text;
 using EtAlii.Adp.History;
-using EtAlii.Adp.Specification.Fbl.History;
+using EtAlii.Adp.Specification.Fbl;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.DotNetDependencyGraph.Tests;

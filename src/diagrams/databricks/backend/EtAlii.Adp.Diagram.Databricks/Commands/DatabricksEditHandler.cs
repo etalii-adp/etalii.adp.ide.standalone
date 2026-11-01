@@ -32,12 +32,9 @@ public abstract class DatabricksEditHandler<TCommand>(IDatabricksDocumentStore d
             return EditOutcome.Refused("There is no job in this file any more.");
         }
 
-        if (job.Tasks.All(task => task.Key != taskKey))
-        {
-            return EditOutcome.Refused($"There is no task named '{taskKey}' any more.");
-        }
-
-        return DatabricksEdits.Job(body, job, reading => new ModelChange.Set(DatabricksEdits.TaskId(reading, taskKey), DatabricksEdits.Attributes((attribute, value))));
+        return job.Tasks.All(task => task.Key != taskKey)
+            ? EditOutcome.Refused($"There is no task named '{taskKey}' any more.")
+            : DatabricksEdits.Job(body, job, reading => new ModelChange.Set(DatabricksEdits.TaskId(reading, taskKey), DatabricksEdits.Attributes((attribute, value))));
     }
 
     /// <summary>The job an edit addresses: the named one, or the file's first.</summary>

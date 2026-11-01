@@ -902,7 +902,7 @@ internal sealed class GrammarFamily(BodyText text, FblBinding binding, FblOption
     private GrammarFamily? ReadAgain(IReadOnlyList<Splice> splices)
     {
         var ordered = splices.Select((splice, index) => (splice, index)).OrderBy(pair => pair.splice.Start).ThenBy(pair => pair.index).Select(pair => pair.splice).ToList();
-        var after = new GrammarFamily(new BodyText(Edit.Apply(Text.Bytes, ordered)), Binding, Options);
+        var after = new GrammarFamily(new BodyText(SpliceEdit.Apply(Text.Bytes, ordered)), Binding, Options);
         after.Parse();
         return after.Unreadable is null && after._skipped <= _skipped ? after : null;
     }

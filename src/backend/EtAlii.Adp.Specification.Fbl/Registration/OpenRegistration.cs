@@ -1,6 +1,5 @@
 using System.Text;
 using EtAlii.Adp.Specification.Fbl.Documents;
-using EtAlii.Adp.Specification.Fbl.History;
 using EtAlii.Adp.Specification.Fbl.Planning;
 using EtAlii.Adp.Specification.Fbl.Rules;
 
@@ -110,7 +109,7 @@ public sealed class OpenRegistration : SplicedFile
         switch (change)
         {
             case ModelChange.Save:
-                return new PlanResult.Planned(Edit.Empty);
+                return new PlanResult.Planned(SpliceEdit.Empty);
             case ModelChange.Place when ShowsNoView:
                 return new PlanResult.Refused("This view is not in the document, so its positions cannot be stored.");
             case ModelChange.Place place:
@@ -118,9 +117,9 @@ public sealed class OpenRegistration : SplicedFile
                 {
                     return new PlanResult.Refused($"The position of '{place.Id}' is kept for this session only, because its id changes whenever the file is edited.");
                 }
-                return new PlanResult.Planned(new Edit(PlanPlace(place)));
+                return new PlanResult.Planned(new SpliceEdit(PlanPlace(place)));
             case ModelChange.Identify identify:
-                return new PlanResult.Planned(new Edit(PlanIdentify(identify)));
+                return new PlanResult.Planned(new SpliceEdit(PlanIdentify(identify)));
             case ModelChange.Setting setting:
                 if (Declaration(setting.Block) is not { } declaration)
                 {
@@ -128,7 +127,7 @@ public sealed class OpenRegistration : SplicedFile
                 }
                 try
                 {
-                    return new PlanResult.Planned(new Edit(DeclaredBlockWriter.Plan(Document, _declarations, declaration, setting, KnownIds, AbsentMembers?.Invoke(setting.Block))));
+                    return new PlanResult.Planned(new SpliceEdit(DeclaredBlockWriter.Plan(Document, _declarations, declaration, setting, KnownIds, AbsentMembers?.Invoke(setting.Block))));
                 }
                 catch (RefusedException refused)
                 {

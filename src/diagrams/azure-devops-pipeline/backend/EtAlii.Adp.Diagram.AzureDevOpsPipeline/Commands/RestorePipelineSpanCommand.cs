@@ -1,7 +1,6 @@
 using System.Security.Cryptography;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Specification.Fbl;
-using EtAlii.Adp.Specification.Fbl.History;
 
 namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
 
@@ -10,7 +9,7 @@ namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>It carries the library's inverse of the edit's splices</b> (<see cref="Edit.Inverse"/>): each the span the edit
+/// <b>It carries the library's inverse of the edit's splices</b> (<see cref="SpliceEdit.Inverse"/>): each the span the edit
 /// wrote, in the file as the edit left it, and the bytes it replaced, under the edit's own operation, so the file is
 /// byte for byte what it was and every splice still says truthfully what it does (amendment 2 of
 /// azure-devops-pipeline-disl-fbl). The edit of one command is one span where it touched one place, and one span per
@@ -45,13 +44,13 @@ public sealed record RestorePipelineSpanCommand(
     /// <param name="after">The bytes the edit left.</param>
     /// <param name="edit">The edit, its offsets in <paramref name="before"/>.</param>
     /// <param name="isRedo">Whether the command undoes an undo, which makes it a redo.</param>
-    internal static RestorePipelineSpanCommand Undoing(IPipelineEditCommand command, byte[] before, byte[] after, Edit edit, bool isRedo = false)
+    internal static RestorePipelineSpanCommand Undoing(IPipelineEditCommand command, byte[] before, byte[] after, SpliceEdit edit, bool isRedo = false)
     {
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(before);
         ArgumentNullException.ThrowIfNull(after);
         ArgumentNullException.ThrowIfNull(edit);
-        return new RestorePipelineSpanCommand(command.Root, command.BodyPath, Edit.Inverse(before, edit.Splices), DigestOf(after), isRedo);
+        return new RestorePipelineSpanCommand(command.Root, command.BodyPath, SpliceEdit.Inverse(before, edit.Splices), DigestOf(after), isRedo);
     }
 
     /// <summary>The SHA-256 of <paramref name="bytes"/>, as <see cref="Sha256"/> holds it.</summary>

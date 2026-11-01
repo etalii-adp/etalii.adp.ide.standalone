@@ -16,11 +16,11 @@ internal sealed class EditHistory
 
     public bool CanRedo => _redo.Count > 0;
 
-    public void Record(byte[] before, byte[] after, Edit edit)
+    public void Record(byte[] before, byte[] after, SpliceEdit edit)
     {
         _undo.Push(new HistoryEntry(
             edit,
-            Edit.Inverse(before, edit.Splices),
+            SpliceEdit.Inverse(before, edit.Splices),
             SHA256.HashData(before),
             SHA256.HashData(after),
             edit.Snapshot ? before : null));
@@ -53,8 +53,8 @@ internal sealed class EditHistory
                 Clear();
                 return;
             }
-            var before = Edit.Apply(state, inverse);
-            var edit = new Edit(Edit.Inverse(state, inverse));
+            var before = SpliceEdit.Apply(state, inverse);
+            var edit = new SpliceEdit(SpliceEdit.Inverse(state, inverse));
             undo.Add(new HistoryEntry(edit, inverse, SHA256.HashData(before), SHA256.HashData(state), null));
             if (Moved(outside, entry.Inverse) is not { } earlier)
             {
@@ -74,8 +74,8 @@ internal sealed class EditHistory
                 Clear();
                 return;
             }
-            var after = Edit.Apply(state, splices);
-            redo.Add(new HistoryEntry(new Edit(splices), Edit.Inverse(state, splices), SHA256.HashData(state), SHA256.HashData(after), null));
+            var after = SpliceEdit.Apply(state, splices);
+            redo.Add(new HistoryEntry(new SpliceEdit(splices), SpliceEdit.Inverse(state, splices), SHA256.HashData(state), SHA256.HashData(after), null));
             if (Moved(outside, entry.Edit.Splices) is not { } later)
             {
                 Clear();
@@ -118,5 +118,3 @@ internal sealed class EditHistory
         _redo.Clear();
     }
 }
-
-internal sealed record HistoryEntry(Edit Edit, IReadOnlyList<Splice> Inverse, byte[] BeforeDigest, byte[] AfterDigest, byte[]? Snapshot);
