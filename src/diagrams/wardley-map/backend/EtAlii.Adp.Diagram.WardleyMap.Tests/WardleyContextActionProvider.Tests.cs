@@ -618,5 +618,7 @@ public sealed class WardleyContextActionProviderTests : IDisposable
         public void Forget(string path) => inner.Forget(path);
 
         public IReadOnlyList<WardleyIdentityEntry> Identities(string path) => inner.Identities(path);
+
+        public void Remember(string path, string text, IReadOnlyList<WardleyIdentityEntry> identities) => inner.Remember(path, text, identities);
     }
 }

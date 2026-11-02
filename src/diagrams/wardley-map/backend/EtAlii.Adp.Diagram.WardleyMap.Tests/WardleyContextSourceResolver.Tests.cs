@@ -63,7 +63,7 @@ public sealed class WardleyContextSourceResolverTests : IDisposable
         _resolver = new WardleyContextSourceResolver(
             new DiagramFileRouter(catalog),
             _documents,
-            new WardleyElementMapper(new WardleyIdentities(new FileWriter())));
+            new WardleyElementMapper());
     }
 
     public void Dispose()
@@ -172,7 +172,7 @@ public sealed class WardleyContextSourceResolverTests : IDisposable
         var identities = _documents.Identities(_body);
         var map = (await _documents.GetOrLoadAsync(_body, TestContext.Current.CancellationToken)).Model;
         var elementId = await IdOfAsync(WardleyIdentityKind.Component, "Cup of Tea");
-        var streamed = new WardleyElementMapper(new WardleyIdentities(new FileWriter()))
+        var streamed = new WardleyElementMapper()
             .Elements(map, identities)
             .Single(element => element.Id == elementId);
 

@@ -29,10 +29,10 @@ public sealed class WardleyCommandHandlersTests : EditHandlerContract<IWardleyDo
     protected override ICommand EditOfMissing(string bodyPath) => new RenameWardleyElementCommand(bodyPath, "no-such-element", "Kettle");
 
     [Fact]
-    public async Task AMoveAndItsLineRestore_CarryTheSaveWarning()
+    public async Task AMoveAndItsRestore_CarryTheSaveWarning()
     {
-        // Arrange: a move names its own undo, a restore of the one line it changed, so its result
-        // is built apart from the shared run's and the warning can be lost on the way.
+        // Arrange: a move is undone by the shared restore of the whole text, whose result is built apart from the edit's,
+        // so the warning can be lost on the way.
         const string warning = "Something beside the document was not kept.";
         using var folder = TestFolder.Create("EtAlii.Adp.Diagram.WardleyMap.Tests");
         var body = folder.Combine(Path.GetFileName(Example));
@@ -49,7 +49,7 @@ public sealed class WardleyCommandHandlersTests : EditHandlerContract<IWardleyDo
         // Assert.
         Assert.True(moved.IsSuccess, moved.Error);
         Assert.Equal(warning, moved.Warning);
-        Assert.IsType<RestoreWardleyLineCommand>(moved.Inverse);
+        Assert.IsType<RestoreDocumentCommand<IWardleyDocumentStore>>(moved.Inverse);
         Assert.True(restored.IsSuccess, restored.Error);
         Assert.Equal(warning, restored.Warning);
         Assert.Equal(await File.ReadAllTextAsync(Example, TestContext.Current.CancellationToken), await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken));
@@ -59,5 +59,7 @@ public sealed class WardleyCommandHandlersTests : EditHandlerContract<IWardleyDo
         : WarningDocumentStore<LineDocument, WardleyMap>(inner, warning), IWardleyDocumentStore
     {
         public IReadOnlyList<WardleyIdentityEntry> Identities(string path) => inner.Identities(path);
+
+        public void Remember(string path, string text, IReadOnlyList<WardleyIdentityEntry> identities) => inner.Remember(path, text, identities);
     }
 }

@@ -128,6 +128,24 @@ public class RegistrationTests
     }
 
     [Fact]
+    public void TheIdentitiesBlockIsReadAsKeyToId_AndARegistrationWithoutOneHasNone()
+    {
+        // Arrange: a later holder's key ends with its ordinal and a tab, which the block keeps (FBL 0.12 §8.6).
+        var held = OpenRegistration.Open("wardley/map\nidentities:\n  component:Tea: c1\n  component:Tea\u001f2\t: c2\n  component:Tea: c3\n"u8.ToArray());
+        var none = OpenRegistration.Open("wardley/map\n"u8.ToArray());
+
+        // Act.
+        var identities = held.Identities();
+
+        // Assert: the first entry of a key is the one read, and a registration without the block holds none.
+        Assert.NotNull(identities);
+        Assert.Equal(2, identities.Count);
+        Assert.Equal("c1", identities["component:Tea"]);
+        Assert.Equal("c2", identities["component:Tea\u001f2\t"]);
+        Assert.Null(none.Identities());
+    }
+
+    [Fact]
     public void ALegacyLayoutIsReadForItsViewIgnoringCase()
     {
         // Arrange.

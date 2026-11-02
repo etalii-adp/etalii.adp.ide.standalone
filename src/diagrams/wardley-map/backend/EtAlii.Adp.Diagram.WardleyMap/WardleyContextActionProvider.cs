@@ -14,7 +14,7 @@ namespace EtAlii.Adp.Diagram.WardleyMap;
 /// <para>
 /// <b>The menus, the dialogs, what they refuse and what each entry writes are the definition's</b>
 /// (wardley-map-disl-fbl Requirement 3.1): derived by <see cref="WardleyDefinition"/> from the bundled
-/// DISL definition, and written by today's commands (<see cref="WardleyTransactionCommands"/>) through
+/// DISL definition, and written through the binding (<see cref="WriteWardleyTransactionCommand"/>) by
 /// the project's history. This provider computes none of it.
 /// </para>
 /// <para>

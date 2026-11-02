@@ -49,6 +49,14 @@ public sealed record WardleyMap(
     string Style = "",
     WardleyCoordinate? AnnotationsPosition = null)
 {
+    /// <summary>
+    /// Every element that keeps an id, with its kind, the key the binding keeps its id under and its line, in the order
+    /// its ids are given: the components, the links, each pipeline followed by its components, the notes, the
+    /// annotations, the accelerators and the attitudes, each in document order. The keys are the binding's
+    /// (<c>sidecar.kind</c>, <c>sidecar.key</c> and <c>ordinal</c>, FBL 0.12 §8.6), read by <see cref="WardleyBody"/>.
+    /// </summary>
+    public IReadOnlyList<WardleyHolder> Holders { get; init; } = [];
+
     /// <summary>An empty map - what a missing or blank `.owm` reads as (Requirement 2.4).</summary>
     public static WardleyMap Empty { get; } = new("", [], [], [], [], [], [], [], [], []);
 }

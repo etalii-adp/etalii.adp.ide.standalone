@@ -2,7 +2,7 @@ using System.Globalization;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Specification.Disl;
 
-namespace EtAlii.Adp.Diagram.WardleyMap;
+namespace EtAlii.Adp.Diagram.WardleyMap.Tests;
 
 /// <summary>
 /// The command of today's that writes what a transaction of the definition says (DISL §9.3): a create, a set of one
@@ -10,6 +10,10 @@ namespace EtAlii.Adp.Diagram.WardleyMap;
 /// FBL's splices until the map is written through its binding, and goes in task 12 of wardley-map-disl-fbl.
 /// </summary>
 /// <remarks>
+/// <para>
+/// <b>An oracle, not the product</b>: what the module wrote and keyed with before wardley-map-disl-fbl task 12 put
+/// every edit through the binding. It is kept beside the tests to check the binding's output against.
+/// </para>
 /// <para>
 /// <b>Every element is named by its model id</b>, which is the store's identity for it (<see cref="WardleyBody"/>):
 /// a statement that names an element by its name, a link's end, an evolution's or a pipeline's <c>component</c>, is

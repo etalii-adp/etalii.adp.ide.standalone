@@ -26,11 +26,11 @@ namespace EtAlii.Adp.Specification.Fbl.History;
 /// so that undoing the edit does not take away the id the element is known by.
 /// </para>
 /// <para>
-/// Internal until a module opens its bodies through it (spec 071's task T012, the Wardley map), as every public type of the
-/// library is one another project uses.
+/// The Wardley map's module opens its bodies through it (spec 071's task T012). That host keeps an edit's undo its own, by
+/// restoring the whole text, so it uses this for the ids an edit carries and writes the identities where the map keeps them.
 /// </para>
 /// </remarks>
-internal sealed class IdentifiedBody
+public sealed class IdentifiedBody
 {
     /// <summary>For each edit that can be undone, and each that can be redone, whether it wrote the identities file.</summary>
     private readonly Stack<bool> _done = new();
@@ -171,4 +171,4 @@ internal sealed class IdentifiedBody
 /// What an edit of an <see cref="IdentifiedBody"/> did: the body's result, and the splices of the identities file that are a
 /// step of its history, empty when it wrote none.
 /// </summary>
-internal sealed record IdentifiedEdit(PlanResult Body, SpliceEdit Identities);
+public sealed record IdentifiedEdit(PlanResult Body, SpliceEdit Identities);

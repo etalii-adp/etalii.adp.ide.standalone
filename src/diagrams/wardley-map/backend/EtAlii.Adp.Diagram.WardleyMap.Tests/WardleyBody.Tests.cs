@@ -25,11 +25,16 @@ public class WardleyBodyTests
         // Act.
         var read = WardleyBody.Read(LineDocument.Parse(text));
 
-        // Assert.
+        // Assert: the map, and the key of every element as the module kept it before the binding gave them (task 12).
         var expected = WardleyParser.Outcome(LineDocument.Parse(text));
-        Assert.Equal(JsonSerializer.Serialize(expected.Model), JsonSerializer.Serialize(read.Model));
+        Assert.Equal(JsonSerializer.Serialize(expected.Model with { Holders = read.Model.Holders }), JsonSerializer.Serialize(read.Model));
+        Assert.Equal(
+            WardleyIdentityKeys.All(expected.Model).Select(Keyed).Order(StringComparer.Ordinal),
+            read.Model.Holders.Select(Keyed).Order(StringComparer.Ordinal));
         Assert.Equal(JsonSerializer.Serialize(expected.Problems), JsonSerializer.Serialize(read.Problems));
     }
+
+    private static string Keyed(WardleyHolder holder) => $"{holder.Line}|{holder.Kind}|{holder.Key}";
 
     /// <summary>
     /// No statement that opens with a keyword is read as a link, even one holding two arrows as <c>y_axis</c> does, because the

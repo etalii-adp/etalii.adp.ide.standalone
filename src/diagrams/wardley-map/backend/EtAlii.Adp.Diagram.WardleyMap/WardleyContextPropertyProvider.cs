@@ -13,9 +13,9 @@ namespace EtAlii.Adp.Diagram.WardleyMap;
 /// <para>
 /// <b>The rows, their read-only reasons, what a typed value is refused for and what it writes are
 /// the definition's</b> (wardley-map-disl-fbl Requirement 3.1): its inspector forms, derived and
-/// committed by <see cref="WardleyDefinition"/>, and written by today's commands
-/// (<see cref="WardleyTransactionCommands"/>). Typing <c>0.42</c> into the Maturity row and dragging
-/// the component to the same place are still the same command and the same undo entry (Requirement 15.7).
+/// committed by <see cref="WardleyDefinition"/>, and written through the binding
+/// (<see cref="WriteWardleyTransactionCommand"/>). Typing <c>0.42</c> into the Maturity row and dragging
+/// the component to the same place still write the same bytes, each as one undo entry (Requirement 15.7).
 /// </para>
 /// <para>
 /// <b>A file that cannot be written keeps every row</b>, each giving the definition's read-only reason,

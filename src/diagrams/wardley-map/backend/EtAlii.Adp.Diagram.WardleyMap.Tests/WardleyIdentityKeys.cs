@@ -1,10 +1,14 @@
-namespace EtAlii.Adp.Diagram.WardleyMap;
+namespace EtAlii.Adp.Diagram.WardleyMap.Tests;
 
 /// <summary>
 /// The handle each kind of element offers for finding it again across a reload
 /// (Requirement 4.2).
 /// </summary>
 /// <remarks>
+/// <para>
+/// <b>An oracle, not the product</b>: what the module wrote and keyed with before wardley-map-disl-fbl task 12 put
+/// every edit through the binding. It is kept beside the tests to check the binding's output against.
+/// </para>
 /// The `.owm` format has no identifier of any kind, so every key here is derived from what the
 /// document says. They vary in how well they survive an edit made outside ADP, and that is
 /// worth being honest about: a component's name is stable and a rename inside ADP rewrites the
@@ -12,7 +16,7 @@ namespace EtAlii.Adp.Diagram.WardleyMap;
 /// loses its identity. The alternative - writing an ADP id into the file - is what
 /// Requirement 3.7 forbids.
 /// </remarks>
-public static class WardleyIdentityKeys
+internal static class WardleyIdentityKeys
 {
     /// <summary>
     /// What separates the parts of a composite key - ASCII unit separator.

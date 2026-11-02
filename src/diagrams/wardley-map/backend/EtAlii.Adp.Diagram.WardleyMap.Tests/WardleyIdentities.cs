@@ -3,7 +3,7 @@ using EtAlii.Adp.Files;
 using Serilog;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
-namespace EtAlii.Adp.Diagram.WardleyMap;
+namespace EtAlii.Adp.Diagram.WardleyMap.Tests;
 
 /// <summary>
 /// Where ADP keeps the identities the `.owm` format does not provide. A sidecar rather than the
@@ -11,6 +11,10 @@ namespace EtAlii.Adp.Diagram.WardleyMap;
 /// place in it - tech.md's rule, Requirement 3.7, and the precedent C4LayoutSidecar set for `.dsl`.
 /// </summary>
 /// <remarks>
+/// <para>
+/// <b>An oracle, not the product</b>: what the module wrote and keyed with before wardley-map-disl-fbl task 12 put
+/// every edit through the binding. It is kept beside the tests to check the binding's output against.
+/// </para>
 /// <para>
 /// <b>An optimisation, never a dependency</b> (Requirement 4.5). A missing, unreadable or
 /// nonsense sidecar means identities are re-derived from the document; a map that would not
@@ -26,7 +30,7 @@ namespace EtAlii.Adp.Diagram.WardleyMap;
 /// </para>
 /// </remarks>
 /// <param name="writer">Publishes and deletes the sidecar.</param>
-public sealed class WardleyIdentities(IFileWriter writer)
+internal sealed class WardleyIdentities(IFileWriter writer)
 {
     private static readonly ILogger _logger = Log.ForContext<WardleyIdentities>();
 

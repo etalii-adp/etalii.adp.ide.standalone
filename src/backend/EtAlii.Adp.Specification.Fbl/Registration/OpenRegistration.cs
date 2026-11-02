@@ -64,6 +64,12 @@ public sealed class OpenRegistration : SplicedFile
     public IReadOnlyList<KeyValuePair<string, string>>? BlockEntries(string block) =>
         Document.Block(block)?.Entries.Select(entry => new KeyValuePair<string, string>(entry.Key, entry.Value)).ToList();
 
+    /// <summary>
+    /// The <c>identities:</c> block (FBL §8.6) as natural key to id, the first entry of a key; null when the registration holds
+    /// no such block, so that a host reads the legacy identities file instead (FBL 0.12 §8.7).
+    /// </summary>
+    public IReadOnlyDictionary<string, string>? Identities() => Document.Identities is null ? null : Document.IdentityMap();
+
     /// <summary>The natural keys the reading has, when known: an <c>identities</c> entry for any other key is stale (FBL §8.6).</summary>
     public IReadOnlySet<string>? KnownKeys { get; set; }
 

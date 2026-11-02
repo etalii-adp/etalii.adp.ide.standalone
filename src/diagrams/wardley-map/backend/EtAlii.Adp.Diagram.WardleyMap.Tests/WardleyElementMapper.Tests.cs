@@ -7,7 +7,7 @@ namespace EtAlii.Adp.Diagram.WardleyMap.Tests;
 
 public class WardleyElementMapperTests
 {
-    private readonly WardleyElementMapper _mapper = new(new WardleyIdentities(new FileWriter()));
+    private readonly WardleyElementMapper _mapper = new();
 
     private static WardleyMap ParseText(string text) => WardleyBody.Read(LineDocument.Parse(text)).Model;
 

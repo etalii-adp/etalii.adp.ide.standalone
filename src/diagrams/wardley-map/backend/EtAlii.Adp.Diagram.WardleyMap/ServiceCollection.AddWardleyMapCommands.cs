@@ -29,9 +29,9 @@ public static class ServiceCollectionAddWardleyMapCommandsExtension
         // quietly produce two stores that drift apart (Requirement 10.6).
         services.TryAddSingleton<IWardleyDocumentStore, WardleyDocumentStore>();
 
-        // Where the identities the `.owm` format does not provide are kept. Stateless, so one
-        // instance serves every map (Requirement 4.2).
-        services.TryAddSingleton<WardleyIdentities>();
+        // Where the identities the `.owm` format does not provide are kept: the registration's `identities:` block or
+        // the legacy file (FBL 0.12 §8.6, §8.7). Stateless, so one instance serves every map (Requirement 4.2).
+        services.TryAddSingleton<WardleyIdentityFiles>();
 
         // Adding: the three statement kinds, plus the two things a map is written on.
         services.AddSingleton<ICommandHandler<AddWardleyElementCommand>, AddWardleyElementCommandHandler>();
@@ -53,11 +53,11 @@ public static class ServiceCollectionAddWardleyMapCommandsExtension
         services.AddSingleton<ICommandHandler<SetWardleyLinkCommand>, SetWardleyLinkCommandHandler>();
         services.AddSingleton<ICommandHandler<SetWardleyPipelineMembershipCommand>, SetWardleyPipelineMembershipCommandHandler>();
 
-        // The two inverses. An edit that touches one line names the first; one that touches
-        // several - an add, a remove, a rename - is undone by the shared restore of the whole
-        // text, because putting the document back is the only description of those that is both
-        // exact and simple.
-        services.AddSingleton<ICommandHandler<RestoreWardleyLineCommand>, RestoreWardleyLineCommandHandler>();
+        // The definition's own operations - its menus and its rows - written as the model changes they make.
+        services.AddSingleton<ICommandHandler<WriteWardleyTransactionCommand>, WriteWardleyTransactionCommandHandler>();
+
+        // The inverse of every edit: the shared restore of the whole text, because putting the document back is the only
+        // description of an edit that is both exact and simple, however many statements it moved.
         services.AddSingleton<ICommandHandler<RestoreDocumentCommand<IWardleyDocumentStore>>, RestoreDocumentCommandHandler<IWardleyDocumentStore>>();
 
         return services;

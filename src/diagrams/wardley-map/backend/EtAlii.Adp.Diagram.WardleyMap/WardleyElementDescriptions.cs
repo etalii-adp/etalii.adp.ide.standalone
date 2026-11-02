@@ -52,7 +52,7 @@ public static class WardleyElementDescriptions
 
     private static WardleyElementDescription? Component(WardleyMap map, string key)
     {
-        var component = WardleyIdentityKeys.Component(map, key);
+        var component = WardleyHolders.Component(map, key);
         if (component is null)
         {
             return null;
@@ -62,7 +62,7 @@ public static class WardleyElementDescriptions
         // notation contains anything: a Wardley map is a flat space, and the containment the
         // selection chain models is the one the pipeline introduces, and a pipeline naming a
         // repeated name belongs to its first holder (ruling 3).
-        var hasChildren = WardleyIdentityKeys.IsFirstHolder(map, component) && map.Pipelines.Any(pipeline =>
+        var hasChildren = WardleyHolders.IsFirstHolder(map, component) && map.Pipelines.Any(pipeline =>
             pipeline.Parent == component.Name && pipeline.Children.Count > 0);
 
         return new WardleyElementDescription(component.Name, [component.Name], hasChildren);
@@ -72,14 +72,14 @@ public static class WardleyElementDescriptions
     {
         // The only two-segment path this notation produces: a child is named beneath the
         // component whose pipeline holds it.
-        return WardleyIdentityKeys.Child(map, key) is { } found
+        return WardleyHolders.Child(map, key) is { } found
             ? new WardleyElementDescription(found.Child.Name, [found.Pipeline.Parent, found.Child.Name], HasChildren: false)
             : null;
     }
 
     private static WardleyElementDescription? Link(WardleyMap map, string key)
     {
-        var link = WardleyIdentityKeys.Find(map.Links, WardleyIdentityKeys.Of, key);
+        var link = WardleyHolders.Find(map, WardleyIdentityKind.Link, key, map.Links, item => item.Line);
         if (link is null)
         {
             return null;
@@ -98,13 +98,13 @@ public static class WardleyElementDescriptions
 
     private static WardleyElementDescription? Note(WardleyMap map, string key)
     {
-        var note = WardleyIdentityKeys.Find(map.Notes, WardleyIdentityKeys.Of, key);
+        var note = WardleyHolders.Find(map, WardleyIdentityKind.Note, key, map.Notes, item => item.Line);
         return note is null ? null : new WardleyElementDescription(note.Text, [note.Text], HasChildren: false);
     }
 
     private static WardleyElementDescription? Annotation(WardleyMap map, string key)
     {
-        var annotation = WardleyIdentityKeys.Find(map.Annotations, WardleyIdentityKeys.Of, key);
+        var annotation = WardleyHolders.Find(map, WardleyIdentityKind.Annotation, key, map.Annotations, item => item.Line);
         if (annotation is null)
         {
             return null;
@@ -117,7 +117,7 @@ public static class WardleyElementDescriptions
 
     private static WardleyElementDescription? Accelerator(WardleyMap map, string key)
     {
-        var accelerator = WardleyIdentityKeys.Find(map.Accelerators, WardleyIdentityKeys.Of, key);
+        var accelerator = WardleyHolders.Find(map, WardleyIdentityKind.Accelerator, key, map.Accelerators, item => item.Line);
         if (accelerator is null)
         {
             return null;
@@ -131,7 +131,7 @@ public static class WardleyElementDescriptions
 
     private static WardleyElementDescription? Attitude(WardleyMap map, string key)
     {
-        var attitude = WardleyIdentityKeys.Find(map.Attitudes, WardleyIdentityKeys.Of, key);
+        var attitude = WardleyHolders.Find(map, WardleyIdentityKind.Attitude, key, map.Attitudes, item => item.Line);
         if (attitude is null)
         {
             return null;

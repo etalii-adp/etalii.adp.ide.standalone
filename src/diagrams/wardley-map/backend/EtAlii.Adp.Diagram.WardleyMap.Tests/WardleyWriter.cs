@@ -1,13 +1,17 @@
 using System.Text.RegularExpressions;
 using EtAlii.Adp.Documents;
 
-namespace EtAlii.Adp.Diagram.WardleyMap;
+namespace EtAlii.Adp.Diagram.WardleyMap.Tests;
 
 /// <summary>
 /// Rewrites the statements an edit touches, and nothing else (Requirement 3.2), and writes the
 /// text of every statement an edit adds.
 /// </summary>
 /// <remarks>
+/// <para>
+/// <b>An oracle, not the product</b>: what the module wrote and keyed with before wardley-map-disl-fbl task 12 put
+/// every edit through the binding. It is kept beside the tests to check the binding's output against.
+/// </para>
 /// <para>
 /// Every method that changes an existing statement <b>splices a span inside one line</b> rather
 /// than rebuilding the line from the model. That is the difference between an edit and a
@@ -26,7 +30,7 @@ namespace EtAlii.Adp.Diagram.WardleyMap;
 /// are the norm rather than an edge case.
 /// </para>
 /// </remarks>
-public static partial class WardleyWriter
+internal static partial class WardleyWriter
 {
     /// <summary>
     /// Moves one element by rewriting its coordinate pair in place. Returns false when the line

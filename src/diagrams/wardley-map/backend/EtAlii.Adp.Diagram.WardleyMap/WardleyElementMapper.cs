@@ -22,14 +22,6 @@ namespace EtAlii.Adp.Diagram.WardleyMap;
 /// </remarks>
 public sealed class WardleyElementMapper
 {
-    private readonly WardleyIdentities _identities;
-
-    public WardleyElementMapper(WardleyIdentities identities)
-    {
-        ArgumentNullException.ThrowIfNull(identities);
-        _identities = identities;
-    }
-
     /// <summary>
     /// Every element of <paramref name="map"/> as one add - the baseline a connection opens
     /// with. One message rather than a stream of per-element ones, because the whole map is
@@ -42,17 +34,6 @@ public sealed class WardleyElementMapper
 
         var ids = new Ids(map, identities);
         var elements = new List<DiagramElement> { DiagramElementOf(map) };
-
-        // Pipeline children first, so a component that is also a pipeline parent is emitted
-        // with its children already known - and so a child's own element carries its parent.
-        // var childOf = new Dictionary<string, WardleyPipeline>(StringComparer.Ordinal);
-        // foreach (var pipeline in map.Pipelines)
-        // {
-        //     foreach (var child in pipeline.Children)
-        //     {
-        //         childOf[WardleyIdentityKeys.Of(pipeline, child)] = pipeline;
-        //     }
-        // }
 
         foreach (var component in map.Components)
         {
@@ -253,7 +234,7 @@ public sealed class WardleyElementMapper
                 _byKey.TryAdd((entry.Kind, entry.Key), entry.Id);
             }
 
-            foreach (var holder in WardleyIdentityKeys.All(map))
+            foreach (var holder in map.Holders)
             {
                 if (_byKey.TryGetValue((holder.Kind, holder.Key), out var id))
                 {
@@ -274,8 +255,6 @@ public sealed class WardleyElementMapper
         WardleyComponent component,
         Ids ids)
     {
-        _ = _identities;
-
         var payload = new WardleyElementPayload
         {
             Name = component.Name,
@@ -297,7 +276,7 @@ public sealed class WardleyElementMapper
 
         // A later holder of a repeated name shows no evolution: the `evolve` naming it attaches to
         // the first holder (ruling 3).
-        if (WardleyIdentityKeys.IsFirstHolder(map, component)
+        if (WardleyHolders.IsFirstHolder(map, component)
             && map.Evolves.FirstOrDefault(evolve => evolve.Name == component.Name) is { } evolving)
         {
             payload.Evolve = new WardleyEvolvePayload

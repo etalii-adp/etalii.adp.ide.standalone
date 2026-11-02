@@ -13,7 +13,7 @@ namespace EtAlii.Adp.Diagram.WardleyMap;
 /// as a <see cref="DislDiagramDefinition"/> with <see cref="WardleyFunctions"/>, and what the providers derive from it:
 /// the palette, the context menus, the property rows, what removing an element asks first, and what running, asking
 /// for, refusing and committing an entry or a row does, mapped onto the host's types with the wire ids of its
-/// <c>x-wardley</c> block and onto today's commands by <see cref="WardleyTransactionCommands"/>.
+/// <c>x-wardley</c> block and written through the binding by <see cref="WriteWardleyTransactionCommand"/>.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -121,9 +121,7 @@ internal static class WardleyDefinition
         switch (found)
         {
             case { Kind: "delete" } when self is not null:
-                return Removal(bodyPath, diagram, self) is { } removal
-                    ? WardleyStep.Removing(removal, ConfirmationOf(self))
-                    : WardleyStep.Refused(WardleyTransactionCommands.Unwritable("deletion"));
+                return WardleyStep.Removing(Removal(bodyPath, self), ConfirmationOf(self));
 
             case { Kind: "connect", Picker: { } picker } when self is not null:
                 return WardleyStep.Asking(new ContextExecutionRequiresChoice(new ContextChoiceRequest(
@@ -193,15 +191,11 @@ internal static class WardleyDefinition
         switch (found)
         {
             case { Kind: "delete" } when self is not null:
-                return Removal(bodyPath, diagram, self) is { } removal
-                    ? DiagramPropertyChange.By(removal)
-                    : DiagramPropertyChange.Refused(WardleyTransactionCommands.Unwritable("deletion"));
+                return DiagramPropertyChange.By(Removal(bodyPath, self));
 
             case { Kind: "connect", Via: { } via } when self is not null:
                 var connect = new DislTransaction([new DislChange.Connect(via, "", self.Id, value, new Dictionary<string, object?>(StringComparer.Ordinal))], [], null);
-                return WardleyTransactionCommands.Of(bodyPath, diagram, connect) is { } connected
-                    ? DiagramPropertyChange.By(connected)
-                    : DiagramPropertyChange.Refused(WardleyTransactionCommands.Unwritable(via));
+                return DiagramPropertyChange.By(new WriteWardleyTransactionCommand(bodyPath, via, connect.Changes));
 
             case { Operation: { } operation }:
                 {
@@ -247,9 +241,7 @@ internal static class WardleyDefinition
         var working = WardleyBody.Working(entry.Document, identities);
         var transaction = FormCommit.Row(Specification, working.ElementById(element.Id)!, key, value, Env, ids: DislIds.Of(Specification));
         if (!transaction.WasApplied) return DiagramPropertyChange.Refused(transaction.Refusal!);
-        return WardleyTransactionCommands.Of(bodyPath, diagram, transaction, row: true) is { } command
-            ? DiagramPropertyChange.By(command)
-            : DiagramPropertyChange.Refused(WardleyTransactionCommands.Unwritable($"row '{key}'"));
+        return DiagramPropertyChange.By(new WriteWardleyTransactionCommand(bodyPath, $"row '{key}'", transaction.Changes));
     }
 
     /// <summary>
@@ -336,12 +328,12 @@ internal static class WardleyDefinition
             : null;
 
     /// <summary>
-    /// The command that removes <paramref name="element"/>: what goes with it is its handler's, which takes the links and
-    /// the evolution that name an element, as the definition's <c>delete-referencing</c> says and the runtime cannot yet
+    /// The command that removes <paramref name="element"/>: what goes with it is the binding's, whose remove takes the links
+    /// and the evolution that name an element, as the definition's <c>delete-referencing</c> says and the runtime cannot yet
     /// run (<see cref="DeletionPolicy"/>).
     /// </summary>
-    private static ICommand? Removal(string bodyPath, DislDiagram diagram, DislElement element) =>
-        WardleyTransactionCommands.Of(bodyPath, diagram, new DislTransaction([new DislChange.Remove(element.Id)], [], null));
+    private static WriteWardleyTransactionCommand Removal(string bodyPath, DislElement element) =>
+        new(bodyPath, "deletion", [new DislChange.Remove(element.Id)]);
 
     /// <summary>
     /// Runs <paramref name="operation"/> on <paramref name="self"/> (the map for null) with <paramref name="arguments"/> as its
@@ -370,9 +362,7 @@ internal static class WardleyDefinition
             new DislInvocation(Parameters: parameters),
             Env);
         if (!transaction.WasApplied) return WardleyStep.Refused(transaction.Refusal!);
-        return WardleyTransactionCommands.Of(bodyPath, diagram, transaction) is { } command
-            ? WardleyStep.Writing(command)
-            : WardleyStep.Refused(WardleyTransactionCommands.Unwritable(operation));
+        return WardleyStep.Writing(new WriteWardleyTransactionCommand(bodyPath, operation, transaction.Changes));
     }
 
     /// <summary>
