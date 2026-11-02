@@ -41,7 +41,6 @@ public sealed class WardleyValidator(IWardleyDocumentStore documents) : IDiagram
         var map = outcome.Model;
         return ValueTask.FromResult(WardleyDefinition.Problems(
             body,
-            map,
             outcome.Problems,
             IdentitiesOf(request),
             [.. WardleySubmapRule.UnresolvedReferences(map, request)]));

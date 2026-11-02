@@ -9,11 +9,11 @@ public class WardleyElementMapperTests
 {
     private readonly WardleyElementMapper _mapper = new(new WardleyIdentities(new FileWriter()));
 
-    private static WardleyMap ParseText(string text) => WardleyParser.Parse(LineDocument.Parse(text));
+    private static WardleyMap ParseText(string text) => WardleyBody.Read(LineDocument.Parse(text)).Model;
 
     private static WardleyMap Fixture(string name) =>
-        WardleyParser.Parse(LineDocument.Parse(
-            File.ReadAllText(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", name))));
+        WardleyBody.Read(LineDocument.Parse(
+            File.ReadAllText(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", name)))).Model;
 
     /// <summary>Maps a map with freshly reconciled identities, which is what a first open does.</summary>
     private IReadOnlyList<DiagramElement> Map(WardleyMap map) =>
@@ -234,7 +234,7 @@ public class WardleyElementMapperTests
         // pipelines - may take the mapper down.
         foreach (var path in fixtures)
         {
-            var map = WardleyParser.Parse(LineDocument.Parse(File.ReadAllText(path)));
+            var map = WardleyBody.Read(LineDocument.Parse(File.ReadAllText(path))).Model;
             Assert.NotEmpty(Map(map));
         }
     }

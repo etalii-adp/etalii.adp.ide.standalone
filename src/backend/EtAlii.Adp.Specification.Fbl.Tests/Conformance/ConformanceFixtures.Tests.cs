@@ -175,7 +175,7 @@ public class ConformanceFixturesTests
         Assert.NotEqual(text, changed);
 
         // Act.
-        var failure = Record.Exception(() => Run(name, folder, System.Text.Encoding.UTF8.GetBytes(changed)));
+        var failure = Record.Exception(() => Run(name, folder, Encoding.UTF8.GetBytes(changed)));
 
         // Assert.
         Assert.NotNull(failure);

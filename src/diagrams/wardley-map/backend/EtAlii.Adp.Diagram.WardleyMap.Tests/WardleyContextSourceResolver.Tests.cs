@@ -284,7 +284,7 @@ public sealed class WardleyContextSourceResolverTests : IDisposable
 
         // Act.
         var document = (await _documents.GetOrLoadAsync(_body, TestContext.Current.CancellationToken)).Document;
-        WardleyWriter.RemoveLine(document, WardleyParser.Parse(document).Components.Single(c => c.Name == "Power").Line);
+        WardleyWriter.RemoveLine(document, WardleyBody.Read(document).Model.Components.Single(c => c.Name == "Power").Line);
         await _documents.SaveAsync(_body, document, TestContext.Current.CancellationToken);
 
         // Assert.
@@ -302,7 +302,7 @@ public sealed class WardleyContextSourceResolverTests : IDisposable
 
         // Act.
         var document = (await _documents.GetOrLoadAsync(_body, TestContext.Current.CancellationToken)).Document;
-        WardleyWriter.Rename(document, WardleyParser.Parse(document), "Power", "Mains Power");
+        WardleyWriter.Rename(document, WardleyBody.Read(document).Model, "Power", "Mains Power");
         await _documents.SaveAsync(_body, document, TestContext.Current.CancellationToken);
 
         // Assert.

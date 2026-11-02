@@ -1,7 +1,6 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
 using EtAlii.Adp.Diagram.WardleyMap.Tests.Parity;
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Specification.Disl;
 using Xunit;
 
@@ -70,7 +69,7 @@ public partial class WardleyFunctionsTests
         {
             var read = annotations.Single(element => element.Line == annotation.Line);
             List<object?> expected = [.. annotation.Occurrences.Select(occurrence => (object?)new List<object?> { occurrence.Visibility, occurrence.Maturity })];
-            List<object?> positions = [.. ((IEnumerable<object?>)read.ValueOf("positions")!).Select(position => (object?)new List<object?> { ((IReadOnlyDictionary<string, object?>)position!)["visibility"], ((IReadOnlyDictionary<string, object?>)position!)["maturity"] })];
+            List<object?> positions = [.. ((IEnumerable<object?>)read.ValueOf("positions")!).Select(position => (object?)new List<object?> { ((IReadOnlyDictionary<string, object?>)position!)["visibility"], ((IReadOnlyDictionary<string, object?>)position)["maturity"] })];
             Assert.Equal(Text(expected), Text(positions));
         }
     }

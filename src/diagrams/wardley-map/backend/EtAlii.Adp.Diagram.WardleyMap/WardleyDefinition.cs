@@ -253,8 +253,8 @@ internal static class WardleyDefinition
     }
 
     /// <summary>
-    /// The findings of <paramref name="map"/>, read from <paramref name="body"/> with <paramref name="passedOver"/> the
-    /// lines its reader passed over, and <paramref name="identities"/> the ids the store holds beside it (none for a text it
+    /// The findings of the map <paramref name="body"/> holds, with <paramref name="passedOver"/> the lines its reader
+    /// passed over, and <paramref name="identities"/> the ids the store holds beside it (none for a text it
     /// does not hold): the definition's constraints, in its <c>constraints.order</c> of codes, within a code by
     /// <see cref="FindingTypes"/> and then by line. <paramref name="beforeReader"/> are the findings the module makes itself,
     /// which the order puts before the reader's.
@@ -266,7 +266,6 @@ internal static class WardleyDefinition
     /// </remarks>
     public static IReadOnlyList<DiagramProblem> Problems(
         LineDocument body,
-        WardleyMap map,
         IReadOnlyList<ParseProblem> passedOver,
         IReadOnlyList<WardleyIdentityEntry> identities,
         IReadOnlyList<DiagramProblem> beforeReader)

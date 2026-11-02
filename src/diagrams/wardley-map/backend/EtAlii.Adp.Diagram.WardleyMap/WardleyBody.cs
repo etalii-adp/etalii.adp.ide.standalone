@@ -91,13 +91,13 @@ internal sealed class WardleyBody
         var reading = OpenBody.Open(bytes, LoadedBinding.Value, Options).Model;
         var lines = new LineStarts(bytes);
         var problems = new SortedDictionary<int, string>();
-        var unclosed = reading.Findings.Where(finding => finding.Code == UnclosedBlock && finding.Location is not null).Select(finding => finding.Location!.Line).ToHashSet();
+        var unclosed = reading.Findings.Where(finding => finding is { Code: UnclosedBlock, Location: not null }).Select(finding => finding.Location!.Line).ToHashSet();
         var blocks = reading.Elements.Where(element => element.Type == "Pipeline")
             .Select(pipeline => (Pipeline: pipeline, Last: unclosed.Contains(pipeline.Line) ? int.MaxValue : lines.LineOf(pipeline.OwnSpan.End - 1)))
             .ToList();
 
         _read = [];
-        var unparsed = reading.Findings.Where(finding => finding.Code == UnparsedText && finding.Location is not null).Select(finding => finding.Location!.Line).ToHashSet();
+        var unparsed = reading.Findings.Where(finding => finding is { Code: UnparsedText, Location: not null }).Select(finding => finding.Location!.Line).ToHashSet();
         var marked = text.StartsWith('\uFEFF') && text[1..].Split('\n')[0].Trim() is { Length: > 0 } first && !first.StartsWith("//", StringComparison.Ordinal);
         if (marked) problems.TryAdd(0, NoStatement);
         foreach (var element in reading.Elements)
@@ -105,8 +105,8 @@ internal sealed class WardleyBody
             if (marked && element.Line == 1) continue;
             if (unparsed.Contains(element.Line)) continue;
 
-            var inside = blocks.FirstOrDefault(block => element.Line > block.Pipeline.Line && element.Line <= block.Last);
-            if (inside.Pipeline is not null && inside.Last == int.MaxValue && element.ParentId != inside.Pipeline.Id)
+            (FblElement? pipeline, int last) = blocks.FirstOrDefault(block => element.Line > block.Pipeline.Line && element.Line <= block.Last);
+            if (pipeline is not null && last == int.MaxValue && element.ParentId != pipeline.Id)
             {
                 problems.TryAdd(element.Line - 1, InsidePipeline);
                 continue;
@@ -133,10 +133,10 @@ internal sealed class WardleyBody
     }
 
     /// <summary>The map the body states, with a problem for every line it passed over, in line order.</summary>
-    public ParseOutcome<WardleyMap> Outcome { get; }
+    private ParseOutcome<WardleyMap> Outcome { get; }
 
     /// <summary>The body of <paramref name="document"/>'s text, read once for that text.</summary>
-    public static WardleyBody Of(LineDocument document)
+    private static WardleyBody Of(LineDocument document)
     {
         ArgumentNullException.ThrowIfNull(document);
         return Bodies.Of(document.Text);
