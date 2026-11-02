@@ -88,7 +88,7 @@ message C4LegendEntry {
 // The view itself, as one synthetic element. C4 requires every diagram to carry a title and a
 // key, and to be understandable without accompanying narrative.
 //
-// It carries no problems of its own. C4RuleSet reports through core's IDiagramValidator, and
+// It carries no problems of its own. C4Validator reports the definitions' findings through core's IDiagramValidator, and
 // core already pushes the project's problems to every connection with an element-id location
 // (context.proto's ProblemLocation), so the canvas reads them from there. A second copy here
 // would be a second thing to keep in step, and the two would eventually disagree.

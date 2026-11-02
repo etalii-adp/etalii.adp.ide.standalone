@@ -13,8 +13,8 @@ namespace EtAlii.Adp.Diagram.C4;
 /// for gap C8 of c4-disl-fbl, because an FBL block rule has no <c>insert</c>, so no binding can add
 /// a view block, and FBL creates a registration only for a new document or at a first placement
 /// (finding B24, Requirement 6.5). The six definitions' companions name them so. They are the last
-/// edit written by line, and what they need is all that is left of the module's line code:
-/// <see cref="C4Line"/>, <see cref="C4Lines"/> and <see cref="C4Tokens"/>'s lexer (c4-disl-fbl task 15).
+/// edit written by line, and <see cref="C4ViewBlock"/> holds all that is left of the module's line code: the
+/// DSL's line lexer, which finds the views block's closing brace (c4-disl-fbl tasks 15 and 17).
 /// </remarks>
 /// <param name="BodyPath">The <c>.dsl</c> the view is appended to.</param>
 /// <param name="RegistrationPath">The <c>.adp</c> to create, naming that body and this view.</param>
@@ -94,7 +94,7 @@ internal sealed class AddC4ViewCommandHandler(IC4DocumentStore documents, IFileW
         var lines = C4ViewBlock.Declare(command.ViewKind, command.ViewKey, scope, model);
         for (var index = 0; index < lines.Count; index++)
         {
-            body.InsertLine(insertAt.Value + (uint)index, lines[index]);
+            body.Insert((int)(insertAt.Value + (uint)index) - 1, [lines[index]]);
         }
 
         return EditOutcome.UndoneBy(new RemoveC4ViewCommand(command.BodyPath, command.RegistrationPath, command.ViewKey));
@@ -166,6 +166,12 @@ internal sealed class RemoveC4ViewCommandHandler(IC4DocumentStore documents, IFi
 /// <summary>Writing and removing a view block, which both the add and its inverse need.</summary>
 internal static class C4ViewBlock
 {
+    /// <summary>
+    /// The DSL's line lexer: <c>//</c> and <c>#</c> comments outside quoted strings, <c>\"</c> for a quote inside one,
+    /// and braces as tokens of their own. Only this block still reads lines; the body is otherwise read through the binding.
+    /// </summary>
+    private static readonly LineLexer Lexer = new(new CommentPolicy(["#", "//"], OutsideQuotesOnly: true), EscapePolicy.BackslashQuote, "{}");
+
     /// <summary>Convenience for a parsed view, whose kind is already known.</summary>
     public static C4ViewKind ViewKindOrDefault(this C4View view) => view.Kind;
 
@@ -174,9 +180,8 @@ internal static class C4ViewBlock
     {
         var depth = 0;
         var inViews = false;
-        foreach (var line in document.CodeLines())
+        foreach ((string code, uint number) in CodeLines(document))
         {
-            var code = line.Code;
             if (!inViews && code.StartsWith("views", StringComparison.OrdinalIgnoreCase) && code.EndsWith('{'))
             {
                 inViews = true;
@@ -192,7 +197,7 @@ internal static class C4ViewBlock
             depth += code.Count(character => character == '{') - code.Count(character => character == '}');
             if (depth <= 0)
             {
-                return line.Number;
+                return number;
             }
         }
 
@@ -226,17 +231,17 @@ internal static class C4ViewBlock
         var first = view.Line;
         var last = first;
         var depth = 0;
-        foreach (var line in document.CodeLines().Where(line => line.Number >= first))
+        foreach ((string code, uint number) in CodeLines(document).Where(line => line.Number >= first))
         {
-            depth += line.Code.Count(character => character == '{') - line.Code.Count(character => character == '}');
-            last = line.Number;
+            depth += code.Count(character => character == '{') - code.Count(character => character == '}');
+            last = number;
             if (depth <= 0)
             {
                 break;
             }
         }
 
-        document.RemoveLines(first, last);
+        document.Remove(new LineRange((int)first - 1, (int)last - 1));
     }
 
     /// <summary>Removes a view that was saved into the document at <paramref name="bodyPath"/>, and saves that.</summary>
@@ -257,6 +262,10 @@ internal static class C4ViewBlock
         // what actually went wrong.
         _ = await documents.SaveAsync(bodyPath, copy, cancellationToken);
     }
+
+    /// <summary>Each line without its comments and surrounding whitespace, with its 1-based number.</summary>
+    private static IEnumerable<(string Code, uint Number)> CodeLines(LineDocument document) =>
+        document.Lines.Select((line, index) => (Lexer.StripComment(line.Text).Trim(), (uint)(index + 1)));
 
     /// <summary>A component view is scoped to a container, so it needs one rather than a system.</summary>
     private static string ComponentScope(C4Workspace workspace, string? fallback) =>

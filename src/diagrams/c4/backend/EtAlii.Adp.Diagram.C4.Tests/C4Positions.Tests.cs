@@ -99,6 +99,30 @@ public sealed class C4PositionsTests : IDisposable
     }
 
     [Fact]
+    public async Task AnUnreadableLayoutFile_LeavesTheMoveInPlace_AndTellsTheProject()
+    {
+        // Arrange: the layout file beside the body is not JSON, so the position cannot be placed in it.
+        await File.WriteAllTextAsync(_sidecarPath, "{ not json", TestContext.Current.CancellationToken);
+        var notices = new RecordingNotices();
+        await using var services = new ServiceCollection().AddSingleton<ICommandNoticeSink>(notices).AddCommands().AddHierarchyCommandHandlers().AddC4().BuildServiceProvider();
+        var root = ProjectRoot.From(_testFolder.Path);
+        await using var session = (C4Session)services
+            .GetServices<IDiagramSessionFactory>()
+            .First(factory => factory.Origin.Key == "c4/system-landscape")
+            .Open(ShortGuid.NewShortGuid(), root, _bodyPath, null);
+
+        // Act.
+        var refusal = await session.MoveElementToAsync("a", 100, 200, TestContext.Current.CancellationToken);
+
+        // Assert: the drag is not refused, the file is left as it was, and the second of today's two sentences reaches the project.
+        Assert.Equal("", refusal);
+        Assert.Equal("{ not json", await File.ReadAllTextAsync(_sidecarPath, TestContext.Current.CancellationToken));
+        (ProjectRoot notified, string message) = Assert.Single(notices.Notified);
+        Assert.Equal(root, notified);
+        Assert.Equal("The layout beside model.dsl could not be updated, so positions may not be as expected when the diagram is reopened.", message);
+    }
+
+    [Fact]
     public async Task AnEntryUnderAnIdTheBodyDoesNotStore_IsReported()
     {
         // Arrange: "other" keeps a position for a, which the body stores, and one for gone, which it does not.

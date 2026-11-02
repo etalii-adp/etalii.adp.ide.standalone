@@ -143,9 +143,7 @@
           "g1 c4.edit-description | Edit description… | mdi-text-box-outline | - | on",
           "g1 c4.set-technology | Set technology… | mdi-tools | - | on"
         ],
-        [
-          "g1 c4.edit-description | Add description… | mdi-text-box-outline | - | on"
-        ],
+        [],
         [
           "g1 c4.relabel | Relabel… | mdi-pencil-outline | F2 | on",
           "g1 c4.set-protocol | Set technology… | mdi-transit-connection-variant | - | on"
@@ -153,8 +151,7 @@
         [
           "g1 c4.add-person | Add person… | mdi-plus | - | on",
           "g1 c4.add-softwaresystem | Add software system… | mdi-plus | - | on"
-        ],
-        []
+        ]
       ],
       "choices": [],
       "rowSets": [
@@ -230,7 +227,6 @@
           "c4.identifier | Identifier | \"deploymentnode_AmazonEC2_4\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"webApplicationInstance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
@@ -252,7 +248,6 @@
           "c4.identifier | Identifier | \"deploymentnode_MySQL_6\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"containerinstance_database_7\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
@@ -294,7 +289,7 @@
         "\"route53->elb@48\" => menu #5, rows #14",
         "\"elb->webApplicationInstance@49\" => menu #5, rows #15",
         "\"\" => menu #6, no rows",
-        "\"parity:unknown\" => menu #7, no rows"
+        "\"parity:unknown\" => menu #4, no rows"
       ],
       "views": [
         {
@@ -307,16 +302,16 @@
             "\"elb\" => menu #3, rows #6",
             "\"webApplicationInstance\" => menu #4, rows #9",
             "\"containerinstance_database_7\" => menu #4, rows #12",
-            "\"webApplicationInstance->containerinstance_database_7@8\" => menu #7, no rows",
+            "\"webApplicationInstance->containerinstance_database_7@8\" => menu #4, no rows",
             "\"route53->elb@48\" => menu #5, rows #14",
             "\"elb->webApplicationInstance@49\" => menu #5, rows #15",
-            "\"boundary:deploymentnode_AmazonWebServices_1\" => menu #7, no rows",
-            "\"boundary:deploymentnode_USEast1_2\" => menu #7, no rows",
-            "\"boundary:deploymentnode_Autoscalinggroup_3\" => menu #7, no rows",
-            "\"boundary:deploymentnode_AmazonEC2_4\" => menu #7, no rows",
-            "\"boundary:deploymentnode_AmazonRDS_5\" => menu #7, no rows",
-            "\"boundary:deploymentnode_MySQL_6\" => menu #7, no rows",
-            "\"c4:view\" => menu #7, no rows",
+            "\"boundary:deploymentnode_AmazonWebServices_1\" => menu #4, no rows",
+            "\"boundary:deploymentnode_USEast1_2\" => menu #4, no rows",
+            "\"boundary:deploymentnode_Autoscalinggroup_3\" => menu #4, no rows",
+            "\"boundary:deploymentnode_AmazonEC2_4\" => menu #4, no rows",
+            "\"boundary:deploymentnode_AmazonRDS_5\" => menu #4, no rows",
+            "\"boundary:deploymentnode_MySQL_6\" => menu #4, no rows",
+            "\"c4:view\" => menu #4, no rows",
             "\"\" => menu #6, no rows"
           ],
           "payloads": [
@@ -1187,9 +1182,7 @@
           "g1 c4.edit-description | Add description… | mdi-text-box-outline | - | on",
           "g1 c4.set-technology | Change technology… | mdi-tools | - | on"
         ],
-        [
-          "g1 c4.edit-description | Add description… | mdi-text-box-outline | - | on"
-        ],
+        [],
         [
           "g1 c4.relabel | Relabel… | mdi-pencil-outline | F2 | on",
           "g1 c4.set-protocol | Set technology… | mdi-transit-connection-variant | - | on"
@@ -1197,8 +1190,7 @@
         [
           "g1 c4.add-person | Add person… | mdi-plus | - | on",
           "g1 c4.add-softwaresystem | Add software system… | mdi-plus | - | on"
-        ],
-        []
+        ]
       ],
       "choices": [],
       "rowSets": [
@@ -1311,7 +1303,6 @@
           "c4.identifier | Identifier | \"deploymentnode_Customersmobiledevice_1\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"containerinstance_mobileApp_2\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
@@ -1333,7 +1324,6 @@
           "c4.identifier | Identifier | \"deploymentnode_WebBrowser_4\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"containerinstance_singlePageApplication_5\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
@@ -1363,7 +1353,6 @@
           "c4.identifier | Identifier | \"deploymentnode_ApacheTomcat_8\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"containerinstance_webApplication_9\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
@@ -1385,7 +1374,6 @@
           "c4.identifier | Identifier | \"deploymentnode_ApacheTomcat_11\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"containerinstance_apiApplication_12\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
@@ -1407,7 +1395,6 @@
           "c4.identifier | Identifier | \"primaryDatabaseServer\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"containerinstance_database_14\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
@@ -1429,7 +1416,6 @@
           "c4.identifier | Identifier | \"secondaryDatabaseServer\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"containerinstance_database_16\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
@@ -1587,7 +1573,7 @@
         "\"mainframeBankingSystemFacade->mainframeBankingSystem@42\" => menu #4, rows #46",
         "\"primaryDatabaseServer->secondaryDatabaseServer@76\" => menu #4, rows #47",
         "\"\" => menu #5, no rows",
-        "\"parity:unknown\" => menu #6, no rows"
+        "\"parity:unknown\" => menu #3, no rows"
       ],
       "views": [
         {
@@ -1604,7 +1590,7 @@
             "\"internetBankingSystem->mainframeBankingSystem@24\" => menu #4, rows #32",
             "\"internetBankingSystem->emailSystem@25\" => menu #4, rows #33",
             "\"emailSystem->customer@26\" => menu #4, rows #34",
-            "\"c4:view\" => menu #6, no rows",
+            "\"c4:view\" => menu #3, no rows",
             "\"\" => menu #5, no rows"
           ],
           "payloads": [
@@ -1633,7 +1619,7 @@
             "\"internetBankingSystem->mainframeBankingSystem@24\" => menu #4, rows #32",
             "\"internetBankingSystem->emailSystem@25\" => menu #4, rows #33",
             "\"emailSystem->customer@26\" => menu #4, rows #34",
-            "\"c4:view\" => menu #6, no rows",
+            "\"c4:view\" => menu #3, no rows",
             "\"\" => menu #5, no rows"
           ],
           "payloads": [
@@ -1667,12 +1653,12 @@
             "\"customer->singlePageApplication@30\" => menu #4, rows #36",
             "\"customer->mobileApp@31\" => menu #4, rows #37",
             "\"webApplication->singlePageApplication@32\" => menu #4, rows #38",
-            "\"singlePageApplication->apiApplication@35\" => menu #6, no rows",
-            "\"mobileApp->apiApplication@37\" => menu #6, no rows",
-            "\"apiApplication->database@41\" => menu #6, no rows",
-            "\"apiApplication->mainframeBankingSystem@42\" => menu #6, no rows",
-            "\"boundary:internetBankingSystem\" => menu #6, no rows",
-            "\"c4:view\" => menu #6, no rows",
+            "\"singlePageApplication->apiApplication@35\" => menu #3, no rows",
+            "\"mobileApp->apiApplication@37\" => menu #3, no rows",
+            "\"apiApplication->database@41\" => menu #3, no rows",
+            "\"apiApplication->mainframeBankingSystem@42\" => menu #3, no rows",
+            "\"boundary:internetBankingSystem\" => menu #3, no rows",
+            "\"c4:view\" => menu #3, no rows",
             "\"\" => menu #5, no rows"
           ],
           "payloads": [
@@ -1731,8 +1717,8 @@
             "\"accountsSummaryController->mainframeBankingSystemFacade@40\" => menu #4, rows #44",
             "\"securityComponent->database@41\" => menu #4, rows #45",
             "\"mainframeBankingSystemFacade->mainframeBankingSystem@42\" => menu #4, rows #46",
-            "\"boundary:apiApplication\" => menu #6, no rows",
-            "\"c4:view\" => menu #6, no rows",
+            "\"boundary:apiApplication\" => menu #3, no rows",
+            "\"c4:view\" => menu #3, no rows",
             "\"\" => menu #5, no rows"
           ],
           "payloads": [
@@ -1778,13 +1764,13 @@
             "\"signinController\" => menu #1, rows #6",
             "\"securityComponent\" => menu #1, rows #8",
             "\"database\" => menu #1, rows #10",
-            "\"singlePageApplication->signinController@102\" => menu #6, no rows",
-            "\"signinController->securityComponent@103\" => menu #6, no rows",
-            "\"securityComponent->database@104\" => menu #6, no rows",
-            "\"database->securityComponent@105\" => menu #6, no rows",
-            "\"securityComponent->signinController@106\" => menu #6, no rows",
-            "\"signinController->singlePageApplication@107\" => menu #6, no rows",
-            "\"c4:view\" => menu #6, no rows",
+            "\"singlePageApplication->signinController@102\" => menu #3, no rows",
+            "\"signinController->securityComponent@103\" => menu #3, no rows",
+            "\"securityComponent->database@104\" => menu #3, no rows",
+            "\"database->securityComponent@105\" => menu #3, no rows",
+            "\"securityComponent->signinController@106\" => menu #3, no rows",
+            "\"signinController->singlePageApplication@107\" => menu #3, no rows",
+            "\"c4:view\" => menu #3, no rows",
             "\"\" => menu #5, no rows"
           ],
           "payloads": [
@@ -1813,20 +1799,20 @@
             "\"containerinstance_apiApplication_12\" => menu #3, rows #24",
             "\"containerinstance_database_14\" => menu #3, rows #27",
             "\"containerinstance_database_16\" => menu #3, rows #30",
-            "\"containerinstance_webApplication_9->containerinstance_singlePageApplication_5@32\" => menu #6, no rows",
-            "\"boundary:deploymentnode_Customersmobiledevice_1\" => menu #6, no rows",
-            "\"boundary:deploymentnode_Customerscomputer_3\" => menu #6, no rows",
-            "\"boundary:deploymentnode_WebBrowser_4\" => menu #6, no rows",
-            "\"boundary:deploymentnode_BigBankplc_6\" => menu #6, no rows",
-            "\"boundary:deploymentnode_bigbankweb_7\" => menu #6, no rows",
-            "\"boundary:deploymentnode_ApacheTomcat_8\" => menu #6, no rows",
-            "\"boundary:deploymentnode_bigbankapi_10\" => menu #6, no rows",
-            "\"boundary:deploymentnode_ApacheTomcat_11\" => menu #6, no rows",
-            "\"boundary:deploymentnode_bigbankdb01_13\" => menu #6, no rows",
-            "\"boundary:primaryDatabaseServer\" => menu #6, no rows",
-            "\"boundary:deploymentnode_bigbankdb02_15\" => menu #6, no rows",
-            "\"boundary:secondaryDatabaseServer\" => menu #6, no rows",
-            "\"c4:view\" => menu #6, no rows",
+            "\"containerinstance_webApplication_9->containerinstance_singlePageApplication_5@32\" => menu #3, no rows",
+            "\"boundary:deploymentnode_Customersmobiledevice_1\" => menu #3, no rows",
+            "\"boundary:deploymentnode_Customerscomputer_3\" => menu #3, no rows",
+            "\"boundary:deploymentnode_WebBrowser_4\" => menu #3, no rows",
+            "\"boundary:deploymentnode_BigBankplc_6\" => menu #3, no rows",
+            "\"boundary:deploymentnode_bigbankweb_7\" => menu #3, no rows",
+            "\"boundary:deploymentnode_ApacheTomcat_8\" => menu #3, no rows",
+            "\"boundary:deploymentnode_bigbankapi_10\" => menu #3, no rows",
+            "\"boundary:deploymentnode_ApacheTomcat_11\" => menu #3, no rows",
+            "\"boundary:deploymentnode_bigbankdb01_13\" => menu #3, no rows",
+            "\"boundary:primaryDatabaseServer\" => menu #3, no rows",
+            "\"boundary:deploymentnode_bigbankdb02_15\" => menu #3, no rows",
+            "\"boundary:secondaryDatabaseServer\" => menu #3, no rows",
+            "\"c4:view\" => menu #3, no rows",
             "\"\" => menu #5, no rows"
           ],
           "payloads": [
@@ -4248,9 +4234,7 @@
           "g1 c4.edit-description | Edit description… | mdi-text-box-outline | - | on",
           "g1 c4.set-technology | Change technology… | mdi-tools | - | on"
         ],
-        [
-          "g1 c4.edit-description | Add description… | mdi-text-box-outline | - | on"
-        ],
+        [],
         [
           "g1 c4.relabel | Relabel… | mdi-pencil-outline | F2 | on",
           "g1 c4.set-protocol | Set technology… | mdi-transit-connection-variant | - | on"
@@ -4258,8 +4242,7 @@
         [
           "g1 c4.add-person | Add person… | mdi-plus | - | on",
           "g1 c4.add-softwaresystem | Add software system… | mdi-plus | - | on"
-        ],
-        []
+        ]
       ],
       "choices": [],
       "rowSets": [
@@ -4548,13 +4531,11 @@
           "c4.identifier | Identifier | \"deploymentnode_gwopc_4\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"containerinstance_opcGateway_5\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"containerinstance_historianBridge_6\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
@@ -4592,31 +4573,26 @@
           "c4.identifier | Identifier | \"deploymentnode_messervices_9\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"containerinstance_orderService_10\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"containerinstance_batchService_11\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"containerinstance_qualityService_12\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"containerinstance_oeeService_13\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"containerinstance_erpAdapter_14\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
@@ -4630,13 +4606,11 @@
           "c4.identifier | Identifier | \"deploymentnode_mesweb_15\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"containerinstance_hmi_16\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"containerinstance_andon_17\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
@@ -4650,7 +4624,6 @@
           "c4.identifier | Identifier | \"deploymentnode_kafkaplant_18\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"containerinstance_eventBus_19\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
@@ -4664,13 +4637,11 @@
           "c4.identifier | Identifier | \"dbPrimary\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"containerinstance_operationalDb_20\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"containerinstance_batchArchive_21\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
@@ -4684,13 +4655,11 @@
           "c4.identifier | Identifier | \"dbStandby\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"containerinstance_operationalDb_22\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"containerinstance_batchArchive_23\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
@@ -4704,7 +4673,6 @@
           "c4.identifier | Identifier | \"deploymentnode_LineHMIterminal_24\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"containerinstance_hmi_25\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
@@ -5172,7 +5140,7 @@
         "\"firewall->scadaServer@229\" => menu #3, rows #116",
         "\"lineBalancer->firewall@230\" => menu #3, rows #117",
         "\"\" => menu #4, no rows",
-        "\"parity:unknown\" => menu #5, no rows"
+        "\"parity:unknown\" => menu #2, no rows"
       ],
       "views": [
         {
@@ -5205,7 +5173,7 @@
             "\"mes->cmms@106\" => menu #3, rows #75",
             "\"mes->warehouse@107\" => menu #3, rows #76",
             "\"scada->historian@108\" => menu #3, rows #77",
-            "\"c4:view\" => menu #5, no rows",
+            "\"c4:view\" => menu #2, no rows",
             "\"\" => menu #4, no rows"
           ],
           "payloads": [
@@ -5266,7 +5234,7 @@
             "\"mes->cmms@106\" => menu #3, rows #75",
             "\"mes->warehouse@107\" => menu #3, rows #76",
             "\"scada->historian@108\" => menu #3, rows #77",
-            "\"c4:view\" => menu #5, no rows",
+            "\"c4:view\" => menu #2, no rows",
             "\"\" => menu #4, no rows"
           ],
           "payloads": [
@@ -5358,8 +5326,8 @@
             "\"erpAdapter->orderService@148\" => menu #3, rows #105",
             "\"batchService->erpAdapter@149\" => menu #3, rows #106",
             "\"batchService->cmms@150\" => menu #3, rows #107",
-            "\"boundary:mes\" => menu #5, no rows",
-            "\"c4:view\" => menu #5, no rows",
+            "\"boundary:mes\" => menu #2, no rows",
+            "\"c4:view\" => menu #2, no rows",
             "\"\" => menu #4, no rows"
           ],
           "payloads": [
@@ -5478,12 +5446,12 @@
             "\"supervisor->hmi@113\" => menu #3, rows #80",
             "\"quality->hmi@114\" => menu #3, rows #81",
             "\"maintainer->andon@115\" => menu #3, rows #82",
-            "\"hmi->mes@118\" => menu #5, no rows",
+            "\"hmi->mes@118\" => menu #2, no rows",
             "\"hmi->batchService@119\" => menu #3, rows #84",
             "\"hmi->qualityService@120\" => menu #3, rows #85",
             "\"andon->oeeService@121\" => menu #3, rows #86",
-            "\"mes->operationalDb@123\" => menu #5, no rows",
-            "\"mes->eventBus@124\" => menu #5, no rows",
+            "\"mes->operationalDb@123\" => menu #2, no rows",
+            "\"mes->eventBus@124\" => menu #2, no rows",
             "\"batchService->operationalDb@127\" => menu #3, rows #90",
             "\"batchService->batchArchive@128\" => menu #3, rows #91",
             "\"batchService->eventBus@129\" => menu #3, rows #92",
@@ -5499,7 +5467,7 @@
             "\"historianBridge->historian@144\" => menu #3, rows #102",
             "\"historianBridge->eventBus@145\" => menu #3, rows #103",
             "\"erpAdapter->erp@147\" => menu #3, rows #104",
-            "\"erpAdapter->mes@148\" => menu #5, no rows",
+            "\"erpAdapter->mes@148\" => menu #2, no rows",
             "\"batchService->erpAdapter@149\" => menu #3, rows #106",
             "\"batchService->cmms@150\" => menu #3, rows #107",
             "\"erpAdapter->orderIntake@153\" => menu #3, rows #108",
@@ -5507,8 +5475,8 @@
             "\"orderRepository->operationalDb@155\" => menu #3, rows #110",
             "\"orderState->eventBus@156\" => menu #3, rows #111",
             "\"materialCheck->warehouse@157\" => menu #3, rows #112",
-            "\"boundary:orderService\" => menu #5, no rows",
-            "\"c4:view\" => menu #5, no rows",
+            "\"boundary:orderService\" => menu #2, no rows",
+            "\"c4:view\" => menu #2, no rows",
             "\"\" => menu #4, no rows"
           ],
           "payloads": [
@@ -5609,15 +5577,15 @@
             "\"batchArchive\" => menu #1, rows #21",
             "\"erpAdapter\" => menu #1, rows #18",
             "\"erp\" => menu #0, rows #25",
-            "\"opcGateway->eventBus@256\" => menu #5, no rows",
-            "\"eventBus->batchService@257\" => menu #5, no rows",
-            "\"batchService->qualityService@258\" => menu #5, no rows",
-            "\"qualityService->lims@259\" => menu #5, no rows",
-            "\"qualityService->batchService@260\" => menu #5, no rows",
-            "\"batchService->batchArchive@261\" => menu #5, no rows",
-            "\"batchService->erpAdapter@262\" => menu #5, no rows",
-            "\"erpAdapter->erp@263\" => menu #5, no rows",
-            "\"c4:view\" => menu #5, no rows",
+            "\"opcGateway->eventBus@256\" => menu #2, no rows",
+            "\"eventBus->batchService@257\" => menu #2, no rows",
+            "\"batchService->qualityService@258\" => menu #2, no rows",
+            "\"qualityService->lims@259\" => menu #2, no rows",
+            "\"qualityService->batchService@260\" => menu #2, no rows",
+            "\"batchService->batchArchive@261\" => menu #2, no rows",
+            "\"batchService->erpAdapter@262\" => menu #2, no rows",
+            "\"erpAdapter->erp@263\" => menu #2, no rows",
+            "\"c4:view\" => menu #2, no rows",
             "\"\" => menu #4, no rows"
           ],
           "payloads": [
@@ -5666,50 +5634,50 @@
             "\"containerinstance_operationalDb_22\" => menu #2, rows #57",
             "\"containerinstance_batchArchive_23\" => menu #2, rows #58",
             "\"containerinstance_hmi_25\" => menu #2, rows #60",
-            "\"containerinstance_hmi_16->containerinstance_orderService_10@118\" => menu #5, no rows",
-            "\"containerinstance_hmi_25->containerinstance_orderService_10@118\" => menu #5, no rows",
-            "\"containerinstance_hmi_16->containerinstance_batchService_11@119\" => menu #5, no rows",
-            "\"containerinstance_hmi_25->containerinstance_batchService_11@119\" => menu #5, no rows",
-            "\"containerinstance_hmi_16->containerinstance_qualityService_12@120\" => menu #5, no rows",
-            "\"containerinstance_hmi_25->containerinstance_qualityService_12@120\" => menu #5, no rows",
-            "\"containerinstance_andon_17->containerinstance_oeeService_13@121\" => menu #5, no rows",
-            "\"containerinstance_orderService_10->containerinstance_operationalDb_20@123\" => menu #5, no rows",
-            "\"containerinstance_orderService_10->containerinstance_operationalDb_22@123\" => menu #5, no rows",
-            "\"containerinstance_orderService_10->containerinstance_eventBus_19@124\" => menu #5, no rows",
-            "\"containerinstance_batchService_11->containerinstance_operationalDb_20@127\" => menu #5, no rows",
-            "\"containerinstance_batchService_11->containerinstance_operationalDb_22@127\" => menu #5, no rows",
-            "\"containerinstance_batchService_11->containerinstance_batchArchive_21@128\" => menu #5, no rows",
-            "\"containerinstance_batchService_11->containerinstance_batchArchive_23@128\" => menu #5, no rows",
-            "\"containerinstance_batchService_11->containerinstance_eventBus_19@129\" => menu #5, no rows",
-            "\"containerinstance_eventBus_19->containerinstance_batchService_11@130\" => menu #5, no rows",
-            "\"containerinstance_qualityService_12->containerinstance_operationalDb_20@132\" => menu #5, no rows",
-            "\"containerinstance_qualityService_12->containerinstance_operationalDb_22@132\" => menu #5, no rows",
-            "\"containerinstance_qualityService_12->containerinstance_batchService_11@134\" => menu #5, no rows",
-            "\"containerinstance_oeeService_13->containerinstance_eventBus_19@136\" => menu #5, no rows",
-            "\"containerinstance_oeeService_13->containerinstance_operationalDb_20@137\" => menu #5, no rows",
-            "\"containerinstance_oeeService_13->containerinstance_operationalDb_22@137\" => menu #5, no rows",
-            "\"containerinstance_opcGateway_5->containerinstance_eventBus_19@141\" => menu #5, no rows",
-            "\"containerinstance_eventBus_19->containerinstance_opcGateway_5@142\" => menu #5, no rows",
-            "\"containerinstance_historianBridge_6->containerinstance_eventBus_19@145\" => menu #5, no rows",
-            "\"containerinstance_erpAdapter_14->containerinstance_orderService_10@148\" => menu #5, no rows",
-            "\"containerinstance_batchService_11->containerinstance_erpAdapter_14@149\" => menu #5, no rows",
+            "\"containerinstance_hmi_16->containerinstance_orderService_10@118\" => menu #2, no rows",
+            "\"containerinstance_hmi_25->containerinstance_orderService_10@118\" => menu #2, no rows",
+            "\"containerinstance_hmi_16->containerinstance_batchService_11@119\" => menu #2, no rows",
+            "\"containerinstance_hmi_25->containerinstance_batchService_11@119\" => menu #2, no rows",
+            "\"containerinstance_hmi_16->containerinstance_qualityService_12@120\" => menu #2, no rows",
+            "\"containerinstance_hmi_25->containerinstance_qualityService_12@120\" => menu #2, no rows",
+            "\"containerinstance_andon_17->containerinstance_oeeService_13@121\" => menu #2, no rows",
+            "\"containerinstance_orderService_10->containerinstance_operationalDb_20@123\" => menu #2, no rows",
+            "\"containerinstance_orderService_10->containerinstance_operationalDb_22@123\" => menu #2, no rows",
+            "\"containerinstance_orderService_10->containerinstance_eventBus_19@124\" => menu #2, no rows",
+            "\"containerinstance_batchService_11->containerinstance_operationalDb_20@127\" => menu #2, no rows",
+            "\"containerinstance_batchService_11->containerinstance_operationalDb_22@127\" => menu #2, no rows",
+            "\"containerinstance_batchService_11->containerinstance_batchArchive_21@128\" => menu #2, no rows",
+            "\"containerinstance_batchService_11->containerinstance_batchArchive_23@128\" => menu #2, no rows",
+            "\"containerinstance_batchService_11->containerinstance_eventBus_19@129\" => menu #2, no rows",
+            "\"containerinstance_eventBus_19->containerinstance_batchService_11@130\" => menu #2, no rows",
+            "\"containerinstance_qualityService_12->containerinstance_operationalDb_20@132\" => menu #2, no rows",
+            "\"containerinstance_qualityService_12->containerinstance_operationalDb_22@132\" => menu #2, no rows",
+            "\"containerinstance_qualityService_12->containerinstance_batchService_11@134\" => menu #2, no rows",
+            "\"containerinstance_oeeService_13->containerinstance_eventBus_19@136\" => menu #2, no rows",
+            "\"containerinstance_oeeService_13->containerinstance_operationalDb_20@137\" => menu #2, no rows",
+            "\"containerinstance_oeeService_13->containerinstance_operationalDb_22@137\" => menu #2, no rows",
+            "\"containerinstance_opcGateway_5->containerinstance_eventBus_19@141\" => menu #2, no rows",
+            "\"containerinstance_eventBus_19->containerinstance_opcGateway_5@142\" => menu #2, no rows",
+            "\"containerinstance_historianBridge_6->containerinstance_eventBus_19@145\" => menu #2, no rows",
+            "\"containerinstance_erpAdapter_14->containerinstance_orderService_10@148\" => menu #2, no rows",
+            "\"containerinstance_batchService_11->containerinstance_erpAdapter_14@149\" => menu #2, no rows",
             "\"scadaServer->plcRuntime@226\" => menu #3, rows #114",
             "\"scadaServer->historianServer@227\" => menu #3, rows #115",
             "\"firewall->scadaServer@229\" => menu #3, rows #116",
             "\"lineBalancer->firewall@230\" => menu #3, rows #117",
-            "\"boundary:deploymentnode_ControlnetworkPurduelevel12_1\" => menu #5, no rows",
-            "\"boundary:deploymentnode_FillinglinePLC_2\" => menu #5, no rows",
-            "\"boundary:deploymentnode_PlantDMZ_3\" => menu #5, no rows",
-            "\"boundary:deploymentnode_gwopc_4\" => menu #5, no rows",
-            "\"boundary:deploymentnode_Plantdatacentre_7\" => menu #5, no rows",
-            "\"boundary:deploymentnode_k8splant_8\" => menu #5, no rows",
-            "\"boundary:deploymentnode_messervices_9\" => menu #5, no rows",
-            "\"boundary:deploymentnode_mesweb_15\" => menu #5, no rows",
-            "\"boundary:deploymentnode_kafkaplant_18\" => menu #5, no rows",
-            "\"boundary:dbPrimary\" => menu #5, no rows",
-            "\"boundary:dbStandby\" => menu #5, no rows",
-            "\"boundary:deploymentnode_LineHMIterminal_24\" => menu #5, no rows",
-            "\"c4:view\" => menu #5, no rows",
+            "\"boundary:deploymentnode_ControlnetworkPurduelevel12_1\" => menu #2, no rows",
+            "\"boundary:deploymentnode_FillinglinePLC_2\" => menu #2, no rows",
+            "\"boundary:deploymentnode_PlantDMZ_3\" => menu #2, no rows",
+            "\"boundary:deploymentnode_gwopc_4\" => menu #2, no rows",
+            "\"boundary:deploymentnode_Plantdatacentre_7\" => menu #2, no rows",
+            "\"boundary:deploymentnode_k8splant_8\" => menu #2, no rows",
+            "\"boundary:deploymentnode_messervices_9\" => menu #2, no rows",
+            "\"boundary:deploymentnode_mesweb_15\" => menu #2, no rows",
+            "\"boundary:deploymentnode_kafkaplant_18\" => menu #2, no rows",
+            "\"boundary:dbPrimary\" => menu #2, no rows",
+            "\"boundary:dbStandby\" => menu #2, no rows",
+            "\"boundary:deploymentnode_LineHMIterminal_24\" => menu #2, no rows",
+            "\"c4:view\" => menu #2, no rows",
             "\"\" => menu #4, no rows"
           ],
           "payloads": [
@@ -6891,9 +6859,7 @@
           "g1 c4.edit-description | Add description… | mdi-text-box-outline | - | on",
           "g1 c4.set-technology | Change technology… | mdi-tools | - | on"
         ],
-        [
-          "g1 c4.edit-description | Add description… | mdi-text-box-outline | - | on"
-        ],
+        [],
         [
           "g1 c4.relabel | Relabel… | mdi-pencil-outline | F2 | on",
           "g1 c4.set-protocol | Set technology… | mdi-transit-connection-variant | - | on"
@@ -6901,8 +6867,7 @@
         [
           "g1 c4.add-person | Add person… | mdi-plus | - | on",
           "g1 c4.add-softwaresystem | Add software system… | mdi-plus | - | on"
-        ],
-        []
+        ]
       ],
       "choices": [],
       "rowSets": [
@@ -6978,13 +6943,11 @@
           "c4.identifier | Identifier | \"node\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"containerinstance_web_1\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"containerinstance_api_2\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
@@ -7006,7 +6969,6 @@
           "c4.identifier | Identifier | \"primary\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"containerinstance_db_3\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
@@ -7020,7 +6982,6 @@
           "c4.identifier | Identifier | \"replica\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"containerinstance_db_4\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
@@ -7051,7 +7012,7 @@
         "\"containerinstance_db_4\" => menu #2, rows #15",
         "\"dns->lb@31\" => menu #3, rows #16",
         "\"\" => menu #4, no rows",
-        "\"parity:unknown\" => menu #5, no rows"
+        "\"parity:unknown\" => menu #2, no rows"
       ],
       "views": [
         {
@@ -7067,13 +7028,13 @@
             "\"containerinstance_db_3\" => menu #2, rows #13",
             "\"containerinstance_db_4\" => menu #2, rows #15",
             "\"dns->lb@31\" => menu #3, rows #16",
-            "\"boundary:region\" => menu #5, no rows",
-            "\"boundary:cluster\" => menu #5, no rows",
-            "\"boundary:node\" => menu #5, no rows",
-            "\"boundary:data\" => menu #5, no rows",
-            "\"boundary:primary\" => menu #5, no rows",
-            "\"boundary:replica\" => menu #5, no rows",
-            "\"c4:view\" => menu #5, no rows",
+            "\"boundary:region\" => menu #2, no rows",
+            "\"boundary:cluster\" => menu #2, no rows",
+            "\"boundary:node\" => menu #2, no rows",
+            "\"boundary:data\" => menu #2, no rows",
+            "\"boundary:primary\" => menu #2, no rows",
+            "\"boundary:replica\" => menu #2, no rows",
+            "\"c4:view\" => menu #2, no rows",
             "\"\" => menu #4, no rows"
           ],
           "payloads": [
@@ -14369,9 +14330,7 @@
           "g1 c4.edit-description | Add description… | mdi-text-box-outline | - | on",
           "g1 c4.set-technology | Set technology… | mdi-tools | - | on"
         ],
-        [
-          "g1 c4.edit-description | Add description… | mdi-text-box-outline | - | on"
-        ],
+        [],
         [
           "g1 c4.relabel | Relabel… | mdi-pencil-outline | F2 | on",
           "g1 c4.set-protocol | Set technology… | mdi-transit-connection-variant | - | on"
@@ -14379,8 +14338,7 @@
         [
           "g1 c4.add-person | Add person… | mdi-plus | - | on",
           "g1 c4.add-softwaresystem | Add software system… | mdi-plus | - | on"
-        ],
-        []
+        ]
       ],
       "choices": [],
       "rowSets": [
@@ -14438,7 +14396,6 @@
           "c4.identifier | Identifier | \"gw\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"ci\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
@@ -14468,7 +14425,7 @@
         "\"q->c@10\" => menu #6, rows #8",
         "\"q->missing@11\" => menu #6, rows #9",
         "\"\" => menu #7, no rows",
-        "\"parity:unknown\" => menu #8, no rows"
+        "\"parity:unknown\" => menu #5, no rows"
       ],
       "views": [
         {
@@ -14480,8 +14437,8 @@
             "\"p\" => menu #0, rows #0",
             "\"s\" => menu #1, rows #1",
             "\"q\" => menu #1, rows #4",
-            "\"q->s@10\" => menu #8, no rows",
-            "\"c4:view\" => menu #8, no rows",
+            "\"q->s@10\" => menu #5, no rows",
+            "\"c4:view\" => menu #5, no rows",
             "\"\" => menu #7, no rows"
           ],
           "payloads": [
@@ -14499,7 +14456,7 @@
           "layout": "0 stored positions",
           "targets": [
             "\"c\" => menu #2, rows #2",
-            "\"c4:view\" => menu #8, no rows",
+            "\"c4:view\" => menu #5, no rows",
             "\"\" => menu #7, no rows"
           ],
           "payloads": [
@@ -14513,7 +14470,7 @@
           "title": "Container diagram for System",
           "layout": "0 stored positions",
           "targets": [
-            "\"c4:view\" => menu #8, no rows",
+            "\"c4:view\" => menu #5, no rows",
             "\"\" => menu #7, no rows"
           ],
           "payloads": [
@@ -14528,8 +14485,8 @@
           "targets": [
             "\"gw\" => menu #4, rows #6",
             "\"ci\" => menu #5, rows #7",
-            "\"boundary:n\" => menu #8, no rows",
-            "\"c4:view\" => menu #8, no rows",
+            "\"boundary:n\" => menu #5, no rows",
+            "\"c4:view\" => menu #5, no rows",
             "\"\" => menu #7, no rows"
           ],
           "payloads": [
@@ -19530,9 +19487,7 @@
           "g1 c4.edit-description | Edit description… | mdi-text-box-outline | - | on",
           "g1 c4.set-technology | Change technology… | mdi-tools | - | on"
         ],
-        [
-          "g1 c4.edit-description | Add description… | mdi-text-box-outline | - | on"
-        ],
+        [],
         [
           "g1 c4.relabel | Relabel… | mdi-pencil-outline | F2 | on",
           "g1 c4.set-protocol | Set technology… | mdi-transit-connection-variant | - | on"
@@ -19540,8 +19495,7 @@
         [
           "g1 c4.add-person | Add person… | mdi-plus | - | on",
           "g1 c4.add-softwaresystem | Add software system… | mdi-plus | - | on"
-        ],
-        []
+        ]
       ],
       "choices": [],
       "rowSets": [
@@ -19584,13 +19538,11 @@
           "c4.identifier | Identifier | \"n\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"wi\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"ai\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
@@ -19656,7 +19608,7 @@
         "\"gw->wi@21\" => menu #3, rows #12",
         "\"n->gw@23\" => menu #3, rows #13",
         "\"\" => menu #4, no rows",
-        "\"parity:unknown\" => menu #5, no rows"
+        "\"parity:unknown\" => menu #2, no rows"
       ],
       "views": [
         {
@@ -19668,7 +19620,7 @@
             "\"u\" => menu #0, rows #0",
             "\"s\" => menu #0, rows #1",
             "\"u->s@4\" => menu #3, rows #8",
-            "\"c4:view\" => menu #5, no rows",
+            "\"c4:view\" => menu #2, no rows",
             "\"\" => menu #4, no rows"
           ],
           "payloads": [
@@ -19689,8 +19641,8 @@
             "\"api\" => menu #1, rows #3",
             "\"web->api@8\" => menu #3, rows #9",
             "\"u->web@12\" => menu #3, rows #10",
-            "\"boundary:s\" => menu #5, no rows",
-            "\"c4:view\" => menu #5, no rows",
+            "\"boundary:s\" => menu #2, no rows",
+            "\"c4:view\" => menu #2, no rows",
             "\"\" => menu #4, no rows"
           ],
           "payloads": [
@@ -19712,10 +19664,10 @@
             "\"wi\" => menu #2, rows #5",
             "\"ai\" => menu #2, rows #6",
             "\"gw\" => menu #1, rows #7",
-            "\"wi->ai@8\" => menu #5, no rows",
+            "\"wi->ai@8\" => menu #2, no rows",
             "\"gw->wi@21\" => menu #3, rows #12",
-            "\"boundary:n\" => menu #5, no rows",
-            "\"c4:view\" => menu #5, no rows",
+            "\"boundary:n\" => menu #2, no rows",
+            "\"c4:view\" => menu #2, no rows",
             "\"\" => menu #4, no rows"
           ],
           "payloads": [
@@ -24960,9 +24912,7 @@
           "g1 c4.edit-description | Edit description… | mdi-text-box-outline | - | on",
           "g1 c4.set-technology | Change technology… | mdi-tools | - | on"
         ],
-        [
-          "g1 c4.edit-description | Add description… | mdi-text-box-outline | - | on"
-        ],
+        [],
         [
           "g1 c4.relabel | Relabel… | mdi-pencil-outline | F2 | on",
           "g1 c4.set-protocol | Set technology… | mdi-transit-connection-variant | - | on"
@@ -24970,8 +24920,7 @@
         [
           "g1 c4.add-person | Add person… | mdi-plus | - | on",
           "g1 c4.add-softwaresystem | Add software system… | mdi-plus | - | on"
-        ],
-        []
+        ]
       ],
       "choices": [],
       "rowSets": [
@@ -25014,7 +24963,6 @@
           "c4.identifier | Identifier | \"deploymentnode_Server_1\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"containerinstance_web_2\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
@@ -25035,7 +24983,7 @@
         "\"containerinstance_web_2\" => menu #2, rows #5",
         "\"u->c@9\" => menu #3, rows #6",
         "\"\" => menu #4, no rows",
-        "\"parity:unknown\" => menu #5, no rows"
+        "\"parity:unknown\" => menu #2, no rows"
       ],
       "views": [
         {
@@ -25046,8 +24994,8 @@
           "targets": [
             "\"u\" => menu #0, rows #0",
             "\"s\" => menu #0, rows #1",
-            "\"u->s@9\" => menu #5, no rows",
-            "\"c4:view\" => menu #5, no rows",
+            "\"u->s@9\" => menu #2, no rows",
+            "\"c4:view\" => menu #2, no rows",
             "\"\" => menu #4, no rows"
           ],
           "payloads": [
@@ -25065,8 +25013,8 @@
           "targets": [
             "\"u\" => menu #0, rows #0",
             "\"s\" => menu #0, rows #1",
-            "\"u->s@9\" => menu #5, no rows",
-            "\"c4:view\" => menu #5, no rows",
+            "\"u->s@9\" => menu #2, no rows",
+            "\"c4:view\" => menu #2, no rows",
             "\"\" => menu #4, no rows"
           ],
           "payloads": [
@@ -25084,9 +25032,9 @@
           "targets": [
             "\"u\" => menu #0, rows #0",
             "\"web\" => menu #1, rows #2",
-            "\"u->web@9\" => menu #5, no rows",
-            "\"boundary:s\" => menu #5, no rows",
-            "\"c4:view\" => menu #5, no rows",
+            "\"u->web@9\" => menu #2, no rows",
+            "\"boundary:s\" => menu #2, no rows",
+            "\"c4:view\" => menu #2, no rows",
             "\"\" => menu #4, no rows"
           ],
           "payloads": [
@@ -25107,8 +25055,8 @@
             "\"s\" => menu #0, rows #1",
             "\"c\" => menu #1, rows #3",
             "\"u->c@9\" => menu #3, rows #6",
-            "\"boundary:web\" => menu #5, no rows",
-            "\"c4:view\" => menu #5, no rows",
+            "\"boundary:web\" => menu #2, no rows",
+            "\"c4:view\" => menu #2, no rows",
             "\"\" => menu #4, no rows"
           ],
           "payloads": [
@@ -25128,8 +25076,8 @@
           "targets": [
             "\"u\" => menu #0, rows #0",
             "\"c\" => menu #1, rows #3",
-            "\"u->c@30\" => menu #5, no rows",
-            "\"c4:view\" => menu #5, no rows",
+            "\"u->c@30\" => menu #2, no rows",
+            "\"c4:view\" => menu #2, no rows",
             "\"\" => menu #4, no rows"
           ],
           "payloads": [
@@ -25146,8 +25094,8 @@
           "layout": "0 stored positions",
           "targets": [
             "\"containerinstance_web_2\" => menu #2, rows #5",
-            "\"boundary:deploymentnode_Server_1\" => menu #5, no rows",
-            "\"c4:view\" => menu #5, no rows",
+            "\"boundary:deploymentnode_Server_1\" => menu #2, no rows",
+            "\"c4:view\" => menu #2, no rows",
             "\"\" => menu #4, no rows"
           ],
           "payloads": [
@@ -25163,8 +25111,8 @@
           "layout": "0 stored positions",
           "targets": [
             "\"containerinstance_web_2\" => menu #2, rows #5",
-            "\"boundary:deploymentnode_Server_1\" => menu #5, no rows",
-            "\"c4:view\" => menu #5, no rows",
+            "\"boundary:deploymentnode_Server_1\" => menu #2, no rows",
+            "\"c4:view\" => menu #2, no rows",
             "\"\" => menu #4, no rows"
           ],
           "payloads": [
@@ -26248,9 +26196,7 @@
           "g1 c4.edit-description | Edit description… | mdi-text-box-outline | - | on",
           "g1 c4.set-technology | Change technology… | mdi-tools | - | on"
         ],
-        [
-          "g1 c4.edit-description | Add description… | mdi-text-box-outline | - | on"
-        ],
+        [],
         [
           "g1 c4.relabel | Relabel… | mdi-pencil-outline | F2 | on",
           "g1 c4.set-protocol | Set technology… | mdi-transit-connection-variant | - | on"
@@ -26258,8 +26204,7 @@
         [
           "g1 c4.add-person | Add person… | mdi-plus | - | on",
           "g1 c4.add-softwaresystem | Add software system… | mdi-plus | - | on"
-        ],
-        []
+        ]
       ],
       "choices": [],
       "rowSets": [
@@ -26548,13 +26493,11 @@
           "c4.identifier | Identifier | \"deploymentnode_gwopc_4\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"containerinstance_opcGateway_5\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"containerinstance_historianBridge_6\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
@@ -26592,31 +26535,26 @@
           "c4.identifier | Identifier | \"deploymentnode_messervices_9\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"containerinstance_orderService_10\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"containerinstance_batchService_11\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"containerinstance_qualityService_12\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"containerinstance_oeeService_13\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"containerinstance_erpAdapter_14\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
@@ -26630,13 +26568,11 @@
           "c4.identifier | Identifier | \"deploymentnode_mesweb_15\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"containerinstance_hmi_16\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"containerinstance_andon_17\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
@@ -26650,7 +26586,6 @@
           "c4.identifier | Identifier | \"deploymentnode_kafkaplant_18\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"containerinstance_eventBus_19\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
@@ -26664,13 +26599,11 @@
           "c4.identifier | Identifier | \"dbPrimary\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"containerinstance_operationalDb_20\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"containerinstance_batchArchive_21\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
@@ -26684,13 +26617,11 @@
           "c4.identifier | Identifier | \"dbStandby\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"containerinstance_operationalDb_22\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"containerinstance_batchArchive_23\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
@@ -26704,7 +26635,6 @@
           "c4.identifier | Identifier | \"deploymentnode_LineHMIterminal_24\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"containerinstance_hmi_25\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
@@ -27172,7 +27102,7 @@
         "\"firewall->scadaServer@217\" => menu #3, rows #116",
         "\"lineBalancer->firewall@218\" => menu #3, rows #117",
         "\"\" => menu #4, no rows",
-        "\"parity:unknown\" => menu #5, no rows"
+        "\"parity:unknown\" => menu #2, no rows"
       ],
       "views": [
         {
@@ -27205,7 +27135,7 @@
             "\"mes->cmms@94\" => menu #3, rows #75",
             "\"mes->warehouse@95\" => menu #3, rows #76",
             "\"scada->historian@96\" => menu #3, rows #77",
-            "\"c4:view\" => menu #5, no rows",
+            "\"c4:view\" => menu #2, no rows",
             "\"\" => menu #4, no rows"
           ],
           "payloads": [
@@ -27266,7 +27196,7 @@
             "\"mes->cmms@94\" => menu #3, rows #75",
             "\"mes->warehouse@95\" => menu #3, rows #76",
             "\"scada->historian@96\" => menu #3, rows #77",
-            "\"c4:view\" => menu #5, no rows",
+            "\"c4:view\" => menu #2, no rows",
             "\"\" => menu #4, no rows"
           ],
           "payloads": [
@@ -27358,8 +27288,8 @@
             "\"erpAdapter->orderService@136\" => menu #3, rows #105",
             "\"batchService->erpAdapter@137\" => menu #3, rows #106",
             "\"batchService->cmms@138\" => menu #3, rows #107",
-            "\"boundary:mes\" => menu #5, no rows",
-            "\"c4:view\" => menu #5, no rows",
+            "\"boundary:mes\" => menu #2, no rows",
+            "\"c4:view\" => menu #2, no rows",
             "\"\" => menu #4, no rows"
           ],
           "payloads": [
@@ -27448,8 +27378,8 @@
             "\"orderRepository->operationalDb@143\" => menu #3, rows #110",
             "\"orderState->eventBus@144\" => menu #3, rows #111",
             "\"materialCheck->warehouse@145\" => menu #3, rows #112",
-            "\"boundary:orderService\" => menu #5, no rows",
-            "\"c4:view\" => menu #5, no rows",
+            "\"boundary:orderService\" => menu #2, no rows",
+            "\"c4:view\" => menu #2, no rows",
             "\"\" => menu #4, no rows"
           ],
           "payloads": [
@@ -27491,15 +27421,15 @@
             "\"batchArchive\" => menu #1, rows #21",
             "\"erpAdapter\" => menu #1, rows #18",
             "\"erp\" => menu #0, rows #25",
-            "\"opcGateway->eventBus@258\" => menu #5, no rows",
-            "\"eventBus->batchService@259\" => menu #5, no rows",
-            "\"batchService->qualityService@260\" => menu #5, no rows",
-            "\"qualityService->lims@261\" => menu #5, no rows",
-            "\"qualityService->batchService@262\" => menu #5, no rows",
-            "\"batchService->batchArchive@263\" => menu #5, no rows",
-            "\"batchService->erpAdapter@264\" => menu #5, no rows",
-            "\"erpAdapter->erp@265\" => menu #5, no rows",
-            "\"c4:view\" => menu #5, no rows",
+            "\"opcGateway->eventBus@258\" => menu #2, no rows",
+            "\"eventBus->batchService@259\" => menu #2, no rows",
+            "\"batchService->qualityService@260\" => menu #2, no rows",
+            "\"qualityService->lims@261\" => menu #2, no rows",
+            "\"qualityService->batchService@262\" => menu #2, no rows",
+            "\"batchService->batchArchive@263\" => menu #2, no rows",
+            "\"batchService->erpAdapter@264\" => menu #2, no rows",
+            "\"erpAdapter->erp@265\" => menu #2, no rows",
+            "\"c4:view\" => menu #2, no rows",
             "\"\" => menu #4, no rows"
           ],
           "payloads": [
@@ -27548,50 +27478,50 @@
             "\"containerinstance_operationalDb_22\" => menu #2, rows #57",
             "\"containerinstance_batchArchive_23\" => menu #2, rows #58",
             "\"containerinstance_hmi_25\" => menu #2, rows #60",
-            "\"containerinstance_hmi_16->containerinstance_orderService_10@106\" => menu #5, no rows",
-            "\"containerinstance_hmi_25->containerinstance_orderService_10@106\" => menu #5, no rows",
-            "\"containerinstance_hmi_16->containerinstance_batchService_11@107\" => menu #5, no rows",
-            "\"containerinstance_hmi_25->containerinstance_batchService_11@107\" => menu #5, no rows",
-            "\"containerinstance_hmi_16->containerinstance_qualityService_12@108\" => menu #5, no rows",
-            "\"containerinstance_hmi_25->containerinstance_qualityService_12@108\" => menu #5, no rows",
-            "\"containerinstance_andon_17->containerinstance_oeeService_13@109\" => menu #5, no rows",
-            "\"containerinstance_orderService_10->containerinstance_operationalDb_20@111\" => menu #5, no rows",
-            "\"containerinstance_orderService_10->containerinstance_operationalDb_22@111\" => menu #5, no rows",
-            "\"containerinstance_orderService_10->containerinstance_eventBus_19@112\" => menu #5, no rows",
-            "\"containerinstance_batchService_11->containerinstance_operationalDb_20@115\" => menu #5, no rows",
-            "\"containerinstance_batchService_11->containerinstance_operationalDb_22@115\" => menu #5, no rows",
-            "\"containerinstance_batchService_11->containerinstance_batchArchive_21@116\" => menu #5, no rows",
-            "\"containerinstance_batchService_11->containerinstance_batchArchive_23@116\" => menu #5, no rows",
-            "\"containerinstance_batchService_11->containerinstance_eventBus_19@117\" => menu #5, no rows",
-            "\"containerinstance_eventBus_19->containerinstance_batchService_11@118\" => menu #5, no rows",
-            "\"containerinstance_qualityService_12->containerinstance_operationalDb_20@120\" => menu #5, no rows",
-            "\"containerinstance_qualityService_12->containerinstance_operationalDb_22@120\" => menu #5, no rows",
-            "\"containerinstance_qualityService_12->containerinstance_batchService_11@122\" => menu #5, no rows",
-            "\"containerinstance_oeeService_13->containerinstance_eventBus_19@124\" => menu #5, no rows",
-            "\"containerinstance_oeeService_13->containerinstance_operationalDb_20@125\" => menu #5, no rows",
-            "\"containerinstance_oeeService_13->containerinstance_operationalDb_22@125\" => menu #5, no rows",
-            "\"containerinstance_opcGateway_5->containerinstance_eventBus_19@129\" => menu #5, no rows",
-            "\"containerinstance_eventBus_19->containerinstance_opcGateway_5@130\" => menu #5, no rows",
-            "\"containerinstance_historianBridge_6->containerinstance_eventBus_19@133\" => menu #5, no rows",
-            "\"containerinstance_erpAdapter_14->containerinstance_orderService_10@136\" => menu #5, no rows",
-            "\"containerinstance_batchService_11->containerinstance_erpAdapter_14@137\" => menu #5, no rows",
+            "\"containerinstance_hmi_16->containerinstance_orderService_10@106\" => menu #2, no rows",
+            "\"containerinstance_hmi_25->containerinstance_orderService_10@106\" => menu #2, no rows",
+            "\"containerinstance_hmi_16->containerinstance_batchService_11@107\" => menu #2, no rows",
+            "\"containerinstance_hmi_25->containerinstance_batchService_11@107\" => menu #2, no rows",
+            "\"containerinstance_hmi_16->containerinstance_qualityService_12@108\" => menu #2, no rows",
+            "\"containerinstance_hmi_25->containerinstance_qualityService_12@108\" => menu #2, no rows",
+            "\"containerinstance_andon_17->containerinstance_oeeService_13@109\" => menu #2, no rows",
+            "\"containerinstance_orderService_10->containerinstance_operationalDb_20@111\" => menu #2, no rows",
+            "\"containerinstance_orderService_10->containerinstance_operationalDb_22@111\" => menu #2, no rows",
+            "\"containerinstance_orderService_10->containerinstance_eventBus_19@112\" => menu #2, no rows",
+            "\"containerinstance_batchService_11->containerinstance_operationalDb_20@115\" => menu #2, no rows",
+            "\"containerinstance_batchService_11->containerinstance_operationalDb_22@115\" => menu #2, no rows",
+            "\"containerinstance_batchService_11->containerinstance_batchArchive_21@116\" => menu #2, no rows",
+            "\"containerinstance_batchService_11->containerinstance_batchArchive_23@116\" => menu #2, no rows",
+            "\"containerinstance_batchService_11->containerinstance_eventBus_19@117\" => menu #2, no rows",
+            "\"containerinstance_eventBus_19->containerinstance_batchService_11@118\" => menu #2, no rows",
+            "\"containerinstance_qualityService_12->containerinstance_operationalDb_20@120\" => menu #2, no rows",
+            "\"containerinstance_qualityService_12->containerinstance_operationalDb_22@120\" => menu #2, no rows",
+            "\"containerinstance_qualityService_12->containerinstance_batchService_11@122\" => menu #2, no rows",
+            "\"containerinstance_oeeService_13->containerinstance_eventBus_19@124\" => menu #2, no rows",
+            "\"containerinstance_oeeService_13->containerinstance_operationalDb_20@125\" => menu #2, no rows",
+            "\"containerinstance_oeeService_13->containerinstance_operationalDb_22@125\" => menu #2, no rows",
+            "\"containerinstance_opcGateway_5->containerinstance_eventBus_19@129\" => menu #2, no rows",
+            "\"containerinstance_eventBus_19->containerinstance_opcGateway_5@130\" => menu #2, no rows",
+            "\"containerinstance_historianBridge_6->containerinstance_eventBus_19@133\" => menu #2, no rows",
+            "\"containerinstance_erpAdapter_14->containerinstance_orderService_10@136\" => menu #2, no rows",
+            "\"containerinstance_batchService_11->containerinstance_erpAdapter_14@137\" => menu #2, no rows",
             "\"scadaServer->plcRuntime@214\" => menu #3, rows #114",
             "\"scadaServer->historianServer@215\" => menu #3, rows #115",
             "\"firewall->scadaServer@217\" => menu #3, rows #116",
             "\"lineBalancer->firewall@218\" => menu #3, rows #117",
-            "\"boundary:deploymentnode_ControlnetworkPurduelevel12_1\" => menu #5, no rows",
-            "\"boundary:deploymentnode_FillinglinePLC_2\" => menu #5, no rows",
-            "\"boundary:deploymentnode_PlantDMZ_3\" => menu #5, no rows",
-            "\"boundary:deploymentnode_gwopc_4\" => menu #5, no rows",
-            "\"boundary:deploymentnode_Plantdatacentre_7\" => menu #5, no rows",
-            "\"boundary:deploymentnode_k8splant_8\" => menu #5, no rows",
-            "\"boundary:deploymentnode_messervices_9\" => menu #5, no rows",
-            "\"boundary:deploymentnode_mesweb_15\" => menu #5, no rows",
-            "\"boundary:deploymentnode_kafkaplant_18\" => menu #5, no rows",
-            "\"boundary:dbPrimary\" => menu #5, no rows",
-            "\"boundary:dbStandby\" => menu #5, no rows",
-            "\"boundary:deploymentnode_LineHMIterminal_24\" => menu #5, no rows",
-            "\"c4:view\" => menu #5, no rows",
+            "\"boundary:deploymentnode_ControlnetworkPurduelevel12_1\" => menu #2, no rows",
+            "\"boundary:deploymentnode_FillinglinePLC_2\" => menu #2, no rows",
+            "\"boundary:deploymentnode_PlantDMZ_3\" => menu #2, no rows",
+            "\"boundary:deploymentnode_gwopc_4\" => menu #2, no rows",
+            "\"boundary:deploymentnode_Plantdatacentre_7\" => menu #2, no rows",
+            "\"boundary:deploymentnode_k8splant_8\" => menu #2, no rows",
+            "\"boundary:deploymentnode_messervices_9\" => menu #2, no rows",
+            "\"boundary:deploymentnode_mesweb_15\" => menu #2, no rows",
+            "\"boundary:deploymentnode_kafkaplant_18\" => menu #2, no rows",
+            "\"boundary:dbPrimary\" => menu #2, no rows",
+            "\"boundary:dbStandby\" => menu #2, no rows",
+            "\"boundary:deploymentnode_LineHMIterminal_24\" => menu #2, no rows",
+            "\"c4:view\" => menu #2, no rows",
             "\"\" => menu #4, no rows"
           ],
           "payloads": [
@@ -28768,9 +28698,7 @@
           "g1 c4.edit-description | Edit description… | mdi-text-box-outline | - | on",
           "g1 c4.set-technology | Change technology… | mdi-tools | - | on"
         ],
-        [
-          "g1 c4.edit-description | Add description… | mdi-text-box-outline | - | on"
-        ],
+        [],
         [
           "g1 c4.relabel | Relabel… | mdi-pencil-outline | F2 | on",
           "g1 c4.set-protocol | Set technology… | mdi-transit-connection-variant | - | on"
@@ -28778,8 +28706,7 @@
         [
           "g1 c4.add-person | Add person… | mdi-plus | - | on",
           "g1 c4.add-softwaresystem | Add software system… | mdi-plus | - | on"
-        ],
-        []
+        ]
       ],
       "choices": [],
       "rowSets": [
@@ -28937,7 +28864,6 @@
           "c4.identifier | Identifier | \"deploymentnode_WebBrowser_2\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"containerinstance_spa_3\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
@@ -28951,7 +28877,6 @@
           "c4.identifier | Identifier | \"deploymentnode_Courierhandset_4\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"containerinstance_mobile_5\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
@@ -28981,13 +28906,11 @@
           "c4.identifier | Identifier | \"deploymentnode_ApacheTomcat_8\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"containerinstance_web_9\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"containerinstance_api_10\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
@@ -29009,7 +28932,6 @@
           "c4.identifier | Identifier | \"deploymentnode_kafka_11\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"containerinstance_broker_12\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
@@ -29023,7 +28945,6 @@
           "c4.identifier | Identifier | \"dbPrimary\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"containerinstance_database_13\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
@@ -29037,7 +28958,6 @@
           "c4.identifier | Identifier | \"dbStandby\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"containerinstance_database_14\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
@@ -29297,7 +29217,7 @@
         "\"dbPrimary->dbStandby@148\" => menu #3, rows #64",
         "\"loadBalancer->web@152\" => menu #3, rows #65",
         "\"\" => menu #4, no rows",
-        "\"parity:unknown\" => menu #5, no rows"
+        "\"parity:unknown\" => menu #2, no rows"
       ],
       "views": [
         {
@@ -29320,7 +29240,7 @@
             "\"tracking->email@76\" => menu #3, rows #41",
             "\"tracking->maps@77\" => menu #3, rows #42",
             "\"email->sender@78\" => menu #3, rows #43",
-            "\"c4:view\" => menu #5, no rows",
+            "\"c4:view\" => menu #2, no rows",
             "\"\" => menu #4, no rows"
           ],
           "payloads": [
@@ -29361,7 +29281,7 @@
             "\"tracking->email@76\" => menu #3, rows #41",
             "\"tracking->maps@77\" => menu #3, rows #42",
             "\"email->sender@78\" => menu #3, rows #43",
-            "\"c4:view\" => menu #5, no rows",
+            "\"c4:view\" => menu #2, no rows",
             "\"\" => menu #4, no rows"
           ],
           "payloads": [
@@ -29413,8 +29333,8 @@
             "\"api->routing@93\" => menu #3, rows #53",
             "\"api->email@94\" => menu #3, rows #54",
             "\"api->maps@95\" => menu #3, rows #55",
-            "\"boundary:tracking\" => menu #5, no rows",
-            "\"c4:view\" => menu #5, no rows",
+            "\"boundary:tracking\" => menu #2, no rows",
+            "\"c4:view\" => menu #2, no rows",
             "\"\" => menu #4, no rows"
           ],
           "payloads": [
@@ -29481,11 +29401,11 @@
             "\"courier->mobile@82\" => menu #3, rows #45",
             "\"agent->spa@83\" => menu #3, rows #46",
             "\"web->spa@87\" => menu #3, rows #47",
-            "\"spa->tracking@88\" => menu #5, no rows",
-            "\"mobile->tracking@89\" => menu #5, no rows",
-            "\"tracking->database@90\" => menu #5, no rows",
-            "\"tracking->broker@91\" => menu #5, no rows",
-            "\"broker->tracking@92\" => menu #5, no rows",
+            "\"spa->tracking@88\" => menu #2, no rows",
+            "\"mobile->tracking@89\" => menu #2, no rows",
+            "\"tracking->database@90\" => menu #2, no rows",
+            "\"tracking->broker@91\" => menu #2, no rows",
+            "\"broker->tracking@92\" => menu #2, no rows",
             "\"spa->bookingController@98\" => menu #3, rows #56",
             "\"spa->trackingController@99\" => menu #3, rows #57",
             "\"mobile->scanIngest@100\" => menu #3, rows #58",
@@ -29494,8 +29414,8 @@
             "\"scanIngest->broker@103\" => menu #3, rows #61",
             "\"notifier->email@104\" => menu #3, rows #62",
             "\"routingFacade->routing@105\" => menu #3, rows #63",
-            "\"boundary:api\" => menu #5, no rows",
-            "\"c4:view\" => menu #5, no rows",
+            "\"boundary:api\" => menu #2, no rows",
+            "\"c4:view\" => menu #2, no rows",
             "\"\" => menu #4, no rows"
           ],
           "payloads": [
@@ -29556,13 +29476,13 @@
             "\"broker\" => menu #1, rows #13",
             "\"email\" => menu #0, rows #16",
             "\"sender\" => menu #0, rows #0",
-            "\"mobile->api@180\" => menu #5, no rows",
-            "\"api->database@181\" => menu #5, no rows",
-            "\"api->broker@182\" => menu #5, no rows",
-            "\"broker->api@183\" => menu #5, no rows",
-            "\"api->email@184\" => menu #5, no rows",
-            "\"email->sender@185\" => menu #5, no rows",
-            "\"c4:view\" => menu #5, no rows",
+            "\"mobile->api@180\" => menu #2, no rows",
+            "\"api->database@181\" => menu #2, no rows",
+            "\"api->broker@182\" => menu #2, no rows",
+            "\"broker->api@183\" => menu #2, no rows",
+            "\"api->email@184\" => menu #2, no rows",
+            "\"email->sender@185\" => menu #2, no rows",
+            "\"c4:view\" => menu #2, no rows",
             "\"\" => menu #4, no rows"
           ],
           "payloads": [
@@ -29595,23 +29515,23 @@
             "\"containerinstance_broker_12\" => menu #2, rows #30",
             "\"containerinstance_database_13\" => menu #2, rows #32",
             "\"containerinstance_database_14\" => menu #2, rows #34",
-            "\"containerinstance_web_9->containerinstance_spa_3@87\" => menu #5, no rows",
-            "\"containerinstance_spa_3->containerinstance_api_10@88\" => menu #5, no rows",
-            "\"containerinstance_mobile_5->containerinstance_api_10@89\" => menu #5, no rows",
-            "\"containerinstance_api_10->containerinstance_database_13@90\" => menu #5, no rows",
-            "\"containerinstance_api_10->containerinstance_database_14@90\" => menu #5, no rows",
-            "\"containerinstance_api_10->containerinstance_broker_12@91\" => menu #5, no rows",
-            "\"containerinstance_broker_12->containerinstance_api_10@92\" => menu #5, no rows",
-            "\"boundary:deploymentnode_Senderdevice_1\" => menu #5, no rows",
-            "\"boundary:deploymentnode_WebBrowser_2\" => menu #5, no rows",
-            "\"boundary:deploymentnode_Courierhandset_4\" => menu #5, no rows",
-            "\"boundary:deploymentnode_Regionaldatacentre_6\" => menu #5, no rows",
-            "\"boundary:deploymentnode_web_7\" => menu #5, no rows",
-            "\"boundary:deploymentnode_ApacheTomcat_8\" => menu #5, no rows",
-            "\"boundary:deploymentnode_kafka_11\" => menu #5, no rows",
-            "\"boundary:dbPrimary\" => menu #5, no rows",
-            "\"boundary:dbStandby\" => menu #5, no rows",
-            "\"c4:view\" => menu #5, no rows",
+            "\"containerinstance_web_9->containerinstance_spa_3@87\" => menu #2, no rows",
+            "\"containerinstance_spa_3->containerinstance_api_10@88\" => menu #2, no rows",
+            "\"containerinstance_mobile_5->containerinstance_api_10@89\" => menu #2, no rows",
+            "\"containerinstance_api_10->containerinstance_database_13@90\" => menu #2, no rows",
+            "\"containerinstance_api_10->containerinstance_database_14@90\" => menu #2, no rows",
+            "\"containerinstance_api_10->containerinstance_broker_12@91\" => menu #2, no rows",
+            "\"containerinstance_broker_12->containerinstance_api_10@92\" => menu #2, no rows",
+            "\"boundary:deploymentnode_Senderdevice_1\" => menu #2, no rows",
+            "\"boundary:deploymentnode_WebBrowser_2\" => menu #2, no rows",
+            "\"boundary:deploymentnode_Courierhandset_4\" => menu #2, no rows",
+            "\"boundary:deploymentnode_Regionaldatacentre_6\" => menu #2, no rows",
+            "\"boundary:deploymentnode_web_7\" => menu #2, no rows",
+            "\"boundary:deploymentnode_ApacheTomcat_8\" => menu #2, no rows",
+            "\"boundary:deploymentnode_kafka_11\" => menu #2, no rows",
+            "\"boundary:dbPrimary\" => menu #2, no rows",
+            "\"boundary:dbStandby\" => menu #2, no rows",
+            "\"c4:view\" => menu #2, no rows",
             "\"\" => menu #4, no rows"
           ],
           "payloads": [
@@ -30763,9 +30683,7 @@
           "g1 c4.edit-description | Edit description… | mdi-text-box-outline | - | on",
           "g1 c4.set-technology | Change technology… | mdi-tools | - | on"
         ],
-        [
-          "g1 c4.edit-description | Add description… | mdi-text-box-outline | - | on"
-        ],
+        [],
         [
           "g1 c4.relabel | Relabel… | mdi-pencil-outline | F2 | on",
           "g1 c4.set-protocol | Set technology… | mdi-transit-connection-variant | - | on"
@@ -30773,8 +30691,7 @@
         [
           "g1 c4.add-person | Add person… | mdi-plus | - | on",
           "g1 c4.add-softwaresystem | Add software system… | mdi-plus | - | on"
-        ],
-        []
+        ]
       ],
       "choices": [],
       "rowSets": [
@@ -30932,7 +30849,6 @@
           "c4.identifier | Identifier | \"deploymentnode_WebBrowser_2\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"containerinstance_spa_3\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
@@ -30946,7 +30862,6 @@
           "c4.identifier | Identifier | \"deploymentnode_Courierhandset_4\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"containerinstance_mobile_5\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
@@ -30976,13 +30891,11 @@
           "c4.identifier | Identifier | \"deploymentnode_ApacheTomcat_8\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"containerinstance_web_9\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"containerinstance_api_10\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
@@ -31004,7 +30917,6 @@
           "c4.identifier | Identifier | \"deploymentnode_kafka_11\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"containerinstance_broker_12\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
@@ -31018,7 +30930,6 @@
           "c4.identifier | Identifier | \"dbPrimary\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"containerinstance_database_13\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
@@ -31032,7 +30943,6 @@
           "c4.identifier | Identifier | \"dbStandby\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
         ],
         [
-          "c4.description | Description | \"\" | Text | editable | group ",
           "c4.tags | Tags | \"\" | Line | read-only (Tags are edited in the document until an action exists for them.) | group ",
           "c4.kind | Kind | \"Container instance\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model",
           "c4.identifier | Identifier | \"containerinstance_database_14\" | Line | read-only (Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.) | group Model"
@@ -31292,7 +31202,7 @@
         "\"dbPrimary->dbStandby@148\" => menu #3, rows #64",
         "\"loadBalancer->web@152\" => menu #3, rows #65",
         "\"\" => menu #4, no rows",
-        "\"parity:unknown\" => menu #5, no rows"
+        "\"parity:unknown\" => menu #2, no rows"
       ],
       "views": [
         {
@@ -31315,7 +31225,7 @@
             "\"tracking->email@76\" => menu #3, rows #41",
             "\"tracking->maps@77\" => menu #3, rows #42",
             "\"email->sender@78\" => menu #3, rows #43",
-            "\"c4:view\" => menu #5, no rows",
+            "\"c4:view\" => menu #2, no rows",
             "\"\" => menu #4, no rows"
           ],
           "payloads": [
@@ -31356,7 +31266,7 @@
             "\"tracking->email@76\" => menu #3, rows #41",
             "\"tracking->maps@77\" => menu #3, rows #42",
             "\"email->sender@78\" => menu #3, rows #43",
-            "\"c4:view\" => menu #5, no rows",
+            "\"c4:view\" => menu #2, no rows",
             "\"\" => menu #4, no rows"
           ],
           "payloads": [
@@ -31408,8 +31318,8 @@
             "\"api->routing@93\" => menu #3, rows #53",
             "\"api->email@94\" => menu #3, rows #54",
             "\"api->maps@95\" => menu #3, rows #55",
-            "\"boundary:tracking\" => menu #5, no rows",
-            "\"c4:view\" => menu #5, no rows",
+            "\"boundary:tracking\" => menu #2, no rows",
+            "\"c4:view\" => menu #2, no rows",
             "\"\" => menu #4, no rows"
           ],
           "payloads": [
@@ -31476,11 +31386,11 @@
             "\"courier->mobile@82\" => menu #3, rows #45",
             "\"agent->spa@83\" => menu #3, rows #46",
             "\"web->spa@87\" => menu #3, rows #47",
-            "\"spa->tracking@88\" => menu #5, no rows",
-            "\"mobile->tracking@89\" => menu #5, no rows",
-            "\"tracking->database@90\" => menu #5, no rows",
-            "\"tracking->broker@91\" => menu #5, no rows",
-            "\"broker->tracking@92\" => menu #5, no rows",
+            "\"spa->tracking@88\" => menu #2, no rows",
+            "\"mobile->tracking@89\" => menu #2, no rows",
+            "\"tracking->database@90\" => menu #2, no rows",
+            "\"tracking->broker@91\" => menu #2, no rows",
+            "\"broker->tracking@92\" => menu #2, no rows",
             "\"spa->bookingController@98\" => menu #3, rows #56",
             "\"spa->trackingController@99\" => menu #3, rows #57",
             "\"mobile->scanIngest@100\" => menu #3, rows #58",
@@ -31489,8 +31399,8 @@
             "\"scanIngest->broker@103\" => menu #3, rows #61",
             "\"notifier->email@104\" => menu #3, rows #62",
             "\"routingFacade->routing@105\" => menu #3, rows #63",
-            "\"boundary:api\" => menu #5, no rows",
-            "\"c4:view\" => menu #5, no rows",
+            "\"boundary:api\" => menu #2, no rows",
+            "\"c4:view\" => menu #2, no rows",
             "\"\" => menu #4, no rows"
           ],
           "payloads": [
@@ -31551,13 +31461,13 @@
             "\"broker\" => menu #1, rows #13",
             "\"email\" => menu #0, rows #16",
             "\"sender\" => menu #0, rows #0",
-            "\"mobile->api@180\" => menu #5, no rows",
-            "\"api->database@181\" => menu #5, no rows",
-            "\"api->broker@182\" => menu #5, no rows",
-            "\"broker->api@183\" => menu #5, no rows",
-            "\"api->email@184\" => menu #5, no rows",
-            "\"email->sender@185\" => menu #5, no rows",
-            "\"c4:view\" => menu #5, no rows",
+            "\"mobile->api@180\" => menu #2, no rows",
+            "\"api->database@181\" => menu #2, no rows",
+            "\"api->broker@182\" => menu #2, no rows",
+            "\"broker->api@183\" => menu #2, no rows",
+            "\"api->email@184\" => menu #2, no rows",
+            "\"email->sender@185\" => menu #2, no rows",
+            "\"c4:view\" => menu #2, no rows",
             "\"\" => menu #4, no rows"
           ],
           "payloads": [
@@ -31590,23 +31500,23 @@
             "\"containerinstance_broker_12\" => menu #2, rows #30",
             "\"containerinstance_database_13\" => menu #2, rows #32",
             "\"containerinstance_database_14\" => menu #2, rows #34",
-            "\"containerinstance_web_9->containerinstance_spa_3@87\" => menu #5, no rows",
-            "\"containerinstance_spa_3->containerinstance_api_10@88\" => menu #5, no rows",
-            "\"containerinstance_mobile_5->containerinstance_api_10@89\" => menu #5, no rows",
-            "\"containerinstance_api_10->containerinstance_database_13@90\" => menu #5, no rows",
-            "\"containerinstance_api_10->containerinstance_database_14@90\" => menu #5, no rows",
-            "\"containerinstance_api_10->containerinstance_broker_12@91\" => menu #5, no rows",
-            "\"containerinstance_broker_12->containerinstance_api_10@92\" => menu #5, no rows",
-            "\"boundary:deploymentnode_Senderdevice_1\" => menu #5, no rows",
-            "\"boundary:deploymentnode_WebBrowser_2\" => menu #5, no rows",
-            "\"boundary:deploymentnode_Courierhandset_4\" => menu #5, no rows",
-            "\"boundary:deploymentnode_Regionaldatacentre_6\" => menu #5, no rows",
-            "\"boundary:deploymentnode_web_7\" => menu #5, no rows",
-            "\"boundary:deploymentnode_ApacheTomcat_8\" => menu #5, no rows",
-            "\"boundary:deploymentnode_kafka_11\" => menu #5, no rows",
-            "\"boundary:dbPrimary\" => menu #5, no rows",
-            "\"boundary:dbStandby\" => menu #5, no rows",
-            "\"c4:view\" => menu #5, no rows",
+            "\"containerinstance_web_9->containerinstance_spa_3@87\" => menu #2, no rows",
+            "\"containerinstance_spa_3->containerinstance_api_10@88\" => menu #2, no rows",
+            "\"containerinstance_mobile_5->containerinstance_api_10@89\" => menu #2, no rows",
+            "\"containerinstance_api_10->containerinstance_database_13@90\" => menu #2, no rows",
+            "\"containerinstance_api_10->containerinstance_database_14@90\" => menu #2, no rows",
+            "\"containerinstance_api_10->containerinstance_broker_12@91\" => menu #2, no rows",
+            "\"containerinstance_broker_12->containerinstance_api_10@92\" => menu #2, no rows",
+            "\"boundary:deploymentnode_Senderdevice_1\" => menu #2, no rows",
+            "\"boundary:deploymentnode_WebBrowser_2\" => menu #2, no rows",
+            "\"boundary:deploymentnode_Courierhandset_4\" => menu #2, no rows",
+            "\"boundary:deploymentnode_Regionaldatacentre_6\" => menu #2, no rows",
+            "\"boundary:deploymentnode_web_7\" => menu #2, no rows",
+            "\"boundary:deploymentnode_ApacheTomcat_8\" => menu #2, no rows",
+            "\"boundary:deploymentnode_kafka_11\" => menu #2, no rows",
+            "\"boundary:dbPrimary\" => menu #2, no rows",
+            "\"boundary:dbStandby\" => menu #2, no rows",
+            "\"c4:view\" => menu #2, no rows",
             "\"\" => menu #4, no rows"
           ],
           "payloads": [

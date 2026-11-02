@@ -161,7 +161,7 @@
       ],
       "returns": "bool",
       "cel": "e.isA('ContainerInstance') || e.isA('SoftwareSystemInstance')",
-      "doc": "The two kinds that have no name in C4: an instance stands for what it is an instance of, which its first argument names."
+      "doc": "The two kinds that have no name and no description in C4: an instance stands for what it is an instance of, which its first argument names."
     },
     "referenced": {
       "params": [
@@ -2240,7 +2240,8 @@
             "kind": "operation",
             "operation": "editDescription",
             "group": "g1",
-            "icon": "mdi-text-box-outline"
+            "icon": "mdi-text-box-outline",
+            "visible": "!isInstance(self)"
           },
           {
             "kind": "operation",
@@ -2319,7 +2320,8 @@
         {
           "attribute": "description",
           "label": "Description",
-          "widget": "textarea"
+          "widget": "textarea",
+          "visible": "!isInstance(self)"
         },
         {
           "attribute": "technology",
@@ -2846,6 +2848,16 @@
         }
       },
       {
+        "id": "noDescriptionHere",
+        "kind": "change",
+        "scope": "Element",
+        "enforcement": "prevent",
+        "rule": "attribute != 'description' || !isInstance(self)",
+        "message": {
+          "cel": "'A ' + self.type.lowerAscii() + ' has no description in C4; it stands for what it is an instance of.'"
+        }
+      },
+      {
         "id": "dragDoesNotReparent",
         "kind": "placement",
         "label": "Dragging does not change containment",
@@ -2908,6 +2920,14 @@
           }
         },
         "paramsForm": "describeElement",
+        "unavailable": [
+          {
+            "when": "isInstance(self)",
+            "message": {
+              "cel": "'A ' + self.type.lowerAscii() + ' has no description in C4; it stands for what it is an instance of.'"
+            }
+          }
+        ],
         "actions": [
           {
             "set": {
