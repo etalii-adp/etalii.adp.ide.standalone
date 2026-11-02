@@ -94,7 +94,7 @@ internal sealed class WardleyIdentities(IFileWriter writer)
     /// elements has no identities to keep, and a stray file would only invite the question of
     /// what it is for.
     /// </remarks>
-    public async Task<string> WriteAsync(string bodyPath, IReadOnlyList<WardleyIdentityEntry> entries, CancellationToken cancellationToken)
+    public async Task WriteAsync(string bodyPath, IReadOnlyList<WardleyIdentityEntry> entries, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(bodyPath);
         ArgumentNullException.ThrowIfNull(entries);
@@ -103,7 +103,7 @@ internal sealed class WardleyIdentities(IFileWriter writer)
         if (entries.Count == 0)
         {
             await RemoveAsync(bodyPath, cancellationToken);
-            return "";
+            return;
         }
 
         // The folder is this sidecar's precondition rather than the writer's business: a
@@ -119,7 +119,6 @@ internal sealed class WardleyIdentities(IFileWriter writer)
             }
 
             await writer.SaveAsync(path, JsonSerializer.Serialize(entries, Options), cancellationToken);
-            return "";
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
@@ -129,10 +128,8 @@ internal sealed class WardleyIdentities(IFileWriter writer)
             // list when the sidecar is gone and Reconcile mints fresh ids for anything it
             // does not recognise, so the map is intact and its elements are renamed
             // underneath any selection still pointing at the old ones.
-            _logger.Warning(exception, "Could not write the identity sidecar beside {BodyPath}", bodyPath);
-
             // The writer removes its own scratch file before the failure surfaces.
-            return $"The element identities beside {IoPath.GetFileName(bodyPath)} could not be saved, so this map's elements may be given new ids the next time it is opened.";
+            _logger.Warning(exception, "Could not write the identity sidecar beside {BodyPath}", bodyPath);
         }
     }
 
@@ -181,7 +178,7 @@ internal sealed class WardleyIdentities(IFileWriter writer)
     /// The entries of <paramref name="holders"/>, each with the id <paramref name="idOf"/> gives
     /// it, or a fresh one where it gives none or one already given.
     /// </summary>
-    internal static IReadOnlyList<WardleyIdentityEntry> Assign(IEnumerable<WardleyHolder> holders, Func<WardleyHolder, string?> idOf)
+    private static IReadOnlyList<WardleyIdentityEntry> Assign(IEnumerable<WardleyHolder> holders, Func<WardleyHolder, string?> idOf)
     {
         var given = new HashSet<string>(StringComparer.Ordinal);
         var assigned = new List<WardleyIdentityEntry>();

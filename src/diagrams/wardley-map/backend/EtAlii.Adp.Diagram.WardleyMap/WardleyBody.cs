@@ -152,7 +152,7 @@ internal sealed class WardleyBody
     private ParseOutcome<WardleyMap> Outcome { get; }
 
     /// <summary>The body of <paramref name="document"/>'s text, read once for that text.</summary>
-    internal static WardleyBody Of(LineDocument document)
+    private static WardleyBody Of(LineDocument document)
     {
         ArgumentNullException.ThrowIfNull(document);
         return Bodies.Of(document.Text);
@@ -224,7 +224,7 @@ internal sealed class WardleyBody
         Identify(document, Keyed(known));
 
     /// <summary><paramref name="identities"/> as the binding looks an id up: by <c>kind:key</c>, the first of each.</summary>
-    internal static Dictionary<string, string> Keyed(IEnumerable<WardleyIdentityEntry> identities)
+    private static Dictionary<string, string> Keyed(IEnumerable<WardleyIdentityEntry> identities)
     {
         ArgumentNullException.ThrowIfNull(identities);
         var keyed = new Dictionary<string, string>(StringComparer.Ordinal);

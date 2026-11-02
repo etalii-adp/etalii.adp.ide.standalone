@@ -36,7 +36,7 @@ public abstract class WardleyEditHandler<TCommand>(IWardleyDocumentStore documen
     protected const string Gone = WardleyEdit.Gone;
 
     /// <summary>The store, for the identities held beside each map.</summary>
-    protected IWardleyDocumentStore Documents { get; } = documents ?? throw new ArgumentNullException(nameof(documents));
+    private IWardleyDocumentStore Documents { get; } = documents ?? throw new ArgumentNullException(nameof(documents));
 
     /// <inheritdoc />
     public Task<CommandResult> ExecuteAsync(TCommand command, CancellationToken cancellationToken = default)
@@ -51,7 +51,7 @@ public abstract class WardleyEditHandler<TCommand>(IWardleyDocumentStore documen
     /// The edit is made on a body of its own, opened on the cached text, so a refusal halfway through leaves nothing behind
     /// for the next save to write. A document that could not be read is not edited at all.
     /// </remarks>
-    protected virtual async Task<CommandResult> RunAsync(TCommand command, CancellationToken cancellationToken)
+    private async Task<CommandResult> RunAsync(TCommand command, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
         var entry = await Documents.GetOrLoadAsync(command.BodyPath, cancellationToken);
@@ -114,7 +114,7 @@ public sealed record WardleyEditContext(LineDocument Document, WardleyMap Map, I
 
     /// <summary>The id of the element of <paramref name="kind"/> declared on <paramref name="line"/>, or null.</summary>
     public string? IdAt(string kind, uint line) =>
-        Map.Holders.FirstOrDefault(holder => holder.Kind == kind && holder.Line == line) is { } holder
+        Map.Holders.FirstOrDefault(candidate => candidate.Kind == kind && candidate.Line == line) is { } holder
             ? Identities.FirstOrDefault(entry => entry.Kind == kind && entry.Key == holder.Key)?.Id
             : null;
 
@@ -217,14 +217,6 @@ internal static class WardleyEdit
         foreach ((string name, object? value) in values) attributes[name] = value;
         return attributes;
     }
-
-    /// <summary>The binding's type of a positioned element of <paramref name="kind"/>: Component, Anchor or Submap.</summary>
-    public static string TypeOf(WardleyElementKind kind) => kind switch
-    {
-        WardleyElementKind.Anchor => "Anchor",
-        WardleyElementKind.Submap => "Submap",
-        _ => "Component",
-    };
 
     /// <summary>The words of <paramref name="element"/>'s decorators as written, the ones that are no decorator of this notation included.</summary>
     public static List<string> DecoratorWords(FblElement? element) =>
@@ -529,7 +521,7 @@ public sealed class SetWardleyEvolveCommandHandler(IWardleyDocumentStore documen
         if (existingId is not null)
         {
             var changed = WardleyEdit.Attributes(("becomes", becomes.Length > 0 ? becomes : null));
-            if (existing!.Maturity != maturity) changed["maturity"] = maturity;
+            if (Math.Abs(existing!.Maturity - maturity) > double.Tolerance) changed["maturity"] = maturity;
             if (existing.Override == becomes) changed.Remove("becomes");
             return changed.Count == 0 ? EditOutcome.Unchanged : Changed(body, new ModelChange.Set(existingId, changed));
         }

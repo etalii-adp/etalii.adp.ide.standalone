@@ -44,7 +44,7 @@ public sealed class WardleyCommentedStatementsTests
         var written = new List<Splice>();
         foreach (var element in WardleyBody.Edit(lines, []).Reading.Elements.Where(element => HoldsAComment(lines, element.Line)))
         {
-            foreach (var (attribute, value) in element.Attributes)
+            foreach ((string attribute, object? value) in element.Attributes)
             {
                 if (Changed(value) is not { } changed) continue;
                 var edit = WardleyBody.Edit(lines, []);

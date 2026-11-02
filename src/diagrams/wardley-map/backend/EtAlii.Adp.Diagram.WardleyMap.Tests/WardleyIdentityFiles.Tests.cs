@@ -74,7 +74,7 @@ public sealed class WardleyIdentityFilesTests : IDisposable
 
         // Act.
         var moved = await ExecuteAsync(new MoveWardleyElementCommand(_path, kettle, 0.6d, 0.4d));
-        using var reopened = Provider();
+        await using var reopened = Provider();
         var again = await IdentitiesAsync(reopened, _path);
 
         // Assert.
@@ -96,7 +96,7 @@ public sealed class WardleyIdentityFilesTests : IDisposable
 
         // Act.
         var renamed = await ExecuteAsync(new RenameWardleyElementCommand(_path, "kettle-id", "Electric Kettle"));
-        using var reopened = Provider();
+        await using var reopened = Provider();
         var again = await IdentitiesAsync(reopened, _path);
 
         // Assert.

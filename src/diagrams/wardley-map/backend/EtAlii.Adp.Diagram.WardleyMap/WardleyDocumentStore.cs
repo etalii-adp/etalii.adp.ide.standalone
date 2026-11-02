@@ -47,7 +47,7 @@ public sealed class WardleyDocumentStore(IFileWriter writer) : LifecycleDocument
         // identities of a map it has already read, so a map that is not held has none yet, and none
         // are kept for it until it is (code-structure FR-050).
         return Get(path) is { } entry
-            ? _identities.GetOrAdd(path, key => new Held(entry.Document.Text, entry.Model, WardleyBody.Identify(entry.Document, _files.Read(key)))).Entries
+            ? _identities.GetOrAdd(path, key => new Held(entry.Document.Text, WardleyBody.Identify(entry.Document, _files.Read(key)))).Entries
             : [];
     }
 
@@ -132,7 +132,7 @@ public sealed class WardleyDocumentStore(IFileWriter writer) : LifecycleDocument
         }
 
         memory.Keep(text, carried);
-        _identities[path] = new Held(text, entry.Model, carried);
+        _identities[path] = new Held(text, carried);
         return _files.WriteAsync(path, carried, cancellationToken);
     }
 
@@ -169,11 +169,11 @@ public sealed class WardleyDocumentStore(IFileWriter writer) : LifecycleDocument
         }
 
         memory.Keep(text, reconciled);
-        _identities[path] = new Held(text, entry.Model, reconciled);
+        _identities[path] = new Held(text, reconciled);
     }
 
-    /// <summary>The identities held for a map, with the text and the map they are the identities of.</summary>
-    private sealed record Held(string Text, WardleyMap Model, IReadOnlyList<WardleyIdentityEntry> Entries);
+    /// <summary>The identities held for a map, with the text they are the identities of.</summary>
+    private sealed record Held(string Text, IReadOnlyList<WardleyIdentityEntry> Entries);
 
     /// <summary>The identities of the last texts of one map, the oldest forgotten first.</summary>
     private sealed class Memory

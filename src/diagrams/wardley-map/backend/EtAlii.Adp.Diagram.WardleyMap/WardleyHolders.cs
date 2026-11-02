@@ -18,7 +18,7 @@ namespace EtAlii.Adp.Diagram.WardleyMap;
 public static class WardleyHolders
 {
     /// <summary>The 1-based line of the element of <paramref name="kind"/> whose key is <paramref name="key"/>, or null.</summary>
-    public static uint? LineOf(WardleyMap map, string kind, string key)
+    private static uint? LineOf(WardleyMap map, string kind, string key)
     {
         ArgumentNullException.ThrowIfNull(map);
         return map.Holders.FirstOrDefault(holder => holder.Kind == kind && holder.Key == key)?.Line;

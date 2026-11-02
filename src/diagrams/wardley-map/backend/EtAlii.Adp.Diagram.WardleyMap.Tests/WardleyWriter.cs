@@ -117,38 +117,6 @@ internal static partial class WardleyWriter
         return changed + RenameReferences(document, map, oldName, newName);
     }
 
-    /// <summary>
-    /// Renames one holder of a name, which is how a repeated name is resolved (finding B9, ruling 5):
-    /// the first holder takes along every statement that names it, a later holder changes its own
-    /// declaration only, because nothing attaches to it, and the other holders keep the old name.
-    /// </summary>
-    /// <returns>How many lines were rewritten.</returns>
-    public static int Rename(LineDocument document, WardleyMap map, WardleyComponent holder, string newName)
-    {
-        ArgumentNullException.ThrowIfNull(document);
-        ArgumentNullException.ThrowIfNull(map);
-        ArgumentNullException.ThrowIfNull(holder);
-        ArgumentException.ThrowIfNullOrWhiteSpace(newName);
-
-        if (holder.Name == newName || !RenameDeclaration(document, holder, newName))
-        {
-            return 0;
-        }
-
-        return WardleyIdentityKeys.IsFirstHolder(map, holder)
-            ? 1 + RenameReferences(document, map, holder.Name, newName)
-            : 1;
-    }
-
-    /// <summary>Rewrites the name in <paramref name="component"/>'s own declaration, and nothing else.</summary>
-    public static bool RenameDeclaration(LineDocument document, WardleyComponent component, string newName)
-    {
-        ArgumentNullException.ThrowIfNull(document);
-        ArgumentNullException.ThrowIfNull(component);
-        ArgumentException.ThrowIfNullOrWhiteSpace(newName);
-
-        return RenameIn(document, component.Line, DeclarationNameExpression(), "name", newName);
-    }
 
     /// <summary>Every link, `evolve`, pipeline parent and pipeline child naming <paramref name="oldName"/>.</summary>
     private static int RenameReferences(LineDocument document, WardleyMap map, string oldName, string newName)
@@ -178,62 +146,6 @@ internal static partial class WardleyWriter
         return changed;
     }
 
-    /// <summary>
-    /// The declaration of a new element, `component Name [v, m]` or the same with `anchor` or
-    /// `submap`, the keyword in lower case whatever case it came in, and a decorator the element
-    /// carries from the start after the coordinates: `component Name [v, m] (market)`.
-    /// </summary>
-    internal static string ElementStatement(string kind, string name, WardleyCoordinate position, WardleyDecorator? decorator)
-    {
-        var decoration = decorator is { } word ? $" ({word.ToString().ToLowerInvariant()})" : "";
-        return $"{kind.ToLowerInvariant()} {name} {CoordinatePair(position)}{decoration}";
-    }
-
-    /// <summary>A `note Text [v, m]`: the text first, trimmed, and its position last.</summary>
-    internal static string NoteStatement(string text, WardleyCoordinate position) =>
-        $"note {text.Trim()} {CoordinatePair(position)}";
-
-    /// <summary>An `annotation N [v, m] Text`: the number and position first, the trimmed text last.</summary>
-    internal static string AnnotationStatement(int number, WardleyCoordinate position, string text) =>
-        $"annotation {number} {CoordinatePair(position)} {text.Trim()}";
-
-    /// <summary>
-    /// A link, `Source->Target` for a dependency or `Source+>Target` for a flow, with its context
-    /// after a semicolon when, trimmed, it has one: `Source->Target; context`.
-    /// </summary>
-    internal static string LinkStatement(string source, string target, WardleyLinkKind kind, string context)
-    {
-        var arrow = kind == WardleyLinkKind.Flow ? "+>" : "->";
-        var trimmed = context.Trim();
-        return trimmed.Length > 0
-            ? $"{source}{arrow}{target}; {trimmed}"
-            : $"{source}{arrow}{target}";
-    }
-
-    /// <summary>
-    /// An `evolve Name x`, or `evolve Name->NewName x` when the component takes another name on
-    /// arrival, which is given trimmed and is left out when nothing remains of it.
-    /// </summary>
-    internal static string EvolveStatement(string name, string arrivingName, double maturity)
-    {
-        var trimmed = arrivingName.Trim();
-        var named = trimmed.Length > 0 ? $"{name}->{trimmed}" : name;
-        return $"evolve {named} {DslNumber.Format(maturity)}";
-    }
-
-    /// <summary>
-    /// A pipeline child, `  component Name [m]`: indented as a line of the block, and with an
-    /// evolution position only, since its visibility is the parent's (Requirement 7.4).
-    /// </summary>
-    internal static string PipelineChildStatement(string name, double maturity) =>
-        $"  component {name} [{DslNumber.Format(maturity)}]";
-
-    /// <summary>
-    /// A new pipeline in the nested form, holding its first child: the `pipeline Parent` line, the
-    /// opening brace, the child and the closing brace, one line each.
-    /// </summary>
-    internal static IReadOnlyList<string> PipelineStatements(string parent, string childName, double childMaturity) =>
-        [$"pipeline {parent}", "{", PipelineChildStatement(childName, childMaturity), "}"];
 
     /// <summary>
     /// Appends a statement at the end of the document. New statements go at the end rather than
@@ -284,91 +196,6 @@ internal static partial class WardleyWriter
         document.Insert((int)number - 1, [text]);
     }
 
-    /// <summary>
-    /// Adds or removes a parenthesised decorator on a component's line, leaving the rest of the
-    /// line - coordinates, other decorators, label offset, comment - exactly as it was.
-    /// </summary>
-    public static bool SetDecorator(LineDocument document, WardleyComponent component, string decorator, bool present)
-    {
-        ArgumentNullException.ThrowIfNull(document);
-        ArgumentNullException.ThrowIfNull(component);
-        ArgumentException.ThrowIfNullOrWhiteSpace(decorator);
-
-        var line = LineAt(document, component.Line);
-        if (line is null)
-        {
-            return false;
-        }
-
-        var existing = NamedDecoratorExpression(decorator).Match(line);
-        if (existing.Success == present)
-        {
-            // Already in the state asked for. Reporting success without writing keeps an
-            // idempotent command from producing an empty undo entry.
-            return true;
-        }
-
-        if (present)
-        {
-            var coordinates = PairExpression().Match(line);
-            if (!coordinates.Success)
-            {
-                return false;
-            }
-
-            // After the last decorator already there, or after the coordinates when there are
-            // none. Appending keeps the existing ones in the order the author wrote them;
-            // inserting before them would reshuffle a line the user only asked to add to.
-            var decorators = AnyDecoratorExpression().Matches(line);
-            var at = decorators.Count > 0
-                ? decorators[^1].Index + decorators[^1].Length
-                : coordinates.Index + coordinates.Length;
-
-            ReplaceLine(document, component.Line, Splice(line, at, 0, $" ({decorator})"));
-            return true;
-        }
-
-        // Take the leading space with it, so removing the last decorator does not leave one.
-        var start = existing.Index > 0 && line[existing.Index - 1] == ' ' ? existing.Index - 1 : existing.Index;
-        ReplaceLine(document, component.Line, Splice(line, start, existing.Index + existing.Length - start, ""));
-        return true;
-    }
-
-    /// <summary>Adds or removes the bare `inertia` word on a component's line (Requirement 6.2).</summary>
-    public static bool SetInertia(LineDocument document, WardleyComponent component, bool present)
-    {
-        ArgumentNullException.ThrowIfNull(document);
-        ArgumentNullException.ThrowIfNull(component);
-
-        var line = LineAt(document, component.Line);
-        if (line is null)
-        {
-            return false;
-        }
-
-        var existing = InertiaWordExpression().Match(line);
-        if (existing.Success == present)
-        {
-            return true;
-        }
-
-        if (present)
-        {
-            var coordinates = PairExpression().Match(line);
-            if (!coordinates.Success)
-            {
-                return false;
-            }
-
-            var at = coordinates.Index + coordinates.Length;
-            ReplaceLine(document, component.Line, Splice(line, at, 0, " inertia"));
-            return true;
-        }
-
-        var start = existing.Index > 0 && line[existing.Index - 1] == ' ' ? existing.Index - 1 : existing.Index;
-        ReplaceLine(document, component.Line, Splice(line, start, existing.Index + existing.Length - start, ""));
-        return true;
-    }
 
     private static bool SetCoordinatePair(LineDocument document, uint number, WardleyCoordinate position)
     {
@@ -455,9 +282,6 @@ internal static partial class WardleyWriter
     private static string? LineAt(LineDocument document, uint number) =>
         number >= 1 && number <= document.Lines.Count ? document.Lines[(int)number - 1].Text : null;
 
-    private static string CoordinatePair(WardleyCoordinate position) =>
-        $"[{DslNumber.Format(position.Visibility)}, {DslNumber.Format(position.Maturity)}]";
-
     private static string Splice(string line, int index, int length, string replacement) =>
         string.Concat(line.AsSpan(0, index), replacement, line.AsSpan(index + length));
 
@@ -484,16 +308,4 @@ internal static partial class WardleyWriter
     /// <summary>A link's two endpoints, captured separately for span-precise renaming.</summary>
     [GeneratedRegex(@"^(?<source>[^-+;]+?)\s*(?:->|\+>)\s*(?<target>[^;/]+?)\s*(?=;|//|$)")]
     private static partial Regex LinkPartsExpression();
-
-    /// <summary>The bare `inertia` word, which is not a parenthesised decorator.</summary>
-    [GeneratedRegex("(?<![A-Za-z])inertia(?![A-Za-z])", RegexOptions.IgnoreCase)]
-    private static partial Regex InertiaWordExpression();
-
-    /// <summary>Any parenthesised decorator, for finding where the last one ends.</summary>
-    [GeneratedRegex(@"\(\s*[A-Za-z]+\s*\)")]
-    private static partial Regex AnyDecoratorExpression();
-
-    /// <summary>One named decorator in parentheses, for adding or removing exactly that one.</summary>
-    private static Regex NamedDecoratorExpression(string decorator) =>
-        new($@"\(\s*{Regex.Escape(decorator)}\s*\)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 }

@@ -20,17 +20,13 @@ namespace EtAlii.Adp.Diagram.WardleyMap.Tests;
 /// named by its first holder's.
 /// </para>
 /// <para>
-/// <b>A transaction no command writes has none</b>, and is refused by the caller in a sentence naming the operation
-/// (<see cref="Unwritable"/>); <c>WardleyDerivedOperations.Tests</c> runs every operation of the definition over the
+/// <b>A transaction no command writes has none</b>, and is refused by the caller in a sentence naming the operation;
+/// <c>WardleyDerivedOperations.Tests</c> runs every operation of the definition over the
 /// corpus so that none ships that way.
 /// </para>
 /// </remarks>
 internal static class WardleyTransactionCommands
 {
-    /// <summary>The refusal of a transaction of <paramref name="operation"/> that no command of this map writes.</summary>
-    public static string Unwritable(string operation) =>
-        $"The definition's {operation} makes a change this map's commands cannot write.";
-
     /// <summary>
     /// The command that writes <paramref name="transaction"/> into the map at <paramref name="bodyPath"/>, whose model
     /// before it ran is <paramref name="diagram"/>; null when no command writes it. <paramref name="row"/> says a

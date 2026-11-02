@@ -61,10 +61,8 @@ internal sealed class WardleyTransactionWriter(WardleyBodyEdit body, WardleyEdit
     private static readonly string[] Coordinates = ["visibility", "maturity"];
 
     private readonly DislDiagram _diagram = map.Diagram;
-    private HashSet<string>? _taken;
-
     /// <summary>The names the map has, with every name this transaction gave.</summary>
-    private HashSet<string> Taken => _taken ??= map.Names();
+    private HashSet<string> Taken => field ??= map.Names();
 
     /// <summary>Writes <paramref name="changes"/> in order: the first refusal, else applied, or unchanged when none changed anything.</summary>
     public EditOutcome Write(IReadOnlyList<DislChange> changes)
@@ -299,12 +297,12 @@ internal sealed class WardleyTransactionWriter(WardleyBodyEdit body, WardleyEdit
 
     /// <summary>The attributes a new statement states: none that is empty, and no inertia it does not have, which the statement leaves out.</summary>
     private static Dictionary<string, object?> Stated(IReadOnlyDictionary<string, object?> attributes) =>
-        attributes.Where(attribute => attribute.Value is not (null or "" or IReadOnlyCollection<object?> { Count: 0 }) && !(attribute.Key == "inertia" && attribute.Value is "false"))
+        attributes.Where(attribute => attribute is not { Value: null or "" or IReadOnlyCollection<object?> { Count: 0 } } and not { Key: "inertia", Value: "false" })
             .ToDictionary(attribute => attribute.Key, attribute => attribute.Value, StringComparer.Ordinal);
 
     private static bool Same(object? now, object? then) => (now, then) switch
     {
-        (double left, double right) => left == right,
+        (double left, double right) => Math.Abs(left - right) < double.Tolerance,
         (long left, long right) => left == right,
         (IEnumerable<object?> left, IEnumerable<object?> right) when now is not string && then is not string => left.SequenceEqual(right),
         _ => Equals(now, then),

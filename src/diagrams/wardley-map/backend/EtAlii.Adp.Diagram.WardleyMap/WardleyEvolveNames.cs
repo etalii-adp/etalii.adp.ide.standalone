@@ -38,6 +38,6 @@ internal static class WardleyEvolveNames
             && body.Change(new ModelChange.Add("Evolve", null, evolve)).WasApplied;
         return written
             && WardleyBody.Read(LineDocument.Parse(body.Text)).Model.Evolves is [var read]
-            && read.Name == name && read.Override == becomes && read.Maturity == 0.9d;
+            && read.Name == name && read.Override == becomes && Math.Abs(read.Maturity - 0.9d) < double.Tolerance;
     }
 }

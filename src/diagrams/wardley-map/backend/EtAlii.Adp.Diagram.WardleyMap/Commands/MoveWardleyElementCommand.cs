@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Specification.Fbl.Planning;
 using Serilog;
@@ -47,12 +46,12 @@ public sealed class MoveWardleyElementCommandHandler(IWardleyDocumentStore docum
         {
             // A pipeline child has no visibility of its own - the format gives it nowhere to put one - so only its
             // maturity moves (Requirement 7.4).
-            if (found.Child.Maturity != clamped.Maturity) changed["maturity"] = clamped.Maturity;
+            if (Math.Abs(found.Child.Maturity - clamped.Maturity) > double.Tolerance) changed["maturity"] = clamped.Maturity;
         }
         else if (map.ComponentOf(command.ElementId) is { } component)
         {
-            if (component.Position.Visibility != clamped.Visibility) changed["visibility"] = clamped.Visibility;
-            if (component.Position.Maturity != clamped.Maturity) changed["maturity"] = clamped.Maturity;
+            if (Math.Abs(component.Position.Visibility - clamped.Visibility) > double.Tolerance) changed["visibility"] = clamped.Visibility;
+            if (Math.Abs(component.Position.Maturity - clamped.Maturity) > double.Tolerance) changed["maturity"] = clamped.Maturity;
             _logger.Debug("Moving {Name} to {Visibility},{Maturity}", component.Name, clamped.Visibility, clamped.Maturity);
         }
         else

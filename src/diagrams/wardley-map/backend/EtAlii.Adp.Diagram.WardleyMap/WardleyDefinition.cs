@@ -152,10 +152,10 @@ internal static class WardleyDefinition
                                 Sentence(operation) ?? "")));
                         }
 
-                        return Ran(bodyPath, entry, identities, diagram, operation, self, Answered(found.Arguments, field.Attribute, options is [var only] ? only.Value : null));
+                        return Ran(bodyPath, entry, identities, operation, self, Answered(found.Arguments, field.Attribute, options is [var only] ? only.Value : null));
                     }
 
-                    return Ran(bodyPath, entry, identities, diagram, operation, self, found.Arguments);
+                    return Ran(bodyPath, entry, identities, operation, self, found.Arguments);
                 }
 
             default:
@@ -213,7 +213,7 @@ internal static class WardleyDefinition
                         arguments = Answered(arguments, field.Attribute, answer);
                     }
 
-                    step = Ran(bodyPath, entry, identities, diagram, operation, self, arguments);
+                    step = Ran(bodyPath, entry, identities, operation, self, arguments);
                     break;
                 }
 
@@ -343,7 +343,6 @@ internal static class WardleyDefinition
         string bodyPath,
         DocumentEntry<LineDocument, WardleyMap> entry,
         IReadOnlyList<WardleyIdentityEntry> identities,
-        DislDiagram diagram,
         string operation,
         DislElement? self,
         IReadOnlyDictionary<string, object?> arguments)

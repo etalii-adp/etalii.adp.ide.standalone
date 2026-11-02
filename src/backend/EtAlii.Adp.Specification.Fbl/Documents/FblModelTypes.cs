@@ -70,7 +70,7 @@ public sealed class FblBinding
 
     /// <summary>
     /// <c>registration.legacyIdentities</c> (FBL 0.12 §8.7): the pattern of the identities file hosts wrote before FBL, such as
-    /// <c>{base}.identities.json</c>, for <see cref="EtAlii.Adp.Specification.Fbl.Registration.LegacySidecar.PathFor"/>; null when the binding names none.
+    /// <c>{base}.identities.json</c>, for <see cref="Registration.LegacySidecar.PathFor"/>; null when the binding names none.
     /// </summary>
     public string? LegacyIdentities => Registration.LegacyIdentities;
 

@@ -133,7 +133,7 @@ public sealed class WardleyBodyEdit
         if (positions is IEnumerable<object?> items)
         {
             rounded["positions"] = items.Select(item => item is IReadOnlyDictionary<string, object?> position
-                ? position.ToDictionary(part => part.Key, part => part.Value is double number ? (object?)Rounded(number) : part.Value, StringComparer.Ordinal)
+                ? position.ToDictionary(part => part.Key, part => part.Value is double number ? Rounded(number) : part.Value, StringComparer.Ordinal)
                 : item).ToList();
         }
 
@@ -172,7 +172,7 @@ public sealed class WardleyBodyEdit
     private static IReadOnlyList<string>? Words(object? value) => value switch
     {
         string text => [text],
-        IEnumerable<object?> items when items.All(item => item is string) => [.. items.Cast<string>()],
+        IEnumerable<object?> items => items.ToList() is var list && list.All(item => item is string) ? [.. list.Cast<string>()] : null,
         _ => null,
     };
 }

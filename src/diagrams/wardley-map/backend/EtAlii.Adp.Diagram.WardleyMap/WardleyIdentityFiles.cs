@@ -1,6 +1,6 @@
 using System.Text;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.Files;
-using EtAlii.Adp.Specification.Fbl;
 using EtAlii.Adp.Specification.Fbl.Planning;
 using EtAlii.Adp.Specification.Fbl.Registration;
 using Serilog;
@@ -62,9 +62,9 @@ public sealed class WardleyIdentityFiles(IFileWriter writer)
         try
         {
             var path = RegistrationPathFor(bodyPath);
-            if (File.Exists(path) && Registration(File.ReadAllBytes(path), bodyPath) is { } registration && registration.Identities() is { } block) return block;
+            if (File.Exists(path) && Registration(SharedDocumentReader.ReadAllBytes(path), bodyPath) is { } registration && registration.Identities() is { } block) return block;
             var legacy = LegacyPathFor(bodyPath);
-            return File.Exists(legacy) ? LegacySidecar.Open(File.ReadAllBytes(legacy)).Identities() : new Dictionary<string, string>(StringComparer.Ordinal);
+            return File.Exists(legacy) ? LegacySidecar.Open(SharedDocumentReader.ReadAllBytes(legacy)).Identities() : new Dictionary<string, string>(StringComparer.Ordinal);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
