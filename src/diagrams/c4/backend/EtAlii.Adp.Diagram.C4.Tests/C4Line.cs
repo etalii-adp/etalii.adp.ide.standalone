@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Diagram.C4;
+namespace EtAlii.Adp.Diagram.C4.Tests;
 
 /// <summary>
 /// One line of a Structurizr DSL document, as read. The document is kept as lines rather than

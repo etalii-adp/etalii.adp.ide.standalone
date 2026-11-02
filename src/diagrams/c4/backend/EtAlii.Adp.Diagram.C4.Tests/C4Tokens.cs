@@ -1,14 +1,13 @@
 using EtAlii.Adp.Documents;
 
-namespace EtAlii.Adp.Diagram.C4;
+namespace EtAlii.Adp.Diagram.C4.Tests;
 
 /// <summary>
 /// The DSL's line lexer, which tells <see cref="C4Line.Code"/> a comment from a <c>//</c> inside a quoted string.
 /// </summary>
 /// <remarks>
-/// Only <see cref="AddC4ViewCommand"/> still reads lines, because a view is code and not a model change of the binding
-/// (c4-disl-fbl Requirement 8); every other edit is written by the library (task 15), and the tokenizer and the
-/// argument surgery the commands used before then are kept with the tests' oracle, <c>C4LineSurgery</c>.
+/// The tests' oracle, beside <c>C4LineSurgery</c> and <c>C4Parser</c>: the product reads the body through the binding, and
+/// the one edit still written by line keeps a lexer of its own in <c>C4ViewBlock</c> (c4-disl-fbl tasks 15 and 17).
 /// </remarks>
 public static class C4Tokens
 {

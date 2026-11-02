@@ -1,6 +1,6 @@
 using EtAlii.Adp.Documents;
 
-namespace EtAlii.Adp.Diagram.C4;
+namespace EtAlii.Adp.Diagram.C4.Tests;
 
 /// <summary>
 /// The Structurizr DSL side of the core <see cref="LineDocument"/>: the lines with their 1-based
@@ -10,8 +10,8 @@ namespace EtAlii.Adp.Diagram.C4;
 /// <remarks>
 /// C4 held a line document of its own until code-structure T128, and moved onto the core one
 /// with these four as its whole remainder. Where the two disagreed about line endings the core's
-/// behaviour won (behaviour changes B-05 and B-16). Since c4-disl-fbl task 15 only <see cref="AddC4ViewCommand"/>
-/// edits by line, so the three it uses are what is left; replacing a line went with the commands that did it.
+/// behaviour won (behaviour changes B-05 and B-16). Since c4-disl-fbl task 17 they are the tests' oracle
+/// only: the product's one edit by line, the view command, reads its lines in <c>C4ViewBlock</c>.
 /// </remarks>
 public static class C4Lines
 {
