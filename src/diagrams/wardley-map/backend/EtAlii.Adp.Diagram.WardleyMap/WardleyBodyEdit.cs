@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using EtAlii.Adp.Documents;
@@ -35,6 +36,7 @@ namespace EtAlii.Adp.Diagram.WardleyMap;
 public sealed class WardleyBodyEdit
 {
     private readonly IdentifiedBody _body;
+    private readonly List<Splice> _splices = [];
 
     internal WardleyBodyEdit(string text, IReadOnlyList<WardleyIdentityEntry> identities)
     {
@@ -44,6 +46,9 @@ public sealed class WardleyBodyEdit
 
     /// <summary>The body's text after every change made to it.</summary>
     public string Text => Encoding.UTF8.GetString(_body.Body.Bytes);
+
+    /// <summary>Every splice planned so far, in order: what the tests read to see how an edit was written.</summary>
+    internal IReadOnlyList<Splice> Splices => _splices;
 
     /// <summary>What the binding reads from the body now, under the ids its elements have now.</summary>
     public FblModel Reading => _body.Body.Model;
@@ -63,6 +68,7 @@ public sealed class WardleyBodyEdit
     public EditOutcome Change(ModelChange change)
     {
         ArgumentNullException.ThrowIfNull(change);
+        change = Positioned(change);
         if (change is not ModelChange.Add add)
         {
             return Planned(change);
@@ -109,6 +115,37 @@ public sealed class WardleyBodyEdit
             : Reading.Elements.FirstOrDefault(read => read.IdentityKind is null && read.Line == line)?.Id;
     }
 
+    /// <summary>
+    /// <paramref name="change"/> with an annotation's positions rounded as every other coordinate is written, to four
+    /// decimals, halves away from zero (Requirement 5.4): the binding's <c>positions</c> items are structured values, which
+    /// it writes as it is given them.
+    /// </summary>
+    private static ModelChange Positioned(ModelChange change) => change switch
+    {
+        ModelChange.Add add when add.Attributes.TryGetValue("positions", out var positions) => add with { Attributes = Rounded(add.Attributes, positions) },
+        ModelChange.Set set when set.Attributes.TryGetValue("positions", out var positions) => set with { Attributes = Rounded(set.Attributes, positions) },
+        _ => change,
+    };
+
+    private static Dictionary<string, object?> Rounded(IReadOnlyDictionary<string, object?> attributes, object? positions)
+    {
+        var rounded = new Dictionary<string, object?>(attributes, StringComparer.Ordinal);
+        if (positions is IEnumerable<object?> items)
+        {
+            rounded["positions"] = items.Select(item => item is IReadOnlyDictionary<string, object?> position
+                ? position.ToDictionary(part => part.Key, part => part.Value is double number ? (object?)Rounded(number) : part.Value, StringComparer.Ordinal)
+                : item).ToList();
+        }
+
+        return rounded;
+    }
+
+    /// <summary>A number rounded to four decimals as the decimal it is written as, so that 0.12345 is a half.</summary>
+    private static double Rounded(double number) =>
+        decimal.TryParse(number.ToString("R", CultureInfo.InvariantCulture), NumberStyles.Float, CultureInfo.InvariantCulture, out var written)
+            ? (double)Math.Round(written, 4, MidpointRounding.AwayFromZero)
+            : Math.Round(number, 4, MidpointRounding.AwayFromZero);
+
     /// <summary>The component whose pipeline's block runs to the end of the body unclosed, or null for none.</summary>
     private string? UnclosedPipeline() =>
         Reading.Findings
@@ -117,8 +154,19 @@ public sealed class WardleyBodyEdit
             .Select(pipeline => pipeline?.Attributes.GetValueOrDefault("component") as string)
             .FirstOrDefault(name => name is not null);
 
-    private EditOutcome Planned(ModelChange change) =>
-        _body.Change(change).Body is PlanResult.Refused refused ? EditOutcome.Refused(refused.Reason) : EditOutcome.Applied;
+    private EditOutcome Planned(ModelChange change)
+    {
+        switch (_body.Change(change).Body)
+        {
+            case PlanResult.Refused refused:
+                return EditOutcome.Refused(refused.Reason);
+            case PlanResult.Planned planned:
+                _splices.AddRange(planned.Edit.Splices);
+                break;
+        }
+
+        return EditOutcome.Applied;
+    }
 
     /// <summary>A text value as its one word, a list of texts as its words; null for any other value, which an add's emit writes itself.</summary>
     private static IReadOnlyList<string>? Words(object? value) => value switch

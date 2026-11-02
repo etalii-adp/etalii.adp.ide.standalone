@@ -332,6 +332,36 @@ public sealed class WardleyCommandsTests : IDisposable
         Assert.Equal("component Alpha [0.5, 0.5]\nnote Standardising soon [0.3, 0.7]\n", Read());
     }
 
+    [Fact]
+    public async Task AMovedCoordinate_IsWrittenWithAtMostFourDecimals_HalvesAwayFromZero_WithoutTrailingZeros()
+    {
+        // Arrange.
+        Write("component Alpha [0.5, 0.5]\ncomponent Beta [0.5, 0.5]\n");
+
+        // Act.
+        var halves = await Execute(new MoveWardleyElementCommand(_path, await IdOfAsync("Alpha"), 0.12345d, 0.56785d));
+        var zeros = await Execute(new MoveWardleyElementCommand(_path, await IdOfAsync("Beta"), 0.30000d, 0.700004d));
+
+        // Assert.
+        Assert.True(halves.IsSuccess, halves.Error);
+        Assert.True(zeros.IsSuccess, zeros.Error);
+        Assert.Equal("component Alpha [0.1235, 0.5679]\ncomponent Beta [0.3, 0.7]\n", Read());
+    }
+
+    [Fact]
+    public async Task AnAnnotationsPosition_IsRoundedToFourDecimals()
+    {
+        // Arrange.
+        Write("component Alpha [0.5, 0.5]\n");
+
+        // Act.
+        var result = await Execute(new AddWardleyAnnotationCommand(_path, "Soon", 0.123456d, 0.65d));
+
+        // Assert.
+        Assert.True(result.IsSuccess, result.Error);
+        Assert.Equal("component Alpha [0.5, 0.5]\nannotation 1 [[0.1235,0.65]] Soon\n", Read());
+    }
+
     /// <remarks>The position is written as the binding's insert emits it, in the outer brackets (spec 071, T012).</remarks>
     [Fact]
     public async Task AddAnnotation_NumbersOnePastTheHighest_AndWritesItsTrimmedTextAfterItsPosition()
