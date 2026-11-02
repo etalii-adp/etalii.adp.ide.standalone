@@ -150,6 +150,39 @@ public class ConformanceFixturesTests
     }
 
     /// <summary>
+    /// The runner compares what a fixture states of the binding's own reading under <c>x-binding</c>, the types the tool type
+    /// maps as the diagram or as a relation and so leaves out of its elements (etalii.adp spec 071): a copy of
+    /// <c>wardley-brace-ending</c> whose dependency's context loses its brace fails, naming the attribute.
+    /// </summary>
+    [Fact]
+    public void TheRunnerFailsOnABindingElementOfAnotherValue() => AssertFailsOn("wardley-brace-ending", "\"context\": \"heats the water {\"", "\"context\": \"heats the water\"", "'context'");
+
+    /// <summary>
+    /// The runner compares the document a fixture states for a tool type that composes it from several binding types (the
+    /// Wardley map's title, style, size and annotations position, etalii.adp spec 071): a copy of
+    /// <c>wardley-annotation-positions</c> whose annotations maturity is changed fails, naming the attribute.
+    /// </summary>
+    [Fact]
+    public void TheRunnerFailsOnAComposedDocumentOfAnotherValue() => AssertFailsOn("wardley-annotation-positions", "\"annotationsMaturity\": 0.02", "\"annotationsMaturity\": 0.03", "'annotationsMaturity'");
+
+    /// <summary>Runs a copy of the fixture <paramref name="name"/> with <paramref name="original"/> replaced and requires it to fail, naming <paramref name="named"/>.</summary>
+    private static void AssertFailsOn(string name, string original, string replacement, string named)
+    {
+        // Arrange.
+        var folder = Path.Combine(Repository.Conformance, "fixtures", name);
+        var text = File.ReadAllText(Path.Combine(folder, "fixture.json"));
+        var changed = text.Replace(original, replacement, StringComparison.Ordinal);
+        Assert.NotEqual(text, changed);
+
+        // Act.
+        var failure = Record.Exception(() => Run(name, folder, Encoding.UTF8.GetBytes(changed)));
+
+        // Assert.
+        Assert.NotNull(failure);
+        Assert.Contains(named, failure.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>
     /// The runner fails on a grammar fixture with one wrong offset (etalii.adp spec 072, Requirement 7.3): a copy of
     /// <c>w3c-turtle-grammar</c> whose set of the label starts one byte late, which shows that it runs byte for byte with its splices.
     /// </summary>
@@ -317,6 +350,16 @@ public class ConformanceFixturesTests
             Assert.True(diagram is not null, $"{name}: no {documentType} was read as the document.");
             if (document.TryGetProperty("attributes", out var attributes)) AssertAttributes(Document(model, diagram, binding.Name), attributes, name);
         }
+        else if (NaturalIds.DocumentParts(binding.Name) is { Count: > 0 } parts && read.TryGetProperty("document", out var composed) && composed.TryGetProperty("attributes", out var composedAttributes))
+        {
+            AssertAttributes(Composed(model, parts, binding.Name), composedAttributes, name);
+        }
+        foreach (var bindingElement in BindingElements(read, "x-binding"))
+        {
+            // The types the tool type maps as the diagram, or as a relation, are no elements of its reading (DISL 11.2); a fixture
+            // states them under x-binding, as the binding reads them, and this library's reading is the binding's.
+            AssertElement(model, bindingElement, name, binding, aliases);
+        }
         if (read.TryGetProperty("elements", out var elements))
         {
             // A fixture that lists no element says the reading has none but the document (FBL 0.7 §15.3).
@@ -325,16 +368,7 @@ public class ConformanceFixturesTests
                 var read0 = model.Elements.Where(element => element.Type != documentType).ToList();
                 Assert.True(read0.Count == 0, $"{name}: the fixture expects no element; read: {string.Join(", ", read0.Select(e => $"{e.Id} ({e.Type})"))}.");
             }
-            foreach (var element in elements.EnumerateArray())
-            {
-                var id = element.GetProperty("id").GetString()!;
-                var type = element.GetProperty("type").GetString()!;
-                var found = model.Find(aliases.GetValueOrDefault(id) ?? id);
-                Assert.True(found is not null, $"{name}: no element '{id}' was read; read: {string.Join(", ", model.Elements.Select(e => $"{e.Id} ({e.Type})"))}.");
-                Assert.Equal(type, found.Type);
-                if (element.TryGetProperty("parent", out var parent)) Assert.True((parent.GetString() is { } named ? aliases.GetValueOrDefault(named) ?? named : null) == found.ParentId, $"{name}: '{id}' is read in '{found.ParentId}', where the fixture reads '{parent.GetString()}'.");
-                if (element.TryGetProperty("attributes", out var attributes)) AssertAttributes(Typed(found, binding.Name), attributes, name);
-            }
+            foreach (var element in elements.EnumerateArray()) AssertElement(model, element, name, binding, aliases);
         }
         if (read.TryGetProperty("findings", out var findings))
         {
@@ -356,6 +390,22 @@ public class ConformanceFixturesTests
         }
     }
 
+    /// <summary>One element a fixture's reading names: read, of its type, in its parent, with the attributes it names.</summary>
+    private static void AssertElement(FblModel model, JsonElement element, string name, FblBinding binding, IReadOnlyDictionary<string, string> aliases)
+    {
+        var id = element.GetProperty("id").GetString()!;
+        var type = element.GetProperty("type").GetString()!;
+        var found = model.Find(aliases.GetValueOrDefault(id) ?? id);
+        Assert.True(found is not null, $"{name}: no element '{id}' was read; read: {string.Join(", ", model.Elements.Select(e => $"{e.Id} ({e.Type})"))}.");
+        Assert.Equal(type, found.Type);
+        if (element.TryGetProperty("parent", out var parent)) Assert.True((parent.GetString() is { } named ? aliases.GetValueOrDefault(named) ?? named : null) == found.ParentId, $"{name}: '{id}' is read in '{found.ParentId}', where the fixture reads '{parent.GetString()}'.");
+        if (element.TryGetProperty("attributes", out var attributes)) AssertAttributes(Typed(found, binding.Name), attributes, name);
+    }
+
+    /// <summary>The elements a fixture's reading lists under <paramref name="property"/>; none when it lists none.</summary>
+    private static List<JsonElement> BindingElements(JsonElement read, string property) =>
+        read.TryGetProperty(property, out var listed) && listed.ValueKind == JsonValueKind.Array ? [.. listed.EnumerateArray()] : [];
+
     /// <summary>
     /// The read element each of the fixture's elements stands for where the reading holds no element of its id and the binding
     /// stores none for it: a fixture must name every element (FBL §15.3), and where FBL reads no id the name is the fixture
@@ -366,15 +416,16 @@ public class ConformanceFixturesTests
     private static Dictionary<string, string> Aliases(JsonElement root, FblModel? model, string folder)
     {
         var aliases = new Dictionary<string, string>(StringComparer.Ordinal);
-        if (model is null || !root.TryGetProperty("read", out var read) || !read.TryGetProperty("elements", out var elements)) return aliases;
+        if (model is null || !root.TryGetProperty("read", out var read)) return aliases;
+        var elements = BindingElements(read, "elements").Concat(BindingElements(read, "x-binding")).ToList();
         var stored = StoredIds(folder);
         var claimed = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var element in elements.EnumerateArray())
+        foreach (var element in elements)
         {
             var id = element.GetProperty("id").GetString()!;
             if (model.Find(id) is not null || stored.Contains(id)) continue;
             var type = element.GetProperty("type").GetString()!;
-            var stands = model.Elements.FirstOrDefault(candidate => candidate.Type == type && !candidate.IdIsStored && !claimed.Contains(candidate.Id) && elements.EnumerateArray().All(other => other.GetProperty("id").GetString() != candidate.Id));
+            var stands = model.Elements.FirstOrDefault(candidate => candidate.Type == type && !candidate.IdIsStored && !claimed.Contains(candidate.Id) && elements.All(other => other.GetProperty("id").GetString() != candidate.Id));
             if (stands is null) continue;
             claimed.Add(stands.Id);
             aliases[id] = stands.Id;
@@ -439,6 +490,21 @@ public class ConformanceFixturesTests
             foreach ((string attribute, object? value) in element.Attributes) attributes[renames.GetValueOrDefault(attribute) ?? attribute] = DislValue(binding, element.Type, attribute, value);
         }
         return diagram with { Attributes = attributes };
+    }
+
+    /// <summary>
+    /// The document of a tool type that maps several binding types as the diagram and has no element of its own for it
+    /// (DISL 11.2, the Wardley map's title, style, size and annotations position): each part's attributes under the names the
+    /// typeMap gives them, the first entry's value where several give one, as etalii.adp's reading check composes it.
+    /// </summary>
+    private static FblElement Composed(FblModel model, IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>> parts, string binding)
+    {
+        var attributes = new Dictionary<string, object?>(StringComparer.Ordinal);
+        foreach (var element in model.Elements.Where(element => parts.ContainsKey(element.Type)))
+        {
+            foreach ((string attribute, object? value) in element.Attributes) attributes.TryAdd(parts[element.Type].GetValueOrDefault(attribute) ?? attribute, DislValue(binding, element.Type, attribute, value));
+        }
+        return new FblElement("document", false, "document", "document", false, attributes, null, null, null, null, default, 0);
     }
 
     /// <summary>An element with its attributes as DISL types them (<see cref="DislValue"/>).</summary>

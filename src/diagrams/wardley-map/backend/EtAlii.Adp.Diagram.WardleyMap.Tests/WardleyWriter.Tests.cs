@@ -14,7 +14,7 @@ public class WardleyWriterTests
     private static (LineDocument Document, WardleyMap Map) Open(string text)
     {
         var document = LineDocument.Parse(text);
-        return (document, WardleyParser.Parse(document));
+        return (document, WardleyBody.Read(document).Model);
     }
 
     /// <summary>The lines that differ between two texts, as 1-based numbers.</summary>

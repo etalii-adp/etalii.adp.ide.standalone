@@ -140,7 +140,7 @@ public sealed class WardleyDuplicateKeysTests : IDisposable
         // Act.
         var ids = await ComponentIdsAsync();
         var keys = Corpus()
-            .SelectMany(text => WardleyIdentities.Reconcile(WardleyParser.Parse(LineDocument.Parse(text)), []))
+            .SelectMany(text => WardleyIdentities.Reconcile(WardleyBody.Read(LineDocument.Parse(text)).Model, []))
             .Where(entry => !entry.Key.EndsWith('\t'))
             .Select(entry => entry.Key)
             .ToArray();

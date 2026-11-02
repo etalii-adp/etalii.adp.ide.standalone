@@ -19,8 +19,8 @@ public sealed class WardleyRuleSetTests
     private static IReadOnlyList<DiagramProblem> Validate(string text)
     {
         var body = LineDocument.Parse(text);
-        var outcome = WardleyParser.Outcome(body);
-        return WardleyDefinition.Problems(body, outcome.Model, outcome.Problems, [], []);
+        var outcome = WardleyBody.Read(body);
+        return WardleyDefinition.Problems(body, outcome.Problems, [], []);
     }
 
     private static DiagramProblem Single(IReadOnlyList<DiagramProblem> problems, string ruleId) =>
@@ -236,7 +236,7 @@ public sealed class WardleyRuleSetTests
             Kettle->Nothing
 
             """;
-        var map = WardleyParser.Parse(LineDocument.Parse(text));
+        var map = WardleyBody.Read(LineDocument.Parse(text)).Model;
 
         // Assert.
         Assert.NotEmpty(Validate(text));

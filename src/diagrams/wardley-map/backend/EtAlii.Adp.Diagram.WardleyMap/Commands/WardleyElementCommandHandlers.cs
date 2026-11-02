@@ -34,7 +34,7 @@ public abstract class WardleyEditHandler<TCommand>(IWardleyDocumentStore documen
     protected IWardleyDocumentStore Documents { get; } = documents;
 
     /// <inheritdoc />
-    protected sealed override WardleyMap Parse(LineDocument body) => WardleyParser.Parse(body);
+    protected sealed override WardleyMap Parse(LineDocument body) => WardleyBody.Read(body).Model;
 
     /// <summary>The component <paramref name="elementId"/> names on the map at <paramref name="bodyPath"/>, or null.</summary>
     protected WardleyComponent? ComponentOf(WardleyMap map, string bodyPath, string elementId) =>
@@ -81,7 +81,7 @@ internal static class WardleyEdit
 
         static bool ReadsBack(string source, string target)
         {
-            var map = WardleyParser.Parse(LineDocument.Parse(WardleyWriter.LinkStatement(source, target, WardleyLinkKind.Dependency, "") + "\n"));
+            var map = WardleyBody.Read(LineDocument.Parse(WardleyWriter.LinkStatement(source, target, WardleyLinkKind.Dependency, "") + "\n")).Model;
             return map.Links is [var link] && link.Source == source && link.Target == target;
         }
     }
@@ -259,7 +259,7 @@ public sealed class SetWardleyDecoratorsCommandHandler(IWardleyDocumentStore doc
 
             // Re-read after each change: the statement has been rewritten, so the component's
             // spans are from before it moved.
-            var current = ComponentOf(WardleyParser.Parse(body), command.BodyPath, command.ElementId);
+            var current = ComponentOf(WardleyBody.Read(body).Model, command.BodyPath, command.ElementId);
             if (current is null || !WardleyWriter.SetDecorator(body, current, decorator.ToString().ToLowerInvariant(), present))
             {
                 return EditOutcome.Refused("That element's decorators could not be changed.");
@@ -537,7 +537,7 @@ public sealed class SetWardleyPipelineMembershipCommandHandler(IWardleyDocumentS
     /// lines, comments and statements this module does not model - all of which Requirement 3.3
     /// says survive untouched, and any of which may sit after the last child.
     /// </remarks>
-    internal static uint? ClosingBraceOf(LineDocument document, WardleyPipeline pipeline)
+    private static uint? ClosingBraceOf(LineDocument document, WardleyPipeline pipeline)
     {
         for (var number = pipeline.Line; number <= document.Lines.Count; number++)
         {

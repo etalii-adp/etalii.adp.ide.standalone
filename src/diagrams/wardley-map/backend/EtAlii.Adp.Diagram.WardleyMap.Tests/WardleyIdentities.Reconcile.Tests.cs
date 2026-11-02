@@ -10,11 +10,11 @@ namespace EtAlii.Adp.Diagram.WardleyMap.Tests;
 /// </summary>
 public class WardleyIdentitiesReconcileTests
 {
-    private static WardleyMap ParseText(string text) => WardleyParser.Parse(LineDocument.Parse(text));
+    private static WardleyMap ParseText(string text) => WardleyBody.Read(LineDocument.Parse(text)).Model;
 
     private static WardleyMap Fixture(string name) =>
-        WardleyParser.Parse(LineDocument.Parse(
-            File.ReadAllText(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", name))));
+        WardleyBody.Read(LineDocument.Parse(
+            File.ReadAllText(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", name)))).Model;
 
     [Fact]
     public void Reconcile_AssignsAnIdToEveryElement_WhenNothingIsRecorded()

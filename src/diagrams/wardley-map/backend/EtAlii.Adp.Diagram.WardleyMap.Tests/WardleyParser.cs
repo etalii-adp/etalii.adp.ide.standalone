@@ -2,7 +2,7 @@ using System.Globalization;
 using System.Text.RegularExpressions;
 using EtAlii.Adp.Documents;
 
-namespace EtAlii.Adp.Diagram.WardleyMap;
+namespace EtAlii.Adp.Diagram.WardleyMap.Tests;
 
 /// <summary>
 /// Reads a <see cref="LineDocument"/> into a <see cref="WardleyMap"/> (Requirement 5).
@@ -26,7 +26,7 @@ namespace EtAlii.Adp.Diagram.WardleyMap;
 /// <c>Point2D</c> lives in the mapper and nowhere else (Requirement 5.2).
 /// </para>
 /// </remarks>
-public static partial class WardleyParser
+internal static partial class WardleyParser
 {
     public static WardleyMap Parse(LineDocument document) => Outcome(document).Model;
 

@@ -7,12 +7,11 @@ namespace EtAlii.Adp.Diagram.WardleyMap;
 /// <summary>
 /// The command of today's that writes what a transaction of the definition says (DISL §9.3): a create, a set of one
 /// attribute, a connect or a remove, each onto the record whose handler splices the map's own lines. It stands in for
-/// FBL's splices until the map is read and written through a binding (gap 1 of section C of wardley-map-disl-fbl), and
-/// goes in task 11 with <see cref="WardleyDisl"/>.
+/// FBL's splices until the map is written through its binding, and goes in task 12 of wardley-map-disl-fbl.
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Every element is named by its model id</b>, which is the store's identity for it (<see cref="WardleyDisl"/>):
+/// <b>Every element is named by its model id</b>, which is the store's identity for it (<see cref="WardleyBody"/>):
 /// a statement that names an element by its name, a link's end, an evolution's or a pipeline's <c>component</c>, is
 /// named by its first holder's.
 /// </para>
@@ -30,9 +29,10 @@ internal static class WardleyTransactionCommands
 
     /// <summary>
     /// The command that writes <paramref name="transaction"/> into the map at <paramref name="bodyPath"/>, whose model
-    /// before it ran is <paramref name="diagram"/>; null when no command writes it.
+    /// before it ran is <paramref name="diagram"/>; null when no command writes it. <paramref name="row"/> says a
+    /// property row's commit made it, whose set of the decorators is the whole set, where an operation's toggles one.
     /// </summary>
-    public static ICommand? Of(string bodyPath, DislDiagram diagram, DislTransaction transaction)
+    public static ICommand? Of(string bodyPath, DislDiagram diagram, DislTransaction transaction, bool row = false)
     {
         ArgumentNullException.ThrowIfNull(bodyPath);
         ArgumentNullException.ThrowIfNull(diagram);
@@ -44,9 +44,9 @@ internal static class WardleyTransactionCommands
             [DislChange.Create { Type: "Pipeline" } started, DislChange.Create { Type: "PipelineComponent" } child] when child.ParentId == started.Id =>
                 Member(bodyPath, IdOf(diagram, started.Attributes.GetValueOrDefault("component")), child),
             [DislChange.Create create] => Created(bodyPath, diagram, create),
-            [DislChange.Set set] => Set(bodyPath, diagram, set),
+            [DislChange.Set set] => Set(bodyPath, diagram, set, row),
             [DislChange.Set first, ..] when transaction.Changes.All(change => change is DislChange.Set set && set.ElementId == first.ElementId) =>
-                Set(bodyPath, diagram, Merged(first, transaction.Changes.Cast<DislChange.Set>())),
+                Set(bodyPath, diagram, Merged(first, transaction.Changes.Cast<DislChange.Set>()), row),
             [DislChange.Connect connect] => Connected(bodyPath, connect),
             [.., DislChange.Remove removed] => Removed(bodyPath, diagram, transaction.Changes, removed),
             _ => null,
@@ -60,7 +60,7 @@ internal static class WardleyTransactionCommands
         {
             case "Component" or "Anchor" or "Submap":
                 {
-                    WardleyDecorator?[] decorators = [.. WardleyDecorators.All.Where(decorator => attributes.GetValueOrDefault(WardleyDecorators.Spell(decorator)) is true).Select(decorator => (WardleyDecorator?)decorator)];
+                    WardleyDecorator?[] decorators = [.. Decorators(attributes.GetValueOrDefault("decorators")).Select(decorator => (WardleyDecorator?)decorator)];
                     if (decorators.Length > 1) return null;
                     return new AddWardleyElementCommand(
                         bodyPath,
@@ -78,7 +78,8 @@ internal static class WardleyTransactionCommands
                 {
                     // A new annotation has one occurrence; its number is the handler's to give, as the definition's
                     // nextAnnotationNumber() gives it.
-                    return WardleyFunctions.Positions(Text(attributes, "positions")) is [List<object?> and [double visibility, double maturity]]
+                    return attributes.GetValueOrDefault("positions") is IReadOnlyList<object?> and [IReadOnlyDictionary<string, object?> position]
+                        && position.GetValueOrDefault("visibility") is double visibility && position.GetValueOrDefault("maturity") is double maturity
                         ? new AddWardleyAnnotationCommand(bodyPath, Text(attributes, "text"), visibility, maturity)
                         : null;
                 }
@@ -103,22 +104,16 @@ internal static class WardleyTransactionCommands
             ? new SetWardleyPipelineMembershipCommand(bodyPath, parentId, Text(child.Attributes, "name"), Member: true, Number(child.Attributes, "maturity"))
             : null;
 
-    private static ICommand? Set(string bodyPath, DislDiagram diagram, DislChange.Set set)
+    private static ICommand? Set(string bodyPath, DislDiagram diagram, DislChange.Set set, bool row)
     {
         if (diagram.ElementById(set.ElementId) is not { } element) return null;
         var attributes = set.Attributes;
 
         if (element.IsA("Positioned"))
         {
-            var decorators = WardleyDecorators.All.Where(candidate => attributes.ContainsKey(WardleyDecorators.Spell(candidate))).ToList();
-            if (decorators.Count == WardleyDecorators.All.Count && attributes.Count == decorators.Count)
-            {
-                return new SetWardleyDecoratorsCommand(bodyPath, element.Id, [.. decorators.Where(candidate => attributes[WardleyDecorators.Spell(candidate)] is true)]);
-            }
-
             if (attributes.Count != 1) return null;
             (string name, object? value) = attributes.Single();
-            if (decorators is [var decorator]) return value is bool present ? new SetWardleyDecoratorCommand(bodyPath, element.Id, decorator, present) : null;
+            if (name == "decorators") return Decorated(bodyPath, element, Decorators(value), row);
             return name switch
             {
                 "name" => new RenameWardleyElementCommand(bodyPath, element.Id, Text(attributes, "name")),
@@ -188,6 +183,26 @@ internal static class WardleyTransactionCommands
                 new SetWardleyPipelineMembershipCommand(bodyPath, parent, Text(element, "name"), Member: false),
             _ => null,
         };
+    }
+
+    /// <summary>
+    /// The command that gives <paramref name="element"/> the decorators <paramref name="now"/>: a row's commit sets the whole
+    /// set; an operation adds or removes the one decorator it toggles, and one that changes several at once has none.
+    /// </summary>
+    private static ICommand? Decorated(string bodyPath, DislElement element, List<WardleyDecorator> now, bool row)
+    {
+        if (row) return new SetWardleyDecoratorsCommand(bodyPath, element.Id, now);
+        var before = Decorators(element.ValueOf("decorators"));
+        return WardleyDecorators.All.Where(candidate => before.Contains(candidate) != now.Contains(candidate)).ToList() is [var toggled]
+            ? new SetWardleyDecoratorCommand(bodyPath, element.Id, toggled, now.Contains(toggled))
+            : null;
+    }
+
+    /// <summary>The five decorators the words <paramref name="value"/> holds name, in the order the format documents them; any other word is none.</summary>
+    private static List<WardleyDecorator> Decorators(object? value)
+    {
+        var words = value is IEnumerable<object?> list ? list.OfType<string>().ToList() : [];
+        return [.. WardleyDecorators.All.Where(candidate => words.Any(word => string.Equals(word, WardleyDecorators.Spell(candidate), StringComparison.OrdinalIgnoreCase)))];
     }
 
     private static WardleyLinkKind KindOf(DislElement link) => link.IsA("Flow") ? WardleyLinkKind.Flow : WardleyLinkKind.Dependency;

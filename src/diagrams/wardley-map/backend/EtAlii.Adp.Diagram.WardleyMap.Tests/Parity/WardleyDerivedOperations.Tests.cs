@@ -52,9 +52,9 @@ public class WardleyDerivedOperationsTests
 
         // Act.
         List<string> mismatches = [];
-        foreach (var step in Steps(WardleyDisl.Of(entry.Document, entry.Model, identities)))
+        foreach (var step in Steps(WardleyBody.Model(entry.Document, identities)))
         {
-            var working = WardleyDisl.Build(entry.Document, entry.Model, identities);
+            var working = WardleyBody.Working(entry.Document, identities);
             var self = step.SelfId is null ? null : working.ElementById(step.SelfId);
             var parameters = step.Parameters.ToDictionary(
                 parameter => parameter.Key,
@@ -79,7 +79,7 @@ public class WardleyDerivedOperationsTests
                 continue;
             }
 
-            var command = WardleyTransactionCommands.Of(session.Body, WardleyDisl.Of(entry.Document, entry.Model, identities), transaction);
+            var command = WardleyTransactionCommands.Of(session.Body, WardleyBody.Model(entry.Document, identities), transaction);
             if (command is null)
             {
                 mismatches.Add($"{step}: no command writes {string.Join(", ", transaction.Changes)}");
@@ -115,9 +115,9 @@ public class WardleyDerivedOperationsTests
             }
 
             var identities = session.Store.Identities(session.Body);
-            foreach (var step in Steps(WardleyDisl.Of(entry.Document, entry.Model, identities)).Where(step => unrun.Contains(step.Operation)))
+            foreach (var step in Steps(WardleyBody.Model(entry.Document, identities)).Where(step => unrun.Contains(step.Operation)))
             {
-                var working = WardleyDisl.Build(entry.Document, entry.Model, identities);
+                var working = WardleyBody.Working(entry.Document, identities);
                 var self = step.SelfId is null ? null : working.ElementById(step.SelfId);
                 var parameters = step.Parameters.ToDictionary(
                     parameter => parameter.Key,
@@ -138,7 +138,7 @@ public class WardleyDerivedOperationsTests
     private static IEnumerable<Step> Steps(DislDiagram diagram)
     {
         var specification = WardleyDefinition.Specification;
-        IEnumerable<DislElement?> selves = [null, .. diagram.Elements.Where(element => element.IsA("Positioned") && ReferenceEquals(WardleyDisl.ElementOf(diagram, element.Id), element))];
+        IEnumerable<DislElement?> selves = [null, .. diagram.Elements.Where(element => element.IsA("Positioned") && ReferenceEquals(WardleyBody.ElementOf(diagram, element.Id), element))];
         foreach (var self in selves)
         {
             IReadOnlyList<string> types = self?.Type.Linearisation ?? ["diagram"];
@@ -169,7 +169,7 @@ public class WardleyDerivedOperationsTests
             case "unlink" when self is not null:
                 foreach (var link in diagram.Elements.Where(element => element.IsA("Link") && (element.Source?.Id == self.Id || element.Target?.Id == self.Id)))
                 {
-                    yield return (With(("link", link)), WardleyDisl.ChoiceIdOf(link));
+                    yield return (With(("link", link)), WardleyBody.ChoiceIdOf(link));
                 }
 
                 break;
