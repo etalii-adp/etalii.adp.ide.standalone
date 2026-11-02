@@ -64,7 +64,7 @@ internal static class C4Parser
                 continue;
             }
 
-            var tokens = C4Tokens.Split(code);
+            var tokens = C4LineSurgery.Split(code);
 
             // Noted, not followed. Reading another file would make the model complete but the
             // round trip a lie: ADP writes only this document, so an edit landing in an

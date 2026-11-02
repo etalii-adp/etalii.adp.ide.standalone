@@ -164,7 +164,7 @@ internal static class HandWrittenC4
 
     private static IReadOnlyList<ContextActionDefinition> AddActionsFor(C4Element? parent) =>
         AddableKinds
-            .Where(kind => C4Placement.Refuse(C4Workspace.Empty, kind, parentId: "") is null)
+            .Where(kind => HandWrittenC4Edits.Refuse(C4Workspace.Empty, kind, parentId: "") is null)
             .Where(kind => FitsInside(kind, parent))
             .Select(kind => new ContextActionDefinition($"c4.add-{kind.ToString().ToLowerInvariant()}", $"Add {SpellAdd(kind).ToLowerInvariant()}…", "mdi-plus"))
             .ToArray();

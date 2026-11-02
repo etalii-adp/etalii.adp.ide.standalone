@@ -386,7 +386,7 @@ public class C4ContextActionProviderTests : IDisposable
     {
         // Arrange.
         var workspace = (await _documents.GetOrLoadAsync(_bodyPath, TestContext.Current.CancellationToken)).Model;
-        var identifier = C4Placement.IdentifierFor(workspace, name.Trim());
+        var identifier = Parity.HandWrittenC4Edits.IdentifierFor(workspace, name.Trim());
 
         // Act: the operation the commit runs first, handed that identifier (gap C11).
         var created = C4Definitions.Created(workspace, "model.dsl", C4Definitions.ViewOf(workspace, null), null, operation, parent, name, identifier);

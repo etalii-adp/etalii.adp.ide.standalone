@@ -1,20 +1,160 @@
 using System.Globalization;
 using System.Text;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.History;
 
-namespace EtAlii.Adp.Diagram.C4;
+namespace EtAlii.Adp.Diagram.C4.Tests.Parity;
 
 /// <summary>
-/// Where a new element goes in a Structurizr DSL document, and how it gets there.
+/// The C4 edits as the module wrote them by line before c4-disl-fbl task 15, when each became a model change the
+/// library plans into splices: the set handlers' bodies, the add and its removal, and <c>C4Placement</c>, kept
+/// verbatim but for the inverse commands, which undo no longer runs, as the oracle the library's edits are compared
+/// with (<see cref="C4DerivedOperationsTests"/>).
 /// </summary>
-/// <remarks>
-/// C4 says what may contain what, and this is the one place that turns those rules into line
-/// numbers. Two things make it more than an append: an element may have to go *inside* another,
-/// and the element it goes inside may not have a block yet - <c>web = container "Web" "x" "y"</c>
-/// is one line, and putting a component in it means giving it braces it never had.
-/// </remarks>
-internal static class C4Placement
+internal static class HandWrittenC4Edits
 {
+    /// <summary><c>SetElementNameCommandHandler</c>'s edit.</summary>
+    public static EditOutcome SetName(LineDocument body, C4Workspace model, string elementId, string name)
+    {
+        var element = model.Find(elementId);
+        if (element is not null && element.Kind is C4ElementKind.ContainerInstance or C4ElementKind.SoftwareSystemInstance)
+        {
+            return EditOutcome.Refused(
+                $"A {element.Kind.ToString().ToLowerInvariant()} has no name in C4; it stands for what it is an instance of.");
+        }
+
+        return EditElement(body, model, elementId, 0, name);
+    }
+
+    /// <summary><c>SetElementDescriptionCommandHandler</c>'s edit.</summary>
+    public static EditOutcome SetDescription(LineDocument body, C4Workspace model, string elementId, string description) =>
+        EditElement(body, model, elementId, 1, description);
+
+    /// <summary><c>SetElementTechnologyCommandHandler</c>'s edit.</summary>
+    public static EditOutcome SetTechnology(LineDocument body, C4Workspace model, string elementId, string technology)
+    {
+        var element = model.Find(elementId);
+        if (element is not null && element.Kind is not (C4ElementKind.Container or C4ElementKind.Component
+            or C4ElementKind.DeploymentNode or C4ElementKind.InfrastructureNode))
+        {
+            return EditOutcome.Refused(
+                $"A {element.Kind.ToString().ToLowerInvariant()} has no technology in C4; only containers, components and infrastructure do.");
+        }
+
+        return EditElement(body, model, elementId, 2, technology);
+    }
+
+    /// <summary><c>SetRelationshipDescriptionCommandHandler</c>'s edit.</summary>
+    public static EditOutcome SetRelationshipDescription(LineDocument body, C4Workspace model, string relationshipId, string description) =>
+        EditRelationship(body, model, relationshipId, 0, description);
+
+    /// <summary><c>SetRelationshipTechnologyCommandHandler</c>'s edit.</summary>
+    public static EditOutcome SetRelationshipTechnology(LineDocument body, C4Workspace model, string relationshipId, string technology) =>
+        EditRelationship(body, model, relationshipId, 1, technology);
+
+    /// <summary><c>AddC4ElementCommandHandler</c>'s edit, after its name check.</summary>
+    public static EditOutcome Add(LineDocument body, C4Workspace model, C4ElementKind kind, string name, string parentId, string identifier)
+    {
+        name = name.Trim();
+        if (Refuse(model, kind, parentId) is { } refusal)
+        {
+            return EditOutcome.Refused(refusal);
+        }
+
+        identifier = identifier.Length > 0 ? identifier : IdentifierFor(model, name);
+        if (model.Find(identifier) is not null)
+        {
+            return EditOutcome.Refused($"This model already has something called '{identifier}'.");
+        }
+
+        return TryInsert(body, model, kind, name, identifier, parentId, out var error)
+            ? EditOutcome.Applied
+            : EditOutcome.Refused(error);
+    }
+
+    /// <summary><c>RemoveC4ElementCommandHandler</c>'s edit.</summary>
+    public static EditOutcome Remove(LineDocument body, C4Workspace model, string identifier, string collapseParent)
+    {
+        if (model.Find(identifier) is not { } element)
+        {
+            return EditOutcome.Refused("That element is no longer in this model.");
+        }
+
+        var parent = collapseParent.Length > 0 ? model.Find(collapseParent) : null;
+        if (!TryRemove(body, element, out var error))
+        {
+            return EditOutcome.Refused(error);
+        }
+
+        if (parent is not null)
+        {
+            CollapseEmptyBlock(body, parent);
+        }
+
+        return EditOutcome.Applied;
+    }
+
+    /// <summary><c>C4EditHandler.EditElement</c>: one argument of the line the element was declared on.</summary>
+    private static EditOutcome EditElement(LineDocument document, C4Workspace workspace, string elementId, int argumentIndex, string value)
+    {
+        var element = workspace.Find(elementId);
+        if (element is null)
+        {
+            return EditOutcome.Refused($"'{elementId}' is not in this model any more.");
+        }
+
+        var line = document.Lines[(int)element.Line - 1].Text;
+        var keyword = KeywordIndexOf(line);
+        if (keyword < 0)
+        {
+            return EditOutcome.Refused($"Line {element.Line} does not look like an element declaration any more.");
+        }
+
+        document.ReplaceLine(element.Line, C4LineSurgery.ReplaceArgument(line, keyword, argumentIndex, value));
+        return EditOutcome.Applied;
+    }
+
+    /// <summary><c>C4EditHandler.EditRelationship</c>: the same, for a relationship, whose arguments follow the destination.</summary>
+    private static EditOutcome EditRelationship(LineDocument document, C4Workspace workspace, string relationshipId, int argumentIndex, string value)
+    {
+        var relationship = workspace.Relationships.FirstOrDefault(candidate => candidate.Id == relationshipId);
+        if (relationship is null)
+        {
+            return EditOutcome.Refused("That relationship is not in this model any more.");
+        }
+
+        var line = document.Lines[(int)relationship.Line - 1].Text;
+        var tokens = C4LineSurgery.SplitWithSpans(line);
+        var arrow = -1;
+        for (var index = 0; index < tokens.Count; index++)
+        {
+            if (!tokens[index].Quoted && tokens[index].Value == "->")
+            {
+                arrow = index;
+                break;
+            }
+        }
+
+        if (arrow < 0 || arrow + 1 >= tokens.Count)
+        {
+            return EditOutcome.Refused($"Line {relationship.Line} does not look like a relationship any more.");
+        }
+
+        document.ReplaceLine(relationship.Line, C4LineSurgery.ReplaceArgument(line, arrow + 1, argumentIndex, value));
+        return EditOutcome.Applied;
+    }
+
+    private static int KeywordIndexOf(string line)
+    {
+        var tokens = C4LineSurgery.SplitWithSpans(line);
+        if (tokens is [_, { Value: "=" }, _, ..])
+        {
+            return 2;
+        }
+
+        return tokens.Count >= 1 ? 0 : -1;
+    }
+
     /// <summary>Why this kind cannot go there, or null when it can.</summary>
     public static string? Refuse(C4Workspace workspace, C4ElementKind kind, string parentId)
     {
@@ -52,18 +192,16 @@ internal static class C4Placement
     /// <summary>
     /// Writes the declaration, opening a block on the parent if it has none.
     /// </summary>
-    public static bool TryInsert(
+    private static bool TryInsert(
         LineDocument document,
         C4Workspace workspace,
         C4ElementKind kind,
         string name,
         string identifier,
         string parentId,
-        out string error,
-        out bool openedBlock)
+        out string error)
     {
         error = "";
-        openedBlock = false;
         var parent = parentId.Length == 0 ? null : workspace.Find(parentId);
 
         if (parent is null)
@@ -114,7 +252,6 @@ internal static class C4Placement
         document.ReplaceLine(declaration.Number, declaration.Text.TrimEnd() + " {");
         document.InsertLine(declaration.Number + 1, Declare(kind, name, identifier, indent));
         document.InsertLine(declaration.Number + 2, new string(' ', IndentOf(declaration.Text)) + "}");
-        openedBlock = true;
         return true;
     }
 
@@ -128,7 +265,7 @@ internal static class C4Placement
     /// Leaves the block as it is if anything at all is left inside, so a concurrent edit is never
     /// swallowed: an empty block parses and round-trips, so nobody has to be told it stayed.
     /// </remarks>
-    public static void CollapseEmptyBlock(LineDocument document, C4Element parent)
+    private static void CollapseEmptyBlock(LineDocument document, C4Element parent)
     {
         var open = document.CodeLines()
             .Where(line => line.Number == parent.Line && line.Code.EndsWith('{'))
@@ -165,7 +302,7 @@ internal static class C4Placement
     /// Removes an element declared on one line. Undoing an add is the only caller, so an element
     /// with a block of its own is refused rather than taking its children with it.
     /// </summary>
-    public static bool TryRemove(LineDocument document, C4Element element, out string error)
+    private static bool TryRemove(LineDocument document, C4Element element, out string error)
     {
         error = "";
         var line = document.CodeLines()
