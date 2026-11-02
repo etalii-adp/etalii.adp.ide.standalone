@@ -20,15 +20,6 @@ public class ConformanceFixturesTests
     /// <summary>The number of fixtures vendored: fewer means the enumeration broke.</summary>
     private const int MinimumFixtures = 50;
 
-    /// <summary>
-    /// The fixtures vendored before the library passes them, by name: the text of the failure each still gives, and why. They
-    /// are held out of the theories; <see cref="ThePendingFixturesStillFailAsRecorded"/> fails when one passes, or fails
-    /// otherwise, so that the entry is taken out, or its reason brought up to date, in the change that makes it so.
-    /// </summary>
-    private static readonly Dictionary<string, (string Fails, string Why)> Pending = new(StringComparer.Ordinal)
-    {
-    };
-
     /// <summary>The fixtures copied in etalii.adp's own layout, beside the Knowledge designer's.</summary>
     private const string AdpFixtures = "etalii.adp/specifications/fbl/fixtures";
 
@@ -43,7 +34,6 @@ public class ConformanceFixturesTests
         var data = new TheoryData<string>();
         foreach (var name in Under("fixtures", "").Concat(Under(AdpFixtures, AdpFixtures + "/")).Order(StringComparer.Ordinal))
         {
-            if (Pending.ContainsKey(name)) continue;
             if (!name.StartsWith(AdpFixtures + "/knowledge-", StringComparison.Ordinal) && !name.StartsWith(AdpFixtures + "/hierarchical-requirement-", StringComparison.Ordinal)) data.Add(name);
         }
         return data;
@@ -66,25 +56,6 @@ public class ConformanceFixturesTests
     public void TheFixturesAreFound()
     {
         Assert.True(Fixtures().Count >= MinimumFixtures, $"Only {Fixtures().Count} fixtures were found; {MinimumFixtures} are vendored.");
-    }
-
-    /// <summary>
-    /// Each pending fixture, run as the theories run one, still fails with the failure its entry records: one that passes, or
-    /// fails for another reason, fails here (see <see cref="Pending"/>).
-    /// </summary>
-    [Fact]
-    public void ThePendingFixturesStillFailAsRecorded()
-    {
-        foreach ((string name, (string fails, string why)) in Pending)
-        {
-            // Act.
-            var folder = Folder(name);
-            var failure = Record.Exception(() => Run(name, folder, File.ReadAllBytes(Path.Combine(folder, "fixture.json"))));
-
-            // Assert.
-            Assert.True(failure is not null, $"The pending fixture {name} passes; take it out of Pending.");
-            Assert.True(failure.Message.Contains(fails, StringComparison.Ordinal), $"The pending fixture {name}, pending because {why}, now fails otherwise: {failure.Message}");
-        }
     }
 
     [Fact]

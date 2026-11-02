@@ -25,8 +25,12 @@ namespace EtAlii.Adp.Specification.Fbl.History;
 /// leaves where it was, has the id the reading gave it written with the edit, outside the file's history (FBL 0.12 §8.6),
 /// so that undoing the edit does not take away the id the element is known by.
 /// </para>
+/// <para>
+/// Internal until a module opens its bodies through it (spec 071's task T012, the Wardley map), as every public type of the
+/// library is one another project uses.
+/// </para>
 /// </remarks>
-public sealed class IdentifiedBody
+internal sealed class IdentifiedBody
 {
     /// <summary>For each edit that can be undone, and each that can be redone, whether it wrote the identities file.</summary>
     private readonly Stack<bool> _done = new();
@@ -73,7 +77,7 @@ public sealed class IdentifiedBody
         var result = Body.Change(change);
         if (result is not PlanResult.Planned { Edit: { Splices.Count: > 0 } edit }) return new IdentifiedEdit(result, SpliceEdit.Empty);
 
-        var (wanted, firstStored) = Wanted(before, Body.Model, edit.Splices, change as ModelChange.Add);
+        (List<LegacyIdentity> wanted, List<LegacyIdentity> firstStored) = Wanted(before, Body.Model, edit.Splices, change as ModelChange.Add);
         var planned = Identities.PlanIdentities(wanted, _kinds);
         var written = SpliceEdit.Empty;
         if (planned is PlanResult.Planned { Edit: var identities })
@@ -167,4 +171,4 @@ public sealed class IdentifiedBody
 /// What an edit of an <see cref="IdentifiedBody"/> did: the body's result, and the splices of the identities file that are a
 /// step of its history, empty when it wrote none.
 /// </summary>
-public sealed record IdentifiedEdit(PlanResult Body, SpliceEdit Identities);
+internal sealed record IdentifiedEdit(PlanResult Body, SpliceEdit Identities);
