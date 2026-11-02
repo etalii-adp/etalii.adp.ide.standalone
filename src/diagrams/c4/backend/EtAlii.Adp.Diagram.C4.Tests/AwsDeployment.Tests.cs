@@ -180,7 +180,7 @@ public class AwsDeploymentTests
         // Without autoLayout, which would ignore every hand-placed position and so hide the rule.
         var view = Workspace.Views[0] with { AutoLayout = null };
         var computed = C4LayoutEngine.Compute(Workspace, view, C4Metrics.Default);
-        var authored = computed.Boxes.Keys.ToDictionary(id => id, _ => new C4SidecarPosition(-1000, -1000), StringComparer.OrdinalIgnoreCase);
+        var authored = computed.Boxes.Keys.ToDictionary(id => id, _ => new C4Position(-1000, -1000), StringComparer.OrdinalIgnoreCase);
 
         // Act.
         var layout = C4LayoutEngine.Compute(Workspace, view, C4Metrics.Default, authored);

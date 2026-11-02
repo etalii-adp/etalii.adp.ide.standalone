@@ -154,6 +154,10 @@ internal sealed class C4Body
         return Reading(NoView).Elements.FirstOrDefault(element => element.IdIsStored && Kinds.ContainsKey(element.Type) && string.Equals(element.Id, elementId, StringComparison.OrdinalIgnoreCase))?.Id;
     }
 
+    /// <summary>The ids of the elements the body holds, written as their identifiers; an element written without one has none (finding A8, Q7).</summary>
+    internal IReadOnlySet<string> StoredIds() =>
+        Reading(NoView).Elements.Where(element => element.IdIsStored && Kinds.ContainsKey(element.Type)).Select(element => element.Id).ToHashSet(StringComparer.Ordinal);
+
     /// <summary>The id the binding reads for the stored relationship the host knows as <paramref name="relationshipId"/>; null for none.</summary>
     internal string? RelationshipIdOf(string relationshipId)
     {

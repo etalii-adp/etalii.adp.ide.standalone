@@ -36,6 +36,6 @@ public sealed class C4SessionFactory : IDiagramSessionFactory
         // View takes the last, and the two differ only on a registration holding two (code-structure T295).
         var viewKey = registrationPath is { Length: > 0 } ? AdpRegistration.Read(registrationPath)?.FirstView : null;
         // The project's history, so a drag on this canvas is one undo away like every other edit.
-        return new C4Session(bodyPath, viewKey, _documents, _mapper, _historyStacks.Get(root));
+        return new C4Session(bodyPath, viewKey, _documents, _mapper, _historyStacks.Get(root), registrationPath);
     }
 }

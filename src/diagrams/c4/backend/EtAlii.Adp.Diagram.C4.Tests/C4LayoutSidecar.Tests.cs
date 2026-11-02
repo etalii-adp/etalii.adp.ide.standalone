@@ -123,7 +123,7 @@ public class C4LayoutSidecarTests : IDisposable
     {
         (C4Workspace workspace, C4View view) = Load();
         var computed = C4LayoutEngine.Compute(workspace, view, C4Metrics.Default);
-        var authored = new Dictionary<string, C4SidecarPosition> { ["a"] = new(500, 600) };
+        var authored = new Dictionary<string, C4Position> { ["a"] = new(500, 600) };
 
         // Arrange, continued.
         var layout = C4LayoutEngine.Compute(workspace, view, C4Metrics.Default, authored);
@@ -141,7 +141,7 @@ public class C4LayoutSidecarTests : IDisposable
     {
         (C4Workspace workspace, C4View view) = Load();
         var computed = C4LayoutEngine.Compute(workspace, view, C4Metrics.Default);
-        var authored = new Dictionary<string, C4SidecarPosition> { ["a"] = new(500, 600) };
+        var authored = new Dictionary<string, C4Position> { ["a"] = new(500, 600) };
 
         // Arrange, continued.
         var layout = C4LayoutEngine.Compute(workspace, view, C4Metrics.Default, authored);
@@ -158,7 +158,7 @@ public class C4LayoutSidecarTests : IDisposable
         // but the user is told rather than watching their arrangement vanish.
         var dsl = Model.Replace("include *", "include *\n            autoLayout lr", StringComparison.Ordinal);
         (C4Workspace workspace, C4View view) = Load(dsl);
-        var authored = new Dictionary<string, C4SidecarPosition> { ["a"] = new(500, 600) };
+        var authored = new Dictionary<string, C4Position> { ["a"] = new(500, 600) };
 
         // Arrange, continued.
         var layout = C4LayoutEngine.Compute(workspace, view, C4Metrics.Default, authored);
@@ -187,7 +187,7 @@ public class C4LayoutSidecarTests : IDisposable
     public void AnAuthoredPositionForSomethingNotOnTheView_IsIgnoredQuietly()
     {
         (C4Workspace workspace, C4View view) = Load();
-        var authored = new Dictionary<string, C4SidecarPosition> { ["ghost"] = new(500, 600) };
+        var authored = new Dictionary<string, C4Position> { ["ghost"] = new(500, 600) };
 
         // Act.
         var layout = C4LayoutEngine.Compute(workspace, view, C4Metrics.Default, authored);

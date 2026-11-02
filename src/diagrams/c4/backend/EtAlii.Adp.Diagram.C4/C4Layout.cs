@@ -39,7 +39,7 @@ public static class C4LayoutEngine
     /// <param name="view">The view to compute the layout for.</param>
     /// <param name="metrics">The metrics of the view.</param>
     /// <param name="authored">
-    /// Positions the user arranged by hand, from the sidecar. They win over the computed
+    /// Positions the user arranged by hand, from where they are stored (<see cref="C4Positions"/>). They win over the computed
     /// arrangement - unless the document declares <c>autoLayout</c>, which is the author asking
     /// for a computed one explicitly (Requirements 8.3, 8.4).
     /// </param>
@@ -52,7 +52,7 @@ public static class C4LayoutEngine
         C4Workspace workspace,
         C4View view,
         C4Metrics metrics,
-        IReadOnlyDictionary<string, C4SidecarPosition>? authored = null,
+        IReadOnlyDictionary<string, C4Position>? authored = null,
         IReadOnlyList<C4Element>? members = null)
     {
         ArgumentNullException.ThrowIfNull(workspace);
@@ -89,7 +89,7 @@ public static class C4LayoutEngine
         var authoredIgnored = hasAuthored && view.AutoLayout is not null;
         if (hasAuthored && !authoredIgnored)
         {
-            foreach ((string id, C4SidecarPosition position) in authored!)
+            foreach ((string id, C4Position position) in authored!)
             {
                 if (sizes.TryGetValue(id, out var size))
                 {

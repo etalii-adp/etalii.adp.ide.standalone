@@ -31,6 +31,7 @@ public sealed class C4Session : DocumentDiagramSession<LineDocument, C4Workspace
     private static readonly ILogger _logger = Log.ForContext<C4Session>();
 
     private readonly string? _viewKey;
+    private readonly string? _registrationPath;
     private readonly IC4DocumentStore _documents;
     private readonly C4ElementMapper _mapper;
 
@@ -39,17 +40,20 @@ public sealed class C4Session : DocumentDiagramSession<LineDocument, C4Workspace
     /// <param name="documents">The store every C4 session shares.</param>
     /// <param name="mapper">What the view looks like on the canvas.</param>
     /// <param name="history">The project's history, so a drag is one undo away. Null makes the diagram read-only.</param>
+    /// <param name="registrationPath">The <c>.adp</c> the view was opened through, whose <c>layout:</c> block may keep its positions; null for none.</param>
     public C4Session(
         string bodyPath,
         string? viewKey,
         IC4DocumentStore documents,
         C4ElementMapper mapper,
-        IHistoryStack? history = null)
+        IHistoryStack? history = null,
+        string? registrationPath = null)
         : base(bodyPath, documents, history)
     {
         ArgumentNullException.ThrowIfNull(mapper);
 
         _viewKey = viewKey;
+        _registrationPath = registrationPath;
         _documents = documents;
         _mapper = mapper;
     }
@@ -70,7 +74,7 @@ public sealed class C4Session : DocumentDiagramSession<LineDocument, C4Workspace
 
     /// <inheritdoc />
     protected override IReadOnlyList<DiagramElement> Render(C4Workspace model, DiagramViewport viewport) =>
-        ViewOf(model) is { } view ? _mapper.Visible(model, view, viewport, BodyPath) : [];
+        ViewOf(model) is { } view ? _mapper.Visible(model, view, viewport, BodyPath, _registrationPath) : [];
 
     /// <summary>
     /// A drop records where the user put the element in the view this session shows - unless that view
@@ -82,7 +86,8 @@ public sealed class C4Session : DocumentDiagramSession<LineDocument, C4Workspace
         {
             null => DiagramPlacement.Refused("This diagram has no view to arrange."),
             { AutoLayout: not null } => DiagramPlacement.Refused(AutoLayoutRefusal),
-            var view => DiagramPlacement.By(new MoveC4ElementCommand(BodyPath, view.Key, elementId, x, y)),
+            _ when model.Find(elementId) is not null && !C4Body.Of(model).StoredIds().Contains(elementId) => DiagramPlacement.Refused(MoveC4ElementCommandHandler.Unnamed),
+            var view => DiagramPlacement.By(new MoveC4ElementCommand(BodyPath, view.Key, elementId, x, y, _registrationPath)),
         };
 
     private C4View? ViewOf(C4Workspace workspace)

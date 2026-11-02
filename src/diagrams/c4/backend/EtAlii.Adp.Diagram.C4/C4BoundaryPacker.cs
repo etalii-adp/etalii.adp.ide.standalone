@@ -32,7 +32,7 @@ internal static class C4BoundaryPacker
         C4View view,
         IReadOnlyList<C4Element> members,
         C4Metrics metrics,
-        IReadOnlyDictionary<string, C4SidecarPosition>? authored,
+        IReadOnlyDictionary<string, C4Position>? authored,
         string direction,
         int rankSeparation,
         int nodeSeparation)
@@ -54,7 +54,7 @@ internal static class C4BoundaryPacker
         var authoredIgnored = hasAuthored && view.AutoLayout is not null;
         if (hasAuthored && !authoredIgnored)
         {
-            foreach ((string id, C4SidecarPosition position) in authored!)
+            foreach ((string id, C4Position position) in authored!)
             {
                 if (boxes.TryGetValue(id, out var box) && nesting.ById.TryGetValue(id, out var element) && nesting.Hosts[element.Id] is null)
                 {

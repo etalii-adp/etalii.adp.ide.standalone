@@ -26,7 +26,20 @@ public sealed class C4Validator : IDiagramValidator
         ArgumentNullException.ThrowIfNull(request);
 
         cancellationToken.ThrowIfCancellationRequested();
-        var workspace = C4Body.Read(request.Document).Workspace;
-        return ValueTask.FromResult(C4Definitions.Problems(workspace, C4Body.FileOf(request.BodyPath), Origin));
+        var body = C4Body.Read(request.Document);
+        var workspace = body.Workspace;
+        IReadOnlyList<DiagramProblem> problems = [.. C4Definitions.Problems(workspace, C4Body.FileOf(request.BodyPath), Origin), .. LayoutProblems(request.BodyPath, body)];
+        return ValueTask.FromResult(problems);
     }
+
+    /// <summary>
+    /// The entries of the layout file beside the body under ids the body does not store, reported so that the position the
+    /// next placement drops is not lost unseen (Q7). They are about the layout file, not a line of the body, so they have no
+    /// location.
+    /// </summary>
+    private static IEnumerable<DiagramProblem> LayoutProblems(string bodyPath, C4Body body) =>
+        bodyPath is { Length: > 0 }
+            ? C4Positions.Findings(bodyPath, body.Workspace.Views.Select(view => view.Key), body.StoredIds())
+                .Select(each => new DiagramProblem(DiagramProblemSeverity.Warning, $"View '{each.ViewKey}': {each.Finding.Message}", each.Finding.Code))
+            : [];
 }

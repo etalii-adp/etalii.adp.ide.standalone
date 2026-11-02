@@ -107,7 +107,7 @@ Before writing it, decide the single biggest fork in any diagram type's design, 
 
 - **Authored in the document** — a position is the author's claim, and dragging is a *document edit* through a command. Timeline (x is authored time, y an authored row) and wardley-map (both coordinates are the statement) are the shipped examples.
 - **Computed by the module** — layout is derived and never written back; dragging re-parents or is refused. Mindmap is the shipped example.
-- **Computed with authored overrides in a sidecar** — c4 stores dragged positions in a `.layout.json` beside the body, never inside a file another tool owns.
+- **Computed with authored overrides beside the body** — c4 stores dragged positions as FBL 8.7 says: in the `.layout.json` beside the body while one exists, else in the `layout:` block of the registration the view was opened through, never inside a file another tool owns ([`C4Positions.cs`](../src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4/C4Positions.cs)).
 
 Core is indifferent to the choice; the two move gestures (positional move, re-parenting move) are both on the session seam, and a session refuses the one that means nothing for its type.
 
