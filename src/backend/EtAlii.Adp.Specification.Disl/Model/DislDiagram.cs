@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using EtAlii.Adp.Specification.Cel;
 
 namespace EtAlii.Adp.Specification.Disl;
@@ -11,6 +12,11 @@ namespace EtAlii.Adp.Specification.Disl;
 /// Built element by element, parents before their children, by <see cref="DislModelBuilder"/> or a
 /// test. The element lists are what the expressions iterate, so their order is the order every derived id,
 /// finding and position depends on.
+/// <para>
+/// A diagram that is only read may be read from several threads at once, as a host that keeps one reading for every
+/// connection does: what it keeps between two changes is made whole before it is kept, and what a computation marks
+/// as in progress is marked for its own thread. A change is not made while it is read.
+/// </para>
 /// </remarks>
 public sealed class DislDiagram : ICelObject
 {
@@ -21,9 +27,12 @@ public sealed class DislDiagram : ICelObject
     private readonly List<DislElement> _relations = [];
     private readonly List<DislView> _views = [];
     private Dictionary<DislElement, (List<DislElement> Incoming, List<DislElement> Outgoing)>? _ends;
-    private readonly Dictionary<(string Type, long Max), (IReadOnlyList<IReadOnlyList<DislElement>> Cycles, bool Truncated)> _cycles = [];
-    private readonly Dictionary<string, IReadOnlyList<IReadOnlyList<DislElement>>> _knots = new(StringComparer.Ordinal);
-    private bool _computingBudgets;
+    private readonly ConcurrentDictionary<(string Type, long Max), (IReadOnlyList<IReadOnlyList<DislElement>> Cycles, bool Truncated)> _cycles = new();
+    private readonly ConcurrentDictionary<string, IReadOnlyList<IReadOnlyList<DislElement>>> _knots = new(StringComparer.Ordinal);
+
+    /// <summary>The diagrams whose budgets are being computed on this thread, so a budget that reads the budgets stops.</summary>
+    [ThreadStatic]
+    private static HashSet<DislDiagram>? _computingBudgets;
 
     /// <summary>The nodes, then the relations, as <see cref="Elements"/> gives them; null until asked for after a change.</summary>
     private DislElement[]? _elements;
@@ -32,10 +41,11 @@ public sealed class DislDiagram : ICelObject
     private Dictionary<string, DislElement>? _byId;
 
     /// <summary>The nodes and the relations of each type, its subtypes included, as <see cref="NodesOfType"/> and <see cref="RelationsOfType"/> give them.</summary>
-    private readonly Dictionary<(string Type, bool Relation), DislElement[]> _ofType = [];
+    private readonly ConcurrentDictionary<(string Type, bool Relation), DislElement[]> _ofType = new();
 
-    /// <summary>The derived diagram attributes being computed, so one that reads itself stops.</summary>
-    private readonly HashSet<string> _computing = new(StringComparer.Ordinal);
+    /// <summary>The derived diagram attributes being computed on this thread, so one that reads itself stops.</summary>
+    [ThreadStatic]
+    private static HashSet<(DislDiagram Diagram, string Attribute)>? _computing;
 
     /// <summary>A diagram of <paramref name="specification"/> with the diagram attributes <paramref name="attributes"/>, as CEL values.</summary>
     public DislDiagram(DislSpecification specification, IReadOnlyDictionary<string, object?>? attributes = null)
@@ -226,7 +236,7 @@ public sealed class DislDiagram : ICelObject
         {
             _byId[added.Id] = added;
         }
-        foreach (var key in _ofType.Keys.Where(key => key.Relation == added.Type.IsRelation && added.IsA(key.Type)).ToList()) _ofType.Remove(key);
+        foreach (var key in _ofType.Keys.Where(key => key.Relation == added.Type.IsRelation && added.IsA(key.Type)).ToList()) _ofType.TryRemove(key, out _);
     }
 
     /// <summary>An element was given another id: the index by id is made again when next asked for.</summary>
@@ -253,15 +263,15 @@ public sealed class DislDiagram : ICelObject
 
     private IReadOnlyList<DislBudgetState> ComputedBudgets()
     {
-        if (_computingBudgets) throw new CelException("A budget is read while the budgets are computed.");
-        _computingBudgets = true;
+        _computingBudgets ??= new HashSet<DislDiagram>(ReferenceEqualityComparer.Instance);
+        if (!_computingBudgets.Add(this)) throw new CelException("A budget is read while the budgets are computed.");
         try
         {
             return DislBudgets.Compute(this);
         }
         finally
         {
-            _computingBudgets = false;
+            _computingBudgets.Remove(this);
         }
     }
 
@@ -336,7 +346,8 @@ public sealed class DislDiagram : ICelObject
     /// </summary>
     private object? Derived(DislAttribute attribute)
     {
-        if (attribute.DerivedProgram is not { } program || !_computing.Add(attribute.Name)) return DislValues.Unset(attribute, Specification.Metamodel);
+        _computing ??= new HashSet<(DislDiagram, string)>();
+        if (attribute.DerivedProgram is not { } program || !_computing.Add((this, attribute.Name))) return DislValues.Unset(attribute, Specification.Metamodel);
         try
         {
             var value = program.Evaluate(new Dictionary<string, object?> { ["self"] = this, ["diagram"] = this, ["env"] = Env.ToCel() });
@@ -344,19 +355,21 @@ public sealed class DislDiagram : ICelObject
         }
         finally
         {
-            _computing.Remove(attribute.Name);
+            _computing.Remove((this, attribute.Name));
         }
     }
 
     /// <summary>The first element with <paramref name="id"/> in model order, or null; ids compared as the specification says (§11.5.4).</summary>
     public DislElement? ElementById(string id)
     {
-        if (_byId is null)
+        if (_byId is not { } byId)
         {
-            _byId = new Dictionary<string, DislElement>(Specification.IdComparer);
-            foreach (var element in Elements) _byId.TryAdd(element.Id, element);
+            // Made whole before it is kept, so that a thread reading it beside the one making it never sees it half made.
+            byId = new Dictionary<string, DislElement>(Specification.IdComparer);
+            foreach (var element in Elements) byId.TryAdd(element.Id, element);
+            _byId = byId;
         }
-        return _byId.GetValueOrDefault(id);
+        return byId.GetValueOrDefault(id);
     }
 
     /// <summary>The nodes that are <paramref name="type"/> or one of its subtypes, in model order.</summary>
