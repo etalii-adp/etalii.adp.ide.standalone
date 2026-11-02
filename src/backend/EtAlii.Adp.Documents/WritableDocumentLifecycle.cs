@@ -30,14 +30,14 @@ public sealed class WritableDocumentLifecycle<TDocument>
 
     /// <param name="parse">As for <see cref="DocumentLifecycle{TDocument}"/>.</param>
     /// <param name="serialize">The text a document is saved as.</param>
-    /// <param name="writer">What publishes the text, waiting for another save of the path without blocking a thread.</param>
+    /// <param name="writer">What publishes the text, waiting for another save of the path without blocking a thread, with the byte-order mark the file had.</param>
     /// <param name="unavailable">As for <see cref="DocumentLifecycle{TDocument}"/>.</param>
     public WritableDocumentLifecycle(
         Func<string, string, TDocument> parse,
         Func<TDocument, string> serialize,
         IFileWriter writer,
         Func<string, DocumentUnavailability, string, TDocument>? unavailable = null)
-        : this(parse, serialize, unavailable, (writer ?? throw new ArgumentNullException(nameof(writer))).SaveAsync)
+        : this(parse, serialize, unavailable, (writer ?? throw new ArgumentNullException(nameof(writer))).SaveKeepingByteOrderMarkAsync)
     {
     }
 
@@ -81,7 +81,7 @@ public sealed class WritableDocumentLifecycle<TDocument>
         int readAttempts,
         TimeSpan betweenReadAttempts,
         IFileWriter writer)
-        : this(new DocumentLifecycle<TDocument>(parse, unavailable, read, readAttempts, betweenReadAttempts), serialize, (writer ?? throw new ArgumentNullException(nameof(writer))).SaveAsync)
+        : this(new DocumentLifecycle<TDocument>(parse, unavailable, read, readAttempts, betweenReadAttempts), serialize, (writer ?? throw new ArgumentNullException(nameof(writer))).SaveKeepingByteOrderMarkAsync)
     {
     }
 

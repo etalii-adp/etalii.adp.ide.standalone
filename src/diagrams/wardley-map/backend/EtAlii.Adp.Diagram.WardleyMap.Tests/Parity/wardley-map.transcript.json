@@ -22696,9 +22696,9 @@
           "do": "drag new-1 (component \"Business\") to 0.25, 0.75",
           "answer": "accepted",
           "hunks": [
-            "@1 -2 +\"title Tea Shop\\r\\nanchor Business [0.25, 0.25]\\r\\n\""
+            "@2 -1 +\"anchor Business [0.25, 0.25]\\r\\n\""
           ],
-          "sha256": "b7aa2c8344b9eb1600830b91e4c0dd24d8c70e1227ea69c4bea8d1736bf8ded5"
+          "sha256": "acc1326e6520745cd35930629fdc39eef0ca51aded34d18e1ddd8fc074312470"
         },
         {
           "do": "drag new-1 (component \"Business\") to -0.5, 1.5",
@@ -22706,7 +22706,7 @@
           "hunks": [
             "@2 -1 +\"anchor Business [0, 0]\\r\\n\""
           ],
-          "sha256": "edea6376a58e15d1c8873b4856832d6af722e1a9e30569dc94c3714df38248ef"
+          "sha256": "e666021e3a7b499f4f445e02c590b2a2b8138d9cbc42bed9787e272394fd748f"
         },
         {
           "do": "set new-1 (component \"Business\") wardley.visibility = \"0.5\"",
@@ -22714,7 +22714,7 @@
           "hunks": [
             "@2 -1 +\"anchor Business [0.5, 0]\\r\\n\""
           ],
-          "sha256": "5066ffdedc4be7851efe69184ba33cf3420f9aeec55f3149e587ac67ef0f4fcb"
+          "sha256": "ac12de2dce9e25827c5ec8c1db9423c2f5dade1964220f0db28d985bd6066a4f"
         },
         {
           "do": "set new-1 (component \"Business\") wardley.visibility = \"abc\"",
@@ -22732,7 +22732,7 @@
           "hunks": [
             "@2 -1 +\"anchor Business [0.5, 0.25]\\r\\n\""
           ],
-          "sha256": "13959e1d6617490ce94ba2bd86a4127ca2e1734b0e6d1a09145c225c2b5ef731"
+          "sha256": "488c23a9c68fdd1fee0853d590d9621e51310c6cf3fca9d24a860cd739e4493a"
         },
         {
           "do": "set new-1 (component \"Business\") wardley.evolve-name = \"Not yet\"",
@@ -22745,7 +22745,7 @@
           "hunks": [
             "@29 -0 +\"evolve Business 0.7\\r\\n\""
           ],
-          "sha256": "7768f055f9f2bb471de0352391ff10800f95d266aceb2259addf01c7675e0b07"
+          "sha256": "257a89a9b0423fd0e4a0d7779ea4b79fd8bf73a2bf71326e491b0e2892e036b7"
         },
         {
           "do": "set new-1 (component \"Business\") wardley.evolve = \"1.5\"",
@@ -22758,7 +22758,7 @@
           "hunks": [
             "@29 -1 +\"evolve Business->Parity becomes 0.7\\r\\n\""
           ],
-          "sha256": "a449fe704ad000d21e4018b129ee88a9e4ca93aab3687555511fd7c80bc77c9d"
+          "sha256": "a873bc79d9898e17e8c895a7a24097b67affbd20e3936bdb36dea2817e99ca34"
         },
         {
           "do": "set new-1 (component \"Business\") wardley.evolve-name = \"\"",
@@ -22766,7 +22766,7 @@
           "hunks": [
             "@29 -1 +\"evolve Business 0.7\\r\\n\""
           ],
-          "sha256": "7768f055f9f2bb471de0352391ff10800f95d266aceb2259addf01c7675e0b07"
+          "sha256": "257a89a9b0423fd0e4a0d7779ea4b79fd8bf73a2bf71326e491b0e2892e036b7"
         },
         {
           "do": "set new-1 (component \"Business\") wardley.evolve = \"\"",
@@ -22774,7 +22774,7 @@
           "hunks": [
             "@29 -1 +\"\""
           ],
-          "sha256": "13959e1d6617490ce94ba2bd86a4127ca2e1734b0e6d1a09145c225c2b5ef731"
+          "sha256": "488c23a9c68fdd1fee0853d590d9621e51310c6cf3fca9d24a860cd739e4493a"
         },
         {
           "do": "set new-1 (component \"Business\") wardley.inertia = \"true\"",
@@ -22782,7 +22782,7 @@
           "hunks": [
             "@2 -1 +\"anchor Business [0.5, 0.25] inertia\\r\\n\""
           ],
-          "sha256": "1f2b78daeaa06bc0c27e95a359f3d2382ba4d5310aa18bcfd657b33008c67f84"
+          "sha256": "fe1155f22360441d5c45441f7c43430bae5887e5bd544fbdcfbce08670dce0eb"
         },
         {
           "do": "set new-1 (component \"Business\") wardley.inertia = \"false\"",
@@ -22790,7 +22790,7 @@
           "hunks": [
             "@2 -1 +\"anchor Business [0.5, 0.25]\\r\\n\""
           ],
-          "sha256": "13959e1d6617490ce94ba2bd86a4127ca2e1734b0e6d1a09145c225c2b5ef731"
+          "sha256": "488c23a9c68fdd1fee0853d590d9621e51310c6cf3fca9d24a860cd739e4493a"
         },
         {
           "do": "set new-1 (component \"Business\") wardley.decorators = \"build, market\"",
@@ -22798,7 +22798,7 @@
           "hunks": [
             "@2 -1 +\"anchor Business [0.5, 0.25] (market) (build)\\r\\n\""
           ],
-          "sha256": "81cee3eaaf596ed4d49aef954589b13e6760bf63f8e335f33e0134a11ca7f730"
+          "sha256": "8115a83d8406d3fd16cc988d0d53897907cbb79f506d7a0cc53ab5a6bd15321a"
         },
         {
           "do": "set new-1 (component \"Business\") wardley.decorators = \"nonsense\"",
@@ -22811,7 +22811,7 @@
           "hunks": [
             "@2 -1 +\"anchor Business [0.5, 0.25]\\r\\n\""
           ],
-          "sha256": "13959e1d6617490ce94ba2bd86a4127ca2e1734b0e6d1a09145c225c2b5ef731"
+          "sha256": "488c23a9c68fdd1fee0853d590d9621e51310c6cf3fca9d24a860cd739e4493a"
         },
         {
           "do": "set new-1 (component \"Business\") wardley.stage = \"Product\"",
@@ -22850,7 +22850,7 @@
             "@2 -1 +\"anchor Parity named [0.5, 0.25]\\r\\n\"",
             "@13 -1 +\"Parity named->Cup of Tea\\r\\n\""
           ],
-          "sha256": "03522ece69cc283c55542f342472d9755ca8eca646194d32407c63b77b23de08",
+          "sha256": "a6533a72bb7e3a077060f1bd9d8d4a76320a4a1a5ba54e5651bd62b72ecb4d2a",
           "identities": [
             "- new-1 | component | \"Business\"",
             "- new-10 | link | \"Business\\u001FCup of Tea\\u001FDependency\"",
@@ -22864,7 +22864,7 @@
           "hunks": [
             "@13 -1 +\"Parity named->Cup of Tea; Parity context\\r\\n\""
           ],
-          "sha256": "9dd5529ac6297892a6abfc9893a95777d329b7da4edfab6c624bb87424951239"
+          "sha256": "682102e357bfc34edd1613d662b7e2c61c70717769c6e8b60dd31778b0f88a88"
         },
         {
           "do": "set new-10 (link \"Parity named\\u001FCup of Tea\\u001FDependency\") wardley.link.context = \"\"",
@@ -22872,7 +22872,7 @@
           "hunks": [
             "@13 -1 +\"Parity named->Cup of Tea\\r\\n\""
           ],
-          "sha256": "03522ece69cc283c55542f342472d9755ca8eca646194d32407c63b77b23de08"
+          "sha256": "a6533a72bb7e3a077060f1bd9d8d4a76320a4a1a5ba54e5651bd62b72ecb4d2a"
         },
         {
           "do": "set new-10 (link \"Parity named\\u001FCup of Tea\\u001FDependency\") wardley.link.source = \"Somebody\"",
@@ -22890,7 +22890,7 @@
           "hunks": [
             "@13 -1 +\"\""
           ],
-          "sha256": "8a1490ce094e9eae60c081824b59934539d5012cff0a08a0c48555cd5fdf9f94",
+          "sha256": "0e4bd68b64e519ab081f9ced643cac4c019937b88c8eb7a9c72807d4ef65fb9d",
           "identities": [
             "- new-10 | link | \"Parity named\\u001FCup of Tea\\u001FDependency\""
           ]
@@ -22911,7 +22911,7 @@
           "hunks": [
             "@2 -1 +\"anchor Parity renamed [0.5, 0.25]\\r\\n\""
           ],
-          "sha256": "565f9579f7214f05faf365278f90df1b81ba6702efaae136afc1b64a3b6c52a5",
+          "sha256": "9f128e897517067b79cb7727c1742993f4aa1b561c9305696cb304febd14aed9",
           "identities": [
             "- new-1 | component | \"Parity named\"",
             "+ new-1 | component | \"Parity renamed\""
@@ -22933,7 +22933,7 @@
           "hunks": [
             "@28 -0 +\"evolve Parity renamed 0.65\\r\\n\""
           ],
-          "sha256": "5eb119dcb2103d66992fc4d060b8583a0ab3636653bd0ebff325c1a31641abcf"
+          "sha256": "47c61638c327314e93dcedcf708636eb2c857eac6092191e650cc5a477287f96"
         },
         {
           "do": "execute wardley.set-evolve on new-1 (component \"Parity renamed\")",
@@ -22946,7 +22946,7 @@
           "hunks": [
             "@28 -1 +\"\""
           ],
-          "sha256": "565f9579f7214f05faf365278f90df1b81ba6702efaae136afc1b64a3b6c52a5"
+          "sha256": "9f128e897517067b79cb7727c1742993f4aa1b561c9305696cb304febd14aed9"
         },
         {
           "do": "execute wardley.clear-evolve on new-1 (component \"Parity renamed\")",
@@ -22959,7 +22959,7 @@
           "hunks": [
             "@2 -1 +\"anchor Parity renamed [0.5, 0.25] inertia\\r\\n\""
           ],
-          "sha256": "4ff7a66ce46dd9e96db23a3d9cc856632e0b3de5bff051c08e559fc74c423888"
+          "sha256": "a28a47e24f1a25a2ab97ba2d713cdada4ad083ce37f8ee7d640238cf0a4522ba"
         },
         {
           "do": "execute wardley.toggle-inertia on new-1 (component \"Parity renamed\")",
@@ -22967,7 +22967,7 @@
           "hunks": [
             "@2 -1 +\"anchor Parity renamed [0.5, 0.25]\\r\\n\""
           ],
-          "sha256": "565f9579f7214f05faf365278f90df1b81ba6702efaae136afc1b64a3b6c52a5"
+          "sha256": "9f128e897517067b79cb7727c1742993f4aa1b561c9305696cb304febd14aed9"
         },
         {
           "do": "execute wardley.toggle-market on new-1 (component \"Parity renamed\")",
@@ -22975,7 +22975,7 @@
           "hunks": [
             "@2 -1 +\"anchor Parity renamed [0.5, 0.25] (market)\\r\\n\""
           ],
-          "sha256": "d1d266099bc2d09a67fbb7d5e2b2171caafb014e9e2864452b1ac6717729cf9b"
+          "sha256": "06091ef2335c1bb82e9fed9fbb81ceb13badd9b13cf52e0bfb9d09c356f4e2df"
         },
         {
           "do": "execute wardley.toggle-ecosystem on new-1 (component \"Parity renamed\")",
@@ -22983,7 +22983,7 @@
           "hunks": [
             "@2 -1 +\"anchor Parity renamed [0.5, 0.25] (market) (ecosystem)\\r\\n\""
           ],
-          "sha256": "e17153a5029ad1fd650a9d1088f6e2c8c5d49f3583569f1c5eda9fadf60ef93c"
+          "sha256": "1cc94a6831e6c360e4099e029e21c4c371822318cc4885edf436e82cdd1fc261"
         },
         {
           "do": "execute wardley.toggle-build on new-1 (component \"Parity renamed\")",
@@ -22991,7 +22991,7 @@
           "hunks": [
             "@2 -1 +\"anchor Parity renamed [0.5, 0.25] (market) (ecosystem) (build)\\r\\n\""
           ],
-          "sha256": "a472d9018f071b1788e239e36a10ff740ad8ed896de018a0b4f52a9e127d2164"
+          "sha256": "e464b9a05e89a68695446af8df0b27c98c34ef0c126992ebc6cef8a532901c95"
         },
         {
           "do": "execute wardley.toggle-buy on new-1 (component \"Parity renamed\")",
@@ -22999,7 +22999,7 @@
           "hunks": [
             "@2 -1 +\"anchor Parity renamed [0.5, 0.25] (market) (ecosystem) (build) (buy)\\r\\n\""
           ],
-          "sha256": "09e5b6f40842d9318afbc46378f873bf543da4500d694c132adf9442c7ea4c98"
+          "sha256": "18ab28b1724a41af424ed26e9574a1e9592ee79d620bb83c0aa17c7f251a93f6"
         },
         {
           "do": "execute wardley.toggle-outsource on new-1 (component \"Parity renamed\")",
@@ -23007,7 +23007,7 @@
           "hunks": [
             "@2 -1 +\"anchor Parity renamed [0.5, 0.25] (market) (ecosystem) (build) (buy) (outsource)\\r\\n\""
           ],
-          "sha256": "d1d9dc28d63b974c290fae1525786cbeb5ced89bbc23c51e412b64533095a308"
+          "sha256": "a74631cd8b791bba800286ee556bdc47ad523a9080bd2c4b9cfe22a0ab94cba5"
         },
         {
           "do": "execute wardley.link on new-1 (component \"Parity renamed\")",
@@ -23020,7 +23020,7 @@
           "hunks": [
             "@28 -0 +\"Parity renamed->Public\\r\\n\""
           ],
-          "sha256": "aef4e9e9539fc32796026b74d330723a2650f02d3445b4737bcef1f230426c25",
+          "sha256": "2b6515853f49363fbeb637dca77c04255e31141656ca8e384509f969d810924a",
           "identities": [
             "+ new-21 | link | \"Parity renamed\\u001FPublic\\u001FDependency\""
           ]
@@ -23036,7 +23036,7 @@
           "hunks": [
             "@29 -0 +\"Parity renamed+>Public\\r\\n\""
           ],
-          "sha256": "92031c095bae20545f17739ad87a574f20a5a149a54cfa05e301a1ec6de33df1",
+          "sha256": "53302f9977e6030934a7919e92161fce8b88dbc1ff4fd3eb4c3cbd8fbe56dde2",
           "identities": [
             "+ new-22 | link | \"Parity renamed\\u001FPublic\\u001FFlow\""
           ]
@@ -23062,7 +23062,7 @@
           "hunks": [
             "@28 -1 +\"\""
           ],
-          "sha256": "035737e42e3210541f42954e21575ab83363e7da7f739f65aba5a8aa35eee848",
+          "sha256": "bea98002a880e3d09cd5ec573574ed3240059a5a2c38bc03ecb262eabef39afb",
           "identities": [
             "- new-21 | link | \"Parity renamed\\u001FPublic\\u001FDependency\""
           ]
@@ -23078,7 +23078,7 @@
           "hunks": [
             "@29 -0 +\"pipeline Parity renamed\\r\\n{\\r\\n  component Parity child [0.5]\\r\\n}\\r\\n\""
           ],
-          "sha256": "04548755d82b819e2bb9bc835df94b2d960b20797c999bb1e3ea29e93ac44eca",
+          "sha256": "2d6b157e8642ba841a00a4d75719c562e4d6f7abc6a13d225601f90867b8c0d1",
           "identities": [
             "+ new-23 | pipeline | \"Parity renamed\"",
             "+ new-24 | pipeline-child | \"Parity renamed\\u001FParity child\""
@@ -23095,7 +23095,7 @@
           "hunks": [
             "@32 -0 +\"  component Second child [0.5]\\r\\n\""
           ],
-          "sha256": "91050dbbfb49d5b3cfc16bbf9286a06e71b950f3bb1ee0432822022b85976605",
+          "sha256": "7d3a3dfe83842b9dd24d7fb2c00c4486abb7eadeb8d35044d157d835a62ca513",
           "identities": [
             "+ new-25 | pipeline-child | \"Parity renamed\\u001FSecond child\""
           ]
@@ -23116,7 +23116,7 @@
           "hunks": [
             "@34 -0 +\"component Parity component [0.5, 0.5]\\r\\n\""
           ],
-          "sha256": "ace882962b0e5a1769499f1671f53b53600f4a96240699962879ef8ceef0581a",
+          "sha256": "58ab315ba3f6d8c73b447ab8f1f420b571a3c3e96e4cb0b5acd55597609d59bf",
           "identities": [
             "+ new-26 | component | \"Parity component\""
           ]
@@ -23137,7 +23137,7 @@
           "hunks": [
             "@35 -0 +\"anchor Parity anchor [0.5, 0.5]\\r\\n\""
           ],
-          "sha256": "cc6e3d03a1d838e882f3bef39624bc26b03b439584f4b616b2e26cc152644438",
+          "sha256": "6f8fbecc140f966d51ecf29ce3d36b7d19c2271fdb342f2be582e97e24e73e66",
           "identities": [
             "+ new-27 | component | \"Parity anchor\""
           ]
@@ -23158,7 +23158,7 @@
           "hunks": [
             "@36 -0 +\"submap Parity submap [0.5, 0.5]\\r\\n\""
           ],
-          "sha256": "73bf03b3769b4d8e5d0deb37ac804419998eab7ebc46dc195617746127e4620e",
+          "sha256": "ae72d451b65cc2940cbd9d5131aaae207ddd85cc636232495358a6c4c9ac70f9",
           "identities": [
             "+ new-28 | component | \"Parity submap\""
           ]
@@ -23179,7 +23179,7 @@
           "hunks": [
             "@37 -0 +\"component Parity market [0.5, 0.5] (market)\\r\\n\""
           ],
-          "sha256": "c26118bb16b0179dea8d29f27d9e17e02f3cc6014fcfd227b421c2a553475a51",
+          "sha256": "0d25473b815b6732f2544d7764050053f0d452bc08f5811590bddaf674aa58b0",
           "identities": [
             "+ new-29 | component | \"Parity market\""
           ]
@@ -23200,7 +23200,7 @@
           "hunks": [
             "@38 -0 +\"component Parity ecosystem [0.5, 0.5] (ecosystem)\\r\\n\""
           ],
-          "sha256": "15be6771e6d0ca45b647f2f0f489d1f5d7b67b385cc48d70840c9cb88c807ca3",
+          "sha256": "5080eb45c616104125f165deb22429b77ba7819d75d5968104f1d37222addd46",
           "identities": [
             "+ new-30 | component | \"Parity ecosystem\""
           ]
@@ -23221,7 +23221,7 @@
           "hunks": [
             "@39 -0 +\"note Parity note [0.5, 0.5]\\r\\n\""
           ],
-          "sha256": "b730f20d0965ff09e8d10e2d5e563fc401840540a1402857eea00193f7787502",
+          "sha256": "9a7b14f018f36defb934739fecdc8c9209dad5bee8579d9a85d8cd10aecd9969",
           "identities": [
             "+ new-31 | note | \"Parity note\""
           ]
@@ -23242,7 +23242,7 @@
           "hunks": [
             "@40 -0 +\"annotation 3 [0.5, 0.5] Parity annotation\\r\\n\""
           ],
-          "sha256": "db11d1cea8cc619224a184799bbd5f43ed41d9fc783a041198ffd12bf583d0d0",
+          "sha256": "0906f490f335b0df22af7a64503375da4f9ddbc0472d567830a7f20bc24db7c5",
           "identities": [
             "+ new-32 | annotation | \"3\""
           ]
@@ -23295,7 +23295,7 @@
             "@13 -1 +\"\"",
             "@28 -1 +\"\""
           ],
-          "sha256": "27e142bdb333ea4711c9a4c5f925b6d8737cc9154b32f2679eb5321dbcff953d",
+          "sha256": "1628a84befd1c46119435c255358c8b203dac50c196eb996036b941d9a819212",
           "identities": [
             "- new-2 | component | \"Public\"",
             "- new-11 | link | \"Public\\u001FCup of Tea\\u001FDependency\"",
@@ -23303,13 +23303,7 @@
           ]
         }
       ],
-      "undoAll": "40 undone; the original text is NOT back",
-      "undoAllLeaves": {
-        "hunks": [
-          "@1 -1 +\"title Tea Shop\\r\\n\""
-        ],
-        "sha256": "95e38725759db6737d838968854c3ea23681ac439837737b75d3ee2a8e1a9c12"
-      },
+      "undoAll": "40 undone; the original text is back",
       "identitiesAfterUndoAll": [
         "new-1 | component | \"Business\"",
         "new-2 | component | \"Public\"",

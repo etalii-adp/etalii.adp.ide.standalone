@@ -72,10 +72,9 @@
           "do": "commit shacl.add-node-shape on new:240,160 = \"<http://example.org/parity>\"",
           "answer": "ok",
           "hunks": [
-            "@1 -1 +\"# B5: a body that starts with a byte-order mark and holds a Cyrillic literal before an edit point.\\r\\n\"",
             "@8 -0 +\"\\r\\nex:parity a <http://www.w3.org/ns/shacl#NodeShape> .\\r\\n\""
           ],
-          "sha256": "c55dea00694712aae08cd29ac9e18fdf1d179f6570465f43bc1b4d219cb38d2e"
+          "sha256": "9d3884b341c87faced7db929f782c6d444032b515aac09088603a199e9241e26"
         },
         {
           "do": "execute rdf.add-resource on new:240,160",
@@ -88,7 +87,7 @@
           "hunks": [
             "@9 -1 +\"ex:parity a <http://www.w3.org/ns/shacl#NodeShape> ;\\r\\n    a rdfs:Resource .\\r\\n\""
           ],
-          "sha256": "ced0a8413c125e179f00751b44d4a0f5e9d55addb88f73b5ae9fe4515e2f2161"
+          "sha256": "a330602eadde3802ac420b24229c54e0b873ed4901cbd2877e44ae8b087cae23"
         },
         {
           "do": "execute rdf.add-prefix on new:240,160",
@@ -101,16 +100,10 @@
           "hunks": [
             "@4 -0 +\"@prefix parity: <http://example.org/parity#> .\\r\\n\""
           ],
-          "sha256": "537800f9c72c22949e4a86e0b4dd13d0a1a8b87bc4dd2df9c9ee609760f2040e"
+          "sha256": "0a28bf34a4a7b9510426415006b588e3bac0f96fd475031464c41d6fe8c14f3e"
         }
       ],
-      "undoAll": "3 undone; the original text is NOT back",
-      "undoAllLeaves": {
-        "hunks": [
-          "@1 -1 +\"# B5: a body that starts with a byte-order mark and holds a Cyrillic literal before an edit point.\\r\\n\""
-        ],
-        "sha256": "d4d162ef4884c749c6dd6647429fee584104f8f364a0eec0539d98b7187da265"
-      }
+      "undoAll": "3 undone; the original text is back"
     },
     {
       "document": "diagrams/rdf/backend/EtAlii.Adp.Diagram.Rdf.Tests/Fixtures/constructs.ttl",
