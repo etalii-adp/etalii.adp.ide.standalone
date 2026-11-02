@@ -49,7 +49,7 @@ public class C4SessionUpdateViewOnTheRealCorpusTests : IDisposable
     private readonly TestFolder _testFolder = TestFolder.Create("adp-c4-wedge");
     private readonly string _root;
     private readonly C4DocumentStore _documents = new(new FileWriter());
-    private readonly C4ElementMapper _mapper = new(C4Metrics.Default, new C4LayoutSidecar(new FileWriter()));
+    private readonly C4ElementMapper _mapper = new(C4Metrics.Default, new C4Positions(new FileWriter()));
     private readonly IHistoryStackStore _historyStacks = new ServiceCollection()
         .AddCommands()
         .AddHierarchyCommandHandlers()

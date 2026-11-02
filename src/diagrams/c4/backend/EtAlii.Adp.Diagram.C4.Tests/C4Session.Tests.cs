@@ -1,3 +1,4 @@
+using EtAlii.Adp.Diagram.C4.Tests.Parity;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
@@ -17,7 +18,7 @@ public class C4SessionTests : IDisposable
     private readonly TestFolder _testFolder = TestFolder.Create("c4-session");
     private readonly string _root;
     private readonly C4DocumentStore _documents = new(new FileWriter());
-    private readonly C4ElementMapper _mapper = new(C4Metrics.Default, new C4LayoutSidecar(new FileWriter()));
+    private readonly C4ElementMapper _mapper = new(C4Metrics.Default, new C4Positions(new FileWriter()));
     private readonly IHistoryStackStore _historyStacks = new ServiceCollection().AddCommands().AddHierarchyCommandHandlers().AddC4().BuildServiceProvider().GetRequiredService<IHistoryStackStore>();
 
     public C4SessionTests()

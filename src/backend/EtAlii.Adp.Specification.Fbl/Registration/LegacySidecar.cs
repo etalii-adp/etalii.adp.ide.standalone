@@ -12,7 +12,7 @@ namespace EtAlii.Adp.Specification.Fbl.Registration;
 /// (FBL 0.12). It is read when the registration has no matching block and written back by json splices
 /// while it exists; this library never creates one.
 /// </summary>
-internal sealed class LegacySidecar : SplicedFile
+public sealed class LegacySidecar : SplicedFile
 {
     private static readonly FblBinding _json = new()
     {
@@ -116,7 +116,7 @@ internal sealed class LegacySidecar : SplicedFile
     /// before it, or after it for the first; a wanted id the file does not hold is a new entry after the array's last item,
     /// laid out as that item is, its texts written with RFC 8785's escapes. An entry of any other kind is kept as written.
     /// </summary>
-    public PlanResult PlanIdentities(IReadOnlyCollection<LegacyIdentity> wanted, IReadOnlySet<string> kinds)
+    internal PlanResult PlanIdentities(IReadOnlyCollection<LegacyIdentity> wanted, IReadOnlySet<string> kinds)
     {
         ArgumentNullException.ThrowIfNull(wanted);
         ArgumentNullException.ThrowIfNull(kinds);

@@ -35,7 +35,7 @@ reference/
 ```
 
 **The `.dsl` is the model.** It is Structurizr DSL — a format ADP does not own — so ADP edits it
-by the line and keeps everything it does not model, comments included, byte for byte.
+by splices through its FBL binding and keeps everything it does not model, comments included, byte for byte.
 
 **The `.adp` files are the diagrams.** Each is three lines at most: a MIME type, an optional
 `body:` naming the model it opens, and an optional `view:` naming which view within it.
@@ -46,8 +46,11 @@ own name. Deleting or renaming *that* file takes the model with it; deleting any
 removes only that diagram. This is worth knowing before you tidy up a project.
 
 **The `.layout.json` is ADP's.** Positions belong to a view, and views belong to a model, so one
-sidecar sits beside the `.dsl` and holds them all. It is an optimisation and never a dependency:
-delete it and every diagram still opens, laid out by the engine instead.
+sidecar sits beside the `.dsl` and holds them all. ADP reads and writes it as FBL 8.7 says, by
+splices and only while it exists: a project without one keeps each view's positions in the
+`layout:` block of the `.adp` that opens the view, and no sidecar is ever created. It is an
+optimisation and never a dependency: delete it and every diagram still opens, laid out by the
+engine instead.
 
 ## Both models are certified, not just plausible
 

@@ -31,7 +31,7 @@ public static class ServiceCollectionAddC4Extension
         services.AddSingleton<ICommandHandler<SetRelationshipDescriptionCommand>, SetRelationshipDescriptionCommandHandler>();
         services.AddSingleton<ICommandHandler<SetRelationshipTechnologyCommand>, SetRelationshipTechnologyCommandHandler>();
         services.AddSingleton<ICommandHandler<MoveC4ElementCommand>, MoveC4ElementCommandHandler>();
-        services.AddSingleton<ICommandHandler<RestoreC4ElementPositionCommand>, RestoreC4ElementPositionCommandHandler>();
+        services.AddSingleton<ICommandHandler<RestoreC4LayoutCommand>, RestoreC4LayoutCommandHandler>();
         services.AddSingleton<ICommandHandler<AddC4ViewCommand>, AddC4ViewCommandHandler>();
         services.AddSingleton<ICommandHandler<AddC4ElementCommand>, AddC4ElementCommandHandler>();
         services.AddSingleton<ICommandHandler<RemoveC4ElementCommand>, RemoveC4ElementCommandHandler>();
@@ -49,8 +49,8 @@ public static class ServiceCollectionAddC4Extension
         // so they must share the instance that holds it (Requirement 1.2).
         services.TryAddSingleton<IC4DocumentStore, C4DocumentStore>();
         services.TryAddSingleton(C4Metrics.Default);
-        services.TryAddSingleton<C4LayoutSidecar>();
-        services.TryAddSingleton(provider => new C4ElementMapper(provider.GetRequiredService<C4Metrics>(), provider.GetRequiredService<C4LayoutSidecar>()));
+        services.TryAddSingleton<C4Positions>();
+        services.TryAddSingleton(provider => new C4ElementMapper(provider.GetRequiredService<C4Metrics>(), provider.GetRequiredService<C4Positions>()));
 
         // Each type and the view kind it binds, from the table that also names its definition.
         foreach ((ToolOrigin origin, C4ViewKind viewKind, string _) in C4Definitions.Types)

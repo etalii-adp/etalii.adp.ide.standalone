@@ -2,7 +2,7 @@ using System.Text.Json;
 using EtAlii.Adp.Files;
 using Serilog;
 
-namespace EtAlii.Adp.Diagram.C4;
+namespace EtAlii.Adp.Diagram.C4.Tests.Parity;
 
 /// <summary>
 /// Where ADP keeps the positions a user arranged by hand. A sidecar rather than the `.dsl`,
@@ -80,28 +80,6 @@ public sealed class C4LayoutSidecar(IFileWriter writer)
         }
 
         view[elementId] = position;
-        return await PersistAsync(bodyPath, all, cancellationToken);
-    }
-
-    /// <summary>Forgets one element's authored position, handing it back to the layout.</summary>
-    public async Task<string> RemoveAsync(string bodyPath, string viewKey, string elementId, CancellationToken cancellationToken)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(bodyPath);
-        ArgumentNullException.ThrowIfNull(viewKey);
-        ArgumentException.ThrowIfNullOrWhiteSpace(elementId);
-
-        if (!TryReadAllForModify(bodyPath, out var all))
-        {
-            // False here means the sidecar exists and could not be read - a missing one
-            // reads as an empty layout and succeeds - so the change is not going to land.
-            return Unreadable(bodyPath);
-        }
-
-        foreach (var view in all.Values)
-        {
-            view.Remove(elementId);
-        }
-
         return await PersistAsync(bodyPath, all, cancellationToken);
     }
 

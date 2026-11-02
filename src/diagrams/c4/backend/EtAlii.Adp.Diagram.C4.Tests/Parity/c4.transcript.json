@@ -339,6 +339,12 @@
       ],
       "edits": [
         {
+          "do": "register view \"AmazonWebServicesDeployment\" as parity-move-0.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-0.adp": "c4/deployment\nbody: aws-deployment.dsl\nview: AmazonWebServicesDeployment\n"
+        },
+        {
           "do": "move route53 on view \"AmazonWebServicesDeployment\" to 224, 236.89999999999998",
           "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
           "unchanged": true
@@ -1849,9 +1855,21 @@
       ],
       "edits": [
         {
+          "do": "register view \"SystemLandscape\" as parity-move-0.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-0.adp": "c4/system-landscape\nbody: big-bank-plc.dsl\nview: SystemLandscape\n"
+        },
+        {
           "do": "move customer on view \"SystemLandscape\" to 40, 584.9000000000001",
           "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
           "unchanged": true
+        },
+        {
+          "do": "register view \"SystemContext\" as parity-move-1.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-1.adp": "c4/context\nbody: big-bank-plc.dsl\nview: SystemContext\n"
         },
         {
           "do": "move customer on view \"SystemContext\" to 40, 584.9000000000001",
@@ -1859,9 +1877,21 @@
           "unchanged": true
         },
         {
+          "do": "register view \"Containers\" as parity-move-2.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-2.adp": "c4/container\nbody: big-bank-plc.dsl\nview: Containers\n"
+        },
+        {
           "do": "move customer on view \"Containers\" to 40, -120.69999999999999",
           "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
           "unchanged": true
+        },
+        {
+          "do": "register view \"Components\" as parity-move-3.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-3.adp": "c4/component\nbody: big-bank-plc.dsl\nview: Components\n"
         },
         {
           "do": "move customer on view \"Components\" to -442, 594.7",
@@ -1869,9 +1899,21 @@
           "unchanged": true
         },
         {
+          "do": "register view \"SignIn\" as parity-move-4.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-4.adp": "c4/dynamic\nbody: big-bank-plc.dsl\nview: SignIn\n"
+        },
+        {
           "do": "move singlePageApplication on view \"SignIn\" to 40, 89.3",
           "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
           "unchanged": true
+        },
+        {
+          "do": "register view \"LiveDeployment\" as parity-move-5.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-5.adp": "c4/deployment\nbody: big-bank-plc.dsl\nview: LiveDeployment\n"
         },
         {
           "do": "move containerinstance_mobileApp_2 on view \"LiveDeployment\" to 192, 417.3",
@@ -2915,70 +2957,52 @@
       ],
       "edits": [
         {
+          "do": "register view \"context\" as parity-move-0.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-0.adp": "c4/context\nbody: comments-everywhere.dsl\nview: context\n"
+        },
+        {
           "do": "move u on view \"context\" to -70, 59.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@1 -0 +\"{\\n  \\\"context\\\": {\\n    \\\"u\\\": {\\n      \\\"x\\\": -70,\\n      \\\"y\\\": 59.9\\n    }\\n  }\\n}\""
-            ],
-            "sha256": "f91b3025372d26361dbaea95f50e69aba58054cf2e8df5d86faf70d227b78f35"
-          }
+          "writes parity-move-0.adp": "c4/context\nbody: comments-everywhere.dsl\nview: context\nlayout:\n  u: -70 59.9\n"
         },
         {
           "do": "undo move u on view \"context\" to -70, 59.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -6 +\"  \\\"context\\\": {}\\n\""
-            ],
-            "sha256": "18cc83779d09bae08344c128e12b0e43594a4f45a901b7e9d36d3b76ef1fb47f"
-          }
+          "writes parity-move-0.adp": "c4/context\nbody: comments-everywhere.dsl\nview: context\n"
         },
         {
           "do": "redo move u on view \"context\" to -70, 59.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -1 +\"  \\\"context\\\": {\\n    \\\"u\\\": {\\n      \\\"x\\\": -70,\\n      \\\"y\\\": 59.9\\n    }\\n  }\\n\""
-            ],
-            "sha256": "f91b3025372d26361dbaea95f50e69aba58054cf2e8df5d86faf70d227b78f35"
-          }
+          "writes parity-move-0.adp": "c4/context\nbody: comments-everywhere.dsl\nview: context\nlayout:\n  u: -70 59.9\n"
+        },
+        {
+          "do": "register view \"containers\" as parity-move-1.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-1.adp": "c4/container\nbody: comments-everywhere.dsl\nview: containers\n"
         },
         {
           "do": "move u on view \"containers\" to 40, 59.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@7 -0 +\"  },\\n  \\\"containers\\\": {\\n    \\\"u\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 59.9\\n    }\\n\""
-            ],
-            "sha256": "bd03d2d058068a3736492b100c227c289d1997b64f97cbd3f2cc8d1958d40990"
-          }
+          "writes parity-move-1.adp": "c4/container\nbody: comments-everywhere.dsl\nview: containers\nlayout:\n  u: 40 59.9\n"
         },
         {
           "do": "undo move u on view \"containers\" to 40, 59.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -12 +\"  \\\"context\\\": {},\\n  \\\"containers\\\": {}\\n\""
-            ],
-            "sha256": "6e2fcd806d29427ecbd1e6ae2a767c62c3754be614addba5e0f70fd55cedaa50"
-          }
+          "writes parity-move-1.adp": "c4/container\nbody: comments-everywhere.dsl\nview: containers\n"
         },
         {
           "do": "redo move u on view \"containers\" to 40, 59.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@3 -1 +\"  \\\"containers\\\": {\\n    \\\"u\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 59.9\\n    }\\n  }\\n\""
-            ],
-            "sha256": "e574fa4e6de29a3b8edbaf167fc8c5ded357bff4ad9879a8f1984819dbfefbb6"
-          }
+          "writes parity-move-1.adp": "c4/container\nbody: comments-everywhere.dsl\nview: containers\nlayout:\n  u: 40 59.9\n"
         },
         {
           "do": "move parity:unknown on view \"context\" to 10, 10",
@@ -3692,37 +3716,28 @@
       ],
       "edits": [
         {
+          "do": "register view \"context\" as parity-move-0.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-0.adp": "c4/context\nbody: crlf-line-endings.dsl\nview: context\n"
+        },
+        {
           "do": "move u on view \"context\" to 40, 50.1",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@1 -0 +\"{\\n  \\\"context\\\": {\\n    \\\"u\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 50.1\\n    }\\n  }\\n}\""
-            ],
-            "sha256": "00f1663b06d02a3176c01647d307c3e5d7ce625089ee09c91879a048c2fa007f"
-          }
+          "writes parity-move-0.adp": "c4/context\nbody: crlf-line-endings.dsl\nview: context\nlayout:\n  u: 40 50.1\n"
         },
         {
           "do": "undo move u on view \"context\" to 40, 50.1",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -6 +\"  \\\"context\\\": {}\\n\""
-            ],
-            "sha256": "18cc83779d09bae08344c128e12b0e43594a4f45a901b7e9d36d3b76ef1fb47f"
-          }
+          "writes parity-move-0.adp": "c4/context\nbody: crlf-line-endings.dsl\nview: context\n"
         },
         {
           "do": "redo move u on view \"context\" to 40, 50.1",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -1 +\"  \\\"context\\\": {\\n    \\\"u\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 50.1\\n    }\\n  }\\n\""
-            ],
-            "sha256": "00f1663b06d02a3176c01647d307c3e5d7ce625089ee09c91879a048c2fa007f"
-          }
+          "writes parity-move-0.adp": "c4/context\nbody: crlf-line-endings.dsl\nview: context\nlayout:\n  u: 40 50.1\n"
         },
         {
           "do": "move parity:unknown on view \"context\" to 10, 10",
@@ -5767,9 +5782,21 @@
       ],
       "edits": [
         {
+          "do": "register view \"Landscape\" as parity-move-0.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-0.adp": "c4/system-landscape\nbody: crowded-component-view.dsl\nview: Landscape\n"
+        },
+        {
           "do": "move operator on view \"Landscape\" to -560, 79.5",
           "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
           "unchanged": true
+        },
+        {
+          "do": "register view \"SystemContext\" as parity-move-1.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-1.adp": "c4/context\nbody: crowded-component-view.dsl\nview: SystemContext\n"
         },
         {
           "do": "move operator on view \"SystemContext\" to -560, 79.5",
@@ -5777,9 +5804,21 @@
           "unchanged": true
         },
         {
+          "do": "register view \"Containers\" as parity-move-2.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-2.adp": "c4/container\nbody: crowded-component-view.dsl\nview: Containers\n"
+        },
+        {
           "do": "move operator on view \"Containers\" to 160, -694.1",
           "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
           "unchanged": true
+        },
+        {
+          "do": "register view \"OrderServiceComponents\" as parity-move-3.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-3.adp": "c4/component\nbody: crowded-component-view.dsl\nview: OrderServiceComponents\n"
         },
         {
           "do": "move operator on view \"OrderServiceComponents\" to 160, -404.9",
@@ -5787,9 +5826,21 @@
           "unchanged": true
         },
         {
+          "do": "register view \"BatchRelease\" as parity-move-4.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-4.adp": "c4/dynamic\nbody: crowded-component-view.dsl\nview: BatchRelease\n"
+        },
+        {
           "do": "move opcGateway on view \"BatchRelease\" to 160, 20.5",
           "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
           "unchanged": true
+        },
+        {
+          "do": "register view \"PlantDeployment\" as parity-move-5.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-5.adp": "c4/deployment\nbody: crowded-component-view.dsl\nview: PlantDeployment\n"
         },
         {
           "do": "move plcRuntime on view \"PlantDeployment\" to 224, 1433.3",
@@ -7045,6 +7096,12 @@
       ],
       "edits": [
         {
+          "do": "register view \"production\" as parity-move-0.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-0.adp": "c4/deployment\nbody: deployment-nested.dsl\nview: production\n"
+        },
+        {
           "do": "move dns on view \"production\" to 258.45, 82.1",
           "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
           "unchanged": true
@@ -7996,6 +8053,12 @@
       ],
       "edits": [
         {
+          "do": "register view \"signup\" as parity-move-0.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-0.adp": "c4/dynamic\nbody: dynamic-interactions.dsl\nview: signup\n"
+        },
+        {
           "do": "move u on view \"signup\" to 120, 20.5",
           "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
           "unchanged": true
@@ -8712,37 +8775,28 @@
       ],
       "edits": [
         {
+          "do": "register view \"context\" as parity-move-0.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-0.adp": "c4/context\nbody: lf-line-endings.dsl\nview: context\n"
+        },
+        {
           "do": "move u on view \"context\" to 40, 50.1",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@1 -0 +\"{\\n  \\\"context\\\": {\\n    \\\"u\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 50.1\\n    }\\n  }\\n}\""
-            ],
-            "sha256": "00f1663b06d02a3176c01647d307c3e5d7ce625089ee09c91879a048c2fa007f"
-          }
+          "writes parity-move-0.adp": "c4/context\nbody: lf-line-endings.dsl\nview: context\nlayout:\n  u: 40 50.1\n"
         },
         {
           "do": "undo move u on view \"context\" to 40, 50.1",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -6 +\"  \\\"context\\\": {}\\n\""
-            ],
-            "sha256": "18cc83779d09bae08344c128e12b0e43594a4f45a901b7e9d36d3b76ef1fb47f"
-          }
+          "writes parity-move-0.adp": "c4/context\nbody: lf-line-endings.dsl\nview: context\n"
         },
         {
           "do": "redo move u on view \"context\" to 40, 50.1",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -1 +\"  \\\"context\\\": {\\n    \\\"u\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 50.1\\n    }\\n  }\\n\""
-            ],
-            "sha256": "00f1663b06d02a3176c01647d307c3e5d7ce625089ee09c91879a048c2fa007f"
-          }
+          "writes parity-move-0.adp": "c4/context\nbody: lf-line-endings.dsl\nview: context\nlayout:\n  u: 40 50.1\n"
         },
         {
           "do": "move parity:unknown on view \"context\" to 10, 10",
@@ -9314,6 +9368,12 @@
         }
       ],
       "edits": [
+        {
+          "do": "register view \"context\" as parity-move-0.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-0.adp": "c4/context\nbody: minimal.dsl\nview: context\n"
+        },
         {
           "do": "move u on view \"context\" to 120, 20.5",
           "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
@@ -9890,37 +9950,28 @@
       ],
       "edits": [
         {
+          "do": "register view \"context\" as parity-move-0.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-0.adp": "c4/context\nbody: no-trailing-newline.dsl\nview: context\n"
+        },
+        {
           "do": "move u on view \"context\" to 40, 50.1",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@1 -0 +\"{\\n  \\\"context\\\": {\\n    \\\"u\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 50.1\\n    }\\n  }\\n}\""
-            ],
-            "sha256": "00f1663b06d02a3176c01647d307c3e5d7ce625089ee09c91879a048c2fa007f"
-          }
+          "writes parity-move-0.adp": "c4/context\nbody: no-trailing-newline.dsl\nview: context\nlayout:\n  u: 40 50.1\n"
         },
         {
           "do": "undo move u on view \"context\" to 40, 50.1",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -6 +\"  \\\"context\\\": {}\\n\""
-            ],
-            "sha256": "18cc83779d09bae08344c128e12b0e43594a4f45a901b7e9d36d3b76ef1fb47f"
-          }
+          "writes parity-move-0.adp": "c4/context\nbody: no-trailing-newline.dsl\nview: context\n"
         },
         {
           "do": "redo move u on view \"context\" to 40, 50.1",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -1 +\"  \\\"context\\\": {\\n    \\\"u\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 50.1\\n    }\\n  }\\n\""
-            ],
-            "sha256": "00f1663b06d02a3176c01647d307c3e5d7ce625089ee09c91879a048c2fa007f"
-          }
+          "writes parity-move-0.adp": "c4/context\nbody: no-trailing-newline.dsl\nview: context\nlayout:\n  u: 40 50.1\n"
         },
         {
           "do": "move parity:unknown on view \"context\" to 10, 10",
@@ -10510,37 +10561,28 @@
       ],
       "edits": [
         {
+          "do": "register view \"context\" as parity-move-0.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-0.adp": "c4/context\nbody: unmodelled-constructs.dsl\nview: context\n"
+        },
+        {
           "do": "move u on view \"context\" to 40, 50.1",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@1 -0 +\"{\\n  \\\"context\\\": {\\n    \\\"u\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 50.1\\n    }\\n  }\\n}\""
-            ],
-            "sha256": "00f1663b06d02a3176c01647d307c3e5d7ce625089ee09c91879a048c2fa007f"
-          }
+          "writes parity-move-0.adp": "c4/context\nbody: unmodelled-constructs.dsl\nview: context\nlayout:\n  u: 40 50.1\n"
         },
         {
           "do": "undo move u on view \"context\" to 40, 50.1",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -6 +\"  \\\"context\\\": {}\\n\""
-            ],
-            "sha256": "18cc83779d09bae08344c128e12b0e43594a4f45a901b7e9d36d3b76ef1fb47f"
-          }
+          "writes parity-move-0.adp": "c4/context\nbody: unmodelled-constructs.dsl\nview: context\n"
         },
         {
           "do": "redo move u on view \"context\" to 40, 50.1",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -1 +\"  \\\"context\\\": {\\n    \\\"u\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 50.1\\n    }\\n  }\\n\""
-            ],
-            "sha256": "00f1663b06d02a3176c01647d307c3e5d7ce625089ee09c91879a048c2fa007f"
-          }
+          "writes parity-move-0.adp": "c4/context\nbody: unmodelled-constructs.dsl\nview: context\nlayout:\n  u: 40 50.1\n"
         },
         {
           "do": "move parity:unknown on view \"context\" to 10, 10",
@@ -11261,37 +11303,28 @@
       ],
       "edits": [
         {
+          "do": "register view \"context\" as parity-move-0.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-0.adp": "c4/context\nbody: unusual-indentation.dsl\nview: context\n"
+        },
+        {
           "do": "move u on view \"context\" to 40, 50.1",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@1 -0 +\"{\\n  \\\"context\\\": {\\n    \\\"u\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 50.1\\n    }\\n  }\\n}\""
-            ],
-            "sha256": "00f1663b06d02a3176c01647d307c3e5d7ce625089ee09c91879a048c2fa007f"
-          }
+          "writes parity-move-0.adp": "c4/context\nbody: unusual-indentation.dsl\nview: context\nlayout:\n  u: 40 50.1\n"
         },
         {
           "do": "undo move u on view \"context\" to 40, 50.1",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -6 +\"  \\\"context\\\": {}\\n\""
-            ],
-            "sha256": "18cc83779d09bae08344c128e12b0e43594a4f45a901b7e9d36d3b76ef1fb47f"
-          }
+          "writes parity-move-0.adp": "c4/context\nbody: unusual-indentation.dsl\nview: context\n"
         },
         {
           "do": "redo move u on view \"context\" to 40, 50.1",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -1 +\"  \\\"context\\\": {\\n    \\\"u\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 50.1\\n    }\\n  }\\n\""
-            ],
-            "sha256": "00f1663b06d02a3176c01647d307c3e5d7ce625089ee09c91879a048c2fa007f"
-          }
+          "writes parity-move-0.adp": "c4/context\nbody: unusual-indentation.dsl\nview: context\nlayout:\n  u: 40 50.1\n"
         },
         {
           "do": "move parity:unknown on view \"context\" to 10, 10",
@@ -12013,9 +12046,21 @@
       ],
       "edits": [
         {
+          "do": "register view \"auto\" as parity-move-0.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-0.adp": "c4/system-landscape\nbody: autolayout-ignores-positions.dsl\nview: auto\n"
+        },
+        {
           "do": "move a on view \"auto\" to 120, 20.5",
           "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
           "unchanged": true
+        },
+        {
+          "do": "register view \"manual\" as parity-move-1.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-1.adp": "c4/system-landscape\nbody: autolayout-ignores-positions.dsl\nview: manual\n"
         },
         {
           "do": "move a on view \"manual\" to 130, 79.9",
@@ -12023,10 +12068,9 @@
           "unchanged": true,
           "sidecar": {
             "hunks": [
-              "@10 -2 +\"      \\\"x\\\": 130,\\n      \\\"y\\\": 79.9\\n\"",
-              "@14 -1 +\"}\""
+              "@10 -2 +\"      \\\"x\\\": 130,\\n      \\\"y\\\": 79.9\\n\""
             ],
-            "sha256": "9f04b54dfe56c809df1645b9d2f5108433d4b60650875d1bb3adf8b4c5aa2236"
+            "sha256": "e9297489206ca92abd8d13fc8f1eb93a6d92e8b91dca24e160e29b2a2e99ab54"
           }
         },
         {
@@ -12037,7 +12081,7 @@
             "hunks": [
               "@10 -2 +\"      \\\"x\\\": 10,\\n      \\\"y\\\": 20\\n\""
             ],
-            "sha256": "f19bfe5bf6f2460e549acc6a40692c057bf50ffa7cdf2d41128492822d63940f"
+            "sha256": "1f4842afedcee42dd003012268b1c3ee71297ac138d229e0c60589f459ad7399"
           }
         },
         {
@@ -12048,7 +12092,7 @@
             "hunks": [
               "@10 -2 +\"      \\\"x\\\": 130,\\n      \\\"y\\\": 79.9\\n\""
             ],
-            "sha256": "9f04b54dfe56c809df1645b9d2f5108433d4b60650875d1bb3adf8b4c5aa2236"
+            "sha256": "e9297489206ca92abd8d13fc8f1eb93a6d92e8b91dca24e160e29b2a2e99ab54"
           }
         },
         {
@@ -12531,37 +12575,28 @@
       ],
       "edits": [
         {
+          "do": "register view \"landscape\" as parity-move-0.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-0.adp": "c4/system-landscape\nbody: block-comments.dsl\nview: landscape\n"
+        },
+        {
           "do": "move t on view \"landscape\" to 40, 457.5",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@1 -0 +\"{\\n  \\\"landscape\\\": {\\n    \\\"t\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 457.5\\n    }\\n  }\\n}\""
-            ],
-            "sha256": "d2d8610300bf05a089c394967becc9c7b6fb0964c5197d70e639f11893ede00b"
-          }
+          "writes parity-move-0.adp": "c4/system-landscape\nbody: block-comments.dsl\nview: landscape\nlayout:\n  t: 40 457.5\n"
         },
         {
           "do": "undo move t on view \"landscape\" to 40, 457.5",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -6 +\"  \\\"landscape\\\": {}\\n\""
-            ],
-            "sha256": "881c8f933b0bcd7fb3882ea4f47ee2b1a2ece6cf2c01b9e16d52d710b027687d"
-          }
+          "writes parity-move-0.adp": "c4/system-landscape\nbody: block-comments.dsl\nview: landscape\n"
         },
         {
           "do": "redo move t on view \"landscape\" to 40, 457.5",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -1 +\"  \\\"landscape\\\": {\\n    \\\"t\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 457.5\\n    }\\n  }\\n\""
-            ],
-            "sha256": "d2d8610300bf05a089c394967becc9c7b6fb0964c5197d70e639f11893ede00b"
-          }
+          "writes parity-move-0.adp": "c4/system-landscape\nbody: block-comments.dsl\nview: landscape\nlayout:\n  t: 40 457.5\n"
         },
         {
           "do": "move parity:unknown on view \"landscape\" to 10, 10",
@@ -13164,37 +13199,28 @@
       ],
       "edits": [
         {
+          "do": "register view \"context\" as parity-move-0.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-0.adp": "c4/context\nbody: dangling-both-ends.dsl\nview: context\n"
+        },
+        {
           "do": "move u on view \"context\" to 40, 59.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@1 -0 +\"{\\n  \\\"context\\\": {\\n    \\\"u\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 59.9\\n    }\\n  }\\n}\""
-            ],
-            "sha256": "ef90afcf919bfe6aa8f4e8a5181191f7fc35b5e27e46d728ff45cd9b12740221"
-          }
+          "writes parity-move-0.adp": "c4/context\nbody: dangling-both-ends.dsl\nview: context\nlayout:\n  u: 40 59.9\n"
         },
         {
           "do": "undo move u on view \"context\" to 40, 59.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -6 +\"  \\\"context\\\": {}\\n\""
-            ],
-            "sha256": "18cc83779d09bae08344c128e12b0e43594a4f45a901b7e9d36d3b76ef1fb47f"
-          }
+          "writes parity-move-0.adp": "c4/context\nbody: dangling-both-ends.dsl\nview: context\n"
         },
         {
           "do": "redo move u on view \"context\" to 40, 59.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -1 +\"  \\\"context\\\": {\\n    \\\"u\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 59.9\\n    }\\n  }\\n\""
-            ],
-            "sha256": "ef90afcf919bfe6aa8f4e8a5181191f7fc35b5e27e46d728ff45cd9b12740221"
-          }
+          "writes parity-move-0.adp": "c4/context\nbody: dangling-both-ends.dsl\nview: context\nlayout:\n  u: 40 59.9\n"
         },
         {
           "do": "move parity:unknown on view \"context\" to 10, 10",
@@ -13779,37 +13805,28 @@
       ],
       "edits": [
         {
+          "do": "register view \"context\" as parity-move-0.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-0.adp": "c4/context\nbody: escaped-quote.dsl\nview: context\n"
+        },
+        {
           "do": "move u on view \"context\" to 40, 59.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@1 -0 +\"{\\n  \\\"context\\\": {\\n    \\\"u\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 59.9\\n    }\\n  }\\n}\""
-            ],
-            "sha256": "ef90afcf919bfe6aa8f4e8a5181191f7fc35b5e27e46d728ff45cd9b12740221"
-          }
+          "writes parity-move-0.adp": "c4/context\nbody: escaped-quote.dsl\nview: context\nlayout:\n  u: 40 59.9\n"
         },
         {
           "do": "undo move u on view \"context\" to 40, 59.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -6 +\"  \\\"context\\\": {}\\n\""
-            ],
-            "sha256": "18cc83779d09bae08344c128e12b0e43594a4f45a901b7e9d36d3b76ef1fb47f"
-          }
+          "writes parity-move-0.adp": "c4/context\nbody: escaped-quote.dsl\nview: context\n"
         },
         {
           "do": "redo move u on view \"context\" to 40, 59.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -1 +\"  \\\"context\\\": {\\n    \\\"u\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 59.9\\n    }\\n  }\\n\""
-            ],
-            "sha256": "ef90afcf919bfe6aa8f4e8a5181191f7fc35b5e27e46d728ff45cd9b12740221"
-          }
+          "writes parity-move-0.adp": "c4/context\nbody: escaped-quote.dsl\nview: context\nlayout:\n  u: 40 59.9\n"
         },
         {
           "do": "move parity:unknown on view \"context\" to 10, 10",
@@ -14525,103 +14542,76 @@
       ],
       "edits": [
         {
+          "do": "register view \"lost\" as parity-move-0.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-0.adp": "c4/context\nbody: finding-order.dsl\nview: lost\n"
+        },
+        {
           "do": "move p on view \"lost\" to -180, 59.900000000000006",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@1 -0 +\"{\\n  \\\"lost\\\": {\\n    \\\"p\\\": {\\n      \\\"x\\\": -180,\\n      \\\"y\\\": 59.900000000000006\\n    }\\n  }\\n}\""
-            ],
-            "sha256": "cd0f1eb26e1f46c423e818cadc31ef3e427b772f5ead249b1b374afdd22c08f3"
-          }
+          "writes parity-move-0.adp": "c4/context\nbody: finding-order.dsl\nview: lost\nlayout:\n  p: -180 59.9\n"
         },
         {
           "do": "undo move p on view \"lost\" to -180, 59.900000000000006",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -6 +\"  \\\"lost\\\": {}\\n\""
-            ],
-            "sha256": "b8ad9d8b05fb5c0bed9b6024a96870b62a9ad810e05b923bf06e384ce04534b1"
-          }
+          "writes parity-move-0.adp": "c4/context\nbody: finding-order.dsl\nview: lost\n"
         },
         {
           "do": "redo move p on view \"lost\" to -180, 59.900000000000006",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -1 +\"  \\\"lost\\\": {\\n    \\\"p\\\": {\\n      \\\"x\\\": -180,\\n      \\\"y\\\": 59.900000000000006\\n    }\\n  }\\n\""
-            ],
-            "sha256": "cd0f1eb26e1f46c423e818cadc31ef3e427b772f5ead249b1b374afdd22c08f3"
-          }
+          "writes parity-move-0.adp": "c4/context\nbody: finding-order.dsl\nview: lost\nlayout:\n  p: -180 59.9\n"
+        },
+        {
+          "do": "register view \"context\" as parity-move-1.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-1.adp": "c4/context\nbody: finding-order.dsl\nview: context\n"
         },
         {
           "do": "move c on view \"context\" to 40, 59.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@7 -0 +\"  },\\n  \\\"context\\\": {\\n    \\\"c\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 59.9\\n    }\\n\""
-            ],
-            "sha256": "13644e32bd7f54f34bc2131298399c5c95ccc9eba25ab6d0cde0dc0de716e81c"
-          }
+          "writes parity-move-1.adp": "c4/context\nbody: finding-order.dsl\nview: context\nlayout:\n  c: 40 59.9\n"
         },
         {
           "do": "undo move c on view \"context\" to 40, 59.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@8 -6 +\"  \\\"context\\\": {}\\n\""
-            ],
-            "sha256": "c3fdaf24e79797dcd20c255b47a1d116815dabcff42c7b73fd6f5e7a986861cb"
-          }
+          "writes parity-move-1.adp": "c4/context\nbody: finding-order.dsl\nview: context\n"
         },
         {
           "do": "redo move c on view \"context\" to 40, 59.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@8 -1 +\"  \\\"context\\\": {\\n    \\\"c\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 59.9\\n    }\\n  }\\n\""
-            ],
-            "sha256": "13644e32bd7f54f34bc2131298399c5c95ccc9eba25ab6d0cde0dc0de716e81c"
-          }
+          "writes parity-move-1.adp": "c4/context\nbody: finding-order.dsl\nview: context\nlayout:\n  c: 40 59.9\n"
+        },
+        {
+          "do": "register view \"live\" as parity-move-3.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-3.adp": "c4/deployment\nbody: finding-order.dsl\nview: live\n"
         },
         {
           "do": "move gw on view \"live\" to 164.85, 91.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@13 -0 +\"  },\\n  \\\"live\\\": {\\n    \\\"gw\\\": {\\n      \\\"x\\\": 164.85,\\n      \\\"y\\\": 91.9\\n    }\\n\""
-            ],
-            "sha256": "2e1b9311f8b136a7f0ef7f7b685e98f6276195c520d13d050ff1ead4ac1fa6d8"
-          }
+          "writes parity-move-3.adp": "c4/deployment\nbody: finding-order.dsl\nview: live\nlayout:\n  gw: 164.85 91.9\n"
         },
         {
           "do": "undo move gw on view \"live\" to 164.85, 91.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@14 -6 +\"  \\\"live\\\": {}\\n\""
-            ],
-            "sha256": "9e46bf7f6b8ea57ea9b18a4aed8c359ceb94262e1772ec78f840cca8ebf99f90"
-          }
+          "writes parity-move-3.adp": "c4/deployment\nbody: finding-order.dsl\nview: live\n"
         },
         {
           "do": "redo move gw on view \"live\" to 164.85, 91.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@14 -1 +\"  \\\"live\\\": {\\n    \\\"gw\\\": {\\n      \\\"x\\\": 164.85,\\n      \\\"y\\\": 91.9\\n    }\\n  }\\n\""
-            ],
-            "sha256": "2e1b9311f8b136a7f0ef7f7b685e98f6276195c520d13d050ff1ead4ac1fa6d8"
-          }
+          "writes parity-move-3.adp": "c4/deployment\nbody: finding-order.dsl\nview: live\nlayout:\n  gw: 164.85 91.9\n"
         },
         {
           "do": "move parity:unknown on view \"lost\" to 10, 10",
@@ -15752,15 +15742,20 @@
       ],
       "edits": [
         {
+          "do": "register view \"one\" as parity-move-0.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-0.adp": "c4/system-landscape\nbody: first-drag-undo.dsl\nview: one\n"
+        },
+        {
           "do": "move a on view \"one\" to 220, 109.9",
           "answer": "ok",
           "unchanged": true,
           "sidecar": {
             "hunks": [
-              "@4 -2 +\"      \\\"x\\\": 220,\\n      \\\"y\\\": 109.9\\n\"",
-              "@8 -1 +\"}\""
+              "@4 -2 +\"      \\\"x\\\": 220,\\n      \\\"y\\\": 109.9\\n\""
             ],
-            "sha256": "873d52f8bed920f72bd43445499ea81bbf8399b7f407fc67b1d8c0d98aa8dd6f"
+            "sha256": "681edb4e0796ca5ad49a6afd1e3051ffc886fc281bffb854222678414d178031"
           }
         },
         {
@@ -15771,7 +15766,7 @@
             "hunks": [
               "@4 -2 +\"      \\\"x\\\": 100,\\n      \\\"y\\\": 50\\n\""
             ],
-            "sha256": "4d7576c9a5bc1b767811fe0cadddd353fbd77251bea1b8d26a4b77b0148b3f13"
+            "sha256": "3f244771c1cfe1e915c3a8158490bed9b7864e050d418a06702e0ecee8fd055c"
           }
         },
         {
@@ -15782,8 +15777,14 @@
             "hunks": [
               "@4 -2 +\"      \\\"x\\\": 220,\\n      \\\"y\\\": 109.9\\n\""
             ],
-            "sha256": "873d52f8bed920f72bd43445499ea81bbf8399b7f407fc67b1d8c0d98aa8dd6f"
+            "sha256": "681edb4e0796ca5ad49a6afd1e3051ffc886fc281bffb854222678414d178031"
           }
+        },
+        {
+          "do": "register view \"two\" as parity-move-1.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-1.adp": "c4/system-landscape\nbody: first-drag-undo.dsl\nview: two\n"
         },
         {
           "do": "move a on view \"two\" to 40, 59.9",
@@ -15793,7 +15794,7 @@
             "hunks": [
               "@7 -0 +\"  },\\n  \\\"two\\\": {\\n    \\\"a\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 59.9\\n    }\\n\""
             ],
-            "sha256": "fd01d4d2bb4c8c76d0aa01c89e3d3f072dc179009398fda1460f83e9255e2eca"
+            "sha256": "19d02b671430f2d96f3a2c0dcb66fc981bc5d21c8f8f8511d86b3c1caf29c563"
           }
         },
         {
@@ -15802,9 +15803,9 @@
           "unchanged": true,
           "sidecar": {
             "hunks": [
-              "@2 -12 +\"  \\\"one\\\": {},\\n  \\\"two\\\": {}\\n\""
+              "@7 -6 +\"\""
             ],
-            "sha256": "e228edd743b2c58e2acc568de36bf987e5697891add8a6caf0188ad24ab3eac3"
+            "sha256": "681edb4e0796ca5ad49a6afd1e3051ffc886fc281bffb854222678414d178031"
           }
         },
         {
@@ -15813,9 +15814,9 @@
           "unchanged": true,
           "sidecar": {
             "hunks": [
-              "@3 -1 +\"  \\\"two\\\": {\\n    \\\"a\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 59.9\\n    }\\n  }\\n\""
+              "@7 -0 +\"  },\\n  \\\"two\\\": {\\n    \\\"a\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 59.9\\n    }\\n\""
             ],
-            "sha256": "2799a22167c61264402def870a6614929e12b2c6b19f521bdd3c787c8624acee"
+            "sha256": "19d02b671430f2d96f3a2c0dcb66fc981bc5d21c8f8f8511d86b3c1caf29c563"
           }
         },
         {
@@ -16360,70 +16361,52 @@
       ],
       "edits": [
         {
+          "do": "register view \"a\" as parity-move-0.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-0.adp": "c4/container\nbody: hierarchical-identifiers.dsl\nview: a\n"
+        },
+        {
           "do": "move u on view \"a\" to -180, 59.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@1 -0 +\"{\\n  \\\"a\\\": {\\n    \\\"u\\\": {\\n      \\\"x\\\": -180,\\n      \\\"y\\\": 59.9\\n    }\\n  }\\n}\""
-            ],
-            "sha256": "10639a71e60c232b8b030352d6dc3f99ee31cdb47b3b9f5d0070eeb733c7ee0c"
-          }
+          "writes parity-move-0.adp": "c4/container\nbody: hierarchical-identifiers.dsl\nview: a\nlayout:\n  u: -180 59.9\n"
         },
         {
           "do": "undo move u on view \"a\" to -180, 59.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -6 +\"  \\\"a\\\": {}\\n\""
-            ],
-            "sha256": "7f10d71c755659f646af274decc1dff1441fce64212c79ef3dc4686147716622"
-          }
+          "writes parity-move-0.adp": "c4/container\nbody: hierarchical-identifiers.dsl\nview: a\n"
         },
         {
           "do": "redo move u on view \"a\" to -180, 59.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -1 +\"  \\\"a\\\": {\\n    \\\"u\\\": {\\n      \\\"x\\\": -180,\\n      \\\"y\\\": 59.9\\n    }\\n  }\\n\""
-            ],
-            "sha256": "10639a71e60c232b8b030352d6dc3f99ee31cdb47b3b9f5d0070eeb733c7ee0c"
-          }
+          "writes parity-move-0.adp": "c4/container\nbody: hierarchical-identifiers.dsl\nview: a\nlayout:\n  u: -180 59.9\n"
+        },
+        {
+          "do": "register view \"b\" as parity-move-1.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-1.adp": "c4/container\nbody: hierarchical-identifiers.dsl\nview: b\n"
         },
         {
           "do": "move u on view \"b\" to -180, 59.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@7 -0 +\"  },\\n  \\\"b\\\": {\\n    \\\"u\\\": {\\n      \\\"x\\\": -180,\\n      \\\"y\\\": 59.9\\n    }\\n\""
-            ],
-            "sha256": "7e30e1fdd1a358d3543183c29ecd4e57687cdce39c302423eaeaf8055c0f7a5f"
-          }
+          "writes parity-move-1.adp": "c4/container\nbody: hierarchical-identifiers.dsl\nview: b\nlayout:\n  u: -180 59.9\n"
         },
         {
           "do": "undo move u on view \"b\" to -180, 59.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -12 +\"  \\\"a\\\": {},\\n  \\\"b\\\": {}\\n\""
-            ],
-            "sha256": "a789ceae957b37e855e99754f4ec906dc3af7bc96203997788397716f3bbc17f"
-          }
+          "writes parity-move-1.adp": "c4/container\nbody: hierarchical-identifiers.dsl\nview: b\n"
         },
         {
           "do": "redo move u on view \"b\" to -180, 59.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@3 -1 +\"  \\\"b\\\": {\\n    \\\"u\\\": {\\n      \\\"x\\\": -180,\\n      \\\"y\\\": 59.9\\n    }\\n  }\\n\""
-            ],
-            "sha256": "209becb5c859c691b8cd81e61d8e82cdad55113beee74c4ae3a964ef2cc4310d"
-          }
+          "writes parity-move-1.adp": "c4/container\nbody: hierarchical-identifiers.dsl\nview: b\nlayout:\n  u: -180 59.9\n"
         },
         {
           "do": "move parity:unknown on view \"a\" to 10, 10",
@@ -17136,37 +17119,28 @@
       ],
       "edits": [
         {
+          "do": "register view \"landscape\" as parity-move-0.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-0.adp": "c4/system-landscape\nbody: include-directive.dsl\nview: landscape\n"
+        },
+        {
           "do": "move u on view \"landscape\" to 40, 59.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@1 -0 +\"{\\n  \\\"landscape\\\": {\\n    \\\"u\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 59.9\\n    }\\n  }\\n}\""
-            ],
-            "sha256": "cf2639be9c2ed71d18a59ece02916387ea02091df66f2c83161a3d6c7f8133a6"
-          }
+          "writes parity-move-0.adp": "c4/system-landscape\nbody: include-directive.dsl\nview: landscape\nlayout:\n  u: 40 59.9\n"
         },
         {
           "do": "undo move u on view \"landscape\" to 40, 59.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -6 +\"  \\\"landscape\\\": {}\\n\""
-            ],
-            "sha256": "881c8f933b0bcd7fb3882ea4f47ee2b1a2ece6cf2c01b9e16d52d710b027687d"
-          }
+          "writes parity-move-0.adp": "c4/system-landscape\nbody: include-directive.dsl\nview: landscape\n"
         },
         {
           "do": "redo move u on view \"landscape\" to 40, 59.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -1 +\"  \\\"landscape\\\": {\\n    \\\"u\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 59.9\\n    }\\n  }\\n\""
-            ],
-            "sha256": "cf2639be9c2ed71d18a59ece02916387ea02091df66f2c83161a3d6c7f8133a6"
-          }
+          "writes parity-move-0.adp": "c4/system-landscape\nbody: include-directive.dsl\nview: landscape\nlayout:\n  u: 40 59.9\n"
         },
         {
           "do": "move parity:unknown on view \"landscape\" to 10, 10",
@@ -17826,70 +17800,52 @@
       ],
       "edits": [
         {
+          "do": "register view \"Context\" as parity-move-0.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-0.adp": "c4/context\nbody: lenient-spellings.dsl\nview: Context\n"
+        },
+        {
           "do": "move User on view \"Context\" to 40, 69.7",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@1 -0 +\"{\\n  \\\"Context\\\": {\\n    \\\"User\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 69.7\\n    }\\n  }\\n}\""
-            ],
-            "sha256": "372eb890e2497b29f3ab005be51bb85f9ccf76fa42b0a8670d6800f8bb58aa46"
-          }
+          "writes parity-move-0.adp": "c4/context\nbody: lenient-spellings.dsl\nview: Context\nlayout:\n  User: 40 69.7\n"
         },
         {
           "do": "undo move User on view \"Context\" to 40, 69.7",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -6 +\"  \\\"Context\\\": {}\\n\""
-            ],
-            "sha256": "48aa5ad3ed509be2b24ca9200d0d4b119dcd6233bbdfb350dfbdf40b5bee09d1"
-          }
+          "writes parity-move-0.adp": "c4/context\nbody: lenient-spellings.dsl\nview: Context\n"
         },
         {
           "do": "redo move User on view \"Context\" to 40, 69.7",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -1 +\"  \\\"Context\\\": {\\n    \\\"User\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 69.7\\n    }\\n  }\\n\""
-            ],
-            "sha256": "372eb890e2497b29f3ab005be51bb85f9ccf76fa42b0a8670d6800f8bb58aa46"
-          }
+          "writes parity-move-0.adp": "c4/context\nbody: lenient-spellings.dsl\nview: Context\nlayout:\n  User: 40 69.7\n"
+        },
+        {
+          "do": "register view \"containers\" as parity-move-1.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-1.adp": "c4/container\nbody: lenient-spellings.dsl\nview: containers\n"
         },
         {
           "do": "move User on view \"containers\" to 40, 69.7",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@7 -0 +\"  },\\n  \\\"containers\\\": {\\n    \\\"User\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 69.7\\n    }\\n\""
-            ],
-            "sha256": "f6f194fa76b4d4c785ab3b07c4fe01fe4886decf87553aee0b890da24e8086d2"
-          }
+          "writes parity-move-1.adp": "c4/container\nbody: lenient-spellings.dsl\nview: containers\nlayout:\n  User: 40 69.7\n"
         },
         {
           "do": "undo move User on view \"containers\" to 40, 69.7",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -12 +\"  \\\"Context\\\": {},\\n  \\\"containers\\\": {}\\n\""
-            ],
-            "sha256": "6c545abbd31354d2926472a114b70e750450bd1b38ea016ab7f5d23036ca3896"
-          }
+          "writes parity-move-1.adp": "c4/container\nbody: lenient-spellings.dsl\nview: containers\n"
         },
         {
           "do": "redo move User on view \"containers\" to 40, 69.7",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@3 -1 +\"  \\\"containers\\\": {\\n    \\\"User\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 69.7\\n    }\\n  }\\n\""
-            ],
-            "sha256": "54015d28b0bf8432393139a4aa3c6633b3c9b08a5b2574d93df44cb2edabea9f"
-          }
+          "writes parity-move-1.adp": "c4/container\nbody: lenient-spellings.dsl\nview: containers\nlayout:\n  User: 40 69.7\n"
         },
         {
           "do": "move parity:unknown on view \"Context\" to 10, 10",
@@ -18778,70 +18734,52 @@
       ],
       "edits": [
         {
+          "do": "register view \"landscape\" as parity-move-0.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-0.adp": "c4/system-landscape\nbody: misplaced-container.dsl\nview: landscape\n"
+        },
+        {
           "do": "move s on view \"landscape\" to -70, 59.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@1 -0 +\"{\\n  \\\"landscape\\\": {\\n    \\\"s\\\": {\\n      \\\"x\\\": -70,\\n      \\\"y\\\": 59.9\\n    }\\n  }\\n}\""
-            ],
-            "sha256": "51c900d1dfb59c7e73d410e2561edc76bbe176ff69192bf450da006183001146"
-          }
+          "writes parity-move-0.adp": "c4/system-landscape\nbody: misplaced-container.dsl\nview: landscape\nlayout:\n  s: -70 59.9\n"
         },
         {
           "do": "undo move s on view \"landscape\" to -70, 59.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -6 +\"  \\\"landscape\\\": {}\\n\""
-            ],
-            "sha256": "881c8f933b0bcd7fb3882ea4f47ee2b1a2ece6cf2c01b9e16d52d710b027687d"
-          }
+          "writes parity-move-0.adp": "c4/system-landscape\nbody: misplaced-container.dsl\nview: landscape\n"
         },
         {
           "do": "redo move s on view \"landscape\" to -70, 59.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -1 +\"  \\\"landscape\\\": {\\n    \\\"s\\\": {\\n      \\\"x\\\": -70,\\n      \\\"y\\\": 59.9\\n    }\\n  }\\n\""
-            ],
-            "sha256": "51c900d1dfb59c7e73d410e2561edc76bbe176ff69192bf450da006183001146"
-          }
+          "writes parity-move-0.adp": "c4/system-landscape\nbody: misplaced-container.dsl\nview: landscape\nlayout:\n  s: -70 59.9\n"
+        },
+        {
+          "do": "register view \"containers\" as parity-move-1.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-1.adp": "c4/container\nbody: misplaced-container.dsl\nview: containers\n"
         },
         {
           "do": "move stray on view \"containers\" to -240.55, 69.7",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@7 -0 +\"  },\\n  \\\"containers\\\": {\\n    \\\"stray\\\": {\\n      \\\"x\\\": -240.55,\\n      \\\"y\\\": 69.7\\n    }\\n\""
-            ],
-            "sha256": "99f079408b025e039a4f0d92eea939ab074f703e4813fc6f183f22f26d99cf22"
-          }
+          "writes parity-move-1.adp": "c4/container\nbody: misplaced-container.dsl\nview: containers\nlayout:\n  stray: -240.55 69.7\n"
         },
         {
           "do": "undo move stray on view \"containers\" to -240.55, 69.7",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@8 -6 +\"  \\\"containers\\\": {}\\n\""
-            ],
-            "sha256": "3c8bc8ded0d63238038821e518584efb344a95409bb6bc0d63896e3d5712ed06"
-          }
+          "writes parity-move-1.adp": "c4/container\nbody: misplaced-container.dsl\nview: containers\n"
         },
         {
           "do": "redo move stray on view \"containers\" to -240.55, 69.7",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@8 -1 +\"  \\\"containers\\\": {\\n    \\\"stray\\\": {\\n      \\\"x\\\": -240.55,\\n      \\\"y\\\": 69.7\\n    }\\n  }\\n\""
-            ],
-            "sha256": "99f079408b025e039a4f0d92eea939ab074f703e4813fc6f183f22f26d99cf22"
-          }
+          "writes parity-move-1.adp": "c4/container\nbody: misplaced-container.dsl\nview: containers\nlayout:\n  stray: -240.55 69.7\n"
         },
         {
           "do": "move parity:unknown on view \"landscape\" to 10, 10",
@@ -19793,103 +19731,76 @@
       ],
       "edits": [
         {
+          "do": "register view \"context\" as parity-move-0.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-0.adp": "c4/context\nbody: nested-relationships.dsl\nview: context\n"
+        },
+        {
           "do": "move u on view \"context\" to 40, 59.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@1 -0 +\"{\\n  \\\"context\\\": {\\n    \\\"u\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 59.9\\n    }\\n  }\\n}\""
-            ],
-            "sha256": "ef90afcf919bfe6aa8f4e8a5181191f7fc35b5e27e46d728ff45cd9b12740221"
-          }
+          "writes parity-move-0.adp": "c4/context\nbody: nested-relationships.dsl\nview: context\nlayout:\n  u: 40 59.9\n"
         },
         {
           "do": "undo move u on view \"context\" to 40, 59.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -6 +\"  \\\"context\\\": {}\\n\""
-            ],
-            "sha256": "18cc83779d09bae08344c128e12b0e43594a4f45a901b7e9d36d3b76ef1fb47f"
-          }
+          "writes parity-move-0.adp": "c4/context\nbody: nested-relationships.dsl\nview: context\n"
         },
         {
           "do": "redo move u on view \"context\" to 40, 59.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -1 +\"  \\\"context\\\": {\\n    \\\"u\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 59.9\\n    }\\n  }\\n\""
-            ],
-            "sha256": "ef90afcf919bfe6aa8f4e8a5181191f7fc35b5e27e46d728ff45cd9b12740221"
-          }
+          "writes parity-move-0.adp": "c4/context\nbody: nested-relationships.dsl\nview: context\nlayout:\n  u: 40 59.9\n"
+        },
+        {
+          "do": "register view \"containers\" as parity-move-1.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-1.adp": "c4/container\nbody: nested-relationships.dsl\nview: containers\n"
         },
         {
           "do": "move u on view \"containers\" to 40, 59.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@7 -0 +\"  },\\n  \\\"containers\\\": {\\n    \\\"u\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 59.9\\n    }\\n\""
-            ],
-            "sha256": "e2cd8939beefbed6b83db474ba77fc323f7c61b75c869eb0f7568a64b65cbc5f"
-          }
+          "writes parity-move-1.adp": "c4/container\nbody: nested-relationships.dsl\nview: containers\nlayout:\n  u: 40 59.9\n"
         },
         {
           "do": "undo move u on view \"containers\" to 40, 59.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -12 +\"  \\\"context\\\": {},\\n  \\\"containers\\\": {}\\n\""
-            ],
-            "sha256": "6e2fcd806d29427ecbd1e6ae2a767c62c3754be614addba5e0f70fd55cedaa50"
-          }
+          "writes parity-move-1.adp": "c4/container\nbody: nested-relationships.dsl\nview: containers\n"
         },
         {
           "do": "redo move u on view \"containers\" to 40, 59.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@3 -1 +\"  \\\"containers\\\": {\\n    \\\"u\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 59.9\\n    }\\n  }\\n\""
-            ],
-            "sha256": "e574fa4e6de29a3b8edbaf167fc8c5ded357bff4ad9879a8f1984819dbfefbb6"
-          }
+          "writes parity-move-1.adp": "c4/container\nbody: nested-relationships.dsl\nview: containers\nlayout:\n  u: 40 59.9\n"
+        },
+        {
+          "do": "register view \"live\" as parity-move-2.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-2.adp": "c4/deployment\nbody: nested-relationships.dsl\nview: live\n"
         },
         {
           "do": "move wi on view \"live\" to 191.8, 290.7",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@8 -0 +\"  },\\n  \\\"live\\\": {\\n    \\\"wi\\\": {\\n      \\\"x\\\": 191.8,\\n      \\\"y\\\": 290.7\\n    }\\n\""
-            ],
-            "sha256": "7a8f35588a90b338f7c6b9c46f7a9dd062a2643678f9ff7e9bf6b966119b8583"
-          }
+          "writes parity-move-2.adp": "c4/deployment\nbody: nested-relationships.dsl\nview: live\nlayout:\n  wi: 191.8 290.7\n"
         },
         {
           "do": "undo move wi on view \"live\" to 191.8, 290.7",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@9 -6 +\"  \\\"live\\\": {}\\n\""
-            ],
-            "sha256": "b18317c2519de54386b9f373d941f3ada6b7238b7ab6db50e7a77c2ff8e61a26"
-          }
+          "writes parity-move-2.adp": "c4/deployment\nbody: nested-relationships.dsl\nview: live\n"
         },
         {
           "do": "redo move wi on view \"live\" to 191.8, 290.7",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@9 -1 +\"  \\\"live\\\": {\\n    \\\"wi\\\": {\\n      \\\"x\\\": 191.8,\\n      \\\"y\\\": 290.7\\n    }\\n  }\\n\""
-            ],
-            "sha256": "7a8f35588a90b338f7c6b9c46f7a9dd062a2643678f9ff7e9bf6b966119b8583"
-          }
+          "writes parity-move-2.adp": "c4/deployment\nbody: nested-relationships.dsl\nview: live\nlayout:\n  wi: 191.8 290.7\n"
         },
         {
           "do": "move parity:unknown on view \"context\" to 10, 10",
@@ -20828,7 +20739,9 @@
         "scripted | \"c4/context\\nview: parity-missing\\n\" => shows no view",
         "scripted | \"c4/context\\nview:\\n\" => shows \"Landscape\" (SystemLandscape, line 8)"
       ],
-      "findings": [],
+      "findings": [
+        "nowhere | Warning | fbl.stale-view-data | View 'Landscape': The layout file keeps a position for 'gone', which the file no longer has; it is removed at the next placement in this view."
+      ],
       "menus": [
         [
           "g1 c4.rename | Rename… | mdi-pencil-outline | F2 | on",
@@ -20879,7 +20792,7 @@
           "view": "\"Landscape\" (SystemLandscape, line 8)",
           "origin": "c4/system-landscape",
           "title": "System Landscape diagram for Sidecar keys",
-          "layout": "2 stored positions",
+          "layout": "1 stored positions",
           "targets": [
             "\"alpha\" => menu #0, rows #0",
             "\"beta\" => menu #0, rows #1",
@@ -20897,15 +20810,20 @@
       ],
       "edits": [
         {
+          "do": "register view \"Landscape\" as parity-move-0.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-0.adp": "c4/system-landscape\nbody: sidecar-keys.dsl\nview: Landscape\n"
+        },
+        {
           "do": "move alpha on view \"Landscape\" to 132.35, 19.78",
           "answer": "ok",
           "unchanged": true,
           "sidecar": {
             "hunks": [
-              "@4 -2 +\"      \\\"x\\\": 132.35,\\n      \\\"y\\\": 19.78\\n\"",
-              "@18 -1 +\"}\""
+              "@4 -6 +\"      \\\"x\\\": 132.35,\\n      \\\"y\\\": 19.78\\n\""
             ],
-            "sha256": "bd597a62ca0c422b4c512658673fe323d40d8cab5c090322da367647ed262ddd"
+            "sha256": "bcc528a2283f451d831246df3a450409506ca253d84c0a392f0dd35a5634fe64"
           }
         },
         {
@@ -20914,9 +20832,9 @@
           "unchanged": true,
           "sidecar": {
             "hunks": [
-              "@4 -2 +\"      \\\"x\\\": 12.3456789,\\n      \\\"y\\\": -40.125\\n\""
+              "@4 -2 +\"      \\\"x\\\": 12.3456789,\\n      \\\"y\\\": -40.125\\n    },\\n    \\\"gone\\\": {\\n      \\\"x\\\": 1,\\n      \\\"y\\\": 2\\n\""
             ],
-            "sha256": "f8eb89e0583e15c212e3bbe1ab7dd142dc8b6ae7be009357bd1829ee654db17c"
+            "sha256": "7acf305a9e34d50fb3ef7a9323e55a9676943997c465ea5f89a68b9f0980fd0b"
           }
         },
         {
@@ -20925,9 +20843,9 @@
           "unchanged": true,
           "sidecar": {
             "hunks": [
-              "@4 -2 +\"      \\\"x\\\": 132.35,\\n      \\\"y\\\": 19.78\\n\""
+              "@4 -6 +\"      \\\"x\\\": 132.35,\\n      \\\"y\\\": 19.78\\n\""
             ],
-            "sha256": "bd597a62ca0c422b4c512658673fe323d40d8cab5c090322da367647ed262ddd"
+            "sha256": "bcc528a2283f451d831246df3a450409506ca253d84c0a392f0dd35a5634fe64"
           }
         },
         {
@@ -21454,70 +21372,52 @@
       ],
       "edits": [
         {
+          "do": "register view \"context\" as parity-move-0.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-0.adp": "c4/context\nbody: tags-in-block.dsl\nview: context\n"
+        },
+        {
           "do": "move u on view \"context\" to 40, 59.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@1 -0 +\"{\\n  \\\"context\\\": {\\n    \\\"u\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 59.9\\n    }\\n  }\\n}\""
-            ],
-            "sha256": "ef90afcf919bfe6aa8f4e8a5181191f7fc35b5e27e46d728ff45cd9b12740221"
-          }
+          "writes parity-move-0.adp": "c4/context\nbody: tags-in-block.dsl\nview: context\nlayout:\n  u: 40 59.9\n"
         },
         {
           "do": "undo move u on view \"context\" to 40, 59.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -6 +\"  \\\"context\\\": {}\\n\""
-            ],
-            "sha256": "18cc83779d09bae08344c128e12b0e43594a4f45a901b7e9d36d3b76ef1fb47f"
-          }
+          "writes parity-move-0.adp": "c4/context\nbody: tags-in-block.dsl\nview: context\n"
         },
         {
           "do": "redo move u on view \"context\" to 40, 59.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -1 +\"  \\\"context\\\": {\\n    \\\"u\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 59.9\\n    }\\n  }\\n\""
-            ],
-            "sha256": "ef90afcf919bfe6aa8f4e8a5181191f7fc35b5e27e46d728ff45cd9b12740221"
-          }
+          "writes parity-move-0.adp": "c4/context\nbody: tags-in-block.dsl\nview: context\nlayout:\n  u: 40 59.9\n"
+        },
+        {
+          "do": "register view \"containers\" as parity-move-1.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-1.adp": "c4/container\nbody: tags-in-block.dsl\nview: containers\n"
         },
         {
           "do": "move u on view \"containers\" to -86.69999999999999, 59.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@7 -0 +\"  },\\n  \\\"containers\\\": {\\n    \\\"u\\\": {\\n      \\\"x\\\": -86.69999999999999,\\n      \\\"y\\\": 59.9\\n    }\\n\""
-            ],
-            "sha256": "fee5c32af7b0e88a1003a977afaf029cd373349c39be6c792c905c8d8e43d1a0"
-          }
+          "writes parity-move-1.adp": "c4/container\nbody: tags-in-block.dsl\nview: containers\nlayout:\n  u: -86.7 59.9\n"
         },
         {
           "do": "undo move u on view \"containers\" to -86.69999999999999, 59.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -12 +\"  \\\"context\\\": {},\\n  \\\"containers\\\": {}\\n\""
-            ],
-            "sha256": "6e2fcd806d29427ecbd1e6ae2a767c62c3754be614addba5e0f70fd55cedaa50"
-          }
+          "writes parity-move-1.adp": "c4/container\nbody: tags-in-block.dsl\nview: containers\n"
         },
         {
           "do": "redo move u on view \"containers\" to -86.69999999999999, 59.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@3 -1 +\"  \\\"containers\\\": {\\n    \\\"u\\\": {\\n      \\\"x\\\": -86.69999999999999,\\n      \\\"y\\\": 59.9\\n    }\\n  }\\n\""
-            ],
-            "sha256": "8681f6448c06478e68000289ed288015154d857b0d9f6a549d7195b10696580d"
-          }
+          "writes parity-move-1.adp": "c4/container\nbody: tags-in-block.dsl\nview: containers\nlayout:\n  u: -86.7 59.9\n"
         },
         {
           "do": "move parity:unknown on view \"context\" to 10, 10",
@@ -22312,37 +22212,34 @@
       ],
       "edits": [
         {
+          "do": "register view \"landscape\" as parity-move-0.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-0.adp": "c4/system-landscape\nbody: trailing-comments.dsl\nview: landscape\n"
+        },
+        {
           "do": "move u on view \"landscape\" to -109.80000000000001, 59.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@1 -0 +\"{\\n  \\\"landscape\\\": {\\n    \\\"u\\\": {\\n      \\\"x\\\": -109.80000000000001,\\n      \\\"y\\\": 59.9\\n    }\\n  }\\n}\""
-            ],
-            "sha256": "3e8c6dc17b8d457516aff40cd5f81d74bd9e840592491fefea59c26d0a376224"
-          }
+          "writes parity-move-0.adp": "c4/system-landscape\nbody: trailing-comments.dsl\nview: landscape\nlayout:\n  u: -109.8 59.9\n"
         },
         {
           "do": "undo move u on view \"landscape\" to -109.80000000000001, 59.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -6 +\"  \\\"landscape\\\": {}\\n\""
-            ],
-            "sha256": "881c8f933b0bcd7fb3882ea4f47ee2b1a2ece6cf2c01b9e16d52d710b027687d"
-          }
+          "writes parity-move-0.adp": "c4/system-landscape\nbody: trailing-comments.dsl\nview: landscape\n"
         },
         {
           "do": "redo move u on view \"landscape\" to -109.80000000000001, 59.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -1 +\"  \\\"landscape\\\": {\\n    \\\"u\\\": {\\n      \\\"x\\\": -109.80000000000001,\\n      \\\"y\\\": 59.9\\n    }\\n  }\\n\""
-            ],
-            "sha256": "3e8c6dc17b8d457516aff40cd5f81d74bd9e840592491fefea59c26d0a376224"
-          }
+          "writes parity-move-0.adp": "c4/system-landscape\nbody: trailing-comments.dsl\nview: landscape\nlayout:\n  u: -109.8 59.9\n"
+        },
+        {
+          "do": "register view \"containers\" as parity-move-1.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-1.adp": "c4/container\nbody: trailing-comments.dsl\nview: containers\n"
         },
         {
           "do": "move u on view \"containers\" to 159.8, -237.5",
@@ -23705,37 +23602,15 @@
       ],
       "edits": [
         {
+          "do": "register view \"landscape\" as parity-move-0.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-0.adp": "c4/system-landscape\nbody: unidentified-elements.dsl\nview: landscape\n"
+        },
+        {
           "do": "move person_User_1 on view \"landscape\" to -433.4, 69.7",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@1 -0 +\"{\\n  \\\"landscape\\\": {\\n    \\\"person_User_1\\\": {\\n      \\\"x\\\": -433.4,\\n      \\\"y\\\": 69.7\\n    }\\n  }\\n}\""
-            ],
-            "sha256": "fac6e6a007d8da0975cdc9aeed0dcbdd1f1bf0dd4e68d600490e5b80776b644a"
-          }
-        },
-        {
-          "do": "undo move person_User_1 on view \"landscape\" to -433.4, 69.7",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -6 +\"  \\\"landscape\\\": {}\\n\""
-            ],
-            "sha256": "881c8f933b0bcd7fb3882ea4f47ee2b1a2ece6cf2c01b9e16d52d710b027687d"
-          }
-        },
-        {
-          "do": "redo move person_User_1 on view \"landscape\" to -433.4, 69.7",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -1 +\"  \\\"landscape\\\": {\\n    \\\"person_User_1\\\": {\\n      \\\"x\\\": -433.4,\\n      \\\"y\\\": 69.7\\n    }\\n  }\\n\""
-            ],
-            "sha256": "fac6e6a007d8da0975cdc9aeed0dcbdd1f1bf0dd4e68d600490e5b80776b644a"
-          }
+          "answer": "refused: This element is written without an identifier, so its position would be lost at the next edit above it; give it an identifier in the file to arrange it by hand.",
+          "unchanged": true
         },
         {
           "do": "move parity:unknown on view \"landscape\" to 10, 10",
@@ -24202,7 +24077,7 @@
           "unchanged": true
         }
       ],
-      "undoAll": "11 undone; the original text is back"
+      "undoAll": "10 undone; the original text is back"
     },
     {
       "document": "diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/Fixtures/findings/view-statements.dsl",
@@ -24388,42 +24263,45 @@
       ],
       "edits": [
         {
+          "do": "register view \"titled\" as parity-move-0.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-0.adp": "c4/container\nbody: view-statements.dsl\nview: titled\n"
+        },
+        {
           "do": "move u on view \"titled\" to 40, 59.9",
           "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
           "unchanged": true
         },
         {
+          "do": "register view \"named\" as parity-move-1.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-1.adp": "c4/container\nbody: view-statements.dsl\nview: named\n"
+        },
+        {
           "do": "move web on view \"named\" to 40, 258.70000000000005",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@1 -0 +\"{\\n  \\\"named\\\": {\\n    \\\"web\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 258.70000000000005\\n    }\\n  }\\n}\""
-            ],
-            "sha256": "d27addfb7804db1c1df7da501d25aa6d4eb4a63ee9afaf94478f554e6403b2be"
-          }
+          "writes parity-move-1.adp": "c4/container\nbody: view-statements.dsl\nview: named\nlayout:\n  web: 40 258.7\n"
         },
         {
           "do": "undo move web on view \"named\" to 40, 258.70000000000005",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -6 +\"  \\\"named\\\": {}\\n\""
-            ],
-            "sha256": "eadd6d41ed0ad15e1a5a2716acc08da84a1cc080c8b09e376d393a9d85ffc3cb"
-          }
+          "writes parity-move-1.adp": "c4/container\nbody: view-statements.dsl\nview: named\n"
         },
         {
           "do": "redo move web on view \"named\" to 40, 258.70000000000005",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -1 +\"  \\\"named\\\": {\\n    \\\"web\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 258.70000000000005\\n    }\\n  }\\n\""
-            ],
-            "sha256": "d27addfb7804db1c1df7da501d25aa6d4eb4a63ee9afaf94478f554e6403b2be"
-          }
+          "writes parity-move-1.adp": "c4/container\nbody: view-statements.dsl\nview: named\nlayout:\n  web: 40 258.7\n"
+        },
+        {
+          "do": "register view \"steps\" as parity-move-2.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-2.adp": "c4/dynamic\nbody: view-statements.dsl\nview: steps\n"
         },
         {
           "do": "move u on view \"steps\" to 120, 20.5",
@@ -25298,235 +25176,146 @@
       ],
       "edits": [
         {
+          "do": "register view \"landscape\" as parity-move-0.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-0.adp": "c4/system-landscape\nbody: view-without-key.dsl\nview: landscape\n"
+        },
+        {
           "do": "move u on view \"landscape\" to -70, 59.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@1 -0 +\"{\\n  \\\"landscape\\\": {\\n    \\\"u\\\": {\\n      \\\"x\\\": -70,\\n      \\\"y\\\": 59.9\\n    }\\n  }\\n}\""
-            ],
-            "sha256": "59404dc5dd4a95070a63e504636d4d34606c6ecab1b3248b0e42326142ee5596"
-          }
+          "writes parity-move-0.adp": "c4/system-landscape\nbody: view-without-key.dsl\nview: landscape\nlayout:\n  u: -70 59.9\n"
         },
         {
           "do": "undo move u on view \"landscape\" to -70, 59.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -6 +\"  \\\"landscape\\\": {}\\n\""
-            ],
-            "sha256": "881c8f933b0bcd7fb3882ea4f47ee2b1a2ece6cf2c01b9e16d52d710b027687d"
-          }
+          "writes parity-move-0.adp": "c4/system-landscape\nbody: view-without-key.dsl\nview: landscape\n"
         },
         {
           "do": "redo move u on view \"landscape\" to -70, 59.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -1 +\"  \\\"landscape\\\": {\\n    \\\"u\\\": {\\n      \\\"x\\\": -70,\\n      \\\"y\\\": 59.9\\n    }\\n  }\\n\""
-            ],
-            "sha256": "59404dc5dd4a95070a63e504636d4d34606c6ecab1b3248b0e42326142ee5596"
-          }
+          "writes parity-move-0.adp": "c4/system-landscape\nbody: view-without-key.dsl\nview: landscape\nlayout:\n  u: -70 59.9\n"
+        },
+        {
+          "do": "register view \"systemcontext\" as parity-move-1.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-1.adp": "c4/context\nbody: view-without-key.dsl\nview: systemcontext\n"
         },
         {
           "do": "move u on view \"systemcontext\" to -70, 59.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@7 -0 +\"  },\\n  \\\"systemcontext\\\": {\\n    \\\"u\\\": {\\n      \\\"x\\\": -70,\\n      \\\"y\\\": 59.9\\n    }\\n\""
-            ],
-            "sha256": "f2e497835807e77e5e031fa90ff949fa57e26631fd46080225cc10ef749b9982"
-          }
+          "writes parity-move-1.adp": "c4/context\nbody: view-without-key.dsl\nview: systemcontext\nlayout:\n  u: -70 59.9\n"
         },
         {
           "do": "undo move u on view \"systemcontext\" to -70, 59.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -12 +\"  \\\"landscape\\\": {},\\n  \\\"systemcontext\\\": {}\\n\""
-            ],
-            "sha256": "6ce957f8c0a36c73357b7608e11b67046c0ced9dab1cc1d0f8f524db1a525f1d"
-          }
+          "writes parity-move-1.adp": "c4/context\nbody: view-without-key.dsl\nview: systemcontext\n"
         },
         {
           "do": "redo move u on view \"systemcontext\" to -70, 59.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@3 -1 +\"  \\\"systemcontext\\\": {\\n    \\\"u\\\": {\\n      \\\"x\\\": -70,\\n      \\\"y\\\": 59.9\\n    }\\n  }\\n\""
-            ],
-            "sha256": "abeebef0ec6ebf3324873666ce11ca23babf133f5115d96fd7f09213902b900d"
-          }
+          "writes parity-move-1.adp": "c4/context\nbody: view-without-key.dsl\nview: systemcontext\nlayout:\n  u: -70 59.9\n"
+        },
+        {
+          "do": "register view \"containers\" as parity-move-2.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-2.adp": "c4/container\nbody: view-without-key.dsl\nview: containers\n"
         },
         {
           "do": "move u on view \"containers\" to -71.30000000000001, 59.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@8 -0 +\"  },\\n  \\\"containers\\\": {\\n    \\\"u\\\": {\\n      \\\"x\\\": -71.30000000000001,\\n      \\\"y\\\": 59.9\\n    }\\n\""
-            ],
-            "sha256": "c4bb4d60917a3160945b64998d99565e0ea5fb3bfee6933e258f5594e2a24864"
-          }
+          "writes parity-move-2.adp": "c4/container\nbody: view-without-key.dsl\nview: containers\nlayout:\n  u: -71.3 59.9\n"
         },
         {
           "do": "undo move u on view \"containers\" to -71.30000000000001, 59.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@3 -12 +\"  \\\"systemcontext\\\": {},\\n  \\\"containers\\\": {}\\n\""
-            ],
-            "sha256": "07cb79a806fc7f696aa10e07dc4f07e539bc9e2d2a339711331e4e788d69af11"
-          }
+          "writes parity-move-2.adp": "c4/container\nbody: view-without-key.dsl\nview: containers\n"
         },
         {
           "do": "redo move u on view \"containers\" to -71.30000000000001, 59.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@4 -1 +\"  \\\"containers\\\": {\\n    \\\"u\\\": {\\n      \\\"x\\\": -71.30000000000001,\\n      \\\"y\\\": 59.9\\n    }\\n  }\\n\""
-            ],
-            "sha256": "b27617a3103166b8bfb155d327e9a66e4ec1c62d1c06d104f72e243377d7693f"
-          }
+          "writes parity-move-2.adp": "c4/container\nbody: view-without-key.dsl\nview: containers\nlayout:\n  u: -71.3 59.9\n"
+        },
+        {
+          "do": "register view \"component\" as parity-move-3.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-3.adp": "c4/component\nbody: view-without-key.dsl\nview: component\n"
         },
         {
           "do": "move u on view \"component\" to -70, 59.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@9 -0 +\"  },\\n  \\\"component\\\": {\\n    \\\"u\\\": {\\n      \\\"x\\\": -70,\\n      \\\"y\\\": 59.9\\n    }\\n\""
-            ],
-            "sha256": "79ff22df8b80012ece4cffa3fd197d3859c29319fb1a89857e6cbf10dfe419b4"
-          }
+          "writes parity-move-3.adp": "c4/component\nbody: view-without-key.dsl\nview: component\nlayout:\n  u: -70 59.9\n"
         },
         {
           "do": "undo move u on view \"component\" to -70, 59.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@4 -12 +\"  \\\"containers\\\": {},\\n  \\\"component\\\": {}\\n\""
-            ],
-            "sha256": "dd97214288a51fe1e1de55dda00fdd02c223e2304e4dbf4b016d4725bcbbcff1"
-          }
+          "writes parity-move-3.adp": "c4/component\nbody: view-without-key.dsl\nview: component\n"
         },
         {
           "do": "redo move u on view \"component\" to -70, 59.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@5 -1 +\"  \\\"component\\\": {\\n    \\\"u\\\": {\\n      \\\"x\\\": -70,\\n      \\\"y\\\": 59.9\\n    }\\n  }\\n\""
-            ],
-            "sha256": "10e86255b095554e626734ff7e6602befb73e3349819e0ab0385ef5cfc1ed0e7"
-          }
+          "writes parity-move-3.adp": "c4/component\nbody: view-without-key.dsl\nview: component\nlayout:\n  u: -70 59.9\n"
+        },
+        {
+          "do": "register view \"dynamic\" as parity-move-4.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-4.adp": "c4/dynamic\nbody: view-without-key.dsl\nview: dynamic\n"
         },
         {
           "do": "move u on view \"dynamic\" to 40, 59.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@10 -0 +\"  },\\n  \\\"dynamic\\\": {\\n    \\\"u\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 59.9\\n    }\\n\""
-            ],
-            "sha256": "ec95f106dcfc8dcd0896331ccb8a6147ab9a9c59aa2164bf1780ba0a70c1a118"
-          }
+          "writes parity-move-4.adp": "c4/dynamic\nbody: view-without-key.dsl\nview: dynamic\nlayout:\n  u: 40 59.9\n"
         },
         {
           "do": "undo move u on view \"dynamic\" to 40, 59.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@5 -12 +\"  \\\"component\\\": {},\\n  \\\"dynamic\\\": {}\\n\""
-            ],
-            "sha256": "d7fa62ecf36e2fd937d15956a651dee2857574d62ffb3ac627db5e2f3fa88ecb"
-          }
+          "writes parity-move-4.adp": "c4/dynamic\nbody: view-without-key.dsl\nview: dynamic\n"
         },
         {
           "do": "redo move u on view \"dynamic\" to 40, 59.9",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@6 -1 +\"  \\\"dynamic\\\": {\\n    \\\"u\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 59.9\\n    }\\n  }\\n\""
-            ],
-            "sha256": "e7dc5029fcc0d8df736cac0943fc92b664b5b8de4c1510b664c1ec7f589da822"
-          }
+          "writes parity-move-4.adp": "c4/dynamic\nbody: view-without-key.dsl\nview: dynamic\nlayout:\n  u: 40 59.9\n"
+        },
+        {
+          "do": "register view \"Live\" as parity-move-5.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-5.adp": "c4/deployment\nbody: view-without-key.dsl\nview: Live\n"
         },
         {
           "do": "move containerinstance_web_2 on view \"Live\" to 153.3, 91.9",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@11 -0 +\"  },\\n  \\\"Live\\\": {\\n    \\\"containerinstance_web_2\\\": {\\n      \\\"x\\\": 153.3,\\n      \\\"y\\\": 91.9\\n    }\\n\""
-            ],
-            "sha256": "0a1e5a1adabbf1203ca45bdf2053822d2bbf4375884993aacc2ec39c125fa723"
-          }
+          "answer": "refused: This element is written without an identifier, so its position would be lost at the next edit above it; give it an identifier in the file to arrange it by hand.",
+          "unchanged": true
         },
         {
-          "do": "undo move containerinstance_web_2 on view \"Live\" to 153.3, 91.9",
+          "do": "register view \"everywhere\" as parity-move-6.adp",
           "answer": "ok",
           "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@12 -6 +\"  \\\"Live\\\": {}\\n\""
-            ],
-            "sha256": "bfc7be3436998aa770cd27e8bcdb52d19b736f79d5ccaa679bd13d2b290a2c10"
-          }
-        },
-        {
-          "do": "redo move containerinstance_web_2 on view \"Live\" to 153.3, 91.9",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@12 -1 +\"  \\\"Live\\\": {\\n    \\\"containerinstance_web_2\\\": {\\n      \\\"x\\\": 153.3,\\n      \\\"y\\\": 91.9\\n    }\\n  }\\n\""
-            ],
-            "sha256": "0a1e5a1adabbf1203ca45bdf2053822d2bbf4375884993aacc2ec39c125fa723"
-          }
+          "writes parity-move-6.adp": "c4/deployment\nbody: view-without-key.dsl\nview: everywhere\n"
         },
         {
           "do": "move containerinstance_web_2 on view \"everywhere\" to 153.3, 91.9",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@17 -0 +\"  },\\n  \\\"everywhere\\\": {\\n    \\\"containerinstance_web_2\\\": {\\n      \\\"x\\\": 153.3,\\n      \\\"y\\\": 91.9\\n    }\\n\""
-            ],
-            "sha256": "7cb991d7777833b85e06c940a401a5f1379d5d0bac4d4a0a0410348b5b1b002a"
-          }
-        },
-        {
-          "do": "undo move containerinstance_web_2 on view \"everywhere\" to 153.3, 91.9",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@12 -12 +\"  \\\"Live\\\": {},\\n  \\\"everywhere\\\": {}\\n\""
-            ],
-            "sha256": "8a865e17d446c44da03493e523438c3e774ff9f77f43ab725384b3e79ad8b3d9"
-          }
-        },
-        {
-          "do": "redo move containerinstance_web_2 on view \"everywhere\" to 153.3, 91.9",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@13 -1 +\"  \\\"everywhere\\\": {\\n    \\\"containerinstance_web_2\\\": {\\n      \\\"x\\\": 153.3,\\n      \\\"y\\\": 91.9\\n    }\\n  }\\n\""
-            ],
-            "sha256": "53362057f729b8610c668a8c0518a659cecd1428af8c1160ee3fabc7978dbf37"
-          }
+          "answer": "refused: This element is written without an identifier, so its position would be lost at the next edit above it; give it an identifier in the file to arrange it by hand.",
+          "unchanged": true
         },
         {
           "do": "move parity:unknown on view \"landscape\" to 10, 10",
@@ -26422,7 +26211,7 @@
           "unchanged": true
         }
       ],
-      "undoAll": "45 undone; the original text is back"
+      "undoAll": "43 undone; the original text is back"
     },
     {
       "document": "diagrams/c4/examples/industrial-plant/architecture/bottling-mes.dsl",
@@ -27875,9 +27664,21 @@
       ],
       "edits": [
         {
+          "do": "register view \"Landscape\" as parity-move-0.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-0.adp": "c4/system-landscape\nbody: bottling-mes.dsl\nview: Landscape\n"
+        },
+        {
           "do": "move operator on view \"Landscape\" to -560, 79.5",
           "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
           "unchanged": true
+        },
+        {
+          "do": "register view \"SystemContext\" as parity-move-1.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-1.adp": "c4/context\nbody: bottling-mes.dsl\nview: SystemContext\n"
         },
         {
           "do": "move operator on view \"SystemContext\" to -560, 79.5",
@@ -27885,9 +27686,21 @@
           "unchanged": true
         },
         {
+          "do": "register view \"Containers\" as parity-move-2.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-2.adp": "c4/container\nbody: bottling-mes.dsl\nview: Containers\n"
+        },
+        {
           "do": "move operator on view \"Containers\" to 160, -694.1",
           "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
           "unchanged": true
+        },
+        {
+          "do": "register view \"OrderServiceComponents\" as parity-move-3.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-3.adp": "c4/component\nbody: bottling-mes.dsl\nview: OrderServiceComponents\n"
         },
         {
           "do": "move orderIntake on view \"OrderServiceComponents\" to 520, -68.5",
@@ -27895,9 +27708,21 @@
           "unchanged": true
         },
         {
+          "do": "register view \"BatchRelease\" as parity-move-4.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-4.adp": "c4/dynamic\nbody: bottling-mes.dsl\nview: BatchRelease\n"
+        },
+        {
           "do": "move opcGateway on view \"BatchRelease\" to 160, 20.5",
           "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
           "unchanged": true
+        },
+        {
+          "do": "register view \"PlantDeployment\" as parity-move-5.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-5.adp": "c4/deployment\nbody: bottling-mes.dsl\nview: PlantDeployment\n"
         },
         {
           "do": "move plcRuntime on view \"PlantDeployment\" to 224, 1433.3",
@@ -29820,9 +29645,21 @@
       ],
       "edits": [
         {
+          "do": "register view \"Landscape\" as parity-move-0.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-0.adp": "c4/system-landscape\nbody: courier.dsl\nview: Landscape\n"
+        },
+        {
           "do": "move sender on view \"Landscape\" to 40, 764.1",
           "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
           "unchanged": true
+        },
+        {
+          "do": "register view \"SystemContext\" as parity-move-1.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-1.adp": "c4/context\nbody: courier.dsl\nview: SystemContext\n"
         },
         {
           "do": "move sender on view \"SystemContext\" to 40, 764.1",
@@ -29830,9 +29667,21 @@
           "unchanged": true
         },
         {
+          "do": "register view \"Containers\" as parity-move-2.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-2.adp": "c4/container\nbody: courier.dsl\nview: Containers\n"
+        },
+        {
           "do": "move sender on view \"Containers\" to 1932, 30.300000000000004",
           "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
           "unchanged": true
+        },
+        {
+          "do": "register view \"ApiComponents\" as parity-move-3.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-3.adp": "c4/component\nbody: courier.dsl\nview: ApiComponents\n"
         },
         {
           "do": "move sender on view \"ApiComponents\" to 2620, -318.5",
@@ -29840,9 +29689,21 @@
           "unchanged": true
         },
         {
+          "do": "register view \"ParcelScanned\" as parity-move-4.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-4.adp": "c4/dynamic\nbody: courier.dsl\nview: ParcelScanned\n"
+        },
+        {
           "do": "move mobile on view \"ParcelScanned\" to 160, 20.5",
           "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
           "unchanged": true
+        },
+        {
+          "do": "register view \"ProductionDeployment\" as parity-move-5.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-5.adp": "c4/deployment\nbody: courier.dsl\nview: ProductionDeployment\n"
         },
         {
           "do": "move containerinstance_spa_3 on view \"ProductionDeployment\" to 549.5, 1444.9",
@@ -31779,9 +31640,21 @@
       ],
       "edits": [
         {
+          "do": "register view \"Landscape\" as parity-move-0.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-0.adp": "c4/system-landscape\nbody: courier.dsl\nview: Landscape\n"
+        },
+        {
           "do": "move sender on view \"Landscape\" to 40, 764.1",
           "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
           "unchanged": true
+        },
+        {
+          "do": "register view \"SystemContext\" as parity-move-1.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-1.adp": "c4/context\nbody: courier.dsl\nview: SystemContext\n"
         },
         {
           "do": "move sender on view \"SystemContext\" to 40, 764.1",
@@ -31789,9 +31662,21 @@
           "unchanged": true
         },
         {
+          "do": "register view \"Containers\" as parity-move-2.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-2.adp": "c4/container\nbody: courier.dsl\nview: Containers\n"
+        },
+        {
           "do": "move sender on view \"Containers\" to 1932, 30.300000000000004",
           "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
           "unchanged": true
+        },
+        {
+          "do": "register view \"ApiComponents\" as parity-move-3.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-3.adp": "c4/component\nbody: courier.dsl\nview: ApiComponents\n"
         },
         {
           "do": "move sender on view \"ApiComponents\" to 2620, -318.5",
@@ -31799,9 +31684,21 @@
           "unchanged": true
         },
         {
+          "do": "register view \"ParcelScanned\" as parity-move-4.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-4.adp": "c4/dynamic\nbody: courier.dsl\nview: ParcelScanned\n"
+        },
+        {
           "do": "move mobile on view \"ParcelScanned\" to 160, 20.5",
           "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
           "unchanged": true
+        },
+        {
+          "do": "register view \"ProductionDeployment\" as parity-move-5.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-5.adp": "c4/deployment\nbody: courier.dsl\nview: ProductionDeployment\n"
         },
         {
           "do": "move containerinstance_spa_3 on view \"ProductionDeployment\" to 549.5, 1444.9",
@@ -32869,6 +32766,12 @@
       ],
       "edits": [
         {
+          "do": "register view \"context\" as parity-move-0.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-0.adp": "c4/context\nbody: parity.dsl\nview: context\n"
+        },
+        {
           "do": "move parity on view \"context\" to 120, 20.5",
           "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
           "unchanged": true
@@ -33625,6 +33528,12 @@
       ],
       "edits": [
         {
+          "do": "register view \"components\" as parity-move-0.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-0.adp": "c4/component\nbody: parity.dsl\nview: components\n"
+        },
+        {
           "do": "move parity on view \"components\" to 120, 20.5",
           "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
           "unchanged": true
@@ -34127,6 +34036,12 @@
         }
       ],
       "edits": [
+        {
+          "do": "register view \"landscape\" as parity-move-0.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-0.adp": "c4/system-landscape\nbody: parity.dsl\nview: landscape\n"
+        },
         {
           "do": "move parity on view \"landscape\" to 120, 20.5",
           "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
@@ -34883,6 +34798,12 @@
         }
       ],
       "edits": [
+        {
+          "do": "register view \"deployment\" as parity-move-0.adp",
+          "answer": "ok",
+          "unchanged": true,
+          "writes parity-move-0.adp": "c4/deployment\nbody: parity.dsl\nview: deployment\n"
+        },
         {
           "do": "move deploymentnode_Server_1 on view \"deployment\" to 120, 50.1",
           "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",

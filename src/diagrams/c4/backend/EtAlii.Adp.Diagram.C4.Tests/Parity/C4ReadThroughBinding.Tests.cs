@@ -17,7 +17,7 @@ public class C4ReadThroughBindingTests : IDisposable
     private readonly TestFolder _testFolder = TestFolder.Create("c4-read-through-binding");
     private readonly string _root;
     private readonly IC4DocumentStore _documents;
-    private readonly C4ElementMapper _mapper = new(C4Metrics.Default, new C4LayoutSidecar(new FileWriter()));
+    private readonly C4ElementMapper _mapper = new(C4Metrics.Default, new C4Positions(new FileWriter()));
     private readonly ServiceProvider _services;
     private readonly IHistoryStackStore _historyStacks;
 
