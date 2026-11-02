@@ -530,12 +530,21 @@ internal static partial class BindingReader
             : new CreateChild(JsonProperties.String(json, "emit") ?? "", Setting<ChildPlace>(json, "place", pointer, "A child's place", problems) ?? ChildPlace.Last, null) { After = after, Pad = pad };
     }
 
-    /// <summary>A slot's <c>escape</c> (FBL 0.11 §5.2), <c>{"with": "\\", "quote": "\""}</c>, one character each.</summary>
+    /// <summary>
+    /// A slot's <c>escape</c> (FBL 0.11 §5.2), <c>{"with": "\\", "quote": "\""}</c>, one character each, and its
+    /// <c>requote</c> (FBL 0.15 §5.2), one character too when it is given.
+    /// </summary>
     private static SlotEscape? ReadEscape(JsonElement json, string pointer, List<LoadDiagnostic> problems)
     {
         if (Object(json, "escape", pointer, "A slot's escape", problems) is not { } escape) return null;
-        if (JsonProperties.String(escape, "with") is { Length: 1 } with && JsonProperties.String(escape, "quote") is { Length: 1 } quote) return new SlotEscape(with[0], quote[0]);
-        problems.Add(new LoadDiagnostic(pointer + "/escape", LoadSeverity.Error, "A slot's escape gives 'with' and 'quote', one character each (FBL 0.11 5.2)."));
+        if (JsonProperties.String(escape, "with") is not { Length: 1 } with || JsonProperties.String(escape, "quote") is not { Length: 1 } quote)
+        {
+            problems.Add(new LoadDiagnostic(pointer + "/escape", LoadSeverity.Error, "A slot's escape gives 'with' and 'quote', one character each (FBL 0.11 5.2)."));
+            return null;
+        }
+        if (!escape.TryGetProperty("requote", out _)) return new SlotEscape(with[0], quote[0]);
+        if (JsonProperties.String(escape, "requote") is { Length: 1 } requote) return new SlotEscape(with[0], quote[0]) { Requote = requote[0] };
+        problems.Add(new LoadDiagnostic(pointer + "/escape", LoadSeverity.Error, "A slot's escape gives 'requote' as one character (FBL 0.15 5.2)."));
         return null;
     }
 

@@ -232,7 +232,8 @@
               "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
               "escape": {
                 "with": "\\",
-                "quote": "\""
+                "quote": "\"",
+                "requote": "\""
               },
               "empty": "keep"
             },
@@ -241,7 +242,8 @@
               "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
               "escape": {
                 "with": "\\",
-                "quote": "\""
+                "quote": "\"",
+                "requote": "\""
               },
               "empty": "keep",
               "create": {
@@ -304,7 +306,8 @@
               "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
               "escape": {
                 "with": "\\",
-                "quote": "\""
+                "quote": "\"",
+                "requote": "\""
               },
               "empty": "keep"
             },
@@ -313,7 +316,8 @@
               "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
               "escape": {
                 "with": "\\",
-                "quote": "\""
+                "quote": "\"",
+                "requote": "\""
               },
               "empty": "keep",
               "create": {
@@ -390,7 +394,8 @@
               "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
               "escape": {
                 "with": "\\",
-                "quote": "\""
+                "quote": "\"",
+                "requote": "\""
               },
               "empty": "keep"
             },
@@ -399,7 +404,8 @@
               "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
               "escape": {
                 "with": "\\",
-                "quote": "\""
+                "quote": "\"",
+                "requote": "\""
               },
               "empty": "keep",
               "create": {
@@ -415,7 +421,8 @@
               "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
               "escape": {
                 "with": "\\",
-                "quote": "\""
+                "quote": "\"",
+                "requote": "\""
               },
               "empty": "keep",
               "create": {
@@ -491,7 +498,8 @@
               "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
               "escape": {
                 "with": "\\",
-                "quote": "\""
+                "quote": "\"",
+                "requote": "\""
               },
               "empty": "keep"
             },
@@ -500,7 +508,8 @@
               "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
               "escape": {
                 "with": "\\",
-                "quote": "\""
+                "quote": "\"",
+                "requote": "\""
               },
               "empty": "keep",
               "create": {
@@ -516,7 +525,8 @@
               "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
               "escape": {
                 "with": "\\",
-                "quote": "\""
+                "quote": "\"",
+                "requote": "\""
               },
               "empty": "keep",
               "create": {
@@ -584,7 +594,8 @@
               "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
               "escape": {
                 "with": "\\",
-                "quote": "\""
+                "quote": "\"",
+                "requote": "\""
               },
               "empty": "keep"
             },
@@ -593,7 +604,8 @@
               "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
               "escape": {
                 "with": "\\",
-                "quote": "\""
+                "quote": "\"",
+                "requote": "\""
               },
               "empty": "keep",
               "create": {
@@ -609,7 +621,8 @@
               "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
               "escape": {
                 "with": "\\",
-                "quote": "\""
+                "quote": "\"",
+                "requote": "\""
               },
               "empty": "keep",
               "create": {
@@ -669,7 +682,8 @@
               "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
               "escape": {
                 "with": "\\",
-                "quote": "\""
+                "quote": "\"",
+                "requote": "\""
               },
               "empty": "keep"
             },
@@ -678,7 +692,8 @@
               "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
               "escape": {
                 "with": "\\",
-                "quote": "\""
+                "quote": "\"",
+                "requote": "\""
               },
               "empty": "keep",
               "create": {
@@ -694,7 +709,8 @@
               "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
               "escape": {
                 "with": "\\",
-                "quote": "\""
+                "quote": "\"",
+                "requote": "\""
               },
               "empty": "keep",
               "create": {
@@ -911,7 +927,8 @@
               "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
               "escape": {
                 "with": "\\",
-                "quote": "\""
+                "quote": "\"",
+                "requote": "\""
               },
               "empty": "keep",
               "create": {
@@ -927,7 +944,8 @@
               "match": "\"?(?<value>(?:[^\"\\\\]|\\\\.)*)\"?",
               "escape": {
                 "with": "\\",
-                "quote": "\""
+                "quote": "\"",
+                "requote": "\""
               },
               "empty": "keep",
               "create": {

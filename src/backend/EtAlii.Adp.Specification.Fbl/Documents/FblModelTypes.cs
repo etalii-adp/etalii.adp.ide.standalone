@@ -627,6 +627,12 @@ internal sealed record CreateChild(string Emit, ChildPlace Place, string? Before
 /// </summary>
 internal sealed record SlotEscape(char With, char Quote)
 {
+    /// <summary>
+    /// <c>requote</c> (FBL 0.15 §5.2): the quote a set writes the whole node in, so that a value written bare is written
+    /// quoted when it is set (§6.3, <i>A string</i>); null when the binding gives none, and a set writes the value's span.
+    /// </summary>
+    public char? Requote { get; init; }
+
     public string Read(string text)
     {
         if (text.IndexOf(With) < 0) return text;
