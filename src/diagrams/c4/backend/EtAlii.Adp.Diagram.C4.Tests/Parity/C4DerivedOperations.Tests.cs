@@ -181,10 +181,10 @@ public class C4DerivedOperationsTests
 
             // The line surgery's own refusals, for a line it could not cut, have no counterpart: the library either
             // writes the value or says why not. And where the surgery wrote a value into an argument that is not the
-            // attribute's, as a description into an instance's deployment groups, the binding holds no such
-            // attribute and the library refuses (the instance-name defect of task 14, found again for the description).
+            // attribute's, as a description into an instance's deployment groups, the command now refuses it in C4's words
+            // (the instance-name defect of task 14, found again for the description).
             var surgery = expected is not null && expected.StartsWith("Line ", StringComparison.Ordinal);
-            var notHeld = expected is null && actual is not null && actual.Contains(" keeps no '", StringComparison.Ordinal);
+            var notHeld = expected is null && actual is not null && actual.EndsWith(" has no description in C4; it stands for what it is an instance of.", StringComparison.Ordinal);
 
             // A value written bare, without quotes, keeps its style (Q1), and a new value that needs quotes then does not
             // read back, so the library refuses where the line surgery quoted it (finding B18; reported as a gap).

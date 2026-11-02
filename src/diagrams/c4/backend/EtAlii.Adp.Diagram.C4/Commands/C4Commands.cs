@@ -70,8 +70,19 @@ internal sealed class SetElementNameCommandHandler(IC4DocumentStore documents) :
 internal sealed class SetElementDescriptionCommandHandler(IC4DocumentStore documents) : C4EditHandler<SetElementDescriptionCommand>(documents)
 {
     /// <inheritdoc />
-    protected override EditOutcome Apply(LineDocument body, C4Workspace model, SetElementDescriptionCommand command) =>
-        EditElement(body, command, command.ElementId, "description", command.Description);
+    protected override EditOutcome Apply(LineDocument body, C4Workspace model, SetElementDescriptionCommand command)
+    {
+        var element = model.Find(command.ElementId);
+        if (element is not null && element.Kind is C4ElementKind.ContainerInstance or C4ElementKind.SoftwareSystemInstance)
+        {
+            // As for the name: an instance takes what it is an instance of, deployment groups and tags, and the binding
+            // holds no description for it.
+            return EditOutcome.Refused(
+                $"A {element.Kind.ToString().ToLowerInvariant()} has no description in C4; it stands for what it is an instance of.");
+        }
+
+        return EditElement(body, command, command.ElementId, "description", command.Description);
+    }
 }
 
 internal sealed class SetElementTechnologyCommandHandler(IC4DocumentStore documents) : C4EditHandler<SetElementTechnologyCommand>(documents)

@@ -769,7 +769,7 @@
         },
         {
           "do": "set webApplicationInstance c4.description = \"Parity description\"",
-          "answer": "refused: A ContainerInstance keeps no 'description' in this file.",
+          "answer": "refused: A containerinstance has no description in C4; it stands for what it is an instance of.",
           "unchanged": true
         },
         {
@@ -819,7 +819,7 @@
         },
         {
           "do": "commit c4.edit-description on webApplicationInstance = \"Parity described\"",
-          "answer": "refused: A ContainerInstance keeps no 'description' in this file.",
+          "answer": "refused: A containerinstance has no description in C4; it stands for what it is an instance of.",
           "unchanged": true
         },
         {
@@ -2405,7 +2405,7 @@
         },
         {
           "do": "set containerinstance_mobileApp_2 c4.description = \"Parity description\"",
-          "answer": "refused: A ContainerInstance keeps no 'description' in this file.",
+          "answer": "refused: A containerinstance has no description in C4; it stands for what it is an instance of.",
           "unchanged": true
         },
         {
@@ -2455,7 +2455,7 @@
         },
         {
           "do": "commit c4.edit-description on containerinstance_mobileApp_2 = \"Parity described\"",
-          "answer": "refused: A ContainerInstance keeps no 'description' in this file.",
+          "answer": "refused: A containerinstance has no description in C4; it stands for what it is an instance of.",
           "unchanged": true
         },
         {
@@ -6430,7 +6430,7 @@
         },
         {
           "do": "set containerinstance_opcGateway_5 c4.description = \"Parity description\"",
-          "answer": "refused: A ContainerInstance keeps no 'description' in this file.",
+          "answer": "refused: A containerinstance has no description in C4; it stands for what it is an instance of.",
           "unchanged": true
         },
         {
@@ -6480,7 +6480,7 @@
         },
         {
           "do": "commit c4.edit-description on containerinstance_opcGateway_5 = \"Parity described\"",
-          "answer": "refused: A ContainerInstance keeps no 'description' in this file.",
+          "answer": "refused: A containerinstance has no description in C4; it stands for what it is an instance of.",
           "unchanged": true
         },
         {
@@ -7493,7 +7493,7 @@
         },
         {
           "do": "set containerinstance_web_1 c4.description = \"Parity description\"",
-          "answer": "refused: A ContainerInstance keeps no 'description' in this file.",
+          "answer": "refused: A containerinstance has no description in C4; it stands for what it is an instance of.",
           "unchanged": true
         },
         {
@@ -7543,7 +7543,7 @@
         },
         {
           "do": "commit c4.edit-description on containerinstance_web_1 = \"Parity described\"",
-          "answer": "refused: A ContainerInstance keeps no 'description' in this file.",
+          "answer": "refused: A containerinstance has no description in C4; it stands for what it is an instance of.",
           "unchanged": true
         },
         {
@@ -15275,7 +15275,7 @@
         },
         {
           "do": "set ci c4.description = \"Parity description\"",
-          "answer": "refused: A ContainerInstance keeps no 'description' in this file.",
+          "answer": "refused: A containerinstance has no description in C4; it stands for what it is an instance of.",
           "unchanged": true
         },
         {
@@ -15325,7 +15325,7 @@
         },
         {
           "do": "commit c4.edit-description on ci = \"Parity described\"",
-          "answer": "refused: A ContainerInstance keeps no 'description' in this file.",
+          "answer": "refused: A containerinstance has no description in C4; it stands for what it is an instance of.",
           "unchanged": true
         },
         {
@@ -20411,7 +20411,7 @@
         },
         {
           "do": "set wi c4.description = \"Parity description\"",
-          "answer": "refused: A ContainerInstance keeps no 'description' in this file.",
+          "answer": "refused: A containerinstance has no description in C4; it stands for what it is an instance of.",
           "unchanged": true
         },
         {
@@ -20461,7 +20461,7 @@
         },
         {
           "do": "commit c4.edit-description on wi = \"Parity described\"",
-          "answer": "refused: A ContainerInstance keeps no 'description' in this file.",
+          "answer": "refused: A containerinstance has no description in C4; it stands for what it is an instance of.",
           "unchanged": true
         },
         {
@@ -26030,7 +26030,7 @@
         },
         {
           "do": "set containerinstance_web_2 c4.description = \"Parity description\"",
-          "answer": "refused: A ContainerInstance keeps no 'description' in this file.",
+          "answer": "refused: A containerinstance has no description in C4; it stands for what it is an instance of.",
           "unchanged": true
         },
         {
@@ -26080,7 +26080,7 @@
         },
         {
           "do": "commit c4.edit-description on containerinstance_web_2 = \"Parity described\"",
-          "answer": "refused: A ContainerInstance keeps no 'description' in this file.",
+          "answer": "refused: A containerinstance has no description in C4; it stands for what it is an instance of.",
           "unchanged": true
         },
         {
@@ -28513,7 +28513,7 @@
         },
         {
           "do": "set containerinstance_opcGateway_5 c4.description = \"Parity description\"",
-          "answer": "refused: A ContainerInstance keeps no 'description' in this file.",
+          "answer": "refused: A containerinstance has no description in C4; it stands for what it is an instance of.",
           "unchanged": true
         },
         {
@@ -28563,7 +28563,7 @@
         },
         {
           "do": "commit c4.edit-description on containerinstance_opcGateway_5 = \"Parity described\"",
-          "answer": "refused: A ContainerInstance keeps no 'description' in this file.",
+          "answer": "refused: A containerinstance has no description in C4; it stands for what it is an instance of.",
           "unchanged": true
         },
         {
@@ -30458,7 +30458,7 @@
         },
         {
           "do": "set containerinstance_spa_3 c4.description = \"Parity description\"",
-          "answer": "refused: A ContainerInstance keeps no 'description' in this file.",
+          "answer": "refused: A containerinstance has no description in C4; it stands for what it is an instance of.",
           "unchanged": true
         },
         {
@@ -30508,7 +30508,7 @@
         },
         {
           "do": "commit c4.edit-description on containerinstance_spa_3 = \"Parity described\"",
-          "answer": "refused: A ContainerInstance keeps no 'description' in this file.",
+          "answer": "refused: A containerinstance has no description in C4; it stands for what it is an instance of.",
           "unchanged": true
         },
         {
@@ -32417,7 +32417,7 @@
         },
         {
           "do": "set containerinstance_spa_3 c4.description = \"Parity description\"",
-          "answer": "refused: A ContainerInstance keeps no 'description' in this file.",
+          "answer": "refused: A containerinstance has no description in C4; it stands for what it is an instance of.",
           "unchanged": true
         },
         {
@@ -32467,7 +32467,7 @@
         },
         {
           "do": "commit c4.edit-description on containerinstance_spa_3 = \"Parity described\"",
-          "answer": "refused: A ContainerInstance keeps no 'description' in this file.",
+          "answer": "refused: A containerinstance has no description in C4; it stands for what it is an instance of.",
           "unchanged": true
         },
         {
