@@ -127,6 +127,7 @@ internal sealed class WardleyTransactionWriter(WardleyBodyEdit body, WardleyEdit
         var becomes = Text(create.Attributes, "renamedTo").Trim();
         if (becomes.Length > 0 && WardleyEdit.Unusable(becomes) is { } unusable) return EditOutcome.Refused(unusable);
         if (WardleyEdit.NameFor(body, map, component, id, Taken) is not { } name) return EditOutcome.Refused("That element could not be renamed.");
+        if (create.Type == "Evolution" && (WardleyEvolveNames.OfComponent(name) ?? WardleyEvolveNames.Arriving(becomes)) is { } unevolvable) return EditOutcome.Refused(unevolvable);
 
         // The statement names the component by its name, as the format writes it.
         var attributes = Clamped(create.Attributes);
@@ -214,12 +215,15 @@ internal sealed class WardleyTransactionWriter(WardleyBodyEdit body, WardleyEdit
             if (string.IsNullOrWhiteSpace(name)) return EditOutcome.Refused("An element needs a name.");
             if (WardleyEdit.Unusable(name) is { } unusable) return EditOutcome.Refused(unusable);
             if (map.Map.Components.Any(existing => existing.Name == name)) return EditOutcome.Refused($"This map already has an element called '{name}'.");
+            if (map.ComponentOf(set.ElementId) is { } component && WardleyEdit.Evolving(map.Map, component)
+                && WardleyEvolveNames.OfComponent(name) is { } unevolvable) return EditOutcome.Refused(unevolvable);
             Taken.Add(name);
         }
 
         if (attributes.TryGetValue("renamedTo", out var becomes) && becomes is string text)
         {
             if (text.Trim() is { Length: > 0 } trimmed && WardleyEdit.Unusable(trimmed) is { } unusable) return EditOutcome.Refused(unusable);
+            if (WardleyEvolveNames.Arriving(text.Trim()) is { } unarriving) return EditOutcome.Refused(unarriving);
             attributes["renamedTo"] = text.Trim();
         }
 

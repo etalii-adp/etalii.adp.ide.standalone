@@ -165,6 +165,10 @@ internal static class WardleyEdit
             && link.Source == source && link.Target == target;
     }
 
+    /// <summary>Whether an `evolve` names <paramref name="component"/>: it is the first holder of its name, and one names that name.</summary>
+    public static bool Evolving(WardleyMap map, WardleyComponent component) =>
+        WardleyHolders.IsFirstHolder(map, component) && map.Evolves.Any(evolve => evolve.Name == component.Name);
+
     private static bool Component(WardleyBodyEdit body, string id, string name) =>
         body.Change(new ModelChange.Add("Component", id, new Dictionary<string, object?>(StringComparer.Ordinal) { ["name"] = name, ["visibility"] = 0.5d, ["maturity"] = 0.5d })).WasApplied;
 
@@ -289,7 +293,7 @@ public sealed class RenameWardleyElementCommandHandler(IWardleyDocumentStore doc
             return EditOutcome.Refused("An element needs a name.");
         }
 
-        if (map.ComponentOf(command.ElementId) is null)
+        if (map.ComponentOf(command.ElementId) is not { } component)
         {
             return EditOutcome.Refused(Gone);
         }
@@ -297,6 +301,11 @@ public sealed class RenameWardleyElementCommandHandler(IWardleyDocumentStore doc
         if (WardleyEdit.Unusable(command.NewName) is { } unusable)
         {
             return EditOutcome.Refused(unusable);
+        }
+
+        if (WardleyEdit.Evolving(map.Map, component) && WardleyEvolveNames.OfComponent(command.NewName) is { } unevolvable)
+        {
+            return EditOutcome.Refused(unevolvable);
         }
 
         if (map.Map.Components.Any(existing => existing.Name == command.NewName))
@@ -509,6 +518,11 @@ public sealed class SetWardleyEvolveCommandHandler(IWardleyDocumentStore documen
             return EditOutcome.Refused(unusable);
         }
 
+        if (WardleyEvolveNames.Arriving(becomes) is { } unarriving)
+        {
+            return EditOutcome.Refused(unarriving);
+        }
+
         // Clamped rather than refused, for the same reason a drag is: the axis has ends, and a value past one of them is a
         // slip rather than a different intention (Requirement 7.3).
         var maturity = Math.Clamp(command.Maturity, 0d, 1d);
@@ -525,6 +539,11 @@ public sealed class SetWardleyEvolveCommandHandler(IWardleyDocumentStore documen
         if (WardleyEdit.NameFor(body, map, component, command.ElementId, map.Names()) is not { } name)
         {
             return EditOutcome.Refused("That element could not be renamed.");
+        }
+
+        if (WardleyEvolveNames.OfComponent(name) is { } unevolvable)
+        {
+            return EditOutcome.Refused(unevolvable);
         }
 
         var attributes = WardleyEdit.Attributes(("component", name), ("maturity", maturity));

@@ -2,6 +2,7 @@ using EtAlii.Adp.Diagram.WardleyMap.Tests.Parity;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Specification.Disl;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
@@ -215,8 +216,14 @@ public sealed class WardleyDuplicateKeysTests : IDisposable
         Assert.Equal(ids, undone);
     }
 
+    /// <remarks>
+    /// The binding cannot yet read an evolution of a name whose last word is a number: `evolve Tea 2 0.9` reads the 2 as
+    /// the maturity's rival, which LALR(1) cannot decide (spec 071, the coordinator's ruling (b) of 2026-11-02). So the
+    /// evolution a later holder would need is refused, and the map is left as it was. The refusal lifts by itself once the
+    /// binding reads such a name (<see cref="WardleyEvolveNames"/>).
+    /// </remarks>
     [Fact]
-    public async Task AnEvolutionDrawnFromALaterHolder_RenamesItWithANumber()
+    public async Task AnEvolutionDrawnFromALaterHolder_IsRefused_SinceItsNumberedNameCannotBeWrittenInAnEvolution()
     {
         // Arrange.
         Write(TwoTeas);
@@ -227,10 +234,99 @@ public sealed class WardleyDuplicateKeysTests : IDisposable
         var after = await ComponentIdsAsync();
 
         // Assert.
-        Assert.True(evolved.IsSuccess, evolved.Error);
-        Assert.Equal("component Tea [0.5, 0.5]\ncomponent Tea 2 [0.3, 0.7]\ncomponent Cup [0.8, 0.2]\nevolve Tea 2 0.9\n", Read());
+        Assert.False(evolved.IsSuccess);
+        Assert.Equal("'Tea 2' ends in a number, so an evolution of it cannot be written.", evolved.Error);
+        Assert.Equal(TwoTeas, Read());
         Assert.Equal(ids, after);
     }
+
+    [Fact]
+    public async Task AnEvolutionArrivingUnderANameEndingInANumber_IsRefused()
+    {
+        // Arrange.
+        Write(TwoTeas);
+        var ids = await ComponentIdsAsync();
+
+        // Act.
+        var evolved = await ExecuteAsync(new SetWardleyEvolveCommand(_path, ids[2], Present: true, 0.9d, "Cup 2"));
+
+        // Assert.
+        Assert.False(evolved.IsSuccess);
+        Assert.Equal("'Cup 2' ends in a number, so an evolution cannot arrive under it.", evolved.Error);
+        Assert.Equal(TwoTeas, Read());
+    }
+
+    [Fact]
+    public async Task RenamingAnEvolvingComponentToANameEndingInANumber_IsRefused()
+    {
+        // Arrange.
+        Write(TwoTeas + "evolve Cup 0.9\n");
+        var ids = await ComponentIdsAsync();
+
+        // Act.
+        var renamed = await ExecuteAsync(new RenameWardleyElementCommand(_path, ids[2], "Cup 3"));
+
+        // Assert.
+        Assert.False(renamed.IsSuccess);
+        Assert.Equal("'Cup 3' ends in a number, so an evolution of it cannot be written.", renamed.Error);
+        Assert.Equal(TwoTeas + "evolve Cup 0.9\n", Read());
+    }
+
+    [Fact]
+    public async Task ADefinitionsEvolutionOfALaterHolder_IsRefused_AsTheCommandsIs()
+    {
+        // Arrange.
+        Write(TwoTeas);
+        var ids = await ComponentIdsAsync();
+        var create = new DislChange.Create("Evolution", "", Values(("component", ids[1]), ("maturity", 0.9d)), null, null);
+
+        // Act.
+        var written = await ExecuteAsync(new WriteWardleyTransactionCommand(_path, "evolution", [create]));
+
+        // Assert.
+        Assert.False(written.IsSuccess);
+        Assert.Equal("'Tea 2' ends in a number, so an evolution of it cannot be written.", written.Error);
+        Assert.Equal(TwoTeas, Read());
+    }
+
+    [Fact]
+    public async Task ADefinitionsEvolutionArrivingUnderANumberedName_IsRefused_OnAnAddAndOnASet()
+    {
+        // Arrange.
+        Write(TwoTeas + "evolve Cup 0.9\n");
+        var ids = await ComponentIdsAsync();
+        var evolution = WardleyBody.Model(LineDocument.Parse(Read()), Documents.Identities(_path)).Elements.Single(element => element.IsA("Evolution")).Id;
+        var create = new DislChange.Create("Evolution", "", Values(("component", ids[0]), ("maturity", 0.9d), ("renamedTo", "Leaf 2")), null, null);
+        var set = new DislChange.Set(evolution, "Evolution", Values(("renamedTo", "Mug 2")));
+
+        // Act.
+        var added = await ExecuteAsync(new WriteWardleyTransactionCommand(_path, "evolution", [create]));
+        var changed = await ExecuteAsync(new WriteWardleyTransactionCommand(_path, "row 'renamedTo'", [set]));
+
+        // Assert.
+        Assert.Equal("'Leaf 2' ends in a number, so an evolution cannot arrive under it.", added.Error);
+        Assert.Equal("'Mug 2' ends in a number, so an evolution cannot arrive under it.", changed.Error);
+        Assert.Equal(TwoTeas + "evolve Cup 0.9\n", Read());
+    }
+
+    [Fact]
+    public async Task ADefinitionsRenameOfAnEvolvingComponentToANumberedName_IsRefused()
+    {
+        // Arrange.
+        Write(TwoTeas + "evolve Cup 0.9\n");
+        var ids = await ComponentIdsAsync();
+        var set = new DislChange.Set(ids[2], "Component", Values(("name", "Cup 3")));
+
+        // Act.
+        var renamed = await ExecuteAsync(new WriteWardleyTransactionCommand(_path, "row 'name'", [set]));
+
+        // Assert.
+        Assert.Equal("'Cup 3' ends in a number, so an evolution of it cannot be written.", renamed.Error);
+        Assert.Equal(TwoTeas + "evolve Cup 0.9\n", Read());
+    }
+
+    private static Dictionary<string, object?> Values(params (string Name, object? Value)[] values) =>
+        values.ToDictionary(value => value.Name, value => value.Value, StringComparer.Ordinal);
 
     [Fact]
     public async Task APipelineDrawnFromALaterHolder_RenamesItWithANumber()
