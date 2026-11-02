@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.Specification.Fbl;
 using EtAlii.Adp.Specification.Fbl.Planning;
@@ -24,8 +25,8 @@ public sealed class C4Positions(IFileWriter writer)
 {
     private static readonly ILogger _logger = Log.ForContext<C4Positions>();
 
-    /// <summary>The binding's <c>registration.legacyLayout</c>, which <c>C4PositionsTests</c> holds to <c>structurizr.fbl</c>.</summary>
-    public const string LegacyLayout = "{base}.layout.json";
+    /// <summary>The binding's <c>registration.legacyLayout</c>.</summary>
+    private const string LegacyLayout = "{base}.layout.json";
 
     /// <summary>The layout file the binding names for a body: <see cref="LegacyLayout"/> beside it.</summary>
     public static string LegacyPathFor(string bodyPath)
@@ -58,7 +59,7 @@ public sealed class C4Positions(IFileWriter writer)
 
         try
         {
-            return LegacySidecar.Open(File.ReadAllBytes(legacy)).Positions(viewKey, ids)
+            return LegacySidecar.Open(SharedDocumentReader.ReadAllBytes(legacy)).Positions(viewKey, ids)
                 .ToDictionary(pair => pair.Key, pair => new C4Position(pair.Value.X, pair.Value.Y), StringComparer.OrdinalIgnoreCase);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
@@ -88,7 +89,7 @@ public sealed class C4Positions(IFileWriter writer)
 
         try
         {
-            var sidecar = LegacySidecar.Open(File.ReadAllBytes(legacy));
+            var sidecar = LegacySidecar.Open(SharedDocumentReader.ReadAllBytes(legacy));
             return [.. viewKeys.SelectMany(viewKey => sidecar.Findings(viewKey, stored, Path.GetFileName(legacy)).Select(finding => (viewKey, finding)))];
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
@@ -178,6 +179,6 @@ public sealed class C4Positions(IFileWriter writer)
         $"The layout beside {Path.GetFileName(bodyPath)} could not be updated, so positions may not be as expected when the diagram is reopened.";
 
     /// <summary>What a move says when its position could not be written.</summary>
-    internal static string NotSaved(string bodyPath) =>
+    private static string NotSaved(string bodyPath) =>
         $"The new position could not be saved beside {Path.GetFileName(bodyPath)}, so it will not be there when the diagram is reopened.";
 }
