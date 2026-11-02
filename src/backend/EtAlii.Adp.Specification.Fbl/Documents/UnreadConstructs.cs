@@ -28,7 +28,7 @@ internal static class UnreadConstructs
     }
 
     /// <summary>A rule's constructs, wherever they stand in it: its insert's <c>continues</c>, its remove's <c>parts</c> and
-    /// <c>whole</c>, and a <c>{node}</c> slot's <c>expand</c>, <c>ordinal</c>, <c>name</c> and the escapes of 0.15.</summary>
+    /// <c>whole</c>, and a <c>{node}</c> slot's <c>expand</c>, <c>ordinal</c>, <c>name</c> and the escapes of 0.15 but <c>requote</c>.</summary>
     public static string? InRule(JsonElement rule, string type, string pointer, List<LoadDiagnostic> problems)
     {
         var found = new List<Construct>();
@@ -55,7 +55,7 @@ internal static class UnreadConstructs
             {
                 ("insert", "continues") => new Construct("insert.continues", at, "0.16"),
                 ("remove", "parts" or "whole") => new Construct($"remove.{property.Name}", at, "0.16"),
-                ("escape", "sequences" or "unicode" or "writes" or "requote") => new Construct($"escape.{property.Name}", at, "0.15"),
+                ("escape", "sequences" or "unicode" or "writes") => new Construct($"escape.{property.Name}", at, "0.15"),
                 (_, "expand" or "ordinal" or "name") when slot => new Construct(property.Name, at, "0.15"),
                 _ => null,
             };

@@ -365,7 +365,9 @@ internal sealed class GrammarFamily(BodyText text, FblBinding binding, FblOption
 
     /// <summary>
     /// A changed value: a <c>replace-value</c> of the value's span, the group <c>value</c> of the slot's <c>match</c> or the
-    /// node's own span; a list of items, the difference (<see cref="WriteItems"/>), unless the slot reaches no node.
+    /// node's own span, or, when the slot's <c>escape</c> gives a <c>requote</c>, of the whole node, the value between two of
+    /// it (FBL 0.15 §6.3, <i>A string</i>); a list of items, the difference (<see cref="WriteItems"/>), unless the slot
+    /// reaches no node.
     /// </summary>
     protected override bool ReplaceSlot(Plan plan, SlotChange change)
     {
@@ -382,6 +384,11 @@ internal sealed class GrammarFamily(BodyText text, FblBinding binding, FblOption
             return true;
         }
         if (change.Read.Span is not { } span) return false;
+        if (change.Binding.Escape?.Requote is { } requote && change.Read.Node is GrammarNode { HasSpan: true } node)
+        {
+            plan.Add(SpliceOperation.ReplaceValue, node.Own, requote + Format(change.Read, change.Binding, change.Value) + requote);
+            return true;
+        }
         plan.Add(SpliceOperation.ReplaceValue, span, Format(change.Read, change.Binding, change.Value));
         return true;
     }

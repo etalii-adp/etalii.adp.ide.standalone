@@ -240,13 +240,6 @@
       "reason": "The fixture is one of the supply chain module's parity corpus, written to be text that is not YAML. FBL section 7.5 opens such a body empty and read-only and reports std.unparseable, as the module's reader reports it under supply-chain.unreadable; the binding is not wrong here, the body is (supply-chain-disl-fbl, Requirement 4.6)."
     },
     {
-      "property": "edit",
-      "binding": "structurizr",
-      "file": "src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/Fixtures/findings/lenient-spellings.dsl",
-      "observed": "User.name: The new name would not read back from the text.",
-      "reason": "The person's name is written bare ('Person User'), a WORD. The binding writes a value as it is inside the token it replaces (FBL 0.11 section 4.9), so 'User edited' would be two words, and the set is refused because the entry would not read back with it (section 6.4). C4Parser writes a quoted name. Candidate follow-up for etalii.adp: a slot that requotes a bare value it cannot write as one word (the 'requote' of FBL 0.15's escape)."
-    },
-    {
       "property": "beside-parser",
       "binding": "structurizr",
       "file": "src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/Fixtures/findings/unbalanced.dsl",

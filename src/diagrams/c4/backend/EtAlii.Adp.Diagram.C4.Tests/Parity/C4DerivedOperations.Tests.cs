@@ -185,11 +185,7 @@ public class C4DerivedOperationsTests
             // (the instance-name defect of task 14, found again for the description).
             var surgery = expected is not null && expected.StartsWith("Line ", StringComparison.Ordinal);
             var notHeld = expected is null && actual is not null && actual.EndsWith(" has no description in C4; it stands for what it is an instance of.", StringComparison.Ordinal);
-
-            // A value written bare, without quotes, keeps its style (Q1), and a new value that needs quotes then does not
-            // read back, so the library refuses where the line surgery quoted it (finding B18; reported as a gap).
-            var bare = expected is null && actual is not null && actual.EndsWith(" would not read back from the text.", StringComparison.Ordinal);
-            if (!string.Equals(expected, actual, StringComparison.Ordinal) && !surgery && !notHeld && !bare)
+            if (!string.Equals(expected, actual, StringComparison.Ordinal) && !surgery && !notHeld)
             {
                 Mismatches.Add($"{edit}\n  hand-written {expected ?? "applied"}\n  library      {actual ?? "applied"}");
             }
