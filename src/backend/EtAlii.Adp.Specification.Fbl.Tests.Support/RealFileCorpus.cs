@@ -32,6 +32,8 @@ public static class RealFileCorpus
         new("sankey", "src/diagrams/sankey/backend/EtAlii.Adp.Diagram.Sankey/sankey.fbl", "skv", 34, (path, _) => Extension(path, ".skv")),
         // supply-chain-disl-fbl, task 10: the module's own binding, through which the module reads every .supply.
         new("supply-chain", "src/diagrams/supply-chain/backend/EtAlii.Adp.Diagram.SupplyChain/supply-chain.fbl", "supply", 34, (path, _) => Extension(path, ".supply")),
+        // wardley-map-disl-fbl, task 11: the module's own binding, through which the module reads every .owm.
+        new("wardley-map", "src/diagrams/wardley-map/backend/EtAlii.Adp.Diagram.WardleyMap/wardley-map.fbl", "map", 54, (path, _) => Extension(path, ".owm")),
     ];
 
     /// <summary>Registrations: every <c>.adp</c> under <c>src/</c>.</summary>

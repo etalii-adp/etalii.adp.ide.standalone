@@ -17,7 +17,7 @@ namespace EtAlii.Adp.Diagram.WardleyMap;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>The model is <see cref="WardleyDisl"/>'s</b>, built from the parser's reading and the identities the store keeps
+/// <b>The model is <see cref="WardleyBody"/>'s</b>, built from the binding's reading and the identities the store keeps
 /// beside the map, so a menu and a row read the same snapshot. An element is found by its identity, which is its model id.
 /// An operation runs on a model of its own, built from the same reading, as the DISL runtime changes the one it is given.
 /// </para>
@@ -92,7 +92,7 @@ internal static class WardleyDefinition
         ArgumentNullException.ThrowIfNull(entry);
         if (!entry.IsUsable) return [];
 
-        var diagram = WardleyDisl.Of(entry.Document, entry.Model, identities);
+        var diagram = WardleyBody.Model(entry.Document, identities);
         return TargetOf(diagram, elementId) is { } target ? Definition.Menus(target, EnvOf(editable)) : [];
     }
 
@@ -100,7 +100,7 @@ internal static class WardleyDefinition
     public static IReadOnlyList<ContextPropertyDefinition> Rows(DocumentEntry<LineDocument, WardleyMap> entry, IReadOnlyList<WardleyIdentityEntry> identities, string elementId, bool editable)
     {
         ArgumentNullException.ThrowIfNull(entry);
-        return WardleyDisl.ElementOf(WardleyDisl.Of(entry.Document, entry.Model, identities), elementId) is { } element
+        return WardleyBody.ElementOf(WardleyBody.Model(entry.Document, identities), elementId) is { } element
             ? Definition.Rows(element, EnvOf(editable))
             : [];
     }
@@ -113,9 +113,9 @@ internal static class WardleyDefinition
     public static WardleyStep Execute(DocumentEntry<LineDocument, WardleyMap> entry, IReadOnlyList<WardleyIdentityEntry> identities, string bodyPath, string elementId, string actionId)
     {
         ArgumentNullException.ThrowIfNull(entry);
-        var diagram = WardleyDisl.Of(entry.Document, entry.Model, identities);
-        if (elementId.Length > 0 && WardleyDisl.ElementOf(diagram, elementId) is null) return WardleyStep.Refused(Gone);
-        var self = WardleyDisl.ElementOf(diagram, elementId);
+        var diagram = WardleyBody.Model(entry.Document, identities);
+        if (elementId.Length > 0 && WardleyBody.ElementOf(diagram, elementId) is null) return WardleyStep.Refused(Gone);
+        var self = WardleyBody.ElementOf(diagram, elementId);
         if (EntryOf(diagram, self, actionId) is not { } found) return WardleyStep.Refused(DoesNotApply(actionId));
 
         switch (found)
@@ -150,7 +150,7 @@ internal static class WardleyDefinition
                                 asked.Label,
                                 asked.Icon ?? "",
                                 asked.SubmitLabel ?? "",
-                                [.. options.Select(option => new ContextOptionNode(WardleyDisl.ChoiceIdOf(option.Value), option.Label, Selectable: true))],
+                                [.. options.Select(option => new ContextOptionNode(WardleyBody.ChoiceIdOf(option.Value), option.Label, Selectable: true))],
                                 Sentence(operation) ?? "")));
                         }
 
@@ -169,8 +169,8 @@ internal static class WardleyDefinition
     public static string? Validate(DocumentEntry<LineDocument, WardleyMap> entry, IReadOnlyList<WardleyIdentityEntry> identities, string elementId, string actionId, string value)
     {
         ArgumentNullException.ThrowIfNull(entry);
-        var diagram = WardleyDisl.Of(entry.Document, entry.Model, identities);
-        var self = WardleyDisl.ElementOf(diagram, elementId);
+        var diagram = WardleyBody.Model(entry.Document, identities);
+        var self = WardleyBody.ElementOf(diagram, elementId);
         if (elementId.Length > 0 && self is null) return null;
         if (EntryOf(diagram, self, actionId) is not { Operation: { } operation } found || Unanswered(operation, found.Arguments) is not { } form) return null;
 
@@ -185,8 +185,8 @@ internal static class WardleyDefinition
     public static DiagramPropertyChange Commit(DocumentEntry<LineDocument, WardleyMap> entry, IReadOnlyList<WardleyIdentityEntry> identities, string bodyPath, string elementId, string actionId, string value)
     {
         ArgumentNullException.ThrowIfNull(entry);
-        var diagram = WardleyDisl.Of(entry.Document, entry.Model, identities);
-        var self = WardleyDisl.ElementOf(diagram, elementId);
+        var diagram = WardleyBody.Model(entry.Document, identities);
+        var self = WardleyBody.ElementOf(diagram, elementId);
         if (elementId.Length > 0 && self is null || EntryOf(diagram, self, actionId) is not { } found) return DiagramPropertyChange.Refused(DoesNotApply(actionId));
 
         WardleyStep step;
@@ -211,7 +211,7 @@ internal static class WardleyDefinition
                         object? answer = value;
                         if (field.Options is { } options)
                         {
-                            var chosen = value.Length == 0 && options is [var only] ? only : options.FirstOrDefault(option => WardleyDisl.ChoiceIdOf(option.Value) == value);
+                            var chosen = value.Length == 0 && options is [var only] ? only : options.FirstOrDefault(option => WardleyBody.ChoiceIdOf(option.Value) == value);
                             if (chosen is null) return DiagramPropertyChange.Refused(DoesNotApply(actionId));
                             answer = chosen.Value;
                         }
@@ -237,17 +237,17 @@ internal static class WardleyDefinition
     public static DiagramPropertyChange Change(DocumentEntry<LineDocument, WardleyMap> entry, IReadOnlyList<WardleyIdentityEntry> identities, string bodyPath, string elementId, string propertyId, string value)
     {
         ArgumentNullException.ThrowIfNull(entry);
-        var diagram = WardleyDisl.Of(entry.Document, entry.Model, identities);
-        if (WardleyDisl.ElementOf(diagram, elementId) is not { } element) return DiagramPropertyChange.Refused(Gone);
+        var diagram = WardleyBody.Model(entry.Document, identities);
+        if (WardleyBody.ElementOf(diagram, elementId) is not { } element) return DiagramPropertyChange.Refused(Gone);
         // A row the form declares is one, shown or not: one hidden by its visible or its showAbsent meets the
         // definition's own refusals, as the evolution rows of an element that is not evolving do.
         var key = RowKeyOf(element, propertyId);
         if (!FormCommit.HasRow(Specification, element, key)) return DiagramPropertyChange.Refused($"'{propertyId}' is not a property of this element.");
 
-        var working = WardleyDisl.Build(entry.Document, entry.Model, identities);
+        var working = WardleyBody.Working(entry.Document, identities);
         var transaction = FormCommit.Row(Specification, working.ElementById(element.Id)!, key, value, Env, ids: DislIds.Of(Specification));
         if (!transaction.WasApplied) return DiagramPropertyChange.Refused(transaction.Refusal!);
-        return WardleyTransactionCommands.Of(bodyPath, diagram, transaction) is { } command
+        return WardleyTransactionCommands.Of(bodyPath, diagram, transaction, row: true) is { } command
             ? DiagramPropertyChange.By(command)
             : DiagramPropertyChange.Refused(WardleyTransactionCommands.Unwritable($"row '{key}'"));
     }
@@ -274,7 +274,7 @@ internal static class WardleyDefinition
         ArgumentNullException.ThrowIfNull(passedOver);
         ArgumentNullException.ThrowIfNull(identities);
         ArgumentNullException.ThrowIfNull(beforeReader);
-        var diagram = WardleyDisl.Of(body, map, identities);
+        var diagram = WardleyBody.Model(body, identities);
         var reader = passedOver.Select(problem => DislReaderFinding.Unreadable(problem.Message, problem.Line + 1)).ToList();
         var findings = ConstraintEvaluator.Evaluate(Specification, diagram, new DislConstraintOptions(Env, reader));
         var codes = CodeOrder();
@@ -327,7 +327,7 @@ internal static class WardleyDefinition
     private static DislMenuTarget? TargetOf(DislDiagram diagram, string elementId) =>
         elementId.Length == 0
             ? DislMenuTarget.Canvas(diagram)
-            : WardleyDisl.ElementOf(diagram, elementId) is { } element
+            : WardleyBody.ElementOf(diagram, elementId) is { } element
                 ? DislMenuTarget.Element(element)
                 : null;
 
@@ -357,7 +357,7 @@ internal static class WardleyDefinition
         DislElement? self,
         IReadOnlyDictionary<string, object?> arguments)
     {
-        var working = WardleyDisl.Build(entry.Document, entry.Model, identities);
+        var working = WardleyBody.Working(entry.Document, identities);
         var parameters = arguments.ToDictionary(
             argument => argument.Key,
             argument => argument.Value is DislElement element ? working.ElementById(element.Id) : argument.Value,

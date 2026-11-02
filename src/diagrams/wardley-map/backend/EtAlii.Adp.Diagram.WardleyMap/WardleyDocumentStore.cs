@@ -76,7 +76,7 @@ public sealed class WardleyDocumentStore(IFileWriter writer) : LifecycleDocument
 
 
     /// <inheritdoc />
-    protected override ParseOutcome<WardleyMap> Parse(LineDocument body) => WardleyParser.Outcome(body);
+    protected override ParseOutcome<WardleyMap> Parse(LineDocument body) => WardleyBody.Read(body);
 
     /// <inheritdoc />
     /// <remarks>

@@ -70,7 +70,9 @@ public static class NaturalIds
     /// The further binding types a binding's tool type maps <c>as: "diagram"</c> beside <see cref="DocumentType"/>, and the
     /// name each of their attributes takes on the diagram (DISL 11.2, <c>typeMap</c>), read here from the specifications
     /// in etalii.adp: the C4 types map the selected view's statements (<c>ViewInclude</c>) onto the diagram too, and name the
-    /// workspace's name <c>workspaceName</c> and a view's include members <c>includes</c>.
+    /// workspace's name <c>workspaceName</c> and a view's include members <c>includes</c>. The Wardley map has no type of its
+    /// own for the diagram and maps four onto it, naming the annotations position's two numbers <c>annotationsVisibility</c>
+    /// and <c>annotationsMaturity</c>.
     /// </summary>
     public static IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>> DocumentParts(string binding) => binding switch
     {
@@ -78,6 +80,13 @@ public static class NaturalIds
         {
             ["Workspace"] = new Dictionary<string, string>(StringComparer.Ordinal) { ["name"] = "workspaceName" },
             ["ViewInclude"] = new Dictionary<string, string>(StringComparer.Ordinal) { ["members"] = "includes" },
+        },
+        "map" => new Dictionary<string, IReadOnlyDictionary<string, string>>(StringComparer.Ordinal)
+        {
+            ["Title"] = new Dictionary<string, string>(StringComparer.Ordinal),
+            ["Style"] = new Dictionary<string, string>(StringComparer.Ordinal),
+            ["Size"] = new Dictionary<string, string>(StringComparer.Ordinal),
+            ["AnnotationsPosition"] = new Dictionary<string, string>(StringComparer.Ordinal) { ["visibility"] = "annotationsVisibility", ["maturity"] = "annotationsMaturity" },
         },
         _ => new Dictionary<string, IReadOnlyDictionary<string, string>>(StringComparer.Ordinal),
     };

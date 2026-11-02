@@ -6,13 +6,6 @@
   "read": {
     "elements": [
       {
-        "id": "title",
-        "type": "Title",
-        "attributes": {
-          "title": "Trailing comments"
-        }
-      },
-      {
         "id": "user",
         "type": "Anchor",
         "attributes": {
@@ -58,23 +51,6 @@
         }
       },
       {
-        "id": "user-kettle",
-        "type": "Dependency",
-        "attributes": {
-          "from": "User",
-          "to": "Kettle"
-        }
-      },
-      {
-        "id": "kettle-power",
-        "type": "Dependency",
-        "attributes": {
-          "from": "Kettle",
-          "to": "Power",
-          "context": "it needs power"
-        }
-      },
-      {
         "id": "kettle-evolve",
         "type": "Evolve",
         "attributes": {
@@ -103,6 +79,37 @@
         "attributes": {
           "name": "Electric",
           "maturity": 0.6
+        }
+      }
+    ],
+    "document": {
+      "attributes": {
+        "title": "Trailing comments"
+      }
+    },
+    "x-binding": [
+      {
+        "id": "title",
+        "type": "Title",
+        "attributes": {
+          "title": "Trailing comments"
+        }
+      },
+      {
+        "id": "user-kettle",
+        "type": "Dependency",
+        "attributes": {
+          "from": "User",
+          "to": "Kettle"
+        }
+      },
+      {
+        "id": "kettle-power",
+        "type": "Dependency",
+        "attributes": {
+          "from": "Kettle",
+          "to": "Power",
+          "context": "it needs power"
         }
       }
     ],

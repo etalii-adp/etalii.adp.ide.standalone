@@ -9,8 +9,8 @@ namespace EtAlii.Adp.Diagram.WardleyMap.Tests;
 
 /// <summary>
 /// The CEL functions the definition takes from the module (wardley-map-disl-fbl task 6): <c>fixedNumber</c> writes a
-/// number as the format does whatever the user's culture, <c>positions</c> reads every annotation of the corpus as the
-/// parser does, and <c>writtenDecorators</c> gives an element's decorators in the order its statement writes them.
+/// number as the format does whatever the user's culture, an annotation's <c>positions</c> are read for every annotation of the
+/// corpus as the parser read them, and <c>writtenDecorators</c> gives an element's decorators in the order its statement writes them.
 /// </summary>
 public partial class WardleyFunctionsTests
 {
@@ -52,21 +52,26 @@ public partial class WardleyFunctionsTests
 
     [Theory]
     [MemberData(nameof(Documents))]
-    public async Task Positions_ReadsEveryAnnotationAsTheParserDoes(string name)
+    public async Task Positions_ReadEveryAnnotationAsTheParserDoes(string name)
     {
         // Arrange.
-        var document = new WardleyTranscript().Corpus().Single(candidate => candidate.Name == name);
-        var lines = LineBreak().Split(TranscriptText.Decode(await document.Read(TestContext.Current.CancellationToken)));
-        var map = WardleyParser.Parse(LineDocument.Parse(TranscriptText.Decode(await document.Read(TestContext.Current.CancellationToken))));
+        var cancellationToken = TestContext.Current.CancellationToken;
+        using var session = await WardleyCorpus.OpenAsync(name, cancellationToken);
+        var entry = session.Store.Get(session.Body)!;
+        var map = WardleyParser.Parse(entry.Document);
 
-        // Act and assert.
+        // Act.
+        var diagram = WardleyBody.Model(entry.Document, session.Store.Identities(session.Body));
+
+        // Assert: each annotation's positions, by its line, are the parser's occurrences in their order.
+        var annotations = diagram.Elements.Where(element => element.IsA("Annotation")).ToList();
+        Assert.Equal(map.Annotations.Count, annotations.Count);
         foreach (var annotation in map.Annotations)
         {
+            var read = annotations.Single(element => element.Line == annotation.Line);
             List<object?> expected = [.. annotation.Occurrences.Select(occurrence => (object?)new List<object?> { occurrence.Visibility, occurrence.Maturity })];
-            var written = Bracketed(lines[annotation.Line - 1]);
-
-            Assert.Equal(Text(expected), Text(WardleyFunctions.Positions(written)));
-            Assert.Equal(Text(expected), Text(WardleyFunctions.Positions(WardleyFunctions.PositionsText(annotation.Occurrences))));
+            List<object?> positions = [.. ((IEnumerable<object?>)read.ValueOf("positions")!).Select(position => (object?)new List<object?> { ((IReadOnlyDictionary<string, object?>)position!)["visibility"], ((IReadOnlyDictionary<string, object?>)position!)["maturity"] })];
+            Assert.Equal(Text(expected), Text(positions));
         }
     }
 
@@ -79,7 +84,7 @@ public partial class WardleyFunctionsTests
         using var session = await WardleyCorpus.OpenAsync(name, cancellationToken);
         var entry = session.Store.Get(session.Body)!;
         var lines = LineBreak().Split(entry.Document.Text);
-        var diagram = WardleyDisl.Of(entry.Document, entry.Model, session.Store.Identities(session.Body));
+        var diagram = WardleyBody.Model(entry.Document, session.Store.Identities(session.Body));
 
         // Act and assert.
         foreach (var element in diagram.Elements.Where(element => element.IsA("Positioned")))
@@ -102,20 +107,6 @@ public partial class WardleyFunctionsTests
 
     /// <summary>Whether <paramref name="component"/> is the statement <paramref name="element"/> was read from: the one on its line.</summary>
     private static bool WrittenOn(WardleyComponent component, DislElement element) => element.Line is not { } line || line == component.Line;
-
-    /// <summary>The text between the outer brackets of an <c>annotation</c> statement.</summary>
-    private static string Bracketed(string line)
-    {
-        var start = line.IndexOf('[', StringComparison.Ordinal);
-        var depth = 0;
-        for (var index = start; index < line.Length; index++)
-        {
-            depth += line[index] switch { '[' => 1, ']' => -1, _ => 0 };
-            if (depth == 0) return line[(start + 1)..index];
-        }
-
-        throw new InvalidOperationException($"'{line}' has no closing bracket.");
-    }
 
     [GeneratedRegex(@"\r\n|\n|\r")]
     private static partial Regex LineBreak();

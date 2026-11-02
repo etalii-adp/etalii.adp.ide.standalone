@@ -29,9 +29,21 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- The DISL definition bundled from etalii-adp/etalii.adp (src/diagrams/tools/bundle-disl.sh), and its provenance. Nothing derives from it yet. -->
+    <!-- The DISL definition bundled from etalii-adp/etalii.adp (src/diagrams/tools/bundle-disl.sh), and its provenance. -->
     <EmbeddedResource Include="..\..\definition\wardley-map.dis" LogicalName="wardley-map.dis" />
     <EmbeddedResource Include="..\..\definition\provenance.json" LogicalName="wardley-map.provenance.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      The module's own FBL binding of an Online Wardley Maps body, which the definition names as its persistence.binding,
+      and the grammar beside it that it names (FBL 0.12, the grammar family). Both are etalii.adp's
+      specifications/fbl/wardley-map.fbl and wardley-map.lark as of commit 48b2872 (the merge of etalii.adp #701: a
+      pipeline's form and a legacy pipeline's two numbers), byte for byte: a change goes to etalii.adp and is copied
+      again. WardleyBody reads every body through them (wardley-map-disl-fbl task 11).
+    -->
+    <EmbeddedResource Include="wardley-map.fbl" LogicalName="wardley-map.fbl" />
+    <EmbeddedResource Include="wardley-map.lark" LogicalName="wardley-map.lark" />
   </ItemGroup>
 
   <ItemGroup>

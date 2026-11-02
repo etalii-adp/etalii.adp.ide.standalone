@@ -6,13 +6,6 @@
   "read": {
     "elements": [
       {
-        "id": "title",
-        "type": "Title",
-        "attributes": {
-          "title": "Decorators"
-        }
-      },
-      {
         "id": "user",
         "type": "Anchor",
         "attributes": {
@@ -73,6 +66,20 @@
         "attributes": {
           "name": "Plain",
           "decorators": []
+        }
+      }
+    ],
+    "document": {
+      "attributes": {
+        "title": "Decorators"
+      }
+    },
+    "x-binding": [
+      {
+        "id": "title",
+        "type": "Title",
+        "attributes": {
+          "title": "Decorators"
         }
       },
       {

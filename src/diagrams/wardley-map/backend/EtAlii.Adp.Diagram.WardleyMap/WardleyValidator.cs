@@ -37,7 +37,7 @@ public sealed class WardleyValidator(IWardleyDocumentStore documents) : IDiagram
         cancellationToken.ThrowIfCancellationRequested();
 
         var body = LineDocument.Parse(request.Document);
-        var outcome = WardleyParser.Outcome(body);
+        var outcome = WardleyBody.Read(body);
         var map = outcome.Model;
         return ValueTask.FromResult(WardleyDefinition.Problems(
             body,

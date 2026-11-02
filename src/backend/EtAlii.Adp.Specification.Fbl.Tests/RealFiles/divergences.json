@@ -259,6 +259,20 @@
       "file": "src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/Fixtures/findings/include-directive.dsl",
       "observed": "Include: the binding lacks 1 (https:); the binding adds 1 (https://example.com/model.dsl)",
       "reason": "'!include https://example.com/model.dsl': structurizr.lark reads the URL as one word, the longest match, and the binding's include rule its whole path; C4Parser takes '//' as the start of a comment wherever it stands and reports the path as 'https:'. The binding is right."
+    },
+    {
+      "property": "cross-check",
+      "binding": "wardley-map",
+      "file": "src/diagrams/wardley-map/backend/EtAlii.Adp.Diagram.WardleyMap.Tests/Fixtures/awkward-names.owm",
+      "observed": "Dependency: the binding adds 2 (link:C++ build\u001fCI/CD\u001fDependency, link:Self-service\u001fCI/CD\u001fDependency)",
+      "reason": "Finding B13 of wardley-map-disl-fbl: the module reads a link's source up to the first '-' or '+', so it reads no link from 'Self-service' or 'C++ build', and WardleyBody passes such a link over as the parser did until task 12 writes the links through the binding. The binding reads both, which is right."
+    },
+    {
+      "property": "cross-check",
+      "binding": "wardley-map",
+      "file": "src/diagrams/wardley-map/backend/EtAlii.Adp.Diagram.WardleyMap.Tests/Fixtures/unclosed-pipeline.owm",
+      "observed": "Dependency: the binding adds 1 (link:Kettle\u001fPower\u001fDependency)",
+      "reason": "A pipeline whose block never closes runs to the end of the file in both readings (FBL section 4.9, fbl.unclosed-block), but the binding's recovery reads 'Kettle->Power' after it as a link, where the module reads every line of the block as one of the pipeline's and passes over what is not a component, as it did before task 11 (finding B2). The transcript holds the module's reading."
     }
   ]
 }
