@@ -193,7 +193,7 @@ public sealed class WardleyToolboxTests : IDisposable
         await Execute(WardleyContextActionProvider.AddAnnotationActionId, "fourth");
 
         // Assert.
-        Assert.Contains("annotation 4 [0.5, 0.5] fourth", await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken), StringComparison.Ordinal);
+        Assert.Contains("annotation 4 [[0.5,0.5]] fourth", await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -203,7 +203,7 @@ public sealed class WardleyToolboxTests : IDisposable
         await Execute(WardleyContextActionProvider.AddAnnotationActionId, "the first thing to say");
 
         // Assert.
-        Assert.Contains("annotation 1 [0.5, 0.5] the first thing to say", await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken), StringComparison.Ordinal);
+        Assert.Contains("annotation 1 [[0.5,0.5]] the first thing to say", await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken), StringComparison.Ordinal);
     }
 
     [Fact]

@@ -29,10 +29,11 @@ public sealed class WardleyCommandHandlersTests : EditHandlerContract<IWardleyDo
     protected override ICommand EditOfMissing(string bodyPath) => new RenameWardleyElementCommand(bodyPath, "no-such-element", "Kettle");
 
     [Fact]
-    public async Task AMoveAndItsRestore_CarryTheSaveWarning()
+    public async Task AMove_CarriesTheSaveWarning_AndItsRestore_PutsTheTextBack()
     {
-        // Arrange: a move is undone by the shared restore of the whole text, whose result is built apart from the edit's,
-        // so the warning can be lost on the way.
+        // Arrange: a move is undone by the shared restore of the whole text, which writes the body alone and reloads it
+        // through the store, so it saves nothing beside the document that could warn; the store keeps the identities it
+        // had for that text and writes them with the next save.
         const string warning = "Something beside the document was not kept.";
         using var folder = TestFolder.Create("EtAlii.Adp.Diagram.WardleyMap.Tests");
         var body = folder.Combine(Path.GetFileName(Example));
@@ -51,7 +52,7 @@ public sealed class WardleyCommandHandlersTests : EditHandlerContract<IWardleyDo
         Assert.Equal(warning, moved.Warning);
         Assert.IsType<RestoreDocumentCommand<IWardleyDocumentStore>>(moved.Inverse);
         Assert.True(restored.IsSuccess, restored.Error);
-        Assert.Equal(warning, restored.Warning);
+        Assert.True(string.IsNullOrEmpty(restored.Warning), restored.Warning);
         Assert.Equal(await File.ReadAllTextAsync(Example, TestContext.Current.CancellationToken), await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken));
     }
 

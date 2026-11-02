@@ -332,6 +332,7 @@ public sealed class WardleyCommandsTests : IDisposable
         Assert.Equal("component Alpha [0.5, 0.5]\nnote Standardising soon [0.3, 0.7]\n", Read());
     }
 
+    /// <remarks>The position is written as the binding's insert emits it, in the outer brackets (spec 071, T012).</remarks>
     [Fact]
     public async Task AddAnnotation_NumbersOnePastTheHighest_AndWritesItsTrimmedTextAfterItsPosition()
     {
@@ -343,7 +344,7 @@ public sealed class WardleyCommandsTests : IDisposable
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
-        Assert.Equal("annotation 1 [0.1, 0.2] First\nannotation 3 [0.4, 0.5] Third\nannotation 4 [0.3, 0.7] Fourth\n", Read());
+        Assert.Equal("annotation 1 [0.1, 0.2] First\nannotation 3 [0.4, 0.5] Third\nannotation 4 [[0.3,0.7]] Fourth\n", Read());
     }
 
     // ---- links --------------------------------------------------------------------------------
@@ -531,10 +532,10 @@ public sealed class WardleyCommandsTests : IDisposable
     }
 
     [Fact]
-    public async Task PipelineMembership_InsertsBeforeTheClosingBrace_LeavingWhatIsInTheBlockAlone()
+    public async Task PipelineMembership_InsertsAfterTheLastChild_LeavingWhatIsInTheBlockAlone()
     {
-        // Arrange. A block may hold comments and blank lines, which Requirement 3.3 says
-        // survive untouched - so the brace is found by looking rather than by counting children.
+        // Arrange. A block may hold comments and blank lines, which Requirement 3.3 says survive untouched. The binding
+        // places a new child after the last one (its insert's last-child), so a comment after it stays where it is.
         Write("component Kettle [0.4, 0.3]\npipeline Kettle\n{\n  component Campfire Kettle [0.15]\n  // the other one\n}\n");
 
         // Act.
@@ -544,7 +545,7 @@ public sealed class WardleyCommandsTests : IDisposable
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
         Assert.Equal(
-            "component Kettle [0.4, 0.3]\npipeline Kettle\n{\n  component Campfire Kettle [0.15]\n  // the other one\n  component Electric Kettle [0.63]\n}\n",
+            "component Kettle [0.4, 0.3]\npipeline Kettle\n{\n  component Campfire Kettle [0.15]\n  component Electric Kettle [0.63]\n  // the other one\n}\n",
             Read());
     }
 

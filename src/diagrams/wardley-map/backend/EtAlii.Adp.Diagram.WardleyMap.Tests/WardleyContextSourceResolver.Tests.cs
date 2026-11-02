@@ -3,6 +3,7 @@ using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.Hierarchy;
+using EtAlii.Adp.Specification.Fbl.Planning;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
@@ -300,10 +301,13 @@ public sealed class WardleyContextSourceResolverTests : IDisposable
         IReadOnlyList<string>? announced = null;
         using var subscription = _resolver.Track(ShortGuid.NewShortGuid(), ProjectRoot.From(_root), level, path => announced = path);
 
-        // Act.
+        // Act: renamed as the rename command writes it, the id moving with its key in the same edit.
         var document = (await _documents.GetOrLoadAsync(_body, TestContext.Current.CancellationToken)).Document;
-        WardleyWriter.Rename(document, WardleyBody.Read(document).Model, "Power", "Mains Power");
-        await _documents.SaveAsync(_body, document, TestContext.Current.CancellationToken);
+        var power = await IdOfAsync(WardleyIdentityKind.Component, "Power");
+        var edit = WardleyBody.Edit(document, _documents.Identities(_body));
+        Assert.True(edit.Change(new ModelChange.Set(power, new Dictionary<string, object?>(StringComparer.Ordinal) { ["name"] = "Mains Power" })).WasApplied);
+        _documents.Remember(_body, edit.Text, edit.Identities());
+        await _documents.SaveAsync(_body, LineDocument.Parse(edit.Text), TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal(["Mains Power"], announced);

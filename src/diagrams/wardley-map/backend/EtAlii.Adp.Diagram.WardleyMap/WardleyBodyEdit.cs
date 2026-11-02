@@ -56,7 +56,9 @@ public sealed class WardleyBodyEdit
     /// <remarks>
     /// An add writes its statement as the binding's <c>insert</c> emits it, which leaves out a part the statement may
     /// have, such as a component's decorators or its inertia; each such part it was given is then set on the new element,
-    /// in the same edit, as its own attribute's <c>create</c> writes it.
+    /// in the same edit, as its own attribute's <c>create</c> writes it. An add is refused while a pipeline's block is
+    /// unclosed, unless it is a pipeline component, which goes into its own pipeline: every other statement is written at
+    /// the end of the document, which is inside that block (ruling 1(a) of 2026-11-02).
     /// </remarks>
     public EditOutcome Change(ModelChange change)
     {
@@ -64,6 +66,11 @@ public sealed class WardleyBodyEdit
         if (change is not ModelChange.Add add)
         {
             return Planned(change);
+        }
+
+        if (add.Type != "PipelineComponent" && UnclosedPipeline() is { } parent)
+        {
+            return EditOutcome.Refused($"'{parent}' has a pipeline that is missing its closing brace, so nothing can be added after it.");
         }
 
         var before = Reading.Elements.Select(element => element.Id).ToHashSet(StringComparer.Ordinal);
@@ -101,6 +108,14 @@ public sealed class WardleyBodyEdit
             ? null
             : Reading.Elements.FirstOrDefault(read => read.IdentityKind is null && read.Line == line)?.Id;
     }
+
+    /// <summary>The component whose pipeline's block runs to the end of the body unclosed, or null for none.</summary>
+    private string? UnclosedPipeline() =>
+        Reading.Findings
+            .Where(finding => finding is { Code: "fbl.unclosed-block", Location: not null })
+            .Select(finding => Reading.Elements.FirstOrDefault(element => element.Type == "Pipeline" && element.Line == finding.Location!.Line))
+            .Select(pipeline => pipeline?.Attributes.GetValueOrDefault("component") as string)
+            .FirstOrDefault(name => name is not null);
 
     private EditOutcome Planned(ModelChange change) =>
         _body.Change(change).Body is PlanResult.Refused refused ? EditOutcome.Refused(refused.Reason) : EditOutcome.Applied;
