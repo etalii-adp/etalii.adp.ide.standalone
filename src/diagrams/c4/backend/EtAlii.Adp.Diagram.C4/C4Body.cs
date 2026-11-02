@@ -2,11 +2,14 @@ using System.Collections.Concurrent;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text;
+using EtAlii.Adp.Documents;
+using EtAlii.Adp.History;
 using EtAlii.Adp.Specification.Cel;
 using EtAlii.Adp.Specification.Disl;
 using EtAlii.Adp.Specification.Fbl;
 using EtAlii.Adp.Specification.Fbl.Documents;
 using EtAlii.Adp.Specification.Fbl.History;
+using EtAlii.Adp.Specification.Fbl.Planning;
 
 namespace EtAlii.Adp.Diagram.C4;
 
@@ -103,6 +106,62 @@ internal sealed class C4Body
         if (_bodies.TryGetValue(workspace, out var body)) return body;
         if (ReferenceEquals(workspace, C4Workspace.Empty)) return Read("");
         throw new InvalidOperationException("The workspace was not read through the binding (C4Body).");
+    }
+
+    /// <summary>
+    /// Writes into <paramref name="document"/> the change <paramref name="change"/> makes of its body, planned by the
+    /// library as splices in the body's own conventions (FBL section 6): a changed value changes only its bytes, and
+    /// every other argument, word and comment of the body stays as it was. The change is made of this body's reading,
+    /// in its ids (<see cref="ReadingIdOf"/>); null for a change that names nothing, which is refused with
+    /// <paramref name="gone"/>.
+    /// </summary>
+    /// <remarks>
+    /// <b>Undo is by bytes</b> (Q1, finding B21): the edit is undone by putting back the text it started from, and only
+    /// while the file still holds the text the edit left; a file written since is not overwritten, and the undo is
+    /// refused as the library refuses a body that has drifted (FBL 7.2).
+    /// </remarks>
+    internal static EditOutcome Write(LineDocument document, IDocumentEditCommand command, Func<C4Body, ModelChange?> change, string gone)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        ArgumentNullException.ThrowIfNull(command);
+        ArgumentNullException.ThrowIfNull(change);
+        var before = document.Text;
+        var body = Read(before);
+        if (change(body) is not { } planned) return EditOutcome.Refused(gone);
+
+        var open = OpenBody.Open(body._bytes, _binding.Value, new FblOptions { FileName = "body.dsl", View = NoView, Many = Many });
+        if (open.Change(planned) is PlanResult.Refused refused) return EditOutcome.Refused(refused.Reason);
+
+        var text = Encoding.UTF8.GetString(open.Bytes);
+        if (string.Equals(text, before, StringComparison.Ordinal)) return EditOutcome.Unchanged;
+        document.Splice(0, document.Lines.Count, LineDocument.Parse(text).Lines);
+        return EditOutcome.UndoneBy(new RestoreDocumentCommand<IC4DocumentStore>(command.BodyPath, before, command, After: document.Text));
+    }
+
+    /// <summary>
+    /// The id the binding reads for the element the host knows as <paramref name="elementId"/>: its identifier, matched
+    /// without case as the DSL matches it, or for an element written without one, the reading's own id of the element the
+    /// host named so; null for none.
+    /// </summary>
+    internal string? ReadingIdOf(string elementId)
+    {
+        ArgumentNullException.ThrowIfNull(elementId);
+        foreach ((string read, string named) in _names)
+        {
+            if (string.Equals(named, elementId, StringComparison.OrdinalIgnoreCase)) return read;
+        }
+
+        return Reading(NoView).Elements.FirstOrDefault(element => element.IdIsStored && Kinds.ContainsKey(element.Type) && string.Equals(element.Id, elementId, StringComparison.OrdinalIgnoreCase))?.Id;
+    }
+
+    /// <summary>The id the binding reads for the stored relationship the host knows as <paramref name="relationshipId"/>; null for none.</summary>
+    internal string? RelationshipIdOf(string relationshipId)
+    {
+        ArgumentNullException.ThrowIfNull(relationshipId);
+        var shown = Workspace.Relationships.FirstOrDefault(relationship => relationship.Id == relationshipId);
+        return shown is null
+            ? null
+            : Reading(NoView).Elements.FirstOrDefault(element => element.Type == "Relationship" && element.Line == shown.Line)?.Id;
     }
 
     /// <summary>The implementations of the definitions' plugin functions: <c>writtenEnd</c>.</summary>

@@ -37,6 +37,9 @@ public static class ServiceCollectionAddC4Extension
         services.AddSingleton<ICommandHandler<RemoveC4ElementCommand>, RemoveC4ElementCommandHandler>();
         services.AddSingleton<ICommandHandler<RemoveC4ViewCommand>, RemoveC4ViewCommandHandler>();
 
+        // An edit planned into splices is undone by putting back the text it started from (c4-disl-fbl task 15).
+        services.AddSingleton<ICommandHandler<RestoreDocumentCommand<IC4DocumentStore>>, RestoreDocumentCommandHandler<IC4DocumentStore>>();
+
         // What can be done to an element or a relationship, offered through the one path that
         // reaches the ribbon, the menu and the keyboard (Requirement 13.2).
         services.AddSingleton<IContextActionProvider, C4ContextActionProvider>();

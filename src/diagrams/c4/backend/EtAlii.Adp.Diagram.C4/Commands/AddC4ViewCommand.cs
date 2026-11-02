@@ -12,7 +12,9 @@ namespace EtAlii.Adp.Diagram.C4;
 /// This command and its inverse <see cref="RemoveC4ViewCommand"/> stay module code: they stand in
 /// for gap C8 of c4-disl-fbl, because an FBL block rule has no <c>insert</c>, so no binding can add
 /// a view block, and FBL creates a registration only for a new document or at a first placement
-/// (finding B24, Requirement 6.5). The six definitions' companions name them so.
+/// (finding B24, Requirement 6.5). The six definitions' companions name them so. They are the last
+/// edit written by line, and what they need is all that is left of the module's line code:
+/// <see cref="C4Line"/>, <see cref="C4Lines"/> and <see cref="C4Tokens"/>'s lexer (c4-disl-fbl task 15).
 /// </remarks>
 /// <param name="BodyPath">The <c>.dsl</c> the view is appended to.</param>
 /// <param name="RegistrationPath">The <c>.adp</c> to create, naming that body and this view.</param>
