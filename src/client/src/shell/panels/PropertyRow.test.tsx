@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { createRoot } from "react-dom/client";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { create } from "@bufbuild/protobuf";
 import { ContextPropertyEditor } from "../../generated/context-contract_pb";
@@ -220,5 +221,42 @@ describe("PropertyRow", () => {
 
     // Assert.
     expect(onCommit.mock.calls).toEqual([["two"]]);
+  });
+  it("keeps what was typed before the row's first effects ran", async () => {
+    // Arrange.
+    // A row is on screen as soon as it is committed, and its effects run in a later task. A
+    // focus and a keystroke can land in that gap - which is how the grid's "writes to that
+    // diagram" test failed on CI three times: its findBy resolved on the commit's DOM mutation,
+    // the row's first effect then ran, closed over a row nobody was editing yet, and put the
+    // backend's value back over the typed one, so the blur found nothing to write. Rendering
+    // outside act and acting on the commit's mutation opens exactly that gap, every run.
+    const onCommit = vi.fn(async () => "");
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const committed = new Promise<void>((resolve) => {
+      const observer = new MutationObserver(() => {
+        observer.disconnect();
+        resolve();
+      });
+      observer.observe(container, { childList: true, subtree: true });
+    });
+    const root = createRoot(container);
+    root.render(<PropertyRow property={property({ id: "causal-loop.flow-strength", label: "Link strength", value: "3" })} onCommit={onCommit} />);
+    await committed;
+    const field = container.querySelector("input");
+    expect(field).not.toBeNull();
+
+    // Act: the focus and the keystroke reach the row before its first effects have run.
+    act(() => {
+      fireEvent.focus(field!);
+      fireEvent.change(field!, { target: { value: "4" } });
+    });
+    fireEvent.blur(field!);
+    await flush();
+
+    // Assert.
+    expect(onCommit.mock.calls).toEqual([["4"]]);
+    act(() => root.unmount());
+    container.remove();
   });
 });
