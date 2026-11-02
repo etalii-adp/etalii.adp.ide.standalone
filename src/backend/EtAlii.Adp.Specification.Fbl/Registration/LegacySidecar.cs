@@ -142,6 +142,12 @@ public sealed class LegacySidecar : SplicedFile
         return new PlanResult.Planned(new SpliceEdit([.. splices.OrderBy(splice => splice.Start).ThenBy(splice => splice.End)]));
     }
 
+    /// <summary>
+    /// Writes the entries of ids stored for the first time (FBL 0.12 §8.6): with the edit of the body that leads to them, and
+    /// no step of the file's history, which is carried over them.
+    /// </summary>
+    internal void StoreOutsideHistory(SpliceEdit edit) => ApplyOutsideHistory(edit);
+
     /// <summary>Whether the file is an array, the form legacy identities are written in (FBL 0.12 §8.7).</summary>
     private bool HoldsIdentities => _reading.Unreadable is null && _reading.Root?.Value.Kind == ValueKind.Sequence;
 

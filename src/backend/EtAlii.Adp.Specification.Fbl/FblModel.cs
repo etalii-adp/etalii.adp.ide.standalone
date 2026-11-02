@@ -203,8 +203,11 @@ public sealed class FblOptions
     /// <summary>The registration's <c>identities</c> block, for rules with <c>id.sidecar</c>.</summary>
     public IReadOnlyDictionary<string, string> Identities { get; init; } = new Dictionary<string, string>();
 
-    /// <summary>These options for the reading of another origin and resource of the same body (FBL 0.10 §9.1): everything else as it is.</summary>
-    internal FblOptions With(string? origin, string? resource) => new()
+    /// <summary>
+    /// These options for the reading of another origin and resource of the same body (FBL 0.10 §9.1), or of the same body
+    /// with the ids its sidecar keeps now (FBL 0.12 §8.6): everything else as it is.
+    /// </summary>
+    internal FblOptions With(string? origin, string? resource, IReadOnlyDictionary<string, string>? identities = null) => new()
     {
         FileName = FileName,
         MaxBodyBytes = MaxBodyBytes,
@@ -219,6 +222,6 @@ public sealed class FblOptions
         Origin = origin,
         View = View,
         SupplementaryEntries = SupplementaryEntries,
-        Identities = Identities,
+        Identities = identities ?? Identities,
     };
 }
