@@ -110,10 +110,9 @@
           "do": "set res:http://example.org/moscow rdf.label = \"Parity value\"",
           "answer": "ok",
           "hunks": [
-            "@1 -1 +\"# B5: a body that starts with a byte-order mark and holds a Cyrillic literal before an edit point.\\r\\n\"",
             "@5 -1 +\"ex:moscow rdfs:label \\\"Parity value\\\"@ru ;\\r\\n\""
           ],
-          "sha256": "016e262014b9863d796e43987bf75f62d085c613a4431743a351f2371b8ef42f"
+          "sha256": "2d4e48c66b513516887c45712058a757989bf399481da9ea6a74fb82f291aa97"
         },
         {
           "do": "set res:http://example.org/moscow rdf.comment = \"Parity value\"",
@@ -121,7 +120,7 @@
           "hunks": [
             "@6 -1 +\"    ex:twin ex:prague ;\\r\\n    rdfs:comment \\\"Parity value\\\" .\\r\\n\""
           ],
-          "sha256": "bdbe26399b5b65d957b738ac20bedb67d8acc5cdaebc9c0d8d640cfb98510c95"
+          "sha256": "2e51b8d2a54f093e24e8527770f03849a32da99bffb6ba3d6055718e1698e7aa"
         },
         {
           "do": "execute rdf.add-resource on new:240,160",
@@ -134,7 +133,7 @@
           "hunks": [
             "@9 -0 +\"\\r\\nex:parity a rdfs:Resource .\\r\\n\""
           ],
-          "sha256": "09ce0e879082e9392307e84ac0d12c6dd75b86e84fd2a1cc24db822a2a94e0f4"
+          "sha256": "190a7d61213d6166430191596498d2a22319172216cbddf3107cde4530d6e3a4"
         },
         {
           "do": "execute rdf.add-prefix on new:240,160",
@@ -147,7 +146,7 @@
           "hunks": [
             "@4 -0 +\"@prefix parity: <http://example.org/parity#> .\\r\\n\""
           ],
-          "sha256": "e3534433b0c1ca6d9c84d1b5b0d84a5d0daccbbe8f4b265830c00c913506999a"
+          "sha256": "3b1eb4d695401f08dede9997abc6e10075526b9773dfec144a0811514e7f2f94"
         },
         {
           "do": "execute rdf.connect on rel:res:http://example.org/moscow->res:http://example.org/prague",
@@ -160,7 +159,7 @@
           "hunks": [
             "@8 -1 +\"    rdfs:comment \\\"Parity value\\\" ;\\r\\n    ex:parity ex:prague .\\r\\n\""
           ],
-          "sha256": "8e3c46fc1f4cdc1a5dcf3900c849c8248faebbecb410860e77fb933446f1d699"
+          "sha256": "18c5d5c2af9e44781e1e7bec9ad4f60b5161a17713766ad3e24a19b5fdb7a2f9"
         },
         {
           "do": "execute rdf.remove-edge on edge:res:http://example.org/moscow|http://example.org/twin|res:http://example.org/prague",
@@ -168,7 +167,7 @@
           "hunks": [
             "@7 -1 +\"\""
           ],
-          "sha256": "17082c20c73d2a29f9b405c6c6ea69836d4455a91eaad865f9ef2e36d9f4b227"
+          "sha256": "742960549ecefd8c009bfbdc56da315be7293eb741c68efb54a3806ae55bece5"
         },
         {
           "do": "execute rdf.rename-resource on res:http://example.org/moscow",
@@ -181,7 +180,7 @@
           "hunks": [
             "@6 -1 +\"ex:moscowParity rdfs:label \\\"Parity value\\\"@ru ;\\r\\n\""
           ],
-          "sha256": "bb63ac07c24eb645e6261fa175951cac58484799905ecef3dd43932f6437b982"
+          "sha256": "9ed6556420d2edcfb0db00e1265364dd20731d39c474348440da5c7186fd22da"
         },
         {
           "do": "execute rdf.remove-resource on res:http://example.org/moscow",
@@ -189,13 +188,7 @@
           "unchanged": true
         }
       ],
-      "undoAll": "7 undone; the original text is NOT back",
-      "undoAllLeaves": {
-        "hunks": [
-          "@1 -1 +\"# B5: a body that starts with a byte-order mark and holds a Cyrillic literal before an edit point.\\r\\n\""
-        ],
-        "sha256": "d4d162ef4884c749c6dd6647429fee584104f8f364a0eec0539d98b7187da265"
-      }
+      "undoAll": "7 undone; the original text is back"
     },
     {
       "document": "diagrams/rdf/backend/EtAlii.Adp.Diagram.Rdf.Tests/Fixtures/constructs.ttl",

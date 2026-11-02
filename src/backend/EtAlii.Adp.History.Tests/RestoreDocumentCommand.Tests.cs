@@ -39,6 +39,22 @@ public sealed class RestoreDocumentCommandTests : IDisposable
     }
 
     [Fact]
+    public async Task ARestoreOfAFileWithAByteOrderMark_KeepsIt()
+    {
+        // Spec 071, T012: undoing an edit of a file somebody else wrote gives its bytes back, the mark included.
+        var path = IoPath.Combine(_folder, "body.yml");
+        await File.WriteAllBytesAsync(path, [0xEF, 0xBB, 0xBF, .. "after the edit"u8.ToArray()], TestContext.Current.CancellationToken);
+        var store = new FirstStore();
+
+        var result = await new RestoreDocumentCommandHandler<FirstStore>(store, new FileWriter())
+            .ExecuteAsync(new RestoreDocumentCommand<FirstStore>(path, "before the edit", new SampleEdit(), After: "after the edit"), TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsSuccess, result.Error);
+        byte[] expected = [0xEF, 0xBB, 0xBF, .. "before the edit"u8.ToArray()];
+        Assert.Equal(expected, await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
     public async Task ARestoreOfAFileStillAsTheEditLeftIt_WritesTheTextBack()
     {
         var path = IoPath.Combine(_folder, "body.yml");
