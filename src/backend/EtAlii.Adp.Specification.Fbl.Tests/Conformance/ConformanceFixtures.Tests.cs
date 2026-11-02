@@ -20,18 +20,6 @@ public class ConformanceFixturesTests
     /// <summary>The number of fixtures vendored: fewer means the enumeration broke.</summary>
     private const int MinimumFixtures = 50;
 
-    /// <summary>
-    /// The fixtures vendored before the library passes them, by name: the text of the failure each still gives, and why. They
-    /// are held out of the theories; <see cref="ThePendingFixturesStillFailAsRecorded"/> fails when one passes, or fails
-    /// otherwise, so that the entry is taken out, or its reason brought up to date, in the change that makes it so.
-    /// </summary>
-    private static readonly Dictionary<string, (string Fails, string Why)> Pending = new(StringComparer.Ordinal)
-    {
-        ["wardley-duplicate-names/same-key-twice"] = ("a splice names the file 'same-key-twice.identities.json'", "an add writes its element's identity entry in the same edit (FBL 0.12 sections 8.6 and 8.7), which etalii.adp spec 071 task T012 (F3) delivers"),
-        ["wardley-legacy-identities"] = ("a splice names the file 'annotations-and-labels.identities.json'", "a removal prunes the identity entry in the same edit (FBL 0.12 section 8.7), spec 071 task T012 (F3)"),
-        ["wardley-rename-identity"] = ("a splice names the file 'annotations-and-labels.identities.json'", "a rename moves the identity entries' keys in the same edit (FBL 0.12 section 8.6), spec 071 task T012 (F3)"),
-    };
-
     /// <summary>The fixtures copied in etalii.adp's own layout, beside the Knowledge designer's.</summary>
     private const string AdpFixtures = "etalii.adp/specifications/fbl/fixtures";
 
@@ -46,7 +34,6 @@ public class ConformanceFixturesTests
         var data = new TheoryData<string>();
         foreach (var name in Under("fixtures", "").Concat(Under(AdpFixtures, AdpFixtures + "/")).Order(StringComparer.Ordinal))
         {
-            if (Pending.ContainsKey(name)) continue;
             if (!name.StartsWith(AdpFixtures + "/knowledge-", StringComparison.Ordinal) && !name.StartsWith(AdpFixtures + "/hierarchical-requirement-", StringComparison.Ordinal)) data.Add(name);
         }
         return data;
@@ -69,25 +56,6 @@ public class ConformanceFixturesTests
     public void TheFixturesAreFound()
     {
         Assert.True(Fixtures().Count >= MinimumFixtures, $"Only {Fixtures().Count} fixtures were found; {MinimumFixtures} are vendored.");
-    }
-
-    /// <summary>
-    /// Each pending fixture, run as the theories run one, still fails with the failure its entry records: one that passes, or
-    /// fails for another reason, fails here (see <see cref="Pending"/>).
-    /// </summary>
-    [Fact]
-    public void ThePendingFixturesStillFailAsRecorded()
-    {
-        foreach ((string name, (string fails, string why)) in Pending)
-        {
-            // Act.
-            var folder = Folder(name);
-            var failure = Record.Exception(() => Run(name, folder, File.ReadAllBytes(Path.Combine(folder, "fixture.json"))));
-
-            // Assert.
-            Assert.True(failure is not null, $"The pending fixture {name} passes; take it out of Pending.");
-            Assert.True(failure.Message.Contains(fails, StringComparison.Ordinal), $"The pending fixture {name}, pending because {why}, now fails otherwise: {failure.Message}");
-        }
     }
 
     [Fact]
@@ -668,6 +636,12 @@ public class ConformanceFixturesTests
         /// </summary>
         private LegacySidecar? _identities;
 
+        /// <summary>
+        /// The body with the legacy identities its ids are read from (FBL 0.12 §8.6, §8.7), when there are any: a model edit
+        /// of the body writes the entries it changes there in the same edit, and its undo takes both back.
+        /// </summary>
+        private IdentifiedBody? _identified;
+
         /// <summary>The path of the legacy identities, as <c>expectFiles</c> names it.</summary>
         private string? _identitiesName;
 
@@ -729,7 +703,10 @@ public class ConformanceFixturesTests
                 subject._identitiesName = Path.GetRelativePath(folder, identitiesPath).Replace('\\', '/');
                 identities = subject._identities.Identities();
             }
-            var body = OpenBody.Open(File.ReadAllBytes(Path.Combine(folder, bodyName)), binding, Options(binding, bodyName, origin, registration.Document.Resource, registration.Document.View, identities));
+            var bodyBytes = File.ReadAllBytes(Path.Combine(folder, bodyName));
+            var bodyOptions = Options(binding, bodyName, origin, registration.Document.Resource, registration.Document.View, identities);
+            subject._identified = subject._identities is null ? null : IdentifiedBody.Open(bodyBytes, binding, bodyOptions, subject._identities);
+            var body = subject._identified?.Body ?? OpenBody.Open(bodyBytes, binding, bodyOptions);
             registration.KnownIds = body.Model.Elements.Select(element => element.Id).ToHashSet(StringComparer.Ordinal);
             registration.ShowsNoView = body.Model.ShowsNoView(registration.Document.View);
             if (binding.ForOrigin(origin).Registration.ResourceCapture is not null) registration.KnownResources = body.Model.Resources;
@@ -795,10 +772,12 @@ public class ConformanceFixturesTests
                 : step.TryGetProperty("redo", out var redo) && redo.GetBoolean() ? (_undone.Count > 0 ? _undone.Peek() : Written.Input)
                 : step.TryGetProperty("edit", out var edit) ? Target(ReadChange(edit, Model)) : Written.Input;
             var expected = FileOf(writes);
+            // A model edit of a body with legacy identities writes the entries it changes there too, after the body's splices (FBL 0.12 §8.6).
+            var alongside = writes == Written.Body && _identified is not null ? _identitiesName : null;
             foreach (var splice in step.GetProperty("splices").EnumerateArray())
             {
                 var file = splice.TryGetProperty("file", out var named) ? named.GetString() : null;
-                Assert.True(file == expected, $"{label}: a splice names the file '{file}', where the step writes {(expected is null ? "the input" : $"'{expected}'")}.");
+                Assert.True(file == expected || (alongside is not null && file == alongside), $"{label}: a splice names the file '{file}', where the step writes {(expected is null ? "the input" : $"'{expected}'")}.");
             }
         }
 
@@ -825,6 +804,7 @@ public class ConformanceFixturesTests
             {
                 Written.Sidecar => _sidecar!.Change(sidecar => sidecar.PlanPlace(_body!.Model.SelectedView, ((ModelChange.Place)change).Id, ((ModelChange.Place)change).X, ((ModelChange.Place)change).Y, Ids)),
                 Written.Input when _registration is not null => _registration.Change(change),
+                Written.Body when _identified is not null => Both(_identified.Change(change)),
                 _ => change is ModelChange.Remove remove && Unsets(remove.Id) is { Count: > 0 } unsets ? RemoveWith(remove, unsets) : _body!.Change(change),
             };
             if (result is PlanResult.Planned { Edit.Splices.Count: > 0 })
@@ -874,10 +854,19 @@ public class ConformanceFixturesTests
             return new PlanResult.Planned(edit);
         }
 
+        /// <summary>An edit of a body with legacy identities as one list: the body's splices, then those of the identities file.</summary>
+        private static PlanResult Both(IdentifiedEdit edit) =>
+            edit.Body is PlanResult.Planned planned ? new PlanResult.Planned(new SpliceEdit([.. planned.Edit.Splices, .. edit.Identities.Splices])) : edit.Body;
+
         public IReadOnlyList<Splice> Undo(string label)
         {
             var written = _done.Count > 0 ? _done.Pop() : Written.Input;
             _undone.Push(written);
+            if (written == Written.Body && _identified is not null)
+            {
+                (UndoResult body, IReadOnlyList<Splice> identities) = _identified.Undo();
+                return [.. Done(body, label), .. identities];
+            }
             return Done(FileWritten(written).Undo(), label);
         }
 
@@ -885,6 +874,11 @@ public class ConformanceFixturesTests
         {
             var written = _undone.Count > 0 ? _undone.Pop() : Written.Input;
             _done.Push(written);
+            if (written == Written.Body && _identified is not null)
+            {
+                (UndoResult body, IReadOnlyList<Splice> identities) = _identified.Redo();
+                return [.. Done(body, label), .. identities];
+            }
             return Done(FileWritten(written).Redo(), label);
         }
 

@@ -33,7 +33,7 @@ public sealed class OpenBody : SplicedFile
 
     private FblBinding Binding { get; }
 
-    private FblOptions Options { get; }
+    private FblOptions Options { get; set; }
 
     public FblModel Model => Reading.ToModel();
 
@@ -144,6 +144,17 @@ public sealed class OpenBody : SplicedFile
             _views[(origin, resource)] = reading;
             return reading;
         }
+    }
+
+    /// <summary>
+    /// Reads the body again with the ids its sidecar keeps now (FBL 0.12 §8.6): after an edit moved, added or pruned an
+    /// entry there, or an undo put one back. The bytes and the history stay as they are.
+    /// </summary>
+    internal void Identify(IReadOnlyDictionary<string, string> identities)
+    {
+        ArgumentNullException.ThrowIfNull(identities);
+        Options = Options.With(Options.Origin, Options.Resource, identities);
+        Reread();
     }
 
     protected override void Reread()
