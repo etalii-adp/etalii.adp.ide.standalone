@@ -43,8 +43,12 @@ public class CausalLoopDocumentStoreSelfWriteTests : IDisposable
         var damaged = 0;
         var reloads = 0;
         string? first = null;
+        // The saves wait for the reloader to be running, so that a busy machine, which may start it only once the saves are
+        // done, cannot leave it nothing to race with.
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var reloader = Task.Run(async () =>
         {
+            started.SetResult();
             // ReSharper disable once AccessToModifiedClosure - Reason: Used in a test case which is acceptable.
             while (Volatile.Read(ref saving) == 1)
             {
@@ -61,6 +65,7 @@ public class CausalLoopDocumentStoreSelfWriteTests : IDisposable
         }, TestContext.Current.CancellationToken);
 
         // Act.
+        await started.Task.WaitAsync(TestContext.Current.CancellationToken);
         var refused = 0;
         for (var i = 0; i < 2000; i++)
         {

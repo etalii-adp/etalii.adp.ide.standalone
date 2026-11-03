@@ -11,7 +11,9 @@ namespace EtAlii.Adp.Specification.Disl.Tests;
 public class DiagramIndexConcurrencyTests
 {
     private const int Rounds = 50;
-    private const int Readers = 8;
+    /// <summary>One reader for each processor, at least two, so that none waits for a thread a spinning reader holds.</summary>
+    private static readonly int Readers = Math.Clamp(Environment.ProcessorCount, 2, 8);
+
     private const int Nodes = 2000;
 
     private static readonly DislSpecification Specification = Specifications.Loaded(Specifications.With("""
@@ -26,10 +28,9 @@ public class DiagramIndexConcurrencyTests
         {
             // Arrange.
             var diagram = Station();
-            using var start = new Barrier(Readers);
 
             // Act.
-            var found = await Task.WhenAll(Enumerable.Range(0, Readers).Select(_ => Task.Run(() => FindLast(diagram, start), TestContext.Current.CancellationToken)));
+            var found = await AtOnce(_ => FindLast(diagram));
 
             // Assert.
             Assert.All(found, id => Assert.Equal($"n{Nodes - 1}", id));
@@ -43,10 +44,9 @@ public class DiagramIndexConcurrencyTests
         {
             // Arrange.
             var diagram = Station();
-            using var start = new Barrier(Readers);
 
             // Act.
-            var counts = await Task.WhenAll(Enumerable.Range(0, Readers).Select(reader => Task.Run(() => CountOf(diagram, start, reader), TestContext.Current.CancellationToken)));
+            var counts = await AtOnce(reader => CountOf(diagram, reader));
 
             // Assert.
             Assert.All(counts, count => Assert.Equal(Nodes, count));
@@ -60,17 +60,32 @@ public class DiagramIndexConcurrencyTests
         return diagram;
     }
 
-    private static string? FindLast(DislDiagram diagram, Barrier start)
+    /// <summary>What <paramref name="read"/> gives on each of the readers, all of them let go at once.</summary>
+    private static Task<T[]> AtOnce<T>(Func<int, T> read)
     {
-        start.SignalAndWait(TestContext.Current.CancellationToken);
-        return diagram.ElementById($"n{Nodes - 1}")?.Id;
+        var start = new StartLine(Readers);
+        return Task.WhenAll(Enumerable.Range(0, Readers).Select(reader => Task.Run(() => start.Released(reader, read), TestContext.Current.CancellationToken)));
     }
 
+    private static string? FindLast(DislDiagram diagram) => diagram.ElementById($"n{Nodes - 1}")?.Id;
+
     /// <summary>The stations, asked for by every reader at once, each reader also asking for a type of its own so that the lists are made side by side.</summary>
-    private static int CountOf(DislDiagram diagram, Barrier start, int reader)
+    private static int CountOf(DislDiagram diagram, int reader)
     {
-        start.SignalAndWait(TestContext.Current.CancellationToken);
         _ = diagram.NodesOfType(reader % 2 == 0 ? "Halt" : "Station");
         return diagram.NodesOfType("Station").Count;
+    }
+
+    /// <summary>Holds every reader until all of them are there, so that they ask at the same moment.</summary>
+    private sealed class StartLine(int readers)
+    {
+        private int _arrived;
+
+        public T Released<T>(int reader, Func<int, T> read)
+        {
+            Interlocked.Increment(ref _arrived);
+            while (Volatile.Read(ref _arrived) < readers) Thread.SpinWait(20);
+            return read(reader);
+        }
     }
 }
