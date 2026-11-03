@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Diagram.WardleyMap;
+namespace EtAlii.Adp.Diagram.WardleyMap.Tests;
 
 /// <summary>
 /// One link, as a dialog offers it: what it joins, which arrow it is, how it reads, and the

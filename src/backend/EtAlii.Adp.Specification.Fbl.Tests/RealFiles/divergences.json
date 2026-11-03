@@ -265,7 +265,7 @@
       "binding": "wardley-map",
       "file": "src/diagrams/wardley-map/backend/EtAlii.Adp.Diagram.WardleyMap.Tests/Fixtures/awkward-names.owm",
       "observed": "Dependency: the binding adds 2 (link:C++ build\u001fCI/CD\u001fDependency, link:Self-service\u001fCI/CD\u001fDependency)",
-      "reason": "Finding B13 of wardley-map-disl-fbl: the module reads a link's source up to the first '-' or '+', so it reads no link from 'Self-service' or 'C++ build', and WardleyBody passes such a link over as the parser did until task 12 writes the links through the binding. The binding reads both, which is right."
+      "reason": "Finding B13 of wardley-map-disl-fbl: the module reads a link's source up to the first '-' or '+', so it reads no link from 'Self-service' or 'C++ build', and WardleyBody passes such a link over as the parser did, as Online Wardley Maps reads it, and the module refuses such a name on an add or a rename. Task 12, which writes every edit through the binding, keeps that reading, so this stays until the module reads such a link. The binding reads both, which is right."
     },
     {
       "property": "cross-check",

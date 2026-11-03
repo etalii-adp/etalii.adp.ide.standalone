@@ -26,8 +26,8 @@ namespace EtAlii.Adp.Specification.Fbl.History;
 /// so that undoing the edit does not take away the id the element is known by.
 /// </para>
 /// <para>
-/// The Wardley map's module opens its bodies through it (spec 071's task T012). That host keeps an edit's undo its own, by
-/// restoring the whole text, so it uses this for the ids an edit carries and writes the identities where the map keeps them.
+/// A host that keeps an edit's undo its own, by restoring the whole text, uses this for the ids an edit carries, and writes
+/// the identities where its document keeps them.
 /// </para>
 /// </remarks>
 public sealed class IdentifiedBody
