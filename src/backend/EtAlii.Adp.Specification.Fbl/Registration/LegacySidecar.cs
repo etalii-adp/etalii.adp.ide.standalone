@@ -116,7 +116,7 @@ public sealed class LegacySidecar : SplicedFile
     /// before it, or after it for the first; a wanted id the file does not hold is a new entry after the array's last item,
     /// laid out as that item is, its texts written with RFC 8785's escapes. An entry of any other kind is kept as written.
     /// </summary>
-    internal PlanResult PlanIdentities(IReadOnlyCollection<LegacyIdentity> wanted, IReadOnlySet<string> kinds)
+    public PlanResult PlanIdentities(IReadOnlyCollection<LegacyIdentity> wanted, IReadOnlySet<string> kinds)
     {
         ArgumentNullException.ThrowIfNull(wanted);
         ArgumentNullException.ThrowIfNull(kinds);

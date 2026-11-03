@@ -1,5 +1,5 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Specification.Fbl.Planning;
 using Serilog;
 
 namespace EtAlii.Adp.Diagram.WardleyMap;
@@ -24,79 +24,48 @@ public sealed record MoveWardleyElementCommand(
     double Maturity) : IDocumentEditCommand;
 
 /// <summary>
-/// Applies a move by rewriting the one statement it occupies, and names the command that puts
-/// that line back.
+/// Applies a move by setting the coordinates that change, as values of the element the library writes in place.
 /// </summary>
+/// <remarks>
+/// Only a coordinate whose value changes is set, so the other keeps the bytes it was written with (Requirement 5.2), and
+/// the undo is the shared restore of the whole text, which gives back <c>[0.90, 0.10]</c> as it was written rather than as
+/// <c>[0.9, 0.1]</c>.
+/// </remarks>
 public sealed class MoveWardleyElementCommandHandler(IWardleyDocumentStore documents) : WardleyEditHandler<MoveWardleyElementCommand>(documents)
 {
     private static readonly ILogger _logger = Log.ForContext<MoveWardleyElementCommandHandler>();
 
-    protected override EditOutcome Apply(LineDocument body, WardleyMap model, MoveWardleyElementCommand command)
+    protected override EditOutcome Apply(WardleyBodyEdit body, WardleyEditContext map, MoveWardleyElementCommand command)
     {
-        // From the store, not reconciled here: an unmatched element gets a FRESH ShortGuid, so
-        // reconciling separately would mint ids the session never handed out and this handler
-        // would never find the element it was asked to move.
-        var identities = Documents.Identities(command.BodyPath);
+        var clamped = WardleyAxis.Clamp(new WardleyCoordinate(command.Visibility, command.Maturity));
+        var entry = map.Identities.FirstOrDefault(candidate => candidate.Id == command.ElementId);
+        var changed = WardleyEdit.Attributes();
 
-        // Preconditions are checked against CURRENT state rather than trusted from when the
-        // command was made, because undo and redo dispatch this again later (Requirement 9.5).
-        if (Locate(model, identities, command.ElementId) is not { } target)
+        // The holder at the entry's ordinal, where two elements carry one key (finding B9).
+        if (entry is { Kind: WardleyIdentityKind.PipelineChild } && WardleyHolders.Child(map.Map, entry.Key) is { } found)
+        {
+            // A pipeline child has no visibility of its own - the format gives it nowhere to put one - so only its
+            // maturity moves (Requirement 7.4).
+            if (Math.Abs(found.Child.Maturity - clamped.Maturity) > double.Tolerance) changed["maturity"] = clamped.Maturity;
+        }
+        else if (map.ComponentOf(command.ElementId) is { } component)
+        {
+            if (Math.Abs(component.Position.Visibility - clamped.Visibility) > double.Tolerance) changed["visibility"] = clamped.Visibility;
+            if (Math.Abs(component.Position.Maturity - clamped.Maturity) > double.Tolerance) changed["maturity"] = clamped.Maturity;
+            _logger.Debug("Moving {Name} to {Visibility},{Maturity}", component.Name, clamped.Visibility, clamped.Maturity);
+        }
+        else
         {
             return EditOutcome.Refused(Gone);
         }
 
-        var clamped = WardleyAxis.Clamp(new WardleyCoordinate(command.Visibility, command.Maturity));
-
-        // Captured before the edit, so the inverse restores the LINE rather than the numbers.
-        // Recomputing from numbers would bring `[0.90, 0.10]` back as `[0.9, 0.1]` - the same
-        // position, a different file - and an undo has to leave no trace at all.
-        var line = target.Child?.Line ?? target.Component!.Line;
-        var before = body.Lines[(int)line - 1].Text;
-
-        if (target.Child is { } child)
+        if (changed.Count == 0)
         {
-            // A pipeline child has no visibility of its own - the format gives it nowhere to
-            // put one - so only its maturity moves (Requirement 7.4).
-            if (!WardleyWriter.SetPipelineChildMaturity(body, child, clamped.Maturity))
-            {
-                return EditOutcome.Refused("That element could not be moved.");
-            }
-        }
-        else
-        {
-            var component = target.Component!;
-            if (!WardleyWriter.SetPosition(body, component, clamped))
-            {
-                return EditOutcome.Refused("That element could not be moved.");
-            }
-
-            _logger.Debug("Moved {Name} to {Visibility},{Maturity}", component.Name, clamped.Visibility, clamped.Maturity);
+            return EditOutcome.Unchanged;
         }
 
-        return EditOutcome.UndoneBy(new RestoreWardleyLineCommand(command.BodyPath, line, before));
-    }
-
-    /// <summary>The component or pipeline child <paramref name="elementId"/> names, or null.</summary>
-    private static (WardleyComponent? Component, WardleyPipelineChild? Child)? Locate(
-        WardleyMap map,
-        IReadOnlyList<WardleyIdentityEntry> identities,
-        string elementId)
-    {
-        var entry = identities.FirstOrDefault(candidate => candidate.Id == elementId);
-        if (entry is null)
-        {
-            return null;
-        }
-
-        // The holder at the entry's ordinal, where two elements carry one key (finding B9).
-        if (entry.Kind == WardleyIdentityKind.Component)
-        {
-            var component = WardleyIdentityKeys.Component(map, entry.Key);
-            return component is null ? null : (component, null);
-        }
-
-        return entry.Kind == WardleyIdentityKind.PipelineChild && WardleyIdentityKeys.Child(map, entry.Key) is { } found
-            ? (null, found.Child)
-            : null;
+        return body.Change(new ModelChange.Set(command.ElementId, changed)).WasApplied
+            ? EditOutcome.Applied
+            : EditOutcome.Refused("That element could not be moved.");
     }
 }

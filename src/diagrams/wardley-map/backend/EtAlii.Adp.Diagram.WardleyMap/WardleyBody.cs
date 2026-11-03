@@ -17,13 +17,16 @@ namespace EtAlii.Adp.Diagram.WardleyMap;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Nothing in this module parses a map any more.</b> The reading is the library's reading of the binding's rules. What
-/// the module still needs in its own vocabulary, the <see cref="WardleyMap"/> the writer, the commands, the mapper and the
-/// identities work on until task 12 writes through the binding, is projected from that reading, statement by statement.
+/// <b>Nothing in this module parses or writes a map any more.</b> The reading is the library's reading of the binding's
+/// rules, and every edit a model change the library plans as splices (<see cref="WardleyBodyEdit"/>, task 12). What the
+/// module still needs in its own vocabulary, the <see cref="WardleyMap"/> the mapper, the descriptions and the commands'
+/// checks read, is projected from that reading, statement by statement, with the key the binding keeps each element's id
+/// under (<see cref="WardleyMap.Holders"/>).
 /// </para>
 /// <para>
 /// <b>The model is built from the reading</b>, each element under the id the store keeps for its kind and key
-/// (<see cref="WardleyIdentities"/>), which are the binding's <c>sidecar</c> kind and key; an element the store keeps
+/// (<see cref="Identify(LineDocument, IReadOnlyDictionary{string, string})"/>), which are the binding's <c>sidecar</c> kind
+/// and key; an element the store keeps
 /// none for has one no identity can equal. A statement that names an element by its name, a link's end, an
 /// evolution's or a pipeline's <c>component</c>, names the first holder of that name in document order, as the module
 /// has since task 2 (ruling 3); one that names no element has no end, and the name as written is kept for
@@ -37,14 +40,14 @@ namespace EtAlii.Adp.Diagram.WardleyMap;
 /// <see cref="Typed"/> gives each its value: a number, a whole number, a flag, a pair.
 /// </para>
 /// <para>
-/// <b>Five things are read as the module read them before, until task 12</b>, each where the reading differs from what
-/// the transcript records: a line the binding does not read is reported in the module's own sentence
-/// (<see cref="Sentence"/>); a statement followed on its line by text the grammar does not read, as an <c>evolve</c>
-/// with a <c>label</c> is, is passed over whole, as the parser could not read it; what follows a pipeline whose block never closes is inside it, as the module has always
-/// read it, so that only its components are read there; a link whose source holds <c>-</c> or <c>+</c> is passed
-/// over, the defect of finding B13 that task 12 removes by construction with the module's own link grammar; and the
-/// first line of a text that begins with a byte order mark is passed over, as the parser, whose keyword then began with
-/// the mark, passed it over.
+/// <b>Five things are read as the module read them before</b>, each where the reading differs from what the transcript
+/// records: a line the binding does not read is reported in the module's own sentence (<see cref="Sentence"/>); a
+/// statement followed on its line by text the grammar does not read, as an <c>evolve</c> with a <c>label</c> is, is
+/// passed over whole, as the parser could not read it; what follows a pipeline whose block never closes is inside it, as
+/// the module has always read it, so that only its components are read there; a link whose source holds <c>-</c> or
+/// <c>+</c> is passed over, as Online Wardley Maps reads it, which is why a name holding either is refused (finding B13,
+/// <see cref="WardleyEdit.Unusable"/>); and the first line of a text that begins with a byte order mark is passed over,
+/// as the parser, whose keyword then began with the mark, passed it over.
 /// </para>
 /// </remarks>
 internal sealed class WardleyBody
@@ -60,9 +63,12 @@ internal sealed class WardleyBody
 
     /// <summary>
     /// The host attribute holding a link as the menus choose it: its source, target and kind as written, joined by
-    /// <see cref="WardleyIdentityKeys.Separator"/>, which every repeat of one link shares.
+    /// <see cref="Separator"/>, which every repeat of one link shares.
     /// </summary>
     private const string ChoiceKey = "choiceKey";
+
+    /// <summary>What separates the parts of a link's choice: U+001F, which the binding's keys separate their parts with too.</summary>
+    private const char Separator = '\u001F';
 
     private const string InsidePipeline = "This line inside a pipeline is not a component of it, so it was passed over.";
 
@@ -75,9 +81,20 @@ internal sealed class WardleyBody
         "accelerator", "deaccelerator", "pipeline", "component", "anchor", "submap",
     };
 
+    /// <summary>The binding every <c>.owm</c> body is read and written with.</summary>
+    internal static FblBinding Binding => LoadedBinding.Value;
+
     private static readonly Lazy<FblBinding> LoadedBinding = new(() => BundledBinding.Load(typeof(WardleyBody).Assembly, "wardley-map.fbl", "map"));
 
-    private static readonly FblOptions Options = new() { FileName = "body.owm", Many = ManyOf };
+    /// <summary>How a body is read: as <c>body.owm</c>, with the attributes of several values the binding has.</summary>
+    internal static FblOptions Options { get; } = new() { FileName = "body.owm", Many = ManyOf };
+
+    /// <summary>The kinds the binding keeps ids of, its rules' <c>sidecar.kind</c>: an identities entry of any other kind is kept as written.</summary>
+    internal static IReadOnlySet<string> Kinds { get; } = new HashSet<string>(StringComparer.Ordinal)
+    {
+        WardleyIdentityKind.Component, WardleyIdentityKind.Link, WardleyIdentityKind.Pipeline, WardleyIdentityKind.PipelineChild,
+        WardleyIdentityKind.Note, WardleyIdentityKind.Annotation, WardleyIdentityKind.Accelerator, WardleyIdentityKind.Attitude,
+    };
 
     /// <summary>The bodies read lately, by their text: a menu, a row and a finding of one text read it once.</summary>
     private static readonly Recent Bodies = new();
@@ -104,7 +121,6 @@ internal sealed class WardleyBody
         {
             if (marked && element.Line == 1) continue;
             if (unparsed.Contains(element.Line)) continue;
-
             (FblElement? pipeline, int last) = blocks.FirstOrDefault(block => element.Line > block.Pipeline.Line && element.Line <= block.Last);
             if (pipeline is not null && last == int.MaxValue && element.ParentId != pipeline.Id)
             {
@@ -175,6 +191,87 @@ internal sealed class WardleyBody
     {
         ArgumentNullException.ThrowIfNull(diagram);
         return id is { Length: > 0 } ? diagram.ElementById(id) : null;
+    }
+
+    /// <summary>
+    /// The identities of <paramref name="document"/>'s elements, in the order of <see cref="WardleyMap.Holders"/>: each the
+    /// id <paramref name="known"/> keeps under its kind and key, <c>kind:key</c> as the binding looks it up (FBL 0.12
+    /// §8.6), else a new <c>ShortGuid</c>. Nothing is written here: a map opened and not edited writes nothing
+    /// (Requirement 6.2).
+    /// </summary>
+    /// <remarks>
+    /// <b>One id per kind, key and ordinal</b> (finding B9, Requirement 6.4): the binding gives a later holder of a key the
+    /// key that carries its ordinal, so after an edit made outside ADP the ids follow the order of the holders (ruling 7).
+    /// No two elements share an id: an id already given is not given again, so a file that names one id under two keys gives
+    /// the second a new one.
+    /// </remarks>
+    public static IReadOnlyList<WardleyIdentityEntry> Identify(LineDocument document, IReadOnlyDictionary<string, string> known)
+    {
+        ArgumentNullException.ThrowIfNull(known);
+        var given = new HashSet<string>(StringComparer.Ordinal);
+        var entries = new List<WardleyIdentityEntry>();
+        foreach (var holder in Read(document).Model.Holders)
+        {
+            var id = known.TryGetValue(LookupKey(holder.Kind, holder.Key), out var stored) && given.Add(stored) ? stored : Fresh(given);
+            entries.Add(new WardleyIdentityEntry(id, holder.Kind, holder.Key));
+        }
+
+        return entries;
+    }
+
+    /// <summary>The identities of <paramref name="document"/>'s elements with the ids <paramref name="known"/> gives their kinds and keys, the first of each.</summary>
+    public static IReadOnlyList<WardleyIdentityEntry> Identify(LineDocument document, IReadOnlyList<WardleyIdentityEntry> known) =>
+        Identify(document, Keyed(known));
+
+    /// <summary><paramref name="identities"/> as the binding looks an id up: by <c>kind:key</c>, the first of each.</summary>
+    private static Dictionary<string, string> Keyed(IEnumerable<WardleyIdentityEntry> identities)
+    {
+        ArgumentNullException.ThrowIfNull(identities);
+        var keyed = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var entry in identities) keyed.TryAdd(LookupKey(entry.Kind, entry.Key), entry.Id);
+        return keyed;
+    }
+
+    /// <summary>The key an id is looked up by: the rule's <c>sidecar.kind</c>, a colon and the natural key (FBL 0.12 §8.6).</summary>
+    internal static string LookupKey(string kind, string key) => $"{kind}:{key}";
+
+    /// <summary>The edits of <paramref name="document"/>, whose elements have <paramref name="identities"/>, planned through the binding.</summary>
+    public static WardleyBodyEdit Edit(LineDocument document, IReadOnlyList<WardleyIdentityEntry> identities)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        ArgumentNullException.ThrowIfNull(identities);
+        return new WardleyBodyEdit(document.Text, identities);
+    }
+
+    /// <summary>
+    /// Whether the block of the nested pipeline declared on the 1-based <paramref name="pipelineLine"/> closes: a line that
+    /// holds only <c>}</c> follows it.
+    /// </summary>
+    /// <remarks>
+    /// Found by scanning rather than from what the binding reads, because a block may hold blank lines, comments and
+    /// statements this module does not model, and the binding's recovery reads an unclosed block's components all the same.
+    /// </remarks>
+    public static bool Closes(LineDocument document, uint pipelineLine)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        for (var number = (int)pipelineLine; number <= document.Lines.Count; number++)
+        {
+            if (number >= 1 && document.Lines[number - 1].Text.Trim() == "}") return true;
+        }
+
+        return false;
+    }
+
+    private static string Fresh(HashSet<string> given)
+    {
+        string id;
+        do
+        {
+            id = ShortGuid.NewShortGuid().ToString();
+        }
+        while (!given.Add(id));
+
+        return id;
     }
 
     /// <summary>
@@ -257,7 +354,7 @@ internal sealed class WardleyBody
             ["context"] = Text(element, "context"),
             [WardleyFunctions.WrittenSource] = source,
             [WardleyFunctions.WrittenTarget] = target,
-            [ChoiceKey] = $"{source}{WardleyIdentityKeys.Separator}{target}{WardleyIdentityKeys.Separator}{KindOf(element)}",
+            [ChoiceKey] = $"{source}{Separator}{target}{Separator}{KindOf(element)}",
         };
         if (holders.TryGetValue(source, out var from)) attributes["from"] = from;
         if (holders.TryGetValue(target, out var to)) attributes["to"] = to;
@@ -389,7 +486,31 @@ internal sealed class WardleyBody
             }
         }
 
-        return new WardleyMap(title, components, links, pipelines, evolves, attitudes, accelerators, notes, annotations, urls, size, style, annotationsPosition);
+        return new WardleyMap(title, components, links, pipelines, evolves, attitudes, accelerators, notes, annotations, urls, size, style, annotationsPosition)
+        {
+            Holders = [.. Walked(read).Where(element => element.IdentityKey is not null).Select(element => new WardleyHolder(element.IdentityKind ?? "", element.IdentityKey!, (uint)element.Line))],
+        };
+    }
+
+    /// <summary>
+    /// The elements of <paramref name="read"/> in the order their ids are given, which is the order the module has always
+    /// given them in: the components, the links, each pipeline followed by its components, the notes, the annotations, the
+    /// accelerators and the attitudes, each in document order.
+    /// </summary>
+    private static IEnumerable<FblElement> Walked(List<FblElement> read)
+    {
+        foreach (var element in read.Where(IsPositioned)) yield return element;
+        foreach (var element in read.Where(element => element.Type is "Dependency" or "Flow")) yield return element;
+        foreach (var pipeline in read.Where(element => element.Type is "Pipeline" or "LegacyPipeline"))
+        {
+            yield return pipeline;
+            foreach (var child in read.Where(child => child.Type == "PipelineComponent" && child.ParentId == pipeline.Id)) yield return child;
+        }
+
+        foreach (var type in (string[])["Note", "Annotation", "Accelerator", "Attitude"])
+        {
+            foreach (var element in read.Where(element => element.Type == type)) yield return element;
+        }
     }
 
     /// <summary>The five decorators <paramref name="element"/> is written with, each once, in the order they are first written; a word that is none of them is kept in the body and read as none.</summary>

@@ -225,6 +225,10 @@ internal static class EditPlanner
     /// A rename (FBL §5.7): every reference to the old value is rewritten in the same edit, one
     /// <c>rewrite-reference</c> splice each, word by word inside a group.
     /// </summary>
+    /// <remarks>
+    /// A reference is to the renamed element only when it resolves to it (FBL 5.4): what names a repeated key names its
+    /// first holder (FBL 5.3), so a later holder's rename rewrites none, as its removal cascades to none (<see cref="References"/>).
+    /// </remarks>
     private static void RewriteReferences(Plan plan, ReadElement renamed, string newKey)
     {
         var reading = plan.Reading;
@@ -240,6 +244,7 @@ internal static class EditPlanner
             {
                 if (binding.Reference is not { } reference || !reference.To.Contains(renamed.Rule.Name)) continue;
                 if (other == renamed && name == renamed.KeyAttribute) continue;
+                if (reading.ReferencedBy(reference, oldKey) is { } named && named != renamed) continue;
                 if (!other.Slots.TryGetValue(name, out var read) || !read.Present) continue;
                 if (read.Words is { Count: > 1 } ||(read.Words is { Count: 1 } && other.Attributes.GetValueOrDefault(name) is List<object?>))
                 {

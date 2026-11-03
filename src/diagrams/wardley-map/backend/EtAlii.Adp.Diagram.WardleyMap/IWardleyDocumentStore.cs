@@ -28,4 +28,12 @@ public interface IWardleyDocumentStore : IDiagramDocumentStore<LineDocument, War
     /// carries that as its <see cref="DocumentSaveResult.Warning"/>.
     /// </remarks>
     IReadOnlyList<WardleyIdentityEntry> Identities(string path);
+
+    /// <summary>
+    /// Hands the store the identities an edit gave <paramref name="text"/>, the text it is about to
+    /// save at <paramref name="path"/>, so that the save keeps them and writes them where the map keeps
+    /// its ids. A text the store held before keeps the identities it had then, which is how a redo
+    /// gives back the ids of the edit it redoes.
+    /// </summary>
+    void Remember(string path, string text, IReadOnlyList<WardleyIdentityEntry> identities);
 }

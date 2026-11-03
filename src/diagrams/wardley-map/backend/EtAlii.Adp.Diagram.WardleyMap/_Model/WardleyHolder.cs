@@ -5,6 +5,6 @@ namespace EtAlii.Adp.Diagram.WardleyMap;
 /// ordinal of a second or later holder of one key) and the line that declares it.
 /// </summary>
 /// <param name="Kind">One of <see cref="WardleyIdentityKind"/>.</param>
-/// <param name="Key">The key of the holder, as <see cref="WardleyIdentityKeys.Numbered"/> builds it.</param>
+/// <param name="Key">The key of the holder, as the binding's <c>sidecar.key</c> and <c>ordinal</c> give it (FBL 0.12 §8.6).</param>
 /// <param name="Line">The 1-based line of the statement that declares the element.</param>
 public sealed record WardleyHolder(string Kind, string Key, uint Line);

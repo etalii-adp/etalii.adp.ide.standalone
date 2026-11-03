@@ -29,6 +29,42 @@ public class IdentifiedBodyTests
         body.Body.Model.Elements.Single(element => element.Type == type && element.IdentityKey == key).Id;
 
     [Fact]
+    public void TheLegacyIdentitiesFileABindingNames_IsReadable_AndOneThatNamesNoneHasNone()
+    {
+        // Arrange.
+        var wardley = RealFileCorpus.Binding("wardley-map.fbl", "map");
+        var turtle = RealFileCorpus.Binding("w3c-turtle.fbl", "turtle");
+
+        // Act.
+        var path = LegacySidecar.PathFor(wardley.LegacyIdentities!, Path.Combine("maps", "tea.owm"));
+
+        // Assert: the pattern is the binding's, resolved beside the body (FBL 0.12 §8.7).
+        Assert.Equal("{base}.identities.json", wardley.LegacyIdentities);
+        Assert.Equal("tea.identities.json", Path.GetFileName(path));
+        Assert.Null(turtle.LegacyIdentities);
+    }
+
+    [Fact]
+    public void ARenameOfALaterHolder_RewritesNoReference_SinceEachNamesTheFirstHolder()
+    {
+        // Arrange: two components named Tea; the link and the evolution naming Tea attach to the first (FBL 5.3, 5.4).
+        var body = Open(
+            "component Tea [0.1, 0.1]\ncomponent Tea [0.2, 0.2]\ncomponent Cup [0.8, 0.2]\nTea->Cup\nevolve Tea 0.9\n",
+            "[\n" + Entry("c1", "component", "Tea") + ",\n" + Entry("c2", "component", "Tea\\u001F2\\t") + "\n]\n");
+
+        // Act: the later holder is renamed, and then the first.
+        var later = body.Change(new ModelChange.Set("c2", new Dictionary<string, object?> { ["name"] = "Leaf" }));
+        var afterLater = Encoding.UTF8.GetString(body.Body.Bytes);
+        var first = body.Change(new ModelChange.Set("c1", new Dictionary<string, object?> { ["name"] = "Kettle" }));
+
+        // Assert: the later holder's own statement alone changes; the first holder takes every reference with it (FBL 5.7).
+        Assert.IsType<PlanResult.Planned>(later.Body);
+        Assert.Equal("component Tea [0.1, 0.1]\ncomponent Leaf [0.2, 0.2]\ncomponent Cup [0.8, 0.2]\nTea->Cup\nevolve Tea 0.9\n", afterLater);
+        Assert.IsType<PlanResult.Planned>(first.Body);
+        Assert.Equal("component Kettle [0.1, 0.1]\ncomponent Leaf [0.2, 0.2]\ncomponent Cup [0.8, 0.2]\nKettle->Cup\nevolve Kettle 0.9\n", Encoding.UTF8.GetString(body.Body.Bytes));
+    }
+
+    [Fact]
     public void AnIdStoredForTheFirstTime_IsWrittenWithTheEdit_AndIsNoStepOfItsHistory()
     {
         // Arrange: Tea has an entry, Cup has none and is known by the id the reading gives it.

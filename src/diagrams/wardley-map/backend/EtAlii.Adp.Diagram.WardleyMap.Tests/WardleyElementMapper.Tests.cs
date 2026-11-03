@@ -1,5 +1,4 @@
 using EtAlii.Adp.Documents;
-using EtAlii.Adp.Files;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
@@ -7,7 +6,7 @@ namespace EtAlii.Adp.Diagram.WardleyMap.Tests;
 
 public class WardleyElementMapperTests
 {
-    private readonly WardleyElementMapper _mapper = new(new WardleyIdentities(new FileWriter()));
+    private readonly WardleyElementMapper _mapper = new();
 
     private static WardleyMap ParseText(string text) => WardleyBody.Read(LineDocument.Parse(text)).Model;
 

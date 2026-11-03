@@ -31,7 +31,7 @@ public sealed class WardleyDocumentStore(IFileWriter writer) : LifecycleDocument
 
     private readonly ConcurrentDictionary<string, Memory> _memories = new(StringComparer.OrdinalIgnoreCase);
 
-    private readonly WardleyIdentities _sidecar = new(writer);
+    private readonly WardleyIdentityFiles _files = new(writer);
 
     /// <inheritdoc />
     public IReadOnlyList<WardleyIdentityEntry> Identities(string path)
@@ -47,8 +47,17 @@ public sealed class WardleyDocumentStore(IFileWriter writer) : LifecycleDocument
         // identities of a map it has already read, so a map that is not held has none yet, and none
         // are kept for it until it is (code-structure FR-050).
         return Get(path) is { } entry
-            ? _identities.GetOrAdd(path, key => new Held(entry.Document.Text, entry.Model, WardleyIdentities.Reconcile(entry.Model, _sidecar.Read(key)))).Entries
+            ? _identities.GetOrAdd(path, key => new Held(entry.Document.Text, WardleyBody.Identify(entry.Document, _files.Read(key)))).Entries
             : [];
+    }
+
+    /// <inheritdoc />
+    public void Remember(string path, string text, IReadOnlyList<WardleyIdentityEntry> identities)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        ArgumentNullException.ThrowIfNull(text);
+        ArgumentNullException.ThrowIfNull(identities);
+        _memories.GetOrAdd(path, _ => new Memory()).Offer(text, identities);
     }
 
     /// <summary>
@@ -81,11 +90,14 @@ public sealed class WardleyDocumentStore(IFileWriter writer) : LifecycleDocument
     /// <inheritdoc />
     /// <remarks>
     /// <para>
-    /// The edit may have added, removed or renamed elements, so the identities are carried across
-    /// it by line (<see cref="WardleyIdentityMoves"/>): every element the edit kept keeps its id,
-    /// whatever it did to its key, and only now are they written. A map opened and never edited
-    /// reaches none of this (Requirement 4.3). A sidecar that could not be written is the save's
-    /// warning: the map landed, and the ids it hands out will not survive a restart.
+    /// The edit may have added, removed or renamed elements, so the identities it carried are the
+    /// ones its command handed over (<see cref="Remember"/>), which the library moved with their
+    /// keys (<see cref="WardleyBodyEdit"/>): every element the edit kept keeps its id, whatever it
+    /// did to its key, and only now are they written, where the map keeps them
+    /// (<see cref="WardleyIdentityFiles"/>). A save no command handed identities to keeps each id
+    /// its kind and key had. A map opened and never edited reaches none of this (Requirement 4.3).
+    /// Identities that could not be written are the save's warning: the map landed, and the ids it
+    /// hands out will not survive a restart.
     /// </para>
     /// <para>
     /// <b>A text this store held before has the identities it had then</b>, which is how an undo
@@ -103,15 +115,15 @@ public sealed class WardleyDocumentStore(IFileWriter writer) : LifecycleDocument
         IReadOnlyList<WardleyIdentityEntry> carried;
         if (memory.Recall(text) is { } recalled)
         {
-            carried = WardleyIdentities.Reconcile(entry.Model, recalled);
+            carried = WardleyBody.Identify(entry.Document, recalled);
         }
         else if (before is not null)
         {
-            carried = WardleyIdentityMoves.Follow(before.Model, before.Text, before.Entries, entry.Model, text);
+            carried = WardleyBody.Identify(entry.Document, before.Entries);
         }
         else
         {
-            carried = WardleyIdentities.Reconcile(entry.Model, _sidecar.Read(path));
+            carried = WardleyBody.Identify(entry.Document, _files.Read(path));
         }
 
         if (before is not null)
@@ -120,8 +132,8 @@ public sealed class WardleyDocumentStore(IFileWriter writer) : LifecycleDocument
         }
 
         memory.Keep(text, carried);
-        _identities[path] = new Held(text, entry.Model, carried);
-        return _sidecar.WriteAsync(path, carried, cancellationToken);
+        _identities[path] = new Held(text, carried);
+        return _files.WriteAsync(path, carried, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -149,7 +161,7 @@ public sealed class WardleyDocumentStore(IFileWriter writer) : LifecycleDocument
         var memory = _memories.GetOrAdd(path, _ => new Memory());
         var held = _identities.TryGetValue(path, out var current) ? current : null;
         var known = memory.Recall(text) ?? held?.Entries ?? [];
-        var reconciled = WardleyIdentities.Reconcile(entry.Model, known);
+        var reconciled = WardleyBody.Identify(entry.Document, known);
 
         if (held is not null)
         {
@@ -157,11 +169,11 @@ public sealed class WardleyDocumentStore(IFileWriter writer) : LifecycleDocument
         }
 
         memory.Keep(text, reconciled);
-        _identities[path] = new Held(text, entry.Model, reconciled);
+        _identities[path] = new Held(text, reconciled);
     }
 
-    /// <summary>The identities held for a map, with the text and the map they are the identities of.</summary>
-    private sealed record Held(string Text, WardleyMap Model, IReadOnlyList<WardleyIdentityEntry> Entries);
+    /// <summary>The identities held for a map, with the text they are the identities of.</summary>
+    private sealed record Held(string Text, IReadOnlyList<WardleyIdentityEntry> Entries);
 
     /// <summary>The identities of the last texts of one map, the oldest forgotten first.</summary>
     private sealed class Memory
@@ -176,6 +188,17 @@ public sealed class WardleyDocumentStore(IFileWriter writer) : LifecycleDocument
             {
                 return _byText.GetValueOrDefault(text);
             }
+        }
+
+        /// <summary>Keeps <paramref name="entries"/> for <paramref name="text"/> unless it has some already: a text held before keeps the identities it had then.</summary>
+        public void Offer(string text, IReadOnlyList<WardleyIdentityEntry> entries)
+        {
+            lock (_lock)
+            {
+                if (_byText.ContainsKey(text)) return;
+            }
+
+            Keep(text, entries);
         }
 
         public void Keep(string text, IReadOnlyList<WardleyIdentityEntry> entries)

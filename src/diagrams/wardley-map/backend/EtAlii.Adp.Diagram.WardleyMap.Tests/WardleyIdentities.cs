@@ -3,7 +3,7 @@ using EtAlii.Adp.Files;
 using Serilog;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
-namespace EtAlii.Adp.Diagram.WardleyMap;
+namespace EtAlii.Adp.Diagram.WardleyMap.Tests;
 
 /// <summary>
 /// Where ADP keeps the identities the `.owm` format does not provide. A sidecar rather than the
@@ -11,6 +11,10 @@ namespace EtAlii.Adp.Diagram.WardleyMap;
 /// place in it - tech.md's rule, Requirement 3.7, and the precedent C4LayoutSidecar set for `.dsl`.
 /// </summary>
 /// <remarks>
+/// <para>
+/// <b>An oracle, not the product</b>: what the module wrote and keyed with before wardley-map-disl-fbl task 12 put
+/// every edit through the binding. It is kept beside the tests to check the binding's output against.
+/// </para>
 /// <para>
 /// <b>An optimisation, never a dependency</b> (Requirement 4.5). A missing, unreadable or
 /// nonsense sidecar means identities are re-derived from the document; a map that would not
@@ -26,7 +30,7 @@ namespace EtAlii.Adp.Diagram.WardleyMap;
 /// </para>
 /// </remarks>
 /// <param name="writer">Publishes and deletes the sidecar.</param>
-public sealed class WardleyIdentities(IFileWriter writer)
+internal sealed class WardleyIdentities(IFileWriter writer)
 {
     private static readonly ILogger _logger = Log.ForContext<WardleyIdentities>();
 
@@ -90,7 +94,7 @@ public sealed class WardleyIdentities(IFileWriter writer)
     /// elements has no identities to keep, and a stray file would only invite the question of
     /// what it is for.
     /// </remarks>
-    public async Task<string> WriteAsync(string bodyPath, IReadOnlyList<WardleyIdentityEntry> entries, CancellationToken cancellationToken)
+    public async Task WriteAsync(string bodyPath, IReadOnlyList<WardleyIdentityEntry> entries, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(bodyPath);
         ArgumentNullException.ThrowIfNull(entries);
@@ -99,7 +103,7 @@ public sealed class WardleyIdentities(IFileWriter writer)
         if (entries.Count == 0)
         {
             await RemoveAsync(bodyPath, cancellationToken);
-            return "";
+            return;
         }
 
         // The folder is this sidecar's precondition rather than the writer's business: a
@@ -115,7 +119,6 @@ public sealed class WardleyIdentities(IFileWriter writer)
             }
 
             await writer.SaveAsync(path, JsonSerializer.Serialize(entries, Options), cancellationToken);
-            return "";
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
@@ -125,10 +128,8 @@ public sealed class WardleyIdentities(IFileWriter writer)
             // list when the sidecar is gone and Reconcile mints fresh ids for anything it
             // does not recognise, so the map is intact and its elements are renamed
             // underneath any selection still pointing at the old ones.
-            _logger.Warning(exception, "Could not write the identity sidecar beside {BodyPath}", bodyPath);
-
             // The writer removes its own scratch file before the failure surfaces.
-            return $"The element identities beside {IoPath.GetFileName(bodyPath)} could not be saved, so this map's elements may be given new ids the next time it is opened.";
+            _logger.Warning(exception, "Could not write the identity sidecar beside {BodyPath}", bodyPath);
         }
     }
 
@@ -177,7 +178,7 @@ public sealed class WardleyIdentities(IFileWriter writer)
     /// The entries of <paramref name="holders"/>, each with the id <paramref name="idOf"/> gives
     /// it, or a fresh one where it gives none or one already given.
     /// </summary>
-    internal static IReadOnlyList<WardleyIdentityEntry> Assign(IEnumerable<WardleyHolder> holders, Func<WardleyHolder, string?> idOf)
+    private static IReadOnlyList<WardleyIdentityEntry> Assign(IEnumerable<WardleyHolder> holders, Func<WardleyHolder, string?> idOf)
     {
         var given = new HashSet<string>(StringComparer.Ordinal);
         var assigned = new List<WardleyIdentityEntry>();

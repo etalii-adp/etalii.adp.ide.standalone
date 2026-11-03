@@ -2,7 +2,7 @@ using System.Globalization;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Specification.Disl;
 
-namespace EtAlii.Adp.Diagram.WardleyMap;
+namespace EtAlii.Adp.Diagram.WardleyMap.Tests;
 
 /// <summary>
 /// The command of today's that writes what a transaction of the definition says (DISL §9.3): a create, a set of one
@@ -11,22 +11,22 @@ namespace EtAlii.Adp.Diagram.WardleyMap;
 /// </summary>
 /// <remarks>
 /// <para>
+/// <b>An oracle, not the product</b>: what the module wrote and keyed with before wardley-map-disl-fbl task 12 put
+/// every edit through the binding. It is kept beside the tests to check the binding's output against.
+/// </para>
+/// <para>
 /// <b>Every element is named by its model id</b>, which is the store's identity for it (<see cref="WardleyBody"/>):
 /// a statement that names an element by its name, a link's end, an evolution's or a pipeline's <c>component</c>, is
 /// named by its first holder's.
 /// </para>
 /// <para>
-/// <b>A transaction no command writes has none</b>, and is refused by the caller in a sentence naming the operation
-/// (<see cref="Unwritable"/>); <c>WardleyDerivedOperations.Tests</c> runs every operation of the definition over the
+/// <b>A transaction no command writes has none</b>, and is refused by the caller in a sentence naming the operation;
+/// <c>WardleyDerivedOperations.Tests</c> runs every operation of the definition over the
 /// corpus so that none ships that way.
 /// </para>
 /// </remarks>
 internal static class WardleyTransactionCommands
 {
-    /// <summary>The refusal of a transaction of <paramref name="operation"/> that no command of this map writes.</summary>
-    public static string Unwritable(string operation) =>
-        $"The definition's {operation} makes a change this map's commands cannot write.";
-
     /// <summary>
     /// The command that writes <paramref name="transaction"/> into the map at <paramref name="bodyPath"/>, whose model
     /// before it ran is <paramref name="diagram"/>; null when no command writes it. <paramref name="row"/> says a
