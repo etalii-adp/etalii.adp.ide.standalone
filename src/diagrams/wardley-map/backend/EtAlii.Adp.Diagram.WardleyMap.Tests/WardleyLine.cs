@@ -1,5 +1,5 @@
 
-namespace EtAlii.Adp.Diagram.WardleyMap;
+namespace EtAlii.Adp.Diagram.WardleyMap.Tests;
 
 /// <summary>
 /// One line of an `.owm` document with its 1-based number - what the parser reads and what a
