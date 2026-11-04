@@ -209,6 +209,7 @@ internal sealed class GrammarFamily(BodyText text, FblBinding binding, FblOption
     public override SlotRead Read(Candidate candidate, Slot slot)
     {
         if (slot.Kind is not SlotKind.Node(var selector)) return SlotRead.ReadOnlyAbsent($"A grammar entry has no {slot}.");
+        if (slot.Holds is not null) return ReadFlag(candidate, slot, selector);
         if (slot.Items is not null) return ReadRecords(candidate, slot, selector);
         if (slot.Split is not null || slot.Gather.Count > 0) return ReadItems(candidate, slot, selector);
         var node = GrammarSelector.Match((GrammarNode)candidate.Entry, Selector(selector, slot: true), TextOf).FirstOrDefault();
@@ -276,6 +277,18 @@ internal sealed class GrammarFamily(BodyText text, FblBinding binding, FblOption
         var list = items.Select(object? (item) => item.Value).ToList();
         var listed = slot.Split is not null || slot.Gather.Count > 0;
         return new SlotRead(list, null, listed || items.Count > 0, reason is null, reason) { Node = new GrammarItems(values, items) };
+    }
+
+    /// <summary>
+    /// A flag (FBL 0.18 §4.9): present when a node the slot's selector reaches has the text of <c>holds</c> as its value, ASCII
+    /// letters compared without regard to case, a node whose text the slot's <c>match</c> does not match holding nothing.
+    /// Its span is that of the first node that holds it, which is where it is first written.
+    /// </summary>
+    private SlotRead ReadFlag(Candidate candidate, Slot slot, string selector)
+    {
+        var reached = GrammarSelector.Match((GrammarNode)candidate.Entry, Selector(selector, slot: true), TextOf).Where(node => node.HasSpan).ToList();
+        var holding = reached.Where(node => ReadNode(node, slot) is { Present: true, Value: string value } && string.Equals(value, slot.Holds, StringComparison.OrdinalIgnoreCase)).ToList();
+        return new SlotRead(holding.Count > 0, holding.Count > 0 ? holding[0].Own : null, holding.Count > 0, true) { Node = new GrammarFlag(holding, reached.Count > 0 ? reached[^1] : null) };
     }
 
     /// <summary>Every node a slot's selector reaches from the entry, with those of its <c>gather</c>, in document order, each with the slot that reads it.</summary>
@@ -357,6 +370,7 @@ internal sealed class GrammarFamily(BodyText text, FblBinding binding, FblOption
     /// </summary>
     protected override bool RemoveSlot(Plan plan, ReadElement element, SlotChange change)
     {
+        if (change.Read.Node is GrammarFlag) return false;
         if (change.Read.Node is not GrammarNode { HasSpan: true } node) return false;
         var start = _leaves.Where(leaf => leaf.End <= node.Own.Start).Select(leaf => leaf.End).DefaultIfEmpty(node.Own.Start).Max();
         plan.Add(SpliceOperation.RemoveKey, start, node.Own.End, "");
@@ -371,6 +385,11 @@ internal sealed class GrammarFamily(BodyText text, FblBinding binding, FblOption
     /// </summary>
     protected override bool ReplaceSlot(Plan plan, SlotChange change)
     {
+        if (change.Read.Node is GrammarFlag flag)
+        {
+            if (change.Value is not true) RemoveFlag(plan, flag);
+            return true;
+        }
         if (change.Read.Node is GrammarRecords records)
         {
             if (records.Records.Count == 0) return false;
@@ -402,6 +421,11 @@ internal sealed class GrammarFamily(BodyText text, FblBinding binding, FblOption
     /// </summary>
     protected override bool InsertSlot(Plan plan, ReadElement element, SlotChange change)
     {
+        if (change.Read.Node is GrammarFlag flag)
+        {
+            if (change.Value is true) InsertFlag(plan, element, change, flag);
+            return true;
+        }
         if (change.Read.Node is GrammarRecords)
         {
             if (!NewText.IsEmpty(change.Value)) Plan.Refuse($"This {element.Rule.Type} has no {change.Attribute} in this file to write an item after.");
@@ -422,6 +446,36 @@ internal sealed class GrammarFamily(BodyText text, FblBinding binding, FblOption
         }
         plan.Add(SpliceOperation.InsertKey, offset, offset, padding + text);
         return true;
+    }
+
+    /// <summary>
+    /// A flag cleared (FBL 0.18 §6.3): a <c>remove-key</c> of every node that holds it, each its own span and the whitespace
+    /// between it and the token before it, so that one written twice goes whole.
+    /// </summary>
+    private void RemoveFlag(Plan plan, GrammarFlag flag)
+    {
+        foreach (var node in flag.Holding)
+        {
+            var start = _leaves.Where(leaf => leaf.End <= node.Own.Start).Select(leaf => leaf.End).DefaultIfEmpty(node.Own.Start).Max();
+            plan.Add(SpliceOperation.RemoveKey, start, node.Own.End, "");
+        }
+    }
+
+    /// <summary>
+    /// A flag set (FBL 0.18 §6.3): one <c>insert-key</c> of the slot's <c>create.emit</c>, its <c>{value}</c> the text of
+    /// <c>holds</c>, right after the last node the slot reaches, whatever that node holds, or, when it reaches none, after the
+    /// first present attribute of <c>create.after</c>; refused without a <c>create</c> or when none of <c>after</c> is present.
+    /// </summary>
+    private void InsertFlag(Plan plan, ReadElement element, SlotChange change, GrammarFlag flag)
+    {
+        var offset = flag.Last?.Own.End;
+        if (offset is null && change.Binding.Create is { After: { } after }) offset = PartEnd(element, after).Offset;
+        if (change.Binding.Create is not { } create || offset is not { } at)
+        {
+            Plan.Refuse($"This {element.Rule.Type} has no {change.Attribute} in this file to set, and a body read by its grammar is given no part an entry lacks.");
+            return;
+        }
+        plan.Add(SpliceOperation.InsertKey, at, at, NewText.Fill(create.Emit, name => name == "value" ? change.Binding.Holds : null));
     }
 
     /// <summary>
@@ -637,6 +691,7 @@ internal sealed class GrammarFamily(BodyText text, FblBinding binding, FblOption
     /// <summary>Whether <paramref name="after"/> reads the changed value as it was written: a list holding the new items, in any order, a removed part as absent, and any other value as written.</summary>
     private bool ReadsAgain(GrammarFamily after, Candidate candidate, SlotChange change)
     {
+        if (change.Read.Node is GrammarFlag) return after.Read(candidate, change.Binding).Present == change.Value is true;
         if (change is { IsEmpty: true, Binding.Empty: EmptyRule.Remove, Read.Node: GrammarNode }) return after.Read(candidate, change.Binding) is { Present: false };
         if (change.Read.Node is GrammarRecords) return ReadsRecordsAgain(after, candidate, change);
         if (change.Read.Node is not GrammarItems) return after.Read(candidate, change.Binding) is { Present: true } read && read.Wire == Format(change.Read, change.Binding, change.Value);

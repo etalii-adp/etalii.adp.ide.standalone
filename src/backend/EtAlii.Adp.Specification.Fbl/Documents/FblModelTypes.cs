@@ -115,6 +115,26 @@ public sealed class FblBinding
         return problems;
     }
 
+    /// <summary>
+    /// The check of FBL 0.18 §14.1 step 6 that needs the tool type's attribute types: a slot with <c>holds</c> stands only on
+    /// an attribute that <paramref name="flag"/>, given the rule's type and the attribute's name, says is a single-valued
+    /// <c>bool</c>. Each refusal is a problem at the slot's <c>holds</c>; none when every such attribute is one.
+    /// </summary>
+    public IReadOnlyList<LoadDiagnostic> CheckFlagAttributes(Func<string, string, bool> flag)
+    {
+        var problems = new List<LoadDiagnostic>();
+        var rules = Elements.Select((rule, i) => (rule, $"elements/{i}")).Concat(Relations.Select((rule, i) => (rule, $"relations/{i}")));
+        foreach ((Rule rule, string at) in rules)
+        {
+            foreach (var name in rule.Attributes.Where(attribute => attribute.Value.Holds is not null && !flag(rule.Type, attribute.Key)).Select(attribute => attribute.Key))
+            {
+                problems.Add(new LoadDiagnostic($"/bindings/{JsonPointer.Token(Name)}/{at}/attributes/{JsonPointer.Token(name)}/holds", LoadSeverity.Error,
+                    $"The attribute {name} of a {rule.Type} is no single-valued bool, so the flag its holds reads has nothing to hold it (FBL 0.18 14.1)."));
+            }
+        }
+        return problems;
+    }
+
     // The binding as each reading sees it, made once per origin (FBL 0.10 §5.1, §8.2).
     private readonly Dictionary<string, FblBinding> _readings = new(StringComparer.Ordinal);
 
@@ -458,6 +478,13 @@ public record Slot
 
     /// <summary>A <c>{node}</c> slot's <c>escape</c> (FBL 0.11 §5.2): how a quoted value escapes its quotes.</summary>
     internal SlotEscape? Escape { get; init; }
+
+    /// <summary>
+    /// A <c>{node}</c> slot's <c>holds</c> (FBL 0.18 §4.9): the slot reads a bool, true when a node its selector reaches has
+    /// this text as its value, ASCII letters compared without regard to case; null when the slot is no such flag. A slot
+    /// with it is also a <see cref="Flag"/>, so that it is read and planned as a flag is.
+    /// </summary>
+    public string? Holds { get; init; }
 
     /// <summary>A <c>{node}</c> slot's <c>split</c> (FBL 0.13 §4.9): the text its value is cut into items at.</summary>
     public string? Split { get; init; }

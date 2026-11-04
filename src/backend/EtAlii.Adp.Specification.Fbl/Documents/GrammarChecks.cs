@@ -89,12 +89,28 @@ internal static class GrammarChecks
             if (!node || slot.Gather.Any(gathered => gathered.Kind is not SlotKind.Node)) problems.Add(Error(place + "/gather", "A gather stands only on a {node} slot of the grammar family, and gathers {node} slots (FBL 0.11 14.1)."));
             else if (slot is AttributeBinding { ReadOnly: null } && rule.ReadOnly is null) problems.Add(Error(place + "/gather", "A gathered attribute is read-only, since it is never written (FBL 0.11 3.3, 14.1)."));
         }
+        if (slot is AttributeBinding { Holds: not null } flag) CheckFlag(rule, flag, node, place, problems);
         if (slot is not AttributeBinding { Create.After: { } after }) return;
         if (!family) problems.Add(Error(place + "/create/after", "A create's after stands only in the grammar family (FBL 0.11 14.1)."));
         foreach (var name in after.Where(name => rule.Attribute(name) is null || ReferenceEquals(rule.Attribute(name), slot)))
         {
             problems.Add(Error(place + "/create/after", $"A create's after names '{name}', which is no other attribute of the rule (FBL 0.11 14.1)."));
         }
+    }
+
+    /// <summary>
+    /// <c>holds</c> (FBL 0.18 §14.1 step 6): only on a <c>{node}</c> slot of the grammar family, never beside an option that
+    /// reads or writes another value, and, when it is writable, with a <c>create</c> that writes its node, never padded.
+    /// </summary>
+    private static void CheckFlag(Rule rule, AttributeBinding flag, bool node, string place, List<LoadDiagnostic> problems)
+    {
+        if (!node) problems.Add(Error(place + "/holds", "A holds stands only on a {node} slot of the grammar family (FBL 0.18 14.1)."));
+        if (flag.Items is not null || flag.Split is not null || flag.Map is not null || flag.Default is not null || flag.Or.Count > 0 || flag.Gather.Count > 0 || flag.Override is not null || flag.Secondary is not null)
+        {
+            problems.Add(Error(place + "/holds", "A flag reads a bool from the nodes that hold its text, so it takes no items, split, map, default, or, gather, override or secondary (FBL 0.18 14.1)."));
+        }
+        if (flag.ReadOnly is null && rule.ReadOnly is null && flag.Create is null) problems.Add(Error(place + "/holds", "A writable flag needs a create to write its node (FBL 0.18 14.1)."));
+        if (flag.Create is { Pad: true }) problems.Add(Error(place + "/create/pad", "A flag is never padded (FBL 0.18 14.1)."));
     }
 
     /// <summary>Every segment of a rule's <c>at</c> and of a <c>{node}</c> slot names a rule, alias or terminal of <paramref name="grammar"/>.</summary>

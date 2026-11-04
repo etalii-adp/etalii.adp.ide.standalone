@@ -62,7 +62,7 @@
           "returns": "string",
           "cost": 1,
           "fallback": "['market', 'ecosystem', 'build', 'buy', 'outsource'].filter(d, d == 'market' ? element.market : d == 'ecosystem' ? element.ecosystem : d == 'build' ? element.build : d == 'buy' ? element.buy : element.outsource).join(', ')",
-          "doc": "The five decorators an element carries, each once and in lower case, in the order its statement first writes them, joined by `, `: `outsource, market` for `(Outsource) (market) (outsource)`. A word that is none of the five stays in `decorators` and is left out here. CEL cannot keep the first of each word of a list (gap 5). The fallback lists them in this notation's order."
+          "doc": "The five decorators an element carries, each once and in lower case, in the order its statement first writes them, joined by `, `: `outsource, market` for `(Outsource) (market) (outsource)`. A word that is none of the five is kept in the body and left out here. The model's five booleans have no order (gap 5). The fallback lists them in this notation's order."
         }
       ]
     }
@@ -125,7 +125,7 @@
     "decorated": {
       "params": [{"name": "n", "type": "Element"}, {"name": "d", "type": "string"}],
       "returns": "bool",
-      "cel": "n.decorators.exists(w, lower(w) == d)",
+      "cel": "d == 'market' ? n.market : d == 'ecosystem' ? n.ecosystem : d == 'build' ? n.build : d == 'buy' ? n.buy : d == 'outsource' && n.outsource",
       "doc": "Whether the element carries the decorator named, written in any case."
     },
     "decoratorNames": {
@@ -357,27 +357,21 @@
             "order": 5,
             "doc": "The bare word `inertia` after the coordinates: the element resists change."
           },
-          "decorators": {
-            "type": "string",
-            "many": true,
-            "label": "Decorators",
-            "doc": "The words in parentheses after the coordinates, in the order the statement writes them and as it spells them: `(outsource) (Market)` is `['outsource', 'Market']`. A word that is none of the five decorators is kept, and neither drawn nor listed."
-          },
           "market": {
             "type": "bool",
             "label": "Market",
-            "derived": "self.decorators.exists(w, lower(w) == 'market')",
-            "doc": "The decorator `(market)`, in any case: supplied by a market rather than by one supplier."
+            "default": false,
+            "doc": "The decorator `(market)`, written in any case and as often as the statement writes it: supplied by a market rather than by one supplier. The binding reads it as a flag (FBL 0.18 `holds`); clearing it removes every `(market)` of the statement. A word in parentheses that is none of the five decorators is kept in the body, and neither drawn nor listed."
           },
           "ecosystem": {
             "type": "bool",
             "label": "Ecosystem",
-            "derived": "self.decorators.exists(w, lower(w) == 'ecosystem')",
+            "default": false,
             "doc": "The decorator `(ecosystem)`, in any case: an ecosystem of others is built around it."
           },
-          "build": {"type": "bool", "label": "Build", "derived": "self.decorators.exists(w, lower(w) == 'build')", "doc": "The decorator `(build)`, in any case."},
-          "buy": {"type": "bool", "label": "Buy", "derived": "self.decorators.exists(w, lower(w) == 'buy')", "doc": "The decorator `(buy)`, in any case."},
-          "outsource": {"type": "bool", "label": "Outsource", "derived": "self.decorators.exists(w, lower(w) == 'outsource')", "doc": "The decorator `(outsource)`, in any case."},
+          "build": {"type": "bool", "label": "Build", "default": false, "doc": "The decorator `(build)`, in any case."},
+          "buy": {"type": "bool", "label": "Buy", "default": false, "doc": "The decorator `(buy)`, in any case."},
+          "outsource": {"type": "bool", "label": "Outsource", "default": false, "doc": "The decorator `(outsource)`, in any case."},
           "url": {
             "type": "string",
             "label": "Url",
@@ -1518,7 +1512,13 @@
               "readOnlyReasons": [{"reason": "readOnlyFile"}],
               "parse": {
                 "accepts": "unknownDecorator(value) == ''",
-                "write": [{"set": {"decorators": "decoratorNames().filter(d, d in decoratorWords(value).map(w, lower(w)))"}}],
+                "write": [
+                  {"set": {"market": "'market' in decoratorWords(value).map(w, lower(w))"}},
+                  {"set": {"ecosystem": "'ecosystem' in decoratorWords(value).map(w, lower(w))"}},
+                  {"set": {"build": "'build' in decoratorWords(value).map(w, lower(w))"}},
+                  {"set": {"buy": "'buy' in decoratorWords(value).map(w, lower(w))"}},
+                  {"set": {"outsource": "'outsource' in decoratorWords(value).map(w, lower(w))"}}
+                ],
                 "refusal": {
                   "cel": "\"'\" + unknownDecorator(value) + \"' is not one of this notation's decorators. They are: market, ecosystem, build, buy, outsource.\""
                 },
@@ -2120,7 +2120,7 @@
           {
             "create": {
               "type": "'Component'",
-              "attributes": {"name": "p.name.trim()", "visibility": "0.5", "maturity": "0.5", "decorators": "['market']"}
+              "attributes": {"name": "p.name.trim()", "visibility": "0.5", "maturity": "0.5", "market": "true"}
             }
           }
         ]
@@ -2144,7 +2144,7 @@
           {
             "create": {
               "type": "'Component'",
-              "attributes": {"name": "p.name.trim()", "visibility": "0.5", "maturity": "0.5", "decorators": "['ecosystem']"}
+              "attributes": {"name": "p.name.trim()", "visibility": "0.5", "maturity": "0.5", "ecosystem": "true"}
             }
           }
         ]
@@ -2241,13 +2241,13 @@
         "for": ["Positioned"],
         "params": {"decorator": {"type": "string", "label": "Decorator"}},
         "actions": [
-          {
-            "set": {
-              "decorators": "decorated(self, p.decorator) ? self.decorators.filter(w, lower(w) != p.decorator) : self.decorators + [p.decorator]"
-            }
-          }
+          {"set": {"market": "!self.market"}, "when": "p.decorator == 'market'"},
+          {"set": {"ecosystem": "!self.ecosystem"}, "when": "p.decorator == 'ecosystem'"},
+          {"set": {"build": "!self.build"}, "when": "p.decorator == 'build'"},
+          {"set": {"buy": "!self.buy"}, "when": "p.decorator == 'buy'"},
+          {"set": {"outsource": "!self.outsource"}, "when": "p.decorator == 'outsource'"}
         ],
-        "doc": "Adds or removes one decorator: adds it after the others, or removes every spelling of it. The menu supplies the decorator, so no dialog opens."
+        "doc": "Adds or removes one decorator: adds it after the others, or removes every spelling of it, as the binding writes a flag (FBL 0.18). The menu supplies the decorator, so no dialog opens."
       },
       "unlink": {
         "label": "Remove link…",
@@ -2337,7 +2337,7 @@
     "doc": "There is no automatic layout: every position is authored, and positions are what the map claims."
   },
   "persistence": {
-    "doc": "The Online Wardley Maps text format, `.owm`, read and written through the binding `map` of `specifications/fbl/wardley-map.fbl`, which reads a pipeline whose brace is on the line below it (FBL 0.12, gap 1) and which the standalone module embeds. Its types are mapped onto this metamodel by the typeMap: the title, style and size and the annotations' position are the diagram's attributes, an `evolve` is an Evolution, both forms of pipeline are a Pipeline, and a link's two ends are its source and target. A component's coordinates are the binding's, for writing a part after them, and the host's. A new map is `title {base}` and a line ending.",
+    "doc": "The Online Wardley Maps text format, `.owm`, read and written through the binding `map` of `specifications/fbl/wardley-map.fbl`, which reads a pipeline whose brace is on the line below it (FBL 0.12, gap 1) and which the standalone module embeds. Its types are mapped onto this metamodel by the typeMap: the title, style and size and the annotations' position are the diagram's attributes, an `evolve` is an Evolution, both forms of pipeline are a Pipeline, and a link's two ends are its source and target. The five decorators are five booleans in both, each a flag of the binding (FBL 0.18 `holds`). A component's coordinates are the binding's, for writing a part after them, and the host's. A new map is `title {base}` and a line ending.",
     "format": "fbl",
     "binding": "https://raw.githubusercontent.com/etalii-adp/etalii.adp.ide.standalone/develop/src/diagrams/wardley-map/backend/EtAlii.Adp.Diagram.WardleyMap/wardley-map.fbl#map",
     "ids": {

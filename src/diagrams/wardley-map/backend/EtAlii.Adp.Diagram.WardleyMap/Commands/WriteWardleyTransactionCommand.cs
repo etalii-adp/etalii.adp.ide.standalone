@@ -53,7 +53,7 @@ public sealed class WriteWardleyTransactionCommandHandler(IWardleyDocumentStore 
 /// <para>
 /// <b>Only what changes is written</b>: a set of a value the element already has writes nothing for it, so the bytes it
 /// was written with stay (Requirement 5.2), and a word of the decorators that is no decorator of this notation is kept
-/// where it stands.
+/// where it stands, since the binding reads each of the five as a flag of its own (FBL 0.18 <c>holds</c>).
 /// </para>
 /// </remarks>
 internal sealed class WardleyTransactionWriter(WardleyBodyEdit body, WardleyEditContext map, string operation)
@@ -235,7 +235,6 @@ internal sealed class WardleyTransactionWriter(WardleyBodyEdit body, WardleyEdit
 
         var written = (ModelChange.Set)DislWrite.ToFbl(WardleyDefinition.Specification, set with { Attributes = attributes });
         var values = Typed(Trimmed(written.Attributes));
-        if (values.ContainsKey("decorators")) values["decorators"] = Decorators(id, values["decorators"]);
 
         // An optional part set to nothing is left out of the statement.
         foreach (var emptied in values.Where(value => value.Value is "").Select(value => value.Key).ToList())
@@ -250,23 +249,6 @@ internal sealed class WardleyTransactionWriter(WardleyBodyEdit body, WardleyEdit
         _diagram.ElementById(remove.ElementId) is { } element && body.ReadingIdOf(element) is { } id
             ? body.Change(new ModelChange.Remove(id))
             : EditOutcome.Refused(WardleyEdit.Gone);
-
-    /// <summary>
-    /// The words of the decorators of the element read as <paramref name="id"/> once set to <paramref name="value"/>: each of
-    /// the five decorators kept, removed or added as <paramref name="value"/> says, in the order they were written, and any
-    /// other word kept where it stands (Requirement 5.2).
-    /// </summary>
-    private List<object?> Decorators(string id, object? value)
-    {
-        var wanted = value is IEnumerable<object?> list ? list.OfType<string>().ToList() : [];
-        var words = WardleyEdit.DecoratorWords(body.Reading.Elements.FirstOrDefault(element => element.Id == id));
-        var kept = words.Where(word => !IsDecorator(word) || wanted.Contains(word, StringComparer.OrdinalIgnoreCase)).ToList();
-        kept.AddRange(wanted.Where(word => IsDecorator(word) && !kept.Contains(word, StringComparer.OrdinalIgnoreCase)));
-        return [.. kept];
-    }
-
-    private static bool IsDecorator(string word) =>
-        WardleyDecorators.All.Any(decorator => string.Equals(WardleyDecorators.Spell(decorator), word, StringComparison.OrdinalIgnoreCase));
 
     /// <summary><paramref name="attributes"/> with each coordinate within its axis, and without what the module adds to the model for its own reading.</summary>
     private static Dictionary<string, object?> Clamped(IReadOnlyDictionary<string, object?> attributes)
@@ -288,12 +270,14 @@ internal sealed class WardleyTransactionWriter(WardleyBodyEdit body, WardleyEdit
             attribute => attribute.Key is "text" or "context" or "becomes" && attribute.Value is string text ? text.Trim() : attribute.Value,
             StringComparer.Ordinal);
 
-    /// <summary>Values in the form the binding writes them: a flag as its word.</summary>
+    /// <summary>Values in the form the binding writes them: inertia as its word, and a decorator as the flag it is (FBL 0.18 <c>holds</c>).</summary>
     private static Dictionary<string, object?> Typed(IReadOnlyDictionary<string, object?> attributes) =>
         attributes.ToDictionary(
             attribute => attribute.Key,
-            attribute => attribute.Value is bool flag ? (flag ? "true" : "false") : attribute.Value,
+            attribute => attribute.Value is bool flag && !IsDecorator(attribute.Key) ? (flag ? "true" : "false") : attribute.Value,
             StringComparer.Ordinal);
+
+    private static bool IsDecorator(string attribute) => WardleyDecorators.All.Any(decorator => WardleyDecorators.Spell(decorator) == attribute);
 
     /// <summary>The attributes a new statement states: none that is empty, and no inertia it does not have, which the statement leaves out.</summary>
     private static Dictionary<string, object?> Stated(IReadOnlyDictionary<string, object?> attributes) =>
