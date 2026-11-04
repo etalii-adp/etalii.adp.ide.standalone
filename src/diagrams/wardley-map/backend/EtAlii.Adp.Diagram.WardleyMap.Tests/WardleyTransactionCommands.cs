@@ -113,7 +113,7 @@ internal static class WardleyTransactionCommands
         {
             if (attributes.Count > 0 && attributes.Keys.All(IsDecorator))
             {
-                return Decorated(bodyPath, element, [.. WardleyDecorators.All.Where(decorator => attributes.TryGetValue(WardleyDecorators.Spell(decorator), out var set) ? set is true : Carries(element, decorator))], row);
+                return Decorated(bodyPath, element, [.. WardleyDecorators.All.Where(decorator => attributes.TryGetValue(WardleyDecorators.Spell(decorator), out var given) ? given is true : Carries(element, decorator))], row);
             }
 
             if (attributes.Count != 1) return null;

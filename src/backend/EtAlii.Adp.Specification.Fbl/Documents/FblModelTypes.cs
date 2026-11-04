@@ -126,7 +126,7 @@ public sealed class FblBinding
         var rules = Elements.Select((rule, i) => (rule, $"elements/{i}")).Concat(Relations.Select((rule, i) => (rule, $"relations/{i}")));
         foreach ((Rule rule, string at) in rules)
         {
-            foreach ((string name, AttributeBinding binding) in rule.Attributes.Where(attribute => attribute.Value.Holds is not null && !flag(rule.Type, attribute.Key)))
+            foreach (var name in rule.Attributes.Where(attribute => attribute.Value.Holds is not null && !flag(rule.Type, attribute.Key)).Select(attribute => attribute.Key))
             {
                 problems.Add(new LoadDiagnostic($"/bindings/{JsonPointer.Token(Name)}/{at}/attributes/{JsonPointer.Token(name)}/holds", LoadSeverity.Error,
                     $"The attribute {name} of a {rule.Type} is no single-valued bool, so the flag its holds reads has nothing to hold it (FBL 0.18 14.1)."));
