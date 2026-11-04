@@ -888,6 +888,8 @@ internal sealed class BodyReading
         {
             IdentityKind = e.Rule.Id?.SidecarKind,
             IdentityKey = e.IdentityKey,
+            // Where each value read from the body is written (FBL §11.2's spans): for a flag, the first node that holds it (FBL 0.18 §4.9).
+            ValueSpans = e.Slots.Where(slot => slot.Value is { Present: true, Writable: true, Span: not null }).ToDictionary(slot => slot.Key, slot => slot.Value.Span!.Value, StringComparer.Ordinal),
         }).ToList(),
         _findings.ToList(),
         Unreadable is not null)

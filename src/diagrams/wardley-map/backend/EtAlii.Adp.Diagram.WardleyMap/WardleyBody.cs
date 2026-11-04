@@ -334,12 +334,11 @@ internal sealed class WardleyBody
 
     private static bool IsPositioned(FblElement element) => element.Type is "Component" or "Anchor" or "Submap";
 
-    /// <summary>A positioned element's attributes: as read and typed, its decorators also as the map writes them, in their order.</summary>
+    /// <summary>A positioned element's attributes: as read and typed, its five decorator flags also as the map writes them, in their order.</summary>
     private static Dictionary<string, object?> Positioned(FblElement element)
     {
         var attributes = new Dictionary<string, object?>(Typed(element).Attributes, StringComparer.Ordinal);
         attributes.TryAdd("url", "");
-        attributes.TryAdd("decorators", new List<object?>());
         attributes[WardleyFunctions.WrittenDecorators] = WardleyDecorators.Join(DecoratorsOf(element));
         return attributes;
     }
@@ -513,19 +512,17 @@ internal sealed class WardleyBody
         }
     }
 
-    /// <summary>The five decorators <paramref name="element"/> is written with, each once, in the order they are first written; a word that is none of them is kept in the body and read as none.</summary>
-    private static List<WardleyDecorator> DecoratorsOf(FblElement element)
-    {
-        var decorators = new List<WardleyDecorator>();
-        if (element.Attributes.GetValueOrDefault("decorators") is not IEnumerable<object?> words) return decorators;
-        foreach (var word in words.OfType<string>())
-        {
-            var decorator = WardleyDecorators.All.Cast<WardleyDecorator?>().FirstOrDefault(candidate => string.Equals(WardleyDecorators.Spell(candidate!.Value), word, StringComparison.OrdinalIgnoreCase));
-            if (decorator is { } known && !decorators.Contains(known)) decorators.Add(known);
-        }
-
-        return decorators;
-    }
+    /// <summary>
+    /// The five decorators <paramref name="element"/> is written with, each once, in the order they are first written: the
+    /// binding reads each as a flag (FBL 0.18 <c>holds</c>), whose span is where it is first written; a word that is none of
+    /// them is kept in the body and read as none.
+    /// </summary>
+    private static List<WardleyDecorator> DecoratorsOf(FblElement element) =>
+    [
+        .. WardleyDecorators.All
+            .Where(decorator => element.Attributes.GetValueOrDefault(WardleyDecorators.Spell(decorator)) is true)
+            .OrderBy(decorator => element.ValueSpans.TryGetValue(WardleyDecorators.Spell(decorator), out var span) ? span.Start : int.MaxValue),
+    ];
 
     /// <summary>
     /// Whether a component's <c>inertia</c> slot says it has inertia: the binding maps the word to <c>true</c> and reads
@@ -556,8 +553,8 @@ internal sealed class WardleyBody
             : null;
     }
 
-    /// <summary>Which attributes of a binding type hold several values: a positioned element's decorators and an annotation's positions.</summary>
-    private static bool ManyOf(string type, string attribute) => attribute is "decorators" or "positions";
+    /// <summary>Which attributes of a binding type hold several values: an annotation's positions.</summary>
+    private static bool ManyOf(string type, string attribute) => attribute is "positions";
 
     /// <summary>The 1-based line of a byte offset into a body.</summary>
     private sealed class LineStarts(byte[] bytes)

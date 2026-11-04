@@ -168,10 +168,11 @@ public sealed class WardleyBodyEdit
         return EditOutcome.Applied;
     }
 
-    /// <summary>A text value as its one word, a list of texts as its words; null for any other value, which an add's emit writes itself.</summary>
+    /// <summary>A text value as its one word, a flag as its word, a list of texts as its words; null for any other value, which an add's emit writes itself.</summary>
     private static IReadOnlyList<string>? Words(object? value) => value switch
     {
         string text => [text],
+        bool flag => [flag ? "true" : "false"],
         IEnumerable<object?> items => items.ToList() is var list && list.All(item => item is string) ? [.. list.Cast<string>()] : null,
         _ => null,
     };

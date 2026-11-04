@@ -218,9 +218,9 @@ internal static class WardleyEdit
         return attributes;
     }
 
-    /// <summary>The words of <paramref name="element"/>'s decorators as written, the ones that are no decorator of this notation included.</summary>
-    public static List<string> DecoratorWords(FblElement? element) =>
-        element?.Attributes.GetValueOrDefault("decorators") is IEnumerable<object?> words ? [.. words.OfType<string>()] : [];
+    /// <summary>Whether <paramref name="element"/> is written with <paramref name="decorator"/>, which the binding reads as a flag (FBL 0.18 <c>holds</c>).</summary>
+    public static bool Carries(FblElement? element, WardleyDecorator decorator) =>
+        element?.Attributes.GetValueOrDefault(WardleyDecorators.Spell(decorator)) is true;
 }
 
 public sealed class AddWardleyElementCommandHandler(IWardleyDocumentStore documents) : WardleyEditHandler<AddWardleyElementCommand>(documents)
@@ -255,7 +255,7 @@ public sealed class AddWardleyElementCommandHandler(IWardleyDocumentStore docume
         var attributes = WardleyEdit.Attributes(("name", command.Name), ("visibility", position.Visibility), ("maturity", position.Maturity));
         if (command.Decorator is { } decorator)
         {
-            attributes["decorators"] = new List<object?> { WardleyDecorators.Spell(decorator) };
+            attributes[WardleyDecorators.Spell(decorator)] = true;
         }
 
         var type = CultureInfo.InvariantCulture.TextInfo.ToTitleCase(command.Kind.ToLowerInvariant());
@@ -343,24 +343,31 @@ public sealed class SetWardleyDecoratorsCommandHandler(IWardleyDocumentStore doc
             return EditOutcome.Refused(Gone);
         }
 
-        // The words as written, with each of the five decorators kept, removed or added as the command asks: a word that is
-        // none of them is kept where it stands (Requirement 5.2).
-        var wanted = command.Decorators.Distinct().Select(WardleyDecorators.Spell).ToList();
-        var words = WardleyEdit.DecoratorWords(body.Reading.Elements.FirstOrDefault(element => element.Id == command.ElementId));
-        var kept = words.Where(word => !IsDecorator(word) || wanted.Contains(word, StringComparer.OrdinalIgnoreCase)).ToList();
-        kept.AddRange(wanted.Where(word => !kept.Contains(word, StringComparer.OrdinalIgnoreCase)));
-        if (kept.SequenceEqual(words, StringComparer.Ordinal))
+        // Each of the five flags that changes, the ones cleared first and then the ones set in the order the command names
+        // them; a flag that keeps its value writes nothing, and a word that is none of them is kept where it stands
+        // (Requirement 5.2).
+        var element = body.Reading.Elements.FirstOrDefault(element => element.Id == command.ElementId);
+        var wanted = command.Decorators.Distinct().ToList();
+        var flags = WardleyEdit.Attributes();
+        foreach (var cleared in WardleyDecorators.All.Where(decorator => WardleyEdit.Carries(element, decorator) && !wanted.Contains(decorator)))
+        {
+            flags[WardleyDecorators.Spell(cleared)] = false;
+        }
+
+        foreach (var set in wanted.Where(decorator => !WardleyEdit.Carries(element, decorator)))
+        {
+            flags[WardleyDecorators.Spell(set)] = true;
+        }
+
+        if (flags.Count == 0)
         {
             return EditOutcome.Unchanged;
         }
 
-        return body.Change(new ModelChange.Set(command.ElementId, WardleyEdit.Attributes(("decorators", kept.Cast<object?>().ToList())))).WasApplied
+        return body.Change(new ModelChange.Set(command.ElementId, flags)).WasApplied
             ? EditOutcome.Applied
             : EditOutcome.Refused("That element's decorators could not be changed.");
     }
-
-    private static bool IsDecorator(string word) =>
-        WardleyDecorators.All.Any(decorator => string.Equals(WardleyDecorators.Spell(decorator), word, StringComparison.OrdinalIgnoreCase));
 }
 
 public sealed class SetWardleyDecoratorCommandHandler(IWardleyDocumentStore documents) : WardleyEditHandler<SetWardleyDecoratorCommand>(documents)
@@ -373,17 +380,12 @@ public sealed class SetWardleyDecoratorCommandHandler(IWardleyDocumentStore docu
         }
 
         var word = WardleyDecorators.Spell(command.Decorator);
-        var words = WardleyEdit.DecoratorWords(body.Reading.Elements.FirstOrDefault(element => element.Id == command.ElementId));
-        var has = words.Contains(word, StringComparer.OrdinalIgnoreCase);
-        if (has == command.Present)
+        if (WardleyEdit.Carries(body.Reading.Elements.FirstOrDefault(element => element.Id == command.ElementId), command.Decorator) == command.Present)
         {
             return EditOutcome.Unchanged;
         }
 
-        List<object?> now = command.Present
-            ? [.. words, word]
-            : [.. words.Where(candidate => !string.Equals(candidate, word, StringComparison.OrdinalIgnoreCase))];
-        return body.Change(new ModelChange.Set(command.ElementId, WardleyEdit.Attributes(("decorators", now)))).WasApplied
+        return body.Change(new ModelChange.Set(command.ElementId, WardleyEdit.Attributes((word, command.Present)))).WasApplied
             ? EditOutcome.Applied
             : EditOutcome.Refused($"That element's '{word}' could not be changed.");
     }

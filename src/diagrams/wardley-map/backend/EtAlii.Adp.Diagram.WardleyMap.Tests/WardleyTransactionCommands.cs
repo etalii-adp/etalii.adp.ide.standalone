@@ -60,7 +60,7 @@ internal static class WardleyTransactionCommands
         {
             case "Component" or "Anchor" or "Submap":
                 {
-                    WardleyDecorator?[] decorators = [.. Decorators(attributes.GetValueOrDefault("decorators")).Select(decorator => (WardleyDecorator?)decorator)];
+                    WardleyDecorator?[] decorators = [.. WardleyDecorators.All.Where(decorator => attributes.GetValueOrDefault(WardleyDecorators.Spell(decorator)) is true).Select(decorator => (WardleyDecorator?)decorator)];
                     if (decorators.Length > 1) return null;
                     return new AddWardleyElementCommand(
                         bodyPath,
@@ -111,9 +111,13 @@ internal static class WardleyTransactionCommands
 
         if (element.IsA("Positioned"))
         {
+            if (attributes.Count > 0 && attributes.Keys.All(IsDecorator))
+            {
+                return Decorated(bodyPath, element, [.. WardleyDecorators.All.Where(decorator => attributes.TryGetValue(WardleyDecorators.Spell(decorator), out var set) ? set is true : Carries(element, decorator))], row);
+            }
+
             if (attributes.Count != 1) return null;
             (string name, object? value) = attributes.Single();
-            if (name == "decorators") return Decorated(bodyPath, element, Decorators(value), row);
             return name switch
             {
                 "name" => new RenameWardleyElementCommand(bodyPath, element.Id, Text(attributes, "name")),
@@ -192,18 +196,16 @@ internal static class WardleyTransactionCommands
     private static ICommand? Decorated(string bodyPath, DislElement element, List<WardleyDecorator> now, bool row)
     {
         if (row) return new SetWardleyDecoratorsCommand(bodyPath, element.Id, now);
-        var before = Decorators(element.ValueOf("decorators"));
-        return WardleyDecorators.All.Where(candidate => before.Contains(candidate) != now.Contains(candidate)).ToList() is [var toggled]
+        return WardleyDecorators.All.Where(candidate => Carries(element, candidate) != now.Contains(candidate)).ToList() is [var toggled]
             ? new SetWardleyDecoratorCommand(bodyPath, element.Id, toggled, now.Contains(toggled))
             : null;
     }
 
-    /// <summary>The five decorators the words <paramref name="value"/> holds name, in the order the format documents them; any other word is none.</summary>
-    private static List<WardleyDecorator> Decorators(object? value)
-    {
-        var words = value is IEnumerable<object?> list ? list.OfType<string>().ToList() : [];
-        return [.. WardleyDecorators.All.Where(candidate => words.Any(word => string.Equals(word, WardleyDecorators.Spell(candidate), StringComparison.OrdinalIgnoreCase)))];
-    }
+    /// <summary>Whether <paramref name="element"/> carries <paramref name="decorator"/>, one of the definition's five booleans.</summary>
+    private static bool Carries(DislElement element, WardleyDecorator decorator) => element.ValueOf(WardleyDecorators.Spell(decorator)) is true;
+
+    /// <summary>Whether <paramref name="attribute"/> is one of the five decorators' booleans.</summary>
+    private static bool IsDecorator(string attribute) => WardleyDecorators.All.Any(decorator => WardleyDecorators.Spell(decorator) == attribute);
 
     private static WardleyLinkKind KindOf(DislElement link) => link.IsA("Flow") ? WardleyLinkKind.Flow : WardleyLinkKind.Dependency;
 
