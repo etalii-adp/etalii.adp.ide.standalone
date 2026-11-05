@@ -4,6 +4,7 @@ using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Specification.Disl;
 using Google.Protobuf.Reflection;
 using Path = System.IO.Path;
 
@@ -41,7 +42,7 @@ namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests.Parity;
 /// machine. Two sentences of the rule set format a number with the machine's culture (finding A15
 /// of the specification); the probe of <c>width-fraction.fdg</c> records them once more under a
 /// culture whose decimal separator is a comma, so that the defect is in the transcript and its
-/// repair is a named change of it.
+/// repair is a named change of it. Task 7 repaired it: the probe reads "12.5" under both cultures.
 /// </para>
 /// </remarks>
 internal static class FdgTranscript
@@ -60,17 +61,15 @@ internal static class FdgTranscript
     /// <summary>The checked-in transcript.</summary>
     public static string CheckedInPath => Path.Combine(ModuleFolder, "backend", TestProject, "Parity", FileName);
 
-    private static string SourceFolder => Path.GetFullPath(Path.Combine(ModuleFolder, "..", ".."));
+    internal static string SourceFolder => Path.GetFullPath(Path.Combine(ModuleFolder, "..", ".."));
 
     /// <summary>The corpus, as paths relative to <c>src/</c> with forward slashes, in the order they are recorded.</summary>
-    private static IReadOnlyList<string> Corpus()
+    internal static IReadOnlyList<string> Corpus()
     {
         var fixtures = Directory.GetFiles(Path.Combine(ModuleFolder, "backend", TestProject, "Fixtures"), "*.fdg");
         var examples = Directory.GetDirectories(Path.Combine(ModuleFolder, "examples")).SelectMany(folder => Directory.GetFiles(folder, "*.fdg"));
         var shipped = Directory.GetDirectories(Path.Combine(SourceFolder, "examples", "diagrams", "functional-decomposition-graph")).SelectMany(folder => Directory.GetFiles(folder, "*.fdg"));
-        return [.. Sorted(fixtures), .. Sorted(examples), .. Sorted(shipped)];
-
-        static IEnumerable<string> Sorted(IEnumerable<string> paths) => paths.Select(path => Path.GetRelativePath(SourceFolder, path).Replace('\\', '/')).Order(StringComparer.Ordinal);
+        return [.. RepositoryPaths.SortedRelativeToSource(fixtures), .. RepositoryPaths.SortedRelativeToSource(examples), .. RepositoryPaths.SortedRelativeToSource(shipped)];
     }
 
     /// <summary>The whole transcript, as the bytes the checked-in file must hold.</summary>
@@ -103,7 +102,7 @@ internal static class FdgTranscript
 
             // The toolbox is static: it does not read the document, so it is written once.
             json.WriteStartArray("toolbox");
-            foreach (var item in new FdgToolboxProvider().Items)
+            foreach (var item in FdgDefinition.Definition.Toolbox)
             {
                 json.WriteStringValue($"{item.Id} | {item.Label} | {item.Icon} | drops {item.DropActionId} | {item.Description}");
             }
@@ -244,7 +243,7 @@ internal static class FdgTranscript
         json.WriteLines(await FindingsAsync(session, TranscriptText.Decode(bytes), cancellationToken));
 
         json.WritePropertyName("payloads");
-        json.WriteLines([.. new FdgElementMapper().Visible(model, DiagramViewport.Unbounded)
+        json.WriteLines([.. new FdgElementMapper().Visible(session.Disl, DiagramViewport.Unbounded)
             .Select(element => TranscriptText.PayloadLine(element.Id, element.X, element.Y, element.Type, element.PayloadTypeUrl, element.Payload, _payloadTypes))]);
     }
 
@@ -428,7 +427,11 @@ internal static class FdgTranscript
         /// <summary>Opens the document, as the diagram's first open does; the readings and edits read what it holds.</summary>
         public async Task ReadAsync(CancellationToken cancellationToken) => await Store.GetOrLoadAsync(Body, cancellationToken);
 
-        public FdgModel Model => Store.Get(Body)!.Model;
+        /// <summary>The document as the old reader reads it: what the script picks its targets and edits from, so they stay the ones recorded.</summary>
+        public FdgModel Model => FdgParser.Parse(LineDocument.Parse(Store.Get(Body)!.Document.Text));
+
+        /// <summary>The DISL model the store holds, which the payloads are drawn from.</summary>
+        public DislModel Disl => Store.Get(Body)!.Model;
 
         public ContextTarget Target(string elementId) =>
             ContextTarget.ForElement(Body, elementId, ProjectRoot.From(Folder), origin: Diagram.FunctionalDecompositionGraph.Origin);
@@ -445,11 +448,11 @@ internal static class FdgTranscript
             remove => inner.Changed -= value;
         }
 
-        public async ValueTask<DocumentEntry<LineDocument, FdgModel>> GetOrLoadAsync(string path, CancellationToken cancellationToken) => await inner.GetOrLoadAsync(path, cancellationToken) with { Unreadable = "parity: read-only" };
+        public async ValueTask<DocumentEntry<FdgBody, DislModel>> GetOrLoadAsync(string path, CancellationToken cancellationToken) => await inner.GetOrLoadAsync(path, cancellationToken) with { Unreadable = "parity: read-only" };
 
-        public DocumentEntry<LineDocument, FdgModel>? Get(string path) => inner.Get(path) is { } held ? held with { Unreadable = "parity: read-only" } : null;
+        public DocumentEntry<FdgBody, DislModel>? Get(string path) => inner.Get(path) is { } held ? held with { Unreadable = "parity: read-only" } : null;
 
-        public Task<DocumentSaveResult> SaveAsync(string path, LineDocument document, CancellationToken cancellationToken) => inner.SaveAsync(path, document, cancellationToken);
+        public Task<DocumentSaveResult> SaveAsync(string path, FdgBody document, CancellationToken cancellationToken) => inner.SaveAsync(path, document, cancellationToken);
 
         public void Forget(string path) => inner.Forget(path);
 

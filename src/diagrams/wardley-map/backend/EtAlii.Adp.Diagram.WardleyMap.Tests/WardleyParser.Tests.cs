@@ -70,16 +70,32 @@ public class WardleyParserTests
         var outcome = WardleyParser.Outcome(LineDocument.Parse(File.ReadAllText(IoPath.Combine(FixturesPath, name))));
 
         // Assert. The unmodelled-statements fixture holds one line no Wardley parser knows, on its
-        // 14th line; every statement elsewhere in the corpus is read or skipped by design.
-        if (name == "unmodelled-statements.owm")
-        {
-            Assert.Equal(13, Assert.Single(outcome.Problems).Line);
-        }
-        else
-        {
-            Assert.Empty(outcome.Problems);
-        }
+        // 14th line. The fixtures of the findings of the conversion to DISL and FBL hold the lines
+        // this tool passes over on purpose, each named in its row of Fixtures/readme.md; every
+        // statement elsewhere in the corpus is read or skipped by design. Lines are counted from 0.
+        Assert.Equal(PassedOver.GetValueOrDefault(name, []), outcome.Problems.Select(problem => problem.Line));
     }
+
+    /// <summary>The lines of a fixture this tool passes over on purpose, counted from 0.</summary>
+    private static readonly Dictionary<string, int[]> PassedOver = new(StringComparer.Ordinal)
+    {
+        ["unmodelled-statements.owm"] = [13],
+
+        // B2: the top-level statements after a pipeline that is never closed are read as inside it.
+        ["unclosed-pipeline.owm"] = [8, 9],
+
+        // B2: the `}` on a line of its own outside any pipeline.
+        ["brace-ending-statements.owm"] = [7],
+
+        // A8: `[1.2.3, 0]` and `[., 0.5]` match the number pattern and do not convert.
+        ["out-of-range.owm"] = [5, 6],
+
+        // B13: the names this tool's two grammars cannot read back (the real parser reads them).
+        ["awkward-names.owm"] = [7, 10],
+
+        // B15: the one line that is no statement, which the real parser also refuses.
+        ["two-titles.owm"] = [5],
+    };
 
     [Fact]
     public void Outcome_ReportsALineInsideAPipelineThatIsNotAChild()

@@ -46,6 +46,14 @@ function open() {
 
 afterEach(cleanup);
 
+/** Gives the lines of the list their places, thirty pixels high one below the other, as a browser lays them out. */
+function linesOfThirty() {
+  screen.getAllByRole("listitem").forEach((line, index) => {
+    Object.defineProperty(line, "offsetTop", { configurable: true, value: index * 30 });
+    Object.defineProperty(line, "offsetHeight", { configurable: true, value: 30 });
+  });
+}
+
 describe("OptionsEditor", () => {
   it("lists the column's options, each with its name, its colour and its place", () => {
     // Act.
@@ -130,9 +138,7 @@ describe("OptionsEditor", () => {
   it("puts an option in its place by dragging its handle, as one gesture when the drag ends", () => {
     // Arrange: two lines of thirty pixels each.
     const { raise } = open();
-    screen.getAllByRole("listitem").forEach((line, index) => {
-      line.getBoundingClientRect = () => ({ left: 0, right: 200, top: index * 30, bottom: index * 30 + 30, width: 200, height: 30, x: 0, y: index * 30, toJSON: () => ({}) });
-    });
+    linesOfThirty();
     const handle = screen.getByRole("img", { name: "Move option Netherlands" });
 
     // Act: dragged down past the middle of the line under it.
@@ -145,6 +151,31 @@ describe("OptionsEditor", () => {
     // Assert.
     expect(raise).toHaveBeenCalledTimes(1);
     expect(raise).toHaveBeenCalledWith({ kind: "moveOption", columnId: "p2", targetId: "o1", index: 1 });
+  });
+
+  it("shows the dragged option under the pointer while it is dragged, the others making way where it would go", () => {
+    // Arrange.
+    open();
+    linesOfThirty();
+    const handle = screen.getByRole("img", { name: "Move option Netherlands" });
+    const [first, second] = screen.getAllByRole("listitem") as HTMLElement[];
+
+    // Act: dragged past the middle of the line under it, not dropped.
+    fireEvent(handle, pointer("pointerdown", { pointerId: 1, button: 0, clientX: 5, clientY: 15 }));
+    fireEvent(handle, pointer("pointermove", { pointerId: 1, clientX: 5, clientY: 35 }));
+    fireEvent(handle, pointer("pointermove", { pointerId: 1, clientX: 5, clientY: 55 }));
+
+    // Assert: the dragged line forty pixels down, the line it passed one line up, in its place.
+    expect(first!.style.transform).toBe("translateY(40px)");
+    expect(first!.className).toContain("table-options-dragging");
+    expect(second!.style.transform).toBe("translateY(-30px)");
+
+    // Act.
+    fireEvent(handle, pointer("pointerup", { pointerId: 1, button: 0, clientX: 5, clientY: 55 }));
+
+    // Assert: dropped, every line stands where the list puts it.
+    expect(first!.style.transform).toBe("");
+    expect(second!.style.transform).toBe("");
   });
 
   it("tells how many rows have an option before deleting it, and deletes only when that is confirmed", () => {

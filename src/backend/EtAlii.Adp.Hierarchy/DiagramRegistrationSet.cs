@@ -30,7 +30,7 @@ internal static class DiagramRegistrationSet
             // subject's file name counts too, which is how a command - which has no project
             // root to resolve a header path against - still finds header-pointed sets.
             var body = DiagramFilePair.BodyOf(candidate, catalog, parentPath);
-            var derives = body is { } resolved && resolved.Path.Length > 0 &&
+            var derives = body is { Path.Length: > 0 } resolved &&
                           string.Equals(resolved.Path, subjectPath, StringComparison.OrdinalIgnoreCase);
             var headerNamesIt = AdpRegistration.Read(candidate) is { } registration &&
                                 !string.Equals(registration.WithBodyFileName(subjectName, subjectName + "\0"), registration.Text, StringComparison.Ordinal);

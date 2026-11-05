@@ -1,12 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { create } from "@bufbuild/protobuf";
 import {
   FdgConnectionPayloadSchema,
   FdgElementPayloadSchema,
 } from "@client/generated/functional-decomposition-graph_pb";
+import { ContextActionGroupSchema, ContextActionSchema, type ContextActionGroup } from "@client/generated/context-contract_pb";
+import { ContextSelectionAction, type ContextSelection } from "@client/generated/context_pb";
+import { selectedElementIdOf } from "@client/canvas/selection";
 import { expectLibrarySelection } from "@client/canvas/library/testing/expectLibrarySelection";
 import { emptyModel, type FdgModel } from "./fdgModel";
+import { FDG_ELEMENT_TYPES, FdgActions } from "./fdgIds";
 import { fakeContextConnection, idsPushed, dragAndSettle } from "@client/canvas/library/testing/canvasHarness";
 
 // The moves the canvas sent, and what the backend answers one with: empty when recorded, its refusal otherwise.
@@ -22,6 +26,7 @@ let moveAnswer = "";
 let currentModel: FdgModel = emptyModel;
 let currentSelectionKey: string | null = null;
 let selections: unknown[] = [];
+let currentActions: ContextActionGroup[] = [];
 
 vi.mock("@client/diagrams/useDiagramStream", () => ({
   useDiagramStream: () => ({
@@ -45,7 +50,7 @@ vi.mock("@client/diagrams/viewReport", async (importOriginal) => ({
 vi.mock("@client/shell/context/ContextConnectionProvider", () => ({
   innermostKey: () => currentSelectionKey,
   useContextPrompt: () => ({ prompt: null, onPropose: vi.fn(), onSubmit: vi.fn(), onCancel: vi.fn() }),
-  useContextSelection: () => ({ selection: currentSelectionKey, levels: [], actions: [] }),
+  useContextSelection: () => ({ selection: currentSelectionKey, levels: [], actions: currentActions }),
   useContextConnection: () => connection,
 }));
 
@@ -88,6 +93,7 @@ beforeEach(() => {
   currentModel = modelWith();
   currentSelectionKey = null;
   selections = [];
+  currentActions = [];
 });
 
 describe("the functional decomposition graph canvas, mounted", () => {
@@ -127,5 +133,43 @@ describe("the functional decomposition graph canvas, mounted", () => {
       element: "planning",
       connection: "c-1",
     });
+  });
+});
+
+/**
+ * The labels the backend answers a placement with: the specification's canvas menu, in the order of the
+ * tool's element types (`FDG_ELEMENT_TYPES`), which is not the palette's.
+ */
+const ADD_HERE_LABELS = ["Add ui element here", "Add data element here", "Add action here", "Add function here", "Add comment here"];
+
+describe("the menu on empty canvas, which the user ruled is offered (chat ruling of 2026-10-24)", () => {
+  it("asks for the menu at the point right-clicked, and offers the five Add … here entries the backend answers", async () => {
+    // Arrange.
+    const { container, rerender } = renderCanvas();
+    selections = [];
+
+    // Act: a right-click on the surface, on no element and no connection.
+    fireEvent.contextMenu(container.querySelector("svg.library-canvas-surface")!, { clientX: 320, clientY: 240 });
+
+    // Assert: the canvas asked for the menu of a placement, not of an item.
+    expect(selections, "a right-click on empty canvas asked for no menu, so it is not offered").toHaveLength(1);
+    const push = selections[0] as ContextSelection;
+    const placement = selectedElementIdOf(push);
+    expect(placement).toMatch(/^new:-?[\d.]+,-?[\d.]+$/);
+    const inner = push.detail.case === "child" ? push.detail.value : push;
+    expect(inner.detail.case === "action" ? inner.detail.value : null).toBe(ContextSelectionAction.CONTEXT_MENU);
+
+    // Act: the backend answers for the placement with its add actions.
+    currentSelectionKey = `element:${placement}`;
+    currentActions = [create(ContextActionGroupSchema, {
+      actions: FDG_ELEMENT_TYPES.map((type, index) => create(ContextActionSchema, { id: FdgActions.add(type), label: ADD_HERE_LABELS[index]!, available: true })),
+    })];
+    rerender(<FdgCanvas projectId={new Uint8Array([1])} entryId={new Uint8Array([2])} path={["field-service.fdg"]} />);
+
+    // Assert: the menu opens with exactly those five, in that order, and an entry runs its add action.
+    const entries = await screen.findAllByRole("menuitem");
+    expect(entries.map((entry) => entry.textContent?.trim())).toEqual(ADD_HERE_LABELS);
+    fireEvent.click(entries[0]!);
+    expect(connection.executeAction).toHaveBeenCalledWith(FdgActions.add(FDG_ELEMENT_TYPES[0]!));
   });
 });

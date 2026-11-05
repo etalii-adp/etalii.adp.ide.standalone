@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The command pipeline for tests: TestHistory and TestToolRouters. TestHistory builds a
+    ServiceProvider of its own, outside any host.
+  -->
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <ProjectReference Include="..\EtAlii.Adp.Hierarchy\EtAlii.Adp.Hierarchy.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.History\EtAlii.Adp.History.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Diagram.Tests.Support\EtAlii.Adp.Diagram.Tests.Support.csproj" />
+  </ItemGroup>
+
+</Project>

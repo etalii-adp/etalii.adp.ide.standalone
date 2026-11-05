@@ -1,0 +1,10 @@
+# B10: no header at all is reported on line 1.
+nodes:
+  - id: a
+    name: A
+  - id: b
+    name: B
+flows:
+  - from: a
+    to: b
+    value: 1

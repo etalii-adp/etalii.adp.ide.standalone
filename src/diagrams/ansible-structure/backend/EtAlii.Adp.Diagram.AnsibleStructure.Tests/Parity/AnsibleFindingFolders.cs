@@ -49,7 +49,7 @@ internal static class AnsibleFindingFolders
         // B3: a binary a role ships. The reader counts it and never opens it.
         ["b3-large-binary"] =
         [
-            new($"file roles/assets/files/blob.bin, {LargeBinaryLength} bytes of a repeating pattern", root =>
+            new Making($"file roles/assets/files/blob.bin, {LargeBinaryLength} bytes of a repeating pattern", root =>
             {
                 var bytes = new byte[LargeBinaryLength];
                 for (var index = 0; index < bytes.Length; index++)
@@ -65,7 +65,7 @@ internal static class AnsibleFindingFolders
         // B5: the registered folder is not there at all.
         ["b5-not-there"] =
         [
-            new("the folder is removed, registration and all", root => Directory.Delete(root, recursive: true)),
+            new Making("the folder is removed, registration and all", root => Directory.Delete(root, recursive: true)),
         ],
 
         // B9: positions stored for a playbook that is saved half way, and for one that is whole.

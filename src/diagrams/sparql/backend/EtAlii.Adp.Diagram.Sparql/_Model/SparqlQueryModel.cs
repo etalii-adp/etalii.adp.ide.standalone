@@ -25,7 +25,11 @@ public sealed record SparqlProjectionItem(string Name, string ExpressionText);
 /// <param name="Prefix">The prefix without its colon; empty for the default prefix.</param>
 /// <param name="Iri">The namespace IRI it expands to.</param>
 /// <param name="Line">The 1-based line the declaration sits on - what an unused-prefix finding points at.</param>
-public sealed record SparqlPrefixDeclaration(string Prefix, string Iri, int Line);
+public sealed record SparqlPrefixDeclaration(string Prefix, string Iri, int Line)
+{
+    /// <summary>Where the declaration is written: from <c>PREFIX</c> to the end of its IRI.</summary>
+    public SparqlSpan Span { get; init; }
+}
 
 /// <summary>
 /// How one variable name is used across the whole query - the query-wide occurrence index the

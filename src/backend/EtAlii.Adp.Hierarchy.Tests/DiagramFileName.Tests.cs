@@ -5,17 +5,17 @@ namespace EtAlii.Adp.Hierarchy.Tests;
 
 public class DiagramFileNameTests : IDisposable
 {
+    private readonly TestFolder _testFolder = TestFolder.Create("diagram-file-name");
     private readonly string _folder;
 
     public DiagramFileNameTests()
     {
-        _folder = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_folder);
+        _folder = _testFolder.Path;
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_folder);
+        _testFolder.Dispose();
     }
 
     private void Existing(string fileName) => File.WriteAllText(IoPath.Combine(_folder, fileName), "");

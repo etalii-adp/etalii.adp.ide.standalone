@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
@@ -18,7 +17,7 @@ namespace EtAlii.Adp.Diagram.C4.Tests;
 public class AwsDeploymentTests
 {
     private static readonly C4Workspace Workspace =
-        C4Parser.Parse(LineDocument.Parse(File.ReadAllText(IoPath.Combine("Fixtures", "aws-deployment.dsl"))));
+        C4Body.Read(File.ReadAllText(IoPath.Combine("Fixtures", "aws-deployment.dsl"))).Workspace;
 
     private static C4Element Node(string name) => Workspace.Elements.Single(element =>
         element.Kind is C4ElementKind.DeploymentNode or C4ElementKind.InfrastructureNode && element.Name == name);
@@ -172,5 +171,22 @@ public class AwsDeploymentTests
                     $"'{boxes[i].Key}' {boxes[i].Value} overlaps '{boxes[j].Key}' {boxes[j].Value}");
             }
         }
+    }
+
+    [Fact]
+    public void AHandPlacedPosition_IsIgnored_ForAnElementInsideANode()
+    {
+        // Arrange: a position far off for every card the view draws, each of which runs on a node.
+        // Without autoLayout, which would ignore every hand-placed position and so hide the rule.
+        var view = Workspace.Views[0] with { AutoLayout = null };
+        var computed = C4LayoutEngine.Compute(Workspace, view, C4Metrics.Default);
+        var authored = computed.Boxes.Keys.ToDictionary(id => id, _ => new C4Position(-1000, -1000), StringComparer.OrdinalIgnoreCase);
+
+        // Act.
+        var layout = C4LayoutEngine.Compute(Workspace, view, C4Metrics.Default, authored);
+
+        // Assert: the node places what it hosts, or a drag could carry a card out of the node it runs on.
+        Assert.False(layout.AuthoredPositionsIgnored);
+        Assert.Equal(computed.Boxes.OrderBy(pair => pair.Key, StringComparer.Ordinal), layout.Boxes.OrderBy(pair => pair.Key, StringComparer.Ordinal));
     }
 }

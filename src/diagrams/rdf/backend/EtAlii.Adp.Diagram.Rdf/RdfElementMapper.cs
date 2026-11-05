@@ -13,6 +13,7 @@ public sealed class RdfElementMapper
     public const string ResourceType = "w3c/rdf+resource";
 
     /// <inheritdoc cref="ResourceType" />
+    [Relation]
     public const string EdgeType = "w3c/rdf+edge";
 
     /// <inheritdoc cref="ResourceType" />

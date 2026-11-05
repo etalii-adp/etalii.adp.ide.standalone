@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Specification.Fbl;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -11,18 +12,18 @@ namespace EtAlii.Adp.Diagram.Sparql.Tests;
 /// </summary>
 public class SparqlDocumentStoreTests : IDisposable
 {
+    private readonly TestFolder _testFolder = TestFolder.Create("sparql-document-store");
     private readonly string _root;
     private readonly SparqlDocumentStore _store = new();
 
     public SparqlDocumentStoreTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     private string CopyFixture(string name)
@@ -78,7 +79,8 @@ public class SparqlDocumentStoreTests : IDisposable
         // Assert.
         Assert.False(entry.IsUsable);
         Assert.Contains("undeclared", entry.Unreadable);
-        Assert.Same(SparqlQueryModel.Empty, entry.Model);
+        Assert.True(entry.Model.Body.IsUnreadable);
+        Assert.Empty(entry.Model.Body.Reading.Elements);
         var problem = Assert.Single(entry.Problems);
         // broken.rq uses the undeclared prefix on its fourth line, which is zero-based line 3.
         Assert.Equal((3, entry.Unreadable), (problem.Line, problem.Message));
@@ -104,7 +106,7 @@ public class SparqlDocumentStoreTests : IDisposable
         // Arrange.
         var path = CopyFixture("crlf-line-endings.rq");
         var before = await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
-        Assert.Single(before.Model.Where.Patterns);
+        Assert.Single(Patterns(before.Model));
 
         DocumentChangedEventArgs? raised = null;
         _store.Changed += (_, args) => raised = args;
@@ -116,7 +118,7 @@ public class SparqlDocumentStoreTests : IDisposable
         // Assert.
         Assert.NotNull(raised);
         Assert.Equal(path, raised.Path);
-        Assert.Equal(2, (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model.Where.Patterns.Count);
+        Assert.Equal(2, Patterns((await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model).Count());
     }
 
     [Fact]
@@ -134,6 +136,9 @@ public class SparqlDocumentStoreTests : IDisposable
 
         // Assert.
         Assert.Same(first, second);
-        Assert.Equal(SparqlQueryForm.Ask, third.Model.Form);
+        Assert.Equal("ask", third.Model.Body.Reading.Elements.Single(record => record.Type == "Query").Attributes["form"]);
     }
+
+    /// <summary>The <c>Pattern</c> records the plugin read.</summary>
+    private static IEnumerable<FblElement> Patterns(SparqlDocument document) => document.Body.Reading.Elements.Where(record => record.Type == "Pattern");
 }

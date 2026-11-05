@@ -89,7 +89,7 @@ internal static class DislBehaviorReader
                 JsonProperties.StringOrStrings(hook, "attribute"),
                 order,
                 orderMalformed,
-                hook.TryGetProperty("when", out var when) ? DislFieldReader.Expression(specification, when, JsonPointer.Append(pointer, "when")) : null,
+                DislFieldReader.OptionalExpression(specification, hook, pointer, "when"),
                 hook.TryGetProperty("actions", out var actions) ? DislActionReader.List(specification, actions, JsonPointer.Append(pointer, "actions")) : null));
         }
         return hooks;
@@ -122,17 +122,14 @@ internal static class DislBehaviorReader
             if (thresholdMalformed is null && declared.TryGetInt64(out var limit)) threshold = limit;
         }
         return new DislDeletionConfirm.Asked(
-            confirm.TryGetProperty("count", out var count) ? DislFieldReader.Expression(specification, count, JsonPointer.Append(pointer, "count")) : null,
+            DislFieldReader.OptionalExpression(specification, confirm, pointer, "count"),
             threshold,
             thresholdMalformed,
-            confirm.TryGetProperty("when", out var when) ? DislFieldReader.Expression(specification, when, JsonPointer.Append(pointer, "when")) : null,
-            Text("title"),
+            DislFieldReader.OptionalExpression(specification, confirm, pointer, "when"),
+            DislFieldReader.OptionalMessage(specification, confirm, pointer, "title"),
             DislFieldReader.Message(specification, message, JsonPointer.Append(pointer, "message")),
-            Text("confirmLabel"),
+            DislFieldReader.OptionalMessage(specification, confirm, pointer, "confirmLabel"),
             !confirm.TryGetProperty("danger", out var danger) || danger.ValueKind != JsonValueKind.False);
-
-        DislMessage? Text(string name) =>
-            confirm.TryGetProperty(name, out var text) ? DislFieldReader.Message(specification, text, JsonPointer.Append(pointer, name)) : null;
     }
 
     private static DislRetypePolicy Retype(DislSpecification specification, JsonElement policy, string pointer)

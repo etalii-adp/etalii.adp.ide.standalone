@@ -25,6 +25,29 @@ public sealed record DislAttribute(string Name, string Type, bool Many, JsonElem
     /// <summary>Its <c>label</c>, read at load; null when it states none.</summary>
     internal string? Label { get; } = JsonProperties.String(Json, "label");
 
+    /// <summary>Its <c>min</c> (§4.3), read at load: the least number it may hold; null when it states none or one that is not a number.</summary>
+    internal double? Min { get; init; } = Bound(Json, "min");
+
+    /// <summary>Its <c>max</c> (§4.3), read at load: the greatest number it may hold; null when it states none or one that is not a number.</summary>
+    internal double? Max { get; init; } = Bound(Json, "max");
+
+    /// <summary>
+    /// What a value typed into a form or an inline label does past <see cref="Min"/> or <see cref="Max"/> (DISL 0.3 §4.3,
+    /// <c>outOfRange.typed</c>): <c>refuse</c>, the default, or <c>clamp</c>.
+    /// </summary>
+    internal string TypedOutOfRange { get; } = Json.ValueKind == JsonValueKind.Object && Json.TryGetProperty("outOfRange", out var outOfRange)
+        ? JsonProperties.String(outOfRange, "typed") ?? "refuse"
+        : "refuse";
+
+    /// <summary>The refusal of a typed value out of range (<c>outOfRange.message</c>), set at load; null for the runtime's sentence.</summary>
+    internal DislMessage? OutOfRangeMessage { get; set; }
+
+    /// <summary>
+    /// The fields of the struct data type (§4.4) it is typed by, in declaration order, each with the bounds of its own
+    /// declaration or of its type, read at load; none for any other type.
+    /// </summary>
+    internal IReadOnlyList<DislAttribute> Fields { get; init; } = [];
+
     /// <summary>Whether it is a <c>key</c> (§4.3), read at load: a part of its type's natural id.</summary>
     internal bool Key { get; } = JsonProperties.Bool(Json, "key");
 
@@ -60,6 +83,9 @@ public sealed record DislAttribute(string Name, string Type, bool Many, JsonElem
     /// none there, and the attribute then reads as unset.
     /// </summary>
     internal CelProgram? DerivedProgram { get; set; }
+
+    private static double? Bound(JsonElement json, string name) =>
+        json.ValueKind == JsonValueKind.Object && json.TryGetProperty(name, out var bound) && bound.ValueKind == JsonValueKind.Number ? bound.GetDouble() : null;
 }
 
 /// <summary>One value of an enumeration (DISL §4.5): its key, which CEL sees, and its stored form, which is written.</summary>
@@ -98,13 +124,16 @@ public sealed class DislType
         Abstract = JsonProperties.Bool(json, "abstract");
         Label = JsonProperties.String(json, "label");
         Icon = JsonProperties.String(json, "icon");
-        AllowSelfLoops = Flag(json, "allowSelfLoops");
-        AllowParallel = Flag(json, "allowParallel");
+        StatedAllowSelfLoops = Flag(json, "allowSelfLoops");
+        StatedAllowParallel = Flag(json, "allowParallel");
         Acyclic = Flag(json, "acyclic") ?? false;
-        Directed = Flag(json, "directed");
+        StatedDirected = Flag(json, "directed");
         var derived = json.ValueKind == JsonValueKind.Object && json.TryGetProperty("derived", out var declared) && declared.ValueKind == JsonValueKind.Object ? declared : default;
         ConnectEdit = derived.ValueKind == JsonValueKind.Object && derived.TryGetProperty("edits", out var edits) ? JsonProperties.String(edits, "connect") : null;
         DerivedReason = JsonProperties.String(derived, "reason");
+        DerivedEdits = DislJson.Members(derived, "edits")
+            .Where(edit => edit.Value.ValueKind == JsonValueKind.String)
+            .ToDictionary(edit => edit.Name, edit => edit.Value.GetString()!, StringComparer.Ordinal);
     }
 
     public string Name { get; }
@@ -123,17 +152,35 @@ public sealed class DislType
     /// <summary>Its <c>icon</c>, read at load; null when it states none.</summary>
     internal string? Icon { get; }
 
-    /// <summary>A relation type's <c>allowSelfLoops</c> (§4.9) when it states it as a boolean; null otherwise.</summary>
-    internal bool? AllowSelfLoops { get; }
+    /// <summary>
+    /// A relation type's <c>allowSelfLoops</c> (§4.9), set at load: what it states, else what the nearest type of its
+    /// linearisation states, else the default, <c>false</c> (DISL 0.6, §4.7).
+    /// </summary>
+    internal bool AllowSelfLoops { get; set; }
 
-    /// <summary>A relation type's <c>allowParallel</c> (§4.9) when it states it as a boolean; null otherwise.</summary>
-    internal bool? AllowParallel { get; }
+    /// <summary>
+    /// A relation type's <c>allowParallel</c> (§4.9), set at load: what it states, else what the nearest type of its
+    /// linearisation states, else the default, <c>true</c> (DISL 0.6, §4.7).
+    /// </summary>
+    internal bool AllowParallel { get; set; } = true;
 
     /// <summary>Whether a relation type's own declaration states <c>acyclic: true</c> (§4.9); a subtype of such a type is acyclic through it.</summary>
     internal bool Acyclic { get; }
 
-    /// <summary>A relation type's <c>directed</c> (§4.9) when it states it as a boolean; null otherwise.</summary>
-    internal bool? Directed { get; }
+    /// <summary>
+    /// A relation type's <c>directed</c> (§4.9), set at load: what it states, else what the nearest type of its
+    /// linearisation states, else the default, <c>true</c> (DISL 0.6, §4.7).
+    /// </summary>
+    internal bool Directed { get; set; } = true;
+
+    /// <summary>A relation type's own <c>allowSelfLoops</c> when it states it as a boolean; null otherwise. The narrowing checks read it (§4.7).</summary>
+    internal bool? StatedAllowSelfLoops { get; }
+
+    /// <summary>A relation type's own <c>allowParallel</c> when it states it as a boolean; null otherwise. The narrowing checks read it (§4.7).</summary>
+    internal bool? StatedAllowParallel { get; }
+
+    /// <summary>A relation type's own <c>directed</c> when it states it as a boolean; null otherwise. The narrowing checks read it (§4.7).</summary>
+    internal bool? StatedDirected { get; }
 
     /// <summary>The supertypes it names, in the order it names them.</summary>
     public IReadOnlyList<string> Extends { get; internal set; } = [];
@@ -164,6 +211,22 @@ public sealed class DislType
     /// for a stored type, and for one whose <c>derived</c> is neither an Expression nor an object.
     /// </summary>
     internal DislDerivedRelation? DerivedRelation { get; set; }
+
+    /// <summary>
+    /// A derived node type's <c>derived</c> (§4.11.2), typed at load with the programs the loader compiled; null for a
+    /// stored type, for a relation type, and for one whose <c>derived</c> is not an object.
+    /// </summary>
+    internal DislDerivedNode? DerivedNode { get; set; }
+
+    /// <summary>
+    /// What a derived type's <c>edits</c> carries out by an operation instead of refusing (§4.11.4): the operation by
+    /// gesture - <c>delete</c>, <c>reparent</c>, <c>move</c>, <c>connect</c>, <c>rename</c>, <c>attribute:&lt;name&gt;</c> - in
+    /// declaration order; empty when it maps none.
+    /// </summary>
+    public IReadOnlyDictionary<string, string> DerivedEdits { get; }
+
+    /// <summary>A derived type's <c>reason</c>, why a gesture on its elements is refused (§4.11.4), or null when it states none.</summary>
+    public string? Reason => DerivedReason;
 
     /// <summary>The operation a derived relation's <c>edits.connect</c> runs when one is drawn (§4.11), or null when it names none.</summary>
     internal string? ConnectEdit { get; }

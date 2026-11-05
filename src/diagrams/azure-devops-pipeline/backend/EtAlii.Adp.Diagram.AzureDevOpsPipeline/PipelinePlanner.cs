@@ -4,6 +4,7 @@ using EtAlii.Adp.Documents;
 using EtAlii.Adp.Specification.Fbl;
 using EtAlii.Adp.Specification.Fbl.Planning;
 using EtAlii.Adp.Specification.Fbl.Plugins;
+using EtAlii.Adp.Specification.Fbl.Yaml;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using YamlDotNet.RepresentationModel;
@@ -717,8 +718,8 @@ internal sealed class PipelinePlanner
         var written = scalar.Style switch
         {
             _ when IsExpression(value) => value,
-            ScalarStyle.SingleQuoted when !value.Contains('\n') => "'" + value.Replace("'", "''", StringComparison.Ordinal) + "'",
-            ScalarStyle.SingleQuoted or ScalarStyle.DoubleQuoted => DoubleQuoted(value),
+            ScalarStyle.SingleQuoted when !value.Contains('\n') => YamlScalars.SingleQuoted(value),
+            ScalarStyle.SingleQuoted or ScalarStyle.DoubleQuoted => YamlScalars.DoubleQuoted(value),
             _ => Scalar(value),
         };
         Replace(SpliceOperation.ReplaceValue, start, End(scalar), written, column);
@@ -839,50 +840,17 @@ internal sealed class PipelinePlanner
     private static IEnumerable<string> Names(YamlSequenceNode list) =>
         list.Children.Select(child => child is YamlScalarNode { Value: { } name } ? name : "\0");
 
-    // Scalars as written: every value is the text it was written with (finding B1).
+    // Scalars as written: every value is the text it was written with (finding B1), so a value is plain wherever YAML's
+    // syntax allows it, whatever a schema would type it as, and true and 1.0 stay bare. The syntax test and the quoting
+    // are the FBL library's YamlScalars (FBL 0.5 §6.3).
 
     /// <summary>A value as a plain scalar where YAML's syntax allows it, else double-quoted; an expression as written.</summary>
     private static string Scalar(string value) =>
-        IsExpression(value) || IsPlainSyntax(value) ? value : DoubleQuoted(value);
+        IsExpression(value) || YamlScalars.IsPlainSyntax(value) ? value : YamlScalars.DoubleQuoted(value);
 
     /// <summary>A compile-time or runtime expression, which is written back as written and never quoted.</summary>
     private static bool IsExpression(string value) =>
         value.StartsWith("${{", StringComparison.Ordinal) || value.StartsWith("$[", StringComparison.Ordinal);
-
-    /// <summary>
-    /// Whether YAML's syntax lets <paramref name="value"/> be written plain, whatever a schema would type it as: this
-    /// tool reads every value as the text it was written with, so <c>true</c> and <c>1.0</c> stay bare.
-    /// </summary>
-    private static bool IsPlainSyntax(string value)
-    {
-        if (value.Length == 0) return false;
-        if (char.IsWhiteSpace(value[0]) || char.IsWhiteSpace(value[^1])) return false;
-        if (value.Any(c => c is '\n' or '\r' || char.IsControl(c))) return false;
-        if ("-?:,[]{}#&*!|>'\"%@`".Contains(value[0])) return false;
-        return !value.Contains(": ", StringComparison.Ordinal) && !value.Contains(" #", StringComparison.Ordinal) && !value.EndsWith(':');
-    }
-
-    private static string DoubleQuoted(string value)
-    {
-        var builder = new StringBuilder("\"");
-        foreach (var c in value)
-        {
-            switch (c)
-            {
-                case '\\': builder.Append("\\\\"); break;
-                case '"': builder.Append("\\\""); break;
-                case '\n': builder.Append("\\n"); break;
-                case '\r': builder.Append("\\r"); break;
-                case '\t': builder.Append("\\t"); break;
-                default:
-                    if (char.IsControl(c)) builder.Append("\\u").Append(((int)c).ToString("X4", CultureInfo.InvariantCulture));
-                    else builder.Append(c);
-                    break;
-            }
-        }
-
-        return builder.Append('"').ToString();
-    }
 
     private static string AsText(object? value) => value switch
     {

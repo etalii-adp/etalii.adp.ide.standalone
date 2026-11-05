@@ -559,3 +559,31 @@ describe("a line fitted by the size a stylesheet draws it at (LabelDeclaration.f
     expect(layoutLabels([{ text: { path: "payload.d" }, offset: { x: 0, y: 0 }, wrap: true, fit }], source({ d: "   " }), card)).toEqual([]);
   });
 });
+
+describe("labels — at an offset the element carries", () => {
+  const declaration: LabelDeclaration = { text: { path: "payload.n" }, anchorTo: "centre", offsetBinding: { path: "payload.shift" }, textAnchor: "start" };
+
+  it("starts the text at the centre moved by the element's [dx, dy]", () => {
+    const line = layoutLabels([declaration], source({ n: "Kettle", shift: [15, 4] }), bounds)[0]!;
+
+    expect({ x: line.x, y: line.y, anchor: line.anchor }).toEqual({ x: 15, y: 4, anchor: "start" });
+  });
+
+  it("reads an offset written as dx and dy", () => {
+    const line = layoutLabels([declaration], source({ n: "Kettle", shift: { dx: -30, dy: 12 } }), bounds)[0]!;
+
+    expect({ x: line.x, y: line.y }).toEqual({ x: -30, y: 12 });
+  });
+
+  it("sits at the centre where the element carries no offset", () => {
+    const line = layoutLabels([declaration], source({ n: "Kettle" }), bounds)[0]!;
+
+    expect({ x: line.x, y: line.y, anchor: line.anchor }).toEqual({ x: 0, y: 0, anchor: "start" });
+  });
+
+  it("ends the text at a stated offset's point where it is anchored at its end", () => {
+    const line = layoutLabels([{ text: { path: "payload.n" }, offset: { x: -10, y: 5 }, textAnchor: "end" }], source({ n: "Kettle" }), bounds)[0]!;
+
+    expect({ x: line.x, y: line.y, anchor: line.anchor }).toEqual({ x: -10, y: 5, anchor: "end" });
+  });
+});

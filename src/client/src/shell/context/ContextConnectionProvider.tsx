@@ -29,7 +29,7 @@ import type { ContextPromptSubmission, ContextPromptVerdict } from "./ContextPro
 import { useCoalescedSelect } from "./useCoalescedSelect";
 import { requestTextTab } from "../panels/textTabRequests";
 import { onLocalNotice } from "./localNotices";
-import { WorkspaceStreams, type TableStreamEvent } from "./workspaceStreams";
+import { WorkspaceStreams, type HierarchySurfaceStreamEvent, type TableStreamEvent } from "./workspaceStreams";
 
 /** The `none` alternative: a plain selection, nothing more. */
 export const NONE_DETAIL: ContextSelection["detail"] = { case: "none", value: create(EmptySchema) };
@@ -179,6 +179,14 @@ export interface WorkspaceStreamsValue {
    * which the table's other calls name. Ends and rejects as a diagram stream does.
    */
   openTableStream: (request: { path: Path; streamId: Uint8Array }, options: { signal: AbortSignal }) => AsyncIterable<TableStreamEvent>;
+  /**
+   * One hierarchy surface's events - the whole model on open and after every change, and what became
+   * of each gesture - under the stream id the caller made. Ends and rejects as a table stream does.
+   */
+  openHierarchySurfaceStream: (
+    request: { path: Path; streamId: Uint8Array },
+    options: { signal: AbortSignal },
+  ) => AsyncIterable<HierarchySurfaceStreamEvent>;
   /** The hierarchy's changes; fails when the connection drops, as the explorer's own stream did. */
   watchHierarchy: (options: { signal: AbortSignal }) => AsyncIterable<HierarchyMessage>;
 }
@@ -369,6 +377,10 @@ export function ContextConnectionProvider({ projectId, children }: ContextConnec
             }
             if (workspaceMessage.message.case === "table") {
               streamsRef.current.table(workspaceMessage.message.value);
+              continue;
+            }
+            if (workspaceMessage.message.case === "hierarchySurface") {
+              streamsRef.current.hierarchySurface(workspaceMessage.message.value);
               continue;
             }
             if (workspaceMessage.message.case !== "context") {
@@ -574,6 +586,21 @@ export function ContextConnectionProvider({ projectId, children }: ContextConnec
                 path: request.path,
               }),
             close: (streamId) => designerClient.closeTable({ watchId: { value: watchIdRef.current }, streamId: { value: streamId } }),
+          },
+          signal,
+        ),
+      openHierarchySurfaceStream: (request, { signal }) =>
+        streamsRef.current.openHierarchySurface(
+          request.streamId,
+          {
+            open: (streamId) =>
+              designerClient.openHierarchySurface({
+                projectId: { value: projectId },
+                watchId: { value: watchIdRef.current },
+                streamId: { value: streamId },
+                path: request.path,
+              }),
+            close: (streamId) => designerClient.closeHierarchySurface({ watchId: { value: watchIdRef.current }, streamId: { value: streamId } }),
           },
           signal,
         ),

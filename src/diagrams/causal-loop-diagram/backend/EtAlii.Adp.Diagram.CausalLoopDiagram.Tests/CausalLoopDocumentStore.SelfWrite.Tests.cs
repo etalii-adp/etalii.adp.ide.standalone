@@ -18,15 +18,14 @@ public class CausalLoopDocumentStoreSelfWriteTests : IDisposable
         + "variable b \"Beta\"\r\n"
         + "link a -> b +\r\n";
 
-    private readonly string _workspace = IoPath.Combine(
-        IoPath.GetTempPath(),
-        "adp-causal-loop-store-" + Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-causal-loop-store");
+    private readonly string _workspace;
 
-    public CausalLoopDocumentStoreSelfWriteTests() => Directory.CreateDirectory(_workspace);
+    public CausalLoopDocumentStoreSelfWriteTests() => _workspace = _testFolder.Path;
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_workspace);
+        _testFolder.Dispose();
 
         GC.SuppressFinalize(this);
     }
@@ -44,8 +43,12 @@ public class CausalLoopDocumentStoreSelfWriteTests : IDisposable
         var damaged = 0;
         var reloads = 0;
         string? first = null;
+        // The saves wait for the reloader to be running, so that a busy machine, which may start it only once the saves are
+        // done, cannot leave it nothing to race with.
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var reloader = Task.Run(async () =>
         {
+            started.SetResult();
             // ReSharper disable once AccessToModifiedClosure - Reason: Used in a test case which is acceptable.
             while (Volatile.Read(ref saving) == 1)
             {
@@ -62,6 +65,7 @@ public class CausalLoopDocumentStoreSelfWriteTests : IDisposable
         }, TestContext.Current.CancellationToken);
 
         // Act.
+        await started.Task.WaitAsync(TestContext.Current.CancellationToken);
         var refused = 0;
         for (var i = 0; i < 2000; i++)
         {

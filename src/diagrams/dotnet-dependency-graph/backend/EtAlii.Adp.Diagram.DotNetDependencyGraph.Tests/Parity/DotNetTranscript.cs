@@ -38,84 +38,78 @@ namespace EtAlii.Adp.Diagram.DotNetDependencyGraph.Tests.Parity;
 /// provider, and the transcript fails the day one appears unannounced.
 /// </para>
 /// </remarks>
-internal static partial class DotNetTranscript
+public sealed partial class DotNetTranscript() : TranscriptAdapter("dotnet-dependency-graph", DotNetCorpus.TestProject, "dotnet.transcript.json")
 {
-    /// <summary>The checked-in file's name, in this project's <c>Parity</c> folder.</summary>
-    private const string FileName = "dotnet.transcript.json";
-
-    private const string TestProject = "EtAlii.Adp.Diagram.DotNetDependencyGraph.Tests";
     private const string Unknown = "parity:unknown";
 
     private static readonly TypeRegistry _payloadTypes = TypeRegistry.FromMessages(DependencyElementPayload.Descriptor);
 
-    /// <summary>The module's folder, <c>src/diagrams/dotnet-dependency-graph</c>.</summary>
-    private static string ModuleFolder { get; } = RepositoryPaths.Under("src", "diagrams", "dotnet-dependency-graph");
+    public override string Origin => Diagram.DependencyGraph.Origin.Key;
 
-    /// <summary>The checked-in transcript.</summary>
-    public static string CheckedInPath => Path.Combine(ModuleFolder, "backend", TestProject, "Parity", FileName);
+    /// <summary>None: the module registers no toolbox, which <see cref="Registrations"/> records instead.</summary>
+    protected override IReadOnlyList<ToolboxItemDefinition>? Toolbox => null;
 
-    internal static string SourceFolder => Path.GetFullPath(Path.Combine(ModuleFolder, "..", ".."));
+    public override string DocumentsName => "solutions";
 
-    internal static string FixtureCache => Path.Combine(ModuleFolder, "backend", TestProject, "Fixtures", "cache");
+    public override string DocumentName => "solution";
 
-    /// <summary>The corpus, as paths relative to <c>src/</c> with forward slashes, in the order they are recorded.</summary>
-    internal static IReadOnlyList<string> Corpus()
+    public override IReadOnlyList<TranscriptDocument> Corpus() => [.. DotNetCorpus.Solutions().Select(OnDisk)];
+
+    public override Task WriteBeforeDocumentsAsync(Utf8JsonWriter json, CancellationToken cancellationToken)
     {
-        return
-        [
-            .. Solutions(Path.Combine(ModuleFolder, "backend", TestProject, "Fixtures")),
-            .. Solutions(Path.Combine(ModuleFolder, "examples")),
-            .. Solutions(Path.Combine(SourceFolder, "examples", "diagrams", "dotnet-dependency-graph")),
-        ];
-
-        static IEnumerable<string> Solutions(string folder) =>
-            Directory.Exists(folder)
-                ? Directory.EnumerateFiles(folder, "*.*", SearchOption.AllDirectories)
-                    .Where(path => Path.GetExtension(path) is ".sln" or ".slnx")
-                    .Select(path => Path.GetRelativePath(SourceFolder, path).Replace('\\', '/'))
-                    .Order(StringComparer.Ordinal)
-                : [];
+        json.WritePropertyName("registrations");
+        json.WriteLines(Registrations());
+        return Task.CompletedTask;
     }
 
-    /// <summary>The whole transcript, as the bytes the checked-in file must hold.</summary>
-    public static async Task<byte[]> GenerateAsync(CancellationToken cancellationToken)
+    /// <summary>
+    /// A shipped copy of an example is written as the one it is the same as, so it costs a line
+    /// while it stays identical. Equal bytes alone are not enough: a solution is the files it
+    /// names too, so the projects are compared through the graph they give. And the extension is
+    /// part of it: the reader chooses its pattern by extension, so the same bytes under another
+    /// one are another document (finding B11's new document was Empty.slnx's bytes under .sln until
+    /// task 9 made it a .slnx, which is now recorded as the same document as Empty.slnx).
+    /// </summary>
+    public override async Task<string?> WriteIdentityAsync(Utf8JsonWriter json, TranscriptDocument document, byte[] bytes, CancellationToken cancellationToken)
     {
-        using var stream = new MemoryStream();
-        await using (var json = new Utf8JsonWriter(stream, TranscriptText.WriterOptions))
+        var sha = await base.WriteIdentityAsync(json, document, bytes, cancellationToken);
+        using var store = Store();
+        return $"{sha}|{Path.GetExtension(document.Name)}|{Fingerprint(store.GetOrLoad(Path.Combine(SourceFolder, document.Name)))}";
+    }
+
+    public override async Task WriteDocumentAsync(Utf8JsonWriter json, TranscriptDocument document, byte[] bytes, string folder, CancellationToken cancellationToken)
+    {
+        var path = Path.Combine(SourceFolder, document.Name);
+        using var store = Store();
+        var graph = store.GetOrLoad(path);
+        await WriteGraphAsync(json, store.BodyOf(graph), path, cancellationToken);
+
+        // The session's answers that do not depend on a history: a reparent is refused whatever the
+        // element, and a move without a history is refused as read-only.
+        var session = new DotNetDependencyGraphSession(path, store, new DependencyElementMapper(), registrationPath: null, history: null, watch: false);
+        await using (session)
+        {
+            var first = graph.Projects.FirstOrDefault()?.Id ?? Unknown;
+            json.WriteStartArray("session");
+            json.WriteStringValue($"baseline => {(await session.BaselineAsync(cancellationToken)).Sum(delta => delta is DiagramAddDelta add ? add.Elements.Count : 0)} elements added");
+            json.WriteStringValue($"reparent {first} => {await session.MoveElementAsync(first, Unknown, 0, cancellationToken)}");
+            json.WriteStringValue($"move {first} to (10, 20) => {await session.MoveElementToAsync(first, 10, 20, cancellationToken)}");
+            json.WriteEndArray();
+        }
+    }
+
+    public override async Task WriteAfterDocumentsAsync(Utf8JsonWriter json, CancellationToken cancellationToken)
+    {
+        json.WriteStartArray("graphs");
+        foreach ((string name, DependencyGraphModel graph) in HandBuiltGraphs())
         {
             json.WriteStartObject();
-            json.WriteString("module", Diagram.DependencyGraph.Origin.Key);
-            json.WriteString("generator", $"src/diagrams/dotnet-dependency-graph/backend/{TestProject}/Parity/DotNetTranscript.cs");
-            json.WriteString("regenerate", "ADP_WRITE_PARITY_TRANSCRIPTS=1 dotnet test --project <this test project> (then review the diff)");
-
-            json.WritePropertyName("registrations");
-            json.WriteLines(Registrations());
-
-            json.WriteStartArray("solutions");
-            var recorded = new Dictionary<string, string>(StringComparer.Ordinal);
-            foreach (var relative in Corpus())
-            {
-                await WriteSolutionAsync(json, relative, recorded, cancellationToken);
-            }
-
-            json.WriteEndArray();
-
-            json.WriteStartArray("graphs");
-            foreach ((string name, DependencyGraphModel graph) in HandBuiltGraphs())
-            {
-                json.WriteStartObject();
-                json.WriteString("graph", name);
-                await WriteGraphAsync(json, DotNetBody.Of(graph), @"C:\parity\Parity.slnx", cancellationToken);
-                json.WriteEndObject();
-            }
-
-            json.WriteEndArray();
+            json.WriteString("graph", name);
+            await WriteGraphAsync(json, DotNetBody.Of(graph), @"C:\parity\Parity.slnx", cancellationToken);
             json.WriteEndObject();
-            await json.FlushAsync(cancellationToken);
         }
 
-        stream.Write("\r\n"u8);
-        return stream.ToArray();
+        json.WriteEndArray();
     }
 
     /// <summary>Every service the module registers, as <c>service =&gt; implementation</c>, in registration order.</summary>
@@ -129,49 +123,8 @@ internal static partial class DotNetTranscript
         ];
     }
 
-    private static async Task WriteSolutionAsync(Utf8JsonWriter json, string relative, Dictionary<string, string> recorded, CancellationToken cancellationToken)
-    {
-        var path = Path.Combine(SourceFolder, relative);
-        var sha = TranscriptText.Sha256(await File.ReadAllBytesAsync(path, cancellationToken));
-
-        json.WriteStartObject();
-        json.WriteString("solution", relative);
-        json.WriteString("sha256", sha);
-
-        // A shipped copy of an example is written as the one it is the same as, so it costs a line
-        // while it stays identical. Equal bytes alone are not enough: a solution is the files it
-        // names too, so the projects are compared through the graph they give. And the extension is
-        // part of it: the reader chooses its pattern by extension, so the same bytes under another
-        // one are another document (finding B11's new document was Empty.slnx's bytes under .sln until
-        // task 9 made it a .slnx, which is now recorded as the same document as Empty.slnx).
-        using var store = new DependencyGraphStore(new SolutionReader(), new ProjectReader(), new PackageDescriptionReader(FixtureCache));
-        var graph = store.GetOrLoad(path);
-        var key = $"{sha}|{Path.GetExtension(relative)}|{Fingerprint(graph)}";
-        if (recorded.TryGetValue(key, out var first))
-        {
-            json.WriteString("sameAs", first);
-            json.WriteEndObject();
-            return;
-        }
-
-        recorded[key] = relative;
-        await WriteGraphAsync(json, store.BodyOf(graph), path, cancellationToken);
-
-        // The session's answers that do not depend on a history: a reparent is refused whatever the
-        // element, and a move without a history is refused as read-only.
-        var session = new DotNetDependencyGraphSession(path, store, new DependencyElementMapper(), registrationPath: null, history: null, watch: false);
-        await using (session)
-        {
-            var first2 = graph.Projects.FirstOrDefault()?.Id ?? Unknown;
-            json.WriteStartArray("session");
-            json.WriteStringValue($"baseline => {(await session.BaselineAsync(cancellationToken)).Sum(delta => delta is DiagramAddDelta add ? add.Elements.Count : 0)} elements added");
-            json.WriteStringValue($"reparent {first2} => {await session.MoveElementAsync(first2, Unknown, 0, cancellationToken)}");
-            json.WriteStringValue($"move {first2} to (10, 20) => {await session.MoveElementToAsync(first2, 10, 20, cancellationToken)}");
-            json.WriteEndArray();
-        }
-
-        json.WriteEndObject();
-    }
+    /// <summary>A store that reads package descriptions from the fixture cache.</summary>
+    private static DependencyGraphStore Store() => new(new SolutionReader(), new ProjectReader(), new PackageDescriptionReader(DotNetCorpus.FixtureCache));
 
     private static async Task WriteGraphAsync(Utf8JsonWriter json, DotNetBody body, string solutionPath, CancellationToken cancellationToken)
     {
@@ -304,7 +257,7 @@ internal static partial class DotNetTranscript
 
     private static string Mask(string text)
     {
-        var masked = text.Replace(SourceFolder, "{src}", StringComparison.Ordinal);
+        var masked = text.Replace(DotNetCorpus.SourceFolder, "{src}", StringComparison.Ordinal);
         return SourcePath().Replace(masked, match => match.Value.Replace('\\', '/'));
     }
 

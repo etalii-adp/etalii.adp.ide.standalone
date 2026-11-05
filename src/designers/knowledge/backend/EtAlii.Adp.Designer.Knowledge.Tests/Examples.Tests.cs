@@ -12,18 +12,17 @@ namespace EtAlii.Adp.Designer.Knowledge.Tests;
 /// </summary>
 public sealed class ExamplesTests : IDisposable
 {
-    private readonly string _root = Directory.CreateTempSubdirectory("adp-knowledge-examples-").FullName;
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-knowledge-examples");
+    private readonly string _root;
+
+    public ExamplesTests()
+    {
+        _root = _testFolder.Path;
+    }
 
     public void Dispose()
     {
-        try
-        {
-            Directory.Delete(_root, recursive: true);
-        }
-        catch (IOException)
-        {
-            // A watcher may still be letting go; the temp folder is the system's to clear.
-        }
+        _testFolder.Dispose();
     }
 
     /// <summary>Every data file of the module's examples and of the showcase's, by its path from <c>src</c>.</summary>

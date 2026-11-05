@@ -130,13 +130,13 @@ internal static class C4FindingOrder
     /// </summary>
     private static int MemberPosition(C4Workspace workspace, C4View view, string id)
     {
-        bool Names(string written) => workspace.Find(written) is { } element && string.Equals(element.Id, id, StringComparison.Ordinal);
-
         var included = IndexOf(view.Includes, Names);
         if (included < int.MaxValue) return included;
         var participants = view.Interactions.SelectMany(interaction => new[] { interaction.SourceId, interaction.DestinationId }).ToList();
         var participant = IndexOf(participants, Names);
         return participant < int.MaxValue ? view.Includes.Count + participant : int.MaxValue;
+
+        bool Names(string written) => workspace.Find(written) is { } element && string.Equals(element.Id, id, StringComparison.Ordinal);
     }
 
     private static int IndexOf<T>(IReadOnlyList<T> items, Func<T, bool> predicate)

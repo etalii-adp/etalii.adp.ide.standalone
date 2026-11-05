@@ -14,6 +14,7 @@ namespace EtAlii.Adp.Diagram.Databricks.Tests;
 /// </summary>
 public class DatabricksContextActionProviderTests : IDisposable
 {
+    private readonly TestFolder _testFolder = TestFolder.Create("databricks-context-action-provider");
     private readonly string _root;
     private readonly ServiceProvider _provider;
     private readonly DatabricksContextActionProvider _actions;
@@ -21,8 +22,7 @@ public class DatabricksContextActionProviderTests : IDisposable
 
     public DatabricksContextActionProviderTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
         _provider = new ServiceCollection()
             .AddSingleton<IReadOnlyList<DiagramDefinition>>(Diagram.Definitions)
             .AddCommands().AddHierarchyCommandHandlers()
@@ -37,7 +37,7 @@ public class DatabricksContextActionProviderTests : IDisposable
     public void Dispose()
     {
         _provider.Dispose();
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     private string CopyFixture(string name)
@@ -235,6 +235,24 @@ public class DatabricksContextActionProviderTests : IDisposable
         // Assert.
         Assert.IsType<ContextExecutionCompleted>(execution);
         Assert.Contains("task_key: notebook_1", await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ADropOnAFileWithNoJob_IsRefused_AndWritesNothing()
+    {
+        // Arrange.
+        // A pipeline declares no job, so a task dropped on its canvas has nowhere to go.
+        var body = CopyFixture("pipeline.json");
+        var before = await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken);
+        var placement = Target(body, DatabricksNewPlacement.IdFor(400, 200));
+
+        // Act.
+        var execution = await _actions.ExecuteAsync(
+            placement, $"{DatabricksContextActionProvider.AddTaskActionPrefix}notebook", TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.Equal("This file declares no job to add a task to.", Assert.IsType<ContextExecutionFailed>(execution).Message);
+        Assert.Equal(before, await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken));
     }
 
     [Theory]

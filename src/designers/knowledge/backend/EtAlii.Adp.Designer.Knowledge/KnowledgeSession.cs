@@ -40,7 +40,7 @@ namespace EtAlii.Adp.Designer.Knowledge;
 /// with the session's one lock held, together with what is shown.
 /// </para>
 /// </remarks>
-internal sealed class KnowledgeSession : IDesignerSession
+internal sealed class KnowledgeSession : ITableDesignerSession
 {
     private static readonly ILogger _logger = Log.ForContext<KnowledgeSession>();
 

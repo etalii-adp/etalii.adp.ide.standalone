@@ -1,5 +1,4 @@
 using EtAlii.Adp.Context.Wire;
-using EtAlii.Adp.TestSupport.Host;
 using Grpc.Core;
 
 namespace EtAlii.Adp.Backend.Tests;

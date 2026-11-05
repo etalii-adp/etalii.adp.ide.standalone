@@ -8,17 +8,17 @@ public class FileProjectStoreTests : IDisposable
 {
     private static readonly ShortGuid UserId = ShortGuid.FromName("user-1");
 
+    private readonly TestFolder _testFolder = TestFolder.Create("file-project-store");
     private readonly string _appDataRoot;
 
     public FileProjectStoreTests()
     {
-        _appDataRoot = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_appDataRoot);
+        _appDataRoot = _testFolder.Path;
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_appDataRoot);
+        _testFolder.Dispose();
     }
 
     private string CreateRealFolder(string name)

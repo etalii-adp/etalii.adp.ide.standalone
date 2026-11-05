@@ -4,6 +4,10 @@
     <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Documents\EtAlii.Adp.Documents.csproj" />
     <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Diagram\EtAlii.Adp.Diagram.csproj" />
     <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Diagram.Modules\EtAlii.Adp.Diagram.Modules.csproj" />
+    <!-- The four bundled DISL definitions are loaded through it (RdfDefinitions). -->
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Specification.Disl\EtAlii.Adp.Specification.Disl.csproj" />
+    <!-- The module's own binding is read and its templates written through it (RdfDefinitions). -->
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Specification.Fbl\EtAlii.Adp.Specification.Fbl.csproj" />
     <!--
       Core abstractions only. The dependency runs module -> core and never back: core must
       compile and test with this module absent. The piece of core this family leans on -
@@ -23,6 +27,23 @@
   <ItemGroup>
     <!-- This family's own wire payloads, packed into the core Element's Any. -->
     <Protobuf Include="..\..\api\*.proto" ProtoRoot="..\..\api" GrpcServices="None" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      The four DISL definitions bundled from etalii-adp/etalii.adp (src/diagrams/tools/bundle-disl.sh),
+      each with its provenance, embedded as w3c-rdf.dis and w3c-rdf.provenance.json and so on.
+    -->
+    <EmbeddedResource Include="..\..\definition\*.dis" LogicalName="%(Filename)%(Extension)" />
+    <EmbeddedResource Include="..\..\definition\*.provenance.json" LogicalName="%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      The module's own FBL binding of a Turtle or N-Triples body, which the four definitions name as their
+      persistence.binding, and whose templates the four document factories write (RdfDefinitions).
+    -->
+    <EmbeddedResource Include="w3c-turtle.fbl" LogicalName="w3c-turtle.fbl" />
   </ItemGroup>
 
   <ItemGroup>

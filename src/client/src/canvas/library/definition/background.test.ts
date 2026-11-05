@@ -92,6 +92,23 @@ describe("background — wardley's stage bands", () => {
     expect(labels[0]!.y).toBeGreaterThan(extent.height);
   });
 
+  it("draws the rule at a fixed band's start where it asks for one, each fixed band being its own", () => {
+    // A band declared outright rather than once per entry of a collection is not the first of a
+    // list, so its edge is drawn: a separator at the start of the range it stands for.
+    const out = resolveBackground(
+      {
+        bands: [
+          { orientation: "vertical", start: 0, end: 0.25, className: "range-a" },
+          { orientation: "vertical", start: 0.25, end: 1, edge: true, className: "range-b" },
+        ],
+      },
+      source(),
+      extent,
+    );
+
+    expect(out.lines.map((line) => [line.className, line.x1])).toEqual([["range-b-edge", 250]]);
+  });
+
   it("draws nothing when the stage collection is empty, rather than one degenerate band", () => {
     const out = resolveBackground(wardley, source({ ...wardleyModel, stages: [] }), extent);
     expect(out.rects.filter((r) => r.className === "wardley-band")).toEqual([]);

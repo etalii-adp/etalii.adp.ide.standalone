@@ -31,6 +31,7 @@ public sealed class PipelineElementMapper
     public const string StepType = "azure-devops/pipeline+step";
 
     /// <summary>A dependency arrow.</summary>
+    [Relation]
     public const string EdgeType = "azure-devops/pipeline+edge";
 
     /// <summary>A template reference standing where a stage or job would.</summary>

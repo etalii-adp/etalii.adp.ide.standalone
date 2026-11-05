@@ -1,4 +1,4 @@
-using EtAlii.Adp.Documents;
+using EtAlii.Adp.Diagram.C4.Tests.Parity;
 using EtAlii.Adp.Files;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
@@ -12,6 +12,7 @@ namespace EtAlii.Adp.Diagram.C4.Tests;
 /// </summary>
 public class C4LayoutSidecarTests : IDisposable
 {
+    private readonly TestFolder _testFolder = TestFolder.Create("c4-layout-sidecar");
     private readonly string _root;
     private readonly string _bodyPath;
     private readonly C4LayoutSidecar _sidecar = new(new FileWriter());
@@ -33,20 +34,19 @@ public class C4LayoutSidecarTests : IDisposable
 
     public C4LayoutSidecarTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Diagram.C4.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
         _bodyPath = IoPath.Combine(_root, "model.dsl");
         File.WriteAllText(_bodyPath, Model);
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     private (C4Workspace Workspace, C4View View) Load(string dsl = Model)
     {
-        var workspace = C4Parser.Parse(LineDocument.Parse(dsl));
+        var workspace = C4Body.Read(dsl).Workspace;
         return (workspace, workspace.Views[0]);
     }
 
@@ -124,7 +124,7 @@ public class C4LayoutSidecarTests : IDisposable
     {
         (C4Workspace workspace, C4View view) = Load();
         var computed = C4LayoutEngine.Compute(workspace, view, C4Metrics.Default);
-        var authored = new Dictionary<string, C4SidecarPosition> { ["a"] = new(500, 600) };
+        var authored = new Dictionary<string, C4Position> { ["a"] = new(500, 600) };
 
         // Arrange, continued.
         var layout = C4LayoutEngine.Compute(workspace, view, C4Metrics.Default, authored);
@@ -142,7 +142,7 @@ public class C4LayoutSidecarTests : IDisposable
     {
         (C4Workspace workspace, C4View view) = Load();
         var computed = C4LayoutEngine.Compute(workspace, view, C4Metrics.Default);
-        var authored = new Dictionary<string, C4SidecarPosition> { ["a"] = new(500, 600) };
+        var authored = new Dictionary<string, C4Position> { ["a"] = new(500, 600) };
 
         // Arrange, continued.
         var layout = C4LayoutEngine.Compute(workspace, view, C4Metrics.Default, authored);
@@ -159,7 +159,7 @@ public class C4LayoutSidecarTests : IDisposable
         // but the user is told rather than watching their arrangement vanish.
         var dsl = Model.Replace("include *", "include *\n            autoLayout lr", StringComparison.Ordinal);
         (C4Workspace workspace, C4View view) = Load(dsl);
-        var authored = new Dictionary<string, C4SidecarPosition> { ["a"] = new(500, 600) };
+        var authored = new Dictionary<string, C4Position> { ["a"] = new(500, 600) };
 
         // Arrange, continued.
         var layout = C4LayoutEngine.Compute(workspace, view, C4Metrics.Default, authored);
@@ -188,7 +188,7 @@ public class C4LayoutSidecarTests : IDisposable
     public void AnAuthoredPositionForSomethingNotOnTheView_IsIgnoredQuietly()
     {
         (C4Workspace workspace, C4View view) = Load();
-        var authored = new Dictionary<string, C4SidecarPosition> { ["ghost"] = new(500, 600) };
+        var authored = new Dictionary<string, C4Position> { ["ghost"] = new(500, 600) };
 
         // Act.
         var layout = C4LayoutEngine.Compute(workspace, view, C4Metrics.Default, authored);

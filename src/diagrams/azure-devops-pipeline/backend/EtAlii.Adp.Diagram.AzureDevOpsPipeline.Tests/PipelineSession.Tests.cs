@@ -13,9 +13,8 @@ namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline.Tests;
 /// </summary>
 public class PipelineSessionTests : IDisposable
 {
-    private readonly string _workspace = IoPath.Combine(
-        IoPath.GetTempPath(),
-        "adp-pipeline-session-" + Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-pipeline-session");
+    private readonly string _workspace;
 
     private ProjectRoot Root => ProjectRoot.From(_workspace);
 
@@ -23,11 +22,11 @@ public class PipelineSessionTests : IDisposable
     private readonly PipelineElementMapper _mapper = new(PipelineMetrics.Default);
     private readonly PipelineViewState _views = new();
 
-    public PipelineSessionTests() => Directory.CreateDirectory(_workspace);
+    public PipelineSessionTests() => _workspace = _testFolder.Path;
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_workspace);
+        _testFolder.Dispose();
 
         GC.SuppressFinalize(this);
     }

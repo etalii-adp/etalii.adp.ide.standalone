@@ -71,9 +71,9 @@ internal static class DependencyGraphDefinition
     public static IReadOnlyList<ContextPropertyDefinition> Rows(DependencyGraphBody body, string elementId)
     {
         ArgumentNullException.ThrowIfNull(body);
-        if (ElementOf(body.Disl.Diagram, elementId) is not { } element) return [];
-
-        return As(Definition.Rows(element, Env), AsWritten(element));
+        return ElementOf(body.Disl.Diagram, elementId) is not { } element
+            ? []
+            : As(Definition.Rows(element, Env), AsWritten(element));
     }
 
     /// <summary>

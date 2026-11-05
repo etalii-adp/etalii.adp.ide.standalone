@@ -39,6 +39,12 @@ public sealed class CausalLoopContextPropertyProvider(
     /// <summary>The identifier links and loops refer to a variable by.</summary>
     public const string VariableIdProperty = "causal-loop.variable-id";
 
+    /// <summary>The level a variable starts at in a flow page.</summary>
+    public const string VariableStartProperty = "causal-loop.variable-start";
+
+    /// <summary>What pushes a variable from outside the diagram in a flow page.</summary>
+    public const string VariablePushProperty = "causal-loop.variable-push";
+
     /// <summary>The cause end of a link.</summary>
     public const string LinkFromProperty = "causal-loop.link-from";
 
@@ -48,7 +54,7 @@ public sealed class CausalLoopContextPropertyProvider(
     /// <summary>Whether the effect is marked as delayed.</summary>
     public const string LinkDelayedProperty = "causal-loop.link-delayed";
 
-    /// <summary>The author's annotation of strength. Recorded, never evaluated.</summary>
+    /// <summary>The author's statement of strength, and the link's starting strength in a flow page.</summary>
     public const string LinkWeightProperty = "causal-loop.link-weight";
 
     /// <summary>An optional note on the link.</summary>
@@ -131,6 +137,8 @@ public sealed class CausalLoopContextPropertyProvider(
                 VariableLabelProperty => new SetVariableLabelCommand(body, variable.Id, Text(committed, "label")),
                 // The identifier is what links and loops refer to, so restating it carries them.
                 VariableIdProperty => new RenameVariableCommand(body, variable.Id, Text(committed, "name")),
+                VariableStartProperty => new SetVariableFlowCommand(body, variable.Id, "start", Written(committed, "start") as double?),
+                VariablePushProperty => new SetVariableFlowCommand(body, variable.Id, "push", Written(committed, "push") as double?),
                 _ => null,
             };
         }

@@ -1,11 +1,10 @@
 using EtAlii.Adp.Diagram.Modules;
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
 
 namespace EtAlii.Adp.Diagram.Sankey;
 
 /// <summary>Resolves a node or a flow of a <c>.skv</c> document to a selection.</summary>
-public sealed class SankeyContextSourceResolver : DiagramElementSourceResolver<LineDocument, SankeyModel>
+public sealed class SankeyContextSourceResolver : DiagramElementSourceResolver<SankeyBody, SankeyModel>
 {
     private readonly SankeyElementMapper _mapper;
 

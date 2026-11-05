@@ -42,13 +42,15 @@ public class FindingLocationTests
         var program = specification.Environment(DislContext.Element).Compile("self.location()");
 
         // Act.
-        object? LocationOf(DislElement self) => program.Evaluate(new Dictionary<string, object?> { ["self"] = self });
 
         // Assert.
         Assert.Equal(CelOptional.Of(new CelMap { ["file"] = "charts/a.yaml", ["line"] = 4L }), LocationOf(placed));
         Assert.Equal(CelOptional.Of(new CelMap { ["file"] = "b.yaml" }), LocationOf(wholeFile));
         Assert.Equal(CelOptional.Of(new CelMap { ["file"] = "main.yaml", ["line"] = 9L }), LocationOf(primary));
         Assert.Equal(CelOptional.None, LocationOf(unplaced));
+        return;
+
+        object? LocationOf(DislElement self) => program.Evaluate(new Dictionary<string, object?> { ["self"] = self });
     }
 
     [Fact]

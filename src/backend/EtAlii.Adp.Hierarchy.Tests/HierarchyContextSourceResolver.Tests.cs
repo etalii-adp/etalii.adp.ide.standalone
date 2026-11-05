@@ -8,6 +8,7 @@ namespace EtAlii.Adp.Hierarchy.Tests;
 
 public class HierarchyContextSourceResolverTests : IDisposable
 {
+    private readonly TestFolder _testFolder = TestFolder.Create("source-resolver");
     private readonly string _root;
     private readonly HierarchyModelStore _store = new(TestToolRouters.For(), TimeSpan.FromMinutes(5));
     private readonly HierarchyContextSourceResolver _resolver;
@@ -15,8 +16,7 @@ public class HierarchyContextSourceResolverTests : IDisposable
 
     public HierarchyContextSourceResolverTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
         _resolver = ResolverOver(_store, new DiagramFileRouter(new EmptyCatalog()), EmptyEditorResolver);
     }
 
@@ -30,7 +30,7 @@ public class HierarchyContextSourceResolverTests : IDisposable
     public void Dispose()
     {
         _store.Dispose();
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     private string CreateFolder(params string[] segments)

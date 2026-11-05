@@ -79,7 +79,7 @@ TMPD=$(mktemp -d) || { echo "RESULT=aborted-no-temp-dir"; exit 3; }
 
 # --- The scratch-worktree guard, as the procedure writes it. Taken from develop, not from the
 # --- branch being gated, so a branch that edits the guard cannot weaken the guard that gates it.
-git -C "$MAIN" show develop:.spec-workflow/steering/processes.md 2>/dev/null | extract_guard > "$TMPD/guard.sh"
+git -C "$MAIN" show develop:docs/steering/processes.md 2>/dev/null | extract_guard > "$TMPD/guard.sh"
 GRC=("${PIPESTATUS[@]}")
 if [ "${GRC[0]}" != 0 ]; then echo "RESULT=aborted-cannot-read-procedure (git show exit ${GRC[0]})"; exit 3; fi
 if [ "${GRC[1]}" != 0 ]; then echo "RESULT=aborted-guard-not-intact (extract_guard exit ${GRC[1]}: 2 none, 3 several, 4 part missing)"; exit 3; fi

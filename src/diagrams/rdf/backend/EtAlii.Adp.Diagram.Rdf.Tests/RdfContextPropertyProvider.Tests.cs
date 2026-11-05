@@ -23,6 +23,7 @@ public class RdfContextPropertyProviderTests : IDisposable
         + "\r\n"
         + "ex:bob ex:name \"Bob\" .\r\n";
 
+    private readonly TestFolder _testFolder = TestFolder.Create("rdf-context-property-provider");
     private readonly string _root;
     private readonly ServiceProvider _provider;
     private readonly RdfContextPropertyProvider _properties;
@@ -30,8 +31,7 @@ public class RdfContextPropertyProviderTests : IDisposable
 
     public RdfContextPropertyProviderTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
         _provider = new ServiceCollection()
             .AddSingleton<IReadOnlyList<DiagramDefinition>>(Diagram.Definitions)
             .AddCommands().AddHierarchyCommandHandlers()
@@ -46,7 +46,7 @@ public class RdfContextPropertyProviderTests : IDisposable
     public void Dispose()
     {
         _provider.Dispose();
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     private string WriteBody(string content)

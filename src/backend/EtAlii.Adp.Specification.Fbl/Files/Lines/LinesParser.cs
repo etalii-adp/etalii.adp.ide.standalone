@@ -10,7 +10,7 @@ namespace EtAlii.Adp.Specification.Fbl.Lines;
 /// A statement of the <c>lines</c> or <c>blocks</c> family (FBL §4.6, §4.7): one line, or, when it
 /// opens a block, the lines up to and including the one holding the matching <c>}</c>.
 /// </summary>
-internal sealed class Statement : Entry
+internal class Statement : Entry
 {
     public required int FirstLine { get; init; }
 
@@ -144,7 +144,7 @@ internal sealed class LinesParser(BodyText text, BoundedRegex? comment, bool blo
         return (net, !inString && last == '{');
     }
 
-    private static int[] ByteOffsets(string content, int start)
+    internal static int[] ByteOffsets(string content, int start)
     {
         var offsets = new int[content.Length + 1];
         var offset = start;

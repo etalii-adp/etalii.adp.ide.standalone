@@ -49,10 +49,23 @@ public static class TolerantYaml
             return new TolerantYamlUnreadable(new TolerantYamlFailure(relativePath, exception.Message, 0));
         }
 
+        return Read(new StringReader(text), relativePath);
+    }
+
+    /// <summary>
+    /// Parses <paramref name="text"/>, naming it <paramref name="relativePath"/> in anything it
+    /// has to report: the read for a caller that holds the file's text rather than its path, as a
+    /// persistence plugin holds the bytes it is handed (<c>PluginFileYaml</c>).
+    /// </summary>
+    public static TolerantYamlResult Read(TextReader text, string relativePath)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        ArgumentNullException.ThrowIfNull(relativePath);
+
         try
         {
             var yaml = new YamlStream();
-            yaml.Load(new StringReader(text));
+            yaml.Load(text);
             // An empty file loads to no documents at all. Valid YAML, nothing to recognise.
             return new TolerantYamlDocument(yaml.Documents.Count == 0 ? null : yaml.Documents[0].RootNode);
         }

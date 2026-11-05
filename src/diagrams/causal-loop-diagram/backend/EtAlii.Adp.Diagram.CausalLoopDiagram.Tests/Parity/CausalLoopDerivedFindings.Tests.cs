@@ -14,14 +14,14 @@ namespace EtAlii.Adp.Diagram.CausalLoopDiagram.Tests.Parity;
 /// </remarks>
 public class CausalLoopDerivedFindingsTests
 {
-    public static TheoryData<string> Documents() => [.. CausalLoopTranscript.Corpus()];
+    public static TheoryData<string> Documents() => [.. CausalLoopCorpus.Paths()];
 
     [Theory]
     [MemberData(nameof(Documents))]
     public async Task EveryFinding_IsTheHandWrittenOne(string relative)
     {
         // Arrange.
-        var text = await File.ReadAllTextAsync(Path.Combine(CausalLoopTranscript.SourceFolder, relative), TestContext.Current.CancellationToken);
+        var text = await File.ReadAllTextAsync(Path.Combine(CausalLoopCorpus.SourceFolder, relative), TestContext.Current.CancellationToken);
 
         // Act.
         var actual = (await Validate(text)).Select(Text).ToList();
@@ -47,8 +47,8 @@ public class CausalLoopDerivedFindingsTests
     public async Task TheUnlabelledLoops_AreReportedInTheToolsOrder_NotDislsSortedOne()
     {
         // Arrange: weight-forms.cld is the document of the corpus on which the two orders differ.
-        var relative = CausalLoopTranscript.Corpus().Single(path => path.EndsWith("/weight-forms.cld", StringComparison.Ordinal));
-        var text = await File.ReadAllTextAsync(Path.Combine(CausalLoopTranscript.SourceFolder, relative), TestContext.Current.CancellationToken);
+        var relative = CausalLoopCorpus.Paths().Single(path => path.EndsWith("/weight-forms.cld", StringComparison.Ordinal));
+        var text = await File.ReadAllTextAsync(Path.Combine(CausalLoopCorpus.SourceFolder, relative), TestContext.Current.CancellationToken);
 
         // Act.
         var loops = (await Validate(text))
@@ -64,8 +64,8 @@ public class CausalLoopDerivedFindingsTests
     public async Task ADocumentThatDeclaresAVariableTwice_HasNoFindings_WhereTheHandWrittenOnesThrew()
     {
         // Arrange.
-        var relative = CausalLoopTranscript.Corpus().Single(path => path.EndsWith("/duplicate-variable.cld", StringComparison.Ordinal));
-        var text = await File.ReadAllTextAsync(Path.Combine(CausalLoopTranscript.SourceFolder, relative), TestContext.Current.CancellationToken);
+        var relative = CausalLoopCorpus.Paths().Single(path => path.EndsWith("/duplicate-variable.cld", StringComparison.Ordinal));
+        var text = await File.ReadAllTextAsync(Path.Combine(CausalLoopCorpus.SourceFolder, relative), TestContext.Current.CancellationToken);
 
         // Act.
         var oracle = Record.Exception(() => HandWrittenCausalLoopFindings.Of(text));

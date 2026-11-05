@@ -1,0 +1,16 @@
+title Submap addresses
+anchor User [0.95, 0.6]
+submap Beside [0.7, 0.4] url(besideMap)
+submap AtRoot [0.6, 0.5] url(rootMap)
+submap Remote [0.5, 0.6] url(remoteMap)
+submap Outside [0.4, 0.7] url(outsideMap)
+submap Nowhere [0.3, 0.8] url(missingMap)
+submap Undefined [0.2, 0.3] url(neverDefined)
+url besideMap [beside.owm]
+url rootMap [at-root.owm]
+url remoteMap [https://example.com/remote.owm]
+url outsideMap [../outside.owm]
+url missingMap [missing.owm]
+url unreferenced [also-missing.owm]
+User->Beside
+User->AtRoot

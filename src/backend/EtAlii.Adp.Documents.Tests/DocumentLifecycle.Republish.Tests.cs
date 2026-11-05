@@ -38,13 +38,14 @@ public class DocumentLifecycleRepublishTests : IDisposable
 {
     private const string Body = "the unchanged body";
 
-    private readonly string _folder = IoPath.Combine(IoPath.GetTempPath(), "adp-lifecycle-republish-" + Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-lifecycle-republish");
+    private readonly string _folder;
 
-    public DocumentLifecycleRepublishTests() => Directory.CreateDirectory(_folder);
+    public DocumentLifecycleRepublishTests() => _folder = _testFolder.Path;
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_folder);
+        _testFolder.Dispose();
         GC.SuppressFinalize(this);
     }
 

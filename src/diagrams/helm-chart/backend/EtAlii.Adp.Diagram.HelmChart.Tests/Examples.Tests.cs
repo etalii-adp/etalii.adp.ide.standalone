@@ -1,7 +1,5 @@
 using Xunit;
 
-using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
-
 namespace EtAlii.Adp.Diagram.HelmChart.Tests;
 
 /// <summary>
@@ -67,18 +65,6 @@ public class ExamplesTests
         Assert.Contains(chart.Values, values => values is { RelativePath: "values-prod.yaml", IsDefault: false });
     }
 
-    /// <summary>The module's own examples folder, found by walking up from the test binary.</summary>
-    private static string Example(string name)
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-        {
-            var candidate = IoPath.Combine(directory.FullName, "src", "diagrams", "helm-chart", "examples", name);
-            if (Directory.Exists(candidate))
-            {
-                return candidate;
-            }
-        }
-
-        throw new InvalidOperationException($"The example '{name}' was not found above the test binary.");
-    }
+    /// <summary>The module's own examples folder.</summary>
+    private static string Example(string name) => RepositoryPaths.Under("src", "diagrams", "helm-chart", "examples", name);
 }

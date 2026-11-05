@@ -1,5 +1,3 @@
-using Xunit;
-
 namespace EtAlii.Adp.Diagram.HelmChart.Tests.Parity;
 
 /// <summary>
@@ -12,24 +10,4 @@ namespace EtAlii.Adp.Diagram.HelmChart.Tests.Parity;
 /// an intended change is fixed by regenerating - <c>ADP_WRITE_PARITY_TRANSCRIPTS=1</c> rewrites the
 /// file before comparing - and the diff of the checked-in file is then the review of that change.
 /// </remarks>
-public sealed class HelmTranscriptTests
-{
-    [Fact]
-    public async Task TheModule_ReproducesTheCheckedInTranscript_ByteForByte()
-    {
-        // Arrange.
-        var cancellationToken = TestContext.Current.CancellationToken;
-
-        // Act.
-        var generated = await HelmTranscript.GenerateAsync(cancellationToken);
-        if (Environment.GetEnvironmentVariable("ADP_WRITE_PARITY_TRANSCRIPTS") == "1")
-        {
-            await File.WriteAllBytesAsync(HelmTranscript.CheckedInPath, generated, cancellationToken);
-        }
-
-        var checkedIn = await File.ReadAllBytesAsync(HelmTranscript.CheckedInPath, cancellationToken);
-
-        // Assert.
-        Assert.True(checkedIn.AsSpan().SequenceEqual(generated), TranscriptText.FirstDifference(checkedIn, generated));
-    }
-}
+public sealed class HelmTranscriptTests : TranscriptTests<HelmTranscript>;

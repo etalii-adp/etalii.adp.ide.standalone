@@ -1,0 +1,7 @@
+sankey: 1
+# B16: entries written as flow mappings.
+nodes:
+  - {id: a, name: A}
+  - {id: b, name: B, color: blue}
+flows:
+  - {from: a, to: b, value: 1}

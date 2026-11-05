@@ -22,14 +22,6 @@ namespace EtAlii.Adp.Diagram.WardleyMap;
 /// </remarks>
 public sealed class WardleyElementMapper
 {
-    private readonly WardleyIdentities _identities;
-
-    public WardleyElementMapper(WardleyIdentities identities)
-    {
-        ArgumentNullException.ThrowIfNull(identities);
-        _identities = identities;
-    }
-
     /// <summary>
     /// Every element of <paramref name="map"/> as one add - the baseline a connection opens
     /// with. One message rather than a stream of per-element ones, because the whole map is
@@ -40,19 +32,8 @@ public sealed class WardleyElementMapper
         ArgumentNullException.ThrowIfNull(map);
         ArgumentNullException.ThrowIfNull(identities);
 
-        var ids = Index(identities);
-        var elements = new List<DiagramElement> { EvolutionAxisElement(map) };
-
-        // Pipeline children first, so a component that is also a pipeline parent is emitted
-        // with its children already known - and so a child's own element carries its parent.
-        // var childOf = new Dictionary<string, WardleyPipeline>(StringComparer.Ordinal);
-        // foreach (var pipeline in map.Pipelines)
-        // {
-        //     foreach (var child in pipeline.Children)
-        //     {
-        //         childOf[WardleyIdentityKeys.Of(pipeline, child)] = pipeline;
-        //     }
-        // }
+        var ids = new Ids(map, identities);
+        var elements = new List<DiagramElement> { DiagramElementOf(map) };
 
         foreach (var component in map.Components)
         {
@@ -64,7 +45,7 @@ public sealed class WardleyElementMapper
             var parent = map.Components.FirstOrDefault(candidate => candidate.Name == pipeline.Parent);
             foreach (var child in pipeline.Children)
             {
-                elements.Add(PipelineChildElement(pipeline, child, parent, ids));
+                elements.Add(PipelineChildElement(child, parent, ids));
             }
         }
 
@@ -109,11 +90,11 @@ public sealed class WardleyElementMapper
     /// <para>
     /// <b>Two kinds carry a placeholder position and must never be judged by it.</b> A link is
     /// emitted at (0, 0) because it has no position of its own - it is drawn between its
-    /// endpoints - and the evolution axis is emitted at (0, 0) because it is the map frame
+    /// endpoints - and the diagram element is emitted at (0, 0) because it is the map itself
     /// rather than a thing on the map. A plain "is the point inside the rectangle" filter would
-    /// therefore keep every link and the axis only while the reader happens to be looking at the
-    /// top-left corner, and cull them everywhere else. The axis is always kept; a link is kept
-    /// when an endpoint is kept.
+    /// therefore keep every link and the diagram element only while the reader happens to be
+    /// looking at the top-left corner, and cull them everywhere else. The diagram element is
+    /// always kept; a link is kept when an endpoint is kept.
     /// </para>
     /// <para>
     /// A visible component pulls in the components it links to, the way the mindmap mapper pulls
@@ -141,8 +122,8 @@ public sealed class WardleyElementMapper
             return all;
         }
 
-        var ids = Index(identities);
-        var kept = new HashSet<string>(StringComparer.Ordinal) { WardleyElementTypes.EvolutionAxisId };
+        var ids = new Ids(map, identities);
+        var kept = new HashSet<string>(StringComparer.Ordinal) { WardleyElementTypes.DiagramId };
 
         // The components in view, and then the ones they link to, so no link dangles.
         var inView = map.Components
@@ -157,17 +138,17 @@ public sealed class WardleyElementMapper
 
         foreach (var component in map.Components.Where(component => reachable.Contains(component.Name)))
         {
-            kept.Add(Id(ids, WardleyIdentityKind.Component, WardleyIdentityKeys.Of(component)));
+            kept.Add(ids.Of(WardleyIdentityKind.Component, component.Line));
         }
 
         foreach (var link in map.Links.Where(link => reachable.Contains(link.Source) && reachable.Contains(link.Target)))
         {
-            kept.Add(Id(ids, WardleyIdentityKind.Link, WardleyIdentityKeys.Of(link)));
+            kept.Add(ids.Of(WardleyIdentityKind.Link, link.Line));
         }
 
         foreach (var attitude in map.Attitudes.Where(attitude => Overlaps(viewport, attitude)))
         {
-            kept.Add(Id(ids, WardleyIdentityKind.Attitude, WardleyIdentityKeys.Of(attitude)));
+            kept.Add(ids.Of(WardleyIdentityKind.Attitude, attitude.Line));
         }
 
         // The remaining kinds are single points and are judged as such. Filtered back over the
@@ -188,7 +169,7 @@ public sealed class WardleyElementMapper
     /// kind added later at (0, 0) cannot slip into being filtered by a position it does not have.
     /// </remarks>
     private static bool IsPointInView(DiagramElement element, DiagramViewport viewport) =>
-        element.Type is not (WardleyElementTypes.Link or WardleyElementTypes.EvolutionAxis)
+        element.Type is not (WardleyElementTypes.Link or WardleyElementTypes.Diagram)
         && Contains(viewport, (element.X, element.Y));
 
     private static bool Contains(DiagramViewport viewport, (double X, double Y) point) =>
@@ -210,7 +191,7 @@ public sealed class WardleyElementMapper
         ArgumentNullException.ThrowIfNull(map);
         ArgumentNullException.ThrowIfNull(identities);
 
-        var ids = Index(identities);
+        var ids = new Ids(map, identities);
         var deltas = new List<DiagramDelta>();
 
         foreach (var pipeline in map.Pipelines.Where(candidate => candidate.Children.Count > 0))
@@ -224,7 +205,7 @@ public sealed class WardleyElementMapper
             }
 
             var children = pipeline.Children
-                .Select(child => Id(ids, WardleyIdentityKind.PipelineChild, WardleyIdentityKeys.Of(pipeline, child)))
+                .Select(child => ids.Of(WardleyIdentityKind.PipelineChild, child.Line))
                 .Where(id => id.Length > 0)
                 .ToArray();
 
@@ -237,27 +218,43 @@ public sealed class WardleyElementMapper
         return deltas;
     }
 
-    private static Dictionary<(string Kind, string Key), string> Index(IReadOnlyList<WardleyIdentityEntry> identities)
+    /// <summary>
+    /// The ids of one map's elements: each element's own, by the line that declares it, and the
+    /// one a statement naming a key reaches, which is its first holder's (finding B9, ruling 3).
+    /// </summary>
+    private sealed class Ids
     {
-        var ids = new Dictionary<(string, string), string>();
-        foreach (var entry in identities)
+        private readonly Dictionary<(string Kind, uint Line), string> _byLine = [];
+        private readonly Dictionary<(string Kind, string Key), string> _byKey = [];
+
+        public Ids(WardleyMap map, IReadOnlyList<WardleyIdentityEntry> identities)
         {
-            ids.TryAdd((entry.Kind, entry.Key), entry.Id);
+            foreach (var entry in identities)
+            {
+                _byKey.TryAdd((entry.Kind, entry.Key), entry.Id);
+            }
+
+            foreach (var holder in map.Holders)
+            {
+                if (_byKey.TryGetValue((holder.Kind, holder.Key), out var id))
+                {
+                    _byLine.TryAdd((holder.Kind, holder.Line), id);
+                }
+            }
         }
 
-        return ids;
-    }
+        /// <summary>The id of the element of <paramref name="kind"/> declared on <paramref name="line"/>, or empty.</summary>
+        public string Of(string kind, uint line) => _byLine.GetValueOrDefault((kind, line), "");
 
-    private static string Id(Dictionary<(string Kind, string Key), string> ids, string kind, string key) =>
-        ids.TryGetValue((kind, key), out var id) ? id : "";
+        /// <summary>The id of the first holder of <paramref name="key"/>, or empty.</summary>
+        public string Named(string kind, string key) => _byKey.GetValueOrDefault((kind, key), "");
+    }
 
     private DiagramElement ComponentElement(
         WardleyMap map,
         WardleyComponent component,
-        Dictionary<(string Kind, string Key), string> ids)
+        Ids ids)
     {
-        _ = _identities;
-
         var payload = new WardleyElementPayload
         {
             Name = component.Name,
@@ -277,7 +274,10 @@ public sealed class WardleyElementMapper
             payload.LabelOffset = new WardleyLabelOffsetPayload { X = offset.X, Y = offset.Y };
         }
 
-        if (map.Evolves.FirstOrDefault(evolve => evolve.Name == component.Name) is { } evolving)
+        // A later holder of a repeated name shows no evolution: the `evolve` naming it attaches to
+        // the first holder (ruling 3).
+        if (WardleyHolders.IsFirstHolder(map, component)
+            && map.Evolves.FirstOrDefault(evolve => evolve.Name == component.Name) is { } evolving)
         {
             payload.Evolve = new WardleyEvolvePayload
             {
@@ -289,7 +289,7 @@ public sealed class WardleyElementMapper
 
         (double x, double y) = WardleyAxis.ToPoint(component.Position);
         return Element(
-            Id(ids, WardleyIdentityKind.Component, WardleyIdentityKeys.Of(component)),
+            ids.Of(WardleyIdentityKind.Component, component.Line),
             x,
             y,
             WardleyElementTypes.Element,
@@ -297,10 +297,9 @@ public sealed class WardleyElementMapper
     }
 
     private static DiagramElement PipelineChildElement(
-        WardleyPipeline pipeline,
         WardleyPipelineChild child,
         WardleyComponent? parent,
-        Dictionary<(string Kind, string Key), string> ids)
+        Ids ids)
     {
         // A child takes its visibility from its parent - the format gives it none of its own,
         // which is why only its maturity may be dragged (Requirement 7.4).
@@ -308,7 +307,7 @@ public sealed class WardleyElementMapper
         var position = new WardleyCoordinate(visibility, child.Maturity);
         var parentId = parent is null
             ? ""
-            : Id(ids, WardleyIdentityKind.Component, WardleyIdentityKeys.Of(parent));
+            : ids.Of(WardleyIdentityKind.Component, parent.Line);
 
         var payload = new WardleyElementPayload
         {
@@ -322,19 +321,19 @@ public sealed class WardleyElementMapper
 
         (double x, double y) = WardleyAxis.ToPoint(position);
         return Element(
-            Id(ids, WardleyIdentityKind.PipelineChild, WardleyIdentityKeys.Of(pipeline, child)),
+            ids.Of(WardleyIdentityKind.PipelineChild, child.Line),
             x,
             y,
             WardleyElementTypes.Element,
             payload);
     }
 
-    private static DiagramElement LinkElement(WardleyLink link, Dictionary<(string Kind, string Key), string> ids)
+    private static DiagramElement LinkElement(WardleyLink link, Ids ids)
     {
         var payload = new WardleyLinkPayload
         {
-            SourceId = Id(ids, WardleyIdentityKind.Component, link.Source),
-            TargetId = Id(ids, WardleyIdentityKind.Component, link.Target),
+            SourceId = ids.Named(WardleyIdentityKind.Component, link.Source),
+            TargetId = ids.Named(WardleyIdentityKind.Component, link.Target),
             IsFlow = link.Kind == WardleyLinkKind.Flow,
             Context = link.Context,
             // Carried even when the ids resolve, so a canvas or a problem can name the endpoint
@@ -344,14 +343,14 @@ public sealed class WardleyElementMapper
         };
 
         // A link has no position of its own: it is drawn between its endpoints.
-        return Element(Id(ids, WardleyIdentityKind.Link, WardleyIdentityKeys.Of(link)), 0d, 0d, WardleyElementTypes.Link, payload);
+        return Element(ids.Of(WardleyIdentityKind.Link, link.Line), 0d, 0d, WardleyElementTypes.Link, payload);
     }
 
-    private static DiagramElement NoteElement(WardleyNote note, Dictionary<(string Kind, string Key), string> ids)
+    private static DiagramElement NoteElement(WardleyNote note, Ids ids)
     {
         (double x, double y) = WardleyAxis.ToPoint(note.Position);
         return Element(
-            Id(ids, WardleyIdentityKind.Note, WardleyIdentityKeys.Of(note)),
+            ids.Of(WardleyIdentityKind.Note, note.Line),
             x,
             y,
             WardleyElementTypes.Note,
@@ -360,7 +359,7 @@ public sealed class WardleyElementMapper
 
     private static DiagramElement AnnotationElement(
         WardleyAnnotation annotation,
-        Dictionary<(string Kind, string Key), string> ids)
+        Ids ids)
     {
         var payload = new WardleyAnnotationPayload { Number = annotation.Number, Text = annotation.Text };
         foreach (var occurrence in annotation.Occurrences)
@@ -373,7 +372,7 @@ public sealed class WardleyElementMapper
         // core Element has one position and Requirement 6.8 says none may be lost.
         (double x, double y) = WardleyAxis.ToPoint(annotation.Occurrences[0]);
         return Element(
-            Id(ids, WardleyIdentityKind.Annotation, WardleyIdentityKeys.Of(annotation)),
+            ids.Of(WardleyIdentityKind.Annotation, annotation.Line),
             x,
             y,
             WardleyElementTypes.Annotation,
@@ -382,11 +381,11 @@ public sealed class WardleyElementMapper
 
     private static DiagramElement AcceleratorElement(
         WardleyAccelerator accelerator,
-        Dictionary<(string Kind, string Key), string> ids)
+        Ids ids)
     {
         (double x, double y) = WardleyAxis.ToPoint(accelerator.Position);
         return Element(
-            Id(ids, WardleyIdentityKind.Accelerator, WardleyIdentityKeys.Of(accelerator)),
+            ids.Of(WardleyIdentityKind.Accelerator, accelerator.Line),
             x,
             y,
             WardleyElementTypes.Accelerator,
@@ -399,13 +398,13 @@ public sealed class WardleyElementMapper
 
     private static DiagramElement AttitudeElement(
         WardleyAttitude attitude,
-        Dictionary<(string Kind, string Key), string> ids)
+        Ids ids)
     {
         (double x, double y) = WardleyAxis.ToPoint(attitude.From);
         (double x2, double y2) = WardleyAxis.ToPoint(attitude.To);
 
         return Element(
-            Id(ids, WardleyIdentityKind.Attitude, WardleyIdentityKeys.Of(attitude)),
+            ids.Of(WardleyIdentityKind.Attitude, attitude.Line),
             x,
             y,
             WardleyElementTypes.Attitude,
@@ -416,26 +415,21 @@ public sealed class WardleyElementMapper
             });
     }
 
-    private static DiagramElement EvolutionAxisElement(WardleyMap map)
+    /// <summary>The map itself, carrying what the definition's `metamodel.diagram` declares, as the document states it.</summary>
+    private static DiagramElement DiagramElementOf(WardleyMap map)
     {
-        var payload = new WardleyEvolutionAxisPayload
+        var payload = new WardleyDiagramPayload
         {
             Title = map.Title,
+            Style = map.Style,
             Width = map.Size?.Width ?? 0d,
             Height = map.Size?.Height ?? 0d,
+            AnnotationsPosition = map.AnnotationsPosition is { } position
+                ? new WardleyPositionPayload { Visibility = position.Visibility, Maturity = position.Maturity }
+                : null,
         };
 
-        foreach (var stage in WardleyEvolution.Stages)
-        {
-            payload.Stages.Add(new WardleyEvolutionStagePayload
-            {
-                Label = stage.Label,
-                Start = stage.Start,
-                End = stage.End,
-            });
-        }
-
-        return Element(WardleyElementTypes.EvolutionAxisId, 0d, 0d, WardleyElementTypes.EvolutionAxis, payload);
+        return Element(WardleyElementTypes.DiagramId, 0d, 0d, WardleyElementTypes.Diagram, payload);
     }
 
     /// <summary>The address a `url(name)` reference resolves to, or empty when nothing defines it.</summary>

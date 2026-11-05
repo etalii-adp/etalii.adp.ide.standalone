@@ -11,17 +11,17 @@ namespace EtAlii.Adp.Diagram.Rdf.Tests;
 /// </summary>
 public class SkosRegistrationLanguageTests : IDisposable
 {
+    private readonly TestFolder _testFolder = TestFolder.Create("rdf-skos-registration-language");
     private readonly string _root;
 
     public SkosRegistrationLanguageTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     private string Write(string content)

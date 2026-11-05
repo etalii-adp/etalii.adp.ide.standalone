@@ -5,7 +5,7 @@ namespace EtAlii.Adp.Specification.Disl;
 
 /// <summary>
 /// Step 6 of loading (DISL §14.1): the metamodel's types with their supertypes resolved, their C3
-/// linearisations computed, and their attributes, containment and label attribute merged (§4.7).
+/// linearisations computed, and their attributes, containment, label attribute and relation flags merged (§4.7).
 /// </summary>
 internal static class DislInheritance
 {
@@ -31,7 +31,8 @@ internal static class DislInheritance
         Linearise(relations, "/metamodel/relations", diagnostics);
 
         var all = types.Values.Concat(relations.Values).ToDictionary(type => type.Name, StringComparer.Ordinal);
-        var known = new TypeNames(enums.Keys, dataTypes, all.Keys);
+        var dataTypeDeclarations = DislJson.Members(metamodel, "dataTypes").ToDictionary(member => member.Name, member => member.Value, StringComparer.Ordinal);
+        var known = new TypeNames(enums.Keys, dataTypes, all.Keys, dataTypeDeclarations);
         foreach (var type in all.Values)
         {
             var section = type.IsRelation ? "/metamodel/relations" : "/metamodel/types";
@@ -43,6 +44,7 @@ internal static class DislInheritance
             relation.Source = End(relation, "source", all, pointer, diagnostics);
             relation.Target = End(relation, "target", all, pointer, diagnostics);
         }
+        Flags(relations, diagnostics);
 
         var diagram = metamodel.TryGetProperty("diagram", out var diagramJson) ? diagramJson : default;
         var diagramAttributes = Attributes(diagram, "diagram", "/metamodel/diagram", known, diagnostics);
@@ -170,6 +172,9 @@ internal static class DislInheritance
             ?? merged.Values.FirstOrDefault(attribute => attribute.Type == "string")?.Name;
     }
 
+    private static double? NumberBound(JsonElement json, string name) =>
+        json.ValueKind == JsonValueKind.Object && json.TryGetProperty(name, out var bound) && bound.ValueKind == JsonValueKind.Number ? bound.GetDouble() : null;
+
     private static bool DeclaresOwn(DislType type, string attribute) =>
         DislJson.Members(type.Json, "attributes").Any(member => member.Name == attribute);
 
@@ -205,11 +210,99 @@ internal static class DislInheritance
             var many = JsonProperties.Bool(member.Value, "many");
             attributes[member.Name] = new DislAttribute(member.Name, type ?? "json", many, literalDefault, declaredBy, member.Value)
             {
+                // A constrained primitive's bounds (§4.4) are the attribute's where it states none of its own.
+                Min = NumberBound(member.Value, "min") ?? known.Bound(type, "min"),
+                Max = NumberBound(member.Value, "max") ?? known.Bound(type, "max"),
                 DefaultValue = literalDefault is { } literal ? DislLiterals.FromJson(literal, type ?? "json", many, known.DataTypes) : null,
                 FixedValue = member.Value.TryGetProperty("fixed", out var declaredFixed) ? DislLiterals.FromJson(declaredFixed, type ?? "json", many, known.DataTypes) : null,
+                Fields = Fields(type, declaredBy, known, new HashSet<string>(StringComparer.Ordinal)),
             };
         }
         return attributes;
+    }
+
+    /// <summary>
+    /// The fields of the struct data type (§4.4) <paramref name="type"/> names, each with its bounds and its own fields; none
+    /// for any other type. A struct already being expanded on the way here (<paramref name="expanding"/>) has none, so a
+    /// struct that holds itself does not expand forever.
+    /// </summary>
+    private static IReadOnlyList<DislAttribute> Fields(string? type, string declaredBy, TypeNames known, IReadOnlySet<string> expanding)
+    {
+        if (type is null || expanding.Contains(type) || known.DeclarationOf(type) is not { ValueKind: JsonValueKind.Object } declaration || !declaration.TryGetProperty("fields", out _)) return [];
+        var inner = new HashSet<string>(expanding, StringComparer.Ordinal) { type };
+        return
+        [
+            .. DislJson.Members(declaration, "fields").Select(member =>
+            {
+                var fieldType = JsonProperties.String(member.Value, "type");
+                return new DislAttribute(member.Name, fieldType ?? "json", JsonProperties.Bool(member.Value, "many"), null, declaredBy, member.Value)
+                {
+                    Min = NumberBound(member.Value, "min") ?? known.Bound(fieldType, "min"),
+                    Max = NumberBound(member.Value, "max") ?? known.Bound(fieldType, "max"),
+                    Fields = Fields(fieldType, declaredBy, known, inner),
+                };
+            }),
+        ];
+    }
+
+    /// <summary>A relation flag (§4.9): its name, its default, and what a relation type states of it.</summary>
+    private sealed record RelationFlag(string Name, bool Default, Func<DislType, bool?> Stated);
+
+    private static readonly RelationFlag[] RelationFlags =
+    [
+        new("directed", true, type => type.StatedDirected),
+        new("allowSelfLoops", false, type => type.StatedAllowSelfLoops),
+        new("allowParallel", true, type => type.StatedAllowParallel),
+    ];
+
+    /// <summary>
+    /// Each relation type's <c>directed</c>, <c>allowSelfLoops</c> and <c>allowParallel</c> (DISL 0.6, §4.7): the value of
+    /// the nearest type of its linearisation that states it, else the §4.9 default. A stated flag only narrows every direct
+    /// supertype's value (<c>true</c> to <c>false</c>; <c>directed</c> never differs), and direct supertypes that differ in a
+    /// flag the type does not state are an error, as for conflicting inherited attributes.
+    /// </summary>
+    private static void Flags(OrderedDictionary<string, DislType> relations, List<LoadDiagnostic> diagnostics)
+    {
+        foreach (var relation in relations.Values)
+        {
+            relation.Directed = Effective(relation, RelationFlags[0]);
+            relation.AllowSelfLoops = Effective(relation, RelationFlags[1]);
+            relation.AllowParallel = Effective(relation, RelationFlags[2]);
+        }
+        foreach (var relation in relations.Values)
+        {
+            var pointer = JsonPointer.Append("/metamodel/relations", relation.Name);
+            foreach (var flag in RelationFlags)
+            {
+                var inherited = relation.Extends.Select(parent => (Parent: parent, Value: Effective(relations[parent], flag))).ToList();
+                if (flag.Stated(relation) is { } stated)
+                {
+                    foreach ((string parent, bool value) in inherited)
+                    {
+                        if (flag.Name == "directed" && stated != value)
+                        {
+                            diagnostics.Add(DislLoader.Error(JsonPointer.Append(pointer, flag.Name), $"'{relation.Name}' states {flag.Name} {Text(stated)}, which differs from the {Text(value)} of its supertype '{parent}' (DISL §4.7)."));
+                        }
+                        else if (flag.Name != "directed" && stated && !value)
+                        {
+                            diagnostics.Add(DislLoader.Error(JsonPointer.Append(pointer, flag.Name), $"'{relation.Name}' states {flag.Name} true, which widens the false of its supertype '{parent}'; a subtype may only narrow it (DISL §4.7)."));
+                        }
+                    }
+                }
+                else if (inherited.Select(supertype => supertype.Value).Distinct().Count() > 1)
+                {
+                    var given = string.Join(", ", inherited.Select(supertype => $"{Text(supertype.Value)} from '{supertype.Parent}'"));
+                    diagnostics.Add(DislLoader.Error(pointer, $"'{relation.Name}' inherits {flag.Name} differently, {given}, and does not redeclare it (DISL §4.7)."));
+                }
+            }
+        }
+
+        return;
+
+        bool Effective(DislType relation, RelationFlag flag) =>
+            relation.Linearisation.Select(name => relations.TryGetValue(name, out var type) ? flag.Stated(type) : null).FirstOrDefault(value => value is not null) ?? flag.Default;
+
+        static string Text(bool value) => value ? "true" : "false";
     }
 
     /// <summary>A relation end (§4.9): a TypeRef, a TypeRef[] or a RelationEnd, its types resolved.</summary>
@@ -239,7 +332,7 @@ internal static class DislInheritance
 }
 
 /// <summary>The names an attribute's type may be: a primitive, an enum, a data type, or a node or relation type (DISL §4.3).</summary>
-internal sealed class TypeNames(IEnumerable<string> enums, IReadOnlySet<string> dataTypes, IEnumerable<string> types)
+internal sealed class TypeNames(IEnumerable<string> enums, IReadOnlySet<string> dataTypes, IEnumerable<string> types, IReadOnlyDictionary<string, JsonElement>? dataTypeDeclarations = null)
 {
     private readonly HashSet<string> _names = [.. DislAttribute.Primitives, .. enums, .. dataTypes, .. types];
 
@@ -247,4 +340,16 @@ internal sealed class TypeNames(IEnumerable<string> enums, IReadOnlySet<string> 
     public IReadOnlySet<string> DataTypes => dataTypes;
 
     public bool Contains(string name) => _names.Contains(name);
+
+    /// <summary>The declaration of the data type <paramref name="type"/> names; null for any other type.</summary>
+    public JsonElement? DeclarationOf(string type) =>
+        dataTypeDeclarations is not null && dataTypeDeclarations.TryGetValue(type, out var declaration) ? declaration : null;
+
+    /// <summary>The <c>min</c> or <c>max</c> of the constrained primitive (§4.4) <paramref name="type"/> names; null for any other type or none stated.</summary>
+    public double? Bound(string? type, string name) =>
+        type is not null && dataTypeDeclarations is not null && dataTypeDeclarations.TryGetValue(type, out var declaration)
+            && declaration.ValueKind == JsonValueKind.Object && declaration.TryGetProperty("base", out _)
+            && declaration.TryGetProperty(name, out var bound) && bound.ValueKind == JsonValueKind.Number
+            ? bound.GetDouble()
+            : null;
 }

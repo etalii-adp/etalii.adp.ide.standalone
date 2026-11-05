@@ -15,19 +15,18 @@ namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline.Tests;
 /// </summary>
 public class PipelineContextSourceResolverTests : IDisposable
 {
-    private readonly string _workspace = IoPath.Combine(
-        IoPath.GetTempPath(),
-        "adp-pipeline-context-" + Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-pipeline-context");
+    private readonly string _workspace;
 
     private ProjectRoot Root => ProjectRoot.From(_workspace);
 
     private readonly PipelineDocumentStore _store = new(new FileWriter());
 
-    public PipelineContextSourceResolverTests() => Directory.CreateDirectory(_workspace);
+    public PipelineContextSourceResolverTests() => _workspace = _testFolder.Path;
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_workspace);
+        _testFolder.Dispose();
 
         GC.SuppressFinalize(this);
     }

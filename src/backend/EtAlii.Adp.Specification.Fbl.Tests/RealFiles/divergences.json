@@ -37,256 +37,11 @@
       "reason": "mindmap.fbl's branch relation selects /map/**/node/node, the same entries the node element rule selects. FBL section 5.1 gives an entry to the first matching rule, elements before relations, so the node rule claims every node and no branch is ever read; the nesting is still there as each node's parent. Candidate follow-up for etalii.adp: express branches as the node rule's containment only, or let a relation rule read an entry an element rule also claims."
     },
     {
-      "property": "cross-check",
-      "binding": "structurizr",
-      "file": "src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/Fixtures/aws-deployment.dsl",
-      "observed": "Relationship: the binding lacks 2 (elb->webApplicationInstance, route53->elb)",
-      "reason": "structurizr.fbl has rules for people, software systems and containers only, so every relationship with a component, deployment node, infrastructure node or instance at either end has a dangling end and is dropped (FBL section 5.4), while C4Parser reads those kinds. Every relationship listed here has such an end; the ids the binding does read agree. Candidate follow-up for etalii.adp: rules for the remaining C4 element kinds in structurizr.fbl."
-    },
-    {
-      "property": "cross-check",
-      "binding": "structurizr",
-      "file": "src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/Fixtures/big-bank-plc.dsl",
-      "observed": "Relationship: the binding lacks 9 (accountsSummaryController->mainframeBankingSystemFacade, mainframeBankingSystemFacade->mainframeBankingSystem, mobileApp->accountsSummaryController, mobileApp->signinController, primaryDatabaseServer->secondaryDatabaseServer, …)",
-      "reason": "structurizr.fbl has rules for people, software systems and containers only, so every relationship with a component, deployment node, infrastructure node or instance at either end has a dangling end and is dropped (FBL section 5.4), while C4Parser reads those kinds. Every relationship listed here has such an end; the ids the binding does read agree. Candidate follow-up for etalii.adp: rules for the remaining C4 element kinds in structurizr.fbl."
-    },
-    {
-      "property": "cross-check",
-      "binding": "structurizr",
-      "file": "src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/Fixtures/crowded-component-view.dsl",
-      "observed": "Relationship: the binding lacks 15 (dbPrimary->dbStandby, erpAdapter->orderIntake, firewall->scadaServer, hmi->sequencer, lineBalancer->firewall, …)",
-      "reason": "structurizr.fbl has rules for people, software systems and containers only, so every relationship with a component, deployment node, infrastructure node or instance at either end has a dangling end and is dropped (FBL section 5.4), while C4Parser reads those kinds. Every relationship listed here has such an end; the ids the binding does read agree. Candidate follow-up for etalii.adp: rules for the remaining C4 element kinds in structurizr.fbl."
-    },
-    {
-      "property": "cross-check",
-      "binding": "structurizr",
-      "file": "src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/Fixtures/deployment-nested.dsl",
-      "observed": "Relationship: the binding lacks 1 (dns->lb)",
-      "reason": "structurizr.fbl has rules for people, software systems and containers only, so every relationship with a component, deployment node, infrastructure node or instance at either end has a dangling end and is dropped (FBL section 5.4), while C4Parser reads those kinds. Every relationship listed here has such an end; the ids the binding does read agree. Candidate follow-up for etalii.adp: rules for the remaining C4 element kinds in structurizr.fbl."
-    },
-    {
-      "property": "cross-check",
-      "binding": "structurizr",
-      "file": "src/diagrams/c4/examples/industrial-plant/architecture/bottling-mes.dsl",
-      "observed": "Relationship: the binding lacks 15 (dbPrimary->dbStandby, erpAdapter->orderIntake, firewall->scadaServer, hmi->sequencer, lineBalancer->firewall, …)",
-      "reason": "structurizr.fbl has rules for people, software systems and containers only, so every relationship with a component, deployment node, infrastructure node or instance at either end has a dangling end and is dropped (FBL section 5.4), while C4Parser reads those kinds. Every relationship listed here has such an end; the ids the binding does read agree. Candidate follow-up for etalii.adp: rules for the remaining C4 element kinds in structurizr.fbl."
-    },
-    {
-      "property": "cross-check",
-      "binding": "structurizr",
-      "file": "src/diagrams/c4/examples/reference/architecture/courier.dsl",
-      "observed": "Relationship: the binding lacks 12 (bookingController->database, bookingController->routingFacade, dbPrimary->dbStandby, loadBalancer->web, mobile->scanIngest, …)",
-      "reason": "structurizr.fbl has rules for people, software systems and containers only, so every relationship with a component, deployment node, infrastructure node or instance at either end has a dangling end and is dropped (FBL section 5.4), while C4Parser reads those kinds. Every relationship listed here has such an end; the ids the binding does read agree. Candidate follow-up for etalii.adp: rules for the remaining C4 element kinds in structurizr.fbl."
-    },
-    {
-      "property": "cross-check",
-      "binding": "structurizr",
-      "file": "src/examples/diagrams/c4/industrial-plant/architecture/bottling-mes.dsl",
-      "observed": "Relationship: the binding lacks 15 (dbPrimary->dbStandby, erpAdapter->orderIntake, firewall->scadaServer, hmi->sequencer, lineBalancer->firewall, …)",
-      "reason": "structurizr.fbl has rules for people, software systems and containers only, so every relationship with a component, deployment node, infrastructure node or instance at either end has a dangling end and is dropped (FBL section 5.4), while C4Parser reads those kinds. Every relationship listed here has such an end; the ids the binding does read agree. Candidate follow-up for etalii.adp: rules for the remaining C4 element kinds in structurizr.fbl."
-    },
-    {
-      "property": "cross-check",
-      "binding": "structurizr",
-      "file": "src/examples/diagrams/c4/reference/architecture/courier.dsl",
-      "observed": "Relationship: the binding lacks 12 (bookingController->database, bookingController->routingFacade, dbPrimary->dbStandby, loadBalancer->web, mobile->scanIngest, …)",
-      "reason": "structurizr.fbl has rules for people, software systems and containers only, so every relationship with a component, deployment node, infrastructure node or instance at either end has a dangling end and is dropped (FBL section 5.4), while C4Parser reads those kinds. Every relationship listed here has such an end; the ids the binding does read agree. Candidate follow-up for etalii.adp: rules for the remaining C4 element kinds in structurizr.fbl."
-    },
-    {
       "property": "registration-layout",
       "binding": "cld",
       "file": "src/examples/diagrams/causal-loop-diagram/on-call/on-call.adp",
       "observed": "2 layout entries name no element: variable:Test, variable:variable1",
       "reason": "The registration keeps positions for two variables on-call.cld does not declare (left from earlier edits of the example), so they name no element of the reading and would be pruned as stale at the next write of the registration. The ids of every declared variable agree since the reading takes DISL's natural ids ('variable:<name>', causal-loop-disl-fbl task 6). Candidate follow-up: drop the two stale positions from the example."
-    },
-    {
-      "property": "registration-resource",
-      "binding": "settings",
-      "file": "src/diagrams/databricks/examples/lakehouse/databricks.pipeline.adp",
-      "observed": "no resource 'bronze_to_gold' among []",
-      "reason": "This registration points the databricks/pipeline reading at the bundle file databricks.yml and selects the pipeline with 'resource: bronze_to_gold', but databricks-pipeline.fbl reads a pipeline settings document from its root and declares no registration.resource capture, so it finds no pipeline in the bundle. Candidate follow-up for etalii.adp: a resource capture over resources.pipelines.{pipeline} in databricks-pipeline.fbl."
-    },
-    {
-      "property": "registration-resource",
-      "binding": "settings",
-      "file": "src/examples/diagrams/databricks/lakehouse/databricks.pipeline.adp",
-      "observed": "no resource 'bronze_to_gold' among []",
-      "reason": "This registration points the databricks/pipeline reading at the bundle file databricks.yml and selects the pipeline with 'resource: bronze_to_gold', but databricks-pipeline.fbl reads a pipeline settings document from its root and declares no registration.resource capture, so it finds no pipeline in the bundle. Candidate follow-up for etalii.adp: a resource capture over resources.pipelines.{pipeline} in databricks-pipeline.fbl."
-    },
-    {
-      "property": "registration-view",
-      "binding": "workspace",
-      "file": "src/diagrams/c4/examples/industrial-plant/architecture/bottling-mes.adp",
-      "observed": "no view 'SystemContext' among Every system in the Northgate plant estate, OT and IT., The MES in its world., What the MES is made of, and which part crosses into the control network., Inside the Order Service., Releasing a finished batch, from last pallet to ERP confirmation.",
-      "reason": "structurizr.fbl's view block rule takes the last quoted string before '{' as the key, with an optional environment string before it. These views carry a key and a description ('systemContext mes \"SystemContext\" \"The MES in its world.\" {'), so the description is read as the key and the registration's view header selects no view. Candidate follow-up for etalii.adp: capture the first quoted string after the scope as the key, and the environment only in deployment views."
-    },
-    {
-      "property": "registration-view",
-      "binding": "workspace",
-      "file": "src/diagrams/c4/examples/industrial-plant/architecture/bottling-mes.batch-release.adp",
-      "observed": "no view 'BatchRelease' among Every system in the Northgate plant estate, OT and IT., The MES in its world., What the MES is made of, and which part crosses into the control network., Inside the Order Service., Releasing a finished batch, from last pallet to ERP confirmation.",
-      "reason": "structurizr.fbl's view block rule takes the last quoted string before '{' as the key, with an optional environment string before it. These views carry a key and a description ('systemContext mes \"SystemContext\" \"The MES in its world.\" {'), so the description is read as the key and the registration's view header selects no view. Candidate follow-up for etalii.adp: capture the first quoted string after the scope as the key, and the environment only in deployment views."
-    },
-    {
-      "property": "registration-view",
-      "binding": "workspace",
-      "file": "src/diagrams/c4/examples/industrial-plant/architecture/bottling-mes.mes-containers.adp",
-      "observed": "no view 'Containers' among Every system in the Northgate plant estate, OT and IT., The MES in its world., What the MES is made of, and which part crosses into the control network., Inside the Order Service., Releasing a finished batch, from last pallet to ERP confirmation.",
-      "reason": "structurizr.fbl's view block rule takes the last quoted string before '{' as the key, with an optional environment string before it. These views carry a key and a description ('systemContext mes \"SystemContext\" \"The MES in its world.\" {'), so the description is read as the key and the registration's view header selects no view. Candidate follow-up for etalii.adp: capture the first quoted string after the scope as the key, and the environment only in deployment views."
-    },
-    {
-      "property": "registration-view",
-      "binding": "workspace",
-      "file": "src/diagrams/c4/examples/industrial-plant/architecture/bottling-mes.order-service-components.adp",
-      "observed": "no view 'OrderServiceComponents' among Every system in the Northgate plant estate, OT and IT., The MES in its world., What the MES is made of, and which part crosses into the control network., Inside the Order Service., Releasing a finished batch, from last pallet to ERP confirmation.",
-      "reason": "structurizr.fbl's view block rule takes the last quoted string before '{' as the key, with an optional environment string before it. These views carry a key and a description ('systemContext mes \"SystemContext\" \"The MES in its world.\" {'), so the description is read as the key and the registration's view header selects no view. Candidate follow-up for etalii.adp: capture the first quoted string after the scope as the key, and the environment only in deployment views."
-    },
-    {
-      "property": "registration-view",
-      "binding": "workspace",
-      "file": "src/diagrams/c4/examples/industrial-plant/architecture/bottling-mes.plant-deployment.adp",
-      "observed": "no view 'PlantDeployment' among Every system in the Northgate plant estate, OT and IT., The MES in its world., What the MES is made of, and which part crosses into the control network., Inside the Order Service., Releasing a finished batch, from last pallet to ERP confirmation.",
-      "reason": "structurizr.fbl's view block rule takes the last quoted string before '{' as the key, with an optional environment string before it. These views carry a key and a description ('systemContext mes \"SystemContext\" \"The MES in its world.\" {'), so the description is read as the key and the registration's view header selects no view. Candidate follow-up for etalii.adp: capture the first quoted string after the scope as the key, and the environment only in deployment views."
-    },
-    {
-      "property": "registration-view",
-      "binding": "workspace",
-      "file": "src/diagrams/c4/examples/industrial-plant/architecture/bottling-mes.plant-landscape.adp",
-      "observed": "no view 'Landscape' among Every system in the Northgate plant estate, OT and IT., The MES in its world., What the MES is made of, and which part crosses into the control network., Inside the Order Service., Releasing a finished batch, from last pallet to ERP confirmation.",
-      "reason": "structurizr.fbl's view block rule takes the last quoted string before '{' as the key, with an optional environment string before it. These views carry a key and a description ('systemContext mes \"SystemContext\" \"The MES in its world.\" {'), so the description is read as the key and the registration's view header selects no view. Candidate follow-up for etalii.adp: capture the first quoted string after the scope as the key, and the environment only in deployment views."
-    },
-    {
-      "property": "registration-view",
-      "binding": "workspace",
-      "file": "src/diagrams/c4/examples/reference/architecture/courier.adp",
-      "observed": "no view 'SystemContext' among Every system in the delivery estate., Courier Tracking in its world., What Courier Tracking is made of., Inside the API application., What happens when a courier scans a parcel.",
-      "reason": "structurizr.fbl's view block rule takes the last quoted string before '{' as the key, with an optional environment string before it. These views carry a key and a description ('systemContext mes \"SystemContext\" \"The MES in its world.\" {'), so the description is read as the key and the registration's view header selects no view. Candidate follow-up for etalii.adp: capture the first quoted string after the scope as the key, and the environment only in deployment views."
-    },
-    {
-      "property": "registration-view",
-      "binding": "workspace",
-      "file": "src/diagrams/c4/examples/reference/architecture/courier.api-components.adp",
-      "observed": "no view 'ApiComponents' among Every system in the delivery estate., Courier Tracking in its world., What Courier Tracking is made of., Inside the API application., What happens when a courier scans a parcel.",
-      "reason": "structurizr.fbl's view block rule takes the last quoted string before '{' as the key, with an optional environment string before it. These views carry a key and a description ('systemContext mes \"SystemContext\" \"The MES in its world.\" {'), so the description is read as the key and the registration's view header selects no view. Candidate follow-up for etalii.adp: capture the first quoted string after the scope as the key, and the environment only in deployment views."
-    },
-    {
-      "property": "registration-view",
-      "binding": "workspace",
-      "file": "src/diagrams/c4/examples/reference/architecture/courier.containers.adp",
-      "observed": "no view 'Containers' among Every system in the delivery estate., Courier Tracking in its world., What Courier Tracking is made of., Inside the API application., What happens when a courier scans a parcel.",
-      "reason": "structurizr.fbl's view block rule takes the last quoted string before '{' as the key, with an optional environment string before it. These views carry a key and a description ('systemContext mes \"SystemContext\" \"The MES in its world.\" {'), so the description is read as the key and the registration's view header selects no view. Candidate follow-up for etalii.adp: capture the first quoted string after the scope as the key, and the environment only in deployment views."
-    },
-    {
-      "property": "registration-view",
-      "binding": "workspace",
-      "file": "src/diagrams/c4/examples/reference/architecture/courier.landscape.adp",
-      "observed": "no view 'Landscape' among Every system in the delivery estate., Courier Tracking in its world., What Courier Tracking is made of., Inside the API application., What happens when a courier scans a parcel.",
-      "reason": "structurizr.fbl's view block rule takes the last quoted string before '{' as the key, with an optional environment string before it. These views carry a key and a description ('systemContext mes \"SystemContext\" \"The MES in its world.\" {'), so the description is read as the key and the registration's view header selects no view. Candidate follow-up for etalii.adp: capture the first quoted string after the scope as the key, and the environment only in deployment views."
-    },
-    {
-      "property": "registration-view",
-      "binding": "workspace",
-      "file": "src/diagrams/c4/examples/reference/architecture/courier.parcel-scanned.adp",
-      "observed": "no view 'ParcelScanned' among Every system in the delivery estate., Courier Tracking in its world., What Courier Tracking is made of., Inside the API application., What happens when a courier scans a parcel.",
-      "reason": "structurizr.fbl's view block rule takes the last quoted string before '{' as the key, with an optional environment string before it. These views carry a key and a description ('systemContext mes \"SystemContext\" \"The MES in its world.\" {'), so the description is read as the key and the registration's view header selects no view. Candidate follow-up for etalii.adp: capture the first quoted string after the scope as the key, and the environment only in deployment views."
-    },
-    {
-      "property": "registration-view",
-      "binding": "workspace",
-      "file": "src/diagrams/c4/examples/reference/architecture/courier.production.adp",
-      "observed": "no view 'ProductionDeployment' among Every system in the delivery estate., Courier Tracking in its world., What Courier Tracking is made of., Inside the API application., What happens when a courier scans a parcel.",
-      "reason": "structurizr.fbl's view block rule takes the last quoted string before '{' as the key, with an optional environment string before it. These views carry a key and a description ('systemContext mes \"SystemContext\" \"The MES in its world.\" {'), so the description is read as the key and the registration's view header selects no view. Candidate follow-up for etalii.adp: capture the first quoted string after the scope as the key, and the environment only in deployment views."
-    },
-    {
-      "property": "registration-view",
-      "binding": "workspace",
-      "file": "src/examples/diagrams/c4/industrial-plant/architecture/bottling-mes.adp",
-      "observed": "no view 'SystemContext' among Every system in the Northgate plant estate, OT and IT., The MES in its world., What the MES is made of, and which part crosses into the control network., Inside the Order Service., Releasing a finished batch, from last pallet to ERP confirmation.",
-      "reason": "structurizr.fbl's view block rule takes the last quoted string before '{' as the key, with an optional environment string before it. These views carry a key and a description ('systemContext mes \"SystemContext\" \"The MES in its world.\" {'), so the description is read as the key and the registration's view header selects no view. Candidate follow-up for etalii.adp: capture the first quoted string after the scope as the key, and the environment only in deployment views."
-    },
-    {
-      "property": "registration-view",
-      "binding": "workspace",
-      "file": "src/examples/diagrams/c4/industrial-plant/architecture/bottling-mes.batch-release.adp",
-      "observed": "no view 'BatchRelease' among Every system in the Northgate plant estate, OT and IT., The MES in its world., What the MES is made of, and which part crosses into the control network., Inside the Order Service., Releasing a finished batch, from last pallet to ERP confirmation.",
-      "reason": "structurizr.fbl's view block rule takes the last quoted string before '{' as the key, with an optional environment string before it. These views carry a key and a description ('systemContext mes \"SystemContext\" \"The MES in its world.\" {'), so the description is read as the key and the registration's view header selects no view. Candidate follow-up for etalii.adp: capture the first quoted string after the scope as the key, and the environment only in deployment views."
-    },
-    {
-      "property": "registration-view",
-      "binding": "workspace",
-      "file": "src/examples/diagrams/c4/industrial-plant/architecture/bottling-mes.mes-containers.adp",
-      "observed": "no view 'Containers' among Every system in the Northgate plant estate, OT and IT., The MES in its world., What the MES is made of, and which part crosses into the control network., Inside the Order Service., Releasing a finished batch, from last pallet to ERP confirmation.",
-      "reason": "structurizr.fbl's view block rule takes the last quoted string before '{' as the key, with an optional environment string before it. These views carry a key and a description ('systemContext mes \"SystemContext\" \"The MES in its world.\" {'), so the description is read as the key and the registration's view header selects no view. Candidate follow-up for etalii.adp: capture the first quoted string after the scope as the key, and the environment only in deployment views."
-    },
-    {
-      "property": "registration-view",
-      "binding": "workspace",
-      "file": "src/examples/diagrams/c4/industrial-plant/architecture/bottling-mes.order-service-components.adp",
-      "observed": "no view 'OrderServiceComponents' among Every system in the Northgate plant estate, OT and IT., The MES in its world., What the MES is made of, and which part crosses into the control network., Inside the Order Service., Releasing a finished batch, from last pallet to ERP confirmation.",
-      "reason": "structurizr.fbl's view block rule takes the last quoted string before '{' as the key, with an optional environment string before it. These views carry a key and a description ('systemContext mes \"SystemContext\" \"The MES in its world.\" {'), so the description is read as the key and the registration's view header selects no view. Candidate follow-up for etalii.adp: capture the first quoted string after the scope as the key, and the environment only in deployment views."
-    },
-    {
-      "property": "registration-view",
-      "binding": "workspace",
-      "file": "src/examples/diagrams/c4/industrial-plant/architecture/bottling-mes.plant-deployment.adp",
-      "observed": "no view 'PlantDeployment' among Every system in the Northgate plant estate, OT and IT., The MES in its world., What the MES is made of, and which part crosses into the control network., Inside the Order Service., Releasing a finished batch, from last pallet to ERP confirmation.",
-      "reason": "structurizr.fbl's view block rule takes the last quoted string before '{' as the key, with an optional environment string before it. These views carry a key and a description ('systemContext mes \"SystemContext\" \"The MES in its world.\" {'), so the description is read as the key and the registration's view header selects no view. Candidate follow-up for etalii.adp: capture the first quoted string after the scope as the key, and the environment only in deployment views."
-    },
-    {
-      "property": "registration-view",
-      "binding": "workspace",
-      "file": "src/examples/diagrams/c4/industrial-plant/architecture/bottling-mes.plant-landscape.adp",
-      "observed": "no view 'Landscape' among Every system in the Northgate plant estate, OT and IT., The MES in its world., What the MES is made of, and which part crosses into the control network., Inside the Order Service., Releasing a finished batch, from last pallet to ERP confirmation.",
-      "reason": "structurizr.fbl's view block rule takes the last quoted string before '{' as the key, with an optional environment string before it. These views carry a key and a description ('systemContext mes \"SystemContext\" \"The MES in its world.\" {'), so the description is read as the key and the registration's view header selects no view. Candidate follow-up for etalii.adp: capture the first quoted string after the scope as the key, and the environment only in deployment views."
-    },
-    {
-      "property": "registration-view",
-      "binding": "workspace",
-      "file": "src/examples/diagrams/c4/reference/architecture/courier.adp",
-      "observed": "no view 'SystemContext' among Every system in the delivery estate., Courier Tracking in its world., What Courier Tracking is made of., Inside the API application., What happens when a courier scans a parcel.",
-      "reason": "structurizr.fbl's view block rule takes the last quoted string before '{' as the key, with an optional environment string before it. These views carry a key and a description ('systemContext mes \"SystemContext\" \"The MES in its world.\" {'), so the description is read as the key and the registration's view header selects no view. Candidate follow-up for etalii.adp: capture the first quoted string after the scope as the key, and the environment only in deployment views."
-    },
-    {
-      "property": "registration-view",
-      "binding": "workspace",
-      "file": "src/examples/diagrams/c4/reference/architecture/courier.api-components.adp",
-      "observed": "no view 'ApiComponents' among Every system in the delivery estate., Courier Tracking in its world., What Courier Tracking is made of., Inside the API application., What happens when a courier scans a parcel.",
-      "reason": "structurizr.fbl's view block rule takes the last quoted string before '{' as the key, with an optional environment string before it. These views carry a key and a description ('systemContext mes \"SystemContext\" \"The MES in its world.\" {'), so the description is read as the key and the registration's view header selects no view. Candidate follow-up for etalii.adp: capture the first quoted string after the scope as the key, and the environment only in deployment views."
-    },
-    {
-      "property": "registration-view",
-      "binding": "workspace",
-      "file": "src/examples/diagrams/c4/reference/architecture/courier.containers.adp",
-      "observed": "no view 'Containers' among Every system in the delivery estate., Courier Tracking in its world., What Courier Tracking is made of., Inside the API application., What happens when a courier scans a parcel.",
-      "reason": "structurizr.fbl's view block rule takes the last quoted string before '{' as the key, with an optional environment string before it. These views carry a key and a description ('systemContext mes \"SystemContext\" \"The MES in its world.\" {'), so the description is read as the key and the registration's view header selects no view. Candidate follow-up for etalii.adp: capture the first quoted string after the scope as the key, and the environment only in deployment views."
-    },
-    {
-      "property": "registration-view",
-      "binding": "workspace",
-      "file": "src/examples/diagrams/c4/reference/architecture/courier.landscape.adp",
-      "observed": "no view 'Landscape' among Every system in the delivery estate., Courier Tracking in its world., What Courier Tracking is made of., Inside the API application., What happens when a courier scans a parcel.",
-      "reason": "structurizr.fbl's view block rule takes the last quoted string before '{' as the key, with an optional environment string before it. These views carry a key and a description ('systemContext mes \"SystemContext\" \"The MES in its world.\" {'), so the description is read as the key and the registration's view header selects no view. Candidate follow-up for etalii.adp: capture the first quoted string after the scope as the key, and the environment only in deployment views."
-    },
-    {
-      "property": "registration-view",
-      "binding": "workspace",
-      "file": "src/examples/diagrams/c4/reference/architecture/courier.parcel-scanned.adp",
-      "observed": "no view 'ParcelScanned' among Every system in the delivery estate., Courier Tracking in its world., What Courier Tracking is made of., Inside the API application., What happens when a courier scans a parcel.",
-      "reason": "structurizr.fbl's view block rule takes the last quoted string before '{' as the key, with an optional environment string before it. These views carry a key and a description ('systemContext mes \"SystemContext\" \"The MES in its world.\" {'), so the description is read as the key and the registration's view header selects no view. Candidate follow-up for etalii.adp: capture the first quoted string after the scope as the key, and the environment only in deployment views."
-    },
-    {
-      "property": "registration-view",
-      "binding": "workspace",
-      "file": "src/examples/diagrams/c4/reference/architecture/courier.production.adp",
-      "observed": "no view 'ProductionDeployment' among Every system in the delivery estate., Courier Tracking in its world., What Courier Tracking is made of., Inside the API application., What happens when a courier scans a parcel.",
-      "reason": "structurizr.fbl's view block rule takes the last quoted string before '{' as the key, with an optional environment string before it. These views carry a key and a description ('systemContext mes \"SystemContext\" \"The MES in its world.\" {'), so the description is read as the key and the registration's view header selects no view. Candidate follow-up for etalii.adp: capture the first quoted string after the scope as the key, and the environment only in deployment views."
-    },
-    {
-      "property": "unreadable",
-      "binding": "structurizr",
-      "file": "src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/Fixtures/comments-everywhere.dsl",
-      "observed": "offset 200: The braces of the body do not balance on this line.",
-      "reason": "FBL section 4.7 opens a block only when a statement's last non-whitespace character is '{', so 'model { // trailing a brace is legal' opens none and the matching '}' leaves the braces unbalanced, which makes the body unreadable. Structurizr accepts a comment after the brace, and the module reads this fixture. Candidate follow-up for etalii.adp: let FBL section 4.7 ignore a trailing comment matching the binding's comment expression before looking for '{'."
     },
     {
       "property": "cross-check",
@@ -359,81 +114,11 @@
       "reason": "Read as a chart of its own, deep's charts/deeper holds only marker.txt, which no file rule selects. helm-chart.fbl's file rules select files, and the folder body hands the plugin only what they select (FBL sections 10.2 and 11.2), so a directory under charts/ that holds no selected file is no entry the plugin can see: the reader drew it as a subchart. This is gap 3 of definitions/diagrams/helm-chart.md (findings B4 and B5), which the module answers with directory entries of its own (HelmFolderEntries, handed to the folder body beside the binding); this cross-check gives the folder body the binding alone, so the gap shows. Candidate follow-up for etalii.adp: entries: \"all\" on a file rule, so a binding can select a directory as an entry."
     },
     {
-      "property": "unreadable",
-      "binding": "structurizr",
-      "file": "src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/Fixtures/findings/block-comments.dsl",
-      "observed": "offset 326: The braces of the body do not balance on this line.",
-      "reason": "The fixture is one of the C4 module's findings corpus (c4-disl-fbl task 1), written to hold '/* */' block comments on purpose (finding B5). structurizr.fbl's comment expression knows only a line starting with '#' or '//', so the '{' in 's = softwareSystem \"System\" \"A system.\" /* a brace { inside a comment */' is a brace that does not balance on its line, which makes the body unreadable; C4Parser skips block comments and reads the fixture. The parity transcript freezes what the module does with it today."
-    },
-    {
-      "property": "cross-check",
-      "binding": "structurizr",
-      "file": "src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/Fixtures/findings/dangling-both-ends.dsl",
-      "observed": "Relationship: the binding lacks 3 (ghost->phantom, ghost->s, u->phantom)",
-      "reason": "The fixture is one of the C4 module's findings corpus (c4-disl-fbl task 1), written to hold relationships whose source, destination or both name nothing on purpose (findings A13 and B8). FBL section 5.4 reads no relation whose end names no element; C4Parser keeps them and the module reports each one. The parity transcript freezes what the module does with it today."
-    },
-    {
-      "property": "cross-check",
-      "binding": "structurizr",
-      "file": "src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/Fixtures/findings/escaped-quote.dsl",
-      "observed": "Person: the binding lacks 1 (u) | Relationship: the binding lacks 1 (u->s) | SoftwareSystem: the binding lacks 1 (s)",
-      "reason": "The fixture is one of the C4 module's findings corpus (c4-disl-fbl task 1), written to hold escaped quotes inside quoted arguments on purpose (finding B7). structurizr.fbl's quoted groups are '\"[^\"]*\"', which end at the first '\\\"', so a declaration holding an escaped quote matches no rule and the relationship between them has no ends to name. C4Parser reads the escape. The parity transcript freezes what the module does with it today."
-    },
-    {
-      "property": "cross-check",
-      "binding": "structurizr",
-      "file": "src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/Fixtures/findings/finding-order.dsl",
-      "observed": "Relationship: the binding lacks 1 (q->missing)",
-      "reason": "The fixture is one of the C4 module's findings corpus (c4-disl-fbl task 1), written to hold one of every finding, to fix the order they are reported in (finding A11). Its relationship 'q -> missing' names no element, and FBL section 5.4 reads no such relation; C4Parser keeps it and the module reports it as dangling. The parity transcript freezes what the module does with it today."
-    },
-    {
-      "property": "cross-check",
-      "binding": "structurizr",
-      "file": "src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/Fixtures/findings/hierarchical-identifiers.dsl",
-      "observed": "Relationship: the binding lacks 2 (u->a.api, u->b.api)",
-      "reason": "The fixture is one of the C4 module's findings corpus (c4-disl-fbl task 1), written to hold '!identifiers hierarchical' and dotted references on purpose (finding B12). structurizr.fbl's relationship ends are plain identifiers, so 'a.api' and 'b.api' match no rule. C4Parser ignores the directive and keeps both relationships, reporting each as dangling. The parity transcript freezes what the module does with it today."
-    },
-    {
       "property": "cross-check",
       "binding": "structurizr",
       "file": "src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/Fixtures/findings/lenient-spellings.dsl",
-      "observed": "Container: the binding lacks 1 (api) | Person: the binding lacks 1 (User) | Relationship: the binding lacks 3 (User->SYS, user->sys, user->web)",
-      "reason": "The fixture is one of the C4 module's findings corpus (c4-disl-fbl task 1), written to hold the spellings Structurizr tolerates on purpose (finding B6). structurizr.fbl's lines want a quoted name and nothing after the last quoted argument, so 'Person User' (unquoted), the container with 'extra words' after its tags and the relationship with an unquoted description match no rule; ids are matched case-sensitively, so 'user' and 'SYS' name no element and those relationships are dropped (FBL section 5.4). C4Parser reads all of them, resolving ids in any case. The parity transcript freezes what the module does with it today."
-    },
-    {
-      "property": "cross-check",
-      "binding": "structurizr",
-      "file": "src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/Fixtures/findings/misplaced-container.dsl",
-      "observed": "Container: the binding lacks 2 (inside, stray) | Relationship: the binding lacks 2 (p->stray, stray->loose)",
-      "reason": "The fixture is one of the C4 module's findings corpus (c4-disl-fbl task 1), written to hold containers and a component outside their C4 parents on purpose (finding B10). structurizr.fbl reads a container only within a software system or a group, and no component at all, so the container in the model, the one in a person's block and the relationships that name them are not read; C4Parser reads them and the module reports the misplacement. The parity transcript freezes what the module does with it today."
-    },
-    {
-      "property": "cross-check",
-      "binding": "structurizr",
-      "file": "src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/Fixtures/findings/nested-relationships.dsl",
-      "observed": "Relationship: the binding lacks 6 (gw->wi, n->gw, u->nobody, u->s, u->web, …)",
-      "reason": "The fixture is one of the C4 module's findings corpus (c4-disl-fbl task 1), written to hold relationships written inside an element's block and from deployment elements on purpose (finding B8). structurizr.fbl has no rule for a relationship without a source ('-> s'), none for deployment nodes, infrastructure nodes or instances, and its relationship line must end after its last quoted argument, so 'u -> web ... {' opens nothing it reads; FBL section 5.4 drops a relationship whose end names no element, as 'u -> nobody' does. C4Parser reads the implied source, the deployment kinds and the block, and keeps the dangling relationship. The parity transcript freezes what the module does with it today."
-    },
-    {
-      "property": "unreadable",
-      "binding": "structurizr",
-      "file": "src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/Fixtures/findings/trailing-comments.dsl",
-      "observed": "offset 0: The braces of the body do not balance on this line.",
-      "reason": "The fixture is one of the C4 module's findings corpus (c4-disl-fbl task 1), written to hold a comment after every kind of line on purpose (findings B4 and B19). FBL section 4.7 opens a block only when a statement's last non-whitespace character is '{', so 'workspace \"Trailing comments\" { // after the workspace brace' opens none and the braces do not balance, which makes the body unreadable; C4Parser strips the comment first and reads the fixture. This is the same gap as comments-everywhere.dsl. The parity transcript freezes what the module does with it today."
-    },
-    {
-      "property": "unreadable",
-      "binding": "structurizr",
-      "file": "src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/Fixtures/findings/unbalanced.dsl",
-      "observed": "offset 219: The braces of the body do not balance: this block is never closed.",
-      "reason": "The fixture is one of the C4 module's findings corpus (c4-disl-fbl task 1), written to hold a block that is never closed on purpose (finding B22). FBL refuses a body whose braces do not balance, while C4Parser reads what it can and the module opens it. The parity transcript freezes what the module does with it today."
-    },
-    {
-      "property": "cross-check",
-      "binding": "structurizr",
-      "file": "src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/Fixtures/findings/view-without-key.dsl",
-      "observed": "Relationship: the binding lacks 1 (u->c)",
-      "reason": "The fixture is one of the C4 module's findings corpus (c4-disl-fbl task 1), written to hold views written without a key on purpose (finding B2). Its one relationship ends at a component, and structurizr.fbl has rules for people, software systems and containers only, so the relationship has a dangling end and is dropped (FBL section 5.4), while C4Parser reads components. The parity transcript freezes what the module does with it today."
+      "observed": "Relationship: the binding adds 1 (web->api)",
+      "reason": "'web->api', written without spaces around the arrow, is a relationship to Structurizr and to structurizr.lark, whose WORD holds no '->'; C4Parser splits a statement at white space and reads '->' only as a word of its own, so it reads no relationship there. The binding is right; the module is lenient elsewhere (finding B6) but not here."
     },
     {
       "property": "unreadable",
@@ -446,8 +131,8 @@
       "property": "cross-check",
       "binding": "databricks-job",
       "file": "src/diagrams/databricks/backend/EtAlii.Adp.Diagram.Databricks.Tests/Fixtures/anchors-and-merge.yml",
-      "observed": "Resource: the binding lacks 1 (aliased) | job aliased: Dependency: the binding lacks 1 (edge:shared_first->shared_second) | Task: the binding lacks 2 (task:shared_first, task:shared_second)",
-      "reason": "The fixture is one of the Databricks module's parity corpus (databricks-disl-fbl task 1), written to hold an anchor, an alias and a merge key (finding B5). The job 'aliased' writes its tasks as the alias *shared_tasks; databricks-job.fbl reads no entry through the alias, so neither the job's resource nor its tasks and dependency are read, while YamlDotNet resolves the alias to the anchored list and the job parser reads both jobs with the same tasks. The parity transcript freezes what the module does with it today."
+      "observed": "Resource: the binding lacks 1 (aliased)",
+      "reason": "The fixture is one of the Databricks module's parity corpus (databricks-disl-fbl task 1), written to hold an anchor, an alias and a merge key (finding B5). The job 'aliased' writes its tasks as the alias *shared_tasks. Since task 11 the module reads the file through its own binding and, under the reading adopted for B5, reads no entry through the alias either, so its job 'aliased' has no tasks, as databricks-job.fbl's has none. What remains is the bundle's side: the module reads every job resource as a Resource, and databricks-job.fbl, which reads a job file, reads no resource for the aliased job."
     },
     {
       "property": "cross-check",
@@ -481,15 +166,8 @@
       "property": "cross-check",
       "binding": "databricks-job",
       "file": "src/diagrams/databricks/backend/EtAlii.Adp.Diagram.Databricks.Tests/Fixtures/flow-collections.yml",
-      "observed": "Resource: the binding lacks 1 (empty_flow) | job flow_dependencies: Dependency: the binding lacks 1 (edge:a->b)",
-      "reason": "The fixture is one of the Databricks module's parity corpus (databricks-disl-fbl task 1), written to hold flow collections (finding B12). The job 'empty_flow' writes 'tasks: []', and databricks-job.fbl's resource capture over /resources/jobs/{job}/tasks/* captures no job that has no task, so the bundle parser's resource 'empty_flow' is not among the binding's resources; and the dependency written 'depends_on: [{task_key: a}]' is not read as a relation, with no finding, where the job parser reads it. The parity transcript freezes what the module does with it today."
-    },
-    {
-      "property": "cross-check",
-      "binding": "databricks-job",
-      "file": "src/diagrams/databricks/backend/EtAlii.Adp.Diagram.Databricks.Tests/Fixtures/flow-dependencies.yml",
-      "observed": "job flow_dependencies: Dependency: the binding lacks 1 (edge:a->b)",
-      "reason": "The fixture is one of the Databricks module's parity corpus (databricks-disl-fbl task 1), written to hold a dependency written as a flow sequence (finding B12). databricks-job.fbl reads 'depends_on: [{task_key: a}]' as no relation, with no finding, where the job parser reads the dependency a->b. The parity transcript freezes what the module does with it today."
+      "observed": "Resource: the binding lacks 1 (empty_flow)",
+      "reason": "The fixture is one of the Databricks module's parity corpus (databricks-disl-fbl task 1), written to hold flow collections (finding B12). The job 'empty_flow' writes 'tasks: []', and databricks-job.fbl's resource capture over /resources/jobs/{job}/tasks/* captures no job that has no task, so the bundle parser's resource 'empty_flow' is not among the binding's resources. The dependency written 'depends_on: [{task_key: a}]' is read since FBL 0.10 section 4.3 (databricks-disl-fbl task 10). The parity transcript freezes what the module does with it today."
     },
     {
       "property": "cross-check",
@@ -518,6 +196,83 @@
       "file": "src/diagrams/databricks/backend/EtAlii.Adp.Diagram.Databricks.Tests/Fixtures/library-ids.json",
       "observed": "Library: the binding adds 2 (library@11, library@7)",
       "reason": "The fixture is one of the Databricks module's parity corpus (databricks-disl-fbl task 1), written to give two libraries one path and to hold two libraries of kind 'other' (finding B15). The pipeline parser reads them under the ids the module draws, library:shared/x and library: (two each, drawn as one), where the binding's natural ids for the second of each are taken, so FBL section 5.3 addresses them by their place (library@7, library@11). The parity transcript freezes what the module does with it today."
+    },
+    {
+      "property": "unreadable",
+      "binding": "sankey",
+      "file": "src/diagrams/sankey/backend/EtAlii.Adp.Diagram.Sankey.Tests/Fixtures/not-yaml.skv",
+      "observed": "offset 33: The body is not well-formed YAML: While parsing a flow sequence, did not find expected ',' or ']'.",
+      "reason": "The fixture is one of the Sankey module's round-trip corpus, written to be text that is not YAML. FBL section 7.5 opens such a body empty and read-only and reports std.unparseable, as the module's reader reports it under sankey.unreadable; the binding is not wrong here, the body is (sankey-disl-fbl, finding B8 and Q3)."
+    },
+    {
+      "property": "cross-check",
+      "binding": "sankey",
+      "file": "src/diagrams/sankey/backend/EtAlii.Adp.Diagram.Sankey.Tests/Fixtures/duplicate-key.skv",
+      "observed": "Flow: the binding adds 1 (a->b) | Node: the binding adds 2 (a, b)",
+      "reason": "The fixture is one of the Sankey module's parity corpus (sankey-disl-fbl task 1), written to hold a key written twice in one mapping (finding B9). YamlDotNet refuses the document, and the module asks it whether a body is YAML before it reads the binding's reading (SankeyBody), so the module reads nothing of it; FBL section 7.4 binds the first of the two and reports fbl.duplicate-key, so the binding reads every node and flow. Q4 keeps the module's answer for this conversion: a duplicated key still makes the document unreadable."
+    },
+    {
+      "property": "cross-check",
+      "binding": "sankey",
+      "file": "src/diagrams/sankey/backend/EtAlii.Adp.Diagram.Sankey.Tests/Fixtures/flow-mapping-entry.skv",
+      "observed": "Flow: the binding lacks 1 (a->b); the binding adds 1 (->) | Node: the binding lacks 2 (a, b)",
+      "reason": "The fixture is one of the Sankey module's parity corpus (sankey-disl-fbl task 1), written with its nodes and its flow as flow mappings (- {id: a, name: A}), the second shape of finding B16. YamlDotNet reads them as mappings like any other; to FBL's YAML family a flow mapping is one value whose members CEL sees and no key slot binds (FBL section 4.3), so the binding's slots read no id and neither end. The module reads such an entry's values from the binding's computed written attribute, the written text of every member (SankeyReader, sankey-disl-fbl task 10), so it draws them as before. That FBL binds no member of a flow mapping is gap 11 of the definition's companion, definition/sankey.md, a candidate change for etalii.adp."
+    },
+    {
+      "property": "cross-check",
+      "binding": "supply-chain",
+      "file": "src/diagrams/supply-chain/backend/EtAlii.Adp.Diagram.SupplyChain.Tests/Fixtures/duplicate-key.supply",
+      "observed": "Node: the binding adds 2 (mine, plant)",
+      "reason": "The fixture is one of the supply chain module's parity corpus (supply-chain-disl-fbl task 1), written to hold a key written twice in one mapping (finding B5). YamlDotNet refuses the document, and the module asks it whether a body is YAML before it reads the binding's reading (SupplyChainBody), so the module reads nothing of it; FBL section 7.4 binds the first of the two and reports fbl.duplicate-key, so the binding reads every node. Q4 keeps the module's answer for this conversion: a duplicated key still makes the document unreadable."
+    },
+    {
+      "property": "cross-check",
+      "binding": "supply-chain",
+      "file": "src/diagrams/supply-chain/backend/EtAlii.Adp.Diagram.SupplyChain.Tests/Fixtures/flow-mapping-entry.supply",
+      "observed": "Flow: the binding lacks 1 (ore) | Group: the binding lacks 1 (north) | Node: the binding lacks 1 (mine)",
+      "reason": "The fixture is one of the supply chain module's parity corpus (supply-chain-disl-fbl task 1), written with a group, a node and a flow as flow mappings (- {id: north, name: North}), a shape of finding B13. YamlDotNet reads them as mappings like any other; to FBL's YAML family a flow mapping is one value whose members CEL sees and no key slot binds (FBL section 4.3), so the binding's slots read no id. The module reads such an entry's values from the binding's computed written attribute, the written text of every member (SupplyChainReading, supply-chain-disl-fbl task 10), so it draws them as before. That FBL binds no member of a flow mapping is the language gap the Sankey diagram's companion records as its gap 11, a candidate change for etalii.adp."
+    },
+    {
+      "property": "unreadable",
+      "binding": "supply-chain",
+      "file": "src/diagrams/supply-chain/backend/EtAlii.Adp.Diagram.SupplyChain.Tests/Fixtures/not-yaml.supply",
+      "observed": "offset 39: The body is not well-formed YAML: While parsing a flow sequence, did not find expected ',' or ']'.",
+      "reason": "The fixture is one of the supply chain module's parity corpus, written to be text that is not YAML. FBL section 7.5 opens such a body empty and read-only and reports std.unparseable, as the module's reader reports it under supply-chain.unreadable; the binding is not wrong here, the body is (supply-chain-disl-fbl, Requirement 4.6)."
+    },
+    {
+      "property": "beside-parser",
+      "binding": "structurizr",
+      "file": "src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/Fixtures/findings/unbalanced.dsl",
+      "observed": "View: the binding lacks 1 (containers)",
+      "reason": "The software system's block is never closed, so the '}' meant for the model closes it and 'views {' stands inside the model, where the grammar reads it as an unbound statement; its container view is then no view of the body, and the model and the workspace are reported fbl.unclosed-block (the structurizr-recover-nested fixture). C4Parser counts no braces and reads the view. Both keep the bytes; the binding reads the text as Structurizr would."
+    },
+    {
+      "property": "beside-parser",
+      "binding": "structurizr",
+      "file": "src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/Fixtures/findings/hierarchical-identifiers.dsl",
+      "observed": "Parent: the binding lacks 1 (api in b)",
+      "reason": "With '!identifiers hierarchical' both containers are 'api'; FBL reads ids flat, so the second 'api' is a duplicate id (std.duplicateId) and the first, in a, is the element the id names. C4Parser keeps both. Hierarchical identifiers stay unsupported (c4-disl-fbl task 14)."
+    },
+    {
+      "property": "beside-parser",
+      "binding": "structurizr",
+      "file": "src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/Fixtures/findings/include-directive.dsl",
+      "observed": "Include: the binding lacks 1 (https:); the binding adds 1 (https://example.com/model.dsl)",
+      "reason": "'!include https://example.com/model.dsl': structurizr.lark reads the URL as one word, the longest match, and the binding's include rule its whole path; C4Parser takes '//' as the start of a comment wherever it stands and reports the path as 'https:'. The binding is right."
+    },
+    {
+      "property": "cross-check",
+      "binding": "wardley-map",
+      "file": "src/diagrams/wardley-map/backend/EtAlii.Adp.Diagram.WardleyMap.Tests/Fixtures/awkward-names.owm",
+      "observed": "Dependency: the binding adds 2 (link:C++ build\u001fCI/CD\u001fDependency, link:Self-service\u001fCI/CD\u001fDependency)",
+      "reason": "Finding B13 of wardley-map-disl-fbl: the module reads a link's source up to the first '-' or '+', so it reads no link from 'Self-service' or 'C++ build', and WardleyBody passes such a link over as the parser did, as Online Wardley Maps reads it, and the module refuses such a name on an add or a rename. Task 12, which writes every edit through the binding, keeps that reading, so this stays until the module reads such a link. The binding reads both, which is right."
+    },
+    {
+      "property": "cross-check",
+      "binding": "wardley-map",
+      "file": "src/diagrams/wardley-map/backend/EtAlii.Adp.Diagram.WardleyMap.Tests/Fixtures/unclosed-pipeline.owm",
+      "observed": "Dependency: the binding adds 1 (link:Kettle\u001fPower\u001fDependency)",
+      "reason": "A pipeline whose block never closes runs to the end of the file in both readings (FBL section 4.9, fbl.unclosed-block), but the binding's recovery reads 'Kettle->Power' after it as a link, where the module reads every line of the block as one of the pipeline's and passes over what is not a component, as it did before task 11 (finding B2). The transcript holds the module's reading."
     }
   ]
 }

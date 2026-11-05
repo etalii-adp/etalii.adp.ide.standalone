@@ -57,22 +57,34 @@ internal static class KnowledgeValidator
             properties.TryAdd(property.Id, property);
         }
 
-        // ---- the table and its properties ----
+        ValidateProperties(table, findings);
+        ValidateCells(table, properties, findings);
+        ValidateRelations(table, targetOf, findings);
+        ValidateViews(table, properties, findings);
+        ValidateParents(table, findings);
+        ValidateIds(model, findings);
 
+        return findings;
+    }
+
+    // ---- the table and its properties ----
+
+    private static void ValidateProperties(KnowledgeTable table, List<TableFinding> findings)
+    {
         var titles = table.Properties.Where(property => property.IsTitle).ToList();
         if (titles.Count == 0 && (table.Properties.Count > 0 || table.Rows.Count > 0))
         {
-            Warn(NoTitle, "The table has no title property, so its rows have no name.");
+            Warn(findings, NoTitle, "The table has no title property, so its rows have no name.");
         }
 
         foreach (var extra in titles.Skip(1))
         {
-            Warn(SeveralTitles, $"'{extra.Name}' is marked as the title, and so is '{titles[0].Name}'; the first is used.", columnId: extra.Id);
+            Warn(findings, SeveralTitles, $"'{extra.Name}' is marked as the title, and so is '{titles[0].Name}'; the first is used.", columnId: extra.Id);
         }
 
         foreach (var title in titles.Where(title => title.Type is not KnowledgeTextType))
         {
-            Error(TitleNotText, $"The title property '{title.Name}' is a {title.ValueType}; a title is text.", columnId: title.Id);
+            Error(findings, TitleNotText, $"The title property '{title.Name}' is a {title.ValueType}; a title is text.", columnId: title.Id);
         }
 
         var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -80,62 +92,73 @@ internal static class KnowledgeValidator
         {
             if (!names.Add(property.Name))
             {
-                Error(DuplicatePropertyName, $"Another property is already called '{property.Name}'.", columnId: property.Id);
+                Error(findings, DuplicatePropertyName, $"Another property is already called '{property.Name}'.", columnId: property.Id);
             }
 
             if (!property.Type.IsKnown)
             {
-                Warn(UnknownType, $"'{property.Name}' has the type '{property.ValueType}', which is none this application knows; its values are shown and cannot be changed here.", columnId: property.Id);
+                Warn(findings, UnknownType, $"'{property.Name}' has the type '{property.ValueType}', which is none this application knows; its values are shown and cannot be changed here.", columnId: property.Id);
             }
         }
+    }
 
-        // ---- the cells ----
+    // ---- the cells ----
 
+    private static void ValidateCells(KnowledgeTable table, Dictionary<string, KnowledgeProperty> properties, List<TableFinding> findings)
+    {
         foreach (var row in table.Rows)
         {
             foreach (var cell in row.Cells)
             {
                 if (!properties.TryGetValue(cell.PropertyId, out var property))
                 {
-                    Warn(UnknownProperty, $"This cell names a property the table does not have ('{cell.PropertyId}'); it is kept as it is.", row.Id, cell.PropertyId);
+                    Warn(findings, UnknownProperty, $"This cell names a property the table does not have ('{cell.PropertyId}'); it is kept as it is.", row.Id, cell.PropertyId);
                     continue;
                 }
 
-                var type = property.Type;
-                if (cell.Values.Count == 0 || !type.IsKnown)
-                {
-                    continue;
-                }
+                ValidateCell(row, cell, property, findings);
+            }
+        }
+    }
 
-                if (cell.Key != type.CellKey)
-                {
-                    Warn(ValueOfAnotherType, $"This value is not a {property.ValueType}; it is kept as it is.", row.Id, property.Id);
-                    continue;
-                }
+    private static void ValidateCell(KnowledgeRow row, KnowledgeCell cell, KnowledgeProperty property, List<TableFinding> findings)
+    {
+        var type = property.Type;
+        if (cell.Values.Count == 0 || !type.IsKnown)
+        {
+            return;
+        }
 
-                if (type.HoldsOptions)
-                {
-                    foreach (var value in cell.Values.Where(value => property.Options.All(option => option.Id != value)))
-                    {
-                        Warn(UnknownOption, $"This value names an option '{property.Name}' does not have ('{value}'); it is kept as it is.", row.Id, property.Id);
-                    }
-                }
+        if (cell.Key != type.CellKey)
+        {
+            Warn(findings, ValueOfAnotherType, $"This value is not a {property.ValueType}; it is kept as it is.", row.Id, property.Id);
+            return;
+        }
 
-                if (property is { Type: KnowledgeRelationType, Limit: "one" } && cell.Values.Count > 1)
-                {
-                    Warn(RelationOverLimit, $"'{property.Name}' relates to one row, and this cell names {cell.Values.Count}; they are kept as they are.", row.Id, property.Id);
-                }
+        if (type.HoldsOptions)
+        {
+            foreach (var value in cell.Values.Where(value => property.Options.All(option => option.Id != value)))
+            {
+                Warn(findings, UnknownOption, $"This value names an option '{property.Name}' does not have ('{value}'); it is kept as it is.", row.Id, property.Id);
             }
         }
 
-        // ---- relations: a target that is not there, and a row that is not in it. The value stays either way. ----
+        if (property is { Type: KnowledgeRelationType, Limit: "one" } && cell.Values.Count > 1)
+        {
+            Warn(findings, RelationOverLimit, $"'{property.Name}' relates to one row, and this cell names {cell.Values.Count}; they are kept as they are.", row.Id, property.Id);
+        }
+    }
 
+    // ---- relations: a target that is not there, and a row that is not in it. The value stays either way. ----
+
+    private static void ValidateRelations(KnowledgeTable table, Func<KnowledgeProperty, KnowledgeTarget?>? targetOf, List<TableFinding> findings)
+    {
         foreach (var relation in table.Properties.Where(property => property.Type is KnowledgeRelationType && targetOf is not null))
         {
             var target = targetOf!(relation);
             if (target?.Table is not { } related)
             {
-                Warn(UnresolvedTarget, $"'{relation.Name}' relates to a table that cannot be shown: {target?.Problem ?? "it names no file."} Its values are kept as they are.", columnId: relation.Id);
+                Warn(findings, UnresolvedTarget, $"'{relation.Name}' relates to a table that cannot be shown: {target?.Problem ?? "it names no file."} Its values are kept as they are.", columnId: relation.Id);
                 continue;
             }
 
@@ -149,16 +172,19 @@ internal static class KnowledgeValidator
             {
                 foreach (var value in row.Cells.FirstOrDefault(cell => cell.PropertyId == relation.Id && cell.Key == "rows")?.Values.Where(value => !there.Contains(value)) ?? [])
                 {
-                    Warn(UnresolvedRow, $"This value names a row that is not in {(related.Name.Length > 0 ? related.Name : "the table it relates to")} ('{value}'); it is kept as it is.", row.Id, relation.Id);
+                    Warn(findings, UnresolvedRow, $"This value names a row that is not in {(related.Name.Length > 0 ? related.Name : "the table it relates to")} ('{value}'); it is kept as it is.", row.Id, relation.Id);
                 }
             }
         }
+    }
 
-        // ---- the views ----
+    // ---- the views ----
 
+    private static void ValidateViews(KnowledgeTable table, Dictionary<string, KnowledgeProperty> properties, List<TableFinding> findings)
+    {
         if (table.Views.Count == 0)
         {
-            Warn(NoView, "The table has no view; it is shown as if it had one that changes nothing.");
+            Warn(findings, NoView, "The table has no view; it is shown as if it had one that changes nothing.");
         }
 
         foreach (var view in table.Views)
@@ -172,41 +198,49 @@ internal static class KnowledgeValidator
                 .Distinct(StringComparer.Ordinal);
             foreach (var id in missing)
             {
-                Warn(ViewNamesMissingProperty, $"The view '{view.Name}' has a setting for a property the table does not have ('{id}'); the view opens without it.");
+                Warn(findings, ViewNamesMissingProperty, $"The view '{view.Name}' has a setting for a property the table does not have ('{id}'); the view opens without it.");
             }
         }
+    }
 
-        // ---- rows that are their own ancestors ----
+    // ---- rows that are their own ancestors ----
 
-        if (table.Properties.FirstOrDefault(property => property.IsParent) is { } parent)
+    private static void ValidateParents(KnowledgeTable table, List<TableFinding> findings)
+    {
+        if (table.Properties.FirstOrDefault(property => property.IsParent) is not { } parent)
         {
-            var under = new Dictionary<string, string>(StringComparer.Ordinal);
-            foreach (var row in table.Rows)
-            {
-                if (row.Cells.FirstOrDefault(candidate => candidate.PropertyId == parent.Id) is { Key: "rows", Values.Count: > 0 } cell)
-                {
-                    under.TryAdd(row.Id, cell.Values[0]);
-                }
-            }
+            return;
+        }
 
-            foreach (var row in table.Rows.Where(row => under.ContainsKey(row.Id)))
+        var under = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var row in table.Rows)
+        {
+            if (row.Cells.FirstOrDefault(candidate => candidate.PropertyId == parent.Id) is { Key: "rows", Values.Count: > 0 } cell)
             {
-                // Walk up from the row; coming back to it within as many steps as there are rows is a circle.
-                var at = under[row.Id];
-                for (var steps = 0; steps <= under.Count && at != row.Id && under.TryGetValue(at, out var next); steps++)
-                {
-                    at = next;
-                }
-
-                if (at == row.Id)
-                {
-                    Error(ParentCycle, $"This row is its own ancestor through '{parent.Name}'.", row.Id, parent.Id);
-                }
+                under.TryAdd(row.Id, cell.Values[0]);
             }
         }
 
-        // ---- entries without an id ----
+        foreach (var row in table.Rows.Where(row => under.ContainsKey(row.Id)))
+        {
+            // Walk up from the row; coming back to it within as many steps as there are rows is a circle.
+            var at = under[row.Id];
+            for (var steps = 0; steps <= under.Count && at != row.Id && under.TryGetValue(at, out var next); steps++)
+            {
+                at = next;
+            }
 
+            if (at == row.Id)
+            {
+                Error(findings, ParentCycle, $"This row is its own ancestor through '{parent.Name}'.", row.Id, parent.Id);
+            }
+        }
+    }
+
+    // ---- entries without an id ----
+
+    private static void ValidateIds(FblModel model, List<TableFinding> findings)
+    {
         foreach (var element in model.Elements.Where(element => !element.IdIsStored && Identified.Contains(element.Type)))
         {
             findings.Add(new TableFinding(
@@ -216,13 +250,11 @@ internal static class KnowledgeValidator
                 element.Type == "Row" ? element.Id : "",
                 element.Type == "Property" ? element.Id : ""));
         }
-
-        return findings;
-
-        void Error(string code, string message, string rowId = "", string columnId = "") => findings.Add(new TableFinding(code, TableFindingSeverity.Error, message, rowId, columnId));
-
-        void Warn(string code, string message, string rowId = "", string columnId = "") => findings.Add(new TableFinding(code, TableFindingSeverity.Warning, message, rowId, columnId));
     }
+
+    private static void Error(List<TableFinding> findings, string code, string message, string rowId = "", string columnId = "") => findings.Add(new TableFinding(code, TableFindingSeverity.Error, message, rowId, columnId));
+
+    private static void Warn(List<TableFinding> findings, string code, string message, string rowId = "", string columnId = "") => findings.Add(new TableFinding(code, TableFindingSeverity.Warning, message, rowId, columnId));
 
     private static IEnumerable<KnowledgeCondition> Conditions(KnowledgeFilterGroup group) => group.Items.SelectMany(item => item switch
     {

@@ -1,8 +1,10 @@
 import type { ActionDeclaration, ActionInvocation } from "../definition/actions";
 import type { Binding, Condition } from "../definition/binding";
+import type { AxisDeclaration, BandDeclaration, BackgroundDeclaration } from "../definition/background";
 import type { CompartmentDeclaration } from "../definition/compartments";
-import type { CalendarStep, ChromeLegendDeclaration, ChromeTextDeclaration, RulerDeclaration, RulerRung, SwitchDeclaration } from "../definition/chrome";
+import type { CalendarStep, ChromeBandDeclaration, ChromeLegendDeclaration, ChromeNoticeDeclaration, ChromeTextDeclaration, RulerDeclaration, RulerRung, SwitchDeclaration } from "../definition/chrome";
 import type {
+  Cardinality,
   AnchorSet,
   BoundElementStyle,
   BuiltInShape,
@@ -16,6 +18,7 @@ import type {
   EndpointConstraint,
   FilterDeclaration,
   LabelDeclaration,
+  LabelTypography,
   LabelUnderline,
   LayoutDefinition,
   LayoutMode,
@@ -25,6 +28,7 @@ import type {
   RelationTypeDefinition,
   RouteLabelRule,
   SegmentDeclaration,
+  ShapeBounds,
   SideFraction,
   SnapAxis,
   SnapDeclaration,
@@ -34,11 +38,13 @@ import type {
 } from "../definition/diagramDefinition";
 import { ArcBow } from "./bowedArc";
 import { bowedArcAdornment, bowedArcRoute, type ArcBarsDeclaration, type ArcMarkDeclaration, type BowedArcDeclaration } from "./bowedArcLine";
+import { ribbonAdornment, type RibbonDeclaration } from "./ribbonLine";
 import { BEFORE_GAP } from "../definition/labels";
 import {
   typeList,
   type Bindable,
   type DislAxis,
+  type DislAxisRange,
   type DislBadge,
   type DislBadgeLayout,
   type DislCompartment,
@@ -57,6 +63,7 @@ import {
   type DislViewpoint,
 } from "./disTypes";
 import { libraryMarkerOf, libraryRouteOf, libraryShapeOf, shapeNameOf, type CustomShapeBinding } from "./shapeCatalog";
+import { drawingArea, type DrawingArea } from "./drawingArea";
 
 /**
  * A DISL notation compiled into the library's {@link DiagramDefinition}: DISL 0.3, and of DISL 0.4
@@ -89,6 +96,13 @@ export interface NotationBindings {
    * in lower case and an action its operation, else its kind - as the backend's derivation has them.
    */
   wireIds?: `x-${string}`;
+  /**
+   * Where the canvas's type ids come from. By default a type is its wire id, as the backend sends
+   * it. `"specification"` names each type by the specification, in lower case, while actions and
+   * tools keep their wire ids: for a module whose wire block gives several types one wire type and
+   * which tells them apart itself as it builds the canvas's model. Two types with one id are refused.
+   */
+  typeIds?: "specification";
   /**
    * The payload path the backend computes for each CEL expression the notation binds, keyed by the
    * expression as written. `self.<attribute>` needs no entry: it is `payload.<attribute>`.
@@ -127,6 +141,12 @@ export interface NotationBindings {
   relationLineClassName?: (relation: string) => string | undefined;
   /** A relation's wide, invisible hit line's class, where the stylesheet dresses it. */
   relationHitClassName?: (relation: string) => string | undefined;
+  /**
+   * Whether a node whose anchors are in DISL's `sides` mode offers a handle at the midpoint of each side it
+   * allows, which is what the mode states (§6.9: the midpoint of the nearest allowed side), rather than the
+   * library's edge rule along those sides. A handle is drawn as a dot and starts a connection from it.
+   */
+  sideHandles?: (type: string) => boolean;
   /** An endpoint's anchor rule, where the module states one. */
   endpointAnchors?: (relation: string, end: "source" | "target") => EndpointConstraint["anchors"] | undefined;
   /** What each custom shape of the specification is drawn as. */
@@ -152,8 +172,24 @@ export interface NotationBindings {
   ownRulers?: boolean;
   /** The class a legend swatch takes for one enum value. */
   legendSwatchClass?: (enumName: string, value: string) => string;
-  /** Library declarations the specification states only under a module's `x-` key, which DISL has no construct for. */
+  /**
+   * Library declarations the specification states only under a module's `x-` key, which DISL has no construct
+   * for. Its `elementTypes` are added after the compiled ones; every other key replaces the compiled one.
+   */
   extras?: (spec: DislDocument) => Partial<DiagramDefinition>;
+  /**
+   * What the module draws itself in place of what the specification states, where the notation can only
+   * approximate the drawing: a text set just after another label's text, a second line moving along an edge,
+   * an arrowhead square to the side it arrives at rather than to the line. Each is named by where it is
+   * stated - `<Node>/labels/<id>`, `<Edge>/labels/<id>`, `<Edge>/midMarkers` or `<Edge>/targetMarker` - and
+   * the compiler leaves it out: the module draws it through {@link elementLabels}, {@link elementDecorations}
+   * and {@link edgeAdornments}. A name the specification does not state is refused.
+   */
+  drawnByModule?: readonly string[];
+  /** Labels drawn after the ones the specification states, for what {@link drawnByModule} leaves to the module. */
+  elementLabels?: (type: string, node: DislNodeNotation) => readonly LabelDeclaration[];
+  /** What rides on an edge's line, drawn by the module, keyed by the edge: for what {@link drawnByModule} leaves to it. */
+  edgeAdornments?: Readonly<Record<string, NonNullable<RelationTypeDefinition["adorn"]>>>;
   /**
    * The condition each CEL `visible` of a label stands for, keyed by the expression as written, as
    * {@link celPaths} does for a value: the library has no CEL, so the payload carries what it tests.
@@ -180,6 +216,12 @@ export interface NotationBindings {
    * the drawing: a bezier's exact reach and its way back round, which DISL states only in outline.
    */
   customRoutes?: Readonly<Record<string, CustomRouteRef>>;
+  /**
+   * The edges drawn as a ribbon, a filled band along their route as thick as their style's stroke width,
+   * measured vertically, in their stroke's colour, with the class each names. DISL strokes every edge, and
+   * a stroke is thick across a curve rather than down it; the route is the edge's custom route.
+   */
+  ribbons?: Readonly<Record<string, { className?: string }>>;
   /**
    * An action as the module dispatches it, given the compiled declaration and the shortcut its menu
    * entry writes (its `KeyboardEvent.key`, without the modifiers, which a `backendKey` cannot carry): where a module's backend resolves an action by its key
@@ -221,6 +263,12 @@ export interface NotationBindings {
    */
   labelFit?: "style";
   /**
+   * Whether a node's stroke and fill, and its labels' size, weight, slant and colour, are drawn from the
+   * notation's styles (DISL §6.6 `stroke`, `fill`, `font`) rather than left to the module's stylesheet. A
+   * stroke of no width is not drawn; a token is its custom property, `--` and its name with dashes for dots.
+   */
+  stylesFromNotation?: boolean;
+  /**
    * The canvas's title and key (DISL §6.13 `canvas.title`, `canvas.legend`) as the module's stylesheet and
    * tests know them. A computed key's CEL runs over the elements drawn, which the backend evaluates, so its
    * entries are the list the model's background holds under `entries`, each read by the key's own CEL
@@ -228,13 +276,38 @@ export interface NotationBindings {
    */
   canvasChrome?: {
     title?: { className?: string; data?: Readonly<Record<string, string>> };
+    /** The header band's class, and each row's by its id (DISL §6.13 `canvas.header`). */
+    header?: { className?: string; rowClassName?: (row: string) => string | undefined; data?: Readonly<Record<string, string>> };
+    /**
+     * Per notice id (`budget:<id>` for a budget's), its class and when it shows. A budget's notice shows
+     * while the budget cuts what is drawn, which only the module's backend knows: the condition over the
+     * model's background that says so is the module's to state.
+     */
+    notices?: Readonly<Record<string, { className?: string; when?: Condition; data?: Readonly<Record<string, string>> }>>;
     legend?: { entries: string; className?: string; titleClassName?: string; entryClassName?: string; swatchClassName?: string; data?: Readonly<Record<string, string>> };
+  };
+  /**
+   * How a bounded canvas's axes are drawn along its edges (DISL §5.3 `ranges`, `endLabels`, `label`): the
+   * backdrop's class, an axis's, a range's band's by its axis, the range and its place among that axis's
+   * ranges, and the type the titles, end labels and range labels are set in. DISL paints a range by its
+   * style, which the module's stylesheet stands for here, and states no size for those labels.
+   */
+  axisChrome?: {
+    className?: string;
+    axisClassName?: string;
+    rangeClassName?: (axis: string, range: DislAxisRange, index: number) => string | undefined;
+    typography?: LabelTypography;
   };
 }
 
 export interface CompileOptions {
   /** The diagram attributes the notation binds (`{ attribute: "unit" }`), when not their default. */
   diagram?: Readonly<Record<string, string>>;
+  /**
+   * The pane the canvas is drawn in, for a canvas stretched to it (DISL §6.13 `fit: "stretch"`): the
+   * drawing area follows the pane's proportions, so a module compiles again when they change.
+   */
+  pane?: { width: number; height: number };
 }
 
 interface WireIds {
@@ -304,6 +377,9 @@ const COMPASS: Readonly<Record<CompassPosition, readonly [number, number]>> = {
   n: [0.5, 0], ne: [1, 0], e: [1, 0.5], se: [1, 1], s: [0.5, 1], sw: [0, 1], w: [0, 0.5], nw: [0, 0],
 };
 
+/** Each side's midpoint as the compass position the library draws a handle at, in the compass's order. */
+const SIDE_MIDPOINTS: readonly (readonly [string, CompassPosition])[] = [["top", "n"], ["right", "e"], ["bottom", "s"], ["left", "w"]];
+
 /** Where the first line of text inside a node sits beneath its top, and half of it above its bottom. */
 const LABEL_LINE = 20;
 
@@ -322,7 +398,49 @@ const BADGE_TOP = 5;
 const LINK_SIZE = 11;
 
 /** What a relation takes from its supertype where it does not state it (DISL 4.7). */
+/**
+ * A relation end's `max` (DISL §4.9) as the library's limit at that end - `maxFromSource` for the source,
+ * `maxIntoTarget` for the target - or nothing for an end that states none.
+ */
+function endLimit(end: unknown, limit: "maxFromSource" | "maxIntoTarget"): { maxFromSource?: number; maxIntoTarget?: number } {
+  return isObject(end) && typeof end.max === "number" ? { [limit]: end.max } : {};
+}
+
 const INHERITED_RELATION_KEYS = ["source", "target", "directed", "allowSelfLoops", "allowParallel", "acyclic"] as const;
+
+/** The three relation flags a subtype may only narrow (DISL 0.6, §4.7), with their §4.9 defaults. */
+const RELATION_FLAGS = { directed: true, allowSelfLoops: false, allowParallel: true } as const;
+
+/** A type's direct supertypes, from an `extends` that names one or a list (DISL §4.7). */
+function supertypesOf(extended: string | readonly string[] | undefined): readonly string[] {
+  return extended === undefined ? [] : typeof extended === "string" ? [extended] : extended;
+}
+
+/**
+ * A type and its supertypes, most specific first: the C3 linearisation (DISL §4.7). A supertype the types do not
+ * declare is left out, and so is one that would close a cycle; supertypes that cannot be put in one order are refused.
+ */
+function linearisation(name: string, types: Readonly<Record<string, { extends?: string | readonly string[] }>>, visiting: readonly string[] = []): string[] {
+  const parents = supertypesOf(types[name]?.extends).filter((parent) => types[parent] !== undefined && parent !== name && !visiting.includes(parent));
+  const sequences = [...parents.map((parent) => linearisation(parent, types, [...visiting, name])), [...parents]];
+  const result = [name];
+  for (;;) {
+    const open = sequences.filter((sequence) => sequence.length > 0);
+    if (open.length === 0) {
+      return result;
+    }
+    const head = open.map((sequence) => sequence[0]!).find((candidate) => !open.some((sequence) => sequence.indexOf(candidate) > 0));
+    if (head === undefined) {
+      return fail(`"${name}" has supertypes that cannot be put in one order (C3, DISL §4.7).`);
+    }
+    result.push(head);
+    for (const sequence of open) {
+      if (sequence[0] === head) {
+        sequence.shift();
+      }
+    }
+  }
+}
 
 /** Whether a filter is a switch whose value is kept with the diagram (DISL 0.4 §6.13.1). */
 function isKeptSwitch(filter: { control?: string; persist?: boolean }): boolean {
@@ -464,7 +582,9 @@ class Compiler {
   private readonly wire: WireIds;
   private readonly nodeNames: readonly string[];
   private readonly system: DislCoordinateSystem | undefined;
+  private readonly systemName: string | undefined;
   private readonly defaultViewpoint: [string, DislViewpoint] | undefined;
+  private readonly area: DrawingArea | undefined;
 
   constructor(
     private readonly spec: DislDocument,
@@ -480,16 +600,22 @@ class Compiler {
     this.nodeNames = Object.keys(spec.notation.nodes);
     const viewpoints = Object.entries(spec.viewpoints ?? {});
     this.defaultViewpoint = viewpoints.find(([, viewpoint]) => viewpoint.default === true) ?? viewpoints[0];
-    this.system = this.systemNamed(this.defaultViewpoint?.[1].coordinateSystem ?? spec.coordinates?.default);
+    this.systemName = this.defaultViewpoint?.[1].coordinateSystem ?? spec.coordinates?.default;
+    this.system = this.systemNamed(this.systemName);
+    try {
+      this.area = drawingArea(spec, options.pane, this.systemName);
+    } catch (error) {
+      fail((error as Error).message);
+    }
   }
 
   compile(): DiagramDefinition {
     const spec = this.spec;
+    this.distinctIds("node types", this.nodeNames);
+    this.distinctIds("edges", Object.keys(spec.notation.edges ?? {}));
     const elementTypes = this.nodeNames.map((name) => this.elementType(name, spec.notation.nodes[name]!));
     const relationTypes = Object.entries(spec.notation.edges ?? {}).map(([name]) => this.relationType(name));
-    const acyclic = Object.entries(spec.metamodel.relations ?? {})
-      .filter(([, relation]) => relation.acyclic === true)
-      .map(([name]) => ({ relationTypes: [this.typeId(name)] }));
+    const acyclic = this.acyclicRules();
     const actions = this.actions();
     const snap = this.snap();
     const rulers = this.rulers(this.system);
@@ -497,16 +623,22 @@ class Compiler {
     const switches = this.switches();
     const empty = this.emptyCanvas();
     const title = this.canvasTitle();
+    const header = this.canvasHeader();
+    const notices = this.notices();
     const legend = this.computedLegend();
     const chrome = {
       ...(rulers.length > 0 ? { rulers } : {}),
       ...(switches.length > 0 ? { switches } : {}),
       ...(empty !== undefined ? { empty } : {}),
       ...(title !== undefined ? { title } : {}),
+      ...(header !== undefined ? { header } : {}),
+      ...(notices.length > 0 ? { notices } : {}),
       ...(legend !== undefined ? { legend } : {}),
     };
     const backgroundMenu = this.backgroundMenu(this.defaultViewpoint?.[0]);
     const dragging = this.dragging(elementTypes);
+    const background = this.axisBackground();
+    const dragBounds = this.dragBounds();
     const drops = this.bindings.toolboxDrops === "module" ? [] : this.toolboxDrops();
 
     const definition: DiagramDefinition = {
@@ -522,9 +654,111 @@ class Compiler {
       ...(backgroundMenu ? { backgroundMenu } : {}),
       ...(drops.length > 0 ? { toolbox: { drops } } : {}),
       ...(this.connectsOnRightDrag() ? { connectOnRightDrag: true } : {}),
+      ...(this.area !== undefined ? { extent: this.area.extent } : {}),
+      ...(dragBounds !== undefined ? { dragBounds } : {}),
+      ...(background !== undefined ? { background } : {}),
     };
 
-    return { ...definition, ...this.bindings.extras?.(spec) };
+    const extras = this.bindings.extras?.(spec) ?? {};
+    return { ...definition, ...extras, ...(extras.elementTypes !== undefined ? { elementTypes: [...elementTypes, ...extras.elementTypes] } : {}) };
+  }
+
+  /** The default system's x and y axes, by name where they are named. */
+  private systemAxes(): { name: string; axis: DislAxis; across: boolean }[] {
+    const system = this.system;
+    if (system === undefined) {
+      return [];
+    }
+    return (["x", "y"] as const).flatMap((end) => {
+      const axis = system[end];
+      return axis === undefined ? [] : [{ name: typeof axis === "string" ? axis : end, axis: this.axis(axis), across: end === "x" }];
+    });
+  }
+
+  /**
+   * A bounded canvas's axes along its edges (DISL §5.3): each axis's named ranges as bands across the
+   * extent, from its `from` to its `to`, with a rule at a range's start where it states a separator; and
+   * each axis with a title or end labels drawn along its edge, the vertical one first, its labels by the
+   * end of the domain they stand at. Ranges need the bounds to be drawn in; an axis along no bounds is the
+   * rulers' to draw, and is left to them.
+   */
+  private axisBackground(): BackgroundDeclaration | undefined {
+    const chrome = this.bindings.axisChrome;
+    const area = this.area;
+    const typography = chrome?.typography;
+    const bands: BandDeclaration[] = [];
+    for (const { name, axis, across } of this.systemAxes()) {
+      const ranges = axis.ranges ?? [];
+      if (ranges.length > 0 && area === undefined) {
+        fail(`axis "${name}" names ranges, and the canvas states no bounds to draw them in.`);
+      }
+      ranges.forEach((range, index) => {
+        if (range.labelPosition !== undefined && range.labelPosition !== "center") {
+          fail(`range "${range.id}" of axis "${name}" puts its label at the ${range.labelPosition}; the library centres a range's label in its band.`);
+        }
+        const at = (value: number) =>
+          across ? (area!.toCanvas(value, 0).x - area!.extent.x) / area!.extent.width : (area!.toCanvas(0, value).y - area!.extent.y) / area!.extent.height;
+        const [start, end] = [at(range.from), at(range.to)].sort((one, other) => one - other) as [number, number];
+        const className = chrome?.rangeClassName?.(name, range, index);
+        bands.push({
+          orientation: across ? "vertical" : "horizontal",
+          start,
+          end,
+          ...(range.label !== undefined ? { label: this.literal(range.label, `range "${range.id}" of axis "${name}" label`) } : {}),
+          ...(range.separator !== undefined ? { edge: true } : {}),
+          ...(className !== undefined ? { className } : {}),
+          ...(typography !== undefined ? { typography } : {}),
+        });
+      });
+    }
+
+    const axes: AxisDeclaration[] = area === undefined ? [] : [...this.systemAxes()].reverse().flatMap(({ name, axis, across }) => {
+      if (axis.label === undefined && axis.endLabels === undefined) {
+        return [];
+      }
+      // The end the axis starts from - the left, or the top - is its minimum unless it runs the other way.
+      const flipped = across ? axis.reversed === true : (axis.reversed === true) !== (this.system?.orientation === "y-up");
+      const [first, last] = flipped ? [axis.endLabels?.max, axis.endLabels?.min] : [axis.endLabels?.min, axis.endLabels?.max];
+      const where = `axis "${name}"`;
+      return [{
+        orientation: across ? "horizontal" as const : "vertical" as const,
+        ...(axis.label !== undefined ? { title: this.literal(axis.label, `${where} label`) } : {}),
+        ...(first !== undefined ? { startLabel: this.literal(first, `${where} end label`) } : {}),
+        ...(last !== undefined ? { endLabel: this.literal(last, `${where} end label`) } : {}),
+        ...(chrome?.axisClassName !== undefined ? { className: chrome.axisClassName } : {}),
+        ...(typography !== undefined ? { typography } : {}),
+      }];
+    });
+
+    if (bands.length === 0 && axes.length === 0) {
+      return undefined;
+    }
+    return {
+      ...(chrome?.className !== undefined ? { className: chrome.className } : {}),
+      ...(bands.length > 0 ? { bands } : {}),
+      ...(axes.length > 0 ? { axes } : {}),
+    };
+  }
+
+  /**
+   * Where a drag stops (DISL §5.3 `outOfRange.drag: "clamp"`): at the bounds, which the axes span from their
+   * minimum to their maximum, where both axes clamp a drag. One axis alone is refused: the library stops a
+   * drag at a box.
+   */
+  private dragBounds(): ShapeBounds | undefined {
+    const axes = this.systemAxes();
+    const clamps = axes.map(({ axis }) => axis.outOfRange?.drag === "clamp");
+    if (!clamps.some(Boolean)) {
+      return undefined;
+    }
+    if (axes.length < 2 || !clamps.every(Boolean)) {
+      const [clamped, free] = clamps[0] ? ["x", "y"] : ["y", "x"];
+      fail(`the coordinate system "${this.systemName}" clamps a drag on its ${clamped} axis and not on its ${free} axis; the library clamps a drag at the bounds on both or neither.`);
+    }
+    if (this.area === undefined) {
+      fail(`the coordinate system "${this.systemName}" clamps a drag at its axes' bounds, and the canvas states no bounds to clamp it in.`);
+    }
+    return this.area.area;
   }
 
   /**
@@ -604,6 +838,86 @@ class Compiler {
   }
 
   /**
+   * The canvas's header band (DISL §6.13 `canvas.header`): its rows, each a label bound against the
+   * model's background, which carries the diagram's attributes, and drawn while its `visible` holds. The
+   * library draws a band and edits none, so an editable row is refused.
+   */
+  private canvasHeader(): ChromeBandDeclaration | undefined {
+    const header = this.spec.notation.canvas?.header;
+    if (header === undefined) {
+      return undefined;
+    }
+
+    const stated = this.bindings.canvasChrome?.header;
+    const rows = header.rows.map((row, index): ChromeTextDeclaration => {
+      const where = `the canvas's header row "${row.id ?? index}"`;
+      if (row.editable === true || row.editable === "inline" || row.editable === "multiline") {
+        fail(`${where} is editable; the library draws a header and edits none.`);
+      }
+      const when = this.labelVisibility(row.visible, where);
+      const className = row.id === undefined ? undefined : stated?.rowClassName?.(row.id);
+      return {
+        text: typeof row.text === "string" ? this.literal(row.text, where) : this.binding(row.text, where),
+        ...(when !== undefined ? { when } : {}),
+        ...(className !== undefined ? { className } : {}),
+      };
+    });
+    const when = header.visible === undefined || header.visible === true ? undefined : this.labelVisibility(header.visible as DislLabel["visible"], "the canvas's header");
+    return {
+      rows,
+      ...(when !== undefined ? { when } : {}),
+      ...(stated?.className !== undefined ? { className: stated.className } : {}),
+      ...(stated?.data !== undefined ? { data: stated.data } : {}),
+    };
+  }
+
+  /**
+   * The canvas's notices (DISL §6.13): each budget's that cuts what is drawn (§3.2.1) and has a notice,
+   * replaced by a declared notice of the id `budget:<id>`. When a budget's notice shows is the module's
+   * condition ({@link NotationBindings.canvasChrome}), since only its backend knows that the budget cut.
+   * A declared notice of any other id is refused: the library draws a budget's notice and no other.
+   */
+  private notices(): ChromeNoticeDeclaration[] {
+    const declared = new Map((this.spec.notation.canvas?.notices ?? []).map((notice) => [notice.id, notice]));
+    for (const id of declared.keys()) {
+      if (!id.startsWith("budget:")) {
+        fail(`the canvas's notice "${id}" is no budget's; the library draws a budget's notice and no other.`);
+      }
+    }
+
+    return Object.entries(this.spec.language.limits?.budgets ?? {}).flatMap(([name, budget]): ChromeNoticeDeclaration[] => {
+      const id = `budget:${name}`;
+      // A budget truncates unless it says otherwise, or it measures with CEL (DISL §3.2.1).
+      const truncates = budget.truncate ?? !(isObject(budget.measure) && typeof budget.measure.cel === "string");
+      const notice = declared.get(id) ?? (budget.notice === false ? undefined : budget.notice === true || budget.notice === undefined ? {} : budget.notice);
+      if (!truncates || notice === undefined) {
+        return [];
+      }
+
+      const where = `the canvas's notice "${id}"`;
+      if (notice.text === undefined) {
+        fail(`${where} states no text; the library has no sentence of its own for a budget.`);
+      }
+      if (notice.visible !== undefined) {
+        fail(`${where} narrows when it shows; the library shows a budget's notice on the module's condition alone.`);
+      }
+      const stated = this.bindings.canvasChrome?.notices?.[id];
+      if (stated?.when === undefined) {
+        fail(`${where} shows while the budget cuts what is drawn; the library needs the module's condition for that in canvasChrome.notices.`);
+      }
+      return [{
+        id,
+        text: typeof notice.text === "string" ? this.literal(notice.text, where) : this.binding(notice.text, where),
+        severity: notice.severity ?? "info",
+        position: notice.position ?? "top",
+        when: stated.when,
+        ...(stated.className !== undefined ? { className: stated.className } : {}),
+        ...(stated.data !== undefined ? { data: stated.data } : {}),
+      }];
+    });
+  }
+
+  /**
    * The canvas's computed key (DISL §6.13 `canvas.legend.computed`), drawn below the drawing surface: one
    * entry per item of the list the module names, its caption and its swatch's colour each the path within
    * the item that the key's CEL stands for ({@link NotationBindings.rowPaths}). A key drawn anywhere but
@@ -650,7 +964,20 @@ class Compiler {
   // ---- names --------------------------------------------------------------------------------
 
   private typeId(name: string): string {
-    return this.wire.types?.[name] ?? name.toLowerCase();
+    return (this.bindings.typeIds === "specification" ? undefined : this.wire.types?.[name]) ?? name.toLowerCase();
+  }
+
+  /** Refuses two of a kind of type under one id, which the canvas tells them apart by. */
+  private distinctIds(kind: string, names: readonly string[]): void {
+    const seen = new Map<string, string>();
+    for (const name of names) {
+      const id = this.typeId(name);
+      const first = seen.get(id);
+      if (first !== undefined) {
+        fail(`${kind} "${first}" and "${name}" are both "${id}" on the canvas, which tells its types apart by id; a module that builds its own model names them by the specification (typeIds).`);
+      }
+      seen.set(id, name);
+    }
   }
 
   /** The concrete node types a metamodel type name stands for: itself, or its descendants with a notation. */
@@ -746,24 +1073,29 @@ class Compiler {
 
   private elementType(name: string, node: DislNodeNotation): ElementTypeDefinition {
     const where = `node "${name}"`;
-    const { shape, segments, cornerRadius } = this.shape(name, node);
+    const { shape, segments, cornerRadius, parts } = this.shape(name, node);
     const bodyless = shape === "none";
     const classNames = [...this.bindings.classNames(name, node), ...this.indexedColours(name, node)];
     const hint = this.showsDragValue() && this.movable(node) ? [this.dragHint()] : [];
-    const labels = [...(node.labels ?? []).map((label) => this.label(name, label, bodyless)), ...hint];
+    // A `text` shape is only its text (Appendix B.2): placed by an edge, its text starts or ends there.
+    const placedEdge = node.placement?.anchor === "left" ? "start" : node.placement?.anchor === "right" ? "end" : undefined;
+    const textEdge = shapeNameOf(node.shape).name === "text" ? placedEdge : undefined;
+    const labels = [...(node.labels ?? []).map((label) => this.label(name, label, bodyless, textEdge)), ...hint, ...(this.bindings.elementLabels?.(name, node) ?? [])];
     const compartments = this.compartments(name, node);
     const { links, decorations: badges } = this.badges(name, node);
-    const decorations = [...this.icon(name, node, bodyless), ...badges, ...(this.bindings.elementDecorations?.(name, node) ?? [])];
+    const decorations = [...(parts ?? []), ...this.icon(name, node, bodyless), ...badges, ...(this.bindings.elementDecorations?.(name, node) ?? [])];
     const data = this.bindings.elementData?.(name, node);
     const centreOf = this.centreOf(name, node);
     const { sizing, resize } = this.sizing(node);
     const editOnDrop = (this.spec.toolbox?.groups ?? []).some((group) => group.tools.some((tool) => tool.creates === name && tool.after === "editLabel"));
     const boundStyle = this.bindings.boundStyle?.(name, node);
+    const style = { ...(cornerRadius !== undefined ? { cornerRadius } : {}), ...this.notationStyle(node) };
+    const dragAxis = this.dragAxis(node);
 
     return {
       id: this.typeId(name),
       shape,
-      ...(cornerRadius !== undefined ? { style: { cornerRadius } } : {}),
+      ...(Object.keys(style).length > 0 ? { style } : {}),
       ...(boundStyle !== undefined ? { boundStyle } : {}),
       ...(classNames.length > 0 ? { classNames } : {}),
       ...(data !== undefined ? { data } : {}),
@@ -777,7 +1109,10 @@ class Compiler {
       sizing,
       ...(resize !== undefined ? { resize } : {}),
       ...(this.movable(node) ? {} : { draggable: false }),
+      ...(dragAxis !== undefined ? { dragAxis } : {}),
       ...(node.deletable === false ? { deletable: false } : {}),
+      // Not picked (DISL §6.9): a press on it is a press on what lies under it.
+      ...(node.selectable === false ? { selectable: false } : {}),
       // The background layer (DISL 6.16) is beneath the connections, so a container's arrows stay over it.
       ...(node.layer === "background" ? { beneathConnections: true } : {}),
       ...(editOnDrop ? { editOnDrop } : {}),
@@ -886,8 +1221,9 @@ class Compiler {
   /**
    * Where a node with no position of its own is drawn (DISL §6.9 placement): the mean of the centres of
    * the members one attribute lists, `self.<members>.map(m, m.view.bounds.center()[0]).avg()` and its
-   * `[1]` - the members the payload lists under the attribute's name. Any other CEL is refused; a
-   * placement by attribute or by the layout is not this one's.
+   * `[1]` - the members the payload lists under the attribute's name. A CEL the module's celPaths name
+   * `element.x` and `element.y` is the position the backend computed, which the model carries. Any other
+   * CEL is refused; a placement by attribute or by the layout is not this one's.
    */
   private centreOf(name: string, node: DislNodeNotation): string | undefined {
     const { x, y } = node.placement ?? {};
@@ -895,6 +1231,19 @@ class Compiler {
     const computed = (value: unknown) => isObject(value) && typeof value.cel === "string";
     if (!computed(x) && !computed(y)) {
       return undefined;
+    }
+
+    // A position the backend computes arrives as the element's own, where the module's celPaths say so.
+    // So does a coordinate an attribute holds, which the model carries as the element's own as well.
+    const byAttribute = (value: unknown) => isObject(value) && typeof value.attribute === "string";
+    const own = (value: unknown, axis: "x" | "y") => byAttribute(value) || (isObject(value) && typeof value.cel === "string" && this.bindings.celPaths[value.cel] === `element.${axis}`);
+    if (own(x, "x") && own(y, "y")) {
+      return undefined;
+    }
+    for (const [value, other, axis] of [[x, y, "x"], [y, x, "y"]] as const) {
+      if (byAttribute(other) && !own(value, axis)) {
+        fail(`node "${name}" places its ${axis} at "${String((value as { cel?: unknown }).cel)}", which has no entry element.${axis} in the module's celPaths; beside an attribute the library draws a coordinate the backend computes.`);
+      }
     }
 
     const memberList = (value: unknown, index: number): string | null => {
@@ -934,16 +1283,20 @@ class Compiler {
   }
 
   /** A `visible` as a condition, or none where it is always drawn. */
-  private visibility(visible: boolean | string | { cel: string } | undefined, where: string): Condition | undefined {
+  private visibility(visible: boolean | string | { cel: string } | { attribute: string } | undefined, where: string): Condition | undefined {
     if (visible === undefined || visible === true) {
       return undefined;
+    }
+    if (isObject(visible) && "attribute" in visible) {
+      // A bool attribute of the element itself: shown while it is true (DISL §6.9).
+      return { path: `payload.${visible.attribute}`, is: "true" };
     }
 
     const expression = typeof visible === "string" ? visible : isObject(visible) ? visible.cel : undefined;
     return expression === undefined ? fail(`${where} is never visible.`) : this.condition(expression.trim(), `${where} visible`);
   }
 
-  private shape(name: string, node: DislNodeNotation): { shape: BuiltInShape; segments?: SegmentDeclaration; cornerRadius?: number } {
+  private shape(name: string, node: DislNodeNotation): { shape: BuiltInShape; segments?: SegmentDeclaration; cornerRadius?: number; parts?: readonly DecorationDeclaration[] } {
     const { name: shapeName, params } = shapeNameOf(node.shape);
     const custom: DislCustomShape | undefined = this.spec.notation.shapes?.[shapeName];
     const drawnAs = custom === undefined ? this.bindings.builtInShapes?.[shapeName] : undefined;
@@ -963,16 +1316,24 @@ class Compiler {
       return fail(`node "${name}" is drawn as "${shapeName}", which is no built-in the library draws and no custom shape the module binds.`);
     }
 
-    const segments = binding.segments?.({ shape: custom, params, bind: (value) => this.binding(value, `node "${name}" shape parameter`) });
-    return segments !== undefined ? { shape: binding.shape, segments } : { shape: binding.shape };
+    const bind = (value: unknown) => this.binding(value, `node "${name}" shape parameter`);
+    const segments = binding.segments?.({ shape: custom, params, bind });
+    const parts = binding.decorations?.({ shape: custom, params, bind, node });
+    return { shape: binding.shape, ...(segments !== undefined ? { segments } : {}), ...(parts !== undefined && parts.length > 0 ? { parts } : {}) };
   }
 
-  private label(type: string, label: DislLabel, bodyless = false): LabelDeclaration {
+  private label(type: string, label: DislLabel, bodyless = false, textEdge?: "start" | "end"): LabelDeclaration {
     const where = `node "${type}" label "${label.id}"`;
-    const declaration: Record<string, unknown> = { text: this.binding(label.text, where) };
+    // A label's text is a Bindable: a literal string is shown as it is written (DISL §2.5b).
+    const declaration: Record<string, unknown> = { text: typeof label.text === "string" ? this.literal(label.text, where) : this.binding(label.text, where) };
 
     const position = label.position;
-    if (bodyless && position === "bottom") {
+    if (position === undefined && textEdge !== undefined) {
+      // The text of a text shape placed by its edge, from that edge: the library's aligned line, with no inset.
+      declaration.anchorTo = "centre";
+      declaration.align = textEdge;
+      declaration.insetX = 0;
+    } else if (bodyless && position === "bottom") {
       // A body-less node has no box to write at the bottom of: its last line is on its point, beneath its icon.
     } else if (position === "outside-left") {
       if (label.distance !== undefined && label.distance !== BEFORE_GAP) {
@@ -1000,12 +1361,33 @@ class Compiler {
       if (anchorTo === undefined || (ax !== 0.5 && edge === undefined)) {
         fail(`${where} anchors at ${JSON.stringify(position.anchor)}; the library anchors a label at the top, centre or bottom of the middle or of an edge.`);
       }
-      if (edge !== undefined && position.align !== edge) {
-        fail(`${where} anchors at its ${edge === "start" ? "left" : "right"} edge ${position.align === undefined ? "with no align" : `aligned "${position.align}"`}; the library aligns such a line "${edge}".`);
+      // A line aligned away from its edge runs out beyond it: the library's aligned line from the opposite
+      // edge, inset across the node, which only a node of a stated width can say.
+      const across = edge === undefined ? undefined : edge === "start" ? "end" : "start";
+      const width = across !== undefined && position.align === across ? this.statedWidth(type) : undefined;
+      if (edge !== undefined && position.align !== edge && width === undefined) {
+        fail(`${where} anchors at its ${edge === "start" ? "left" : "right"} edge ${position.align === undefined ? "with no align" : `aligned "${position.align}"`}; the library aligns such a line "${edge}", or "${across}" beyond the edge of a node of a stated width.`);
       }
       declaration.anchorTo = anchorTo;
-      const offset = position.offset as readonly [number, number] | undefined;
-      if (edge !== undefined) {
+      const stated = position.offset;
+      // An offset the element carries (DISL §6.9 Point, bindable): its [dx, dy] read from the payload at draw time.
+      const bound = isObject(stated) && !Array.isArray(stated) ? (stated as { cel?: string; attribute?: string }) : undefined;
+      if (bound !== undefined && edge !== undefined) {
+        fail(`${where} anchors at its ${edge === "start" ? "left" : "right"} edge at an offset its element binds; the library binds the offset of a label anchored in the middle.`);
+      }
+      const offset = bound === undefined ? (stated as readonly [number, number] | undefined) : undefined;
+      if (bound !== undefined) {
+        declaration.offsetBinding = typeof bound.attribute === "string" ? { path: `payload.${bound.attribute}` } : { path: this.bindings.celPaths[bound.cel ?? ""] ?? fail(`${where} is offset by "${String(bound.cel)}", which has no payload path in the module's celPaths.`) };
+      }
+      if (edge === undefined && (position.align === "start" || position.align === "end")) {
+        // Aligned from its point rather than centred on it: the text starts, or ends, at the anchor moved by the offset.
+        declaration.textAnchor = position.align;
+      }
+      if (edge !== undefined && width !== undefined) {
+        declaration.align = across;
+        declaration.insetX = width + (edge === "end" ? (offset?.[0] ?? 0) : -(offset?.[0] ?? 0));
+        declaration.offset = { x: 0, y: offset?.[1] ?? 0 };
+      } else if (edge !== undefined) {
         declaration.align = edge;
         declaration.insetX = edge === "start" ? (offset?.[0] ?? 0) : -(offset?.[0] ?? 0);
         declaration.offset = { x: 0, y: offset?.[1] ?? 0 };
@@ -1016,6 +1398,12 @@ class Compiler {
       // Inside, on the first or the last line of the node (DISL 0.4 §6.9).
       declaration.anchorTo = position;
       declaration.offset = { x: 0, y: position === "top" ? LABEL_LINE : -LABEL_LINE / 2 };
+    } else if (typeof position === "string" && /^(top|bottom)-(left|right)$/.test(position)) {
+      // Inside, at a corner: on the first or the last line, aligned to that side at the library's inset.
+      const [vertical, side] = position.split("-") as ["top" | "bottom", "left" | "right"];
+      declaration.anchorTo = vertical;
+      declaration.align = side === "left" ? "start" : "end";
+      declaration.offset = { x: 0, y: vertical === "top" ? LABEL_LINE : -LABEL_LINE / 2 };
     } else if (position !== undefined && position !== "center") {
       fail(`${where} is positioned "${String(position)}", which the library has no placement for.`);
     }
@@ -1033,6 +1421,10 @@ class Compiler {
     }
     if (label.tooltip !== undefined) {
       declaration.tooltip = this.binding(label.tooltip, `${where} tooltip`);
+    }
+    const typography = this.typography(type, label, where);
+    if (typography !== undefined) {
+      declaration.typography = typography;
     }
     const when = this.labelVisibility(label.visible, where);
     if (when !== undefined) {
@@ -1053,6 +1445,16 @@ class Compiler {
     }
 
     return declaration as unknown as LabelDeclaration;
+  }
+
+  /** A node's width where it states one that nothing changes: a number, or the first of a fixed size. */
+  private statedWidth(type: string): number | undefined {
+    const size = this.spec.notation.nodes[type]?.size;
+    if (size?.fixed !== undefined) {
+      return size.fixed[0];
+    }
+
+    return typeof size?.width === "number" && (size.resizable === undefined || size.resizable === false || size.resizable === "vertical") ? size.width : undefined;
   }
 
   /**
@@ -1178,6 +1580,17 @@ class Compiler {
       return { kind: "edge" };
     }
 
+    if (anchors?.mode === "sides" && anchors.spread === true) {
+      // Spread along each side: an end sits anywhere along the edge, where the model attaches it.
+      return { kind: "along", edges: [...(anchors.sides ?? ["top", "right", "bottom", "left"])], visible: false };
+    }
+
+    if (anchors?.mode === "sides" && this.bindings.sideHandles?.(name) === true) {
+      // A handle at the middle of each allowed side, in the library's compass order.
+      const allowed = new Set<string>(anchors.sides ?? ["top", "right", "bottom", "left"]);
+      return { kind: "compass", positions: SIDE_MIDPOINTS.filter(([side]) => allowed.has(side)).map(([, position]) => position) };
+    }
+
     if (anchors?.mode === "sides") {
       const sides = [...(anchors.sides ?? ["top", "right", "bottom", "left"])].sort().join(",");
       const edgeSides = sides === "bottom,top" ? "vertical" : sides === "left,right" ? "horizontal" : sides === "bottom,left,right,top" ? undefined : fail(`node "${name}" attaches on ${sides}, which the library's edge anchors cannot narrow to.`);
@@ -1254,6 +1667,69 @@ class Compiler {
     };
   }
 
+  /** The one axis a node moves along, where its placement is movable along one and not the other. */
+  private dragAxis(node: DislNodeNotation): "x" | "y" | undefined {
+    const movable = node.placement?.movable;
+    if (!isObject(movable) || (movable.x === true) === (movable.y === true)) {
+      return undefined;
+    }
+
+    return movable.x === true ? "x" : "y";
+  }
+
+  /**
+   * A node's stroke and fill from its style, where the module asks for them ({@link NotationBindings.stylesFromNotation}):
+   * a stroke of no width is not drawn, and a token is its custom property. A CEL colour is the element's
+   * {@link NotationBindings.boundStyle}'s, which the payload carries.
+   */
+  private notationStyle(node: DislNodeNotation): { stroke?: string; strokeWidth?: number; fill?: string } {
+    if (this.bindings.stylesFromNotation !== true) {
+      return {};
+    }
+
+    const style = this.styleOf(node.style);
+    const stroke = isObject(style?.stroke) ? style.stroke : undefined;
+    const fill = style?.fill;
+    const strokeColour = isObject(stroke?.color) && typeof stroke.color.token === "string" ? tokenProperty(stroke.color.token) : undefined;
+    return {
+      ...(stroke?.width === 0 ? { stroke: "transparent" } : {
+        ...(strokeColour !== undefined ? { stroke: strokeColour } : {}),
+        ...(typeof stroke?.width === "number" ? { strokeWidth: stroke.width } : {}),
+      }),
+      ...(isObject(fill) && typeof fill.token === "string" ? { fill: tokenProperty(fill.token) } : {}),
+    };
+  }
+
+  /**
+   * A label's size, weight, slant and colour from its style's `font`, where the module asks for them
+   * ({@link NotationBindings.stylesFromNotation}). A CEL colour is the element's bound label colour, and
+   * refused where the module binds none.
+   */
+  private typography(type: string, label: DislLabel, where: string): LabelTypography | undefined {
+    if (this.bindings.stylesFromNotation !== true) {
+      return undefined;
+    }
+
+    const font = this.styleOf(label.style)?.font;
+    if (!isObject(font)) {
+      return undefined;
+    }
+
+    const colour = font.color;
+    if (isObject(colour) && typeof colour.cel === "string" && this.bindings.boundStyle?.(type, this.spec.notation.nodes[type]!)?.labelColor === undefined) {
+      fail(`${where} is coloured by "${colour.cel}", which no bound label colour of the module carries.`);
+    }
+
+    const weight = font.weight;
+    const typography: LabelTypography = {
+      ...(typeof font.size === "number" ? { fontSize: font.size } : {}),
+      ...(weight === "bold" || (typeof weight === "number" && weight >= 600) ? { fontWeight: "bold" as const } : {}),
+      ...(font.style === "italic" ? { fontStyle: "italic" as const } : {}),
+      ...(isObject(colour) && typeof colour.token === "string" ? { color: tokenProperty(colour.token) } : {}),
+    };
+    return Object.keys(typography).length > 0 ? typography : undefined;
+  }
+
   private movable(node: DislNodeNotation): boolean {
     const movable = node.placement?.movable;
     return movable === undefined || movable === true || (isObject(movable) && (movable.x === true || movable.y === true));
@@ -1262,17 +1738,21 @@ class Compiler {
   // ---- relation types -----------------------------------------------------------------------
 
   /**
-   * A relation with what it does not state itself taken from its supertypes (DISL 4.7): its ends and
-   * whether it is directed, loops, runs in parallel or is acyclic. Its own `derived`, `abstract` and
-   * label are its own.
+   * A relation with what it does not state itself taken from its supertypes along their C3 linearisation, the
+   * nearest type that states it winning (DISL 0.6, §4.7): its ends and whether it is directed, loops, runs in
+   * parallel or is acyclic. Its own `derived`, `abstract` and label are its own. A relation type that widens a flag,
+   * or whose supertypes differ in one it does not state, is refused, as the backend refuses it.
    */
   private relation(name: string): DislRelation {
     const relations = this.spec.metamodel.relations ?? {};
+    const reference = relations[name] === undefined ? this.referenceRelation(name) : undefined;
+    if (reference !== undefined) {
+      return reference;
+    }
     const own = relations[name] ?? fail(`edge "${name}" has no relation in the metamodel.`);
+    this.checkRelationFlags(name);
     const merged: Record<string, unknown> = { ...own };
-    const seen = [name];
-    for (let current = own.extends; current !== undefined && !seen.includes(current); current = relations[current]?.extends) {
-      seen.push(current);
+    for (const current of linearisation(name, relations).slice(1)) {
       const supertype = relations[current];
       for (const key of INHERITED_RELATION_KEYS) {
         if (merged[key] === undefined && supertype?.[key] !== undefined) {
@@ -1281,6 +1761,58 @@ class Compiler {
       }
     }
     return merged as unknown as DislRelation;
+  }
+
+  /**
+   * The edge a `Type.attribute` key draws for a reference attribute (DISL §4.5, §6.10): from the node that
+   * holds the attribute to the node it names, one per holder. None for a key of no such shape, which is then
+   * a relation type's name; a reference attribute whose type is no node type is refused.
+   */
+  private referenceRelation(name: string): DislRelation | undefined {
+    const key = /^([A-Za-z_][A-Za-z0-9_]*)\.([A-Za-z_][A-Za-z0-9_]*)$/.exec(name);
+    const types = this.spec.metamodel.types;
+    if (key === null || types[key[1]!] === undefined) {
+      return undefined;
+    }
+
+    const [, holder, attribute] = key as unknown as [string, string, string];
+    const declared = linearisation(holder, types).map((type) => types[type]?.attributes?.[attribute]).find((each) => each !== undefined);
+    if (declared === undefined) {
+      return fail(`edge "${name}" draws the attribute "${attribute}", which "${holder}" does not have.`);
+    }
+    if (types[declared.type] === undefined) {
+      return fail(`edge "${name}" draws the attribute "${attribute}" of "${holder}", which names no node type.`);
+    }
+
+    return { source: holder, target: declared.type, directed: true };
+  }
+
+  /** A relation type's flag as DISL 0.6 reads it (§4.7): the nearest stating type of its linearisation, else the default. */
+  private relationFlag(name: string, flag: keyof typeof RELATION_FLAGS): boolean {
+    const relations = this.spec.metamodel.relations ?? {};
+    const stated = linearisation(name, relations).map((type) => relations[type]?.[flag]).find((value) => value !== undefined);
+    return stated ?? RELATION_FLAGS[flag];
+  }
+
+  /** Refuses a relation type that widens a flag of a direct supertype, or inherits two values of one it does not state (DISL 0.6, §4.7). */
+  private checkRelationFlags(name: string): void {
+    const relations = this.spec.metamodel.relations ?? {};
+    const parents = supertypesOf(relations[name]?.extends).filter((parent) => relations[parent] !== undefined);
+    for (const flag of Object.keys(RELATION_FLAGS) as (keyof typeof RELATION_FLAGS)[]) {
+      const stated = relations[name]?.[flag];
+      for (const parent of parents) {
+        const value = this.relationFlag(parent, flag);
+        if (flag === "directed" && stated !== undefined && stated !== value) {
+          fail(`relation "${name}" states ${flag} ${String(stated)}, which differs from the ${String(value)} of its supertype "${parent}" (DISL §4.7).`);
+        }
+        if (flag !== "directed" && stated === true && !value) {
+          fail(`relation "${name}" states ${flag} true, which widens the false of its supertype "${parent}" (DISL §4.7).`);
+        }
+      }
+      if (stated === undefined && new Set(parents.map((parent) => this.relationFlag(parent, flag))).size > 1) {
+        fail(`relation "${name}" inherits ${flag} differently from ${parents.map((parent) => `"${parent}"`).join(" and ")}, and does not state it (DISL §4.7).`);
+      }
+    }
   }
 
   private relationType(name: string): RelationTypeDefinition {
@@ -1299,6 +1831,14 @@ class Compiler {
     const strokeLadder = this.strokeLadder(name, edge);
     const stub = this.stub(name, edge);
     const { dash, dashWhen } = this.dash(name, edge);
+    const ribbon = this.ribbon(name, edge, customRoute);
+    if (ribbon !== undefined && along !== undefined) {
+      fail(`edge "${name}" is a ribbon and a bowed arc; the library draws one or the other.`);
+    }
+    const adornment = this.bindings.edgeAdornments?.[name];
+    if (adornment !== undefined && (ribbon !== undefined || along !== undefined)) {
+      fail(`edge "${name}" is adorned by the module and drawn as a ${ribbon !== undefined ? "ribbon" : "bowed arc"}; the library draws one adornment on a line.`);
+    }
 
     // Only a type that may hold children can be the parent end of a relation derived from containment.
     const derivedFromParent = isObject(relation.derived) && relation.derived.source === "item.parent";
@@ -1314,6 +1854,8 @@ class Compiler {
     // is directed. A derived relation's count follows from its derivation and is not declared.
     const perPair = relation.derived === undefined && relation.allowParallel === false ? (relation.directed === false ? "unordered" : "ordered") : undefined;
     const held = this.heldOnce(relation);
+    const limits = { ...endLimit(relation.source, "maxFromSource"), ...endLimit(relation.target, "maxIntoTarget") };
+    const cardinality: Cardinality = { ...(perPair !== undefined ? { perPair } : {}), ...held, ...limits };
 
     return {
       id: this.typeId(name),
@@ -1321,6 +1863,8 @@ class Compiler {
       style: { ...(source !== "none" ? { startMarker: this.marker(source) } : {}), endMarker: this.marker(target), ...(dash !== undefined ? { dash } : {}) },
       ...(dashWhen !== undefined ? { dashWhen } : {}),
       ...(along !== undefined && ((along.bars?.length ?? 0) > 0 || (along.marks?.length ?? 0) > 0) ? { adorn: bowedArcAdornment(along) } : {}),
+      ...(ribbon !== undefined ? { adorn: ribbonAdornment(ribbon, customRoute!) } : {}),
+      ...(adornment !== undefined ? { adorn: adornment } : {}),
       ...(strokeLadder !== undefined ? { strokeLadder } : {}),
       ...(stub !== undefined ? { stub } : {}),
       ...(className !== undefined ? { className } : {}),
@@ -1334,10 +1878,49 @@ class Compiler {
         source: endpoint(sourceTypes, "source"),
         target: endpoint(targetTypes, "target"),
         allowSelf: relation.allowSelfLoops === true,
-        ...(perPair !== undefined ? { cardinality: { perPair } } : {}),
-        ...(held !== undefined ? { cardinality: held } : {}),
+        ...(Object.keys(cardinality).length > 0 ? { cardinality } : {}),
       },
       ...(this.createsOnEmptyRelease(name, edge) ? { emptyRelease: "complete" as const } : {}),
+    };
+  }
+
+  /**
+   * An edge the module names in {@link NotationBindings.ribbons}: its style's stroke width the band's
+   * thickness and its stroke colour the band's fill, each bound to the payload as a CEL term the
+   * module's celPaths name, and its selected state's casing
+   * width the outline it is drawn with while highlighted.
+   */
+  private ribbon(name: string, edge: DislEdgeNotation, route: CustomRouteRef | undefined): RibbonDeclaration | undefined {
+    const ribbon = this.bindings.ribbons?.[name];
+    if (ribbon === undefined) {
+      return undefined;
+    }
+
+    const where = `edge "${name}" is a ribbon`;
+    if (route === undefined) {
+      return fail(`${where}, which the library sweeps along a custom route the module binds; it binds none.`);
+    }
+
+    const stroke = this.styleOf(edge.style)?.stroke;
+    const width = isObject(stroke) ? stroke.width : undefined;
+    const thickness = width === undefined ? undefined : this.binding(width, `${where}: its thickness`);
+    if (thickness === undefined || !("path" in thickness)) {
+      return fail(`${where}: its style's stroke width ${JSON.stringify(width)} is no payload path to read a thickness from.`);
+    }
+
+    const colour = isObject(stroke) ? stroke.color : undefined;
+    const fill = colour === undefined ? undefined : this.binding(colour, `${where}: its colour`);
+    if (fill !== undefined && !("path" in fill)) {
+      return fail(`${where}: its style's stroke colour ${JSON.stringify(colour)} is no payload path to read a paint from.`);
+    }
+
+    const casing = this.styleOf(edge.states?.selected)?.stroke;
+    const highlightWidth = isObject(casing) && isObject(casing.casing) && typeof casing.casing.width === "number" ? casing.casing.width : undefined;
+    return {
+      thickness: { path: thickness.path },
+      ...(fill !== undefined ? { fill: { path: fill.path } } : {}),
+      ...(ribbon.className !== undefined ? { className: ribbon.className } : {}),
+      ...(highlightWidth !== undefined ? { highlightWidth } : {}),
     };
   }
 
@@ -1399,6 +1982,25 @@ class Compiler {
     }
 
     return undefined;
+  }
+
+  /**
+   * The canvas's cycle rules (DISL §4.9 `acyclic`): one per relation type that states it and has no acyclic
+   * supertype to cover it, over that type and every subtype the notation draws, so `acyclic` on an abstract
+   * type forbids a loop through any mix of its subtypes, as the backend's `std.acyclic` does.
+   */
+  private acyclicRules(): { relationTypes: string[] }[] {
+    const relations = this.spec.metamodel.relations ?? {};
+    const supertypes = (name: string): string[] => linearisation(name, relations).slice(1);
+    const drawn = Object.keys(this.spec.notation.edges ?? {});
+    return Object.entries(relations)
+      .filter(([name, relation]) => relation.acyclic === true && !supertypes(name).some((supertype) => relations[supertype]?.acyclic === true))
+      .map(([name, relation]) => {
+        const members = drawn.filter((edge) => edge === name || supertypes(edge).includes(name));
+        return relation.abstract === true || members.includes(name) ? members : [name, ...members];
+      })
+      .filter((members) => members.length > 0)
+      .map((members) => ({ relationTypes: members.map((member) => this.typeId(member)) }));
   }
 
   /** A DISL marker as the library draws it. */
@@ -1632,6 +2234,12 @@ class Compiler {
         continue;
       }
 
+      const line = this.lineBadge(name, badge, where);
+      if (line !== undefined) {
+        decorations.push(line);
+        continue;
+      }
+
       const right = badge.position === "top-right";
       if (!right && badge.position !== "top-left") {
         fail(`${where} sits "${String(badge.position)}"; the library places a badge at the top left or the top right.`);
@@ -1648,10 +2256,31 @@ class Compiler {
         continue;
       }
 
-      const visible = typeof badge.visible === "string" ? badge.visible : isObject(badge.visible) ? badge.visible.cel : undefined;
-      const when = visible === undefined ? undefined : this.bindings.celConditions?.[visible] ?? fail(`${where} shows when "${visible}", which has no condition in the module's celConditions.`);
+      const visible = typeof badge.visible === "string" ? badge.visible : isObject(badge.visible) && "cel" in badge.visible ? badge.visible.cel : undefined;
+      const when =
+        isObject(badge.visible) && "attribute" in badge.visible
+          ? this.visibility(badge.visible, where)
+          : visible === undefined
+            ? undefined
+            : this.bindings.celConditions?.[visible] ?? fail(`${where} shows when "${visible}", which has no condition in the module's celConditions.`);
       const className = this.bindings.badgeClassName?.(name, badge);
       const tooltip = badge.tooltip === undefined ? undefined : typeof badge.tooltip === "string" ? { template: badge.tooltip } : this.binding(badge.tooltip, `${where} tooltip`);
+      if (badge.text !== undefined) {
+        // A mark with text is that text, at its corner moved by its offset (DISL §6.9), on the corner's side.
+        const [dx, dy] = badge.offset ?? [0, 0];
+        decorations.push({
+          glyph: "marker",
+          anchor: "canvas",
+          from: { x: { path: right ? "bounds.right" : "bounds.left", number: { plus: dx } }, y: { path: "bounds.top", number: { plus: dy } } },
+          text: typeof badge.text === "string" ? this.literal(badge.text, `${where} text`) : this.binding(badge.text, `${where} text`),
+          textAnchor: right ? "end" : "start",
+          ...(className !== undefined ? { className } : {}),
+          ...(tooltip !== undefined ? { tooltip, accessibility: { role: "img", label: tooltip } } : {}),
+          ...(when !== undefined ? { when } : {}),
+        });
+        continue;
+      }
+
       const said = typeof badge.tooltip === "string" ? badge.tooltip.split(".")[0]! : badge.id;
       decorations.push({
         glyph: "circle",
@@ -1669,6 +2298,49 @@ class Compiler {
     }
 
     return { links, decorations };
+  }
+
+  /**
+   * A badge drawn as a `line` at a side of its node (DISL §6.9): centred on that side's middle, moved by
+   * its offset, and `size` long along its orientation; none for a badge that is no line at a side.
+   */
+  private lineBadge(name: string, badge: DislBadge, where: string): DecorationDeclaration | undefined {
+    const side = typeof badge.position === "string" && /^(left|right|top|bottom)$/.test(badge.position) ? badge.position : undefined;
+    const shape = badge.shape;
+    if (side === undefined || shape === undefined || (typeof shape === "string" ? shape : shape.type) !== "line") {
+      return undefined;
+    }
+
+    const orientation = typeof shape === "string" ? undefined : shape.params?.orientation;
+    if (orientation !== "horizontal" && orientation !== "vertical") {
+      return fail(`${where} is a line along ${JSON.stringify(orientation)}; the library draws a line badge horizontal or vertical.`);
+    }
+    if (typeof badge.size !== "number") {
+      return fail(`${where} is a line of no stated size.`);
+    }
+
+    const [dx, dy] = badge.offset ?? [0, 0];
+    const across = side === "left" || side === "right";
+    const x = across ? `bounds.${side}` : "bounds.centreX";
+    const y = across ? "bounds.centreY" : `bounds.${side}`;
+    const half = badge.size / 2;
+    const end = (sign: number) => ({
+      x: { path: x, number: { plus: dx + (orientation === "horizontal" ? sign * half : 0) } },
+      y: { path: y, number: { plus: dy + (orientation === "vertical" ? sign * half : 0) } },
+    });
+    const className = this.bindings.badgeClassName?.(name, badge);
+    const tooltip = badge.tooltip === undefined ? undefined : typeof badge.tooltip === "string" ? this.literal(badge.tooltip, `${where} tooltip`) : this.binding(badge.tooltip, `${where} tooltip`);
+    const when = this.visibility(badge.visible, where);
+
+    return {
+      glyph: "line",
+      anchor: "canvas",
+      from: end(-1),
+      to: end(1),
+      ...(className !== undefined ? { className } : {}),
+      ...(tooltip !== undefined ? { tooltip } : {}),
+      ...(when !== undefined ? { when } : {}),
+    };
   }
 
   /**
@@ -2011,7 +2683,7 @@ class Compiler {
     const origins = this.bindings.snapOrigins;
     const step = (axisName: "x" | "y"): number => {
       const rule = snapping[axisName] as Record<string, unknown> | undefined;
-      const axis = this.axis(system[axisName]);
+      const axis = this.axis(system[axisName] ?? fail(`the ${axisName} snapping rule ${JSON.stringify(rule)} is on a system that declares no ${axisName} axis.`));
       if (isObject(rule?.calendar) && isObject(axis.scale) && JSON.stringify(rule.calendar.unit) === JSON.stringify(axis.scale.unit)) {
         // A calendar snap in the axis's own unit is one step of the axis: `scale.size` canvas units.
         return axis.scale.size;
@@ -2055,7 +2727,12 @@ class Compiler {
     }
 
     return (["x", "y"] as const).flatMap((axisName): RulerDeclaration[] => {
-      const axis = this.axis(system[axisName]);
+      const declared = system[axisName];
+      if (declared === undefined) {
+        return [];
+      }
+
+      const axis = this.axis(declared);
       const ruler = axis.ruler;
       if (ruler === undefined || ruler.visible === false) {
         return [];
@@ -2135,7 +2812,11 @@ class Compiler {
       });
   }
 
-  /** Whether the canvas background has a menu in a viewpoint: a set for `diagram` whose `when` holds there. */
+  /**
+   * Whether the canvas background has a menu in a viewpoint: a set for `diagram` whose `when` holds there.
+   * The canvas has no read-only state of its own, so a menu there "wherever the diagram can be edited"
+   * (`!env.readOnly`) is there, and its entries are the backend's answer for the diagram as it is.
+   */
   private backgroundMenu(viewpoint: string | undefined): boolean {
     return (this.spec.toolbox?.contextMenus ?? []).some((menu) => {
       if (!menu.for.includes("diagram")) {
@@ -2143,6 +2824,10 @@ class Compiler {
       }
       if (menu.when === undefined) {
         return true;
+      }
+      const readOnly = /^(!?)\s*env\.readOnly$/.exec(menu.when.trim());
+      if (readOnly !== null) {
+        return readOnly[1] === "!";
       }
       const match = /^env\.viewpoint\s*==\s*'([^']+)'$/.exec(menu.when.trim());
       return match !== null ? match[1] === viewpoint : fail(`the canvas menu's when "${menu.when}" is not a viewpoint test.`);
@@ -2251,7 +2936,7 @@ class Compiler {
     }
 
     const system = this.systemNamed(variant.coordinateSystem);
-    const rows = system === undefined ? undefined : this.axis(system.y);
+    const rows = system?.y === undefined ? undefined : this.axis(system.y);
     if (rows === undefined || typeof rows.scale !== "number") {
       return fail("the row-packed viewpoint's system needs a linear row axis.");
     }
@@ -2314,14 +2999,8 @@ function mergedPerKey<T>(inherited: T, own: T): T {
  * notation of its own draws it merged per key over its supertypes'; and a concrete type with none draws
  * its nearest supertype's, in that supertype's place, in the metamodel's order.
  */
-function inherited<T>(notation: Readonly<Record<string, T>>, types: Readonly<Record<string, { abstract?: boolean; extends?: string }>>): Record<string, T> {
-  const chain = (type: string): string[] => {
-    const supertypes: string[] = [];
-    for (let current: string | undefined = type; current !== undefined && !supertypes.includes(current); current = types[current]?.extends) {
-      supertypes.push(current);
-    }
-    return supertypes;
-  };
+function inherited<T>(notation: Readonly<Record<string, T>>, types: Readonly<Record<string, { abstract?: boolean; extends?: string | readonly string[] }>>): Record<string, T> {
+  const chain = (type: string): string[] => linearisation(type, types);
   const resolved = (type: string): T =>
     chain(type).reverse().filter((name) => notation[name] !== undefined).reduce<T | undefined>((merged, name) => (merged === undefined ? notation[name]! : mergedPerKey(merged, notation[name]!)), undefined)!;
   const nearest = (type: string): string | undefined => chain(type).find((name) => notation[name] !== undefined);
@@ -2347,7 +3026,44 @@ function inheritedNotation(spec: DislDocument): DislDocument {
   return { ...spec, notation: { ...spec.notation, nodes, ...(edges !== undefined ? { edges } : {}) } };
 }
 
+/**
+ * The specification without what the module draws itself ({@link NotationBindings.drawnByModule}): each
+ * named label, an edge's mid-markers, an edge's target marker, which is then none. A name that states
+ * nothing is refused, so a binding cannot outlive the notation it stands in for.
+ */
+function withoutModuleDrawn(spec: DislDocument, names: readonly string[]): DislDocument {
+  if (names.length === 0) {
+    return spec;
+  }
+
+  const nodes: Record<string, DislNodeNotation> = { ...spec.notation.nodes };
+  const edges: Record<string, DislEdgeNotation> = { ...spec.notation.edges };
+  for (const name of names) {
+    const [owner = "", part = "", id] = name.split("/");
+    const node = nodes[owner];
+    const edge = edges[owner];
+    if (part === "labels" && node?.labels?.some((label) => label.id === id) === true) {
+      nodes[owner] = { ...node, labels: node.labels.filter((label) => label.id !== id) };
+    } else if (part === "labels" && edge?.labels?.some((label) => label.id === id) === true) {
+      edges[owner] = { ...edge, labels: edge.labels.filter((label) => label.id !== id) };
+    } else if (part === "midMarkers" && id === undefined && (edge?.midMarkers?.length ?? 0) > 0) {
+      edges[owner] = { ...edge!, midMarkers: [] };
+    } else if (part === "targetMarker" && id === undefined && edge?.targetMarker !== undefined) {
+      edges[owner] = { ...edge, targetMarker: "none" };
+    } else {
+      fail(`the module draws "${name}" itself, which the specification does not state.`);
+    }
+  }
+
+  return { ...spec, notation: { ...spec.notation, nodes, ...(spec.notation.edges !== undefined ? { edges } : {}) } };
+}
+
 /** A DISL notation as the library's diagram definition. See this file's opening comment. */
+/** A theme token as its CSS custom property: `color.text.muted` is `--color-text-muted`. */
+function tokenProperty(token: string): string {
+  return `--${token.replace(/\./g, "-")}`;
+}
+
 export function compileNotation(spec: DislDocument, bindings: NotationBindings, options: CompileOptions = {}): DiagramDefinition {
-  return new Compiler(inheritedNotation(spec), bindings, options).compile();
+  return new Compiler(withoutModuleDrawn(inheritedNotation(spec), bindings.drawnByModule ?? []), bindings, options).compile();
 }

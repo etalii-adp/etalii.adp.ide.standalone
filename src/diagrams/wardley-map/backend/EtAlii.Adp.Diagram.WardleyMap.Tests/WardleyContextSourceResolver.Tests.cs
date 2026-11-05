@@ -1,7 +1,9 @@
 using EtAlii.Adp.Context;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.Hierarchy;
+using EtAlii.Adp.Specification.Fbl.Planning;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
@@ -38,7 +40,8 @@ public sealed class WardleyContextSourceResolverTests : IDisposable
     /// </summary>
     private const char Key = WardleyIdentityKeys.Separator;
 
-    private readonly string _root = IoPath.Combine(IoPath.GetTempPath(), $"wardley-resolver-{Guid.NewGuid():N}");
+    private readonly TestFolder _testFolder = TestFolder.Create("wardley-resolver");
+    private readonly string _root;
     private readonly WardleyDocumentStore _documents = new(new FileWriter());
     private readonly WardleyContextSourceResolver _resolver;
     private readonly string _registration;
@@ -46,7 +49,7 @@ public sealed class WardleyContextSourceResolverTests : IDisposable
 
     public WardleyContextSourceResolverTests()
     {
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
         _registration = IoPath.Combine(_root, "tea.adp");
         _body = IoPath.Combine(_root, "tea.owm");
         File.WriteAllText(_registration, "wardley/map\n");
@@ -61,12 +64,12 @@ public sealed class WardleyContextSourceResolverTests : IDisposable
         _resolver = new WardleyContextSourceResolver(
             new DiagramFileRouter(catalog),
             _documents,
-            new WardleyElementMapper(new WardleyIdentities(new FileWriter())));
+            new WardleyElementMapper());
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     // ---- resolving ----------------------------------------------------------------------------
@@ -170,7 +173,7 @@ public sealed class WardleyContextSourceResolverTests : IDisposable
         var identities = _documents.Identities(_body);
         var map = (await _documents.GetOrLoadAsync(_body, TestContext.Current.CancellationToken)).Model;
         var elementId = await IdOfAsync(WardleyIdentityKind.Component, "Cup of Tea");
-        var streamed = new WardleyElementMapper(new WardleyIdentities(new FileWriter()))
+        var streamed = new WardleyElementMapper()
             .Elements(map, identities)
             .Single(element => element.Id == elementId);
 
@@ -218,14 +221,29 @@ public sealed class WardleyContextSourceResolverTests : IDisposable
     }
 
     [Fact]
-    public async Task TheEvolutionAxis_IsNotSelectable()
+    public async Task TheDiagramElement_IsNotSelectable()
     {
-        // Act. It is on the element stream, but it is the chrome the map is drawn against
-        // rather than a thing the map contains.
-        var resolution = await Resolve(WardleyElementTypes.EvolutionAxisId);
+        // Act. It is on the element stream, but it is the map itself rather than a thing the
+        // map contains.
+        var resolution = await Resolve(WardleyElementTypes.DiagramId);
 
         // Assert.
         Assert.IsType<RejectedContextLevel>(resolution);
+    }
+
+    [Fact]
+    public async Task APlacement_ResolvesToTheMapItself()
+    {
+        // Arrange. A right-click on empty map names the point it was made at, not an element.
+        var placement = GestureIds.Placement(300, 700);
+
+        // Act.
+        var level = Assert.IsType<ResolvedContextLevel>(await Resolve(placement)).Level;
+
+        // Assert. The map is the subject, so its own menu can be offered; nothing is selected on it.
+        Assert.Equal(["This map"], level.RelativePath);
+        Assert.Equal((placement, _body), (level.Target.ElementId, level.Target.ResolvedFullPath));
+        Assert.Equal("This map", level.Detail.Element.Text);
     }
 
     [Fact]
@@ -267,7 +285,7 @@ public sealed class WardleyContextSourceResolverTests : IDisposable
 
         // Act.
         var document = (await _documents.GetOrLoadAsync(_body, TestContext.Current.CancellationToken)).Document;
-        WardleyWriter.RemoveLine(document, WardleyParser.Parse(document).Components.Single(c => c.Name == "Power").Line);
+        WardleyWriter.RemoveLine(document, WardleyBody.Read(document).Model.Components.Single(c => c.Name == "Power").Line);
         await _documents.SaveAsync(_body, document, TestContext.Current.CancellationToken);
 
         // Assert.
@@ -283,11 +301,13 @@ public sealed class WardleyContextSourceResolverTests : IDisposable
         IReadOnlyList<string>? announced = null;
         using var subscription = _resolver.Track(ShortGuid.NewShortGuid(), ProjectRoot.From(_root), level, path => announced = path);
 
-        // Act.
+        // Act: renamed as the rename command writes it, the id moving with its key in the same edit.
         var document = (await _documents.GetOrLoadAsync(_body, TestContext.Current.CancellationToken)).Document;
-        WardleyWriter.Rename(document, WardleyParser.Parse(document), "Power", "Mains Power");
-        _documents.Rekey(_body, WardleyIdentityKind.Component, "Power", "Mains Power");
-        await _documents.SaveAsync(_body, document, TestContext.Current.CancellationToken);
+        var power = await IdOfAsync(WardleyIdentityKind.Component, "Power");
+        var edit = WardleyBody.Edit(document, _documents.Identities(_body));
+        Assert.True(edit.Change(new ModelChange.Set(power, new Dictionary<string, object?>(StringComparer.Ordinal) { ["name"] = "Mains Power" })).WasApplied);
+        _documents.Remember(_body, edit.Text, edit.Identities());
+        await _documents.SaveAsync(_body, LineDocument.Parse(edit.Text), TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal(["Mains Power"], announced);

@@ -26,9 +26,10 @@ public static class ServiceCollectionAddWorkspaceExtension
         services.AddSingleton<WorkspaceConnections>();
         services.AddSingleton<DiagramPump>();
 
-        // The designer family rides the same stream as its table member: the table streams that
-        // are running, which the calls after an open find their session through.
+        // The designer family rides the same stream as its table and hierarchy surface members: the
+        // streams of each that are running, which the calls after an open find their session through.
         services.AddSingleton<TableStreams>();
+        services.AddSingleton<HierarchySurfaceStreams>();
 
         // The watcher-to-store bridge: an external write to an open diagram's body or .adp
         // reaches the owning store's Reload, which is what carries it to every open session

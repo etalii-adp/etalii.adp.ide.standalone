@@ -20,18 +20,18 @@ public class DiagramTests : IDisposable
         public IReadOnlyList<DiagramDefinition> All => Diagram.Definitions;
     }
 
+    private readonly TestFolder _testFolder = TestFolder.Create("sparql-diagram");
     private readonly string _root;
     private readonly DiagramFileRouter _router = new(new Catalog());
 
     public DiagramTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     [Fact]
@@ -131,8 +131,8 @@ public class DiagramTests : IDisposable
         // And the starter query parses, draws, and reports nothing at all.
         var model = SparqlParser.Parse(text);
         Assert.Equal(SparqlQueryForm.Select, model.Form);
-        Assert.NotEmpty(SparqlProjection.Project(model).Nodes);
-        Assert.Empty(SparqlValidator.Judge(model, text));
+        Assert.NotEmpty(new SparqlDocument(SparqlBody.Parse(text)).Drawing.Nodes);
+        Assert.Empty(SparqlValidator.Findings(text));
         Assert.EndsWith("\r\n", text);
     }
 }

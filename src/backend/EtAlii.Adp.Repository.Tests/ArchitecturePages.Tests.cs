@@ -65,7 +65,7 @@ public partial class ArchitecturePagesTests
     /// namespace skip. Those are illustrations, not claims that a file exists, and a guard that
     /// reddened on them would be teaching the page to stop explaining itself.
     /// </remarks>
-    [GeneratedRegex(@"`((?:src|docs|\.spec-workflow|\.github)/[A-Za-z0-9_./\- ]+)`")]
+    [GeneratedRegex(@"`((?:src|docs|\.github)/[A-Za-z0-9_./\- ]+)`")]
     private static partial Regex RepoPathExpression();
 
     /// <summary>An <c>EtAlii.Adp.*</c> project name, as the pages and the agent files write it.</summary>
@@ -170,10 +170,10 @@ public partial class ArchitecturePagesTests
 
     [Theory]
     [InlineData("CLAUDE.md")]
-    [InlineData(".spec-workflow/steering/structure.md")]
-    [InlineData(".spec-workflow/steering/tech.md")]
-    [InlineData(".spec-workflow/steering/product.md")]
-    [InlineData(".spec-workflow/steering/roles.md")]
+    [InlineData("docs/steering/structure.md")]
+    [InlineData("docs/steering/tech.md")]
+    [InlineData("docs/steering/product.md")]
+    [InlineData("docs/steering/roles.md")]
     public void EveryPathAnAgentFileNames_Exists(string file) => AssertPathsExist(file);
 
     private static void AssertPathsExist(string document)
@@ -200,10 +200,10 @@ public partial class ArchitecturePagesTests
 
     [Theory]
     [InlineData("CLAUDE.md")]
-    [InlineData(".spec-workflow/steering/structure.md")]
-    [InlineData(".spec-workflow/steering/tech.md")]
-    [InlineData(".spec-workflow/steering/product.md")]
-    [InlineData(".spec-workflow/steering/roles.md")]
+    [InlineData("docs/steering/structure.md")]
+    [InlineData("docs/steering/tech.md")]
+    [InlineData("docs/steering/product.md")]
+    [InlineData("docs/steering/roles.md")]
     public void EveryProjectAnAgentFileNames_IsInTheSolution(string file) => AssertProjectNames(file);
 
     private static void AssertProjectNames(string document)

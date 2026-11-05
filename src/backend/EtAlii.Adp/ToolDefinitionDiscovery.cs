@@ -84,6 +84,8 @@ public static class ToolDefinitionDiscovery
                 var keepExisting = string.CompareOrdinal(existing.AssemblyName, assemblyName) <= 0;
                 var kept = keepExisting ? existing.AssemblyName : assemblyName;
                 var dropped = keepExisting ? assemblyName : existing.AssemblyName;
+                // ReSharper disable once TemplateIsNotCompileTimeConstantProblem
+                // Reason: We want to be a bit more verbose here.
                 logger.Warning(duplicate, definition.Key, dropped, kept);
 
                 if (!keepExisting)
@@ -95,14 +97,20 @@ public static class ToolDefinitionDiscovery
             }
 
             found[definition.Key] = (definition, assemblyName);
+            // ReSharper disable once TemplateIsNotCompileTimeConstantProblem
+            // Reason: We want to be a bit more verbose here.
             logger.Information(discovered, definition.Key, definition.Title, assemblyName);
         }
 
         var result = order(found.Values.Select(entry => entry.Definition)).ToArray();
 
+        // ReSharper disable once TemplateIsNotCompileTimeConstantProblem
+        // We want to be a bit more verbose here.
         logger.Information($"{{Count}} {words.Plural} discovered across {{AssemblyCount}} assemblies", result.Length, scan.AssembliesScanned);
         if (result.Length == 0 && words.NoneFound is { } noneFound)
         {
+            // ReSharper disable once TemplateIsNotCompileTimeConstantProblem
+            // Reason: We want to be a bit more verbose here.
             logger.Warning(noneFound);
         }
 

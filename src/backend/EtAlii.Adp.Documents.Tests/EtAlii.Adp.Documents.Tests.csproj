@@ -19,4 +19,10 @@
     <ProjectReference Include="..\EtAlii.Adp.Diagram\EtAlii.Adp.Diagram.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Test support of the areas these tests use; see src/Directory.Build.targets. -->
+    <ProjectReference Include="..\EtAlii.Adp.Files.Tests.Support\EtAlii.Adp.Files.Tests.Support.csproj" />
+    <Using Include="EtAlii.Adp.Files.Tests.Support" />
+  </ItemGroup>
+
 </Project>

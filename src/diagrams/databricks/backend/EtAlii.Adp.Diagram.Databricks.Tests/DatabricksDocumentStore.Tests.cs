@@ -1,5 +1,6 @@
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Files;
+using EtAlii.Adp.Specification.Fbl.Planning;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -21,7 +22,7 @@ public sealed class DatabricksDocumentStoreTests : DocumentStoreContract<IDatabr
     protected override IDatabricksDocumentStore CreateStore() => new DatabricksDocumentStore(new FileWriter());
 
     protected override void Edit(LineDocument document) =>
-        BundleWriter.SetName(document, DatabricksModel.Read(document).Bundle, EditMarker);
+        DatabricksEdits.Bundle(document, reading => new ModelChange.Set(DatabricksEdits.OneOf(reading, "Bundle")!, DatabricksEdits.Attributes(("name", EditMarker))));
 
     protected override string TextOf(LineDocument document) => document.Text;
 

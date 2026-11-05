@@ -39,6 +39,9 @@ internal sealed class SparqlTokenizer
     /// <summary>The zero-based line index holding <paramref name="offset"/>.</summary>
     public int LineOf(int offset) => _lines.LineOf(offset);
 
+    /// <summary>The one-based column of <paramref name="offset"/> on its line.</summary>
+    public int ColumnOf(int offset) => offset - _lines.StartOf(_lines.LineOf(offset)) + 1;
+
     /// <summary>Every token in the document, in order, ending with <see cref="SparqlTokenKind.EndOfFile"/>.</summary>
     public List<SparqlToken> Tokenize()
     {
@@ -251,7 +254,7 @@ internal sealed class SparqlTokenizer
         new(kind, start, _position - start, _text[start.._position]);
 
     private SparqlParseException Error(string message, int offset) =>
-        new(message, LineOf(offset) + 1);
+        new(message, LineOf(offset) + 1, ColumnOf(offset));
 
     private static bool IsNameStartChar(char character) =>
         char.IsLetter(character) || character == '_';

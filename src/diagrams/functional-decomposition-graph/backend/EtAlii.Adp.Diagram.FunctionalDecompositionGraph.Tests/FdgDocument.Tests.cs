@@ -1,4 +1,5 @@
 using System.Text;
+using EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests.Parity;
 using EtAlii.Adp.Documents;
 using Xunit;
 
@@ -167,16 +168,16 @@ public class FdgDocumentTests
     /// to catch.
     /// </remarks>
     [Fact]
-    public void AnEdit_RewritesOnlyItsOwnEntrysLines()
+    public async Task AnEdit_RewritesOnlyItsOwnEntrysLines()
     {
-        var document = Load("crlf-line-endings.fdg");
-        var before = document.Lines.Select(line => line.Text).ToList();
-        var model = FdgParser.Parse(document);
+        var text = Load("crlf-line-endings.fdg").Text;
+        var before = LineDocument.Parse(text).Lines.Select(line => line.Text).ToList();
+        var moved = FdgParser.Parse(LineDocument.Parse(text)).Elements.Single(element => element.Id == "open-task");
 
-        var moved = model.Elements.Single(element => element.Id == "open-task");
-        Assert.True(FdgWriter.MoveTo(document, moved, 300, 400).WasApplied);
+        (string? edited, string? refusal) = await FdgEditing.RunAsync(text, new SetFdgPlacementCommand("crlf-line-endings.fdg", "open-task", 300, 400), TestContext.Current.CancellationToken);
+        Assert.True(edited is not null, refusal);
 
-        var after = document.Lines.Select(line => line.Text).ToList();
+        var after = LineDocument.Parse(edited).Lines.Select(line => line.Text).ToList();
         Assert.Equal(before.Count, after.Count);
 
         var changed = before.Zip(after).Index()
@@ -186,101 +187,129 @@ public class FdgDocumentTests
 
         Assert.Equal(2, changed.Count);
         Assert.All(changed, line => Assert.InRange(line, moved.Range.Start, moved.Range.End));
-        Assert.Contains("x: 300", document.Text, StringComparison.Ordinal);
-        Assert.Contains("y: 400", document.Text, StringComparison.Ordinal);
+        Assert.Contains("x: 300", edited, StringComparison.Ordinal);
+        Assert.Contains("y: 400", edited, StringComparison.Ordinal);
 
-        // And the comment two entries above it is untouched, which is what the range walk-back buys.
-        Assert.Contains("# Comments and blank lines survive every edit.", document.Text, StringComparison.Ordinal);
+        // And the comment two entries above it is untouched.
+        Assert.Contains("# Comments and blank lines survive every edit.", edited, StringComparison.Ordinal);
     }
 
     /// <summary>An edit leaves the document's line endings alone.</summary>
     [Fact]
-    public void AnEditOnAnLfDocument_DoesNotIntroduceCarriageReturns()
+    public async Task AnEditOnAnLfDocument_DoesNotIntroduceCarriageReturns()
     {
-        var document = Load("lf-line-endings.fdg");
-        var model = FdgParser.Parse(document);
+        var text = Load("lf-line-endings.fdg").Text;
+        var first = FdgParser.Parse(LineDocument.Parse(text)).Elements[0];
 
-        Assert.True(FdgWriter.MoveTo(document, model.Elements[0], 1, 2).WasApplied);
+        (string? edited, string? refusal) = await FdgEditing.RunAsync(text, new SetFdgPlacementCommand("lf-line-endings.fdg", first.Id, 1, 2), TestContext.Current.CancellationToken);
 
-        Assert.DoesNotContain("\r", document.Text, StringComparison.Ordinal);
+        Assert.True(edited is not null, refusal);
+        Assert.NotEqual(text, edited);
+        Assert.DoesNotContain("\r", edited, StringComparison.Ordinal);
     }
 
-    /// <summary>The empty document a new diagram starts from.</summary>
+    /// <summary>The empty document a new diagram starts from: the binding's template.</summary>
     [Fact]
     public void TheEmptyDocument_IsAHeaderAndTwoEmptySections()
     {
-        var text = FdgParser.EmptyDocument("\n");
+        var text = FdgBody.Template;
 
-        Assert.Equal("functional-decomposition-graph: 1\nelements: []\nconnections: []\n", text);
+        Assert.Equal("functional-decomposition-graph: 1\r\nelements: []\r\nconnections: []\r\n", text);
 
-        var model = FdgParser.Parse(LineDocument.Parse(text));
-        Assert.Equal(FdgModel.CurrentVersion, model.Version);
-        Assert.Empty(model.Elements);
-        Assert.Empty(model.Connections);
-        Assert.Empty(model.Problems);
+        var body = FdgBody.Parse(text);
+        Assert.False(body.IsUnreadable);
+        Assert.Empty(body.Disl.Diagram.Elements);
+        Assert.Empty(body.Disl.Diagram.Relations);
+        Assert.Empty(FdgParser.Parse(LineDocument.Parse(text)).Problems);
     }
 
     /// <summary>
     /// A first element added to an empty document opens the flow-empty section into a block one.
     /// </summary>
     [Fact]
-    public void AddingToAnEmptyDocument_OpensTheFlowSection()
+    public async Task AddingToAnEmptyDocument_OpensTheFlowSection()
     {
-        var document = LineDocument.Parse(FdgParser.EmptyDocument("\n"));
-        var model = FdgParser.Parse(document);
+        var text = FdgBody.Template.Replace("\r\n", "\n", StringComparison.Ordinal);
 
-        var added = new FdgElement("first", FdgElementTypes.Function, "First", "", "", 10, 20, 100, null, default);
-        Assert.True(FdgWriter.AddElement(document, model, added).WasApplied);
+        (string? edited, string? refusal) = await FdgEditing.RunAsync(text, new AddFdgElementCommand("empty.fdg", FdgElementTypes.Function, 10, 20, "first"), TestContext.Current.CancellationToken);
 
-        var reread = FdgParser.Parse(LineDocument.Parse(document.Text));
+        Assert.True(edited is not null, refusal);
+        var reread = FdgParser.Parse(LineDocument.Parse(edited));
         Assert.Equal(["first"], reread.Elements.Select(element => element.Id));
         Assert.Empty(reread.Problems);
-        Assert.DoesNotContain("elements: []", document.Text, StringComparison.Ordinal);
+        Assert.DoesNotContain("elements: []", edited, StringComparison.Ordinal);
     }
 
     /// <summary>Removing an element takes the connections that touch it.</summary>
     [Fact]
-    public void RemovingAnElement_TakesEveryConnectionTouchingIt()
+    public async Task RemovingAnElement_TakesEveryConnectionTouchingIt()
     {
-        var document = Load("crlf-line-endings.fdg");
-        var model = FdgParser.Parse(document);
+        var text = Load("crlf-line-endings.fdg").Text;
 
-        var target = model.Elements.Single(element => element.Id == "open-task");
-        Assert.True(FdgWriter.RemoveElement(document, model, target).WasApplied);
+        (string? edited, string? refusal) = await FdgEditing.RunAsync(text, new RemoveFdgElementCommand("crlf-line-endings.fdg", "open-task"), TestContext.Current.CancellationToken);
 
-        var reread = FdgParser.Parse(LineDocument.Parse(document.Text));
+        Assert.True(edited is not null, refusal);
+        var reread = FdgParser.Parse(LineDocument.Parse(edited));
         Assert.Equal(["task-list", "note-offline"], reread.Elements.Select(element => element.Id));
         Assert.Empty(reread.Connections);
     }
 
-    /// <summary>A width below the minimum is clamped rather than written as asked.</summary>
-    [Fact]
-    public void AResizeBelowTheMinimum_IsClamped()
+    /// <summary>
+    /// A width below the minimum, and a Comment's height below its own, is raised to the minimum rather than
+    /// written as asked: the definition's <c>outOfRange: clamp</c>, which <see cref="FdgSizeClamp"/> stands in for (gap 9).
+    /// </summary>
+    [Theory]
+    [InlineData("open-task", 10, null, "    width: 80")]
+    [InlineData("note-offline", 10, 10.0, "    width: 80\r\n    height: 48")]
+    [InlineData("note-offline", 300, 47.5, "    width: 300\r\n    height: 48")]
+    public async Task AResizeBelowTheMinimum_IsClamped(string id, double width, double? height, string written)
     {
-        var document = Load("crlf-line-endings.fdg");
-        var model = FdgParser.Parse(document);
+        var text = Load("crlf-line-endings.fdg").Text;
 
-        Assert.True(FdgWriter.Resize(document, model.Elements[0], 10, null).WasApplied);
+        (string? edited, string? refusal) = await FdgEditing.RunAsync(text, new SetFdgSizeCommand("crlf-line-endings.fdg", id, width, height), TestContext.Current.CancellationToken);
 
-        var reread = FdgParser.Parse(LineDocument.Parse(document.Text));
-        Assert.Equal(FdgGeometry.MinimumWidth, reread.Elements[0].Width);
+        Assert.True(edited is not null, refusal);
+        Assert.Contains(written, edited, StringComparison.Ordinal);
     }
 
-    /// <summary>The two edits a Comment does not take, each refused with a sentence.</summary>
+    /// <summary>A height on an element that shares the one height is refused in its sentence, and nothing is written.</summary>
     [Fact]
-    public void ACommentRefusesAName_AndTheOthersRefuseAHeight()
+    public async Task AHeightOnANamedElement_IsRefused()
     {
-        var document = Load("crlf-line-endings.fdg");
-        var model = FdgParser.Parse(document);
-        var comment = model.Elements.Single(element => element.Id == "note-offline");
-        var action = model.Elements.Single(element => element.Id == "open-task");
+        var text = Load("crlf-line-endings.fdg").Text;
 
-        var named = FdgWriter.SetName(document, comment, "no");
-        var heightened = FdgWriter.Resize(document, action, 200, 300);
+        (string? edited, string? refusal) = await FdgEditing.RunAsync(text, new SetFdgSizeCommand("crlf-line-endings.fdg", "open-task", 200, 300), TestContext.Current.CancellationToken);
 
-        Assert.False(named.WasApplied);
-        Assert.Contains("Comment", named.Refusal!, StringComparison.Ordinal);
-        Assert.False(heightened.WasApplied);
-        Assert.Contains("share", heightened.Refusal!, StringComparison.Ordinal);
+        Assert.Null(edited);
+        Assert.Equal("Only a Comment has its own height; the others share one.", refusal);
+    }
+
+    /// <summary>
+    /// Removing an element keeps the comment line directly above it, as the tool always has: FBL's removal reaches
+    /// over it, and <see cref="FdgCommentKeeper"/> stands in for a binding that could say otherwise (gap 5, Q2).
+    /// </summary>
+    [Fact]
+    public async Task RemovingTheFirstElement_KeepsTheCommentAboveIt()
+    {
+        // In whichever line ending this checkout gave the example.
+        var text = (await File.ReadAllTextAsync(FieldServiceExample.Path, TestContext.Current.CancellationToken)).ReplaceLineEndings("\n");
+        Assert.Contains("elements:\n  # The screens.\n  - id: planning\n", text, StringComparison.Ordinal);
+
+        (string? edited, string? refusal) = await FdgEditing.RunAsync(text, new RemoveFdgElementCommand("field-service.fdg", "planning"), TestContext.Current.CancellationToken);
+
+        Assert.True(edited is not null, refusal);
+        Assert.Contains("elements:\n  # The screens.\n  - id: task-list\n", edited, StringComparison.Ordinal);
+    }
+
+    /// <summary>A connect into a document with no <c>connections:</c> key is refused in the tool's own sentence, mapped from the planner's (finding B16).</summary>
+    [Fact]
+    public async Task AConnectWithNoConnectionsSection_IsRefusedInTheToolsSentence()
+    {
+        var text = Load("no-connections-section.fdg").Text;
+
+        (string? edited, string? refusal) = await FdgEditing.RunAsync(text, new ConnectFdgElementsCommand("no-connections-section.fdg", FdgConnectionTypes.UiChild, "u1", "u2"), TestContext.Current.CancellationToken);
+
+        Assert.Null(edited);
+        Assert.Equal("The document has no `connections:` section to add to.", refusal);
     }
 }

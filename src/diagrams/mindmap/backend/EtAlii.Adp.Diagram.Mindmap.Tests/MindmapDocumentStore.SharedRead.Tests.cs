@@ -12,18 +12,18 @@ namespace EtAlii.Adp.Diagram.Mindmap.Tests;
 /// </summary>
 public class MindmapDocumentStoreSharedReadTests : IDisposable
 {
+    private readonly TestFolder _testFolder = TestFolder.Create("mindmap-document-store-shared-read");
     private readonly string _root;
     private readonly MindmapDocumentStore _store = new(new FileWriter());
 
     public MindmapDocumentStoreSharedReadTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     [Fact]

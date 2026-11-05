@@ -36,6 +36,7 @@ public class C4ContextPropertyProviderTests : IDisposable
         }
         """;
 
+    private readonly TestFolder _testFolder = TestFolder.Create("c4-context-property-provider");
     private readonly string _root;
     private readonly string _bodyPath;
     private readonly ServiceProvider _services;
@@ -44,8 +45,7 @@ public class C4ContextPropertyProviderTests : IDisposable
 
     public C4ContextPropertyProviderTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.C4.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
         _bodyPath = IoPath.Combine(_root, "model.dsl");
         File.WriteAllText(_bodyPath, Model);
 
@@ -58,7 +58,7 @@ public class C4ContextPropertyProviderTests : IDisposable
     {
         GC.SuppressFinalize(this);
         _services.Dispose();
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     private ContextTarget Target(string elementId) => new(

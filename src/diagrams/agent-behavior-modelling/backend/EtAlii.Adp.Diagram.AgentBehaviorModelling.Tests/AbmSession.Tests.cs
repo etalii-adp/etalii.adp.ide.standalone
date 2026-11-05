@@ -1,5 +1,6 @@
 using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.AgentBehaviorModelling.Tests;
@@ -7,12 +8,13 @@ namespace EtAlii.Adp.Diagram.AgentBehaviorModelling.Tests;
 /// <summary>A session follows both files: the Markdown through the store, the registration's positions through the history.</summary>
 public sealed class AbmSessionTests : IDisposable
 {
-    private readonly string _folder = Path.Combine(Path.GetTempPath(), "EtAlii.Adp.AbmSessionTests", Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("EtAlii.Adp.AbmSessionTests");
+    private readonly string _folder;
     private readonly AbmDocumentStore _store = new(new FileWriter());
 
     public AbmSessionTests()
     {
-        Directory.CreateDirectory(_folder);
+        _folder = _testFolder.Path;
         File.Copy(AbmExamples.BodyOf("bug-fixer"), Body);
         File.WriteAllText(Registration, "etalii/agent-behavior-modelling\r\n");
     }
@@ -21,16 +23,12 @@ public sealed class AbmSessionTests : IDisposable
 
     private string Registration => Path.Combine(_folder, "agent.adp");
 
+    /// <summary>The host's command pipeline over this test's store.</summary>
+    private ICommandDispatcher Dispatcher() => TestHistory.Dispatcher(s => { s.AddAgentBehaviorModelling(); s.AddSingleton<IAbmDocumentStore>(_store); });
+
     public void Dispose()
     {
-        try
-        {
-            Directory.Delete(_folder, recursive: true);
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            // A temp folder left behind is not a test failure.
-        }
+        _testFolder.Dispose();
     }
 
     private async Task<AbmModel> ModelAsync() => (await _store.GetOrLoadAsync(Body, TestContext.Current.CancellationToken)).Model;
@@ -41,7 +39,7 @@ public sealed class AbmSessionTests : IDisposable
     public async Task ADragDown_MovesTheWholeRowAndEverythingBeneathIt_PushedAsADelta_AndUndone()
     {
         // Arrange.
-        var history = new HistoryStack(new AbmTestDispatcher(_store));
+        var history = new HistoryStack(Dispatcher());
         await using var session = new AbmSession(Body, Registration, _store, new AbmElementMapper(), history);
         await session.BaselineAsync(TestContext.Current.CancellationToken);
         var markdown = await File.ReadAllBytesAsync(Body, TestContext.Current.CancellationToken);
@@ -77,7 +75,7 @@ public sealed class AbmSessionTests : IDisposable
     public async Task ADragAcross_PastASibling_SwapsThemInTheMarkdown_TheirRowsFollow_AndOneUndoPutsBothFilesBack()
     {
         // Arrange: the first child's own children are dragged 40 lower first.
-        var history = new HistoryStack(new AbmTestDispatcher(_store));
+        var history = new HistoryStack(Dispatcher());
         await using var session = new AbmSession(Body, Registration, _store, new AbmElementMapper(), history);
         await session.BaselineAsync(TestContext.Current.CancellationToken);
         var computed = AbmLayout.Compute(await ModelAsync());
@@ -120,7 +118,7 @@ public sealed class AbmSessionTests : IDisposable
     public async Task ADropWhereItWas_WritesNothing()
     {
         // Arrange.
-        var history = new HistoryStack(new AbmTestDispatcher(_store));
+        var history = new HistoryStack(Dispatcher());
         await using var session = new AbmSession(Body, Registration, _store, new AbmElementMapper(), history);
         var computed = AbmLayout.Compute(await ModelAsync());
 
@@ -137,7 +135,7 @@ public sealed class AbmSessionTests : IDisposable
     public async Task ARowDraggedAboveItsParent_StopsJustBelowIt()
     {
         // Arrange.
-        var history = new HistoryStack(new AbmTestDispatcher(_store));
+        var history = new HistoryStack(Dispatcher());
         await using var session = new AbmSession(Body, Registration, _store, new AbmElementMapper(), history);
         var computed = AbmLayout.Compute(await ModelAsync());
 
@@ -152,7 +150,7 @@ public sealed class AbmSessionTests : IDisposable
     public async Task AnEdit_IsPushedToTheSession()
     {
         // Arrange.
-        var history = new HistoryStack(new AbmTestDispatcher(_store));
+        var history = new HistoryStack(Dispatcher());
         await using var session = new AbmSession(Body, Registration, _store, new AbmElementMapper(), history);
         await session.BaselineAsync(TestContext.Current.CancellationToken);
         var pushed = new List<DiagramDelta>();
@@ -170,7 +168,7 @@ public sealed class AbmSessionTests : IDisposable
     public async Task ADragWithoutARegistration_IsRefused()
     {
         // Arrange.
-        var history = new HistoryStack(new AbmTestDispatcher(_store));
+        var history = new HistoryStack(Dispatcher());
         await using var session = new AbmSession(Body, null, _store, new AbmElementMapper(), history);
 
         // Act.
@@ -184,7 +182,7 @@ public sealed class AbmSessionTests : IDisposable
     public async Task ADragOntoAnotherNode_MovesItUnderThatNode_OnTheHistory()
     {
         // Arrange.
-        var history = new HistoryStack(new AbmTestDispatcher(_store));
+        var history = new HistoryStack(Dispatcher());
         await using var session = new AbmSession(Body, Registration, _store, new AbmElementMapper(), history);
         var children = (await ModelAsync()).NodeOf("1.1")!.ChildIds.Count;
 

@@ -16,9 +16,12 @@ public sealed class WatchedFolderTests : IDisposable
 
     private static readonly string[] Events = ["Changed", "Created", "Renamed", "Deleted", "Error"];
 
-    private readonly string _root = Directory.CreateTempSubdirectory("adp-watched-folder-").FullName;
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-watched-folder");
+    private readonly string _root;
 
-    public void Dispose() => TestFolder.TryDelete(_root);
+    public WatchedFolderTests() => _root = _testFolder.Path;
+
+    public void Dispose() => _testFolder.Dispose();
 
     [Fact]
     public void TheWatcher_IsEnabled_WithAHandlerForEveryEventAPublishRaises()

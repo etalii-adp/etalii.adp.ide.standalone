@@ -25,7 +25,7 @@ public class HelmValidationFlowTests : IDisposable
     // The code the bundled definition gives a Chart.yaml without a version (its missingVersion constraint).
     private const string MissingVersion = "helm.missing-version";
 
-    private readonly string _appDataRoot;
+    private readonly TestFolder _testFolder = TestFolder.Create("helm-validation-flow");
     private readonly string _projectFolder;
     private readonly string _chart;
     private readonly ServiceProvider _provider;
@@ -36,8 +36,8 @@ public class HelmValidationFlowTests : IDisposable
 
     public HelmValidationFlowTests()
     {
-        _appDataRoot = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.IntegrationTests", Guid.NewGuid().ToString("N"));
-        _projectFolder = IoPath.Combine(_appDataRoot, "sample-project");
+        var appDataRoot = _testFolder.Path;
+        _projectFolder = IoPath.Combine(appDataRoot, "sample-project");
         _chart = IoPath.Combine(_projectFolder, "web-shop");
         Directory.CreateDirectory(_projectFolder);
 
@@ -52,7 +52,7 @@ public class HelmValidationFlowTests : IDisposable
         services.AddSingleton<DiagramValidators>();
         services.AddSingleton<ProjectValidator>();
         services.AddSingleton<IProblemStore>(provider => new ProblemStore(
-            _appDataRoot, provider.GetRequiredService<DiagramFileRouter>(), provider.GetRequiredService<DiagramValidators>(), provider.GetRequiredService<TimeProvider>()));
+            appDataRoot, provider.GetRequiredService<DiagramFileRouter>(), provider.GetRequiredService<DiagramValidators>(), provider.GetRequiredService<TimeProvider>()));
         services.AddSingleton<ProjectFileEvents>();
         services.AddSingleton(provider => new ProblemMaintenance(
             provider.GetRequiredService<IProblemStore>(),
@@ -69,7 +69,7 @@ public class HelmValidationFlowTests : IDisposable
     public void Dispose()
     {
         _provider.Dispose();
-        TestFolder.TryDelete(_appDataRoot);
+        _testFolder.Dispose();
     }
 
     [Fact]

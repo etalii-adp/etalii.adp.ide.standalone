@@ -14,19 +14,19 @@ public class DiagramFilePairDerivationTests : IDisposable
     private static readonly DiagramDefinition _definition =
         new(new ToolOrigin("c4", "context"), "C4 context", "A test type.", Extension: ".dsl");
 
+    private readonly TestFolder _testFolder = TestFolder.Create("pair-derivation");
     private readonly string _root;
     private readonly IDiagramDefinitionCatalog _catalog = new DiagramDefinitionCatalog { All = [_definition] };
 
     public DiagramFilePairDerivationTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Nesting", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
     }
 
     public void Dispose()
     {
         GC.SuppressFinalize(this);
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     private string Write(string name, string content = "c4/context")
@@ -211,30 +211,24 @@ public class DiagramFilePairDerivationTests : IDisposable
         // The header names a path inside the project, but a link on the way leads out of it
         // (spec 025, D6): reading it would read a file that is not the project's, exactly as a
         // `..` would.
-        var elsewhere = Directory.CreateTempSubdirectory("diagram-file-pair-elsewhere-").FullName;
+        using var elsewhereFolder = TestFolder.Create("pair-derivation-elsewhere");
+        var elsewhere = elsewhereFolder.Path;
+        File.WriteAllText(IoPath.Combine(elsewhere, "model.dsl"), "workspace {}");
         try
         {
-            File.WriteAllText(IoPath.Combine(elsewhere, "model.dsl"), "workspace {}");
-            try
-            {
-                Directory.CreateSymbolicLink(IoPath.Combine(_root, "escape"), elsewhere);
-            }
-            catch (Exception exception) when (exception is UnauthorizedAccessException or IOException && OperatingSystem.IsWindows())
-            {
-                Assert.Skip($"This process may not create a symbolic link: {exception.Message}");
-            }
-            var adp = Write("test.first.adp", "c4/context\nbody: escape/model.dsl");
-
-            // Act.
-            var body = DiagramFilePair.BodyOf(adp, _catalog, _root);
-
-            // Assert.
-            Assert.Null(body);
+            Directory.CreateSymbolicLink(IoPath.Combine(_root, "escape"), elsewhere);
         }
-        finally
+        catch (Exception exception) when (exception is UnauthorizedAccessException or IOException && OperatingSystem.IsWindows())
         {
-            TestFolder.TryDelete(elsewhere);
+            Assert.Skip($"This process may not create a symbolic link: {exception.Message}");
         }
+        var adp = Write("test.first.adp", "c4/context\nbody: escape/model.dsl");
+
+        // Act.
+        var body = DiagramFilePair.BodyOf(adp, _catalog, _root);
+
+        // Assert.
+        Assert.Null(body);
     }
 
     // ---- a type with two serializations ------------------------------------------------

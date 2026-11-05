@@ -14,14 +14,14 @@ public class CausalLoopWriterParityTests
 {
     private const string Path = "parity.cld";
 
-    public static TheoryData<string> Documents() => [.. CausalLoopTranscript.Corpus()];
+    public static TheoryData<string> Documents() => [.. CausalLoopCorpus.Paths()];
 
     [Theory]
     [MemberData(nameof(Documents))]
     public async Task EveryCommand_StatesWhatTheHandWrittenWriterStated(string relative)
     {
         // Arrange.
-        var text = await File.ReadAllTextAsync(System.IO.Path.Combine(CausalLoopTranscript.SourceFolder, relative), TestContext.Current.CancellationToken);
+        var text = await File.ReadAllTextAsync(System.IO.Path.Combine(CausalLoopCorpus.SourceFolder, relative), TestContext.Current.CancellationToken);
         var model = CausalLoopParser.Parse(CausalLoopDocument.Parse(text)).Model;
         var differences = new List<string>();
         var applied = 0;

@@ -11,17 +11,17 @@ namespace EtAlii.Adp.Diagram.Rdf.Tests;
 public class SkosValidatorTests : IDisposable
 {
     private static readonly ToolOrigin Origin = new("w3c", "skos");
+    private readonly TestFolder _testFolder = TestFolder.Create("rdf-skos-validator");
     private readonly string _root;
 
     public SkosValidatorTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     private const string Prelude = """

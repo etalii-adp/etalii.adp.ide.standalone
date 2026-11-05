@@ -13,7 +13,9 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph.Tests;
 public class GhgArrangeBatchTests
 {
     /// <summary>The corpus, each text once: the shipped copies of an example are the example.</summary>
-    public static TheoryData<string> Corpus => [.. GhgTranscript.Corpus().DistinctBy(document => TranscriptText.Sha256(File.ReadAllBytes(Located(document))))];
+    private static readonly GhgTranscript _transcript = new();
+
+    public static TheoryData<string> Corpus => [.. _transcript.Files().DistinctBy(document => TranscriptText.Sha256(File.ReadAllBytes(Located(document))))];
 
     [Theory]
     [MemberData(nameof(Corpus))]
@@ -44,5 +46,5 @@ public class GhgArrangeBatchTests
         Assert.Equal(oneByOne.Text, batched.Text);
     }
 
-    private static string Located(string document) => Path.Combine(GhgTranscript.ModuleFolder, "..", "..", document);
+    private static string Located(string document) => Path.Combine(_transcript.SourceFolder, document);
 }

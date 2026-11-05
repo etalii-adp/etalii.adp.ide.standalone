@@ -3,7 +3,9 @@ import { create, toBinary } from "@bufbuild/protobuf";
 import { DeltaSchema, type Delta } from "@client/generated/deltas_pb";
 import { SankeyFlowPayloadSchema, SankeyNodePayloadSchema } from "@client/generated/sankey_pb";
 import { applyDelta, columnPlaceOf, emptyModel, NODE_GAP, type SankeyModel } from "./sankeyModel";
-import { bandPath, centrePath, paintOf } from "./SankeyCanvas";
+import { ribbonPath } from "@client/canvas/library/disl/ribbonLine";
+import { paintOf } from "./SankeyCanvas";
+import { centrePath } from "./sankeyBindings";
 
 function add(...elements: { id: string; type: string; bytes: Uint8Array; x?: number; y?: number }[]): Delta {
   return create(DeltaSchema, {
@@ -128,7 +130,7 @@ describe("the band", () => {
 
   it("is as thick as its value, measured down, all the way along - even on the slope", () => {
     // Arrange: a steep band, 30 thick, falling 200 over 296.
-    const d = bandPath({ x: 24, y: 100 }, { x: 320, y: 300 }, 30);
+    const d = ribbonPath(centrePath({ x: 24, y: 100 }, { x: 320, y: 300 }), 30);
 
     // Act + Assert.
     for (const x of [24, 100, 172, 250, 320]) {

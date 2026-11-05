@@ -14,11 +14,12 @@ namespace EtAlii.Adp.Diagram.C4.Tests;
 /// </summary>
 public class C4MoveElementTests : IDisposable
 {
+    private readonly TestFolder _testFolder = TestFolder.Create("c4-move-element");
     private readonly string _root;
     private readonly string _bodyPath;
     private readonly ServiceProvider _services;
     private readonly IC4DocumentStore _documents;
-    private readonly C4LayoutSidecar _sidecar;
+    private readonly C4Positions _positions;
     private readonly IHistoryStack _history;
 
     private const string Model = """
@@ -38,21 +39,21 @@ public class C4MoveElementTests : IDisposable
 
     public C4MoveElementTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Diagram.C4.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
         _bodyPath = IoPath.Combine(_root, "model.dsl");
         File.WriteAllText(_bodyPath, Model);
+        File.WriteAllText(IoPath.ChangeExtension(_bodyPath, ".adp"), "c4/system-landscape\nbody: model.dsl\n");
 
         _services = new ServiceCollection().AddCommands().AddHierarchyCommandHandlers().AddC4().BuildServiceProvider();
         _documents = _services.GetRequiredService<IC4DocumentStore>();
-        _sidecar = _services.GetRequiredService<C4LayoutSidecar>();
+        _positions = _services.GetRequiredService<C4Positions>();
         _history = _services.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(_root));
     }
 
     public void Dispose()
     {
         _services.Dispose();
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     /// <summary>The same model, its one view declaring <c>autoLayout</c>: the view places its elements itself.</summary>
@@ -77,17 +78,22 @@ public class C4MoveElementTests : IDisposable
     private C4Session Open(string bodyPath) => (C4Session)_services
         .GetServices<IDiagramSessionFactory>()
         .First(factory => factory.Origin.Key == "c4/system-landscape")
-        .Open(ShortGuid.NewShortGuid(), ProjectRoot.From(_root), bodyPath, null);
+        .Open(ShortGuid.NewShortGuid(), ProjectRoot.From(_root), bodyPath, IoPath.ChangeExtension(bodyPath, ".adp"));
+
+    /// <summary>The positions stored for the view "all" of <paramref name="bodyPath"/>: in its registration's layout block, as Q3 rules for a document without a layout file.</summary>
+    private IReadOnlyDictionary<string, C4Position> Stored(string? bodyPath = null) =>
+        _positions.Read(bodyPath ?? _bodyPath, IoPath.ChangeExtension(bodyPath ?? _bodyPath, ".adp"), "all", new HashSet<string>(StringComparer.Ordinal) { "a", "b" });
 
     private async Task<string> LaidOutAsync()
     {
         var bodyPath = IoPath.Combine(_root, "laid-out.dsl");
         await File.WriteAllTextAsync(bodyPath, LaidOutModel, TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(IoPath.ChangeExtension(bodyPath, ".adp"), "c4/system-landscape\nbody: laid-out.dsl\n", TestContext.Current.CancellationToken);
         return bodyPath;
     }
 
     [Fact]
-    public async Task ADrag_RecordsThePositionInTheSidecar_AndLeavesTheDocumentAlone()
+    public async Task ADrag_RecordsThePositionInTheRegistration_AndLeavesTheDocumentAlone()
     {
         // Arrange.
         var before = await File.ReadAllTextAsync(_bodyPath, TestContext.Current.CancellationToken);
@@ -98,7 +104,7 @@ public class C4MoveElementTests : IDisposable
 
         // Assert.
         Assert.Equal("", error);
-        Assert.Equal(new C4SidecarPosition(250, 400), _sidecar.Read(_bodyPath, "all")["a"]);
+        Assert.Equal(new C4Position(250, 400), Stored()["a"]);
         // The model did not change: a position is view state, and the .dsl is another
         // ecosystem's file (Requirement 3.5).
         Assert.Equal(before, await File.ReadAllTextAsync(_bodyPath, TestContext.Current.CancellationToken));
@@ -117,7 +123,7 @@ public class C4MoveElementTests : IDisposable
         // Assert.
         // Undoing the first drag of an element hands it back to the layout rather than pinning
         // it wherever it happened to have been computed.
-        Assert.DoesNotContain("a", _sidecar.Read(_bodyPath, "all").Keys);
+        Assert.DoesNotContain("a", Stored().Keys);
     }
 
     [Fact]
@@ -132,7 +138,7 @@ public class C4MoveElementTests : IDisposable
         await _history.UndoAsync(TestContext.Current.CancellationToken);
 
         // Assert.
-        Assert.Equal(new C4SidecarPosition(100, 100), _sidecar.Read(_bodyPath, "all")["a"]);
+        Assert.Equal(new C4Position(100, 100), Stored()["a"]);
     }
 
     [Fact]
@@ -160,7 +166,7 @@ public class C4MoveElementTests : IDisposable
         // Act.
         var workspace = (await _documents.GetOrLoadAsync(_bodyPath, TestContext.Current.CancellationToken)).Model;
         var layout = C4LayoutEngine.Compute(
-            workspace, workspace.Views[0], C4Metrics.Default, _sidecar.Read(_bodyPath, "all"));
+            workspace, workspace.Views[0], C4Metrics.Default, Stored());
 
         // Assert.
         Assert.Equal(250, layout.Boxes["a"].X);
@@ -180,7 +186,7 @@ public class C4MoveElementTests : IDisposable
 
         // Assert.
         Assert.Contains("not what contains it", error, StringComparison.OrdinalIgnoreCase);
-        Assert.Empty(_sidecar.Read(_bodyPath, "all"));
+        Assert.Empty(Stored());
     }
 
     [Fact]
@@ -211,7 +217,7 @@ public class C4MoveElementTests : IDisposable
 
         // Assert.
         Assert.Contains("not what contains it", error, StringComparison.OrdinalIgnoreCase);
-        Assert.Empty(_sidecar.Read(_bodyPath, "all"));
+        Assert.Empty(Stored());
     }
 
     [Fact]
@@ -228,7 +234,7 @@ public class C4MoveElementTests : IDisposable
 
         // Assert.
         Assert.Contains("not what contains it", error, StringComparison.OrdinalIgnoreCase);
-        Assert.Empty(_sidecar.Read(_bodyPath, "all"));
+        Assert.Empty(Stored());
     }
 
     [Fact]
@@ -247,8 +253,8 @@ public class C4MoveElementTests : IDisposable
 
         // Assert.
         Assert.Equal(C4Session.AutoLayoutRefusal, error);
-        Assert.Empty(_sidecar.Read(bodyPath, "all"));
-        Assert.False(File.Exists(C4LayoutSidecar.PathFor(bodyPath)), "the refused drag wrote the layout file");
+        Assert.Empty(Stored(bodyPath));
+        Assert.False(File.Exists(C4Positions.LegacyPathFor(bodyPath)), "the refused drag wrote the layout file");
         Assert.Equal(undoable, _history.Availability.UndoCount);
     }
 }

@@ -180,6 +180,17 @@ internal sealed class SparqlTokenCursor
     /// <summary>The one-based line holding the character at <paramref name="offset"/>.</summary>
     public int LineAt(int offset) => _tokenizer.LineOf(offset) + 1;
 
+    /// <summary>The one-based column of the character at <paramref name="offset"/> on its line.</summary>
+    public int ColumnAt(int offset) => _tokenizer.ColumnOf(offset);
+
+    /// <summary>Where the tokens from <paramref name="firstIndex"/> to <paramref name="lastIndex"/> are written, as <see cref="SliceTokens"/> slices them.</summary>
+    public SparqlSpan SpanOf(int firstIndex, int lastIndex)
+    {
+        var first = _tokens[firstIndex];
+        var last = _tokens[Math.Max(firstIndex, lastIndex)];
+        return new SparqlSpan(first.Start, last.End, LineOf(first));
+    }
+
     public SparqlParseException Error(string message, SparqlToken at) =>
-        new(message, LineOf(at));
+        new(message, LineOf(at), ColumnAt(at.Start));
 }

@@ -5,7 +5,7 @@ designer or editor project; a project outside both the core and those kind folde
 of the host under src/tests, is none (T311).
 
 The items of src/Directory.Build.targets are edges too: MSBuild imports it into every project under src/, and
-it attaches EtAlii.Adp.TestSupport to every project whose name ends in .Tests. Such an edge carries
+it attaches EtAlii.Adp.Tests.Support to every project whose name ends in .Tests. Such an edge carries
 "via": "src/Directory.Build.targets". Only the file's top-level item groups count; items inside a target are
 evaluated when the target runs, not when the project is read. A condition other than none or
 '$(MSBuildProjectName.EndsWith(`...`))' == 'true' stops the scan rather than being guessed at."""

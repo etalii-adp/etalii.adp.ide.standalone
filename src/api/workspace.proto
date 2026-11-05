@@ -7,7 +7,7 @@ import "hierarchy.proto"; // HierarchyMessage
 import "context.proto";   // ContextMessage
 import "diagrams.proto";  // OpenDiagramRequest
 import "deltas.proto";    // Delta
-import "designers.proto"; // TableStreamMessage
+import "designers.proto"; // TableStreamMessage, HierarchySurfaceStreamMessage
 
 option csharp_namespace = "EtAlii.Adp.Diagram.Wire";
 
@@ -58,6 +58,8 @@ message WorkspaceMessage {
     DiagramStreamMessage diagram = 3;
     // One event of a table stream DesignerService.OpenTable started on this connection.
     TableStreamMessage table = 4;
+    // One event of a hierarchy surface stream DesignerService.OpenHierarchySurface started on this connection.
+    HierarchySurfaceStreamMessage hierarchy_surface = 5;
   }
 }
 

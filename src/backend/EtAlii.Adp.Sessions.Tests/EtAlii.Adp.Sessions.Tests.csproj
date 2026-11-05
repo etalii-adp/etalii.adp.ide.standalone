@@ -10,11 +10,19 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="xunit.v3" />
     <PackageReference Include="xunit.runner.visualstudio" />
+    <!-- The tests build a ServiceProvider of their own. -->
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
     <PackageReference Include="Grpc.Core.Testing" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\EtAlii.Adp.Sessions\EtAlii.Adp.Sessions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Test support of the areas these tests use; see src/Directory.Build.targets. -->
+    <ProjectReference Include="..\EtAlii.Adp.Files.Tests.Support\EtAlii.Adp.Files.Tests.Support.csproj" />
+    <Using Include="EtAlii.Adp.Files.Tests.Support" />
   </ItemGroup>
 
 </Project>

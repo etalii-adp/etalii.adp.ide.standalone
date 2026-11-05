@@ -40,25 +40,24 @@ public class ArrangeCausalLoopCommandTests : IDisposable
         + "layout:\r\n"
         + "  variable:population: 10 20\r\n";
 
-    private readonly string _root;
+    private readonly TestFolder _testFolder = TestFolder.Create("causal-loop-arrange-command");
     private readonly string _bodyPath;
     private readonly string _adpPath;
     private readonly CausalLoopDocumentStore _store = new(new FileWriter());
 
     public ArrangeCausalLoopCommandTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        var root = _testFolder.Path;
 
-        _bodyPath = IoPath.Combine(_root, "feedback.cld");
-        _adpPath = IoPath.Combine(_root, "feedback.adp");
+        _bodyPath = IoPath.Combine(root, "feedback.cld");
+        _adpPath = IoPath.Combine(root, "feedback.adp");
         File.WriteAllText(_bodyPath, Body);
         File.WriteAllText(_adpPath, Registration);
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
         GC.SuppressFinalize(this);
     }
 

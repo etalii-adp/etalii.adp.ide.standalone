@@ -21,19 +21,20 @@ public class HierarchyServiceLateRecoveryTests : IDisposable
 {
     private static readonly TimeSpan StepTimeout = TimeSpan.FromSeconds(10);
 
+    private readonly TestFolder _testFolder = TestFolder.Create("late-recovery");
     private readonly string _appDataRoot;
     private readonly string _projectFolder;
 
     public HierarchyServiceLateRecoveryTests()
     {
-        _appDataRoot = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
+        _appDataRoot = _testFolder.Path;
         _projectFolder = IoPath.Combine(_appDataRoot, "late-recovery");
         Directory.CreateDirectory(_projectFolder);
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_appDataRoot);
+        _testFolder.Dispose();
     }
 
     [Fact]

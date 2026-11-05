@@ -109,111 +109,27 @@ public sealed class DependencyGraphContextActionProvider(IHistoryStackStore hist
         switch (actionId)
         {
             case AddElementActionId when placed:
-            {
-                // The gesture already said everything an add needs - where it landed - so
-                // nothing is asked and the node appears where it was dropped, as the definition's
-                // addNodeHere places and labels it.
-                return await RunAsync(target, DependencyGraphDefinition.NodeHere(entry.Document, placedX, placedRow), cancellationToken);
-            }
+                return await AddAtPlacementAsync(target, entry, placedX, placedRow, cancellationToken);
 
             case AddAfterActionId when element is not null:
             case AddBelowActionId when element is not null:
-            {
-                // Tab: the next thing, a step to the right on the same row; Enter: the same
-                // coordinate, one row down - each depended upon by the one it grew from, because a
-                // node added from another is a thing that node needs. Where it lands, what it is
-                // called and the dependency are the definition's addRight and addBelow, run on the
-                // selected node, so nothing is asked.
-                return await RunAsync(
-                    target,
-                    DependencyGraphDefinition.Grown(entry.Document, actionId == AddAfterActionId ? "addRight" : "addBelow", target.ElementId),
-                    cancellationToken);
-            }
+                return await GrowAsync(target, entry, actionId, cancellationToken);
 
             case ConnectActionId when GestureIds.TryParseRelation(target.ElementId, out var from, out var to):
-            {
-                // The whole gesture in one call - from, and where it ended. Deliberately
-                // stateless: the two-call protocol this replaces kept an armed source between
-                // calls, and a stale arm made the next drag relate the wrong pair. Either end
-                // may be a placement: a drag from the outgoing anchor lands its placement in
-                // `to`, one from the incoming anchor arrives reversed with the placement in
-                // `from` - what depends on a node points into it.
-                if (GestureIds.TryParseRowPlacement(from, out var fromX, out var fromRow))
-                {
-                    if (DependencyGraphEdits.NodeOf(model, to) is null)
-                    {
-                        return new ContextExecutionFailed("The node this dependency reaches is no longer in this graph.");
-                    }
-
-                    // The new node is the relation's SOURCE: created at the drop, depending on
-                    // the existing node, as the dependsOn tool's createSource makes it.
-                    return await RunAsync(target, DependencyGraphDefinition.RelatedHere(entry.Document, to, "source", fromX, fromRow), cancellationToken);
-                }
-
-                if (DependencyGraphEdits.NodeOf(model, from) is null)
-                {
-                    return new ContextExecutionFailed("The node this dependency starts from is no longer in this graph.");
-                }
-
-                if (GestureIds.TryParseRowPlacement(to, out var toX, out var toRow))
-                {
-                    // Released on empty canvas: what the node depends on does not exist yet, so
-                    // it is created there and related in one command - one undo taking both - as
-                    // the dependsOn tool's createTarget makes it.
-                    return await RunAsync(target, DependencyGraphDefinition.RelatedHere(entry.Document, from, "target", toX, toRow), cancellationToken);
-                }
-
-                return await DispatchAsync(target, new ConnectDependencyGraphElementsCommand(
-                    target.ResolvedFullPath, ShortGuid.NewShortGuid().ToString(), from, to, ""), cancellationToken);
-            }
+                return await ConnectAsync(target, entry, from, to, cancellationToken);
 
             case AddElementActionId:
-                // No placement to land on - the action came from a menu - so the label is asked.
-                // The timeline asked for a begin here because a begin was the one thing it could
-                // not invent; a coordinate it can, and asking a user to type a canvas number
-                // would be asking them to do the canvas's job.
-                return new ContextExecutionRequiresInput(new ContextInputRequest(
-                    "Add node",
-                    "mdi-plus",
-                    "Label",
-                    NewElementLabel,
-                    "Add"));
+                return AskForLabel();
 
             case RenameActionId when element is not null:
                 return new ContextExecutionRequiresInput(new ContextInputRequest(
                     "Rename", "mdi-pencil-outline", "Label", element.ValueOf("label") as string ?? "", "Rename", target.ElementId));
 
             case RelabelActionId:
-            {
-                var relation = DependencyGraphEdits.RelationOf(model, target.ElementId);
-                return relation is null
-                    ? new ContextExecutionFailed(Gone)
-                    : new ContextExecutionRequiresInput(new ContextInputRequest(
-                        "Relabel", "mdi-pencil-outline", "Label", relation.ValueOf("label") as string ?? "", "Relabel", target.ElementId));
-            }
+                return AskForRelabel(target, model);
 
             case RemoveActionId when element is not null:
-            {
-                // The action says how many dependencies go with it, before it runs. An
-                // unconnected node needs no ceremony - and no ceremony means the removal happens
-                // HERE: a Completed execution never reaches the commit leg, so an action that
-                // answers Completed without dispatching has done nothing at all. That trap was
-                // walked into three times in the module this was forked from; every action that
-                // needs no input dispatches in this method.
-                // What is asked, and when, is the definition's deletion confirmation.
-                if (DeletionPolicy.Confirmation(DependencyGraphDefinition.Specification, element) is not { } confirmation)
-                {
-                    return await DispatchAsync(target,
-                        new RemoveDependencyGraphElementCommand(target.ResolvedFullPath, target.ElementId), cancellationToken);
-                }
-
-                return new ContextExecutionRequiresConfirmation(new ContextConfirmationRequest(
-                    confirmation.Title,
-                    "mdi-delete-outline",
-                    confirmation.Message,
-                    confirmation.ConfirmLabel,
-                    Danger: confirmation.Danger));
-            }
+                return await RemoveAsync(target, element, cancellationToken);
 
             case DisconnectActionId when DependencyGraphEdits.RelationOf(model, target.ElementId) is not null:
                 return await DispatchAsync(target,
@@ -222,6 +138,118 @@ public sealed class DependencyGraphContextActionProvider(IHistoryStackStore hist
             default:
                 return new ContextExecutionCompleted();
         }
+    }
+
+    /// <summary>An add dropped on a placement: the node appears where it was dropped.</summary>
+    private async ValueTask<ContextExecutionResult> AddAtPlacementAsync(
+        ContextTarget target, DocumentEntry<DependencyGraphBody, DislModel> entry, double placedX, int placedRow, CancellationToken cancellationToken)
+    {
+        // The gesture already said everything an add needs - where it landed - so
+        // nothing is asked and the node appears where it was dropped, as the definition's
+        // addNodeHere places and labels it.
+        return await RunAsync(target, DependencyGraphDefinition.NodeHere(entry.Document, placedX, placedRow), cancellationToken);
+    }
+
+    /// <summary>Add a node to the right of (Tab) or below (Enter) the selected one, which depends on it.</summary>
+    private async ValueTask<ContextExecutionResult> GrowAsync(
+        ContextTarget target, DocumentEntry<DependencyGraphBody, DislModel> entry, string actionId, CancellationToken cancellationToken)
+    {
+        // Tab: the next thing, a step to the right on the same row; Enter: the same
+        // coordinate, one row down - each depended upon by the one it grew from, because a
+        // node added from another is a thing that node needs. Where it lands, what it is
+        // called and the dependency are the definition's addRight and addBelow, run on the
+        // selected node, so nothing is asked.
+        return await RunAsync(
+            target,
+            DependencyGraphDefinition.Grown(entry.Document, actionId == AddAfterActionId ? "addRight" : "addBelow", target.ElementId),
+            cancellationToken);
+    }
+
+    /// <summary>A finished relation gesture, from <paramref name="from"/> to <paramref name="to"/>, either end possibly a placement.</summary>
+    private async ValueTask<ContextExecutionResult> ConnectAsync(
+        ContextTarget target, DocumentEntry<DependencyGraphBody, DislModel> entry, string from, string to, CancellationToken cancellationToken)
+    {
+        // The whole gesture in one call - from, and where it ended. Deliberately
+        // stateless: the two-call protocol this replaces kept an armed source between
+        // calls, and a stale arm made the next drag relate the wrong pair. Either end
+        // may be a placement: a drag from the outgoing anchor lands its placement in
+        // `to`, one from the incoming anchor arrives reversed with the placement in
+        // `from` - what depends on a node points into it.
+        var model = entry.Model;
+        if (GestureIds.TryParseRowPlacement(from, out var fromX, out var fromRow))
+        {
+            if (DependencyGraphEdits.NodeOf(model, to) is null)
+            {
+                return new ContextExecutionFailed("The node this dependency reaches is no longer in this graph.");
+            }
+
+            // The new node is the relation's SOURCE: created at the drop, depending on
+            // the existing node, as the dependsOn tool's createSource makes it.
+            return await RunAsync(target, DependencyGraphDefinition.RelatedHere(entry.Document, to, "source", fromX, fromRow), cancellationToken);
+        }
+
+        if (DependencyGraphEdits.NodeOf(model, from) is null)
+        {
+            return new ContextExecutionFailed("The node this dependency starts from is no longer in this graph.");
+        }
+
+        if (GestureIds.TryParseRowPlacement(to, out var toX, out var toRow))
+        {
+            // Released on empty canvas: what the node depends on does not exist yet, so
+            // it is created there and related in one command - one undo taking both - as
+            // the dependsOn tool's createTarget makes it.
+            return await RunAsync(target, DependencyGraphDefinition.RelatedHere(entry.Document, from, "target", toX, toRow), cancellationToken);
+        }
+
+        return await DispatchAsync(target, new ConnectDependencyGraphElementsCommand(
+            target.ResolvedFullPath, ShortGuid.NewShortGuid().ToString(), from, to, ""), cancellationToken);
+    }
+
+    /// <summary>An add from a menu, with no placement to land on: the label is asked first.</summary>
+    private static ContextExecutionResult AskForLabel() =>
+        // No placement to land on - the action came from a menu - so the label is asked.
+        // The timeline asked for a begin here because a begin was the one thing it could
+        // not invent; a coordinate it can, and asking a user to type a canvas number
+        // would be asking them to do the canvas's job.
+        new ContextExecutionRequiresInput(new ContextInputRequest(
+            "Add node",
+            "mdi-plus",
+            "Label",
+            NewElementLabel,
+            "Add"));
+
+    /// <summary>Relabel the selected dependency, asking for the new label first.</summary>
+    private static ContextExecutionResult AskForRelabel(ContextTarget target, DislModel model)
+    {
+        var relation = DependencyGraphEdits.RelationOf(model, target.ElementId);
+        return relation is null
+            ? new ContextExecutionFailed(Gone)
+            : new ContextExecutionRequiresInput(new ContextInputRequest(
+                "Relabel", "mdi-pencil-outline", "Label", relation.ValueOf("label") as string ?? "", "Relabel", target.ElementId));
+    }
+
+    /// <summary>Remove the selected node, confirming first when dependencies go with it.</summary>
+    private async ValueTask<ContextExecutionResult> RemoveAsync(ContextTarget target, DislElement element, CancellationToken cancellationToken)
+    {
+        // The action says how many dependencies go with it, before it runs. An
+        // unconnected node needs no ceremony - and no ceremony means the removal happens
+        // HERE: a Completed execution never reaches the commit leg, so an action that
+        // answers Completed without dispatching has done nothing at all. That trap was
+        // walked into three times in the module this was forked from; every action that
+        // needs no input dispatches in RunAsync or a method it calls.
+        // What is asked, and when, is the definition's deletion confirmation.
+        if (DeletionPolicy.Confirmation(DependencyGraphDefinition.Specification, element) is not { } confirmation)
+        {
+            return await DispatchAsync(target,
+                new RemoveDependencyGraphElementCommand(target.ResolvedFullPath, target.ElementId), cancellationToken);
+        }
+
+        return new ContextExecutionRequiresConfirmation(new ContextConfirmationRequest(
+            confirmation.Title,
+            "mdi-delete-outline",
+            confirmation.Message,
+            confirmation.ConfirmLabel,
+            Danger: confirmation.Danger));
     }
 
     /// <summary>What a node created by a gesture is called until somebody renames it.</summary>

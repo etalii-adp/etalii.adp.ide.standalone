@@ -15,6 +15,7 @@ namespace EtAlii.Adp.Diagram.C4.Tests;
 /// </summary>
 public class C4ContextActionProviderTests : IDisposable
 {
+    private readonly TestFolder _testFolder = TestFolder.Create("c4-context-action-provider");
     private readonly string _root;
     private readonly string _bodyPath;
     private readonly ServiceProvider _services;
@@ -40,8 +41,7 @@ public class C4ContextActionProviderTests : IDisposable
 
     public C4ContextActionProviderTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Diagram.C4.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
         _bodyPath = IoPath.Combine(_root, "model.dsl");
         File.WriteAllText(_bodyPath, Model);
 
@@ -55,7 +55,7 @@ public class C4ContextActionProviderTests : IDisposable
     public void Dispose()
     {
         _services.Dispose();
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     private ContextTarget TargetFor(string elementId) =>
@@ -386,7 +386,7 @@ public class C4ContextActionProviderTests : IDisposable
     {
         // Arrange.
         var workspace = (await _documents.GetOrLoadAsync(_bodyPath, TestContext.Current.CancellationToken)).Model;
-        var identifier = C4Placement.IdentifierFor(workspace, name.Trim());
+        var identifier = Parity.HandWrittenC4Edits.IdentifierFor(workspace, name.Trim());
 
         // Act: the operation the commit runs first, handed that identifier (gap C11).
         var created = C4Definitions.Created(workspace, "model.dsl", C4Definitions.ViewOf(workspace, null), null, operation, parent, name, identifier);

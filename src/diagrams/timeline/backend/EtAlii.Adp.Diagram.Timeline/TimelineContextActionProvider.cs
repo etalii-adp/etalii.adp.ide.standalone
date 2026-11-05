@@ -105,130 +105,38 @@ public sealed class TimelineContextActionProvider(IHistoryStackStore historyStac
         {
             case AddElementActionId when placed:
             case AddMomentActionId when placed:
-            {
-                // The gesture already said everything an add needs - where it landed - so
-                // nothing is asked and the element appears where it was dropped.
-                var begin = TimelineScale.ToTime(placedSeconds, TimelinePrecision.Date);
-                return await DispatchAsync(target, NewElementAt(
-                    model, target.ResolvedFullPath, begin, placedRow, period: actionId == AddElementActionId), cancellationToken);
-            }
+                return await AddAtPlacementAsync(target, model, actionId, placedSeconds, placedRow, cancellationToken);
 
             case AddAfterActionId when element is not null:
             case AddBelowActionId when element is not null:
-            {
-                // Tab: the next thing, a little later on the same row; Enter: a parallel track, one
-                // row down, from the same begin - each RELATED to the one it grew from, in one
-                // command. Where it lands and what it is are the definition's addAfter and
-                // addBelow, run on the selected element, so nothing is asked.
-                (AddConnectedTimelineElementCommand? grown, string refusal) = TimelineDefinition.Grown(
-                    model, target.ResolvedFullPath, actionId == AddAfterActionId ? "addAfter" : "addBelow", element.Id);
-                return grown is null
-                    ? new ContextExecutionFailed(refusal)
-                    : await DispatchAsync(target, grown, cancellationToken);
-            }
+                return await GrowAsync(target, model, element, actionId, cancellationToken);
 
             case ConnectActionId when GestureIds.TryParseRelation(target.ElementId, out var from, out var to):
-            {
-                // The whole gesture in one call - from, and where it ended. Deliberately
-                // stateless: the two-call protocol this replaces kept an armed source between
-                // calls, and a stale arm made the next drag relate the wrong pair. Either end
-                // may be a placement: a drag from the END anchor lands its placement in `to`,
-                // one from the BEGIN anchor arrives reversed with the placement in `from` -
-                // what precedes an element points into it.
-                if (GestureIds.TryParseRowPlacement(from, out var fromSeconds, out var fromRow))
-                {
-                    if (TimelineEdits.ElementOf(model, to) is null)
-                    {
-                        return new ContextExecutionFailed("The element this relation reaches is no longer in this timeline.");
-                    }
-
-                    // The new element is the relation's SOURCE: created at the drop, its end
-                    // pointing into the existing element's start, as the relation tool's
-                    // createSource makes it.
-                    return await RelateHereAsync(target, model, to, "source", fromSeconds, fromRow, cancellationToken);
-                }
-
-                if (TimelineEdits.ElementOf(model, from) is null)
-                {
-                    return new ContextExecutionFailed("The element this relation starts from is no longer in this timeline.");
-                }
-
-                if (GestureIds.TryParseRowPlacement(to, out var toSeconds, out var toRow))
-                {
-                    // Released on empty canvas: what the relation reaches does not exist yet, so
-                    // it is created there and related in one command - one undo taking both - as
-                    // the relation tool's createTarget makes it.
-                    return await RelateHereAsync(target, model, from, "target", toSeconds, toRow, cancellationToken);
-                }
-
-                return await DispatchAsync(target, new ConnectTimelineElementsCommand(
-                    target.ResolvedFullPath, ShortGuid.NewShortGuid().ToString(), from, to, ""), cancellationToken);
-            }
+                return await ConnectAsync(target, model, from, to, cancellationToken);
 
             case AddElementActionId:
             case AddMomentActionId:
-                // No placement to land on - the action came from a menu - so the begin is asked,
-                // and the row comes from the element the gesture anchored on, or 0 on nothing.
-                return new ContextExecutionRequiresInput(new ContextInputRequest(
-                    actionId == AddElementActionId ? "Add element" : "Add moment",
-                    "mdi-plus",
-                    "Begin",
-                    TimelineScale.ToText(DateTimeOffset.UtcNow, TimelinePrecision.Date),
-                    "Add"));
+                return AskForBegin(actionId);
 
             case RenameActionId when element is not null:
                 return new ContextExecutionRequiresInput(new ContextInputRequest(
                     "Rename", "mdi-pencil-outline", "Label", element.Label, "Rename", target.ElementId));
 
             case RelabelActionId:
-            {
-                var relation = TimelineEdits.ConnectionOf(model, target.ElementId);
-                return relation is null
-                    ? new ContextExecutionFailed(Gone)
-                    : new ContextExecutionRequiresInput(new ContextInputRequest(
-                        "Relabel", "mdi-pencil-outline", "Label", relation.Label, "Relabel", target.ElementId));
-            }
+                return AskForRelabel(target, model);
 
             case GiveEndActionId when element is not null:
                 return new ContextExecutionRequiresInput(new ContextInputRequest(
                     "Give it an end", "mdi-ray-start-end", "End", element.Begin.Text, "Set"));
 
             case RemoveActionId when element is not null:
-            {
-                // Requirement 2.5: the action says how many relations go with it, before it
-                // runs. An unrelated element needs no ceremony - and no ceremony means the
-                // removal happens HERE: a Completed execution never reaches the commit leg, so
-                // an action that answers Completed without dispatching has done nothing at all.
-                // That trap has now been walked into three times in this module; every action
-                // that needs no input dispatches in this method.
-                // Whether it asks, and what, is the definition's deletion policy.
-                if (TimelineDefinition.RemoveConfirmation(model, target.ElementId) is not { } confirmation)
-                {
-                    return await DispatchAsync(target,
-                        new RemoveTimelineElementCommand(target.ResolvedFullPath, element.Id), cancellationToken);
-                }
-
-                return new ContextExecutionRequiresConfirmation(new ContextConfirmationRequest(
-                    confirmation.Title,
-                    "mdi-delete-outline",
-                    confirmation.Message,
-                    confirmation.ConfirmLabel,
-                    Danger: confirmation.Danger));
-            }
+                return await RemoveAsync(target, model, element, cancellationToken);
 
             case ArrangeActionId:
                 return await DispatchAsync(target, new ArrangeTimelineCommand(target.ResolvedFullPath), cancellationToken);
 
             case RemoveEndActionId when element is not null:
-            {
-                // The definition's removeEnd: the end unset and the period made a moment. A moment,
-                // which it is not for, has no end to remove; that stays the one recorded step that
-                // changes nothing it always was, rather than a refusal.
-                (SetTimelineEndCommand? removal, string refusal) = TimelineDefinition.EndChange(model, target.ResolvedFullPath, "removeEnd", element.Id, null);
-                return refusal.Length > 0
-                    ? new ContextExecutionFailed(refusal)
-                    : await DispatchAsync(target, removal ?? new SetTimelineEndCommand(target.ResolvedFullPath, element.Id, null), cancellationToken);
-            }
+                return await RemoveEndAsync(target, model, element, cancellationToken);
 
             case DisconnectActionId when TimelineEdits.ConnectionOf(model, target.ElementId) is not null:
                 return await DispatchAsync(target,
@@ -237,6 +145,131 @@ public sealed class TimelineContextActionProvider(IHistoryStackStore historyStac
             default:
                 return new ContextExecutionCompleted();
         }
+    }
+
+    /// <summary>An add dropped on a placement: the element appears where it was dropped.</summary>
+    private async ValueTask<ContextExecutionResult> AddAtPlacementAsync(
+        ContextTarget target, TimelineModel model, string actionId, double placedSeconds, int placedRow, CancellationToken cancellationToken)
+    {
+        // The gesture already said everything an add needs - where it landed - so
+        // nothing is asked and the element appears where it was dropped.
+        var begin = TimelineScale.ToTime(placedSeconds, TimelinePrecision.Date);
+        return await DispatchAsync(target, NewElementAt(
+            model, target.ResolvedFullPath, begin, placedRow, period: actionId == AddElementActionId), cancellationToken);
+    }
+
+    /// <summary>Add after (Tab) or below (Enter) the selected element, related to it.</summary>
+    private async ValueTask<ContextExecutionResult> GrowAsync(
+        ContextTarget target, TimelineModel model, TimelineElement element, string actionId, CancellationToken cancellationToken)
+    {
+        // Tab: the next thing, a little later on the same row; Enter: a parallel track, one
+        // row down, from the same begin - each RELATED to the one it grew from, in one
+        // command. Where it lands and what it is are the definition's addAfter and
+        // addBelow, run on the selected element, so nothing is asked.
+        (AddConnectedTimelineElementCommand? grown, string refusal) = TimelineDefinition.Grown(
+            model, target.ResolvedFullPath, actionId == AddAfterActionId ? "addAfter" : "addBelow", element.Id);
+        return grown is null
+            ? new ContextExecutionFailed(refusal)
+            : await DispatchAsync(target, grown, cancellationToken);
+    }
+
+    /// <summary>A finished relation gesture, from <paramref name="from"/> to <paramref name="to"/>, either end possibly a placement.</summary>
+    private async ValueTask<ContextExecutionResult> ConnectAsync(
+        ContextTarget target, TimelineModel model, string from, string to, CancellationToken cancellationToken)
+    {
+        // The whole gesture in one call - from, and where it ended. Deliberately
+        // stateless: the two-call protocol this replaces kept an armed source between
+        // calls, and a stale arm made the next drag relate the wrong pair. Either end
+        // may be a placement: a drag from the END anchor lands its placement in `to`,
+        // one from the BEGIN anchor arrives reversed with the placement in `from` -
+        // what precedes an element points into it.
+        if (GestureIds.TryParseRowPlacement(from, out var fromSeconds, out var fromRow))
+        {
+            if (TimelineEdits.ElementOf(model, to) is null)
+            {
+                return new ContextExecutionFailed("The element this relation reaches is no longer in this timeline.");
+            }
+
+            // The new element is the relation's SOURCE: created at the drop, its end
+            // pointing into the existing element's start, as the relation tool's
+            // createSource makes it.
+            return await RelateHereAsync(target, model, to, "source", fromSeconds, fromRow, cancellationToken);
+        }
+
+        if (TimelineEdits.ElementOf(model, from) is null)
+        {
+            return new ContextExecutionFailed("The element this relation starts from is no longer in this timeline.");
+        }
+
+        if (GestureIds.TryParseRowPlacement(to, out var toSeconds, out var toRow))
+        {
+            // Released on empty canvas: what the relation reaches does not exist yet, so
+            // it is created there and related in one command - one undo taking both - as
+            // the relation tool's createTarget makes it.
+            return await RelateHereAsync(target, model, from, "target", toSeconds, toRow, cancellationToken);
+        }
+
+        return await DispatchAsync(target, new ConnectTimelineElementsCommand(
+            target.ResolvedFullPath, ShortGuid.NewShortGuid().ToString(), from, to, ""), cancellationToken);
+    }
+
+    /// <summary>An add from a menu, with no placement to land on: the begin is asked first.</summary>
+    private static ContextExecutionResult AskForBegin(string actionId) =>
+        // No placement to land on - the action came from a menu - so the begin is asked,
+        // and the row comes from the element the gesture anchored on, or 0 on nothing.
+        new ContextExecutionRequiresInput(new ContextInputRequest(
+            actionId == AddElementActionId ? "Add element" : "Add moment",
+            "mdi-plus",
+            "Begin",
+            TimelineScale.ToText(DateTimeOffset.UtcNow, TimelinePrecision.Date),
+            "Add"));
+
+    /// <summary>Relabel the selected relation, asking for the new label first.</summary>
+    private static ContextExecutionResult AskForRelabel(ContextTarget target, TimelineModel model)
+    {
+        var relation = TimelineEdits.ConnectionOf(model, target.ElementId);
+        return relation is null
+            ? new ContextExecutionFailed(Gone)
+            : new ContextExecutionRequiresInput(new ContextInputRequest(
+                "Relabel", "mdi-pencil-outline", "Label", relation.Label, "Relabel", target.ElementId));
+    }
+
+    /// <summary>Remove the selected element, confirming first when relations go with it.</summary>
+    private async ValueTask<ContextExecutionResult> RemoveAsync(
+        ContextTarget target, TimelineModel model, TimelineElement element, CancellationToken cancellationToken)
+    {
+        // Requirement 2.5: the action says how many relations go with it, before it
+        // runs. An unrelated element needs no ceremony - and no ceremony means the
+        // removal happens HERE: a Completed execution never reaches the commit leg, so
+        // an action that answers Completed without dispatching has done nothing at all.
+        // That trap has now been walked into three times in this module; every action
+        // that needs no input dispatches in RunAsync or a method it calls.
+        // Whether it asks, and what, is the definition's deletion policy.
+        if (TimelineDefinition.RemoveConfirmation(model, target.ElementId) is not { } confirmation)
+        {
+            return await DispatchAsync(target,
+                new RemoveTimelineElementCommand(target.ResolvedFullPath, element.Id), cancellationToken);
+        }
+
+        return new ContextExecutionRequiresConfirmation(new ContextConfirmationRequest(
+            confirmation.Title,
+            "mdi-delete-outline",
+            confirmation.Message,
+            confirmation.ConfirmLabel,
+            Danger: confirmation.Danger));
+    }
+
+    /// <summary>Remove the selected element's end, making it a moment.</summary>
+    private async ValueTask<ContextExecutionResult> RemoveEndAsync(
+        ContextTarget target, TimelineModel model, TimelineElement element, CancellationToken cancellationToken)
+    {
+        // The definition's removeEnd: the end unset and the period made a moment. A moment,
+        // which it is not for, has no end to remove; that stays the one recorded step that
+        // changes nothing it always was, rather than a refusal.
+        (SetTimelineEndCommand? removal, string refusal) = TimelineDefinition.EndChange(model, target.ResolvedFullPath, "removeEnd", element.Id, null);
+        return refusal.Length > 0
+            ? new ContextExecutionFailed(refusal)
+            : await DispatchAsync(target, removal ?? new SetTimelineEndCommand(target.ResolvedFullPath, element.Id, null), cancellationToken);
     }
 
     /// <inheritdoc />

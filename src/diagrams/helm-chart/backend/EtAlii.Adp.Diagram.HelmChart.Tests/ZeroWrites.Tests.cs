@@ -23,6 +23,7 @@ namespace EtAlii.Adp.Diagram.HelmChart.Tests;
 /// </remarks>
 public class ZeroWritesTests : IDisposable
 {
+    private readonly TestFolder _testFolder = TestFolder.Create("helm-chart-zero-writes");
     private readonly string _root;
     // On a clock nobody moves: the test reads and never waits for a re-read.
     private readonly HelmChartStore _store = new(new HelmChartReader(), time: new FakeTimeProvider());
@@ -30,7 +31,7 @@ public class ZeroWritesTests : IDisposable
 
     public ZeroWritesTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
+        _root = _testFolder.Path;
         TestFolder.CopyTree(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", "well-formed"), _root);
         File.WriteAllText(IoPath.Combine(_root, "helm-chart.adp"), "helm/chart\r\n");
     }
@@ -39,7 +40,7 @@ public class ZeroWritesTests : IDisposable
     {
         _provider.Dispose();
         _store.Dispose();
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     [Fact]

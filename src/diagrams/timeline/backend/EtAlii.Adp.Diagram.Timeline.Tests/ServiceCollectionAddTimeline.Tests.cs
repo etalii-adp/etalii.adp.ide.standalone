@@ -41,7 +41,7 @@ public class ServiceCollectionAddTimelineTests
 
         // The few core services this module's own registrations depend on. A production host
         // has far more; what matters here is that AddTimeline asks for nothing else.
-        services.AddSingleton<ICommandDispatcher>(new TimelineTestDispatcher(new TimelineDocumentStore(new FileWriter())));
+        services.AddSingleton(TestHistory.Dispatcher(s => s.AddTimeline()));
         services.AddSingleton<IHistoryStackStore>(provider =>
             new HistoryStackStore(provider.GetRequiredService<ICommandDispatcher>()));
         services.AddSingleton<IDiagramDefinitionCatalog, TimelineOnlyCatalog>();

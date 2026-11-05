@@ -35,7 +35,7 @@ public sealed class RestoreDocumentCommandHandler<TStore>(TStore documents, IFil
 
         try
         {
-            await writer.SaveAsync(command.BodyPath, command.Text, cancellationToken);
+            await writer.SaveKeepingByteOrderMarkAsync(command.BodyPath, command.Text, cancellationToken);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {

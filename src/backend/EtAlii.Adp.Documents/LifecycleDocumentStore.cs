@@ -210,7 +210,7 @@ public abstract class LifecycleDocumentStore<TBody, TModel> : IDiagramDocumentSt
     {
         var body = Read(text);
         var outcome = Parse(body);
-        return new(body, outcome.IsUsable ? outcome with { Unreadable = UnreadableOf(body) } : outcome);
+        return new DocumentEntry<TBody, TModel>(body, outcome.IsUsable ? outcome with { Unreadable = UnreadableOf(body) } : outcome);
     }
 
     // A missing body opens as a new, empty document, which is usable whatever its parser makes of no text.

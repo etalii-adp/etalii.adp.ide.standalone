@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The contract every module with a bundled DISL definition derives its tests from
+    (BundledDefinitionContract, BundledDefinitionSetContract).
+  -->
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3.assert" />
+    <PackageReference Include="xunit.v3.extensibility.core" />
+    <ProjectReference Include="..\EtAlii.Adp.Specification.Disl\EtAlii.Adp.Specification.Disl.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Specification.Json\EtAlii.Adp.Specification.Json.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Tests.Support\EtAlii.Adp.Tests.Support.csproj" />
+  </ItemGroup>
+
+</Project>

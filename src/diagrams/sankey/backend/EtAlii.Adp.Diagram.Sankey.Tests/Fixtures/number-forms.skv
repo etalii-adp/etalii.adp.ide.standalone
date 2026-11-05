@@ -1,0 +1,35 @@
+sankey: 1
+# B2: a number is read from the scalar's text, quoted or not.
+nodes:
+  - id: a
+    name: A
+    column: "1"
+  - id: b
+    name: B
+    column: 2.0
+  - id: c
+    name: C
+  - id: d
+    name: D
+  - id: e
+    name: E
+  - id: f
+    name: F
+flows:
+  - from: a
+    to: b
+    value: "12"
+    step: '0.5'
+  - from: a
+    to: c
+    value: 0x10
+  - from: a
+    to: d
+    value: .inf
+  - from: a
+    to: e
+    value: 1e3
+  - from: a
+    to: f
+    value: +7
+    step: 1_000

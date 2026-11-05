@@ -11,9 +11,10 @@ internal static class BindingChecker
     {
         var rules = binding.AllRules.ToList();
         var names = new HashSet<string>(StringComparer.Ordinal);
-        var ruleNames = rules.Select(r => r.Name).Concat(binding.Blocks.Select(b => b.Name)).ToHashSet(StringComparer.Ordinal);
+        var ruleNames = rules.Select(r => r.Name).Concat(binding.Blocks.Select(b => b.Name)).Concat(binding.Sections.Select(section => section.Name)).ToHashSet(StringComparer.Ordinal);
 
         CheckBlocks(binding, ruleNames, names, pointer, problems);
+        CheckSections(binding, pointer, problems);
         var elementCount = binding.Elements.Count;
         for (var i = 0; i < rules.Count; i++)
         {
@@ -22,6 +23,7 @@ internal static class BindingChecker
             CheckRule(binding, rule, rules, ruleNames, names, at, problems);
         }
         CheckBinding(binding, rules.Count, pointer, problems);
+        GrammarChecks.Check(binding, pointer, problems);
     }
 
     private static void CheckBlocks(FblBinding binding, HashSet<string> ruleNames, HashSet<string> names, string pointer, List<LoadDiagnostic> problems)
@@ -31,8 +33,22 @@ internal static class BindingChecker
             var block = binding.Blocks[i];
             var at = $"{pointer}/blocks/{i}";
             if (!names.Add(block.Name)) problems.Add(new LoadDiagnostic(at + "/name", LoadSeverity.Error, $"The rule name '{block.Name}' is used twice."));
-            CheckRegex(block.Line, at + "/line", problems);
+            // A block of the grammar family selects its entries with at, in place of a line (FBL 0.11 4.9).
+            if (block.At is null) CheckRegex(block.Line, at + "/line", problems);
             CheckWithin(block.Within, ruleNames, at + "/within", problems);
+        }
+    }
+
+    /// <summary>The sections of a bullets body (FBL 0.7 §4.8): a name each, used once, and a heading expression of FBL's subset.</summary>
+    private static void CheckSections(FblBinding binding, string pointer, List<LoadDiagnostic> problems)
+    {
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        for (var i = 0; i < binding.Sections.Count; i++)
+        {
+            var section = binding.Sections[i];
+            var at = $"{pointer}/sections/{i}";
+            if (!seen.Add(section.Name)) problems.Add(new LoadDiagnostic(at + "/name", LoadSeverity.Error, $"The section name '{section.Name}' is used twice."));
+            CheckRegex(section.Heading, at + "/heading", problems);
         }
     }
 
@@ -47,6 +63,7 @@ internal static class BindingChecker
         if (rule.Line is not null) CheckRegex(rule.Line, at + "/line", problems);
         CheckWithin(rule.Within, ruleNames, at + "/within", problems);
         CheckReferences(binding, rule, rules, at, problems);
+        CheckOrigins(binding, rule.Origins, at + "/origins", problems);
 
         var families = FamiliesOf(binding, rule);
         var scalars = families.Count > 0 && families.All(f => f is Family.Yaml or Family.Json);
@@ -62,6 +79,60 @@ internal static class BindingChecker
         CheckAttributes(rule, rules, context, scalars, at, problems);
         if (rule.Source is not null) CheckSlot(rule, rule.Source, context, at + "/source", problems);
         if (rule.Target is not null) CheckSlot(rule, rule.Target, context, at + "/target", problems);
+        if (rule.Insert?.Constant is { } constant) CheckConstant(rule, constant, scalars, at + "/insert/constant", problems);
+        if (rule.Insert is { } insert && scalars) CheckMember(rule, insert, at + "/insert", problems);
+    }
+
+    /// <summary>
+    /// FBL 0.14 §14.1 step 6: an insert of the yaml or json family whose rule's <c>at</c> ends in a capture adds a member
+    /// named by its key, so the rule binds an attribute to that capture; and <c>refusals.key</c> and
+    /// <c>refusals.duplicate</c>, the sentences of that key, stand on no other insert.
+    /// </summary>
+    private static void CheckMember(Rule rule, InsertSettings insert, string pointer, List<LoadDiagnostic> problems)
+    {
+        if (rule.MemberCapture is { } capture)
+        {
+            if (rule.MemberKeyAttribute is null)
+            {
+                problems.Add(new LoadDiagnostic(pointer, LoadSeverity.Error, $"The rule '{rule.Name}' adds a member named by {{{capture}}}, and binds no attribute to that capture (FBL 0.14 14.1)."));
+            }
+            return;
+        }
+        if (insert.KeyRefusal is not null) problems.Add(new LoadDiagnostic(pointer + "/refusals/key", LoadSeverity.Error, $"The rule '{rule.Name}' adds no member, since its at does not end in a capture (FBL 0.14 14.1)."));
+        if (insert.DuplicateRefusal is not null) problems.Add(new LoadDiagnostic(pointer + "/refusals/duplicate", LoadSeverity.Error, $"The rule '{rule.Name}' adds no member, since its at does not end in a capture (FBL 0.14 14.1)."));
+    }
+
+    /// <summary>
+    /// FBL 0.8 §14.1 step 6: an insert's constant is given only in the yaml and json families and never beside
+    /// <c>emit</c>, and none of its keys is one the same rule writes, by a writable attribute binding, <c>id.from</c>,
+    /// <c>source</c> or <c>target</c>, since a place has one writer (§3.3). A read-only binding may read its key.
+    /// </summary>
+    private static void CheckConstant(Rule rule, IReadOnlyList<KeyValuePair<string, object?>> constant, bool scalars, string pointer, List<LoadDiagnostic> problems)
+    {
+        if (!scalars) problems.Add(new LoadDiagnostic(pointer, LoadSeverity.Error, "An insert's constant is given only in the yaml and json families (FBL 0.8 6.2)."));
+        if (rule.Insert!.Emit is not null) problems.Add(new LoadDiagnostic(pointer, LoadSeverity.Error, "An insert has a constant or an emit, not both (FBL 0.8 6.2)."));
+        foreach ((string key, _) in constant)
+        {
+            if (Writer(rule, key) is { } writer)
+            {
+                problems.Add(new LoadDiagnostic(JsonPointer.Append(pointer, key), LoadSeverity.Error, $"The constant's key '{key}' is written by the rule's {writer} too, and a place has one writer (FBL 0.8 14.1)."));
+            }
+        }
+    }
+
+    /// <summary>What of <paramref name="rule"/> writes the key <paramref name="key"/> of its own entry, or null when nothing does.</summary>
+    private static string? Writer(Rule rule, string key)
+    {
+        var slot = new SlotKind.Key(key);
+        if (rule.Id?.From is { Child: null } from && from.Kind == slot) return "id.from";
+        if (rule.Source is { Child: null } source && source.Kind == slot) return "source";
+        if (rule.Target is { Child: null } target && target.Kind == slot) return "target";
+        if (rule.ReadOnly is not null) return null;
+        foreach ((string name, AttributeBinding attribute) in rule.Attributes)
+        {
+            if (attribute is { Child: null, ReadOnly: null } && attribute.Kind == slot) return $"attribute '{name}'";
+        }
+        return null;
     }
 
     /// <summary>The file rules, parent rules and cascaded rules a rule names exist.</summary>
@@ -92,6 +163,12 @@ internal static class BindingChecker
                 foreach (var to in reference.To) Require(to, rules, a + "/reference/to", problems);
             }
             if (attribute.Override is { } o) CheckSlot(rule, o, context, a + "/override", problems);
+            if (attribute.Secondary is { } s) CheckSlot(rule, s, context, a + "/secondary", problems);
+            for (var i = 0; i < attribute.Or.Count; i++) CheckSlot(rule, attribute.Or[i], context, $"{a}/or/{i}", problems);
+            if (attribute is { Secondary: not null, Override: not null })
+            {
+                problems.Add(new LoadDiagnostic(a + "/secondary", LoadSeverity.Error, "An attribute binding has a secondary or an override, not both (FBL 0.10 14.1)."));
+            }
             CheckScalarOptions(attribute, scalars, a, problems);
         }
     }
@@ -122,6 +199,10 @@ internal static class BindingChecker
         {
             problems.Add(new LoadDiagnostic(pointer + "/claims/readings", LoadSeverity.Error, "At most one reading is bare."));
         }
+        foreach (var origin in binding.Registration.ResourceByOrigin?.Keys ?? [])
+        {
+            CheckOrigins(binding, [origin], JsonPointer.Append(pointer + "/registration/resource/byOrigin", origin), problems);
+        }
         if (binding.Comment is not null) CheckRegex(binding.Comment, pointer + "/comment", problems);
         if (binding.Header?.Line is { } headerLine) CheckRegex(headerLine, pointer + "/header/line", problems);
         if (binding.Claims.Marker?.Pattern is { } pattern) CheckRegex(pattern, pointer + "/claims/marker/pattern", problems);
@@ -143,7 +224,7 @@ internal static class BindingChecker
     {
         var where = (scalars, attribute.Kind) switch
         {
-            (false, _) => "a slot of the xml, lines or blocks family",
+            (false, _) => "a slot of the xml, lines, blocks or bullets family",
             (_, SlotKind.Value) => "a value slot",
             (_, SlotKind.Capture) => "a capture slot",
             _ => null,
@@ -159,6 +240,18 @@ internal static class BindingChecker
     {
         if (slot.Kind is SlotKind.Value(var expression)) Compile(rule, expression, context, pointer + "/value", problems);
         if (slot.Word is not null) CheckRegex(slot.Word, pointer + "/word", problems);
+    }
+
+    /// <summary>FBL 0.10 §14.1 step 6: every origin a rule's <c>origins</c> or <c>registration.resource.byOrigin</c> names is one the binding claims.</summary>
+    private static void CheckOrigins(FblBinding binding, IReadOnlyList<string>? origins, string pointer, List<LoadDiagnostic> problems)
+    {
+        foreach (var origin in origins ?? [])
+        {
+            if (!binding.Claims.Origins.Contains(origin))
+            {
+                problems.Add(new LoadDiagnostic(pointer, LoadSeverity.Error, $"The origin '{origin}' is not one of the binding's claims.origins (FBL 0.10 14.1)."));
+            }
+        }
     }
 
     private static void Require(string name, List<Rule> rules, string pointer, List<LoadDiagnostic> problems)

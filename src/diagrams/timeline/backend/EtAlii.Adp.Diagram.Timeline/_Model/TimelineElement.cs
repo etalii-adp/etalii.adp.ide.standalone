@@ -21,4 +21,7 @@ public sealed record TimelineElement(
 {
     /// <summary>Whether this element occupies a period rather than a single moment.</summary>
     public bool IsPeriod => End is not null;
+
+    /// <summary>Whether its end can be placed; one without is drawn as a moment, whatever its file says.</summary>
+    public bool HasReadableEnd => End is { IsReadable: true };
 }

@@ -17,7 +17,8 @@ public sealed class KnowledgeRowContextTests : IDisposable
 {
     private readonly FileWriter _writer = new();
 
-    private readonly string _root = Directory.CreateTempSubdirectory("adp-knowledge-row-").FullName;
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-knowledge-row");
+    private readonly string _root;
     private readonly KnowledgeDocuments _documents = new();
     private readonly HistoryStackStore _histories;
     private readonly KnowledgeRowSourceResolver _resolver;
@@ -25,6 +26,7 @@ public sealed class KnowledgeRowContextTests : IDisposable
 
     public KnowledgeRowContextTests()
     {
+        _root = _testFolder.Path;
         var services = new Handlers
         {
             [typeof(ICommandHandler<KnowledgeEditCommand>)] = new KnowledgeEditCommandHandler(_documents, new FileWriter()),
@@ -41,14 +43,7 @@ public sealed class KnowledgeRowContextTests : IDisposable
     public void Dispose()
     {
         _histories.Dispose();
-        try
-        {
-            Directory.Delete(_root, recursive: true);
-        }
-        catch (IOException)
-        {
-            // The temp folder is the system's to clear.
-        }
+        _testFolder.Dispose();
     }
 
     private string Cities => IoPath.Combine(_root, "cities.yaml");

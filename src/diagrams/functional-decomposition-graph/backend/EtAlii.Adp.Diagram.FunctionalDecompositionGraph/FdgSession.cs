@@ -1,6 +1,6 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Sessions;
+using EtAlii.Adp.Specification.Disl;
 
 namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
 
@@ -15,7 +15,7 @@ namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
 /// project's history - one undo away, like every other edit.
 /// </para>
 /// </remarks>
-public sealed class FdgSession : DocumentDiagramSession<LineDocument, FdgModel>
+public sealed class FdgSession : DocumentDiagramSession<FdgBody, DislModel>
 {
     private readonly FdgElementMapper _mapper;
 
@@ -34,7 +34,7 @@ public sealed class FdgSession : DocumentDiagramSession<LineDocument, FdgModel>
     protected override string ReadOnlyRefusal => "This graph is read-only.";
 
     /// <inheritdoc />
-    protected override IReadOnlyList<DiagramElement> Render(FdgModel model, DiagramViewport viewport) =>
+    protected override IReadOnlyList<DiagramElement> Render(DislModel model, DiagramViewport viewport) =>
         _mapper.Visible(model, viewport);
 
     /// <summary>Moves an element so its top-left is (<paramref name="x"/>, <paramref name="y"/>).</summary>
@@ -43,8 +43,8 @@ public sealed class FdgSession : DocumentDiagramSession<LineDocument, FdgModel>
     /// the document holds the top-left. A connection's id is refused - a curve follows its ends and
     /// has no position of its own.
     /// </remarks>
-    protected override DiagramPlacement PlacementOf(FdgModel model, string elementId, double x, double y) =>
-        model.ElementOf(elementId) is null
+    protected override DiagramPlacement PlacementOf(DislModel model, string elementId, double x, double y) =>
+        FdgDefinition.EndOf(model.Diagram, elementId) is null
             ? DiagramPlacement.Refused("That is not something this graph can move.")
             : DiagramPlacement.By(new SetFdgPlacementCommand(BodyPath, elementId, x, y));
 }

@@ -69,16 +69,7 @@ internal static class OwlLayout
 
         var positions = new Dictionary<string, RegistrationPosition>(StringComparer.Ordinal);
 
-        // The header, top-left, before everything (Requirement 1.5). The classes start below
-        // ITS OWN height: a header carrying a dozen annotation rows is a tall card, and a fixed
-        // gap put the first class straight through it.
-        var header = graph.Nodes.FirstOrDefault(node => node.Kind == OwlNodeKind.OntologyHeader);
-        var headerHeight = 0d;
-        if (header is not null)
-        {
-            positions[header.Id] = new RegistrationPosition(0, 0);
-            headerHeight = SizeOf(header).Height + HeaderGap;
-        }
+        var headerHeight = PlaceHeader(graph, positions);
 
         var order = graph.Nodes.Select((node, index) => (node.Id, index))
             .ToDictionary(entry => entry.Id, entry => entry.index, StringComparer.Ordinal);
@@ -90,6 +81,45 @@ internal static class OwlLayout
             .Select(node => node.Id)
             .ToList();
         var classSet = classIds.ToHashSet(StringComparer.Ordinal);
+        var supers = Supers(graph, classIds, classSet);
+
+        var depths = OwlClassHierarchy.Depths(supers);
+
+        var satellites = Satellites(graph, classIds, classSet, positions);
+
+        var columns = Columns(classIds, depths);
+        var maxY = PlaceClasses(columns, supers, satellites, order, positions, headerHeight);
+
+        // Individuals band below the TBox, then whatever still has no place - orphaned anchors,
+        // free-floating nodes - in a final band; both grid-placed in document order.
+        maxY = Band(graph.Nodes.Where(node => node.Kind == OwlNodeKind.Individual && !positions.ContainsKey(node.Id)), maxY, positions);
+        Band(graph.Nodes.Where(node => !positions.ContainsKey(node.Id)), maxY, positions);
+
+        return positions;
+    }
+
+    /// <summary>
+    /// Places the header, top-left, before everything (Requirement 1.5), and returns where the
+    /// classes start.
+    /// </summary>
+    private static double PlaceHeader(OwlGraphResult graph, Dictionary<string, RegistrationPosition> positions)
+    {
+        // The classes start below ITS OWN height: a header carrying a dozen annotation rows is a
+        // tall card, and a fixed gap put the first class straight through it.
+        var header = graph.Nodes.FirstOrDefault(node => node.Kind == OwlNodeKind.OntologyHeader);
+        var headerHeight = 0d;
+        if (header is not null)
+        {
+            positions[header.Id] = new RegistrationPosition(0, 0);
+            headerHeight = SizeOf(header).Height + HeaderGap;
+        }
+
+        return headerHeight;
+    }
+
+    /// <summary>Each class's asserted superclasses, over the drawn subclass edges between class-like nodes.</summary>
+    private static Dictionary<string, List<string>> Supers(OwlGraphResult graph, List<string> classIds, HashSet<string> classSet)
+    {
         var supers = classIds.ToDictionary(id => id, _ => new List<string>(), StringComparer.Ordinal);
         foreach (var edge in graph.Edges)
         {
@@ -99,10 +129,17 @@ internal static class OwlLayout
             }
         }
 
-        var depths = OwlClassHierarchy.Depths(supers);
+        return supers;
+    }
 
-        // What hangs off each class: its expressions, and the datatypes and anchors only it
-        // reaches. Counted first, because a class's slot is as tall as its satellites need.
+    /// <summary>What hangs off each class: its expressions, and the datatypes and anchors only it reaches.</summary>
+    private static Dictionary<string, List<string>> Satellites(
+        OwlGraphResult graph,
+        List<string> classIds,
+        HashSet<string> classSet,
+        Dictionary<string, RegistrationPosition> positions)
+    {
+        // Counted first, because a class's slot is as tall as its satellites need.
         var satellites = classIds.ToDictionary(id => id, _ => new List<string>(), StringComparer.Ordinal);
         foreach (var node in graph.Nodes)
         {
@@ -123,8 +160,12 @@ internal static class OwlLayout
             }
         }
 
-        // Column order: parents first, then each column arranged by the barycentre of the rows
-        // its members descend from - the one pass that stops the hierarchy edges from crossing.
+        return satellites;
+    }
+
+    /// <summary>The classes grouped into columns by depth, in document order within a column.</summary>
+    private static SortedDictionary<int, List<string>> Columns(List<string> classIds, Dictionary<string, int> depths)
+    {
         var columns = new SortedDictionary<int, List<string>>();
         foreach (var id in classIds)
         {
@@ -138,21 +179,27 @@ internal static class OwlLayout
             members.Add(id);
         }
 
+        return columns;
+    }
+
+    /// <summary>
+    /// Places every class and its satellites, column by column, and returns the lowest edge reached.
+    /// </summary>
+    private static double PlaceClasses(
+        SortedDictionary<int, List<string>> columns,
+        Dictionary<string, List<string>> supers,
+        Dictionary<string, List<string>> satellites,
+        Dictionary<string, int> order,
+        Dictionary<string, RegistrationPosition> positions,
+        double classTop)
+    {
+        // Column order: parents first, then each column arranged by the barycentre of the rows
+        // its members descend from - the one pass that stops the hierarchy edges from crossing.
         var rowOf = new Dictionary<string, double>(StringComparer.Ordinal);
-        var classTop = headerHeight;
         var maxY = classTop;
         foreach ((int depth, List<string> members) in columns)
         {
-            var arranged = depth == 0
-                ? members.OrderBy(id => order[id]).ToList()
-                : members
-                    .OrderBy(id =>
-                    {
-                        var parents = supers[id].Where(rowOf.ContainsKey).Select(parent => rowOf[parent]).ToList();
-                        return parents.Count > 0 ? parents.Average() : double.MaxValue;
-                    })
-                    .ThenBy(id => order[id])
-                    .ToList();
+            var arranged = Arrange(depth, members, supers, order, rowOf);
 
             var y = classTop;
             foreach (var id in arranged)
@@ -175,37 +222,51 @@ internal static class OwlLayout
             }
         }
 
-        // Individuals band below the TBox, then whatever still has no place - orphaned anchors,
-        // free-floating nodes - in a final band; both grid-placed in document order.
-        maxY = Band(graph.Nodes.Where(node => node.Kind == OwlNodeKind.Individual && !positions.ContainsKey(node.Id)), maxY);
-        Band(graph.Nodes.Where(node => !positions.ContainsKey(node.Id)), maxY);
+        return maxY;
+    }
 
-        return positions;
+    /// <summary>A column's members in drawing order: by document order at the root, by the barycentre of their parents' rows below it.</summary>
+    private static List<string> Arrange(
+        int depth,
+        List<string> members,
+        Dictionary<string, List<string>> supers,
+        Dictionary<string, int> order,
+        Dictionary<string, double> rowOf) =>
+        depth == 0
+            ? members.OrderBy(id => order[id]).ToList()
+            : members
+                .OrderBy(id =>
+                {
+                    var parents = supers[id].Where(rowOf.ContainsKey).Select(parent => rowOf[parent]).ToList();
+                    return parents.Count > 0 ? parents.Average() : double.MaxValue;
+                })
+                .ThenBy(id => order[id])
+                .ToList();
 
-        double Band(IEnumerable<OwlNode> nodes, double top)
+    /// <summary>Grid-places <paramref name="nodes"/> in a band below <paramref name="top"/>, and returns the band's bottom.</summary>
+    private static double Band(IEnumerable<OwlNode> nodes, double top, Dictionary<string, RegistrationPosition> positions)
+    {
+        // A band's pitch comes from what it actually holds: individual cards grow a row per
+        // literal assertion, and a fixed row height drew them through each other.
+        var banded = nodes.ToList();
+        if (banded.Count == 0)
         {
-            // A band's pitch comes from what it actually holds: individual cards grow a row per
-            // literal assertion, and a fixed row height drew them through each other.
-            var banded = nodes.ToList();
-            if (banded.Count == 0)
-            {
-                return top;
-            }
-
-            var columnPitch = banded.Max(node => SizeOf(node).Width) + BandColumnGap;
-            var rowPitch = banded.Max(node => SizeOf(node).Height) + BandRowGap;
-            var y = top + BandGap;
-            var bottom = top;
-            for (var placed = 0; placed < banded.Count; placed++)
-            {
-                (double x, double down) = GridPacker.Cell(placed, BandColumns, columnPitch, rowPitch);
-                var position = new RegistrationPosition(x, y + down);
-                positions[banded[placed].Id] = position;
-                bottom = Math.Max(bottom, position.Y + rowPitch);
-            }
-
-            return bottom;
+            return top;
         }
+
+        var columnPitch = banded.Max(node => SizeOf(node).Width) + BandColumnGap;
+        var rowPitch = banded.Max(node => SizeOf(node).Height) + BandRowGap;
+        var y = top + BandGap;
+        var bottom = top;
+        for (var placed = 0; placed < banded.Count; placed++)
+        {
+            (double x, double down) = GridPacker.Cell(placed, BandColumns, columnPitch, rowPitch);
+            var position = new RegistrationPosition(x, y + down);
+            positions[banded[placed].Id] = position;
+            bottom = Math.Max(bottom, position.Y + rowPitch);
+        }
+
+        return bottom;
     }
 
     /// <summary>

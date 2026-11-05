@@ -1,0 +1,23 @@
+supply-chain: 1
+# Finding B1: every value is the text it was written with, whatever YAML's core schema would type it as.
+groups:
+  - id: 2024
+    name: 12
+nodes:
+  - id: 007
+    type: source
+    name: yes
+    group: 2024
+    unit: null
+  - id: 1.0
+    type: producer
+    name: ~
+    description: true
+  - id: off
+    type: outlet
+    name: 0x10
+flows:
+  - id: 1e3
+    from: 007
+    to: 1.0
+    product: no

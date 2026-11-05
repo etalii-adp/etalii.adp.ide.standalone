@@ -8,6 +8,7 @@ import { actionForMenuEntry, backendKeyOf, type ActionLookup } from "./definitio
 import type { DiagramModel } from "./api/diagramModel";
 import { hasRow } from "./definition/compartments";
 import { openLink } from "@client/shell/links/openLink";
+import { clearFocusedDiagram, showFocusedDiagram } from "@client/canvas/focusedDiagram";
 import {
   dispatchDiagramEvent,
   type ActionInvoked,
@@ -145,6 +146,12 @@ export function useLibrarySelection(
 ): LibrarySelection {
   const { select, executeAction, executeShortcut, revealPath } = useContextConnection();
   const { selection: pushed, actions } = useContextSelection();
+
+  // What an empty selection shows the properties of: the diagram this canvas draws.
+  useEffect(() => {
+    showFocusedDiagram(source.entryId);
+  }, [source.entryId, model]);
+  useEffect(() => () => clearFocusedDiagram(source.entryId), [source.entryId]);
 
   const selectionKey = innermostKey(pushed) ?? undefined;
   const selectedId = elementIdOfKey(selectionKey);

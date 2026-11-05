@@ -28,11 +28,14 @@ public sealed class DislElement : ICelObject
     private readonly Dictionary<string, object?> _attributes;
     private readonly List<DislElement> _children = [];
 
+    /// <summary>The element's id; set through <see cref="Id"/> once the element is made, so the diagram's index by id follows.</summary>
+    private string _id;
+
     internal DislElement(DislDiagram diagram, DislType type, string id, IReadOnlyDictionary<string, object?>? attributes)
     {
         Diagram = diagram;
         Type = type;
-        Id = id;
+        _id = id;
         _attributes = new Dictionary<string, object?>(StringComparer.Ordinal);
         foreach ((string name, object? value) in attributes ?? new Dictionary<string, object?>())
         {
@@ -49,7 +52,15 @@ public sealed class DislElement : ICelObject
     public DislType Type { get; private set; }
 
     /// <summary>The element's id: stored, or computed from the id rule once the model is complete (§11.5).</summary>
-    public string Id { get; internal set; }
+    public string Id
+    {
+        get => _id;
+        internal set
+        {
+            _id = value;
+            Diagram.IdsChanged();
+        }
+    }
 
     /// <summary><c>node</c> or <c>relation</c>.</summary>
     public string Kind => Type.IsRelation ? "relation" : "node";
@@ -71,6 +82,28 @@ public sealed class DislElement : ICelObject
 
     /// <summary>A relation's target; null for a node, and for a relation without one (§4.9).</summary>
     public DislElement? Target { get; internal init; }
+
+    /// <summary>
+    /// The element a relation belongs to (§4.11.3): its derived <c>owner</c> when it states one, else the nearest
+    /// common ancestor of its ends; a node's parent. Null for the diagram. An ancestor is never the element itself
+    /// (<see cref="Ancestors"/>), so a relation from a node to its own child belongs to that node's parent.
+    /// </summary>
+    internal DislElement? Owner => !Type.IsRelation ? Parent : OwnerIsStated ? StatedOwner : CommonAncestor();
+
+    /// <summary>A derived relation's stated <c>owner</c> (§4.11.3); null for the diagram, or when it states none.</summary>
+    internal DislElement? StatedOwner { get; init; }
+
+    /// <summary>Whether a derived relation states its <c>owner</c> (§4.11.3), so that its ends do not decide it.</summary>
+    internal bool OwnerIsStated { get; init; }
+
+    /// <summary>The nearest ancestor of a relation's source that is an ancestor of its target too; the source's parent without a target.</summary>
+    private DislElement? CommonAncestor()
+    {
+        if (Source is null) return null;
+        if (Target is null) return Source.Parent;
+        var ofTarget = Target.Ancestors().ToHashSet();
+        return Source.Ancestors().FirstOrDefault(ofTarget.Contains);
+    }
 
     /// <summary>Whether the element is derived (§4.11) rather than stored.</summary>
     public bool IsDerived { get; internal init; }
@@ -179,6 +212,9 @@ public sealed class DislElement : ICelObject
     public IReadOnlyList<DislElement> Outgoing => Diagram.OutgoingOf(this);
 
     /// <summary>The value of the type's label attribute (§4.6), as text; empty when it has none.</summary>
+    /// <summary>The element's <c>label()</c> (§12.2): its label attribute's value as text, or empty.</summary>
+    internal string LabelText => Label();
+
     private string Label() => Type.LabelAttribute is { } name && ValueOf(name) is { } value ? value as string ?? value.ToString() ?? "" : "";
 
     /// <summary>
@@ -190,6 +226,7 @@ public sealed class DislElement : ICelObject
     {
         foreach (var name in _attributes.Keys.Where(name => !type.Attributes.ContainsKey(name)).ToList()) _attributes.Remove(name);
         Type = type;
+        Diagram.IndexChanged();
         foreach ((string name, object? value) in mapped)
         {
             if (value is null) _attributes.Remove(name);
@@ -261,7 +298,7 @@ public sealed class DislElement : ICelObject
             "derived" => IsDerived,
             "sources" => List(Sources),
             "parent" when !Type.IsRelation => Parent,
-            "owner" => Parent is null ? Diagram : Parent,
+            "owner" => (object?)Owner ?? Diagram,
             "slot" when !Type.IsRelation => Slot ?? "",
             "children" when !Type.IsRelation => List(_children),
             "incoming" when !Type.IsRelation => List(Incoming),
@@ -288,6 +325,7 @@ public sealed class DislElement : ICelObject
             ("incomingOf", 1) when !Type.IsRelation => List(Incoming.Where(relation => relation.IsA(Text(arguments[0])))),
             ("outgoingOf", 1) when !Type.IsRelation => List(Outgoing.Where(relation => relation.IsA(Text(arguments[0])))),
             ("reachable", 1) when !Type.IsRelation => List(Reachable(Text(arguments[0]))),
+            ("predecessors", 1) when !Type.IsRelation => List(Predecessors(Text(arguments[0]))),
             ("inCycle", 1) when !Type.IsRelation => Reachable(Text(arguments[0])).Contains(this),
             ("other", 1) when Type.IsRelation => Other(arguments[0]),
             ("location", 0) => LocationMap(),
@@ -332,6 +370,13 @@ public sealed class DislElement : ICelObject
         : throw new CelException($"other() was given an element that is not an end of {this}.");
 
     private static List<object?> List(IEnumerable<DislElement> elements) => [.. elements];
+
+    /// <summary>
+    /// The elements a relation of <paramref name="relationType"/> or one of its subtypes leads from to this one (DISL §12.2),
+    /// each once, in the order of those relations in the model. A relation whose source is unset leads from nothing.
+    /// </summary>
+    private IEnumerable<DislElement> Predecessors(string relationType) =>
+        Incoming.Where(relation => relation.IsA(relationType)).Select(relation => relation.Source).OfType<DislElement>().Distinct(ReferenceEqualityComparer.Instance).Cast<DislElement>();
 
     /// <summary>
     /// The elements reached from this one over relations of <paramref name="relationType"/> and its subtypes (DISL §12.4), in the

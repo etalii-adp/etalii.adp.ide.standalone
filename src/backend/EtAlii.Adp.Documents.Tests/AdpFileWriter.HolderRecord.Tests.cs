@@ -31,17 +31,26 @@ namespace EtAlii.Adp.Documents.Tests;
 [Collection(FileHoldersSeam.Name)]
 public class AdpFileWriterHolderRecordTests : IDisposable
 {
+    /// <summary>
+    /// How long an arrangement or the real Restart Manager may take on a machine running the whole
+    /// suite. Thirty seconds was not enough for either on a loaded Windows machine (2026-10-31): a
+    /// PowerShell holder never reported in time and a holder query outlasted its budget, each passing
+    /// when the class ran alone.
+    /// </summary>
+    private static readonly TimeSpan LoadedMachine = TimeSpan.FromMinutes(2);
+
     private readonly FileWriter _writer = new();
 
-    private readonly string _folder = IoPath.Combine(IoPath.GetTempPath(), "adp-holder-record-" + Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-holder-record");
+    private readonly string _folder;
 
-    public AdpFileWriterHolderRecordTests() => Directory.CreateDirectory(_folder);
+    public AdpFileWriterHolderRecordTests() => _folder = _testFolder.Path;
 
     public void Dispose()
     {
         FileHolders.Query = null;
         FileHolders.Budget = TimeSpan.FromSeconds(2);
-        TestFolder.TryDelete(_folder);
+        _testFolder.Dispose();
         GC.SuppressFinalize(this);
     }
 
@@ -58,7 +67,7 @@ public class AdpFileWriterHolderRecordTests : IDisposable
         // SAYS rather than about how busy the machine is: at the production budget a loaded gate
         // timed out the query and reddened this test for a reason it does not pin. The timeout
         // itself is pinned by AHolderQueryThatHangs_DoesNotHoldTheSaveOpen.
-        FileHolders.Budget = TimeSpan.FromSeconds(30);
+        FileHolders.Budget = LoadedMachine;
 
 
         using var holder = StartHolder(path, ready);
@@ -96,7 +105,7 @@ public class AdpFileWriterHolderRecordTests : IDisposable
         // SAYS rather than about how busy the machine is: at the production budget a loaded gate
         // timed out the query and reddened this test for a reason it does not pin. The timeout
         // itself is pinned by AHolderQueryThatHangs_DoesNotHoldTheSaveOpen.
-        FileHolders.Budget = TimeSpan.FromSeconds(30);
+        FileHolders.Budget = LoadedMachine;
         using var logs = LogCapture.Start();
 
         await using (new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
@@ -222,7 +231,7 @@ public class AdpFileWriterHolderRecordTests : IDisposable
         // the wrong thing: the subject includes the REAL Restart Manager saying nobody, and the mapping
         // of its zero-holder answer to None rather than to "could not be determined". Injected, that
         // mapping would go unexercised and this would test only how a supplied string is formatted.
-        FileHolders.Budget = TimeSpan.FromSeconds(30);
+        FileHolders.Budget = LoadedMachine;
 
         var described = FileHolders.Describe(path);
 
@@ -240,7 +249,7 @@ public class AdpFileWriterHolderRecordTests : IDisposable
         var script =
             $"$h = [System.IO.File]::Open('{path}', 'Open', 'Read', 'Read'); " +
             $"Set-Content -Path '{ready}' -Value 'holding'; " +
-            "Start-Sleep -Seconds 60; $h.Dispose()";
+            "Start-Sleep -Seconds 600; $h.Dispose()";
         var start = new ProcessStartInfo("powershell.exe")
         {
             UseShellExecute = false,
@@ -258,7 +267,7 @@ public class AdpFileWriterHolderRecordTests : IDisposable
 
     private static async Task WaitForHolder(string ready, Process holder)
     {
-        await Eventually.TrueAsync(() => File.Exists(ready) || holder.HasExited, TestContext.Current.CancellationToken, TimeSpan.FromSeconds(30), TimeSpan.FromMilliseconds(50));
+        await Eventually.TrueAsync(() => File.Exists(ready) || holder.HasExited, TestContext.Current.CancellationToken, LoadedMachine, TimeSpan.FromMilliseconds(50));
 
         // Loud rather than silent: without a real holder this test would pass for the wrong reason.
         Assert.False(holder.HasExited && !File.Exists(ready), "The arrangement failed: the holder process exited before it held the file.");

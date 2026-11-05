@@ -26,14 +26,14 @@ public class AddDiagramContextActionProviderRegistrationTests : IDisposable
 
     private static readonly DiagramDocumentFactories NoFactories = new([]);
 
+    private readonly TestFolder _testFolder = TestFolder.Create("add-diagram-registration");
     private readonly string _root;
     private readonly IHistoryStackStore _historyStacks;
     private readonly AddDiagramContextActionProvider _provider;
 
     public AddDiagramContextActionProviderRegistrationTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
         _ = TestHistory.Create(_root, out _historyStacks);
         var catalog = new DiagramDefinitionCatalog { All = [Pipeline, Mindmap, ClassDiagram] };
         _provider = new AddDiagramContextActionProvider(_historyStacks, NoFactories, catalog, new DiagramFileRouter(catalog));
@@ -41,7 +41,7 @@ public class AddDiagramContextActionProviderRegistrationTests : IDisposable
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     private string CreateFile(string name, string content = "stages:\n")

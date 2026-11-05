@@ -13,6 +13,7 @@ namespace EtAlii.Adp.Diagram.Mindmap.Tests;
 /// </summary>
 public class CommandsTests : IDisposable
 {
+    private readonly TestFolder _testFolder = TestFolder.Create("mindmap-commands");
     private readonly string _root;
     private readonly string _bodyPath;
     private readonly ServiceProvider _services;
@@ -21,8 +22,7 @@ public class CommandsTests : IDisposable
 
     public CommandsTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
         _bodyPath = IoPath.Combine(_root, "architecture.mm");
         File.Copy("Fixtures/architecture.mm", _bodyPath);
 
@@ -34,7 +34,7 @@ public class CommandsTests : IDisposable
     public void Dispose()
     {
         _services.Dispose();
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     private async Task<MindmapDocument> DocumentAsync() => await _documents.GetOrLoadAsync(_bodyPath, TestContext.Current.CancellationToken);

@@ -16,7 +16,7 @@ namespace EtAlii.Adp.Specification.Fbl.Yaml;
 /// </summary>
 internal sealed class YamlParser(BodyText text)
 {
-    private static readonly FlowValue NoFlowValue = new(null, "", "plain");
+    private static readonly FlowValue NoFlowValue = new(null, "", "plain", Empty(0));
 
     private readonly byte[] _bytes = text.Bytes;
     private readonly List<Token> _tokens = [];
@@ -286,6 +286,9 @@ internal sealed class YamlParser(BodyText text)
     /// A flow collection is one value: its members are readable, while its only writable span is the
     /// whole collection (FBL §4.3). Its members are read three ways in one walk: each member's typed
     /// value, its written text (FBL §4.1.5) and the name of the style it is written in (FBL §2.4).
+    /// The items of a flow sequence are entries for the rules' selectors too (FBL 0.10 §4.3), each with
+    /// the span of a json item, its separator the <c>,</c> after it, and an item that is a mapping with
+    /// its members as entries, so that a slot of an item can be read.
     /// </summary>
     private TreeValue Flow()
     {
@@ -294,7 +297,7 @@ internal sealed class YamlParser(BodyText text)
         // A flow collection's end token is the closing bracket, marked where it starts.
         var span = new Span(start, ByteOf(_tokens[_next - 1].Start) + 1);
         Leaves.Add(span);
-        return new TreeValue
+        var value = new TreeValue
         {
             Kind = ValueKind.Scalar,
             Style = _bytes[start] == (byte)'[' ? ValueStyle.FlowSequence : ValueStyle.FlowMapping,
@@ -304,11 +307,14 @@ internal sealed class YamlParser(BodyText text)
             FlowText = flow.Text,
             FlowStyle = flow.Style,
         };
+        if (value.Style == ValueStyle.FlowSequence) value.Entries.AddRange(flow.Tree.Entries);
+        return value;
     }
 
     private FlowValue FlowNode()
     {
         while (Peek is Anchor or Tag) _next++;
+        var start = ByteOf(Peek.Start);
         switch (Peek)
         {
             case FlowSequenceStart:
@@ -316,25 +322,31 @@ internal sealed class YamlParser(BodyText text)
                 var typed = new List<object?>();
                 var texts = new List<object?>();
                 var styles = new List<object?>();
+                var sequence = new TreeValue { Kind = ValueKind.Sequence, Style = ValueStyle.FlowSequence, Span = new Span(start, start) };
                 while (Peek is not FlowSequenceEnd)
                 {
-                    if (Peek is FlowEntry)
+                    if (Peek is FlowEntry separator)
                     {
+                        if (sequence.Entries.Count > 0 && sequence.Entries[^1].Separator < 0) sequence.Entries[^1].Separator = ByteOf(separator.Start);
                         _next++;
                         continue;
                     }
+                    var at = ByteOf(Peek.Start);
                     var item = Peek is Key ? FlowPair() : FlowNode();
                     typed.Add(item.Typed);
                     texts.Add(item.Text);
                     styles.Add(item.Style);
+                    sequence.Entries.Add(new TreeEntry { Value = item.Tree, Own = item.Tree.Span with { Start = at }, Indent = Column(at), InFlow = true });
                 }
+                sequence.Span = new Span(start, ByteOf(Peek.Start) + 1);
                 _next++;
-                return new FlowValue(typed, texts, styles);
+                return new FlowValue(typed, texts, styles, sequence);
             case FlowMappingStart:
                 _next++;
                 var typedMap = new CelMap();
                 var textMap = new CelMap();
                 var styleMap = new CelMap();
+                var mapping = new TreeValue { Kind = ValueKind.Mapping, Style = ValueStyle.FlowMapping, Span = new Span(start, start) };
                 while (Peek is not FlowMappingEnd)
                 {
                     if (Peek is FlowEntry)
@@ -342,30 +354,36 @@ internal sealed class YamlParser(BodyText text)
                         _next++;
                         continue;
                     }
-                    FlowMember(typedMap, textMap, styleMap);
+                    FlowMember(typedMap, textMap, styleMap, mapping);
                 }
+                mapping.Span = new Span(start, ByteOf(Peek.Start) + 1);
                 _next++;
-                return new FlowValue(typedMap, textMap, styleMap);
+                return new FlowValue(typedMap, textMap, styleMap, mapping);
             case Scalar scalar:
                 _next++;
+                var written = SpanOf(scalar);
                 return scalar.Style switch
                 {
-                    ScalarStyle.Plain => new FlowValue(YamlScalars.Typed(scalar.Value), scalar.Value, "plain"),
-                    ScalarStyle.DoubleQuoted => new FlowValue(scalar.Value, scalar.Value, "double"),
-                    _ => new FlowValue(scalar.Value, scalar.Value, "single"),
+                    ScalarStyle.Plain => new FlowValue(YamlScalars.Typed(scalar.Value), scalar.Value, "plain", FlowScalar(written, ValueStyle.Plain, scalar.Value, YamlScalars.Typed(scalar.Value))),
+                    ScalarStyle.DoubleQuoted => new FlowValue(scalar.Value, scalar.Value, "double", FlowScalar(written, ValueStyle.Double, scalar.Value, scalar.Value)),
+                    _ => new FlowValue(scalar.Value, scalar.Value, "single", FlowScalar(written, ValueStyle.Single, scalar.Value, scalar.Value)),
                 };
             case AnchorAlias alias:
                 // Inside a flow collection an alias reads as it is written.
                 _next++;
-                var written = "*" + alias.Value.Value;
-                return new FlowValue(written, written, "plain");
+                var name = "*" + alias.Value.Value;
+                return new FlowValue(name, name, "plain", FlowScalar(SpanOf(alias), ValueStyle.Plain, name, name));
             default:
-                return NoFlowValue;
+                return NoFlowValue with { Tree = Empty(start) };
         }
     }
 
+    /// <summary>A scalar inside a flow collection, as the tree of its item holds it (FBL 0.10 §4.3).</summary>
+    private static TreeValue FlowScalar(Span span, ValueStyle style, string written, object? typed) =>
+        new() { Kind = ValueKind.Scalar, Style = style, Span = span, Text = written, Typed = typed };
+
     /// <summary>A flow mapping's member: <c>key: value</c>, a key alone, or <c>? key</c>; the last of a repeated key wins.</summary>
-    private void FlowMember(CelMap typed, CelMap texts, CelMap styles)
+    private void FlowMember(CelMap typed, CelMap texts, CelMap styles, TreeValue mapping)
     {
         if (Peek is Key) _next++;
         var start = ByteOf(Peek.Start);
@@ -373,7 +391,7 @@ internal sealed class YamlParser(BodyText text)
         var last = _tokens[_next - 1];
         // A collection as a key, as in a template's {{ .Release.Name }}, is named by its text as written.
         var written = key.Text as string ?? text.Text(start, last is FlowSequenceEnd or FlowMappingEnd ? ByteOf(last.Start) + 1 : ByteOf(last.End));
-        var value = NoFlowValue;
+        var value = NoFlowValue with { Tree = Empty(key.Tree.Span.End) };
         if (Peek is Value)
         {
             _next++;
@@ -383,6 +401,9 @@ internal sealed class YamlParser(BodyText text)
         typed[name] = value.Typed;
         texts[written] = value.Text;
         styles[name] = value.Style;
+        var member = new TreeEntry { Name = name, KeySpan = key.Tree.Span, Value = value.Tree, Own = new Span(start, Math.Max(key.Tree.Span.End, value.Tree.Span.End)), Indent = Column(start), InFlow = true };
+        mapping.Entries.RemoveAll(entry => entry.Name == name);
+        mapping.Entries.Add(member);
     }
 
     /// <summary>A single pair in a flow sequence (<c>[a: b]</c>) is a mapping of one member.</summary>
@@ -391,12 +412,18 @@ internal sealed class YamlParser(BodyText text)
         var typed = new CelMap();
         var texts = new CelMap();
         var styles = new CelMap();
-        FlowMember(typed, texts, styles);
-        return new FlowValue(typed, texts, styles);
+        var start = ByteOf(Peek.Start);
+        var mapping = new TreeValue { Kind = ValueKind.Mapping, Style = ValueStyle.FlowMapping, Span = new Span(start, start) };
+        FlowMember(typed, texts, styles, mapping);
+        mapping.Span = mapping.Entries.Count > 0 ? new Span(start, mapping.Entries[^1].Own.End) : mapping.Span;
+        return new FlowValue(typed, texts, styles, mapping);
     }
 
-    /// <summary>A member of a flow collection, or the collection itself, read three ways: typed, as written, and by style.</summary>
-    private sealed record FlowValue(object? Typed, object? Text, object? Style);
+    /// <summary>
+    /// A member of a flow collection, or the collection itself, read three ways: typed, as written, and by style; and
+    /// as the tree its items are entries of (FBL 0.10 §4.3).
+    /// </summary>
+    private sealed record FlowValue(object? Typed, object? Text, object? Style, TreeValue Tree);
 
     /// <summary>Hands YamlDotNet's parser the scanner's tokens and keeps each one it reads, so the body is scanned once.</summary>
     private sealed class RecordingScanner(Scanner scanner, List<Token> tokens) : IScanner

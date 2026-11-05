@@ -1,0 +1,11 @@
+# B10: the header is read wherever it stands in the root mapping, quoted or not.
+nodes:
+  - id: a
+    name: A
+  - id: b
+    name: B
+"sankey": 1
+flows:
+  - from: a
+    to: b
+    value: 1

@@ -4,7 +4,6 @@ using EtAlii.Adp.Diagram.Wire;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.Hierarchy.Wire;
-using EtAlii.Adp.TestSupport.Host;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Xunit;
@@ -57,7 +56,7 @@ public class WardleyMapFlowTests(HostFixture host) : IClassFixture<HostFixture>
     // ---- opening ------------------------------------------------------------------------------
 
     [Fact]
-    public async Task AMapOpens_AndDeliversItsElementsAndItsEvolutionAxis()
+    public async Task AMapOpens_AndDeliversItsElementsAndItsDiagram()
     {
         // Arrange.
         using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
@@ -65,9 +64,8 @@ public class WardleyMapFlowTests(HostFixture host) : IClassFixture<HostFixture>
         // Act.
         var elements = await DiagramFlow.BaselineAsync(session, "tea.adp");
 
-        // Assert. The axis goes out as a map-level element, so the client draws the bands it is
-        // told about rather than constants it holds (Requirement 8.2).
-        Assert.Contains(elements, element => element.Type == WardleyElementTypes.EvolutionAxis);
+        // Assert. The map's own attributes go out as one map-level element beside its contents.
+        Assert.Contains(elements, element => element.Type == WardleyElementTypes.Diagram);
         Assert.Equal(3, elements.Count(element => element.Type == WardleyElementTypes.Element));
         Assert.Single(elements, element => element.Type == WardleyElementTypes.Link);
     }

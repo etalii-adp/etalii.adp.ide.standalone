@@ -19,7 +19,7 @@ public class HistoryTests
     {
         // Arrange.
         var bytes = Encoding.UTF8.GetBytes(Timeline);
-        var edit = Edit.Empty with { Splices = [new Splice(SpliceOperation.ReplaceValue, 31, 36, "\"Al: pha\"")] };
+        var edit = SpliceEdit.Empty with { Splices = [new Splice(SpliceOperation.ReplaceValue, 31, 36, "\"Al: pha\"")] };
         var inverse = OpenRegistration.Open(bytes);
         var snapshot = OpenRegistration.Open(bytes);
 

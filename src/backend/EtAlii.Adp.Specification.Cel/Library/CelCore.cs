@@ -53,7 +53,7 @@ internal static class CelCore
     {
         try
         {
-            return Regex.IsMatch(CelValues.AsString(text), RegexSubset.ToDotNet(CelValues.AsString(pattern), false), RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(250));
+            return Regex.IsMatch(CelValues.AsString(text), RegexSubset.ToDotNet(CelValues.AsString(pattern), false), RegexOptions.CultureInvariant, TimeSpan.FromSeconds(2));
         }
         catch (RegexMatchTimeoutException)
         {

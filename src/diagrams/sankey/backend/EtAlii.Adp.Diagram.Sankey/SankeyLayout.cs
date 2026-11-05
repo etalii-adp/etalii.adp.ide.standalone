@@ -135,89 +135,15 @@ public sealed class SankeyLayout
         var heights = nodes.ToDictionary(node => node.Id, node => Math.Max(SankeyGeometry.MinimumNodeHeight, values[node.Id] * scale), StringComparer.Ordinal);
         var extent = order.Count == 0 ? 0 : order.Max(column => column.Sum(id => heights[id]) + (Math.Max(0, column.Count - 1) * SankeyGeometry.NodeGap));
 
-        var forward = flows.Where(flow => columns[flow.To] > columns[flow.From]).ToList();
-        var outgoing = nodes.ToDictionary(node => node.Id, node => flows.Where(flow => flow.From == node.Id).ToList(), StringComparer.Ordinal);
-        var incoming = nodes.ToDictionary(node => node.Id, node => flows.Where(flow => flow.To == node.Id).ToList(), StringComparer.Ordinal);
-        var documentOrder = flows.Select((flow, index) => (flow.Id, index)).ToDictionary(pair => pair.Id, pair => pair.index, StringComparer.Ordinal);
-
-        // Every column starts stacked from the top and centred on the tallest.
-        var top = new Dictionary<string, double>(StringComparer.Ordinal);
-        foreach (var column in order)
-        {
-            var height = column.Sum(id => heights[id]) + (Math.Max(0, column.Count - 1) * SankeyGeometry.NodeGap);
-            var y = (extent - height) / 2;
-            foreach (var id in column)
-            {
-                top[id] = y;
-                y += heights[id] + SankeyGeometry.NodeGap;
-            }
-        }
-
-        var forwardIn = nodes.ToDictionary(node => node.Id, node => forward.Where(flow => flow.To == node.Id).ToList(), StringComparer.Ordinal);
-        var forwardOut = nodes.ToDictionary(node => node.Id, node => forward.Where(flow => flow.From == node.Id).ToList(), StringComparer.Ordinal);
-
-        for (var iteration = 0; iteration < Iterations; iteration++)
-        {
-            var alpha = Math.Pow(0.99, iteration);
-
-            // Right to left: each node towards where its outgoing bands would run level.
-            for (var c = columnCount - 2; c >= 0; c--)
-            {
-                foreach (var id in order[c])
-                {
-                    Relax(id, forwardOut[id], flow => top[flow.To] + OffsetIn(flow) - OffsetOut(flow));
-                }
-
-                Resolve(order[c]);
-            }
-
-            // Left to right: each node towards where its incoming bands would run level.
-            for (var c = 1; c < columnCount; c++)
-            {
-                foreach (var id in order[c])
-                {
-                    Relax(id, forwardIn[id], flow => top[flow.From] + OffsetOut(flow) - OffsetIn(flow));
-                }
-
-                Resolve(order[c]);
-            }
-
-            void Relax(string id, List<SankeyFlow> along, Func<SankeyFlow, double> levelTop)
-            {
-                var weight = along.Sum(ValueOf);
-                if (weight <= 0)
-                {
-                    return;
-                }
-
-                var wanted = along.Sum(flow => levelTop(flow) * ValueOf(flow)) / weight;
-                top[id] += (wanted - top[id]) * alpha;
-            }
-        }
-
-        foreach (var column in order)
-        {
-            Resolve(column);
-        }
+        var stacking = new Stacking(nodes, flows, heights, extent, scale);
+        stacking.Stack(order);
+        stacking.Relax(nodes, flows, columns, order, columnCount);
 
         // Whole units: a position that changes in the fifth decimal on every recompute is a delta
         // nobody can see and every connection pays for.
         var boxes = nodes.ToDictionary(
             node => node.Id,
-            node => new Rect(LeftOf(columns[node.Id]), Math.Round(top[node.Id], 2), SankeyGeometry.NodeWidth, Math.Round(heights[node.Id], 2)),
-            StringComparer.Ordinal);
-
-        var bands = flows.ToDictionary(
-            flow => flow.Id,
-            flow =>
-            {
-                var thickness = Thickness(flow);
-                return new SankeyBand(
-                    Math.Round(Math.Max(SankeyGeometry.MinimumThickness, thickness), 2),
-                    Fraction(OffsetOut(flow) + (thickness / 2), heights[flow.From], values[flow.From]),
-                    Fraction(OffsetIn(flow) + (thickness / 2), heights[flow.To], values[flow.To]),
-                    columns[flow.To] <= columns[flow.From]);
-            },
+            node => new Rect(LeftOf(columns[node.Id]), Math.Round(stacking.Top[node.Id], 2), SankeyGeometry.NodeWidth, Math.Round(heights[node.Id], 2)),
             StringComparer.Ordinal);
 
         return new SankeyLayout(
@@ -226,42 +152,34 @@ public sealed class SankeyLayout
             boxes,
             columns,
             values,
-            bands,
+            BandsOf(flows, stacking, heights, values, columns),
             [.. order.Select(column => (IReadOnlyList<string>)column)],
             scale);
-
-        // Within the extent, in order, never closer than the gap: pushed down from the top, then up
-        // from the bottom, then down once more in case the column is as tall as the extent.
-        void Resolve(List<string> column)
-        {
-            for (var i = 0; i < column.Count; i++)
-            {
-                var floor = i == 0 ? 0 : top[column[i - 1]] + heights[column[i - 1]] + SankeyGeometry.NodeGap;
-                top[column[i]] = Math.Max(top[column[i]], floor);
-            }
-
-            for (var i = column.Count - 1; i >= 0; i--)
-            {
-                var ceiling = i == column.Count - 1 ? extent : top[column[i + 1]] - SankeyGeometry.NodeGap;
-                top[column[i]] = Math.Min(top[column[i]], ceiling - heights[column[i]]);
-            }
-
-            for (var i = 0; i < column.Count; i++)
-            {
-                var floor = i == 0 ? 0 : top[column[i - 1]] + heights[column[i - 1]] + SankeyGeometry.NodeGap;
-                top[column[i]] = Math.Max(top[column[i]], floor);
-            }
-        }
-
-        // A node's bands, stacked in the order of the nodes at their other ends, so they do not cross at the bar.
-        List<SankeyFlow> Out(string id) => [.. outgoing[id].OrderBy(flow => Centre(flow.To)).ThenBy(flow => documentOrder[flow.Id])];
-        List<SankeyFlow> In(string id) => [.. incoming[id].OrderBy(flow => Centre(flow.From)).ThenBy(flow => documentOrder[flow.Id])];
-        double Thickness(SankeyFlow flow) => ValueOf(flow) * scale;
-        double Centre(string id) => top[id] + (heights[id] / 2);
-        double ValueOf(SankeyFlow flow) => Math.Max(0, flow.Value ?? 0);
-        double OffsetOut(SankeyFlow flow) => Out(flow.From).TakeWhile(other => other.Id != flow.Id).Sum(Thickness);
-        double OffsetIn(SankeyFlow flow) => In(flow.To).TakeWhile(other => other.Id != flow.Id).Sum(Thickness);
     }
+
+    /// <summary>Each flow's band, from where the relaxation left its two ends.</summary>
+    private static Dictionary<string, SankeyBand> BandsOf(
+        List<SankeyFlow> flows,
+        Stacking stacking,
+        Dictionary<string, double> heights,
+        Dictionary<string, double> values,
+        Dictionary<string, int> columns)
+    {
+        return flows.ToDictionary(
+            flow => flow.Id,
+            flow =>
+            {
+                var thickness = stacking.Thickness(flow);
+                return new SankeyBand(
+                    Math.Round(Math.Max(SankeyGeometry.MinimumThickness, thickness), 2),
+                    Fraction(stacking.OffsetOut(flow) + (thickness / 2), heights[flow.From], values[flow.From]),
+                    Fraction(stacking.OffsetIn(flow) + (thickness / 2), heights[flow.To], values[flow.To]),
+                    columns[flow.To] <= columns[flow.From]);
+            },
+            StringComparer.Ordinal);
+    }
+
+    private static double ValueOf(SankeyFlow flow) => Math.Max(0, flow.Value ?? 0);
 
     /// <summary>Where along a bar a band's centre sits; the middle of a bar that carries nothing.</summary>
     private static double Fraction(double offset, double height, double value) =>
@@ -289,5 +207,134 @@ public sealed class SankeyLayout
             forward.SelectMany(pair => pair.Value.Where(target => !stated.ContainsKey(target)).Select(target => (pair.Key, target))),
             CyclePolicy.Kahn,
             id => stated.GetValueOrDefault(id, 0));
+    }
+
+    /// <summary>
+    /// The vertical placement of one layout's nodes: each node's top, and where each band meets
+    /// its two bars.
+    /// </summary>
+    private sealed class Stacking
+    {
+        private readonly Dictionary<string, double> _heights;
+        private readonly double _extent;
+        private readonly double _scale;
+        private readonly Dictionary<string, List<SankeyFlow>> _outgoing;
+        private readonly Dictionary<string, List<SankeyFlow>> _incoming;
+        private readonly Dictionary<string, int> _documentOrder;
+
+        public Stacking(List<SankeyNode> nodes, List<SankeyFlow> flows, Dictionary<string, double> heights, double extent, double scale)
+        {
+            _heights = heights;
+            _extent = extent;
+            _scale = scale;
+            _outgoing = nodes.ToDictionary(node => node.Id, node => flows.Where(flow => flow.From == node.Id).ToList(), StringComparer.Ordinal);
+            _incoming = nodes.ToDictionary(node => node.Id, node => flows.Where(flow => flow.To == node.Id).ToList(), StringComparer.Ordinal);
+            _documentOrder = flows.Select((flow, index) => (flow.Id, index)).ToDictionary(pair => pair.Id, pair => pair.index, StringComparer.Ordinal);
+        }
+
+        /// <summary>Each node's top edge.</summary>
+        public Dictionary<string, double> Top { get; } = new(StringComparer.Ordinal);
+
+        /// <summary>Every column starts stacked from the top and centred on the tallest.</summary>
+        public void Stack(List<List<string>> order)
+        {
+            foreach (var column in order)
+            {
+                var height = column.Sum(id => _heights[id]) + (Math.Max(0, column.Count - 1) * SankeyGeometry.NodeGap);
+                var y = (_extent - height) / 2;
+                foreach (var id in column)
+                {
+                    Top[id] = y;
+                    y += _heights[id] + SankeyGeometry.NodeGap;
+                }
+            }
+        }
+
+        public void Relax(List<SankeyNode> nodes, List<SankeyFlow> flows, Dictionary<string, int> columns, List<List<string>> order, int columnCount)
+        {
+            var forward = flows.Where(flow => columns[flow.To] > columns[flow.From]).ToList();
+            var forwardIn = nodes.ToDictionary(node => node.Id, node => forward.Where(flow => flow.To == node.Id).ToList(), StringComparer.Ordinal);
+            var forwardOut = nodes.ToDictionary(node => node.Id, node => forward.Where(flow => flow.From == node.Id).ToList(), StringComparer.Ordinal);
+
+            for (var iteration = 0; iteration < Iterations; iteration++)
+            {
+                var alpha = Math.Pow(0.99, iteration);
+
+                // Right to left: each node towards where its outgoing bands would run level.
+                for (var c = columnCount - 2; c >= 0; c--)
+                {
+                    foreach (var id in order[c])
+                    {
+                        Pull(id, forwardOut[id], flow => Top[flow.To] + OffsetIn(flow) - OffsetOut(flow), alpha);
+                    }
+
+                    Resolve(order[c]);
+                }
+
+                // Left to right: each node towards where its incoming bands would run level.
+                for (var c = 1; c < columnCount; c++)
+                {
+                    foreach (var id in order[c])
+                    {
+                        Pull(id, forwardIn[id], flow => Top[flow.From] + OffsetOut(flow) - OffsetIn(flow), alpha);
+                    }
+
+                    Resolve(order[c]);
+                }
+            }
+
+            foreach (var column in order)
+            {
+                Resolve(column);
+            }
+        }
+
+        public double Thickness(SankeyFlow flow) => ValueOf(flow) * _scale;
+
+        public double OffsetOut(SankeyFlow flow) => Out(flow.From).TakeWhile(other => other.Id != flow.Id).Sum(Thickness);
+
+        public double OffsetIn(SankeyFlow flow) => In(flow.To).TakeWhile(other => other.Id != flow.Id).Sum(Thickness);
+
+        private void Pull(string id, List<SankeyFlow> along, Func<SankeyFlow, double> levelTop, double alpha)
+        {
+            var weight = along.Sum(ValueOf);
+            if (weight <= 0)
+            {
+                return;
+            }
+
+            var wanted = along.Sum(flow => levelTop(flow) * ValueOf(flow)) / weight;
+            Top[id] += (wanted - Top[id]) * alpha;
+        }
+
+        // Within the extent, in order, never closer than the gap: pushed down from the top, then up
+        // from the bottom, then down once more in case the column is as tall as the extent.
+        private void Resolve(List<string> column)
+        {
+            for (var i = 0; i < column.Count; i++)
+            {
+                var floor = i == 0 ? 0 : Top[column[i - 1]] + _heights[column[i - 1]] + SankeyGeometry.NodeGap;
+                Top[column[i]] = Math.Max(Top[column[i]], floor);
+            }
+
+            for (var i = column.Count - 1; i >= 0; i--)
+            {
+                var ceiling = i == column.Count - 1 ? _extent : Top[column[i + 1]] - SankeyGeometry.NodeGap;
+                Top[column[i]] = Math.Min(Top[column[i]], ceiling - _heights[column[i]]);
+            }
+
+            for (var i = 0; i < column.Count; i++)
+            {
+                var floor = i == 0 ? 0 : Top[column[i - 1]] + _heights[column[i - 1]] + SankeyGeometry.NodeGap;
+                Top[column[i]] = Math.Max(Top[column[i]], floor);
+            }
+        }
+
+        // A node's bands, stacked in the order of the nodes at their other ends, so they do not cross at the bar.
+        private List<SankeyFlow> Out(string id) => [.. _outgoing[id].OrderBy(flow => Centre(flow.To)).ThenBy(flow => _documentOrder[flow.Id])];
+
+        private List<SankeyFlow> In(string id) => [.. _incoming[id].OrderBy(flow => Centre(flow.From)).ThenBy(flow => _documentOrder[flow.Id])];
+
+        private double Centre(string id) => Top[id] + (_heights[id] / 2);
     }
 }

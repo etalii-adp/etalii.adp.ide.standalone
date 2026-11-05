@@ -29,6 +29,10 @@ namespace EtAlii.Adp.Designer;
 /// The file formats a document of this type can be created in, in the order they are offered.
 /// Empty for a designer whose documents have one fixed format the module creates itself.
 /// </param>
+/// <param name="Claim">
+/// How the type recognises a body by its envelope, so that the body is its document with or without a registration;
+/// null for a type whose documents are recognised by their registration alone.
+/// </param>
 /// <param name="Build">
 /// Registers the module's own services into the host, exactly as a diagram or editor
 /// definition's <c>Build</c> does. Null for a definition whose module needs nothing registered.
@@ -39,7 +43,8 @@ public sealed record DesignerDefinition(
     string Description = "",
     string Icon = "",
     IReadOnlyList<DesignerFormat>? Formats = null,
-    Action<IHostApplicationBuilder>? Build = null) : IToolDefinition
+    Action<IHostApplicationBuilder>? Build = null,
+    DesignerClaim? Claim = null) : IToolDefinition
 {
     /// <summary>The origin, by which discovery keeps one definition per origin.</summary>
     string IToolDefinition.Key => Origin;

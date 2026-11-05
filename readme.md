@@ -14,7 +14,7 @@ Because the files sit beside the work, diagram elements can do more than illustr
 
 **ADP is not one application.** Each tool type — a diagram, designer or editor — is specified in its kind's specification language (DISL, the Diagram Specification Language, for a diagram type), defined in [`etalii.adp`](https://github.com/etalii-adp/etalii.adp), and interpreted by a core plugin in each supported IDE: this standalone web workspace, IntelliJ Platform IDEs, VS Code and Eclipse, each in its own repository. Where a specification alone is not enough, that host's plugin adds the code to support it. This repository's technical shape describes this host only, not the standard the others follow.
 
-And it starts small on purpose: one repository, local files, no server infrastructure to roll out. ADP should already be worth having in a single repository, before any wider adoption decision is made. The full product thinking lives in [`product.md`](.spec-workflow/steering/product.md).
+And it starts small on purpose: one repository, local files, no server infrastructure to roll out. ADP should already be worth having in a single repository, before any wider adoption decision is made. The full product thinking lives in [`product.md`](docs/steering/product.md).
 
 ## What it looks like
 

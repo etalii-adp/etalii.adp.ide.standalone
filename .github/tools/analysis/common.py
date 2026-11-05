@@ -3,8 +3,8 @@
 A project is classified the way docs/solution-structure.md says it must be: core by the absence of a
 leading '../' in its solution path, otherwise by the tool kind folder it sits under (diagrams, designers,
 editors). A project is a test project when its name ends in '.Tests'. Test code is the test projects and
-the two testing projects they reference, EtAlii.Adp.TestSupport and EtAlii.Adp.TestSupport.Host: a helper
-moved out of a test project into them is still test code.
+the testing projects they reference, named '*.Tests.Support' (one per area, such as EtAlii.Adp.Tests.Support
+and EtAlii.Adp.Backend.Tests.Support): a helper moved out of a test project into them is still test code.
 """
 
 import argparse
@@ -17,7 +17,7 @@ SOLUTION = os.path.join("src", "backend", "EtAlii.Adp.slnx")
 SKIPPED_FOLDERS = {"bin", "obj", "node_modules", ".git"}
 KINDS = {"diagrams": "diagram", "designers": "designer", "editors": "editor"}
 # Not named *.Tests, so not test projects, and nothing in them is production code.
-TESTING_PROJECTS = {"EtAlii.Adp.TestSupport", "EtAlii.Adp.TestSupport.Host"}
+TESTING_PROJECT_SUFFIX = ".Tests.Support"
 
 
 class Project:
@@ -29,7 +29,7 @@ class Project:
         self.test = self.name.endswith(".Tests")
         # Test code: a test project or one of the testing projects. lines.py, methods.py and waits.py split by
         # this; clones.py keeps scanning the test projects alone, by self.test.
-        self.test_code = self.test or self.name in TESTING_PROJECTS
+        self.test_code = self.test or self.name.endswith(TESTING_PROJECT_SUFFIX)
         if not self.solution_path.startswith("../"):
             self.kind = "core"
         else:

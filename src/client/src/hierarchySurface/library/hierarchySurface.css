@@ -1,0 +1,1062 @@
+/*
+ * The hierarchy surface (DESL section 7.7, spec 029): one page of nested boxes in the Knowledge designer's looks
+ * (FR-011). Every colour is a theme token, so both themes follow; the tags are the table's own `.table-option-tag`.
+ */
+
+.hs-surface {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 13px;
+}
+
+/* The trail scrolls with the page's header, not the page (R10). */
+.hs-trail {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.hs-trail-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.hs-trail-link,
+.hs-finding-link {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.hs-trail-separator,
+.hs-finding-line {
+  color: var(--color-text-muted);
+}
+
+.hs-trail-current {
+  font-weight: 600;
+}
+
+.hs-read-only {
+  margin: 0;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+}
+
+.hs-findings {
+  margin: 0;
+  padding: 4px 12px;
+  border-bottom: 1px solid var(--color-border);
+  list-style: none;
+}
+
+.hs-finding {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 2px 0;
+}
+
+.hs-finding-error .mdi {
+  color: var(--color-danger);
+}
+
+.hs-finding-warning .mdi {
+  color: var(--color-warning);
+}
+
+.hs-finding-info .mdi {
+  color: var(--color-text-muted);
+}
+
+/* One page that scrolls from top to bottom; the boxes share their borders (FR-006, FR-007). */
+.hs-page {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 12px;
+}
+
+.hs-level,
+.hs-entry {
+  display: flex;
+  margin: -1px 0 0 -1px;
+  border: 1px solid var(--color-border);
+}
+
+.hs-page > .hs-level,
+.hs-page > .hs-entry {
+  margin-left: 0;
+}
+
+/* A level's own box is as high as what stands to its right: the row stretches it. Its width is its column's. */
+.hs-level-box {
+  position: relative;
+  display: flex;
+  flex: 0 0 240px;
+  width: 240px;
+}
+
+/* The right edge of a column of levels, dragged to change its width (DESL section 7.7.1). */
+.hs-column-edge {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  right: -4px;
+  bottom: 0;
+  width: 8px;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.hs-column-edge::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 3px;
+  width: 2px;
+  background: transparent;
+}
+
+.hs-column-edge:hover::after,
+.hs-column-edge:active::after,
+.hs-column-edge:focus-visible::after {
+  background: var(--color-primary);
+}
+
+.hs-column-edge:focus-visible {
+  outline: none;
+}
+
+.hs-level-content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 280px;
+}
+
+.hs-entry {
+  flex: 1;
+}
+
+/* Its column of controls stands at its right, first in its markup and last in the row, as high as its content. The
+   space between its border and what it holds is the same on every side. */
+.hs-box {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: row-reverse;
+  align-items: stretch;
+  min-width: 0;
+  padding: 6px;
+  cursor: default;
+}
+
+.hs-level-box .hs-box {
+  background: var(--color-surface-raised);
+}
+
+.hs-box.hs-selected {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+/* The first line: the grip, the collapse control and the number stand on it as words do, so a title of several lines
+   wraps under them, its next lines as far from the box's left as the tags and the description. While the title is typed
+   its field takes the rest of the line. */
+.hs-box-header {
+  min-width: 0;
+  padding-inline-start: 6px;
+  line-height: 20px;
+  text-indent: -6px;
+  overflow-wrap: break-word;
+}
+
+.hs-box-header > .hs-grip,
+.hs-box-header > .hs-toggle,
+.hs-box-header > .hs-number {
+  margin-inline-end: 4px;
+  text-indent: 0;
+  vertical-align: top;
+}
+
+.hs-box-header-typing {
+  display: flex;
+  align-items: flex-start;
+  padding-inline-start: 0;
+  text-indent: 0;
+}
+
+/* The column at the box's right: its controls when they stand in a column, and at its bottom the place of its delete,
+   beside the description. It is as high as the header, the tags and the description, which never stand under it. */
+.hs-box-side {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: flex-end;
+  margin-inline-start: 6px;
+}
+
+.hs-box.hs-no-side > .hs-box-side {
+  margin-inline-start: 0;
+}
+
+/* The box's controls, one list with the notes' icon first: from the top down in the column, or, when the whole first
+   line fits beside them, in a row at its end from right to left, the same space from the border as everything else. */
+.hs-box-icons {
+  display: flex;
+  flex-direction: column;
+}
+
+.hs-icons-row > .hs-box-side > .hs-box-icons {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  flex-direction: row-reverse;
+}
+
+.hs-delete-place {
+  display: flex;
+  width: 20px;
+  height: 20px;
+  margin-top: auto;
+}
+
+/* The header, the tags and the description, beside the controls; a description opened for typing takes what is left. */
+.hs-box-content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.hs-toggle,
+.hs-focus,
+.hs-hidden-levels,
+.hs-add-description,
+.hs-note-mark,
+.hs-note-add,
+.hs-tag-add,
+.hs-delete {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.hs-toggle:hover,
+.hs-focus:hover,
+.hs-hidden-levels:hover,
+.hs-add-description:hover,
+.hs-note-add:hover,
+.hs-tag-add:hover,
+.hs-delete:hover {
+  color: var(--color-text);
+}
+
+.hs-number {
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.hs-number {
+  flex: none;
+}
+
+/* A word is broken only when it is wider than the title's line, never where a narrow column happens to end. */
+.hs-title {
+  flex: 1 1 auto;
+  font-weight: 600;
+  overflow-wrap: break-word;
+}
+
+/* The icon of a box's notes, at its top right (FR-015): its open notes' mark, or the way to add the first. */
+.hs-note-mark,
+.hs-note-mark:hover {
+  width: auto;
+  min-width: 18px;
+  color: var(--color-warning);
+}
+
+/* With nothing to show, the way to add is offered where a person is looking: the box under the pointer or selected.
+   So are focus, adding a tag and adding a description, each kept in its place while hidden, so showing them moves
+   nothing a click aims at. */
+.hs-note-add,
+.hs-focus,
+.hs-tag-add,
+.hs-add-description {
+  visibility: hidden;
+}
+
+.hs-box:hover > .hs-box-side > .hs-box-icons > *,
+.hs-box.hs-selected > .hs-box-side > .hs-box-icons > *,
+.hs-note-add[aria-expanded="true"],
+.hs-box-icons > :focus-visible {
+  visibility: visible;
+}
+
+/* A selected box's delete, in its place at the bottom of the column. */
+.hs-delete:hover {
+  color: var(--color-danger);
+}
+
+.hs-note-count {
+  margin-inline-start: 1px;
+  font-size: 10px;
+}
+
+.hs-tags {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin: 4px 0 0 6px;
+}
+
+.hs-tags .table-option-tag + .table-option-tag {
+  margin-inline-start: 0;
+}
+
+/* A label's values, smaller than the text and centred in their shape, each label in a look of its own: a rounded tag
+   written with `#`, a square badge, or a rounded status with a dot. */
+.hs-look {
+  display: contents;
+}
+
+.hs-look .table-option-tag {
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  height: 18px;
+  padding: 0 7px;
+  font-size: 11px;
+  line-height: 1;
+}
+
+.hs-look-tag .table-option-tag::before {
+  content: "#";
+  margin-inline-end: 1px;
+  opacity: 0.55;
+}
+
+.hs-look-badge .table-option-tag {
+  border-radius: 3px;
+}
+
+.hs-look-status .table-option-tag::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  margin-inline-end: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.6;
+}
+
+.hs-description {
+  margin: 4px 0 6px 6px;
+  color: var(--color-text);
+  line-height: 20px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* The bar of an outside change while a field is open (R10), in the text editors' conflict bar's colours. */
+.hs-conflict {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  padding: 0.4rem 0.6rem;
+  background: var(--color-warning-bg);
+  color: var(--color-text);
+}
+
+/* A field whose node the file no longer has, kept under the bar so its text is not lost. */
+.hs-orphan-field {
+  padding: 0.4rem 0.6rem;
+}
+
+/* A title or description typed in place, in the box's own font. */
+.hs-field {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 1px 4px;
+  border: 1px solid var(--color-border);
+  border-radius: 3px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.hs-field-multiline {
+  resize: vertical;
+}
+
+/* In place of a title or description: its text where the text stood, in its weight, as high as it wraps to. */
+.hs-field-inplace {
+  display: block;
+  margin: -2px -5px;
+  padding: 1px 4px;
+  overflow: hidden;
+  line-height: 20px;
+  resize: none;
+}
+
+/* A title typed in place starts after the number, whose space it keeps, and is one line high until its text wraps. */
+.hs-field-title {
+  flex: 1 1 0;
+  min-width: 0;
+  margin-inline-start: 0;
+  font-weight: 600;
+  overflow-wrap: break-word;
+}
+
+/* A description typed in place: where the description stood and as high, reaching down the box to its padding, and
+   the box's own space from the controls at its right. Its reference lookup opens under it. */
+.hs-description-field {
+  position: relative;
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+}
+
+.hs-description-field > .hs-field-multiline {
+  flex: 1 0 auto;
+  width: auto;
+  margin: 2px 0 6px 6px;
+  padding: 0 4px;
+  white-space: pre-wrap;
+}
+
+.hs-description-field > .hs-reference-lookup {
+  top: 100%;
+  left: 6px;
+}
+
+/* The place a node is added, at the end of a level's content and of the page, as the table's new row (FR-012). */
+.hs-add {
+  display: flex;
+  gap: 8px;
+  padding: 2px 6px;
+}
+
+.hs-page > .hs-add {
+  padding: 4px 0;
+}
+
+.hs-add-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  font-size: 16px;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.hs-add-button:hover {
+  border-radius: var(--radius);
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+}
+
+/* What a node is dragged by, with everything in it (FR-013): first on the first line, which the title wraps under. */
+.hs-grip {
+  display: inline-block;
+  width: 14px;
+  font-size: 14px;
+  line-height: 20px;
+  text-align: center;
+  color: var(--color-text-muted);
+  cursor: grab;
+  touch-action: none;
+}
+
+/* Where a dragged node would go: the level it goes into marked, and the place it would stand drawn there, its number
+   and title in a dashed box; the node itself, still in its place, is faded. */
+.hs-box.hs-drop-into {
+  background: var(--color-surface-raised);
+  outline: 2px dashed var(--color-primary);
+  outline-offset: -2px;
+}
+
+.hs-dragging {
+  opacity: 0.45;
+}
+
+.hs-drop-slot {
+  margin: -1px 0 0 -1px;
+  padding: 6px 6px 6px 40px;
+  border: 2px dashed var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface));
+  line-height: 20px;
+}
+
+.hs-page > .hs-drop-slot {
+  margin-left: 0;
+}
+
+.hs-drop-slot-level {
+  width: 240px;
+  box-sizing: border-box;
+}
+
+.hs-drop-slot-title {
+  font-weight: 600;
+}
+
+/* The list of a box's notes, under its icons (FR-016): at the document's top, above every pane, placed in the window. */
+.hs-note-spot {
+  display: none;
+}
+
+.hs-note-list {
+  position: fixed;
+  z-index: 30;
+  box-sizing: border-box;
+  width: 340px;
+  max-width: calc(100vw - 8px);
+  max-height: calc(100vh - 8px);
+  overflow: auto;
+  padding: 8px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  box-shadow: var(--shadow);
+  color: var(--color-text);
+  font-size: 13px;
+  line-height: 20px;
+  cursor: default;
+}
+
+.hs-notes {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* A note, its controls at its right: beside it, one above the other, when it takes several lines; under it, side by side,
+   when it takes one. */
+.hs-note {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.hs-note.hs-note-tall {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.hs-note-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.hs-note-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 2px;
+}
+
+.hs-note-tall > .hs-note-actions {
+  flex-direction: column;
+}
+
+.hs-note-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.hs-note-action:hover {
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+}
+
+.hs-note-resolved .hs-note-head,
+.hs-note-resolved .hs-note-detail {
+  color: var(--color-text-muted);
+}
+
+.hs-note-resolved .hs-note-text {
+  text-decoration: line-through;
+}
+
+.hs-note-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.hs-note-head .mdi {
+  color: var(--color-warning);
+}
+
+.hs-note-text {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.hs-note-detail {
+  margin: 0 0 0 22px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* A new note, and a note being changed: its kind, then its text over the list's width, then its buttons at the right. */
+.hs-note-new,
+.hs-note-changing {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+}
+
+.hs-note-new {
+  padding-top: 8px;
+}
+
+.hs-note-text-field {
+  resize: none;
+  line-height: 20px;
+}
+
+.hs-note-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+/* The dialogs' own buttons, in the compact size of a list. */
+.hs-note-button {
+  padding: 3px 14px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+/* A note's kind, each with its icon to its left. */
+.hs-kind {
+  position: relative;
+  align-self: flex-start;
+}
+
+.hs-kind-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: auto;
+  min-width: 140px;
+  height: 26px;
+  cursor: pointer;
+}
+
+.hs-kind-button .mdi:first-child {
+  color: var(--color-warning);
+}
+
+.hs-kind-name {
+  flex: 1;
+  text-align: start;
+}
+
+.hs-kind-chevron {
+  color: var(--color-text-muted);
+}
+
+.hs-kind-list {
+  position: absolute;
+  z-index: 1;
+  top: 100%;
+  left: 0;
+  min-width: 100%;
+  margin: 2px 0 0;
+  padding: 4px 0;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  box-shadow: var(--shadow);
+  list-style: none;
+}
+
+.hs-kind-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 10px;
+  cursor: pointer;
+}
+
+.hs-kind-option .mdi {
+  color: var(--color-warning);
+}
+
+.hs-kind-option.hs-kind-active {
+  background: var(--color-surface-raised);
+}
+
+.hs-kind-option[aria-selected="true"] {
+  font-weight: 600;
+}
+
+/* A reference in a description (FR-018): a box with its target's number and title, inline in the text. */
+.hs-reference {
+  display: inline;
+  padding: 0 4px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  font: inherit;
+  cursor: pointer;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+.hs-reference:hover {
+  border-color: var(--color-primary);
+}
+
+/* One that names nothing keeps its text as written, marked by a dashed border in the colour of an error. */
+.hs-reference-broken {
+  border-style: dashed;
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+  cursor: default;
+}
+
+.hs-reference-broken .mdi {
+  margin-inline-end: 2px;
+}
+
+/* The lookup `#` opens, under the field it was typed in and above the boxes beside it (FR-017). */
+.hs-reference-lookup {
+  position: absolute;
+  z-index: 10;
+  left: 22px;
+  width: 300px;
+  max-width: calc(100% - 28px);
+  box-shadow: var(--shadow);
+}
+
+/* A label's field (FR-011): its values open its list, the Knowledge designer's searchable list, from which the list
+   itself is edited in the table's options editor. The control that adds the first value stands in the header, kept in
+   its place while hidden, so showing it moves nothing a click aims at. Its values flow with the other labels' tags; its
+   list opens under the row. */
+.hs-tags .hs-tag-field {
+  display: contents;
+}
+
+.hs-tag-values {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.hs-tag-values:hover {
+  background: var(--color-surface-raised);
+}
+
+.hs-tag-values:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+.hs-tag-values .table-option-tag + .table-option-tag {
+  margin-inline-start: 0;
+}
+
+.hs-tag-list {
+  position: absolute;
+  z-index: 10;
+  top: 100%;
+  left: 0;
+  box-sizing: border-box;
+  width: 300px;
+  max-width: calc(100% + 22px);
+  margin-top: 4px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  box-shadow: var(--shadow);
+  cursor: default;
+}
+
+.hs-tag-chosen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 6px 6px 0;
+}
+
+.hs-tag-chosen-value {
+  display: inline-flex;
+  align-items: center;
+}
+
+.hs-tag-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.hs-tag-remove:hover {
+  color: var(--color-text);
+}
+
+.hs-tag-edit-list {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 6px 8px;
+  border: none;
+  border-top: 1px solid var(--color-border);
+  background: none;
+  color: var(--color-text-muted);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.hs-tag-edit-list:hover {
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+}
+
+/* A label of one value (FR-030, FR-031): its tag, or the way to give one, opens its list under the row, as the tags do. */
+.hs-tags .hs-pick {
+  display: contents;
+}
+
+.hs-pick-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.hs-pick-value:hover {
+  background: var(--color-surface-raised);
+}
+
+.hs-pick-value:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+.hs-pick-empty {
+  padding: 0 4px;
+  color: var(--color-text-muted);
+}
+
+.hs-pick-list {
+  position: absolute;
+  z-index: 10;
+  top: 100%;
+  left: 0;
+  box-sizing: border-box;
+  width: 300px;
+  max-width: calc(100% + 22px);
+  margin-top: 4px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  box-shadow: var(--shadow);
+  cursor: default;
+}
+
+.hs-pick-clear {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 6px 8px;
+  border: none;
+  border-top: 1px solid var(--color-border);
+  background: none;
+  color: var(--color-text-muted);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.hs-pick-clear:hover {
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+}
+
+/* The bar that narrows and sorts the page (FR-019, FR-020, FR-048), above it with the findings. */
+.hs-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+}
+
+.hs-filter-query,
+.hs-filter-name,
+.hs-sort select,
+.hs-stored-filters {
+  box-sizing: border-box;
+  height: 24px;
+  padding: 0 6px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.hs-filter-field {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-width: 160px;
+}
+
+.hs-filter-query {
+  flex: 1;
+  min-width: 0;
+}
+
+/* The words the field offers to complete the one being typed, under it and above the page. */
+.hs-filter-completions {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 2px);
+  left: 0;
+  box-sizing: border-box;
+  min-width: 220px;
+  max-height: 280px;
+  overflow: auto;
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  box-shadow: var(--shadow);
+  font-size: 13px;
+}
+
+.hs-filter-completion {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 3px 10px;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.hs-filter-completion-active {
+  background: var(--color-surface-raised);
+}
+
+.hs-filter-completion-word {
+  font-family: var(--font-mono);
+  white-space: nowrap;
+}
+
+.hs-filter-completion-hint {
+  color: var(--color-text-muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.hs-filter-name {
+  width: 160px;
+}
+
+.hs-filter-query:focus-visible,
+.hs-filter-name:focus-visible,
+.hs-sort select:focus-visible,
+.hs-stored-filters:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -1px;
+}
+
+.hs-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.hs-filter-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 24px;
+  padding: 0 6px;
+  border: none;
+  border-radius: var(--radius);
+  background: none;
+  color: var(--color-text-muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.hs-filter-button:hover {
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+}
+
+.hs-filter-count {
+  margin-inline-start: auto;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}

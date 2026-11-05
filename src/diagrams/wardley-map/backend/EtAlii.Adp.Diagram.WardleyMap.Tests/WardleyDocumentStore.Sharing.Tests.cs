@@ -11,14 +11,15 @@ namespace EtAlii.Adp.Diagram.WardleyMap.Tests;
 /// </summary>
 public sealed class WardleyDocumentStoreSharingTests : IDisposable
 {
-    private readonly string _folder = IoPath.Combine(IoPath.GetTempPath(), $"wardley-store-{Guid.NewGuid():N}");
+    private readonly TestFolder _testFolder = TestFolder.Create("wardley-store");
+    private readonly string _folder;
     private readonly WardleyDocumentStore _store = new(new FileWriter());
 
-    public WardleyDocumentStoreSharingTests() => Directory.CreateDirectory(_folder);
+    public WardleyDocumentStoreSharingTests() => _folder = _testFolder.Path;
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_folder);
+        _testFolder.Dispose();
     }
 
     private string Write(string name, string text)

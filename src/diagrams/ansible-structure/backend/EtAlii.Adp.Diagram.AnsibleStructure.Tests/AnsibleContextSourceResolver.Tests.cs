@@ -17,6 +17,7 @@ public class AnsibleContextSourceResolverTests : IDisposable
     private static readonly TimeSpan WaitLimit = TimeSpan.FromSeconds(15);
     private static readonly TimeSpan Silence = TimeSpan.FromMilliseconds(400);
 
+    private readonly TestFolder _testFolder = TestFolder.Create("ansible-context-source-resolver");
     private readonly string _root;
     private readonly string _registration;
     private readonly FakeTimeProvider _clock = new();
@@ -26,7 +27,7 @@ public class AnsibleContextSourceResolverTests : IDisposable
     public AnsibleContextSourceResolverTests()
     {
         _folders = new AnsibleFolders(_clock);
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
+        _root = _testFolder.Path;
         TestFolder.CopyTree(IoPath.Combine("Fixtures", "infrastructure"), _root);
         _registration = IoPath.Combine(_root, "infrastructure.adp");
         File.WriteAllText(_registration, "ansible/structure\n");
@@ -42,7 +43,7 @@ public class AnsibleContextSourceResolverTests : IDisposable
     public void Dispose()
     {
         _folders.Dispose();
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     // ---- resolving ----------------------------------------------------------------------------

@@ -95,3 +95,26 @@ of the DSL, because each contains too little at once. These two exist for that.
 |---|---|
 | `tea-shop.owm` | The value-chain shape every Wardley map has: two anchors, a seven-component chain, label offsets, and eight links, in one document. A parser tested one construct at a time comes apart here. |
 | `strategy-vocabulary.owm` | The strategy vocabulary end to end in one map: `(build)`, `(buy)`, `(outsource)`, `(market)`, `(ecosystem)`, `inertia`, two `evolve` forms (plain and the `->` rename), a flow link `+>`, a link with `; context` text, all three attitude areas, an `accelerator`, a `deaccelerator`, a `note` and a `size`. This is the file that found the `market`/`ecosystem` discrepancy above. |
+
+### One per finding of the conversion to DISL and FBL — hand-written, then certified
+
+The specification `wardley-map-disl-fbl` (Requirement 1.2) asks for one fixture for each finding marked *read* that is about what the tool reads, writes or answers, so that the parity transcript `Parity/wardley-map.transcript.json` shows what the tool does with it today. Each was certified with `certify.mjs` against `cli-owm` 0.0.2 before it was committed; the parse errors it reports are listed with the file, and are the point of the file where they occur.
+
+| File | Finding | What it holds |
+|---|---|---|
+| `submap-addresses.owm` | A5 | Submaps whose `url(name)` names a definition, and definitions whose addresses are beside the map, at the project root, behind a scheme, outside the project, missing, and defined by no submap. The transcript opens every document at `maps/<name>` in a project that has `at-root.owm` at its root and `beside.owm` beside the map, so the findings show which folder an address is resolved against. Certified: no error. |
+| `duplicate-names.owm` | A7 | Two components called `Kettle` (lines 3 and 6) that a link, an `evolve` and a pipeline name, and two called `Power`. Certified: no error. |
+| `out-of-range.owm` | A8, B14 | Coordinates outside 0 to 1 on a component, a note, an accelerator, an attitude, an annotation's second occurrence, a pipeline component, a legacy pipeline's extent and an `evolve`; values with more than four decimals; and `[1.2.3, 0]` and `[., 0.5]`, which match the number pattern and do not convert. Certified: no error (the real parser reads the two broken pairs as something). |
+| `evolve-twice.owm` | A9 | One component with two `evolve` statements, the plain form and the `->` form. Certified: no error. |
+| `unclosed-pipeline.owm` | B2 | A nested pipeline whose block is never closed, followed by top-level statements. Certified: no error. |
+| `brace-ending-statements.owm` | B2 | A title, a trailing comment and a link's context that end in `{`, a `{` and a `}` on lines of their own outside any pipeline, and a note whose text holds a brace. Certified: no error. |
+| `trailing-comments.owm` | B3 | A trailing `//` comment after every kind of statement, one of them holding `(market)`, an address with `https://` followed by a comment, and a pipeline component indented by four spaces where the module writes two (B12). Certified: no error. |
+| `lenient-trailer.owm` | B4 | What follows a component's coordinates in other orders and spacings: a label offset before `inertia`, spaces inside brackets and parentheses, `inertia(buy)` glued, `url( name )`, the word `inertial`, and the keywords `COMPONENT` and `Component`. Certified: **two parse errors, on the two capitalised keywords** (0-based lines 4 and 8). The real parser does not read a keyword in another case; this module does. |
+| `decorators.owm` | B6 | All five decorators on one component, an unknown decorator, one decorator written twice, and decorators around `inertia`. Certified: no error. |
+| `same-key-twice.owm` | B9 | Three components called `Tea`, which a link, an `evolve` and a pipeline name; a fourth called `Tea 2`; the link `User->Tea` stated twice; and two notes with one text. Certified: no error. |
+| `awkward-names.owm` | B13 | Names holding a hyphen (`Self-service`), a slash (`CI/CD`), a bracket (`Tea [hot]`) and a plus (`C++ build`), each named by a link. Certified: no error. |
+| `two-titles.owm` | B15 | Two `title` statements, and one line that is no statement. Certified: **one parse error, on that line** (0-based line 5), which is its purpose. |
+
+The edit scripts for findings B10 to B12 run over `tea-shop.owm`, `comments-everywhere.owm`, `pipelines-both-forms.owm`, `trailing-comments.owm` and `mixed-line-endings.owm`, and need no fixture of their own.
+
+**What the corpus still does not show.** No document is larger than a few dozen lines, so nothing here measures how fast a large map opens or drags. No fixture holds a lone CR line ending, which FBL 2.6 reads and this module does not. No name holds a U+001F, which a file written elsewhere could carry into a composite identity key. No identities file here is unreadable, stale or written by another build; the identities files of the corpus are the two under `examples/example 2`. And none of these files was written by OnlineWardleyMaps itself: each was written for this repository and certified, so a construct the real tool writes and this corpus lacks is not found by it.

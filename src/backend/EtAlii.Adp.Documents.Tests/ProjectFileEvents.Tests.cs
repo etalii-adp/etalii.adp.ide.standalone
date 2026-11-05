@@ -17,13 +17,16 @@ public sealed class ProjectFileEventsTests : IDisposable
     private static readonly TimeSpan Patience = TimeSpan.FromSeconds(10);
     private static readonly TimeSpan Silence = TimeSpan.FromMilliseconds(300);
 
-    private readonly string _root = Directory.CreateTempSubdirectory("adp-project-file-events-").FullName;
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-project-file-events");
+    private readonly string _root;
     private readonly ProjectFileEvents _events = new();
+
+    public ProjectFileEventsTests() => _root = _testFolder.Path;
 
     public void Dispose()
     {
         _events.Dispose();
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     [Fact]
@@ -167,16 +170,10 @@ public sealed class ProjectFileEventsTests : IDisposable
     public void AFolderInsideNoWatchedRoot_IsNotSubscribed()
     {
         using var other = _events.Subscribe(_root, _ => { });
-        var outside = Directory.CreateTempSubdirectory("adp-project-file-events-outside-").FullName;
-        try
-        {
-            Assert.Null(_events.SubscribeWithin(outside, _ => { }));
-            Assert.Null(_events.SubscribeWithin(_root + "-sibling", _ => { }));
-        }
-        finally
-        {
-            TestFolder.TryDelete(outside);
-        }
+        using var outsideFolder = TestFolder.Create("adp-project-file-events-outside");
+        var outside = outsideFolder.Path;
+        Assert.Null(_events.SubscribeWithin(outside, _ => { }));
+        Assert.Null(_events.SubscribeWithin(_root + "-sibling", _ => { }));
     }
 
     [Fact]

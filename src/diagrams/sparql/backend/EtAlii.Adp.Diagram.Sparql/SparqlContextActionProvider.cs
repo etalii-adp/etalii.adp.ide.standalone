@@ -13,6 +13,11 @@ namespace EtAlii.Adp.Diagram.Sparql;
 /// asserts exactly this, and the client can therefore never render a gesture the backend would
 /// have to refuse (Requirement 6.1).
 /// <para>
+/// <b>The definition declares no operation</b>, so the menu it derives for every element is empty, which a parity test
+/// holds over the corpus (sparql-disl-fbl, task 8). The refusal is the sentence the module's binding gives for
+/// <c>readOnly</c>, which the query is read through (<see cref="SparqlBody.Binding"/>).
+/// </para>
+/// <para>
 /// <b>It stays off <see cref="DiagramActionProvider{TBody, TModel}"/></b> (code-structure T099): what
 /// that frame shares is the dispatch through the project's history, the unreadable-document guard
 /// before an edit and the deletion confirmation, and a reading surface has no edit for any of them to
@@ -21,9 +26,8 @@ namespace EtAlii.Adp.Diagram.Sparql;
 /// </remarks>
 public sealed class SparqlContextActionProvider : IContextActionProvider
 {
-    /// <summary>What an action arriving anyway is told.</summary>
-    public const string NoActionsReason =
-        "A query diagram offers no edits: it reads the .rq file, which is edited in a text editor.";
+    /// <summary>What an action arriving anyway is told: the binding's <c>readOnly</c> sentence.</summary>
+    public static string NoActionsReason => SparqlBody.Binding.ReadOnly!;
 
     /// <inheritdoc />
     public ContextScope Scope => ContextScope.DiagramElement;

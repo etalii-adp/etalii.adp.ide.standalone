@@ -1,0 +1,258 @@
+{
+  "$schema": "https://etalii.net/adp/fbl/schema/0.1/fbl.schema.json#/$defs/Fixture",
+  "doc": "FBL 0.12, section 4.9 (segments in any order), FR-024: etalii.adp.ide.standalone/src/diagrams/wardley-map/backend/EtAlii.Adp.Diagram.WardleyMap.Tests/Fixtures/lenient-trailer.owm at ad1a4680a, unchanged. What follows a component's coordinates is segments in any order, each read by its node wherever it stands: inertia, 'label [-30, 12]' and '(build)' in one order on Ordered, 'label[ 5 , -7 ]' and '( market )' glued and spaced on Spaced, 'inertia(buy)' glued on Glued, 'url( linkedMap )' before '(ecosystem)' on Linked, and 'inertial', a word that is no segment, on Lookalike. Keywords are read in any case (COMPONENT, Component). A set of one segment changes only its own bytes.",
+  "binding": "../../../wardley-map.fbl#map",
+  "input": "lenient-trailer.owm",
+  "read": {
+    "elements": [
+      {
+        "id": "user",
+        "type": "Anchor",
+        "attributes": {
+          "name": "User"
+        }
+      },
+      {
+        "id": "ordered",
+        "type": "Component",
+        "attributes": {
+          "name": "Ordered",
+          "visibility": 0.8,
+          "maturity": 0.3,
+          "labelOffset": "-30, 12",
+          "market": false,
+          "ecosystem": false,
+          "build": true,
+          "buy": false,
+          "outsource": false,
+          "inertia": true
+        }
+      },
+      {
+        "id": "spaced",
+        "type": "Component",
+        "attributes": {
+          "name": "Spaced",
+          "visibility": 0.7,
+          "maturity": 0.4,
+          "labelOffset": "5 , -7",
+          "market": true,
+          "ecosystem": false,
+          "build": false,
+          "buy": false,
+          "outsource": false,
+          "inertia": false
+        }
+      },
+      {
+        "id": "shouted",
+        "type": "Component",
+        "attributes": {
+          "name": "Shouted",
+          "market": false,
+          "ecosystem": false,
+          "build": false,
+          "buy": false,
+          "outsource": false,
+          "inertia": false
+        }
+      },
+      {
+        "id": "glued",
+        "type": "Component",
+        "attributes": {
+          "name": "Glued",
+          "market": false,
+          "ecosystem": false,
+          "build": false,
+          "buy": true,
+          "outsource": false,
+          "inertia": true
+        }
+      },
+      {
+        "id": "linked",
+        "type": "Component",
+        "attributes": {
+          "name": "Linked",
+          "url": "linkedMap",
+          "market": false,
+          "ecosystem": true,
+          "build": false,
+          "buy": false,
+          "outsource": false
+        }
+      },
+      {
+        "id": "lookalike",
+        "type": "Component",
+        "attributes": {
+          "name": "Lookalike",
+          "market": false,
+          "ecosystem": false,
+          "build": false,
+          "buy": false,
+          "outsource": false,
+          "inertia": false
+        }
+      },
+      {
+        "id": "cased",
+        "type": "Component",
+        "attributes": {
+          "name": "Cased",
+          "market": false,
+          "ecosystem": false,
+          "build": false,
+          "buy": false,
+          "outsource": true
+        }
+      },
+      {
+        "id": "linked-url",
+        "type": "Url",
+        "attributes": {
+          "name": "linkedMap",
+          "address": "linked.owm"
+        }
+      }
+    ],
+    "document": {
+      "attributes": {
+        "title": "Lenient trailer"
+      }
+    },
+    "x-binding": [
+      {
+        "id": "title",
+        "type": "Title",
+        "attributes": {
+          "title": "Lenient trailer"
+        }
+      },
+      {
+        "id": "user-ordered",
+        "type": "Dependency",
+        "attributes": {
+          "from": "User",
+          "to": "Ordered"
+        }
+      }
+    ],
+    "findings": []
+  },
+  "steps": [
+    {
+      "doc": "Ordered's label offset is a replace-value of the label's numbers alone; (build) before it and inertia after it stay.",
+      "edit": {
+        "set": {
+          "element": "ordered",
+          "attributes": {
+            "labelOffset": "-20, 8"
+          }
+        }
+      },
+      "splices": [
+        {
+          "operation": "replace-value",
+          "start": 90,
+          "end": 97,
+          "text": "-20, 8"
+        }
+      ],
+      "expect": "title Lenient trailer\nanchor User [0.95, 0.5]\ncomponent Ordered [0.8, 0.3] (build) label [-20, 8] inertia\ncomponent Spaced [0.7,0.4]  label[ 5 , -7 ]( market )\nCOMPONENT Shouted [0.6, 0.5]\ncomponent Glued [0.5, 0.6] inertia(buy)\ncomponent Linked [0.4, 0.7] url( linkedMap ) (ecosystem)\ncomponent Lookalike [0.3, 0.8] inertial\nComponent Cased [0.2, 0.2] INERTIA (Outsource)\nurl linkedMap [linked.owm]\nUser->Ordered\n"
+    },
+    {
+      "doc": "The undo puts the numbers back.",
+      "undo": true,
+      "splices": [
+        {
+          "operation": "replace-value",
+          "start": 90,
+          "end": 96,
+          "text": "-30, 12"
+        }
+      ],
+      "expect": "title Lenient trailer\nanchor User [0.95, 0.5]\ncomponent Ordered [0.8, 0.3] (build) label [-30, 12] inertia\ncomponent Spaced [0.7,0.4]  label[ 5 , -7 ]( market )\nCOMPONENT Shouted [0.6, 0.5]\ncomponent Glued [0.5, 0.6] inertia(buy)\ncomponent Linked [0.4, 0.7] url( linkedMap ) (ecosystem)\ncomponent Lookalike [0.3, 0.8] inertial\nComponent Cased [0.2, 0.2] INERTIA (Outsource)\nurl linkedMap [linked.owm]\nUser->Ordered\n"
+    },
+    {
+      "doc": "Clearing Ordered's inertia removes the inertia segment and the whitespace before it, and nothing else.",
+      "edit": {
+        "set": {
+          "element": "ordered",
+          "attributes": {
+            "inertia": false
+          }
+        }
+      },
+      "splices": [
+        {
+          "operation": "remove-key",
+          "start": 98,
+          "end": 106,
+          "text": ""
+        }
+      ],
+      "expect": "title Lenient trailer\nanchor User [0.95, 0.5]\ncomponent Ordered [0.8, 0.3] (build) label [-30, 12]\ncomponent Spaced [0.7,0.4]  label[ 5 , -7 ]( market )\nCOMPONENT Shouted [0.6, 0.5]\ncomponent Glued [0.5, 0.6] inertia(buy)\ncomponent Linked [0.4, 0.7] url( linkedMap ) (ecosystem)\ncomponent Lookalike [0.3, 0.8] inertial\nComponent Cased [0.2, 0.2] INERTIA (Outsource)\nurl linkedMap [linked.owm]\nUser->Ordered\n"
+    },
+    {
+      "doc": "The undo puts the segment back.",
+      "undo": true,
+      "splices": [
+        {
+          "operation": "remove-key",
+          "start": 98,
+          "end": 98,
+          "text": " inertia"
+        }
+      ],
+      "expect": "title Lenient trailer\nanchor User [0.95, 0.5]\ncomponent Ordered [0.8, 0.3] (build) label [-30, 12] inertia\ncomponent Spaced [0.7,0.4]  label[ 5 , -7 ]( market )\nCOMPONENT Shouted [0.6, 0.5]\ncomponent Glued [0.5, 0.6] inertia(buy)\ncomponent Linked [0.4, 0.7] url( linkedMap ) (ecosystem)\ncomponent Lookalike [0.3, 0.8] inertial\nComponent Cased [0.2, 0.2] INERTIA (Outsource)\nurl linkedMap [linked.owm]\nUser->Ordered\n"
+    },
+    {
+      "doc": "Spaced's market cleared and build set, in one edit: ( market ), which stands right after the label's ] with no whitespace before it, is removed alone, and (build) is written where it ended, after the statement's last decorator.",
+      "edit": {
+        "set": {
+          "element": "spaced",
+          "attributes": {
+            "market": false,
+            "build": true
+          }
+        }
+      },
+      "splices": [
+        {
+          "operation": "remove-key",
+          "start": 150,
+          "end": 160,
+          "text": ""
+        },
+        {
+          "operation": "insert-key",
+          "start": 160,
+          "end": 160,
+          "text": " (build)"
+        }
+      ],
+      "expect": "title Lenient trailer\nanchor User [0.95, 0.5]\ncomponent Ordered [0.8, 0.3] (build) label [-30, 12] inertia\ncomponent Spaced [0.7,0.4]  label[ 5 , -7 ] (build)\nCOMPONENT Shouted [0.6, 0.5]\ncomponent Glued [0.5, 0.6] inertia(buy)\ncomponent Linked [0.4, 0.7] url( linkedMap ) (ecosystem)\ncomponent Lookalike [0.3, 0.8] inertial\nComponent Cased [0.2, 0.2] INERTIA (Outsource)\nurl linkedMap [linked.owm]\nUser->Ordered\n"
+    },
+    {
+      "doc": "The undo puts ( market ) back as it was written and removes (build).",
+      "undo": true,
+      "splices": [
+        {
+          "operation": "remove-key",
+          "start": 150,
+          "end": 150,
+          "text": "( market )"
+        },
+        {
+          "operation": "insert-key",
+          "start": 150,
+          "end": 158,
+          "text": ""
+        }
+      ],
+      "expect": "title Lenient trailer\nanchor User [0.95, 0.5]\ncomponent Ordered [0.8, 0.3] (build) label [-30, 12] inertia\ncomponent Spaced [0.7,0.4]  label[ 5 , -7 ]( market )\nCOMPONENT Shouted [0.6, 0.5]\ncomponent Glued [0.5, 0.6] inertia(buy)\ncomponent Linked [0.4, 0.7] url( linkedMap ) (ecosystem)\ncomponent Lookalike [0.3, 0.8] inertial\nComponent Cased [0.2, 0.2] INERTIA (Outsource)\nurl linkedMap [linked.owm]\nUser->Ordered\n"
+    }
+  ]
+}

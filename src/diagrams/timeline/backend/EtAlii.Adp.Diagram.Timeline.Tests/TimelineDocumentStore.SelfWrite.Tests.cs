@@ -25,15 +25,14 @@ public class TimelineDocumentStoreSelfWriteTests : IDisposable
 {
     private const string Text = "timeline: 1\nelements:\n  - id: aaa\n    label: Period\n    begin: 2026-01-05\n    end: 2026-02-13\n    row: 0\n";
 
-    private readonly string _workspace = IoPath.Combine(
-        IoPath.GetTempPath(),
-        "adp-timeline-store-" + Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-timeline-store");
+    private readonly string _workspace;
 
-    public TimelineDocumentStoreSelfWriteTests() => Directory.CreateDirectory(_workspace);
+    public TimelineDocumentStoreSelfWriteTests() => _workspace = _testFolder.Path;
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_workspace);
+        _testFolder.Dispose();
 
         GC.SuppressFinalize(this);
     }

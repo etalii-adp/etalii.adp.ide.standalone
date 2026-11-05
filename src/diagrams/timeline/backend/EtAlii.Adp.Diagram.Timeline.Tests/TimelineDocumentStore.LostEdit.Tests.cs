@@ -39,15 +39,14 @@ public class TimelineDocumentStoreLostEditTests : IDisposable
 {
     private const string Text = "timeline: 1\nelements:\n  - id: aaa\n    label: Period\n    begin: 2026-01-05\n    end: 2026-02-13\n    row: 0\n";
 
-    private readonly string _workspace = IoPath.Combine(
-        IoPath.GetTempPath(),
-        "adp-timeline-lost-edit-" + Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-timeline-lost-edit");
+    private readonly string _workspace;
 
-    public TimelineDocumentStoreLostEditTests() => Directory.CreateDirectory(_workspace);
+    public TimelineDocumentStoreLostEditTests() => _workspace = _testFolder.Path;
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_workspace);
+        _testFolder.Dispose();
 
         GC.SuppressFinalize(this);
     }

@@ -1,4 +1,5 @@
 using EtAlii.Adp.Context;
+using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Sessions;
 using Microsoft.Extensions.DependencyInjection;
@@ -18,8 +19,8 @@ public static class ServiceCollectionAddFunctionalDecompositionGraphExtension
         ArgumentNullException.ThrowIfNull(services);
 
         // Without a document factory the host refuses to start: a type that declares an extension
-        // must be creatable from the Add dialog.
-        services.AddEmptyDocument(Diagram.FunctionalDecompositionGraph.Origin, FdgParser.EmptyDocument("\r\n"));
+        // must be creatable from the Add dialog. A new document is the binding's template.
+        services.AddEmptyDocument(Diagram.FunctionalDecompositionGraph.Origin, FdgBody.Template);
         services.AddSingleton<FdgElementMapper>();
 
         // One document per path, shared by every connection viewing it. TryAdd rather than Add so a
@@ -42,7 +43,7 @@ public static class ServiceCollectionAddFunctionalDecompositionGraphExtension
 
         // What can be done to it: the palette, the menus and shortcuts, and the property grid - each
         // answering the ids the client module states once, and each editing through a command below.
-        services.AddSingleton<IDiagramToolboxProvider, FdgToolboxProvider>();
+        services.AddSingleton<IDiagramToolboxProvider>(new DislToolboxProvider(Diagram.FunctionalDecompositionGraph.Origin, FdgDefinition.Definition));
         services.AddSingleton<IContextActionProvider, FdgContextActionProvider>();
         services.AddSingleton<IContextPropertyProvider, FdgContextPropertyProvider>();
 

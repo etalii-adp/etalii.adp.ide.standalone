@@ -22,7 +22,7 @@ public class AnsibleDerivedRowsTests
 {
     private const string Unknown = "parity:unknown";
 
-    public static TheoryData<string> Folders() => [.. AnsibleTranscript.Corpus()];
+    public static TheoryData<string> Folders() => [.. AnsibleCorpus.Folders()];
 
     [Theory]
     [MemberData(nameof(Folders))]

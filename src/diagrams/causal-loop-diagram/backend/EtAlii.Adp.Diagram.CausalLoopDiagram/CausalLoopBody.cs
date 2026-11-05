@@ -139,6 +139,21 @@ public sealed class CausalLoopBody : ITextBody<CausalLoopBody>
     }
 
     /// <summary>
+    /// Sets diagram attribute <paramref name="attribute"/> to <paramref name="value"/> (null to forget it), as the
+    /// definition's <c>typeMap</c> says where it lives; the first refusal stops it.
+    /// </summary>
+    public EditOutcome SetDiagramAttribute(string attribute, object? value)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(attribute);
+        foreach (var change in DislWrite.DiagramSet(CausalLoopDefinition.Specification, Model, attribute, value))
+        {
+            var edit = Change(change);
+            if (!edit.WasApplied) return edit;
+        }
+        return EditOutcome.Applied;
+    }
+
+    /// <summary>
     /// What the binding reads, as the module's model: the variables, links and loops in document order,
     /// each with the line it is on, and every name as written without its quotes; a loop with what the
     /// definition derives of it, its computed polarity and whether its identifier disagrees with it.

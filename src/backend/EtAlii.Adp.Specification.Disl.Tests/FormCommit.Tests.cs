@@ -23,7 +23,12 @@ public class FormCommitTests
           { "id": "badge", "text": { "cel": "self.code" }, "editable": "inline",
             "parse": { "write": [ { "set": { "code": "value" } } ] } },
           { "id": "plain", "text": "self.note", "editable": "inline" },
-          { "id": "word", "text": "Untitled", "editable": "inline" } ] } } },
+          { "id": "word", "text": "Untitled", "editable": "inline" },
+          { "id": "editPlain", "text": { "cel": "self.code" }, "editText": "self.note", "editable": "inline" },
+          { "id": "editWord", "text": { "cel": "self.code" }, "editText": "Untitled", "editable": "inline" },
+          { "id": "editBound", "text": { "cel": "self.note + '!'" }, "editText": { "attribute": "note" }, "editable": "inline" },
+          { "id": "bound", "text": { "attribute": "note" }, "editable": "inline" },
+          { "id": "editLocalized", "text": { "cel": "self.note" }, "editText": { "nl": "Naamloos", "en": "Untitled" }, "editable": "inline" } ] } } },
         "forms": {
           "gauge": {
             "for": "Gauge",
@@ -42,7 +47,17 @@ public class FormCommitTests
               ] },
               { "attribute": "note", "label": "Note", "widget": "text" },
               { "attribute": "code", "label": "Code", "widget": "text", "readOnlyReasons": ["The code is fixed."] },
-              { "kind": "computed", "label": "Summary", "widget": "text", "value": { "cel": "self.note" } }
+              { "kind": "computed", "label": "Summary", "widget": "text", "value": { "cel": "self.note" } },
+              { "kind": "computed", "id": "spawn", "label": "Spawn", "widget": "text", "value": { "cel": "''" },
+                "parse": { "write": [ { "create": { "type": "'Gauge'", "attributes": { "note": "value" } } } ] } }
+            ]
+          },
+          "choose": {
+            "for": "Gauge",
+            "label": "Choose a mode",
+            "items": [
+              { "attribute": "mode", "label": "Mode", "widget": "select",
+                "options": { "cel": "[{'value': self, 'label': 'This one'}, {'value': 's', 'label': 'Slow'}, 'plain']" } }
             ]
           },
           "pick": {
@@ -144,6 +159,31 @@ public class FormCommitTests
     }
 
     [Fact]
+    public void HasRow_FindsEveryItemOfTheForm_NestedOrComputed_AndNoOther()
+    {
+        // Arrange.
+        var gauge = Gauge();
+
+        // Act & Assert.
+        Assert.True(FormCommit.HasRow(Specification, gauge, "level"));
+        Assert.True(FormCommit.HasRow(Specification, gauge, "code"));
+        Assert.True(FormCommit.HasRow(Specification, gauge, "Summary"));
+        Assert.False(FormCommit.HasRow(Specification, gauge, "nothing"));
+        Assert.False(FormCommit.HasRow(Specification, gauge, "level", "elsewhere"));
+    }
+
+    [Fact]
+    public void AParseThatCreates_TakesTheNewElementsIdFromTheIdsGiven()
+    {
+        // Act.
+        var transaction = FormCommit.Row(Specification, Gauge(), "spawn", "second", Editable, ids: DislIds.Fixed("g2"));
+
+        // Assert.
+        var created = Assert.IsType<DislChange.Create>(Assert.Single(transaction.Changes));
+        Assert.Equal("g2", created.Id);
+    }
+
+    [Fact]
     public void AComputedItemWithoutAParse_IsRefused()
     {
         // Act.
@@ -175,6 +215,24 @@ public class FormCommitTests
         Assert.Equal(("Pick a gauge", "mdi-target", "Go"), (request.Label, request.Icon, request.SubmitLabel));
         var field = Assert.Single(request.Fields);
         Assert.Equal(("target", "Target", "text", (object?)"G2"), (field.Attribute, field.Label, field.Widget, field.Initial));
+    }
+
+    [Fact]
+    public void AParamsFormsSelect_OffersItsOptions_EachAsItsValueAndLabel()
+    {
+        // Arrange.
+        var gauge = Gauge();
+
+        // Act.
+        var request = FormCommit.Request(Specification, "choose", gauge, Editable);
+
+        // Assert: a {value, label} map offers its value under its label; any other option is both.
+        var options = request!.Fields[0].Options!;
+        Assert.Equal(["This one", "Slow", "plain"], options.Select(option => option.Label));
+        Assert.Same(gauge, options[0].Value);
+        Assert.Equal("s", options[1].Value);
+        Assert.Equal("plain", options[2].Value);
+        Assert.Null(FormCommit.Request(Specification, "pick", gauge, Editable)!.Fields[0].Options);
     }
 
     [Fact]
@@ -271,5 +329,47 @@ public class FormCommitTests
 
         // Assert.
         Assert.Equal(expected, text);
+    }
+
+    [Theory]
+    [InlineData("editPlain", "self.note")]
+    [InlineData("editWord", "Untitled")]
+    public void ALabelsEditor_OpensOnItsBareStringEditTextAsALiteral(string label, string expected)
+    {
+        // DISL §2.3: editText is a Message, whose bare string is a LocalizedText, that is literal text (behaviour change
+        // B-41) - neither the one that would compile (to the note) nor the one that would not (to no text) is evaluated.
+
+        // Act.
+        var text = FormCommit.EditText(Specification, Gauge(), label, Editable);
+
+        // Assert.
+        Assert.Equal(expected, text);
+    }
+
+    [Theory]
+    [InlineData("editBound")]
+    [InlineData("bound")]
+    public void ALabelsEditor_BoundToAnAttribute_OpensOnThatAttributesValue(string label)
+    {
+        // DISL §6.12: the editor starts with "the value of the attribute it binds", whether the binding is its editText or,
+        // without one, its text (behaviour change B-42).
+
+        // Act.
+        var text = FormCommit.EditText(Specification, Gauge(), label, Editable);
+
+        // Assert.
+        Assert.Equal("first", text);
+    }
+
+    [Fact]
+    public void ALabelsEditor_WithALocalizedEditText_OpensOnTheLocalesText()
+    {
+        // DISL §2.3: a LocalizedText map gives the text of the locale, English here, not merely its first (behaviour change B-42).
+
+        // Act.
+        var text = FormCommit.EditText(Specification, Gauge(), "editLocalized", Editable);
+
+        // Assert.
+        Assert.Equal("Untitled", text);
     }
 }

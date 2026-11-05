@@ -2,6 +2,7 @@ using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -19,26 +20,25 @@ namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline.Tests;
 /// </remarks>
 public class PipelineContextPropertyProviderTests : IDisposable
 {
-    private readonly string _workspace = IoPath.Combine(
-        IoPath.GetTempPath(),
-        "adp-pipeline-properties-" + Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-pipeline-properties");
+    private readonly string _workspace;
 
     private ProjectRoot Root => ProjectRoot.From(_workspace);
 
     private readonly PipelineDocumentStore _store = new(new FileWriter());
-    private readonly HistoryStackStore _historyStacks;
+    private readonly IHistoryStackStore _historyStacks;
     private readonly PipelineContextPropertyProvider _provider;
 
     public PipelineContextPropertyProviderTests()
     {
-        Directory.CreateDirectory(_workspace);
-        _historyStacks = new HistoryStackStore(new PipelineTestDispatcher(_store));
+        _workspace = _testFolder.Path;
+        _historyStacks = TestHistory.For(s => { s.AddAzurePipeline(); s.AddSingleton<IPipelineDocumentStore>(_store); });
         _provider = new PipelineContextPropertyProvider(_historyStacks, _store);
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_workspace);
+        _testFolder.Dispose();
 
         GC.SuppressFinalize(this);
     }

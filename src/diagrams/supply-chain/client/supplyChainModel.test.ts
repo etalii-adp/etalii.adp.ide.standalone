@@ -7,7 +7,7 @@ import {
   SupplyChainNodePayloadSchema,
 } from "@client/generated/supply-chain_pb";
 import { applyDelta, emptyModel, formatAmount } from "./supplyChainModel";
-import { bandWidthOf, flowPath } from "./SupplyChainCanvas";
+import { bandWidthOf, flowPath } from "./supplyChainFlow";
 
 function add(...elements: { id: string; type: string; bytes: Uint8Array; x?: number; y?: number }[]): Delta {
   return create(DeltaSchema, {

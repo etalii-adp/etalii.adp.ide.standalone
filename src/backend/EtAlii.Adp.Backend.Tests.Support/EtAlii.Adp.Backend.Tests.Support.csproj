@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The in-process host the flow tests drive over gRPC: HostFixture (one host per test class),
+    FlowSession (signed in, with a project added), FlowConstants and StreamProbe. A test project
+    that runs flows references it; a module's unit tests do not, so they do not pull in the host.
+  -->
+
+  <ItemGroup>
+    <PackageReference Include="Grpc.Net.Client" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="xunit.v3.assert" />
+    <PackageReference Include="xunit.v3.extensibility.core" />
+    <ProjectReference Include="..\EtAlii.Adp.Backend.Service\EtAlii.Adp.Backend.Service.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Tests.Support\EtAlii.Adp.Tests.Support.csproj" />
+  </ItemGroup>
+
+</Project>

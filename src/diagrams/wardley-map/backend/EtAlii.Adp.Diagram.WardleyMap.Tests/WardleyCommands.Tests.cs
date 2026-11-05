@@ -12,7 +12,7 @@ namespace EtAlii.Adp.Diagram.WardleyMap.Tests;
 /// </summary>
 public sealed class WardleyCommandsTests : IDisposable
 {
-    private readonly string _root = IoPath.Combine(IoPath.GetTempPath(), $"wardley-commands-{Guid.NewGuid():N}");
+    private readonly TestFolder _testFolder = TestFolder.Create("wardley-commands");
     private readonly ServiceProvider _services;
     private readonly IWardleyDocumentStore _documents;
     private readonly IHistoryStack _history;
@@ -20,17 +20,17 @@ public sealed class WardleyCommandsTests : IDisposable
 
     public WardleyCommandsTests()
     {
-        Directory.CreateDirectory(_root);
+        var root = _testFolder.Path;
         _services = new ServiceCollection().AddCommands().AddHierarchyCommandHandlers().AddWardleyMap().BuildServiceProvider();
         _documents = _services.GetRequiredService<IWardleyDocumentStore>();
-        _history = _services.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(_root));
-        _path = IoPath.Combine(_root, "map.owm");
+        _history = _services.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(root));
+        _path = IoPath.Combine(root, "map.owm");
     }
 
     public void Dispose()
     {
         _services.Dispose();
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     private void Write(string text) => File.WriteAllText(_path, text);
@@ -333,6 +333,37 @@ public sealed class WardleyCommandsTests : IDisposable
     }
 
     [Fact]
+    public async Task AMovedCoordinate_IsWrittenWithAtMostFourDecimals_HalvesAwayFromZero_WithoutTrailingZeros()
+    {
+        // Arrange.
+        Write("component Alpha [0.5, 0.5]\ncomponent Beta [0.5, 0.5]\n");
+
+        // Act.
+        var halves = await Execute(new MoveWardleyElementCommand(_path, await IdOfAsync("Alpha"), 0.12345d, 0.56785d));
+        var zeros = await Execute(new MoveWardleyElementCommand(_path, await IdOfAsync("Beta"), 0.30000d, 0.700004d));
+
+        // Assert.
+        Assert.True(halves.IsSuccess, halves.Error);
+        Assert.True(zeros.IsSuccess, zeros.Error);
+        Assert.Equal("component Alpha [0.1235, 0.5679]\ncomponent Beta [0.3, 0.7]\n", Read());
+    }
+
+    [Fact]
+    public async Task AnAnnotationsPosition_IsRoundedToFourDecimals()
+    {
+        // Arrange.
+        Write("component Alpha [0.5, 0.5]\n");
+
+        // Act.
+        var result = await Execute(new AddWardleyAnnotationCommand(_path, "Soon", 0.123456d, 0.65d));
+
+        // Assert.
+        Assert.True(result.IsSuccess, result.Error);
+        Assert.Equal("component Alpha [0.5, 0.5]\nannotation 1 [[0.1235,0.65]] Soon\n", Read());
+    }
+
+    /// <remarks>The position is written as the binding's insert emits it, in the outer brackets (spec 071, T012).</remarks>
+    [Fact]
     public async Task AddAnnotation_NumbersOnePastTheHighest_AndWritesItsTrimmedTextAfterItsPosition()
     {
         // Arrange. Annotation 2 was deleted, so the next one is 4 rather than a second 3.
@@ -343,7 +374,7 @@ public sealed class WardleyCommandsTests : IDisposable
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
-        Assert.Equal("annotation 1 [0.1, 0.2] First\nannotation 3 [0.4, 0.5] Third\nannotation 4 [0.3, 0.7] Fourth\n", Read());
+        Assert.Equal("annotation 1 [0.1, 0.2] First\nannotation 3 [0.4, 0.5] Third\nannotation 4 [[0.3,0.7]] Fourth\n", Read());
     }
 
     // ---- links --------------------------------------------------------------------------------
@@ -531,10 +562,10 @@ public sealed class WardleyCommandsTests : IDisposable
     }
 
     [Fact]
-    public async Task PipelineMembership_InsertsBeforeTheClosingBrace_LeavingWhatIsInTheBlockAlone()
+    public async Task PipelineMembership_InsertsAfterTheLastChild_LeavingWhatIsInTheBlockAlone()
     {
-        // Arrange. A block may hold comments and blank lines, which Requirement 3.3 says
-        // survive untouched - so the brace is found by looking rather than by counting children.
+        // Arrange. A block may hold comments and blank lines, which Requirement 3.3 says survive untouched. The binding
+        // places a new child after the last one (its insert's last-child), so a comment after it stays where it is.
         Write("component Kettle [0.4, 0.3]\npipeline Kettle\n{\n  component Campfire Kettle [0.15]\n  // the other one\n}\n");
 
         // Act.
@@ -544,7 +575,7 @@ public sealed class WardleyCommandsTests : IDisposable
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
         Assert.Equal(
-            "component Kettle [0.4, 0.3]\npipeline Kettle\n{\n  component Campfire Kettle [0.15]\n  // the other one\n  component Electric Kettle [0.63]\n}\n",
+            "component Kettle [0.4, 0.3]\npipeline Kettle\n{\n  component Campfire Kettle [0.15]\n  component Electric Kettle [0.63]\n  // the other one\n}\n",
             Read());
     }
 

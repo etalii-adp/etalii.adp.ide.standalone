@@ -59,8 +59,8 @@ public class DeclaredBodiesTests
         // Act.
         var result = body.Change(new ModelChange.Save());
 
-        // Assert.
-        if (body.IsReadOnly)
+        // Assert: an unreadable body plans nothing for a save (FBL 0.7 §6.6, §7.5); a read-only binding refuses it.
+        if (body is { IsReadOnly: true, Model.Unreadable: false })
         {
             Assert.IsType<PlanResult.Refused>(result);
         }

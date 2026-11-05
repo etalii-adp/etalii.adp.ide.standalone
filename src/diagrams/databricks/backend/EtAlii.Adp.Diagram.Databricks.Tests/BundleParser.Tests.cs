@@ -14,7 +14,7 @@ public class BundleParserTests
     {
         var document = LineDocument.Parse(
             File.ReadAllText(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", name)));
-        return BundleParser.Parse(YamlAccess.Root(document), document);
+        return DatabricksModel.Read(document).Bundle;
     }
 
     [Fact]
@@ -23,20 +23,18 @@ public class BundleParserTests
         // Arrange & act.
         var bundle = Parse("bundle.yml");
 
-        // Assert.
+        // Assert: the includes and variables are the bundle diagram's attributes, read by the binding.
         Assert.Equal("lakehouse-nightly", bundle.Name);
-        var include = Assert.Single(bundle.Includes);
-        Assert.Equal("resources/*.yml", include.Glob);
-        Assert.Equal(new LineRange(5, 5), include.Lines);
-        Assert.Equal(2, bundle.Variables.Count);
-        Assert.Equal("catalog", bundle.Variables[0].Name);
-        Assert.Equal("lakehouse_dev", bundle.Variables[0].Default);
-        Assert.Equal("The Unity Catalog written to.", bundle.Variables[0].Description);
-        Assert.Equal("warehouse_id", bundle.Variables[1].Name);
-        Assert.Equal("4b9b953939869799", bundle.Variables[1].Default);
-        // Zero-based: each variable's key and its body.
-        Assert.Equal(new LineRange(8, 10), bundle.Variables[0].Lines);
-        Assert.Equal(new LineRange(11, 12), bundle.Variables[1].Lines);
+        var file = Assert.Single(bundle.Reading!.Elements, element => element.Type == "BundleFile");
+        Assert.Equal(["resources/*.yml"], Assert.IsAssignableFrom<IEnumerable<object?>>(file.Attributes["includes"]));
+        var variables = Assert.IsAssignableFrom<IEnumerable<object?>>(file.Attributes["variables"]).Cast<IReadOnlyDictionary<string, object?>>().ToList();
+        Assert.Equal(2, variables.Count);
+        Assert.Equal("catalog", variables[0]["name"]);
+        Assert.Equal("lakehouse_dev", variables[0]["default"]);
+        Assert.Equal("The Unity Catalog written to.", variables[0]["description"]);
+        Assert.Equal("warehouse_id", variables[1]["name"]);
+        Assert.Equal("4b9b953939869799", variables[1]["default"]);
+        Assert.Equal("", variables[1]["description"]);
     }
 
     [Fact]

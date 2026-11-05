@@ -1,4 +1,5 @@
 using EtAlii.Adp.Specification.Fbl.Documents;
+using EtAlii.Adp.Specification.Fbl.Lines;
 using EtAlii.Adp.Specification.Fbl.Rules;
 
 namespace EtAlii.Adp.Specification.Fbl.Planning;
@@ -12,7 +13,8 @@ internal static class EditPlanner
 {
     public static PlanResult Plan(BodyReading reading, ModelChange change)
     {
-        if (reading.Unreadable is not null) return new PlanResult.Refused("The file could not be read, so it is never written.");
+        // A save writes the bytes that were read, which an unreadable body keeps (FBL §6.6, §7.5): nothing to splice.
+        if (reading.Unreadable is not null) return change is ModelChange.Save ? new PlanResult.Planned(SpliceEdit.Empty) : new PlanResult.Refused("The file could not be read, so it is never written.");
         if (reading.Binding.ReadOnly is { } reason) return new PlanResult.Refused(reason.Length > 0 ? reason : "This file is read-only.");
         var plan = new Plan(reading);
         try
@@ -26,6 +28,9 @@ internal static class EditPlanner
                     break;
                 case ModelChange.Add add:
                     PlanAdd(plan, add);
+                    break;
+                case ModelChange.AddAfter added:
+                    PlanAddAfter(plan, added);
                     break;
                 case ModelChange.Remove remove:
                     PlanRemove(plan, remove);
@@ -43,12 +48,29 @@ internal static class EditPlanner
                 default:
                     throw new ArgumentOutOfRangeException(nameof(change));
             }
-            return new PlanResult.Planned(new Edit(plan.Ordered(), plan.Snapshot));
+            var splices = plan.Ordered();
+            return Governed(reading, splices) is { } governed ? new PlanResult.Refused(governed) : new PlanResult.Planned(new SpliceEdit(splices, plan.Snapshot));
         }
         catch (RefusedException refused)
         {
             return new PlanResult.Refused(refused.Message);
         }
+    }
+
+    /// <summary>
+    /// FBL 0.17 §15.1: no splice touches the text of an entry whose rule uses a construct this library does not read, as a
+    /// removal that takes it with another, or a move of what holds it, would; an insert right before or after it does not.
+    /// The reason names the construct.
+    /// </summary>
+    private static string? Governed(BodyReading reading, IReadOnlyList<Splice> splices)
+    {
+        foreach (var element in reading.Elements)
+        {
+            if (element.Rule.Unread is not { } reason) continue;
+            var own = element.Entry.Own;
+            if (splices.Any(splice => splice.Start < own.End && own.Start < splice.End)) return reason;
+        }
+        return null;
     }
 
     private static ReadElement Element(BodyReading reading, string id) =>
@@ -104,23 +126,39 @@ internal static class EditPlanner
             else
             {
                 (rule, binding) = Binding(reading, element, attribute);
-                read = binding is null ? SlotRead.Absent : rule == element.Rule && element.Slots.TryGetValue(attribute, out var known) ? known : reading.ReadSlot(element.Candidate with { Rule = rule }, binding, element);
+                if (binding is null && attribute == "id" && element.Rule.Id?.From is { } from)
+                {
+                    // An id read from the entry (FBL §3.3) is rewritten where it was read.
+                    binding = new AttributeBinding { Kind = from.Kind, Child = from.Child };
+                    read = element.IdRead ?? SlotRead.Absent;
+                }
+                else read = binding is null ? SlotRead.Absent : rule == element.Rule && element.Slots.TryGetValue(attribute, out var known) ? known : reading.ReadSlot(element.Candidate with { Rule = rule }, binding, element);
             }
             if (binding is null)
             {
                 Planning.Plan.Refuse($"A {element.Rule.Type} keeps no '{attribute}' in this file.");
                 return;
             }
+            // FBL 0.15 §4.9: a value read from a further slot of the attribute's or is written as that slot writes.
+            if (read.By is { } by) binding = by;
             if (binding.Kind is SlotKind.Value or SlotKind.Parent || !read.Writable)
             {
                 Planning.Plan.Refuse(read.Reason is { Length: > 0 } reason ? reason : $"The {attribute} of a {element.Rule.Type} cannot be changed in this file.");
             }
-            var empty = NewText.IsEmpty(value) || (binding.Flag && value is false);
-            if (empty && binding is { Flag: false, Empty: EmptyRule.Refuse }) Planning.Plan.Refuse($"The {attribute} of a {element.Rule.Type} cannot be empty.");
+            // A value the binding's map writes as the empty text sets the slot to its empty value (FBL 5.2, empty and map),
+            // as the Wardley map's inertia is cleared by false (fixture wardley-trailer/lenient-trailer).
+            var empty = NewText.IsEmpty(value) || (binding.Flag && value is false) || (binding.Map is not null && NewText.Wire(binding, value, null) == "");
+            if (empty && binding is { Flag: false, Empty: EmptyRule.Refuse }) Planning.Plan.Refuse(binding.EmptyRefusal ?? $"The {attribute} of a {element.Rule.Type} cannot be empty.");
+
+            // FBL 0.10 §5.2: a value read from the secondary slot is written to the attribute's own slot, and the
+            // secondary is removed in the same edit, whether the value was read from it or not.
+            var secondary = Secondary(reading, element, rule, binding);
+            read = read.Own ?? read;
             if (!read.Present && !empty && !binding.Flag && binding.Absent.TryGetValue(reading.Family.FamilyName, out var absent) && absent == AbsentRule.Refuse)
             {
-                Planning.Plan.Refuse($"The {reading.Binding.Name} file has no \"{SlotName(binding)}\" to rewrite.");
+                Planning.Plan.Refuse(binding.AbsentRefusal ?? $"The {reading.Binding.Name} file has no \"{SlotName(binding)}\" to rewrite.");
             }
+            if (secondary is not null) changes.Add(secondary);
             if (empty && !read.Present && !binding.Flag) continue;
             if (!empty && IsKey(element, attribute, binding))
             {
@@ -134,11 +172,20 @@ internal static class EditPlanner
                     newKey = key;
                 }
             }
-            changes.Add(new SlotChange(attribute, binding, rule, read, value, empty));
+            changes.Insert(secondary is null ? changes.Count : changes.Count - 1, new SlotChange(attribute, binding, rule, read, value, empty));
         }
         if (changes.Count > 0) reading.Family.Write(plan, element, changes);
         if (newKey is not null) RewriteReferences(plan, element, newKey);
         if (element.Rule.SnapshotUndo) plan.Snapshot = true;
+    }
+
+    /// <summary>The removal of an attribute's <c>secondary</c> slot, when the entry has it (FBL 0.10 §5.2); null otherwise.</summary>
+    private static SlotChange? Secondary(BodyReading reading, ReadElement element, Rule rule, AttributeBinding binding)
+    {
+        if (binding.Secondary is not { } secondary) return null;
+        var slot = BodyReading.SecondarySlot(secondary);
+        var read = reading.ReadSlot(element.Candidate with { Rule = rule }, slot, element);
+        return read.Present ? new SlotChange(SlotName(secondary), slot, rule, read, null, true) : null;
     }
 
     private static string SlotName(Slot slot) => slot.Kind switch
@@ -178,6 +225,10 @@ internal static class EditPlanner
     /// A rename (FBL §5.7): every reference to the old value is rewritten in the same edit, one
     /// <c>rewrite-reference</c> splice each, word by word inside a group.
     /// </summary>
+    /// <remarks>
+    /// A reference is to the renamed element only when it resolves to it (FBL 5.4): what names a repeated key names its
+    /// first holder (FBL 5.3), so a later holder's rename rewrites none, as its removal cascades to none (<see cref="References"/>).
+    /// </remarks>
     private static void RewriteReferences(Plan plan, ReadElement renamed, string newKey)
     {
         var reading = plan.Reading;
@@ -193,6 +244,7 @@ internal static class EditPlanner
             {
                 if (binding.Reference is not { } reference || !reference.To.Contains(renamed.Rule.Name)) continue;
                 if (other == renamed && name == renamed.KeyAttribute) continue;
+                if (reading.ReferencedBy(reference, oldKey) is { } named && named != renamed) continue;
                 if (!other.Slots.TryGetValue(name, out var read) || !read.Present) continue;
                 if (read.Words is { Count: > 1 } ||(read.Words is { Count: 1 } && other.Attributes.GetValueOrDefault(name) is List<object?>))
                 {
@@ -216,12 +268,22 @@ internal static class EditPlanner
 
     // ---- add ----
 
-    private static void PlanAdd(Plan plan, ModelChange.Add add)
+    /// <summary>An add put on a line of its own right after the entry it names. Only the lines and grammar families' entries can be, and an entry of any other family is refused.</summary>
+    private static void PlanAddAfter(Plan plan, ModelChange.AddAfter added)
+    {
+        var anchor = Element(plan.Reading, added.After);
+        if (plan.Reading.Family is not (LinesFamily or Grammar.GrammarFamily)) Planning.Plan.Refuse($"This file's binding cannot add a {added.Type} at that position.");
+        PlanAdd(plan, new ModelChange.Add(added.Type, null, added.Attributes), anchor);
+    }
+
+    private static void PlanAdd(Plan plan, ModelChange.Add add, ReadElement? after = null)
     {
         var reading = plan.Reading;
-        // A declared binding appends where its insert rule says; a position among siblings is a plugin's to honour.
-        if (add.Index is not null) Planning.Plan.Refuse($"This file's binding cannot add a {add.Type} at a position; only a persistence plugin can.");
+        // A declared binding appends where its insert rule says; a position among siblings is a plugin's to honour,
+        // or a family's whose nesting is its indentation (FBL 0.7 §6.3).
+        if (add.Index is not null && !reading.Family.PlacesByPosition) Planning.Plan.Refuse($"This file's binding cannot add a {add.Type} at a position; only a persistence plugin can.");
         var rules = reading.Binding.AllRules.Where(r => r.Type == add.Type && (add.Slot is null || r.Parent?.Slot == add.Slot)).ToList();
+        if (rules.Count == 0 && BlockInsert(reading.Binding, add.Type) is { } block) rules.Add(block);
         if (rules.Count == 0) Planning.Plan.Refuse($"This file has no place for a {add.Type}.");
         // Several rules may write one type (a cell's items are options or rows; a filter's
         // conditions are written at each level of nesting). The one meant is a rule the parent
@@ -230,9 +292,12 @@ internal static class EditPlanner
         var container = add.ParentId is { } containerId ? reading.Find(containerId) : null;
         var insertable = rules.Where(r => r.Insert is not null).ToList();
         var contained = insertable.Where(r => container is not null && r.Parent?.Rules.Contains(container.Rule.Name) == true).ToList();
-        var rule = (contained.Count > 0 ? contained : insertable)
+        var ordered = (contained.Count > 0 ? contained : insertable)
             .OrderByDescending(r => add.Attributes.Keys.Count(name => r.Attribute(name) is not null))
-            .FirstOrDefault();
+            .ToList();
+        // FBL 0.10 §6.2: of the rules of one type, the first whose insert's when holds plans the add; when none does,
+        // the first refuses it, with its own sentence.
+        var rule = ordered.FirstOrDefault(r => r.Insert!.When is not { } condition || reading.InsertAllowed(r, condition, InsertedAttributes(r, add))) ?? ordered.FirstOrDefault();
         if (rule is null)
         {
             Planning.Plan.Refuse(rules[0].ReadOnly is { Length: > 0 } text ? text : $"A {add.Type} cannot be added to this file.");
@@ -249,14 +314,14 @@ internal static class EditPlanner
         // which follows its own rule for optional segments.
         foreach ((string name, object? value) in values)
         {
-            if (rule.Insert!.Emit is null && rule.Attribute(name) is { Flag: false, Empty: EmptyRule.Refuse } && NewText.IsEmpty(value))
+            if (rule.Insert!.Emit is null && rule.Attribute(name) is { Flag: false, Empty: EmptyRule.Refuse } refused && NewText.IsEmpty(value))
             {
-                Planning.Plan.Refuse($"The {name} of a {add.Type} cannot be empty.");
+                Planning.Plan.Refuse(refused.EmptyRefusal ?? $"The {name} of a {add.Type} cannot be empty.");
             }
         }
         if (rule.Insert!.When is { } when && !reading.InsertAllowed(rule, when, values))
         {
-            Planning.Plan.Refuse($"This {add.Type} cannot be added to the file.");
+            Planning.Plan.Refuse(rule.Insert.WhenRefusal ?? $"This {add.Type} cannot be added to the file.");
         }
         ReadElement? source = null;
         ReadElement? target = null;
@@ -275,9 +340,23 @@ internal static class EditPlanner
             Planning.Plan.Refuse($"Another element already has the id '{id}'.");
             _ = from;
         }
-        reading.Family.Insert(plan, new InsertRequest(rule, add.Id, values, parent, source, target));
+        reading.Family.Insert(plan, new InsertRequest(rule, add.Id, values, parent, source, target, add.Index, after));
         if (rule.SnapshotUndo) plan.Snapshot = true;
     }
+
+    /// <summary>
+    /// A block rule of the grammar family that an add names as its type, with its <c>insert</c> (FBL 0.11 §4.9): a rule of
+    /// that name that selects the block's entries and binds no attribute, so that its entry is planned and undone as an
+    /// element's is while it produces no element; the add's attributes are the values of the emit's placeholders.
+    /// </summary>
+    private static Rule? BlockInsert(FblBinding binding, string type) =>
+        binding.Body.Family == Family.Grammar && binding.Blocks.FirstOrDefault(block => block.Name == type && block is { Insert: not null, At: not null }) is { } named
+            ? new Rule { Name = named.Name, Type = named.Name, At = named.At, Insert = named.Insert }
+            : null;
+
+    /// <summary>The attributes an add gives, as a rule's insert <c>when</c> sees them: a relation's ends are not among them.</summary>
+    private static Dictionary<string, object?> InsertedAttributes(Rule rule, ModelChange.Add add) =>
+        add.Attributes.Where(given => !(rule.IsRelation && given.Key is "source" or "target")).ToDictionary(given => given.Key, given => given.Value, StringComparer.Ordinal);
 
     private static ReadElement End(BodyReading reading, ModelChange.Add add, string end)
     {
@@ -307,6 +386,11 @@ internal static class EditPlanner
             Planning.Plan.Refuse($"A {element.Rule.Type} cannot be moved in this file.");
         }
         ReadElement? parent = move.NewParentId is { } parentId ? Element(reading, parentId) : null;
+        if (reading.Family.PlacesByPosition)
+        {
+            PlanMoveTo(plan, move, element, parent);
+            return;
+        }
         if (parent != element.Parent)
         {
             Planning.Plan.Refuse($"This file's binding cannot move a {element.Rule.Type} to another parent; only a persistence plugin can.");
@@ -316,6 +400,35 @@ internal static class EditPlanner
         var index = move.Index < 0 || move.Index > siblings.Count ? siblings.Count : move.Index;
         if (index == current || index == current + 1) return; // It is there already: no splice.
         reading.Family.Move(plan, element, index < siblings.Count ? siblings[index] : null, siblings[^1]);
+        if (element.Rule.SnapshotUndo) plan.Snapshot = true;
+    }
+
+    /// <summary>
+    /// A move in a family that places by position (FBL 0.7 §5.5, §6.3), to a sibling's place under the same
+    /// parent or under another: not into the element itself or anything it contains, and not into a parent its
+    /// rule cannot be nested in. The index counts the siblings before the move; the family is given it as they
+    /// are without the element.
+    /// </summary>
+    private static void PlanMoveTo(Plan plan, ModelChange.Move move, ReadElement element, ReadElement? parent)
+    {
+        var reading = plan.Reading;
+        for (var enclosing = parent; enclosing is not null; enclosing = enclosing.Parent)
+        {
+            if (enclosing == element) Planning.Plan.Refuse($"A {element.Rule.Type} cannot be moved into itself.");
+        }
+        if (parent is not null && element.Rule.Parent is { } containment && !containment.Rules.Contains(parent.Rule.Name))
+        {
+            Planning.Plan.Refuse($"A {element.Rule.Type} cannot be placed inside a {parent.Rule.Type}.");
+        }
+        var siblings = reading.Elements.Where(other => other.Parent == parent && other.Rule.Parent?.Slot == element.Rule.Parent?.Slot && (parent is not null || other.Rule.Type == element.Rule.Type)).ToList();
+        var index = move.Index < 0 || move.Index > siblings.Count ? siblings.Count : move.Index;
+        var current = siblings.IndexOf(element);
+        if (current >= 0)
+        {
+            if (index == current || index == current + 1) return; // It is there already: no splice.
+            if (index > current) index--;
+        }
+        reading.Family.MoveTo(plan, element, parent, index);
         if (element.Rule.SnapshotUndo) plan.Snapshot = true;
     }
 

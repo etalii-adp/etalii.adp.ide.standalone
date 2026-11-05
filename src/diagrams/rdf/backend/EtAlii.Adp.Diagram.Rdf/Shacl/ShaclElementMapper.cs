@@ -1,4 +1,5 @@
 using Google.Protobuf;
+using JetBrains.Annotations;
 
 namespace EtAlii.Adp.Diagram.Rdf.Shacl;
 
@@ -15,9 +16,11 @@ public sealed class ShaclElementMapper
     public const string ShapeType = "w3c/shacl+shape";
 
     /// <inheritdoc cref="ShapeType" />
+    [Relation]
     public const string EdgeType = "w3c/shacl+edge";
 
     /// <inheritdoc cref="ShapeType" />
+    [UsedImplicitly] // Read only by reflection, into the cross-tier element-types fixture.
     public const string TruncationType = "w3c/shacl+truncation";
 
     /// <summary>The drawn shapes, plus the family truncation banner when the budget cut them.</summary>

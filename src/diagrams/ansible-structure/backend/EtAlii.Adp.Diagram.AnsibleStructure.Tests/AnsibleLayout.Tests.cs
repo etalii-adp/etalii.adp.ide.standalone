@@ -203,25 +203,18 @@ public class AnsibleLayoutTests
         // Arrange.
         // Ansible would refuse such a project, but ADP reads folders somebody is still editing,
         // and a half-written cycle must not hang the diagram.
-        var scratch = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(scratch);
-        try
-        {
-            File.WriteAllText(IoPath.Combine(scratch, "a.yml"), "---\n- import_playbook: b.yml\n");
-            File.WriteAllText(IoPath.Combine(scratch, "b.yml"), "---\n- import_playbook: a.yml\n");
+        using var scratchFolder = TestFolder.Create("ansible-layout");
+        var scratch = scratchFolder.Path;
+        File.WriteAllText(IoPath.Combine(scratch, "a.yml"), "---\n- import_playbook: b.yml\n");
+        File.WriteAllText(IoPath.Combine(scratch, "b.yml"), "---\n- import_playbook: a.yml\n");
 
-            // Act.
-            var boxes = AnsibleLayout.Compute(AnsibleModels.ModelOf(Reader.Read(scratch)));
+        // Act.
+        var boxes = AnsibleLayout.Compute(AnsibleModels.ModelOf(Reader.Read(scratch)));
 
-            // Assert.
-            // Each playbook is measured from itself, so neither sits right of the other merely for
-            // having been walked second.
-            Assert.Equal(2, boxes.Count);
-            Assert.Equal(boxes["playbook:a.yml"].X, boxes["playbook:b.yml"].X);
-        }
-        finally
-        {
-            TestFolder.TryDelete(scratch);
-        }
+        // Assert.
+        // Each playbook is measured from itself, so neither sits right of the other merely for
+        // having been walked second.
+        Assert.Equal(2, boxes.Count);
+        Assert.Equal(boxes["playbook:a.yml"].X, boxes["playbook:b.yml"].X);
     }
 }

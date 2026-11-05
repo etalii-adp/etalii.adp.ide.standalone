@@ -2,8 +2,8 @@ using System.Globalization;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Documents;
-using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Specification.Disl;
 
 namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
 
@@ -12,6 +12,10 @@ namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
 /// without understanding - and the one route a canvas resize reaches the document by.
 /// </summary>
 /// <remarks>
+/// <para>
+/// <b>The rows are the definition's</b> (<see cref="FdgDefinition.Rows"/>): its forms, mapped to the ids
+/// of its <c>x-fdg</c> block. What a set does and what it refuses stays here.
+/// </para>
 /// <para>
 /// <b>Every row is one of the client's ids</b>, stated once in the client module's
 /// <c>fdgIds.ts</c>: this provider answers exactly those strings and invents none.
@@ -29,7 +33,7 @@ namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
 /// </para>
 /// </remarks>
 public sealed class FdgContextPropertyProvider(IHistoryStackStore historyStacks, IFdgDocumentStore documents)
-    : DiagramPropertyProvider<LineDocument, FdgModel>(historyStacks, documents)
+    : DiagramPropertyProvider<FdgBody, DislModel>(historyStacks, documents)
 {
     /// <summary>An element's Name, for the four named types.</summary>
     public const string NameProperty = "fdg.name";
@@ -49,50 +53,20 @@ public sealed class FdgContextPropertyProvider(IHistoryStackStore historyStacks,
     /// <summary>A connection's name.</summary>
     public const string ConnectionNameProperty = "fdg.connection-name";
 
-    private const string IdentityGroup = "Identity";
-    private const string SizeGroup = "Size";
-
     /// <inheritdoc />
     protected override bool IsBody(string path) => Diagram.IsBody(path);
 
     /// <inheritdoc />
-    protected override IReadOnlyList<ContextPropertyDefinition> Describe(DocumentEntry<LineDocument, FdgModel> entry, string elementId)
-    {
-        var model = entry.Model;
-
-        if (model.ElementOf(elementId) is { } element)
-        {
-            List<ContextPropertyDefinition> rows = element.IsComment
-                ? [new ContextPropertyDefinition(TextProperty, "Text", element.Text, ContextPropertyEditor.Text, Group: IdentityGroup)]
-                : [new ContextPropertyDefinition(NameProperty, "Name", element.Name, Group: IdentityGroup)];
-            rows.Add(new ContextPropertyDefinition(DescriptionProperty, "Description", element.Description, ContextPropertyEditor.Text, Group: IdentityGroup));
-            rows.Add(new ContextPropertyDefinition(WidthProperty, "Width", DslNumber.Format(element.Width), Group: SizeGroup));
-            if (element.IsComment)
-            {
-                rows.Add(new ContextPropertyDefinition(HeightProperty, "Height", DslNumber.Format(element.DrawnHeight), Group: SizeGroup));
-            }
-
-            return rows;
-        }
-
-        if (model.ConnectionOf(elementId) is { } connection)
-        {
-            return
-            [
-                new ContextPropertyDefinition(ConnectionNameProperty, "Name", connection.Name, Group: IdentityGroup),
-                new ContextPropertyDefinition(DescriptionProperty, "Description", connection.Description, ContextPropertyEditor.Text, Group: IdentityGroup),
-            ];
-        }
-
-        return [];
-    }
+    protected override IReadOnlyList<ContextPropertyDefinition> Describe(DocumentEntry<FdgBody, DislModel> entry, string elementId) =>
+        // The definition's form for the element or connection, with the ids of its x-fdg block.
+        FdgDefinition.Rows(entry, elementId);
 
     /// <inheritdoc />
-    protected override DiagramPropertyChange Change(ContextTarget target, FdgModel model, string propertyId, string value)
+    protected override DiagramPropertyChange Change(ContextTarget target, DislModel model, string propertyId, string value)
     {
         var body = target.ResolvedFullPath;
         var id = target.ElementId;
-        var element = model.ElementOf(id);
+        var element = FdgDefinition.EndOf(model.Diagram, id);
 
         // A size is validated before any command exists, so the refusal names the value - and an
         // invalid value is never written.
@@ -113,7 +87,7 @@ public sealed class FdgContextPropertyProvider(IHistoryStackStore historyStacks,
             NameProperty or TextProperty when element is not null => new RenameFdgElementCommand(body, id, value),
             DescriptionProperty => new SetFdgDescriptionCommand(body, id, value),
             WidthProperty when element is not null => new SetFdgSizeCommand(body, id, size!.Value),
-            HeightProperty when element is not null => new SetFdgSizeCommand(body, id, element.Width, size!.Value),
+            HeightProperty when element is not null => new SetFdgSizeCommand(body, id, FdgDefinition.NumberOf(element, "width"), size!.Value),
             ConnectionNameProperty => new RenameFdgConnectionCommand(body, id, value),
             _ => null,
         };

@@ -10,10 +10,12 @@ namespace EtAlii.Adp.Diagram.DependencyGraph.Tests.Parity;
 /// </summary>
 public class DependencyGraphRoundTripTests
 {
+    private static readonly DependencyGraphTranscript _transcript = new();
+
     public static TheoryData<string> Documents()
     {
         var data = new TheoryData<string>();
-        foreach ((string name, _) in DependencyGraphTranscript.Corpus()) data.Add(name);
+        foreach ((string name, _) in _transcript.Corpus()) data.Add(name);
         return data;
     }
 
@@ -22,7 +24,7 @@ public class DependencyGraphRoundTripTests
     public async Task ADocumentReadAndStoredWithoutAChange_IsTheSameBytes(string name)
     {
         // Arrange.
-        var bytes = await DependencyGraphTranscript.Corpus().Single(document => document.Name == name).Read(TestContext.Current.CancellationToken);
+        var bytes = await _transcript.Corpus().Single(document => document.Name == name).Read(TestContext.Current.CancellationToken);
         using var folder = TestFolder.Create("dependency-graph-round-trip");
         var path = folder.Combine("body.dgr");
         await File.WriteAllBytesAsync(path, bytes, TestContext.Current.CancellationToken);
@@ -42,7 +44,7 @@ public class DependencyGraphRoundTripTests
     public void TheCorpus_HoldsTheLineEndingPairAndTheFileWithoutAFinalNewline()
     {
         // Act.
-        var names = DependencyGraphTranscript.Corpus().Select(document => document.Name).ToList();
+        var names = _transcript.Corpus().Select(document => document.Name).ToList();
 
         // Assert: the documents whose bytes are the round trip's hardest cases are among those it runs over.
         Assert.Contains(names, name => name.EndsWith("/crlf-line-endings.dgr", StringComparison.Ordinal));

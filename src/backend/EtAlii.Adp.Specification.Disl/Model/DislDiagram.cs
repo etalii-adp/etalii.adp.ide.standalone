@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using EtAlii.Adp.Specification.Cel;
 
 namespace EtAlii.Adp.Specification.Disl;
@@ -11,6 +12,11 @@ namespace EtAlii.Adp.Specification.Disl;
 /// Built element by element, parents before their children, by <see cref="DislModelBuilder"/> or a
 /// test. The element lists are what the expressions iterate, so their order is the order every derived id,
 /// finding and position depends on.
+/// <para>
+/// A diagram that is only read may be read from several threads at once, as a host that keeps one reading for every
+/// connection does: what it keeps between two changes is made whole before it is kept, and what a computation marks
+/// as in progress is marked for its own thread. A change is not made while it is read.
+/// </para>
 /// </remarks>
 public sealed class DislDiagram : ICelObject
 {
@@ -21,10 +27,25 @@ public sealed class DislDiagram : ICelObject
     private readonly List<DislElement> _relations = [];
     private readonly List<DislView> _views = [];
     private Dictionary<DislElement, (List<DislElement> Incoming, List<DislElement> Outgoing)>? _ends;
-    private readonly Dictionary<(string Type, long Max), (IReadOnlyList<IReadOnlyList<DislElement>> Cycles, bool Truncated)> _cycles = [];
+    private readonly ConcurrentDictionary<(string Type, long Max), (IReadOnlyList<IReadOnlyList<DislElement>> Cycles, bool Truncated)> _cycles = new();
+    private readonly ConcurrentDictionary<string, IReadOnlyList<IReadOnlyList<DislElement>>> _knots = new(StringComparer.Ordinal);
 
-    /// <summary>The derived diagram attributes being computed, so one that reads itself stops.</summary>
-    private readonly HashSet<string> _computing = new(StringComparer.Ordinal);
+    /// <summary>The diagrams whose budgets are being computed on this thread, so a budget that reads the budgets stops.</summary>
+    [ThreadStatic]
+    private static HashSet<DislDiagram>? _computingBudgets;
+
+    /// <summary>The nodes, then the relations, as <see cref="Elements"/> gives them; null until asked for after a change.</summary>
+    private DislElement[]? _elements;
+
+    /// <summary>The first element with each id in model order, as <see cref="ElementById"/> finds it; null until asked for after a change.</summary>
+    private Dictionary<string, DislElement>? _byId;
+
+    /// <summary>The nodes and the relations of each type, its subtypes included, as <see cref="NodesOfType"/> and <see cref="RelationsOfType"/> give them.</summary>
+    private readonly ConcurrentDictionary<(string Type, bool Relation), DislElement[]> _ofType = new();
+
+    /// <summary>The derived diagram attributes being computed on this thread, so one that reads itself stops.</summary>
+    [ThreadStatic]
+    private static HashSet<(DislDiagram Diagram, string Attribute)>? _computing;
 
     /// <summary>A diagram of <paramref name="specification"/> with the diagram attributes <paramref name="attributes"/>, as CEL values.</summary>
     public DislDiagram(DislSpecification specification, IReadOnlyDictionary<string, object?>? attributes = null)
@@ -68,7 +89,7 @@ public sealed class DislDiagram : ICelObject
     public IReadOnlyList<DislElement> Relations => _relations;
 
     /// <summary>The nodes, then the relations.</summary>
-    public IReadOnlyList<DislElement> Elements => [.. _nodes, .. _relations];
+    public IReadOnlyList<DislElement> Elements => _elements ??= [.. _nodes, .. _relations];
 
     /// <summary>The views of the model (§12.2, <c>diagram.views</c>), in the order the host added them: those its readings define.</summary>
     public IReadOnlyList<DislView> Views => _views;
@@ -114,7 +135,7 @@ public sealed class DislDiagram : ICelObject
                 throw new ArgumentException("A relation's ends belong to its own diagram.", nameof(element));
             }
             _relations.Add(element);
-            Changed();
+            Changed(element);
             return element;
         }
         if (element.Parent is { } parent)
@@ -123,7 +144,7 @@ public sealed class DislDiagram : ICelObject
             parent.AddChild(element);
         }
         _nodes.Add(element);
-        Changed();
+        Changed(element);
         return element;
     }
 
@@ -182,17 +203,114 @@ public sealed class DislDiagram : ICelObject
     }
 
     /// <summary>What is computed from the elements and their order is computed again.</summary>
-    private void Changed()
+    private void Changed(DislElement? added = null)
     {
+        if (added is null) IndexChanged();
+        else Indexed(added);
         _ends = null;
         _cycles.Clear();
+        _knots.Clear();
         ViewsChanged();
     }
 
-    /// <summary>An element changed: the views' members are computed again.</summary>
+    /// <summary>
+    /// An element was added, removed, moved, given another id or another type: the lists by type, the list of all
+    /// elements and the index by id are made again when next asked for. Each is a snapshot, so a list handed out
+    /// before the change stays as it was.
+    /// </summary>
+    internal void IndexChanged()
+    {
+        _elements = null;
+        _byId = null;
+        _ofType.Clear();
+    }
+
+    /// <summary>
+    /// <paramref name="added"/> was appended to the nodes or the relations: the index by id gains it unless an element
+    /// before it in model order has its id, and only the lists of the types it is one of are made again.
+    /// </summary>
+    private void Indexed(DislElement added)
+    {
+        _elements = null;
+        if (_byId is not null && (!_byId.TryGetValue(added.Id, out var holder) || holder.Type.IsRelation && !added.Type.IsRelation))
+        {
+            _byId[added.Id] = added;
+        }
+        foreach (var key in _ofType.Keys.Where(key => key.Relation == added.Type.IsRelation && added.IsA(key.Type)).ToList()) _ofType.TryRemove(key, out _);
+    }
+
+    /// <summary>An element was given another id: the index by id is made again when next asked for.</summary>
+    internal void IdsChanged() => _byId = null;
+
+    /// <summary>An element changed: the views' members are computed again, and the budgets.</summary>
     internal void ViewsChanged()
     {
+        // Null drops the memo, so the next read computes the budgets again.
+        Budgets = null!;
         foreach (var view in _views) view.Changed();
+    }
+
+    /// <summary>
+    /// The state of every budget (§3.2.1), in declaration order: computed when first asked for, and again after the
+    /// diagram changes.
+    /// </summary>
+    /// <exception cref="CelException">A budget's measure, order or unit is read while the budgets are computed, or a measure does not give an int.</exception>
+    public IReadOnlyList<DislBudgetState> Budgets
+    {
+        get => field ??= ComputedBudgets();
+        private set;
+    }
+
+    private IReadOnlyList<DislBudgetState> ComputedBudgets()
+    {
+        _computingBudgets ??= new HashSet<DislDiagram>(ReferenceEqualityComparer.Instance);
+        if (!_computingBudgets.Add(this)) throw new CelException("A budget is read while the budgets are computed.");
+        try
+        {
+            return DislBudgets.Compute(this);
+        }
+        finally
+        {
+            _computingBudgets.Remove(this);
+        }
+    }
+
+    /// <summary>The state of the budget <paramref name="id"/> (§3.2.1), or null when the specification declares none by that id.</summary>
+    public DislBudgetState? Budget(string id) => Budgets.FirstOrDefault(budget => budget.Id == id);
+
+    /// <summary>
+    /// The candidates of the budget <paramref name="id"/> that are drawn (§3.2.1), in the budget's <c>order</c> with ties
+    /// in persistence order, whether or not it cuts: what a host draws under it, in the order it keeps them. Empty when
+    /// the specification declares no <c>count</c> budget by that id.
+    /// </summary>
+    /// <exception cref="CelException">The budget's order is read while the budgets are computed.</exception>
+    public IReadOnlyList<DislElement> InBudgetOrder(string id)
+    {
+        ArgumentNullException.ThrowIfNull(id);
+        return DislBudgets.Ordered(this, id);
+    }
+
+    /// <summary>
+    /// Whether <paramref name="element"/> is drawn under the budgets (§3.2.1): no truncating budget cuts it, and for a
+    /// relation, both its ends are drawn.
+    /// </summary>
+    public bool IsDrawn(DislElement element)
+    {
+        ArgumentNullException.ThrowIfNull(element);
+        if (Budgets.Any(budget => budget.Cut.Contains(element))) return false;
+        return !element.Type.IsRelation
+            || (element.Source is null || IsDrawn(element.Source)) && (element.Target is null || IsDrawn(element.Target));
+    }
+
+    /// <summary>
+    /// The strongly connected components over the relations that are <paramref name="relationType"/> or one of its
+    /// subtypes that have more than one member or a self-loop (§12.4, <c>diagram.knots</c>): members in model order,
+    /// components ordered by their first member. Memoised until the diagram changes.
+    /// </summary>
+    public IReadOnlyList<IReadOnlyList<DislElement>> Knots(string relationType)
+    {
+        if (_knots.TryGetValue(relationType, out var known)) return known;
+        return _knots[relationType] = DislKnots.Find(_nodes, [.. _relations.Where(relation => relation.IsA(relationType))]);
     }
 
     /// <summary>The children of <paramref name="parent"/>, or the top-level nodes, in model order.</summary>
@@ -228,7 +346,8 @@ public sealed class DislDiagram : ICelObject
     /// </summary>
     private object? Derived(DislAttribute attribute)
     {
-        if (attribute.DerivedProgram is not { } program || !_computing.Add(attribute.Name)) return DislValues.Unset(attribute, Specification.Metamodel);
+        _computing ??= new HashSet<(DislDiagram, string)>();
+        if (attribute.DerivedProgram is not { } program || !_computing.Add((this, attribute.Name))) return DislValues.Unset(attribute, Specification.Metamodel);
         try
         {
             var value = program.Evaluate(new Dictionary<string, object?> { ["self"] = this, ["diagram"] = this, ["env"] = Env.ToCel() });
@@ -236,19 +355,38 @@ public sealed class DislDiagram : ICelObject
         }
         finally
         {
-            _computing.Remove(attribute.Name);
+            _computing.Remove((this, attribute.Name));
         }
     }
 
     /// <summary>The first element with <paramref name="id"/> in model order, or null; ids compared as the specification says (§11.5.4).</summary>
-    public DislElement? ElementById(string id) =>
-        _nodes.FirstOrDefault(node => Specification.IdComparer.Equals(node.Id, id)) ?? _relations.FirstOrDefault(relation => Specification.IdComparer.Equals(relation.Id, id));
+    public DislElement? ElementById(string id)
+    {
+        if (_byId is not { } byId)
+        {
+            // Made whole before it is kept, so that a thread reading it beside the one making it never sees it half made.
+            byId = new Dictionary<string, DislElement>(Specification.IdComparer);
+            foreach (var element in Elements) byId.TryAdd(element.Id, element);
+            _byId = byId;
+        }
+        return byId.GetValueOrDefault(id);
+    }
 
     /// <summary>The nodes that are <paramref name="type"/> or one of its subtypes, in model order.</summary>
-    public IReadOnlyList<DislElement> NodesOfType(string type) => [.. _nodes.Where(node => node.IsA(type))];
+    public IReadOnlyList<DislElement> NodesOfType(string type) => OfType(type, relation: false);
 
     /// <summary>The relations that are <paramref name="type"/> or one of its subtypes, in model order.</summary>
-    public IReadOnlyList<DislElement> RelationsOfType(string type) => [.. _relations.Where(relation => relation.IsA(type))];
+    public IReadOnlyList<DislElement> RelationsOfType(string type) => OfType(type, relation: true);
+
+    private DislElement[] OfType(string type, bool relation)
+    {
+        if (!_ofType.TryGetValue((type, relation), out var members))
+        {
+            members = [.. (relation ? _relations : _nodes).Where(element => element.IsA(type))];
+            _ofType[(type, relation)] = members;
+        }
+        return members;
+    }
 
     /// <summary>
     /// The elementary cycles over the relations that are <paramref name="relationType"/> or one of its
@@ -264,9 +402,9 @@ public sealed class DislDiagram : ICelObject
         return _cycles[(relationType, max)] = DislCycles.Find(_nodes, _relations.Where(relation => relation.IsA(relationType)), max);
     }
 
-    internal IReadOnlyList<DislElement> IncomingOf(DislElement node) => Ends().GetValueOrDefault(node).Incoming ?? [];
+    internal IReadOnlyList<DislElement> IncomingOf(DislElement node) => Ends().TryGetValue(node, out var ends) ? ends.Incoming : [];
 
-    internal IReadOnlyList<DislElement> OutgoingOf(DislElement node) => Ends().GetValueOrDefault(node).Outgoing ?? [];
+    internal IReadOnlyList<DislElement> OutgoingOf(DislElement node) => Ends().TryGetValue(node, out var ends) ? ends.Outgoing : [];
 
     private Dictionary<DislElement, (List<DislElement> Incoming, List<DislElement> Outgoing)> Ends()
     {

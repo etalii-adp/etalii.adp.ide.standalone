@@ -1,21 +1,22 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Specification.Disl;
 
 namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
 
-/// <summary>Sets the Description of an element or a connection.</summary>
+/// <summary>Sets the Description of an element or a connection; a blank one removes the key.</summary>
 public sealed class SetFdgDescriptionCommandHandler(IFdgDocumentStore documents) : FdgEditHandler<SetFdgDescriptionCommand>(documents)
 {
     /// <inheritdoc />
-    protected override EditOutcome Apply(LineDocument document, FdgModel model, SetFdgDescriptionCommand command)
+    protected override EditOutcome Apply(FdgBody body, DislModel model, SetFdgDescriptionCommand command)
     {
-        if (model.ElementOf(command.Id) is { } element)
-        {
-            return FdgWriter.SetDescription(document, element, command.Description);
-        }
+        ArgumentNullException.ThrowIfNull(body);
+        ArgumentNullException.ThrowIfNull(model);
+        ArgumentNullException.ThrowIfNull(command);
 
-        return model.ConnectionOf(command.Id) is { } connection
-            ? FdgWriter.SetConnectionDescription(document, connection, command.Description)
+        // A blank Description is none, which the binding writes by removing the key.
+        var description = string.IsNullOrWhiteSpace(command.Description) ? "" : command.Description;
+        return FdgDefinition.ElementOf(model.Diagram, command.Id) is { } element
+            ? FdgDefinition.Set(body, element, new Dictionary<string, object?>(StringComparer.Ordinal) { ["description"] = description })
             : EditOutcome.Refused("That is no longer in this graph.");
     }
 }

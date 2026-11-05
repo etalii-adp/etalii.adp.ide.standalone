@@ -52,6 +52,7 @@ public sealed class GhgElementMapper
     public const string NoteType = Prefix + "note";
 
     /// <summary>The library type of an influence.</summary>
+    [Relation]
     public const string InfluenceType = Prefix + "influence";
 
     /// <summary>

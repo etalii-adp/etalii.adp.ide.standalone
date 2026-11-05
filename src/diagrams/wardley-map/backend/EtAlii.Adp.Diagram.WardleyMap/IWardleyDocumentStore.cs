@@ -30,14 +30,10 @@ public interface IWardleyDocumentStore : IDiagramDocumentStore<LineDocument, War
     IReadOnlyList<WardleyIdentityEntry> Identities(string path);
 
     /// <summary>
-    /// Moves an identity from one key to another, for a rename (Requirement 4.4).
+    /// Hands the store the identities an edit gave <paramref name="text"/>, the text it is about to
+    /// save at <paramref name="path"/>, so that the save keeps them and writes them where the map keeps
+    /// its ids. A text the store held before keeps the identities it had then, which is how a redo
+    /// gives back the ids of the edit it redoes.
     /// </summary>
-    /// <remarks>
-    /// Reconciliation matches by key, and a component's key is its name - so on its own a rename
-    /// looks exactly like one element disappearing and another arriving. The identity has to be
-    /// carried across in the same command that rewrites the statements, or the selection, the
-    /// pushed element ids and every undo entry naming the element all break on a rename, which
-    /// is the "small catastrophe" Requirement 4 exists to prevent.
-    /// </remarks>
-    void Rekey(string path, string kind, string oldKey, string newKey);
+    void Remember(string path, string text, IReadOnlyList<WardleyIdentityEntry> identities);
 }

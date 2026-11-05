@@ -1,69 +1,233 @@
+using System.Globalization;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Specification.Disl;
+using EtAlii.Adp.Specification.Fbl;
+using EtAlii.Adp.Specification.Fbl.Planning;
+using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
 namespace EtAlii.Adp.Diagram.WardleyMap;
 
 /// <summary>
-/// The handlers for the element commands, on the shared edit run (code-structure FR-033): the
-/// run loads the map, hands a copy of it here, saves it and reports the undo. A handler locates
-/// against <b>current</b> state, refuses with a sentence when that fails, and edits through
-/// <see cref="WardleyWriter"/>.
+/// What every Wardley map command handler shares: load the map, check the command against the map as it is now, write
+/// it as model changes the library plans into splices (<see cref="WardleyBodyEdit"/>), save, and hand back the undo.
 /// </summary>
 /// <remarks>
 /// <para>
-/// Preconditions are always checked against the document as it is now rather than trusted from
-/// when the command was made, because undo and redo dispatch the same instance again later
-/// (Requirement 9.5).
+/// Preconditions are always checked against the document as it is now rather than trusted from when the command was
+/// made, because undo and redo dispatch the same instance again later (Requirement 9.5).
 /// </para>
 /// <para>
-/// <b>Two kinds of undo.</b> An edit that touches several lines - an add, a remove, a rename - is
-/// undone by the run's restore of the whole text. An edit of one line names its own undo, a
-/// <see cref="RestoreWardleyLineCommand"/>, so that undoing a drag brings back <c>[0.90, 0.10]</c>
-/// rather than <c>[0.9, 0.1]</c> and leaves the rest of the file to whoever wrote it since.
+/// <b>Every undo is the shared restore of the whole text</b> (Requirement 5.7): it gives back the bytes the edit was
+/// made to, however much the edit moved, and the store the identities it held for them. The edit's changes are one undo
+/// step however many they are (Requirement 5.5).
+/// </para>
+/// <para>
+/// <b>No handler builds a statement's text or replaces a line</b> (Requirement 5.1, wardley-map-disl-fbl task 12): each
+/// names the element it changes by the id the store keeps for it, which is the id the binding reads it under, and says
+/// which of its values change.
 /// </para>
 /// </remarks>
 /// <typeparam name="TCommand">The command handled.</typeparam>
-public abstract class WardleyEditHandler<TCommand>(IWardleyDocumentStore documents)
-    : DocumentEditHandler<TCommand, IWardleyDocumentStore, LineDocument, WardleyMap>(documents)
+public abstract class WardleyEditHandler<TCommand>(IWardleyDocumentStore documents) : ICommandHandler<TCommand>
     where TCommand : IDocumentEditCommand
 {
     /// <summary>The refusal of an edit whose element the map no longer has.</summary>
-    protected const string Gone = "That element is no longer on this map.";
+    protected const string Gone = WardleyEdit.Gone;
 
     /// <summary>The store, for the identities held beside each map.</summary>
-    protected IWardleyDocumentStore Documents { get; } = documents;
+    private IWardleyDocumentStore Documents { get; } = documents ?? throw new ArgumentNullException(nameof(documents));
 
     /// <inheritdoc />
-    protected sealed override WardleyMap Parse(LineDocument body) => WardleyParser.Parse(body);
+    public Task<CommandResult> ExecuteAsync(TCommand command, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+        cancellationToken.ThrowIfCancellationRequested();
+        return RunAsync(command, cancellationToken);
+    }
 
-    /// <summary>The component <paramref name="elementId"/> names on the map at <paramref name="bodyPath"/>, or null.</summary>
-    protected WardleyComponent? ComponentOf(WardleyMap map, string bodyPath, string elementId) =>
-        WardleyEdit.ComponentOf(map, Documents.Identities(bodyPath), elementId);
+    /// <summary>Runs <paramref name="command"/> against its document.</summary>
+    /// <remarks>
+    /// The edit is made on a body of its own, opened on the cached text, so a refusal halfway through leaves nothing behind
+    /// for the next save to write. A document that could not be read is not edited at all.
+    /// </remarks>
+    private async Task<CommandResult> RunAsync(TCommand command, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+        var entry = await Documents.GetOrLoadAsync(command.BodyPath, cancellationToken);
+        if (!entry.IsUsable)
+        {
+            return CommandResult.Failure(
+                $"{IoPath.GetFileName(command.BodyPath)} could not be read, so nothing can be edited until it can: {entry.Unreadable}");
+        }
+
+        var before = entry.Document.Text;
+        var identities = Documents.Identities(command.BodyPath);
+        var body = WardleyBody.Edit(entry.Document, identities);
+        var outcome = Apply(body, new WardleyEditContext(entry.Document, entry.Model, identities), command);
+        if (!outcome.WasApplied)
+        {
+            return CommandResult.Failure(outcome.Refusal!);
+        }
+
+        if (outcome.IsUnchanged)
+        {
+            return CommandResult.Success();
+        }
+
+        Documents.Remember(command.BodyPath, body.Text, body.Identities());
+        var saved = await Documents.SaveAsync(command.BodyPath, LineDocument.Parse(body.Text), cancellationToken);
+        return CommandResult.FromSave(saved, new RestoreDocumentCommand<IWardleyDocumentStore>(command.BodyPath, before, command));
+    }
+
+    /// <summary>Changes <paramref name="body"/>, whose map and identities are <paramref name="map"/>, as <paramref name="command"/> asks, or says why not.</summary>
+    protected abstract EditOutcome Apply(WardleyBodyEdit body, WardleyEditContext map, TCommand command);
+
+    /// <summary>Applies <paramref name="changes"/> in order, as one edit: the first refusal, else applied.</summary>
+    protected static EditOutcome Changed(WardleyBodyEdit body, params ModelChange[] changes)
+    {
+        ArgumentNullException.ThrowIfNull(body);
+        ArgumentNullException.ThrowIfNull(changes);
+        foreach (var change in changes)
+        {
+            if (body.Change(change) is { WasApplied: false } refused) return refused;
+        }
+
+        return EditOutcome.Applied;
+    }
 }
 
-/// <summary>What the element handlers share besides their base.</summary>
+/// <summary>The map an edit is checked against, with the identities the store keeps beside it.</summary>
+/// <param name="Document">The map's text as it is now.</param>
+/// <param name="Map">The map as it is now.</param>
+/// <param name="Identities">Its elements' identities, which are the ids the binding reads them under.</param>
+public sealed record WardleyEditContext(LineDocument Document, WardleyMap Map, IReadOnlyList<WardleyIdentityEntry> Identities)
+{
+    /// <summary>The map's model as the definition reads it, under the same identities.</summary>
+    public DislDiagram Diagram => WardleyBody.Model(Document, Identities);
+
+    /// <summary>The component an element id names, or null: the holder at the entry's ordinal, where two components carry one name (finding B9).</summary>
+    public WardleyComponent? ComponentOf(string elementId) =>
+        Identities.FirstOrDefault(candidate => candidate.Id == elementId && candidate.Kind == WardleyIdentityKind.Component) is { } entry
+            ? WardleyHolders.Component(Map, entry.Key)
+            : null;
+
+    /// <summary>The id of the element of <paramref name="kind"/> declared on <paramref name="line"/>, or null.</summary>
+    public string? IdAt(string kind, uint line) =>
+        Map.Holders.FirstOrDefault(candidate => candidate.Kind == kind && candidate.Line == line) is { } holder
+            ? Identities.FirstOrDefault(entry => entry.Kind == kind && entry.Key == holder.Key)?.Id
+            : null;
+
+    /// <summary>Every name an element of the map has: its components' and its pipeline components'.</summary>
+    public HashSet<string> Names() =>
+        Map.Components.Select(component => component.Name)
+            .Concat(Map.Pipelines.SelectMany(pipeline => pipeline.Children).Select(child => child.Name))
+            .ToHashSet(StringComparer.Ordinal);
+}
+
+/// <summary>What the element handlers and the transaction's writer share besides their base.</summary>
 internal static class WardleyEdit
 {
-    /// <summary>The component an element id names, or null.</summary>
-    public static WardleyComponent? ComponentOf(
-        WardleyMap map,
-        IReadOnlyList<WardleyIdentityEntry> identities,
-        string elementId)
-    {
-        var entry = identities.FirstOrDefault(candidate =>
-            candidate.Id == elementId && candidate.Kind == WardleyIdentityKind.Component);
+    /// <summary>The refusal of an edit whose element the map no longer has.</summary>
+    public const string Gone = "That element is no longer on this map.";
 
-        return entry is null
+    /// <summary>A new element's id: a <c>ShortGuid</c>, as the definition's <c>ids.strategy</c> gives one.</summary>
+    public static string NewId() => ShortGuid.NewShortGuid().ToString();
+
+    /// <summary>
+    /// Why the format cannot hold <paramref name="name"/>, or null when it can (finding B13): a <c>//</c> starts a comment,
+    /// so the rest of the line is cut and the element is not what was typed; and a name a link to or from it is not read
+    /// back with is a name the map can never link, so every "Link to" would append the link once more.
+    /// </summary>
+    public static string? Unusable(string name)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+
+        if (name.Contains("//", StringComparison.Ordinal))
+        {
+            return "A name cannot hold '//', which the map reads as the start of a comment.";
+        }
+
+        const string other = "Other";
+        return ReadsBack(name, other) && ReadsBack(other, name)
             ? null
-            : map.Components.FirstOrDefault(candidate => WardleyIdentityKeys.Of(candidate) == entry.Key);
+            : $"A link to or from '{name}' could not be read back, so the map cannot hold that name.";
     }
+
+    /// <summary>Whether a link from <paramref name="source"/> to <paramref name="target"/>, written through the binding, is read back as that link.</summary>
+    private static bool ReadsBack(string source, string target)
+    {
+        var body = WardleyBody.Edit(LineDocument.Parse(""), []);
+        var written = Component(body, "readback:source", source) && Component(body, "readback:target", target)
+            && body.Change(new ModelChange.Add("Dependency", "readback:link", new Dictionary<string, object?>(StringComparer.Ordinal) { ["from"] = source, ["to"] = target })).WasApplied;
+        return written
+            && WardleyBody.Read(LineDocument.Parse(body.Text)).Model.Links is [var link]
+            && link.Source == source && link.Target == target;
+    }
+
+    /// <summary>Whether an `evolve` names <paramref name="component"/>: it is the first holder of its name, and one names that name.</summary>
+    public static bool Evolving(WardleyMap map, WardleyComponent component) =>
+        WardleyHolders.IsFirstHolder(map, component) && map.Evolves.Any(evolve => evolve.Name == component.Name);
+
+    private static bool Component(WardleyBodyEdit body, string id, string name) =>
+        body.Change(new ModelChange.Add("Component", id, new Dictionary<string, object?>(StringComparer.Ordinal) { ["name"] = name, ["visibility"] = 0.5d, ["maturity"] = 0.5d })).WasApplied;
+
+    /// <summary>
+    /// The name a link, an `evolve` or a `pipeline` drawn from or to <paramref name="holder"/> is written with (finding B9,
+    /// ruling 4): its own for the first holder of its name, which every such statement attaches to; for a later holder, a
+    /// name of its own first, its name followed by a space and the lowest number from 2 that no element of the map has,
+    /// written into its declaration in the same edit. Null when that declaration could not be rewritten.
+    /// </summary>
+    /// <param name="taken">The names the map has; the new name is added to it.</param>
+    public static string? NameFor(WardleyBodyEdit body, WardleyEditContext map, WardleyComponent holder, string holderId, HashSet<string> taken)
+    {
+        ArgumentNullException.ThrowIfNull(body);
+        ArgumentNullException.ThrowIfNull(map);
+        ArgumentNullException.ThrowIfNull(holder);
+        ArgumentNullException.ThrowIfNull(taken);
+        if (WardleyHolders.IsFirstHolder(map.Map, holder))
+        {
+            return holder.Name;
+        }
+
+        var number = 2;
+        string name;
+        do
+        {
+            name = string.Create(CultureInfo.InvariantCulture, $"{holder.Name} {number++}");
+        }
+        while (!taken.Add(name));
+
+        return body.Change(new ModelChange.Set(holderId, Attributes(("name", name)))).WasApplied ? name : null;
+    }
+
+    /// <summary>
+    /// The link of <paramref name="kind"/> from <paramref name="source"/> to <paramref name="target"/>, or null: one naming
+    /// both by their names, when each is the first holder of its name, which is the one such a link attaches to (ruling 3).
+    /// </summary>
+    public static WardleyLink? LinkBetween(WardleyMap map, WardleyComponent source, WardleyComponent target, WardleyLinkKind kind) =>
+        WardleyHolders.IsFirstHolder(map, source) && WardleyHolders.IsFirstHolder(map, target)
+            ? map.Links.FirstOrDefault(link => link.Source == source.Name && link.Target == target.Name && link.Kind == kind)
+            : null;
+
+    /// <summary>The attributes of a model change, by the binding's names.</summary>
+    public static Dictionary<string, object?> Attributes(params (string Name, object? Value)[] values)
+    {
+        var attributes = new Dictionary<string, object?>(StringComparer.Ordinal);
+        foreach ((string name, object? value) in values) attributes[name] = value;
+        return attributes;
+    }
+
+    /// <summary>Whether <paramref name="element"/> is written with <paramref name="decorator"/>, which the binding reads as a flag (FBL 0.18 <c>holds</c>).</summary>
+    public static bool Carries(FblElement? element, WardleyDecorator decorator) =>
+        element?.Attributes.GetValueOrDefault(WardleyDecorators.Spell(decorator)) is true;
 }
 
 public sealed class AddWardleyElementCommandHandler(IWardleyDocumentStore documents) : WardleyEditHandler<AddWardleyElementCommand>(documents)
 {
     private static readonly string[] Kinds = ["component", "anchor", "submap"];
 
-    protected override EditOutcome Apply(LineDocument body, WardleyMap model, AddWardleyElementCommand command)
+    protected override EditOutcome Apply(WardleyBodyEdit body, WardleyEditContext map, AddWardleyElementCommand command)
     {
         if (!Kinds.Contains(command.Kind, StringComparer.OrdinalIgnoreCase))
         {
@@ -75,169 +239,176 @@ public sealed class AddWardleyElementCommandHandler(IWardleyDocumentStore docume
             return EditOutcome.Refused("An element needs a name.");
         }
 
-        // Two components sharing a name makes every reference to it ambiguous, which
-        // Requirement 14.4 reports as an error - so refusing to create one is kinder than
-        // writing it and reporting it a moment later.
-        if (model.Components.Any(existing => existing.Name == command.Name))
+        if (WardleyEdit.Unusable(command.Name) is { } unusable)
+        {
+            return EditOutcome.Refused(unusable);
+        }
+
+        // Two components sharing a name makes every reference to it ambiguous, which Requirement 14.4 reports as an
+        // error - so refusing to create one is kinder than writing it and reporting it a moment later.
+        if (map.Map.Components.Any(existing => existing.Name == command.Name))
         {
             return EditOutcome.Refused($"This map already has an element called '{command.Name}'.");
         }
 
         var position = WardleyAxis.Clamp(new WardleyCoordinate(command.Visibility, command.Maturity));
-        WardleyWriter.Append(body, WardleyWriter.ElementStatement(command.Kind, command.Name, position, command.Decorator));
-        return EditOutcome.Applied;
+        var attributes = WardleyEdit.Attributes(("name", command.Name), ("visibility", position.Visibility), ("maturity", position.Maturity));
+        if (command.Decorator is { } decorator)
+        {
+            attributes[WardleyDecorators.Spell(decorator)] = true;
+        }
+
+        var type = CultureInfo.InvariantCulture.TextInfo.ToTitleCase(command.Kind.ToLowerInvariant());
+        return Changed(body, new ModelChange.Add(type, WardleyEdit.NewId(), attributes));
     }
 }
 
 public sealed class RemoveWardleyElementCommandHandler(IWardleyDocumentStore documents) : WardleyEditHandler<RemoveWardleyElementCommand>(documents)
 {
-    protected override EditOutcome Apply(LineDocument body, WardleyMap model, RemoveWardleyElementCommand command)
+    protected override EditOutcome Apply(WardleyBodyEdit body, WardleyEditContext map, RemoveWardleyElementCommand command)
     {
-        if (ComponentOf(model, command.BodyPath, command.ElementId) is not { } component)
-        {
-            return EditOutcome.Refused(Gone);
-        }
-
-        // Everything that names it goes with it, or the document is left referring to something
-        // that does not exist. Descending, so removing one line cannot shift the next.
-        var lines = new List<uint> { component.Line };
-        lines.AddRange(model.Links
-            .Where(link => link.Source == component.Name || link.Target == component.Name)
-            .Select(link => link.Line));
-        lines.AddRange(model.Evolves.Where(evolve => evolve.Name == component.Name).Select(evolve => evolve.Line));
-
-        foreach (var line in lines.Distinct().OrderByDescending(line => line))
-        {
-            WardleyWriter.RemoveLine(body, line);
-        }
-
-        return EditOutcome.Applied;
+        // Everything that names it goes with it, as the binding's remove cascades to the links and the evolutions that name
+        // it, or the document is left referring to something that does not exist; its pipeline stays. A later holder of a
+        // repeated name takes its own statement only, because nothing attaches to it (finding B9, ruling 6).
+        return map.ComponentOf(command.ElementId) is null
+            ? EditOutcome.Refused(Gone)
+            : Changed(body, new ModelChange.Remove(command.ElementId));
     }
 }
 
 public sealed class RenameWardleyElementCommandHandler(IWardleyDocumentStore documents) : WardleyEditHandler<RenameWardleyElementCommand>(documents)
 {
-    protected override EditOutcome Apply(LineDocument body, WardleyMap model, RenameWardleyElementCommand command)
+    protected override EditOutcome Apply(WardleyBodyEdit body, WardleyEditContext map, RenameWardleyElementCommand command)
     {
         if (string.IsNullOrWhiteSpace(command.NewName))
         {
             return EditOutcome.Refused("An element needs a name.");
         }
 
-        if (ComponentOf(model, command.BodyPath, command.ElementId) is not { } component)
+        if (map.ComponentOf(command.ElementId) is not { } component)
         {
             return EditOutcome.Refused(Gone);
         }
 
-        if (model.Components.Any(existing => existing.Name == command.NewName))
+        if (WardleyEdit.Unusable(command.NewName) is { } unusable)
+        {
+            return EditOutcome.Refused(unusable);
+        }
+
+        if (WardleyEdit.Evolving(map.Map, component) && WardleyEvolveNames.OfComponent(command.NewName) is { } unevolvable)
+        {
+            return EditOutcome.Refused(unevolvable);
+        }
+
+        if (map.Map.Components.Any(existing => existing.Name == command.NewName))
         {
             return EditOutcome.Refused($"This map already has an element called '{command.NewName}'.");
         }
 
-        // One pass over the declaration and every reference, because Requirement 9.6's undo only
-        // restores them together if they moved together.
-        if (WardleyWriter.Rename(body, model, component.Name, command.NewName) == 0)
-        {
-            return EditOutcome.Refused("That element could not be renamed.");
-        }
-
-        // The identity travels with the name, in this same command. Reconciliation matches by
-        // key and a component's key IS its name, so without this a rename would look like one
-        // element vanishing and another arriving - breaking the selection and every undo entry
-        // that names it (Requirement 4.4).
-        Documents.Rekey(command.BodyPath, WardleyIdentityKind.Component, component.Name, command.NewName);
-        return EditOutcome.Applied;
+        // One change, whose references the library rewrites with it: every link, evolution, pipeline and pipeline
+        // component naming the element, in the same edit (Requirement 5.5). Of a repeated name only the selected holder is
+        // renamed (ruling 5), since the statements naming it attach to the first. The ids move with their keys (finding B10).
+        return body.Change(new ModelChange.Set(command.ElementId, WardleyEdit.Attributes(("name", command.NewName)))).WasApplied
+            ? EditOutcome.Applied
+            : EditOutcome.Refused("That element could not be renamed.");
     }
 }
 
 public sealed class SetWardleyInertiaCommandHandler(IWardleyDocumentStore documents) : WardleyEditHandler<SetWardleyInertiaCommand>(documents)
 {
-    protected override EditOutcome Apply(LineDocument body, WardleyMap model, SetWardleyInertiaCommand command)
+    protected override EditOutcome Apply(WardleyBodyEdit body, WardleyEditContext map, SetWardleyInertiaCommand command)
     {
-        if (ComponentOf(model, command.BodyPath, command.ElementId) is not { } component)
+        if (map.ComponentOf(command.ElementId) is not { } component)
         {
             return EditOutcome.Refused(Gone);
         }
 
-        var before = body.Lines[(int)component.Line - 1].Text;
-        return WardleyWriter.SetInertia(body, component, command.Inertia)
-            ? EditOutcome.UndoneBy(new RestoreWardleyLineCommand(command.BodyPath, component.Line, before))
+        if (component.Inertia == command.Inertia)
+        {
+            return EditOutcome.Unchanged;
+        }
+
+        return body.Change(new ModelChange.Set(command.ElementId, WardleyEdit.Attributes(("inertia", command.Inertia ? "true" : "false")))).WasApplied
+            ? EditOutcome.Applied
             : EditOutcome.Refused("That element's inertia could not be changed.");
     }
 }
 
 public sealed class SetWardleyDecoratorsCommandHandler(IWardleyDocumentStore documents) : WardleyEditHandler<SetWardleyDecoratorsCommand>(documents)
 {
-    protected override EditOutcome Apply(LineDocument body, WardleyMap model, SetWardleyDecoratorsCommand command)
+    protected override EditOutcome Apply(WardleyBodyEdit body, WardleyEditContext map, SetWardleyDecoratorsCommand command)
     {
-        if (ComponentOf(model, command.BodyPath, command.ElementId) is not { } component)
+        if (map.ComponentOf(command.ElementId) is null)
         {
             return EditOutcome.Refused(Gone);
         }
 
-        // One line, captured once: several writer calls follow, and the inverse has to put the
-        // line back as it was rather than as the sum of their opposites.
-        var before = body.Lines[(int)component.Line - 1].Text;
-        var wanted = command.Decorators.Distinct().ToArray();
-
-        foreach (var decorator in WardleyDecorators.All)
+        // Each of the five flags that changes, the ones cleared first and then the ones set in the order the command names
+        // them; a flag that keeps its value writes nothing, and a word that is none of them is kept where it stands
+        // (Requirement 5.2).
+        var element = body.Reading.Elements.FirstOrDefault(element => element.Id == command.ElementId);
+        var wanted = command.Decorators.Distinct().ToList();
+        var flags = WardleyEdit.Attributes();
+        foreach (var cleared in WardleyDecorators.All.Where(decorator => WardleyEdit.Carries(element, decorator) && !wanted.Contains(decorator)))
         {
-            var present = wanted.Contains(decorator);
-            if (present == component.Decorators.Contains(decorator))
-            {
-                continue;
-            }
-
-            // Re-read after each change: the statement has been rewritten, so the component's
-            // spans are from before it moved.
-            var current = ComponentOf(WardleyParser.Parse(body), command.BodyPath, command.ElementId);
-            if (current is null || !WardleyWriter.SetDecorator(body, current, decorator.ToString().ToLowerInvariant(), present))
-            {
-                return EditOutcome.Refused("That element's decorators could not be changed.");
-            }
+            flags[WardleyDecorators.Spell(cleared)] = false;
         }
 
-        return EditOutcome.UndoneBy(new RestoreWardleyLineCommand(command.BodyPath, component.Line, before));
+        foreach (var set in wanted.Where(decorator => !WardleyEdit.Carries(element, decorator)))
+        {
+            flags[WardleyDecorators.Spell(set)] = true;
+        }
+
+        if (flags.Count == 0)
+        {
+            return EditOutcome.Unchanged;
+        }
+
+        return body.Change(new ModelChange.Set(command.ElementId, flags)).WasApplied
+            ? EditOutcome.Applied
+            : EditOutcome.Refused("That element's decorators could not be changed.");
     }
 }
 
 public sealed class SetWardleyDecoratorCommandHandler(IWardleyDocumentStore documents) : WardleyEditHandler<SetWardleyDecoratorCommand>(documents)
 {
-    protected override EditOutcome Apply(LineDocument body, WardleyMap model, SetWardleyDecoratorCommand command)
+    protected override EditOutcome Apply(WardleyBodyEdit body, WardleyEditContext map, SetWardleyDecoratorCommand command)
     {
-        if (ComponentOf(model, command.BodyPath, command.ElementId) is not { } component)
+        if (map.ComponentOf(command.ElementId) is null)
         {
             return EditOutcome.Refused(Gone);
         }
 
-        var before = body.Lines[(int)component.Line - 1].Text;
-        var word = command.Decorator.ToString().ToLowerInvariant();
-        return WardleyWriter.SetDecorator(body, component, word, command.Present)
-            ? EditOutcome.UndoneBy(new RestoreWardleyLineCommand(command.BodyPath, component.Line, before))
+        var word = WardleyDecorators.Spell(command.Decorator);
+        if (WardleyEdit.Carries(body.Reading.Elements.FirstOrDefault(element => element.Id == command.ElementId), command.Decorator) == command.Present)
+        {
+            return EditOutcome.Unchanged;
+        }
+
+        return body.Change(new ModelChange.Set(command.ElementId, WardleyEdit.Attributes((word, command.Present)))).WasApplied
+            ? EditOutcome.Applied
             : EditOutcome.Refused($"That element's '{word}' could not be changed.");
     }
 }
 
 public sealed class AddWardleyNoteCommandHandler(IWardleyDocumentStore documents) : WardleyEditHandler<AddWardleyNoteCommand>(documents)
 {
-    protected override EditOutcome Apply(LineDocument body, WardleyMap model, AddWardleyNoteCommand command)
+    protected override EditOutcome Apply(WardleyBodyEdit body, WardleyEditContext map, AddWardleyNoteCommand command)
     {
         if (string.IsNullOrWhiteSpace(command.Text))
         {
-            // A note's text is also the only handle its identity has, so an empty one could not
-            // be found again even by ADP itself.
+            // A note's text is also the only handle its identity has, so an empty one could not be found again even by ADP itself.
             return EditOutcome.Refused("A note needs something to say.");
         }
 
         var position = WardleyAxis.Clamp(new WardleyCoordinate(command.Visibility, command.Maturity));
-        WardleyWriter.Append(body, WardleyWriter.NoteStatement(command.Text, position));
-        return EditOutcome.Applied;
+        return Changed(body, new ModelChange.Add("Note", WardleyEdit.NewId(), WardleyEdit.Attributes(("text", command.Text.Trim()), ("visibility", position.Visibility), ("maturity", position.Maturity))));
     }
 }
 
 public sealed class AddWardleyAnnotationCommandHandler(IWardleyDocumentStore documents) : WardleyEditHandler<AddWardleyAnnotationCommand>(documents)
 {
-    protected override EditOutcome Apply(LineDocument body, WardleyMap model, AddWardleyAnnotationCommand command)
+    protected override EditOutcome Apply(WardleyBodyEdit body, WardleyEditContext map, AddWardleyAnnotationCommand command)
     {
         if (string.IsNullOrWhiteSpace(command.Text))
         {
@@ -246,134 +417,162 @@ public sealed class AddWardleyAnnotationCommandHandler(IWardleyDocumentStore doc
 
         var position = WardleyAxis.Clamp(new WardleyCoordinate(command.Visibility, command.Maturity));
 
-        // One past the highest, rather than one past the count: a map whose annotation 2 was
-        // deleted still has a 3, and reusing that number would put two of them on the map.
-        var number = model.Annotations.Count == 0 ? 1 : model.Annotations.Max(annotation => annotation.Number) + 1;
-
-        WardleyWriter.Append(body, WardleyWriter.AnnotationStatement(number, position, command.Text));
-        return EditOutcome.Applied;
+        // One past the highest, rather than one past the count: a map whose annotation 2 was deleted still has a 3, and
+        // reusing that number would put two of them on the map.
+        var number = map.Map.Annotations.Count == 0 ? 1 : map.Map.Annotations.Max(annotation => annotation.Number) + 1;
+        var positions = new List<object?> { WardleyEdit.Attributes(("visibility", position.Visibility), ("maturity", position.Maturity)) };
+        return Changed(body, new ModelChange.Add("Annotation", WardleyEdit.NewId(), WardleyEdit.Attributes(("number", (long)number), ("positions", positions), ("text", command.Text.Trim()))));
     }
 }
 
 public sealed class SetWardleyLinkCommandHandler(IWardleyDocumentStore documents) : WardleyEditHandler<SetWardleyLinkCommand>(documents)
 {
-    protected override EditOutcome Apply(LineDocument body, WardleyMap model, SetWardleyLinkCommand command)
+    protected override EditOutcome Apply(WardleyBodyEdit body, WardleyEditContext map, SetWardleyLinkCommand command)
     {
-        var source = ComponentOf(model, command.BodyPath, command.SourceElementId);
-        var target = ComponentOf(model, command.BodyPath, command.TargetElementId);
+        var source = map.ComponentOf(command.SourceElementId);
+        var target = map.ComponentOf(command.TargetElementId);
         if (source is null || target is null)
         {
             return EditOutcome.Refused(Gone);
         }
 
-        if (source.Name == target.Name)
+        if (source.Line == target.Line)
         {
             return EditOutcome.Refused("A link needs two different elements.");
         }
 
-        // Matched on both endpoints AND the kind, because the DSL lets one pair carry a
-        // dependency and a flow at once, and they are two different claims about the pair.
-        var existing = model.Links.FirstOrDefault(link =>
-            link.Source == source.Name && link.Target == target.Name && link.Kind == command.Kind);
+        // Matched on both endpoints AND the kind, because the DSL lets one pair carry a dependency and a flow at once, and
+        // they are two different claims about the pair. A link names its ends' first holders (ruling 3), so a later holder
+        // of a repeated name has none yet.
+        var existing = WardleyEdit.LinkBetween(map.Map, source, target, command.Kind);
+        var existingId = existing is null ? null : map.IdAt(WardleyIdentityKind.Link, existing.Line);
 
         if (!command.Present)
         {
-            if (existing is null)
-            {
-                return EditOutcome.Refused("There is no such link between these two elements.");
-            }
-
-            WardleyWriter.RemoveLine(body, existing.Line);
-            return EditOutcome.Applied;
+            return existingId is null
+                ? EditOutcome.Refused("There is no such link between these two elements.")
+                : Changed(body, new ModelChange.Remove(existingId));
         }
 
-        var statement = WardleyWriter.LinkStatement(source.Name, target.Name, command.Kind, command.Context);
-
-        // An existing link is rewritten in place rather than a second one being appended:
-        // two statements saying the same thing is what Requirement 14.4 reports.
-        if (existing is null)
+        // An existing link has its context set rather than a second one being appended: two statements saying the same
+        // thing is what Requirement 14.4 reports.
+        var context = command.Context.Trim();
+        if (existingId is not null)
         {
-            WardleyWriter.Append(body, statement);
-        }
-        else
-        {
-            WardleyWriter.ReplaceLine(body, existing.Line, statement);
+            return existing!.Context == context
+                ? EditOutcome.Unchanged
+                : Changed(body, new ModelChange.Set(existingId, WardleyEdit.Attributes(("context", context.Length > 0 ? context : null))));
         }
 
-        return EditOutcome.Applied;
+        // A later holder of a repeated name is given a name of its own first, in this same edit, because a link can only
+        // be written as a name (ruling 4). The end the gesture starts from is named first.
+        var taken = map.Names();
+        if (WardleyEdit.NameFor(body, map, source, command.SourceElementId, taken) is not { } sourceName
+            || WardleyEdit.NameFor(body, map, target, command.TargetElementId, taken) is not { } targetName)
+        {
+            return EditOutcome.Refused("That element could not be renamed.");
+        }
+
+        if (sourceName == targetName)
+        {
+            return EditOutcome.Refused("A link needs two different elements.");
+        }
+
+        // A link names its ends by their names, as the format writes them; the binding reads it back to the first holders.
+        var attributes = WardleyEdit.Attributes(("from", sourceName), ("to", targetName));
+        if (context.Length > 0) attributes["context"] = context;
+        return Changed(body, new ModelChange.Add(command.Kind == WardleyLinkKind.Flow ? "Flow" : "Dependency", WardleyEdit.NewId(), attributes));
     }
 }
 
 public sealed class SetWardleyEvolveCommandHandler(IWardleyDocumentStore documents) : WardleyEditHandler<SetWardleyEvolveCommand>(documents)
 {
-    protected override EditOutcome Apply(LineDocument body, WardleyMap model, SetWardleyEvolveCommand command)
+    protected override EditOutcome Apply(WardleyBodyEdit body, WardleyEditContext map, SetWardleyEvolveCommand command)
     {
-        if (ComponentOf(model, command.BodyPath, command.ElementId) is not { } component)
+        if (map.ComponentOf(command.ElementId) is not { } component)
         {
             return EditOutcome.Refused(Gone);
         }
 
-        var existing = model.Evolves.FirstOrDefault(evolve => evolve.Name == component.Name);
+        // A later holder of a repeated name has no `evolve`: one naming it attaches to the first holder (ruling 3).
+        var existing = WardleyHolders.IsFirstHolder(map.Map, component)
+            ? map.Map.Evolves.FirstOrDefault(evolve => evolve.Name == component.Name)
+            : null;
+        var existingId = existing is null ? null : body.Reading.Elements.FirstOrDefault(element => element.Type == "Evolve" && element.Line == existing.Line)?.Id;
         if (!command.Present)
         {
-            if (existing is null)
-            {
-                return EditOutcome.Refused($"'{component.Name}' is not evolving.");
-            }
-
-            WardleyWriter.RemoveLine(body, existing.Line);
-            return EditOutcome.Applied;
+            return existingId is null
+                ? EditOutcome.Refused($"'{component.Name}' is not evolving.")
+                : Changed(body, new ModelChange.Remove(existingId));
         }
 
-        // Clamped rather than refused, for the same reason a drag is: the axis has ends, and a
-        // value past one of them is a slip rather than a different intention (Requirement 7.3).
+        var becomes = command.OverrideName.Trim();
+        if (becomes.Length > 0 && WardleyEdit.Unusable(becomes) is { } unusable)
+        {
+            return EditOutcome.Refused(unusable);
+        }
+
+        if (WardleyEvolveNames.Arriving(becomes) is { } unarriving)
+        {
+            return EditOutcome.Refused(unarriving);
+        }
+
+        // Clamped rather than refused, for the same reason a drag is: the axis has ends, and a value past one of them is a
+        // slip rather than a different intention (Requirement 7.3).
         var maturity = Math.Clamp(command.Maturity, 0d, 1d);
-        var statement = WardleyWriter.EvolveStatement(component.Name, command.OverrideName, maturity);
-
-        if (existing is null)
+        if (existingId is not null)
         {
-            WardleyWriter.Append(body, statement);
-        }
-        else
-        {
-            WardleyWriter.ReplaceLine(body, existing.Line, statement);
+            var changed = WardleyEdit.Attributes(("becomes", becomes.Length > 0 ? becomes : null));
+            if (Math.Abs(existing!.Maturity - maturity) > double.Tolerance) changed["maturity"] = maturity;
+            if (existing.Override == becomes) changed.Remove("becomes");
+            return changed.Count == 0 ? EditOutcome.Unchanged : Changed(body, new ModelChange.Set(existingId, changed));
         }
 
-        return EditOutcome.Applied;
+        // A later holder of a repeated name is given a name of its own first, in this same edit, because an `evolve` can
+        // only name it (ruling 4).
+        if (WardleyEdit.NameFor(body, map, component, command.ElementId, map.Names()) is not { } name)
+        {
+            return EditOutcome.Refused("That element could not be renamed.");
+        }
+
+        if (WardleyEvolveNames.OfComponent(name) is { } unevolvable)
+        {
+            return EditOutcome.Refused(unevolvable);
+        }
+
+        var attributes = WardleyEdit.Attributes(("component", name), ("maturity", maturity));
+        if (becomes.Length > 0) attributes["becomes"] = becomes;
+        return Changed(body, new ModelChange.Add("Evolve", null, attributes));
     }
 }
 
-/// <summary>
-/// Pipeline membership, which is the one edit in this module that writes a block rather than a
-/// line.
-/// </summary>
+/// <summary>Pipeline membership: the one edit in this module that writes a block rather than a line.</summary>
 public sealed class SetWardleyPipelineMembershipCommandHandler(IWardleyDocumentStore documents)
     : WardleyEditHandler<SetWardleyPipelineMembershipCommand>(documents)
 {
-    protected override EditOutcome Apply(LineDocument body, WardleyMap model, SetWardleyPipelineMembershipCommand command)
+    protected override EditOutcome Apply(WardleyBodyEdit body, WardleyEditContext map, SetWardleyPipelineMembershipCommand command)
     {
         if (string.IsNullOrWhiteSpace(command.ChildName))
         {
             return EditOutcome.Refused("A pipeline component needs a name.");
         }
 
-        if (ComponentOf(model, command.BodyPath, command.ParentElementId) is not { } parent)
+        if (map.ComponentOf(command.ParentElementId) is not { } parent)
         {
             return EditOutcome.Refused(Gone);
         }
 
-        var pipeline = model.Pipelines.FirstOrDefault(candidate => candidate.Parent == parent.Name);
+        // A later holder of a repeated name has no pipeline: one naming it attaches to the first holder (ruling 3).
+        var pipeline = WardleyHolders.IsFirstHolder(map.Map, parent)
+            ? map.Map.Pipelines.FirstOrDefault(candidate => candidate.Parent == parent.Name)
+            : null;
         var child = pipeline?.Children.FirstOrDefault(candidate => candidate.Name == command.ChildName);
 
         if (!command.Member)
         {
-            if (child is null)
-            {
-                return EditOutcome.Refused($"'{command.ChildName}' is not in this pipeline.");
-            }
-
-            WardleyWriter.RemoveLine(body, child.Line);
-            return EditOutcome.Applied;
+            return child is null || map.IdAt(WardleyIdentityKind.PipelineChild, child.Line) is not { } childId
+                ? EditOutcome.Refused($"'{command.ChildName}' is not in this pipeline.")
+                : Changed(body, new ModelChange.Remove(childId));
         }
 
         if (child is not null)
@@ -381,9 +580,13 @@ public sealed class SetWardleyPipelineMembershipCommandHandler(IWardleyDocumentS
             return EditOutcome.Refused($"'{command.ChildName}' is already in this pipeline.");
         }
 
-        // The legacy two-coordinate form has no block to put a child in, and Requirement 3.2
-        // says a map written that way is written back that way - so this refuses rather than
-        // silently converting the statement to the nested form.
+        if (WardleyEdit.Unusable(command.ChildName) is { } unusable)
+        {
+            return EditOutcome.Refused(unusable);
+        }
+
+        // The legacy two-coordinate form has no block to put a child in, and Requirement 3.2 says a map written that way is
+        // written back that way - so this refuses rather than silently converting the statement to the nested form.
         if (pipeline is { Form: WardleyPipelineForm.Legacy })
         {
             return EditOutcome.Refused(
@@ -391,49 +594,34 @@ public sealed class SetWardleyPipelineMembershipCommandHandler(IWardleyDocumentS
         }
 
         var maturity = Math.Clamp(command.Maturity, 0d, 1d);
+        var member = WardleyEdit.Attributes(("name", command.ChildName), ("maturity", maturity));
 
         if (pipeline is null)
         {
-            // No pipeline yet: the parent gains one, written in the nested form because that is
-            // the form that can hold what is being added.
-            foreach (var line in WardleyWriter.PipelineStatements(parent.Name, command.ChildName, maturity))
+            // No pipeline yet: the parent gains one, written in the nested form, with its brace on its own line, because
+            // that is the form that can hold what is being added - and a later holder of a repeated name a name of its own
+            // first, in this same edit (ruling 4).
+            if (WardleyEdit.NameFor(body, map, parent, command.ParentElementId, map.Names()) is not { } name)
             {
-                WardleyWriter.Append(body, line);
+                return EditOutcome.Refused("That element could not be renamed.");
             }
 
-            return EditOutcome.Applied;
+            var started = WardleyEdit.NewId();
+            return Changed(
+                body,
+                new ModelChange.Add("Pipeline", started, WardleyEdit.Attributes(("component", name))),
+                new ModelChange.Add("PipelineComponent", WardleyEdit.NewId(), member, started));
         }
 
-        if (ClosingBraceOf(body, pipeline) is not { } closing)
+        if (!WardleyBody.Closes(LineDocument.Parse(body.Text), pipeline.Line))
         {
-            // A nested pipeline whose block never closes is a document ADP did not write and
-            // cannot safely add to: guessing where the block ends would put the child in
-            // whatever follows.
+            // A nested pipeline whose block never closes is a document ADP did not write and cannot safely add to: guessing
+            // where the block ends would put the child in whatever follows.
             return EditOutcome.Refused($"'{parent.Name}' has a pipeline that is missing its closing brace.");
         }
 
-        WardleyWriter.InsertLine(body, closing, WardleyWriter.PipelineChildStatement(command.ChildName, maturity));
-        return EditOutcome.Applied;
-    }
-
-    /// <summary>
-    /// The 1-based line holding the pipeline's closing brace, or null when it has none.
-    /// </summary>
-    /// <remarks>
-    /// Found by scanning rather than computed from the children, because a block may hold blank
-    /// lines, comments and statements this module does not model - all of which Requirement 3.3
-    /// says survive untouched, and any of which may sit after the last child.
-    /// </remarks>
-    private static uint? ClosingBraceOf(LineDocument document, WardleyPipeline pipeline)
-    {
-        for (var number = pipeline.Line; number <= document.Lines.Count; number++)
-        {
-            if (document.Lines[(int)number - 1].Text.Trim() == "}")
-            {
-                return number;
-            }
-        }
-
-        return null;
+        return map.IdAt(WardleyIdentityKind.Pipeline, pipeline.Line) is { } pipelineId
+            ? Changed(body, new ModelChange.Add("PipelineComponent", WardleyEdit.NewId(), member, pipelineId))
+            : EditOutcome.Refused(Gone);
     }
 }

@@ -1,6 +1,6 @@
 # XML editor
 
-The XML editor (`editor/xml`) opens `.xml`, `.xsd`, `.xsl` and `.xslt` files that no diagram or designer claims, and every XML file through "Open as text". Its specification is [`.spec-workflow/specs/xml-editor/`](../../../.spec-workflow/specs/xml-editor/). Colour, matched tags and folding are in the client; well-formedness, XSD and DTD validation and completion from an XSD are in the backend, on `System.Xml` and `System.Xml.Schema`, answered through the editor family's `Analyze` and `Complete` calls.
+The XML editor (`editor/xml`) opens `.xml`, `.xsd`, `.xsl` and `.xslt` files that no diagram or designer claims, and every XML file through "Open as text". Its specification is [`.spec-workflow/specs/xml-editor/`](https://github.com/etalii-adp/etalii.adp.ide.standalone/tree/bd7e2ea95b8e4195bf6f8d97f7aede9ab4dc3ad8/.spec-workflow/specs/xml-editor). Colour, matched tags and folding are in the client; well-formedness, XSD and DTD validation and completion from an XSD are in the backend, on `System.Xml` and `System.Xml.Schema`, answered through the editor family's `Analyze` and `Complete` calls.
 
 | Folder | Holds |
 | --- | --- |

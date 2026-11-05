@@ -2,6 +2,7 @@ using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -13,24 +14,23 @@ namespace EtAlii.Adp.Diagram.DependencyGraph.Tests;
 /// </summary>
 public class DependencyGraphContextActionProviderTests : IDisposable
 {
-    private readonly string _workspace = IoPath.Combine(
-        IoPath.GetTempPath(),
-        "adp-dgr-actions-" + Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-dgr-actions");
+    private readonly string _workspace;
 
     private readonly DependencyGraphDocumentStore _store = new(new FileWriter());
     private readonly DependencyGraphContextActionProvider _actions;
-    private readonly HistoryStackStore _historyStacks;
+    private readonly IHistoryStackStore _historyStacks;
 
     public DependencyGraphContextActionProviderTests()
     {
-        Directory.CreateDirectory(_workspace);
-        _historyStacks = new HistoryStackStore(new DependencyGraphTestDispatcher(_store));
+        _workspace = _testFolder.Path;
+        _historyStacks = TestHistory.For(s => { s.AddDependencyGraph(); s.AddSingleton<IDependencyGraphDocumentStore>(_store); });
         _actions = new DependencyGraphContextActionProvider(_historyStacks, _store);
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_workspace);
+        _testFolder.Dispose();
 
         GC.SuppressFinalize(this);
     }
@@ -323,7 +323,38 @@ public class DependencyGraphContextActionProviderTests : IDisposable
 
         // Assert.
         var failed = Assert.IsType<ContextExecutionFailed>(result);
-        Assert.NotEmpty(failed.Message);
+        Assert.Equal("The node this dependency starts from is no longer in this graph.", failed.Message);
+    }
+
+    [Fact]
+    public async Task ARelationGestureFromEmptyCanvasIntoAVanishedNode_FailsWithAReason_AndAddsNothing()
+    {
+        // Arrange.
+        // The reversed gesture: the placement is the source, and the node it reaches is gone.
+        var path = Write();
+        var gesture = GestureIds.Relation(GestureIds.RowPlacement(-300, 1), "ghost");
+
+        // Act.
+        var result = await _actions.ExecuteAsync(
+            Target(path, gesture), DependencyGraphContextActionProvider.ConnectActionId, CancellationToken.None);
+
+        // Assert.
+        var failed = Assert.IsType<ContextExecutionFailed>(result);
+        Assert.Equal("The node this dependency reaches is no longer in this graph.", failed.Message);
+        Assert.Equal(2, (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model.Elements.Count);
+    }
+
+    [Fact]
+    public async Task RelabellingAVanishedDependency_FailsRatherThanAsking()
+    {
+        // Arrange & act.
+        var path = Write();
+        var result = await _actions.ExecuteAsync(
+            Target(path, "ghost"), DependencyGraphContextActionProvider.RelabelActionId, CancellationToken.None);
+
+        // Assert.
+        var failed = Assert.IsType<ContextExecutionFailed>(result);
+        Assert.Equal("That is no longer in this graph.", failed.Message);
     }
 
     [Fact]

@@ -109,20 +109,24 @@ message WardleyAttitudePayload {
   WardleyPointPayload opposite = 2;
 }
 
-// One per map, in the baseline: the axis the client draws but does not define. Sending it as
-// data is what keeps the stage boundaries in exactly one place (Requirement 8.2).
-message WardleyEvolutionAxisPayload {
-  repeated WardleyEvolutionStagePayload stages = 1;
-  string title = 2;
-  // The `size [w, h]` the document asks to be drawn at, when it says.
+// One per map, in the baseline: the attributes the definition declares on the diagram itself
+// (`metamodel.diagram`). The stages are the definition's, so nothing here says where they lie.
+message WardleyDiagramPayload {
+  // The `title` statement, or empty.
+  string title = 1;
+  // The `style` statement, or empty.
+  string style = 2;
+  // The `size [w, h]` the document asks to be drawn at, or 0 and 0 when it says none.
   double width = 3;
   double height = 4;
+  // The `annotations [visibility, maturity]` statement, when the document has one.
+  WardleyPositionPayload annotations_position = 5;
 }
 
-message WardleyEvolutionStagePayload {
-  string label = 1;
-  double start = 2;
-  double end = 3;
+// A position in the document's own axes, as the format writes it.
+message WardleyPositionPayload {
+  double visibility = 1;
+  double maturity = 2;
 }
 
 // A point in canvas coordinates, for the payload fields that need a second position.

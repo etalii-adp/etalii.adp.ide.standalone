@@ -29,11 +29,14 @@ public class TextEditorSessionWatcherObligationsTests : IDisposable
 {
     private static readonly TimeSpan Patience = TimeSpan.FromSeconds(10);
 
-    private readonly string _root = Directory.CreateTempSubdirectory("adp-text-obligations-").FullName;
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-text-obligations");
+    private readonly string _root;
+
+    public TextEditorSessionWatcherObligationsTests() => _root = _testFolder.Path;
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
         GC.SuppressFinalize(this);
     }
 

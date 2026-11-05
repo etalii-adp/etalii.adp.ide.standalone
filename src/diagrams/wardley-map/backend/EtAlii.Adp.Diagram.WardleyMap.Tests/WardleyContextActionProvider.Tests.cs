@@ -25,7 +25,8 @@ public sealed class WardleyContextActionProviderTests : IDisposable
 
         """;
 
-    private readonly string _root = IoPath.Combine(IoPath.GetTempPath(), $"wardley-actions-{Guid.NewGuid():N}");
+    private readonly TestFolder _testFolder = TestFolder.Create("wardley-actions");
+    private readonly string _root;
     private readonly ServiceProvider _services;
     private readonly IWardleyDocumentStore _documents;
     private readonly WardleyContextActionProvider _provider;
@@ -33,7 +34,7 @@ public sealed class WardleyContextActionProviderTests : IDisposable
 
     public WardleyContextActionProviderTests()
     {
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
         _services = new ServiceCollection().AddCommands().AddHierarchyCommandHandlers().AddWardleyMap().BuildServiceProvider();
         _documents = _services.GetRequiredService<IWardleyDocumentStore>();
         _provider = _services.GetServices<IContextActionProvider>().OfType<WardleyContextActionProvider>().Single();
@@ -44,7 +45,7 @@ public sealed class WardleyContextActionProviderTests : IDisposable
     public void Dispose()
     {
         _services.Dispose();
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     // ---- what is offered ----------------------------------------------------------------------
@@ -190,6 +191,33 @@ public sealed class WardleyContextActionProviderTests : IDisposable
     }
 
     [Fact]
+    public async Task APlacementOnEmptyMap_IsOfferedWhatTheMapItselfIs()
+    {
+        // Act. A right-click on empty map names the point it was made at: the map is the subject.
+        var placed = await ActionIdsFor(GestureIds.Placement(300, 700));
+
+        // Assert. The specification's menu for the diagram, the same entries as with no element at all.
+        Assert.Equal(await ActionIdsFor(""), placed);
+        Assert.Contains(WardleyContextActionProvider.AddComponentActionId, placed);
+    }
+
+    [Fact]
+    public async Task AnAddFromAPlacement_AsksForTheName_AndAddsTheComponent()
+    {
+        // Arrange.
+        var target = Target(GestureIds.Placement(300, 700));
+
+        // Act.
+        var asked = await _provider.ExecuteAsync(target, WardleyContextActionProvider.AddComponentActionId, TestContext.Current.CancellationToken);
+        var committed = await _provider.CommitAsync(target, WardleyContextActionProvider.AddComponentActionId, "Water", "", TestContext.Current.CancellationToken);
+
+        // Assert. The entry asks what it asks with nothing selected, and writes the statement the map's add writes.
+        Assert.IsType<ContextExecutionRequiresInput>(asked);
+        Assert.True(committed.Completed, committed.Error);
+        Assert.Contains("component Water [", await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task AReadOnlyFileIsOfferedNothing()
     {
         // Arrange. Requirement 11.6 - an edit that would not reach disk is withheld rather than
@@ -288,6 +316,22 @@ public sealed class WardleyContextActionProviderTests : IDisposable
         Assert.True(committed.Completed, committed.Error);
         Assert.Contains("component Boiler [0.43, 0.35]", await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken), StringComparison.Ordinal);
         Assert.Contains("Cup of Tea->Boiler", await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ACommitTheDefinitionRefuses_IsRefusedInTheDefinitionsSentence_AndWritesNothing()
+    {
+        // Arrange.
+        var before = await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken);
+
+        // Act. The definition's rename refuses a name another element carries before any command is made.
+        var committed = await _provider.CommitAsync(
+            Target(await IdOfAsync("Kettle")), WardleyContextActionProvider.RenameActionId, "Cup of Tea", "", TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.False(committed.Completed);
+        Assert.Equal("This map already has an element called 'Cup of Tea'.", committed.Error);
+        Assert.Equal(before, await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -575,6 +619,6 @@ public sealed class WardleyContextActionProviderTests : IDisposable
 
         public IReadOnlyList<WardleyIdentityEntry> Identities(string path) => inner.Identities(path);
 
-        public void Rekey(string path, string kind, string oldKey, string newKey) => inner.Rekey(path, kind, oldKey, newKey);
+        public void Remember(string path, string text, IReadOnlyList<WardleyIdentityEntry> identities) => inner.Remember(path, text, identities);
     }
 }

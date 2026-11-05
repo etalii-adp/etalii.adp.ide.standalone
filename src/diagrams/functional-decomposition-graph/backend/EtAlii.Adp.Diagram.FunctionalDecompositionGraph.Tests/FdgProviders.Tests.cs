@@ -1,4 +1,5 @@
 using EtAlii.Adp.Context;
+using EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests.Parity;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
@@ -13,7 +14,8 @@ namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests;
 /// </summary>
 public sealed class FdgProvidersTests : IDisposable
 {
-    private readonly string _folder = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.FdgProvidersTests", Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("EtAlii.Adp.FdgProvidersTests");
+    private readonly string _folder;
     private readonly FdgDocumentStore _store = new(new FileWriter());
     private readonly HistoryStackStore _historyStacks;
     private readonly FdgContextPropertyProvider _properties;
@@ -22,7 +24,7 @@ public sealed class FdgProvidersTests : IDisposable
 
     public FdgProvidersTests()
     {
-        Directory.CreateDirectory(_folder);
+        _folder = _testFolder.Path;
         File.Copy(FieldServiceExample.Path, Body);
         _original = File.ReadAllBytes(Body);
         _historyStacks = new HistoryStackStore(new FdgTestDispatcher(_store));
@@ -35,14 +37,7 @@ public sealed class FdgProvidersTests : IDisposable
     public void Dispose()
     {
         _historyStacks.Dispose();
-        try
-        {
-            Directory.Delete(_folder, recursive: true);
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            // A temp folder left behind is not a test failure.
-        }
+        _testFolder.Dispose();
     }
 
     private ContextTarget Target(string elementId) =>
@@ -237,7 +232,7 @@ public sealed class FdgProvidersTests : IDisposable
         Assert.Equal(broken, await File.ReadAllTextAsync(Body, TestContext.Current.CancellationToken));
         var entry = await _store.GetOrLoadAsync(Body, TestContext.Current.CancellationToken);
         Assert.StartsWith("The document could not be read as YAML: ", entry.Unreadable, StringComparison.Ordinal);
-        Assert.Equal(entry.Model.Problems, entry.Problems);
+        Assert.Equal(entry.Unreadable, Assert.Single(entry.Problems).Message);
     }
 
     [Fact]
@@ -298,7 +293,7 @@ public sealed class FdgProvidersTests : IDisposable
     public void TheToolbox_OffersTheFiveTypes_EachDroppingItsAddAction()
     {
         // Act.
-        var items = new FdgToolboxProvider().Items;
+        var items = FdgDefinition.Definition.Toolbox;
 
         // Assert.
         Assert.Equal(

@@ -13,7 +13,8 @@ namespace EtAlii.Adp.Diagram.WardleyMap.Tests;
 /// </summary>
 public sealed class WardleySessionTests : IDisposable
 {
-    private readonly string _root = IoPath.Combine(IoPath.GetTempPath(), $"wardley-session-{Guid.NewGuid():N}");
+    private readonly TestFolder _testFolder = TestFolder.Create("wardley-session");
+    private readonly string _root;
     private readonly ServiceProvider _services;
     private readonly IWardleyDocumentStore _documents;
     private readonly IHistoryStack _history;
@@ -22,7 +23,7 @@ public sealed class WardleySessionTests : IDisposable
 
     public WardleySessionTests()
     {
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
         _services = new ServiceCollection().AddCommands().AddHierarchyCommandHandlers().AddWardleyMap().BuildServiceProvider();
         _documents = _services.GetRequiredService<IWardleyDocumentStore>();
         // _identities = _services.GetRequiredService<WardleyIdentities>();
@@ -33,7 +34,7 @@ public sealed class WardleySessionTests : IDisposable
     public void Dispose()
     {
         _services.Dispose();
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     private string Write(string text)
@@ -65,7 +66,7 @@ public sealed class WardleySessionTests : IDisposable
         // Act.
         var deltas = await Editable(path).BaselineAsync(TestContext.Current.CancellationToken);
 
-        // Assert. Two elements plus the evolution axis.
+        // Assert. Two elements plus the diagram element.
         Assert.Single(deltas.OfType<DiagramAddDelta>());
         Assert.Equal(3, AddedBy(deltas).Count);
     }
@@ -80,7 +81,7 @@ public sealed class WardleySessionTests : IDisposable
         var elements = AddedBy(await Editable(path).BaselineAsync(TestContext.Current.CancellationToken));
 
         // Assert.
-        Assert.Equal(WardleyElementTypes.EvolutionAxis, Assert.Single(elements).Type);
+        Assert.Equal(WardleyElementTypes.Diagram, Assert.Single(elements).Type);
     }
 
     [Fact]
@@ -172,11 +173,11 @@ public sealed class WardleySessionTests : IDisposable
     }
 
     [Fact]
-    public async Task UpdateView_KeepsTheAxisAndALinkWhoseEndpointIsInView()
+    public async Task UpdateView_KeepsTheDiagramAndALinkWhoseEndpointIsInView()
     {
         // Arrange. Both carry a placeholder position: a link is emitted at (0, 0) because it is
-        // drawn between its endpoints, and the evolution axis at (0, 0) because it is the map's
-        // frame rather than a thing on the map. A filter judging either by that point would keep
+        // drawn between its endpoints, and the diagram element at (0, 0) because it is the map
+        // itself rather than a thing on the map. A filter judging either by that point would keep
         // them only while the reader happened to be looking at the top-left corner, and cull every
         // relationship everywhere else.
         var path = Write("component Alpha [0.9, 0.1]\ncomponent Beta [0.1, 0.9]\nAlpha->Beta\n");
@@ -188,10 +189,10 @@ public sealed class WardleySessionTests : IDisposable
         var deltas = session.UpdateView(corner);
         var held = await VisibleAsync(path, corner);
 
-        // Assert. Nothing was culled: the axis and the link are still held, and so is Alpha, pulled
+        // Assert. Nothing was culled: the diagram and the link are still held, and so is Alpha, pulled
         // in as the link's other endpoint - a link delivered with one end missing draws to nothing.
         Assert.Empty(deltas.OfType<DiagramRemoveDelta>());
-        Assert.Contains(held, element => element.Type == WardleyElementTypes.EvolutionAxis);
+        Assert.Contains(held, element => element.Type == WardleyElementTypes.Diagram);
         Assert.Contains(held, element => element.Type == WardleyElementTypes.Link);
         Assert.Equal(2, held.Count(element => element.Type == WardleyElementTypes.Element));
     }

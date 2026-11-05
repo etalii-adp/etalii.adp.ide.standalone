@@ -39,7 +39,7 @@ public class RawJsonOutsideLoadingTests
     public void NoCodeOutsideTheLoaderReadsTheSpecificationsJson()
     {
         // Arrange.
-        var project = Path.Combine(RepositoryRoot(), "src", "backend", "EtAlii.Adp.Specification.Disl");
+        var project = RepositoryPaths.Under("src", "backend", "EtAlii.Adp.Specification.Disl");
         var loading = Path.Combine(project, "Loading") + Path.DirectorySeparatorChar;
         var files = SourceFiles(project).Where(file => !file.StartsWith(loading, StringComparison.Ordinal)).ToList();
 
@@ -69,15 +69,5 @@ public class RawJsonOutsideLoadingTests
             if (SkippedFolders.Contains(Path.GetFileName(child))) continue;
             foreach (var file in SourceFiles(child)) yield return file;
         }
-    }
-
-    private static string RepositoryRoot()
-    {
-        for (var folder = new DirectoryInfo(AppContext.BaseDirectory); folder is not null; folder = folder.Parent)
-        {
-            if (File.Exists(Path.Combine(folder.FullName, "src", "backend", "EtAlii.Adp.slnx"))) return folder.FullName;
-        }
-
-        throw new InvalidOperationException("The repository root (the folder holding src/backend/EtAlii.Adp.slnx) was not found above the test assembly.");
     }
 }

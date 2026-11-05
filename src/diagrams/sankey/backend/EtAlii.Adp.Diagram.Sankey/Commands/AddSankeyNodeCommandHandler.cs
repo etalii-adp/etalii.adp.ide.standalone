@@ -19,7 +19,7 @@ public sealed class AddSankeyNodeCommandHandler(ISankeyDocumentStore documents) 
     }
 
     /// <inheritdoc />
-    protected override EditOutcome Apply(LineDocument document, SankeyModel model, AddSankeyNodeCommand command)
+    protected override EditOutcome Apply(SankeyBody document, SankeyModel model, AddSankeyNodeCommand command)
     {
         if (model.IsTaken(command.NodeId))
         {
@@ -42,6 +42,6 @@ public sealed class AddSankeyNodeCommandHandler(ISankeyDocumentStore documents) 
             Description: "",
             Range: new LineRange(0, 0));
 
-        return SankeyWriter.AddNode(document, model, node, below is null ? null : model.NodeOf(below));
+        return SankeyEdits.AddNode(document, node, below is null ? null : model.NodeOf(below));
     }
 }

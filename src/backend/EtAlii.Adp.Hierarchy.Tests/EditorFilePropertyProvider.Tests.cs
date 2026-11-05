@@ -13,19 +13,19 @@ namespace EtAlii.Adp.Hierarchy.Tests;
 /// </summary>
 public class EditorFilePropertyProviderTests : IDisposable
 {
+    private readonly TestFolder _testFolder = TestFolder.Create("editor-file-property");
     private readonly string _root;
     private readonly EditorFilePropertyProvider _provider;
 
     public EditorFilePropertyProviderTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
         _provider = new EditorFilePropertyProvider(new DiagramFileRouter(new TestDiagramDefinitionCatalog(Mindmap)));
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     private static readonly DiagramDefinition Mindmap =

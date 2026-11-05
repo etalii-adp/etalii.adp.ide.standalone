@@ -3,7 +3,6 @@ using EtAlii.Adp.Context.Wire;
 using EtAlii.Adp.Diagram.Wire;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy.Wire;
-using EtAlii.Adp.TestSupport.Host;
 using Grpc.Core;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here

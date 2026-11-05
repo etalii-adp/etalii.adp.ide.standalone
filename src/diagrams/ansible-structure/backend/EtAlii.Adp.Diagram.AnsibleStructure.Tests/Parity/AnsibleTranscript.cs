@@ -51,12 +51,8 @@ namespace EtAlii.Adp.Diagram.AnsibleStructure.Tests.Parity;
 /// the machine. YamlDotNet's sentences stay as they are.
 /// </para>
 /// </remarks>
-internal static class AnsibleTranscript
+public sealed class AnsibleTranscript() : TranscriptAdapter("ansible-structure", AnsibleCorpus.TestProject, "ansible-structure.transcript.json")
 {
-    /// <summary>The checked-in file's name, in this project's <c>Parity</c> folder.</summary>
-    private const string FileName = "ansible-structure.transcript.json";
-
-    private const string TestProject = "EtAlii.Adp.Diagram.AnsibleStructure.Tests";
     private const string Unknown = "parity:unknown";
 
     /// <summary>The registration a folder without one is given in its copy: the bare MIME line core writes.</summary>
@@ -64,86 +60,91 @@ internal static class AnsibleTranscript
 
     private static readonly TypeRegistry _payloadTypes = TypeRegistry.FromMessages(Wire.AnsibleElementPayload.Descriptor);
 
-    /// <summary>The module's folder, <c>src/diagrams/ansible-structure</c>.</summary>
-    private static string ModuleFolder { get; } = RepositoryPaths.Under("src", "diagrams", "ansible-structure");
+    public override string Origin => Diagram.AnsibleStructure.Origin.Key;
 
-    private static string TestFolderPath => Path.Combine(ModuleFolder, "backend", TestProject);
-
-    /// <summary>The finding folders git can hold.</summary>
-    private static string FindingFolders => Path.Combine(TestFolderPath, "Parity", "Folders");
-
-    /// <summary>The checked-in transcript.</summary>
-    public static string CheckedInPath => Path.Combine(TestFolderPath, "Parity", FileName);
-
-    private static string SourceFolder => Path.GetFullPath(Path.Combine(ModuleFolder, "..", ".."));
-
-    /// <summary>The corpus, as folder paths relative to <c>src/</c> with forward slashes, in the order they are recorded.</summary>
-    internal static IReadOnlyList<string> Corpus()
+    /// <summary>The toolbox is answered by origin from the providers the module registers, and it registers none.</summary>
+    protected override IReadOnlyList<ToolboxItemDefinition> Toolbox
     {
-        return
-        [
-            .. Children(Path.Combine(TestFolderPath, "Fixtures")),
-            .. Children(FindingFolders)
-                .Concat(AnsibleFindingFolders.MadeFromNothing(FindingFolders).Select(name => Relative(Path.Combine(FindingFolders, name))))
-                .Order(StringComparer.Ordinal),
-            .. Registered(Path.Combine(ModuleFolder, "examples")),
-            .. Registered(Path.Combine(SourceFolder, "examples", "diagrams", "ansible-structure")),
-        ];
-
-        static IEnumerable<string> Children(string folder) =>
-            Directory.GetDirectories(folder).Select(Relative).Order(StringComparer.Ordinal);
-
-        static IEnumerable<string> Registered(string folder) =>
-            Directory.GetFiles(folder, "*.adp", SearchOption.AllDirectories)
-                .Select(path => Relative(Path.GetDirectoryName(path)!))
-                .Distinct(StringComparer.Ordinal)
-                .Order(StringComparer.Ordinal);
-
-        static string Relative(string path) => Path.GetRelativePath(SourceFolder, path).Replace('\\', '/');
+        get
+        {
+            using var provider = Services();
+            return [.. provider.GetServices<IDiagramToolboxProvider>().Where(toolbox => toolbox.Origin == Diagram.AnsibleStructure.Origin).SelectMany(toolbox => toolbox.Items)];
+        }
     }
 
-    /// <summary>The whole transcript, as the bytes the checked-in file must hold.</summary>
-    public static async Task<byte[]> GenerateAsync(CancellationToken cancellationToken)
+    public override string DocumentsName => "folders";
+
+    public override string DocumentName => "folder";
+
+    /// <summary>Every folder, read as its manifest: so a folder whose files equal one recorded earlier, path for path and byte for byte, is <c>sameAs</c> it.</summary>
+    public override IReadOnlyList<TranscriptDocument> Corpus() =>
+        [.. AnsibleCorpus.Folders().Select(relative => new TranscriptDocument(relative, cancellationToken => ManifestAsync(Path.Combine(SourceFolder, relative), cancellationToken)))];
+
+    public override async Task WriteBeforeDocumentsAsync(Utf8JsonWriter json, CancellationToken cancellationToken)
     {
-        await using var provider = new ServiceCollection().AddCommands().AddHierarchyCommandHandlers().AddAnsibleStructure().BuildServiceProvider();
-        var histories = provider.GetRequiredService<IHistoryStackStore>();
+        json.WritePropertyName("registrations");
+        json.WriteLines(Registrations());
 
-        using var stream = new MemoryStream();
-        await using (var json = new Utf8JsonWriter(stream, TranscriptText.WriterOptions))
+        await base.WriteBeforeDocumentsAsync(json, cancellationToken);
+
+        await using var provider = Services();
+        json.WritePropertyName("refusals");
+        json.WriteLines(await RefusalsAsync(provider.GetRequiredService<IHistoryStackStore>(), cancellationToken));
+    }
+
+    /// <summary>A folder that is not there has no hash and is never the same as another; what is made in a folder is part of what it is.</summary>
+    public override async Task<string?> WriteIdentityAsync(Utf8JsonWriter json, TranscriptDocument document, byte[] bytes, CancellationToken cancellationToken)
+    {
+        var source = Path.Combine(SourceFolder, document.Name);
+        var makings = AnsibleFindingFolders.Makings.GetValueOrDefault(Path.GetFileName(source)) ?? [];
+        string? sha = null;
+        if (Directory.Exists(source))
         {
-            json.WriteStartObject();
-            json.WriteString("module", Diagram.AnsibleStructure.Origin.Key);
-            json.WriteString("generator", $"src/diagrams/ansible-structure/backend/{TestProject}/Parity/AnsibleTranscript.cs");
-            json.WriteString("regenerate", "ADP_WRITE_PARITY_TRANSCRIPTS=1 dotnet test --project <this test project> (then review the diff)");
-
-            json.WritePropertyName("registrations");
-            json.WriteLines(Registrations());
-
-            // The toolbox is answered by origin from the providers the module registers, and it registers none.
-            json.WritePropertyName("toolbox");
-            json.WriteLines([.. provider.GetServices<IDiagramToolboxProvider>()
-                .Where(toolbox => toolbox.Origin == Diagram.AnsibleStructure.Origin)
-                .SelectMany(toolbox => toolbox.Items)
-                .Select(item => $"{item.Id} | {item.Label} | {item.Icon} | drops {item.DropActionId} | {item.Description}")]);
-
-            json.WritePropertyName("refusals");
-            json.WriteLines(await RefusalsAsync(histories, cancellationToken));
-
-            json.WriteStartArray("folders");
-            var recorded = new Dictionary<string, string>(StringComparer.Ordinal);
-            foreach (var relative in Corpus())
-            {
-                await WriteFolderAsync(json, relative, recorded, histories, cancellationToken);
-            }
-
-            json.WriteEndArray();
-            json.WriteEndObject();
-            await json.FlushAsync(cancellationToken);
+            sha = await base.WriteIdentityAsync(json, document, bytes, cancellationToken);
+        }
+        else
+        {
+            json.WriteString("tree", "none; made from nothing");
         }
 
-        stream.Write("\r\n"u8);
-        return stream.ToArray();
+        if (makings.Length > 0)
+        {
+            json.WritePropertyName("made");
+            json.WriteLines(makings.Select(making => making.Line));
+        }
+
+        return sha is null ? null : $"{sha}|{string.Join("|", makings.Select(making => making.Line))}";
     }
+
+    public override async Task WriteDocumentAsync(Utf8JsonWriter json, TranscriptDocument document, byte[] bytes, string folder, CancellationToken cancellationToken)
+    {
+        Make(Path.Combine(SourceFolder, document.Name), folder);
+
+        var registration = Directory.Exists(folder)
+            ? Directory.GetFiles(folder, "*.adp").Order(StringComparer.Ordinal).FirstOrDefault()
+            : null;
+        if (!Directory.Exists(folder))
+        {
+            json.WriteString("registration", "none; the folder is not there");
+            registration = Path.Combine(folder, AnsibleFindingFolders.RegistrationName);
+        }
+        else if (registration is null)
+        {
+            json.WriteString("registration", $"none; the copy is given {TranscriptText.Quoted(BareRegistration)}");
+            registration = Path.Combine(folder, AnsibleFindingFolders.RegistrationName);
+            await File.WriteAllTextAsync(registration, BareRegistration, cancellationToken);
+        }
+        else
+        {
+            json.WriteString("registration", Path.GetFileName(registration));
+        }
+
+        // Services of its own: a history is kept by the copy's folder, so no two folders ever shared one.
+        await using var provider = Services();
+        await WriteReadingAsync(json, folder, registration, provider.GetRequiredService<IHistoryStackStore>(), cancellationToken);
+    }
+
+    private static ServiceProvider Services() => new ServiceCollection().AddCommands().AddHierarchyCommandHandlers().AddAnsibleStructure().BuildServiceProvider();
 
     /// <summary>Every service the module registers, as <c>service =&gt; implementation</c>, in registration order.</summary>
     private static List<string> Registrations() =>
@@ -162,7 +163,7 @@ internal static class AnsibleTranscript
         var folder = Path.Combine(Path.GetTempPath(), "EtAlii.Adp.AnsibleTranscript", Guid.NewGuid().ToString("N"));
         try
         {
-            TestFolder.CopyTree(Path.Combine(TestFolderPath, "Fixtures", "infrastructure"), folder);
+            TestFolder.CopyTree(Path.Combine(AnsibleCorpus.TestFolderPath, "Fixtures", "infrastructure"), folder);
             var registration = Path.Combine(folder, AnsibleFindingFolders.RegistrationName);
             await File.WriteAllTextAsync(registration, BareRegistration, cancellationToken);
 
@@ -199,79 +200,12 @@ internal static class AnsibleTranscript
         }
     }
 
-    private static async Task WriteFolderAsync(
-        Utf8JsonWriter json, string relative, Dictionary<string, string> recorded, IHistoryStackStore histories, CancellationToken cancellationToken)
-    {
-        var source = Path.Combine(SourceFolder, relative);
-        var makings = AnsibleFindingFolders.Makings.GetValueOrDefault(Path.GetFileName(source)) ?? [];
-        var sha = Directory.Exists(source) ? await FolderSha256Async(source, cancellationToken) : null;
-
-        json.WriteStartObject();
-        json.WriteString("folder", relative);
-        if (sha is null)
-        {
-            json.WriteString("tree", "none; made from nothing");
-        }
-        else
-        {
-            json.WriteString("sha256", sha);
-        }
-
-        if (makings.Length > 0)
-        {
-            json.WritePropertyName("made");
-            json.WriteLines(makings.Select(making => making.Line));
-        }
-
-        var key = $"{sha}|{string.Join("|", makings.Select(making => making.Line))}";
-        if (sha is not null && recorded.TryGetValue(key, out var first))
-        {
-            json.WriteString("sameAs", first);
-            json.WriteEndObject();
-            return;
-        }
-
-        recorded[key] = relative;
-        var folder = Path.Combine(Path.GetTempPath(), "EtAlii.Adp.AnsibleTranscript", Guid.NewGuid().ToString("N"));
-        try
-        {
-            Make(source, folder);
-
-            var registration = Directory.Exists(folder)
-                ? Directory.GetFiles(folder, "*.adp").Order(StringComparer.Ordinal).FirstOrDefault()
-                : null;
-            if (!Directory.Exists(folder))
-            {
-                json.WriteString("registration", "none; the folder is not there");
-                registration = Path.Combine(folder, AnsibleFindingFolders.RegistrationName);
-            }
-            else if (registration is null)
-            {
-                json.WriteString("registration", $"none; the copy is given {TranscriptText.Quoted(BareRegistration)}");
-                registration = Path.Combine(folder, AnsibleFindingFolders.RegistrationName);
-                await File.WriteAllTextAsync(registration, BareRegistration, cancellationToken);
-            }
-            else
-            {
-                json.WriteString("registration", Path.GetFileName(registration));
-            }
-
-            await WriteReadingAsync(json, folder, registration, histories, cancellationToken);
-        }
-        finally
-        {
-            TestFolder.TryDelete(folder);
-        }
-
-        json.WriteEndObject();
-    }
-
     /// <summary>
     /// The corpus folder <paramref name="relative"/> made in <paramref name="folder"/> as the transcript reads it:
     /// a copy of its files, or an empty folder for one that is not there, and then what <see cref="AnsibleFindingFolders"/>
     /// makes in it, which may take the folder away again.
     /// </summary>
-    internal static void MakeCopy(string relative, string folder) => Make(Path.Combine(SourceFolder, relative), folder);
+    internal static void MakeCopy(string relative, string folder) => Make(Path.Combine(AnsibleCorpus.SourceFolder, relative), folder);
 
     private static void Make(string source, string folder)
     {
@@ -424,9 +358,14 @@ internal static class AnsibleTranscript
         return text.EndsWith('\n') ? lines[..^1] : lines;
     }
 
-    /// <summary>The hash of a folder's files, path for path and byte for byte, in ordinal order of their relative paths.</summary>
-    private static async Task<string> FolderSha256Async(string folder, CancellationToken cancellationToken)
+    /// <summary>A folder's files, path for path and byte for byte, in ordinal order of their relative paths: whose hash makes two folders the same.</summary>
+    private static async Task<byte[]> ManifestAsync(string folder, CancellationToken cancellationToken)
     {
+        if (!Directory.Exists(folder))
+        {
+            return [];
+        }
+
         var manifest = new StringBuilder();
         foreach ((string full, string relative) in Directory.GetFiles(folder, "*", SearchOption.AllDirectories)
                      .Select(path => (Full: path, Relative: Path.GetRelativePath(folder, path).Replace('\\', '/')))
@@ -435,6 +374,6 @@ internal static class AnsibleTranscript
             manifest.Append(relative).Append(' ').Append(TranscriptText.Sha256(await File.ReadAllBytesAsync(full, cancellationToken))).Append('\n');
         }
 
-        return TranscriptText.Sha256(TranscriptText.Encode(manifest.ToString()));
+        return TranscriptText.Encode(manifest.ToString());
     }
 }

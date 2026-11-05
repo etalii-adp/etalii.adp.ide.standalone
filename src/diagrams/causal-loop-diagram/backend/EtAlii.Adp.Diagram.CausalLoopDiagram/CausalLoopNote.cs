@@ -67,7 +67,7 @@ public static class CausalLoopNote
     /// library; null where the library writes the note itself, or <paramref name="set"/> sets none.
     /// </summary>
     /// <param name="model">What the binding itself reads from <paramref name="bytes"/>, its notes not replaced.</param>
-    public static (Edit Edit, ModelChange.Set Remaining)? Splices(FblModel model, byte[] bytes, ModelChange.Set set)
+    public static (SpliceEdit Edit, ModelChange.Set Remaining)? Splices(FblModel model, byte[] bytes, ModelChange.Set set)
     {
         ArgumentNullException.ThrowIfNull(model);
         ArgumentNullException.ThrowIfNull(bytes);
@@ -82,12 +82,12 @@ public static class CausalLoopNote
         var note = value as string ?? "";
         var rest = set.Attributes.Where(attribute => attribute.Key != Note).ToDictionary(attribute => attribute.Key, attribute => attribute.Value, StringComparer.Ordinal);
         // The note the tool reads already: nothing to write, so nothing is written.
-        if (note.Length > 0 && candidates[^1].Text == note) return (new Edit([]), set with { Attributes = rest });
+        if (note.Length > 0 && candidates[^1].Text == note) return (new SpliceEdit([]), set with { Attributes = rest });
 
         var splices = note.Length == 0
             ? candidates.Select(word => new Splice(SpliceOperation.RemoveKey, Offset(link, statement, WhitespaceBefore(statement, word.Start)), Offset(link, statement, word.End), ""))
             : [new Splice(SpliceOperation.ReplaceValue, Offset(link, statement, candidates[^1].Start), Offset(link, statement, candidates[^1].End), $"\"{note}\"")];
-        return (new Edit([.. splices]), set with { Attributes = rest });
+        return (new SpliceEdit([.. splices]), set with { Attributes = rest });
     }
 
     private static string StatementOf(FblElement element, byte[] bytes) =>

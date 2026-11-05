@@ -1,4 +1,5 @@
 using EtAlii.Adp.Files;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph.Tests;
@@ -9,24 +10,18 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph.Tests;
 /// </summary>
 public sealed class GhgTimeUnitTests : IDisposable
 {
-    private readonly string _folder = Path.Combine(Path.GetTempPath(), "EtAlii.Adp.GhgTimeUnitTests", Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("EtAlii.Adp.GhgTimeUnitTests");
+    private readonly string _folder;
     private readonly GhgDocumentStore _store = new(new FileWriter());
 
     public GhgTimeUnitTests()
     {
-        Directory.CreateDirectory(_folder);
+        _folder = _testFolder.Path;
     }
 
     public void Dispose()
     {
-        try
-        {
-            Directory.Delete(_folder, recursive: true);
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            // A temp folder left behind is not a test failure.
-        }
+        _testFolder.Dispose();
     }
 
     private static int M(int year, int month = 1) => GhgScale.MonthIndex(year, month);
@@ -161,7 +156,7 @@ public sealed class GhgTimeUnitTests : IDisposable
         var body = Path.Combine(_folder, "eras.ghg");
         await File.WriteAllTextAsync(body, Document("decade"), TestContext.Current.CancellationToken);
 
-        var moved = await new GhgTestDispatcher(_store).DispatchAsync(
+        var moved = await TestHistory.Dispatcher(s => { s.AddGartnerHypeCycleGraph(); s.AddSingleton<IGhgDocumentStore>(_store); }).DispatchAsync(
             new SetGhgPlacementCommand(body, "printing", GhgScale.XOf(M(1453, 7), GhgTimeUnit.Decade), GhgScale.TopOf(4)),
             TestContext.Current.CancellationToken);
 
@@ -177,7 +172,7 @@ public sealed class GhgTimeUnitTests : IDisposable
         var body = Path.Combine(_folder, "eras.ghg");
         await File.WriteAllTextAsync(body, Document("century"), TestContext.Current.CancellationToken);
 
-        var added = await new GhgTestDispatcher(_store).DispatchAsync(
+        var added = await TestHistory.Dispatcher(s => { s.AddGartnerHypeCycleGraph(); s.AddSingleton<IGhgDocumentStore>(_store); }).DispatchAsync(
             new AddGhgTrendCommand(body, GhgScale.XOf(M(1250), GhgTimeUnit.Century), GhgScale.TopOf(6) + 10),
             TestContext.Current.CancellationToken);
 

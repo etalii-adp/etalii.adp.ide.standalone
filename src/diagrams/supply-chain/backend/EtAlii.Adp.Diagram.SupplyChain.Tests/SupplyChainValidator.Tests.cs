@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.SupplyChain.Tests;
@@ -12,7 +11,7 @@ public sealed class SupplyChainValidatorTests
     public void EveryRule_IsReportedOnTheBrokenDocument()
     {
         // Act.
-        var breaches = SupplyChainValidator.Validate(SupplyChainParser.Parse(LineDocument.Parse(File.ReadAllText(Fixture("rules-broken.supply")))));
+        var breaches = SupplyChainValidator.Validate(SupplyChainReading.Parse(File.ReadAllText(Fixture("rules-broken.supply"))));
 
         // Assert.
         Assert.Equal(
@@ -46,7 +45,7 @@ public sealed class SupplyChainValidatorTests
     public void ACleanDocument_ReportsNothing(string path)
     {
         // Act.
-        var breaches = SupplyChainValidator.Validate(SupplyChainParser.Parse(LineDocument.Parse(File.ReadAllText(path))));
+        var breaches = SupplyChainValidator.Validate(SupplyChainReading.Parse(File.ReadAllText(path)));
 
         // Assert.
         Assert.Empty(breaches);

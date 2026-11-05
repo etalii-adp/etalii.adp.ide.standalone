@@ -24,7 +24,7 @@ public sealed class CorpusUntouchedTests
         var before = await HashesAsync(cancellationToken);
 
         // Act.
-        _ = await DotNetTranscript.GenerateAsync(cancellationToken);
+        _ = await TranscriptHarness.GenerateAsync(new DotNetTranscript(), cancellationToken);
         var after = await HashesAsync(cancellationToken);
 
         // Assert.

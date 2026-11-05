@@ -908,6 +908,87 @@ clipping, and that is only visible on screen.
   instead - one or two lines, not a paragraph that pushes the rest of the panel down.
 - **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **FAILED — a real defect found by running the app.** Clicking `Kettle` on the canvas (tried repeatedly, including a precise click on the zoomed-in dot) does **not** fill the Property Grid: the backend logs *Selected …/tea.adp … as Activate* and *Described 0 properties for …/tea.adp* — the innermost selection resolves to the `.adp` **file**, never the element, so the heading stays the file and Kettle's Identity/Position/Strategy rows never appear. Root cause, confirmed in source: **`WardleyCanvas.tsx` reports no element context-selection.** The working modules do — e.g. causal-loop wires `onSelect → select(elementSelectionOf(entryId, path, id, gesture))` to each element's `onClick` and imports `useContextSelection`/`useElementContextMenu`; `WardleyCanvas` has none of these, its element `<g>` carries only an `onMouseDown` drag handler, and a comment in it admits the `.adp` entry *“a selection reports as its outer level … task 19's context resolver needs and nothing here does.”* The backend `WardleyContextSourceResolver` and `WardleyContextPropertyProvider` exist and are unit-tested, but the client never hands them an element. This is the same class of bug as the already-fixed causal-loop *“context surface is reachable”* entry, and it wants the same fix — wire element-selection reporting into `WardleyCanvas`, with a guard. Flagged to the Scrum master.
 
+## The compiled Wardley map canvas, in a browser (wardley-map-disl-fbl, task 9, Requirement 8.3)
+
+**Why this is a browser pass and not only tests:** the canvas definition is now compiled from the bundled `wardley-map.dis` (`compileNotation(parseDisl(text), WARDLEY_BINDINGS)`), and `wardleyCompiledDefinition.test.tsx` holds its markup to the hand-written definition's on a corpus. Markup is not a picture. Only a browser shows what a band, a mark, an attitude or an accelerator computes to in each theme, where a label at its offset and its editor land, and whether a drag is clamped and a pipeline component kept on its row.
+
+- **Preconditions**:
+  - A build from the branch beside a build of the commit before this task, each with its backend and Vite on ports of their own. Pass the ports on the command line (`ASPNETCORE_URLS`, `Client__DevServerUrl`, `vite --port`) so no file changes. Sign in with the developer session.
+  - A project per build, holding `pass.owm` with the registration `wardley/map`. The map holds:
+    - an anchor `Customer`;
+    - `Cup of Tea` `(buy) inertia`;
+    - `Kettle` with `label [-57, 4]` and a pipeline of `Campfire Kettle` and `Electric Kettle`;
+    - a submap `Power` with a url;
+    - `Water`;
+    - a dependency `Cup of Tea->Kettle` and a flow `Cup of Tea+>Water`;
+    - `evolve Kettle->Smart Kettle 0.62` and `evolve Power 0.85`;
+    - a `settlers` attitude;
+    - an accelerator and a deaccelerator;
+    - `annotation 1` pinned at two places;
+    - a note.
+  - Run every row in the light theme and again in the dark one, from a fresh copy.
+- **Rows**:
+  1. **The bands and both axes.** Four stage bands span the map, from Genesis to Commodity (+utility), each labelled under the evolution axis. Dashed boundaries sit between them, and there is none before the first. The value-chain axis runs up the left edge, with *Visible* at the top and *Invisible* at the bottom; the evolution axis runs along the bottom, with its title under it.
+  2. **Each of the three marks.**
+     - A component is an open circle.
+     - The anchor is a filled square with sharp corners.
+     - The submap is a double ring.
+     - Each mark's name starts 15 to its right.
+     - `Cup of Tea` carries its inertia bar and *buy · inertia* under its name.
+  3. **A label at its offset.** `Kettle`'s name ends left of its mark (offset -57). F2 on `Kettle` opens the editor where that text starts, holding *Kettle*. Typing *Urn* and Enter renames it in every statement that names it, and one Undo puts the file back byte for byte.
+  4. **A dependency and a flow.** The dependency is a thin line in the muted colour; the flow is a thicker one in the text colour. Both run between the marks.
+  5. **An evolution.** `Kettle` and `Power` each have a dashed line to an evolved mark drawn dashed. `Kettle`'s evolved mark is named *Smart Kettle*.
+  6. **An attitude region.** `settlers` is a faint region with a dashed border, its name in its top-left corner.
+  7. **An accelerator and a deaccelerator.** Each is a short heavy rule centred on its point, with its name to the right; the deaccelerator's rule is dashed.
+  8. **A note.** Its text starts at its position.
+  9. **An annotation pinned twice.** A circled *1* is drawn at both places.
+  10. **A drag clamped at an edge.** Drag `Water` far past the right and bottom edges. The file says `component Water [0, 1]`, and one Undo puts it back byte for byte.
+  11. **A pipeline component dragged along its row only.** Drag `Campfire Kettle` right and down. It moves right only, the file gives it its one new maturity, and one Undo puts the file back.
+  12. **The eight toolbox entries.** Component, Anchor, Market, Ecosystem, Submap, Pipeline, Note and Annotation are listed. Drag each onto the map (Pipeline onto `Water`): what happens is the same on both builds.
+  13. **The map's name.** Open a second map, `title.owm`, holding only `title Tea shop` and one component. The canvas is named *Wardley map: Tea shop* (`aria-label`), from the `wardley/map+diagram` element the backend sends for the map itself. `pass.owm` is named by its own title.
+- **Result 2026-10-25 (agent-10-wardley-map-disl-fbl)**: **rows 1 to 12 pass in both themes, the same on both builds but for the differences below; row 13 passes on the branch build.**
+  - **Setup.** Branch `features/wardley-map-disl-fbl-9` with this task's changes uncommitted, the definition bundled from etalii.adp `9df6b8edc`, beside a build of `0139f28f2`. A developer build of each: backend on 5391 and 5381, Vite on 5390 and 5380. Headless Chromium 1194, driven by Playwright 1.56.1 at 1600 by 1000, with real mouse and keyboard input and `colorScheme` set per theme.
+  - **How it was read.** From the DOM, its computed styles and the file on disk. Every drawn primitive's screen box, stroke, fill, dash, opacity and font was compared between the builds. Screenshots `<build>-<theme>-<step>.png` are in `/tmp/claude-0/wm9/pw`.
+  1. Band fills: `rgba(0, 0, 0, 0.06)` light and `rgba(255, 255, 255, 0.06)` dark, at opacity 0.35, 0.5, 0.65 and 0.8. Boundaries `rgb(226, 232, 240)`, dashed `6px, 6px`, at x 527, 731 and 1003 on the screen. Axes `rgb(100, 116, 139)` at 2px. The axis titles and stage labels are 20px. The same on both builds.
+  2. The marks were the same on both builds. Squares and the attitude are drawn without the canvas's rounded corner (`rx: 0` in `wardley.css`).
+  3. The editor opened over the name at x 658 on the screen, where the text starts, on both builds. The rename wrote the five statements that name `Kettle`, and Undo put the file back byte for byte.
+  4.-7., 9. Identical on both builds, except that a line now ends on its mark's circle rather than its box (a point or two at this zoom), and the accelerators' names (see below).
+  8. The note's text starts at x 640 on the screen on both builds, and is set 2 lower.
+  10. `component Water [0, 1]` on both; Undo gave a byte-identical file.
+  11. `component Campfire Kettle [0.2823]`, the screen y unchanged at 478, on both; Undo gave a byte-identical file.
+  12. All eight listed, and a drop of each changed nothing on either build. The Wardley canvas has never answered a toolbox drop.
+  13. Run on the branch build only, after the diagram element replaced the evolution axis element and the definition was bundled from etalii.adp `113dccd7d`. `title.owm` reads *Wardley map: Tea shop* and `pass.owm` *Wardley map: Task nine pass*, on the canvas's frame and its `svg` alike.
+- **Differences from the build before this task, each named in `wardleyCompiledDefinition.test.tsx`:**
+  - *buy · inertia* starts under the name instead of being centred under the mark.
+  - An evolution's new name sits on the line of every other name, 2 higher on the screen.
+  - The attitude's label is inset 1 more and set 2 lower.
+  - An accelerator's name is text in the text colour. The hand-written canvas stroked it 3 wide with the rule's dash, which drew it smeared.
+  - **Delete on a selected component** now asks *Remove 'Water', and every link and evolution that names it?* and removes it, and one Undo puts the file back. Before this task, Delete did nothing (ruled 2026-10-25, option a).
+- **Observations, not failures of this task:**
+  - A right-click on empty map sends the backend a placement, which the Wardley backend does not resolve, so no menu opens, as before this task. The specification declares a menu there. Answered by the next entry.
+  - `Smart Kettle` overlaps `Electric Kettle` on both builds, because the corpus places them at nearly one point.
+
+## A right-click on empty Wardley map opens the map's menu (wardley-map-disl-fbl, after task 9)
+
+**Why this is a browser pass and not only tests:** the backend tests prove that a placement `new:x,y` resolves to the map and is offered the definition's menu for the diagram. Only a running client shows that the canvas's right-click sends that placement, that the shared menu opens on it, and that an entry's dialog reaches the file.
+
+- **Preconditions**:
+  - A build from the branch, with its backend and Vite on ports of their own (`ASPNETCORE_URLS`, `Client__DevServerUrl`, `vite --port`).
+  - A project holding `pass.owm` with the registration `wardley/map`, holding the map of the entry above.
+  - Run in the light theme and again in the dark one, from a fresh copy.
+- **Rows**:
+  1. **The menu.** Right-click empty map, away from every mark and line. A menu opens listing *Add component…*, *Add anchor…*, *Add submap…*, *Add market…*, *Add ecosystem…*, *Add note…* and *Add annotation…*, in that order.
+  2. **An entry from it.** Choose *Add component…*. A dialog *Add component* asks for a *Name*. Type *Water Tank* and press *Add*. The file gains `component Water Tank [0.5, 0.5]`: the middle of the map, as the definition says, not the point clicked.
+  3. **Undo.** One Undo puts the file back byte for byte.
+- **Result 2026-10-25 (agent-10-wardley-map-disl-fbl)**: **rows 1 to 3 pass; row 1 in both themes.**
+  - **Setup.** Branch `features/wardley-map-disl-fbl-9-menu` with this change uncommitted on `02d255944`. A developer build: backend on 5391, Vite on 5390. Headless Chromium 1194 driven by Playwright 1.56.1 at 1600 by 1000, with a real right-click at (450, 250) and `colorScheme` set per theme.
+  - **Rows.**
+    1. The seven entries were listed in the order above, in both themes.
+    2. The dialog asked for *Name*. *Add* wrote `component Water Tank [0.5, 0.5]`.
+    3. The file was byte-identical after one Undo.
+  - **Before this change**, the same right-click opened no menu on either build of the entry above (its *Observations*).
+  - **Seen besides.** While the map is the subject, the ribbon lists the same seven adds. Enter in the dialog's field did not submit it; *Add* did. That is the shared dialog's behaviour, not this change's.
+
 ## The ruler stays fixed to the view while its labels slide with the content (timeline-diagram, task 31)
 
 - **Preconditions**: a project holding a `.tml` with several elements spanning a few months
@@ -3354,8 +3435,9 @@ below stays either way.
 - **Preconditions**: the two pages exist - `docs/architecture.md` (one `flowchart LR`) and
   `docs/solution-structure.md` (one `flowchart LR`). No running app is needed; this check is
   about documents, not the product.
-- **Reader 1, the spec-workflow dashboard**: open the dashboard and view both pages through it.
-  This is the reader that matters most, because it is where a session reads documentation.
+- **Reader 1, the IDE's Markdown preview**: open both pages in Rider's or Visual Studio Code's
+  Markdown preview with its mermaid support. This is where a session's user reads documentation
+  (until 2026-10-31 this reader was the spec-workflow dashboard, which is no longer used).
 - **Reader 2, the repository host**: view both pages on GitHub, which renders mermaid in
   markdown natively. A block can parse in one renderer and not the other; two readers is the
   point of the check, not redundancy.
@@ -3883,6 +3965,64 @@ writes a size - is evidenced by the module's own suites. Requirements 13.1 and 1
   - After Undo the `tls.yml` text tab opened in step 5 became active rather than the diagram, as the Helm pass saw.
   - The diagram's tab has an empty caption, its file being named `.adp`; its title reads `ansible-pass/.adp`.
 
+## The compiled functional decomposition graph canvas, in a browser (functional-decomposition-graph-disl-fbl, task 8, Requirement 7.4)
+
+**Why this is a browser pass and not a test:** the compiled definition is held to the hand-written one
+key for key and markup for markup by `fdgCompiledDefinition.test.tsx`, but jsdom applies no CSS and
+lays out no text, so a fill, a centred Comment and a drag that writes a size are evidenced only here.
+
+- **Preconditions**: a locally running developer build of the branch. A **copy** of
+  `src/diagrams/functional-decomposition-graph/examples/field-service/` added as a project, because
+  the rows edit the document; open `field-service.fdg` by selecting it in Hierarchy and pressing
+  **Enter**. Read every result from the document on disk, not from the canvas. The instrument traps of
+  the task 18 entry above apply: in a hidden browser pane hold a dispatched gesture about three
+  seconds **after its last move** before releasing, and re-read positions after anything that
+  re-fits the canvas (an add re-fits it).
+- **Rows**:
+  1. **Five shapes and fills, both themes.** Read each shape's **computed** fill: light `#aaed92`,
+     `#ededed`, `#9edcfa`, `#86e6d9`, `#fcf281`; dark `#2e7814`, `#696969`, `#086fa1`, `#187569`,
+     `#736a03`. Labels and the Comment's text are `--color-text` in both; the Comment's text is
+     centred in its box.
+  2. **A drop of each palette entry** onto empty canvas writes one entry of that type, named as the
+     tool names a new one ("New UI element", …, a Comment "New comment", 240 by 96).
+  3. **A right-button drag for each of the five relations** writes it: UI to UI (`ui-child`), UI to
+     Action (`owns-action`), Action to Data (`owns-data`), Data to Function (`owns-function`), and a
+     **Shows from an Action to the page that owns it**. **One refused drag per check**, each with the
+     forbidden highlight and nothing written: a type (Action to Action), a cardinality (a second
+     parent) and a cycle (a child onto its own parent).
+  4. **Inline rename** of a name (F2, type, Enter) and of a Comment's text (F2, the multiline
+     editor) writes the new value.
+  5. **Resize**: a named element shows a left and a right handle only; dragging the right edge writes
+     the width, the left edge the width and `x`, the right edge staying put. A Comment shows four
+     handles; each of its four edges writes.
+  6. **Remove**: an element with no connection goes without asking; one with a connection asks
+     "Removing this element also removes the 1 connection to or from it." and, confirmed, takes the
+     connection with it.
+  7. **A right-click on empty canvas** opens the specification's menu: "Add ui element here", "Add
+     data element here", "Add action here", "Add function here", "Add comment here". The hand-written
+     canvas opened nothing here; the user ruled that the menu is offered (chat ruling of 2026-10-24).
+- **Result 2026-10-22, agent-7 (Developer), branch `features/functional-decomposition-graph-disl-fbl-8`
+  at `cace83f44`, macOS, light and dark via emulated `prefers-color-scheme`, in the IDE's built-in
+  browser with its pane hidden: all seven rows pass. Every gesture was dispatched as pointer, drag and
+  key events from the page, not made with a hand.** Measured:
+  1. Light fills `rgb(170, 237, 146)`, `rgb(237, 237, 237)`, `rgb(158, 220, 250)`,
+     `rgb(134, 230, 217)`, `rgb(252, 242, 129)`; dark `rgb(46, 120, 20)`, `rgb(105, 105, 105)`,
+     `rgb(8, 111, 161)`, `rgb(24, 117, 105)`, `rgb(115, 106, 3)`: the tokens exactly. Label and Comment
+     text `rgb(15, 23, 42)` light and `rgb(241, 245, 249)` dark. `note-offline`'s text is anchored at
+     x 1690, the middle of its box (1560 + 260 / 2).
+  2. Five entries written, each of its type and name; the canvas went from 19 elements to 24.
+  3. All five relations written with the relation the pair admits, the Shows from the new Action to
+     the new UI Element that owns it included; the three refusals showed the forbidden highlight only
+     and the document kept its 47 entries.
+  4. `name: Browser renamed screen` and a two-line `text: |-` written.
+  5. `task-row`: 2 handles; right edge 140 -> 203 with `x` 280; left edge 203 -> 266 with `x`
+     280 -> 217.014. `note-round-trip`: 4 handles; 260 by 96 -> 344 by 181, `x` 20 -> -21.9906,
+     `y` 520 -> 477.0715.
+  6. The new Comment went with no dialog; the new Function asked with the sentence above and,
+     confirmed, went with its `owns-function` connection: 47 -> 44 entries.
+  7. The five entries, in that order, in the context menu.
+- **Owed to a real hand**: the gesture START of a right-button drag and of a palette drag, as in task 18.
+
 ## A .NET dependency graph follows its files, keeps a drag, and is created as a `.slnx` (dotnet-dependency-graph-disl-fbl, task 9)
 
 **Why this is a browser pass and not only tests:** the module's tests read, watch, write and create through the real pipeline, but only the running app shows what the canvas draws after a change on disk, what a drag on it writes, and what the Add dialog creates, and only the .NET tooling says whether the created file is a solution it opens.
@@ -3904,3 +4044,371 @@ writes a size - is evidenced by the module's own suites. Requirements 13.1 and 1
   - Step 5: the menu offered *Add as diagram…* on the `.sln`, the dialog *Open Lone.sln as* *dotnet* → *.NET dependency graph*, and `Lone.adp` held `dotnet/dependency-graph` CRLF alone; the diagram drew `project:Classic/Classic.csproj`.
   - Step 6: `created/` held `New.adp` (`dotnet/dependency-graph` CRLF) and `New.slnx` (`<Solution>` CRLF `</Solution>` CRLF); the tab read *This solution has no projects ADP could resolve. Any reason is reported in the problems panel.* with *No problems found.*; `dotnet sln created/New.slnx list` printed *No projects found in the solution.* and exited 0 under SDK 10.0.112; the second Add said *An item named 'New.adp' already exists in this folder.* and wrote nothing.
   - **Not run here**: the light and dark appearance of the canvas, which this task does not change, and a screenshot read by a person.
+
+## The Hierarchical Requirement Designer's page, in a browser (spec 029, task T058)
+
+**Why this is a browser pass and not a test:** what the boxes, tags and marks compute to in each theme, how many levels fit a real page, and whether a fold made on the page lands in the registration alone are decided between the stylesheet, the layout, the stream and the files, which no single suite spans. jsdom computes no style from a stylesheet and lays nothing out.
+
+- **Preconditions**: a locally running developer build from the branch, and a scratch folder registered as a project holding a copy of `src/designers/hierarchical-requirement/examples/` (`web-shop.md` and `web-shop.adp`), the Knowledge designer's `cities.yaml` with `provinces.yaml` and a registration, and three files made from `web-shop.md`: `broken.md` with one number written `REQ-00X2`, `later.md` with the envelope's version `0.3`, and `agent.md`, written from the companion alone, with no registration: an item `ITEM-NEW` holding two `REQ-NEW` requirements. The developer build opens signed in.
+- **Steps**:
+  1. Open `web-shop.md`, 1400 px wide, in the dark theme. Read the page: the boxes, the numbers, titles, tags and descriptions, the folds the registration keeps, the note icons, the findings, and the computed colours of the page, a level's box, an entry's box, a number, a title and the tags.
+  2. The same in the light theme.
+  3. Press the mark at the right of *Checkout*. Read the trail and the page. Expand *Guest checkout*. Press the document's title in the trail.
+  4. Collapse *REQ-0001*. Read the page, the Undo button, the registration and the body.
+  5. Open `broken.md`, `later.md` and `agent.md` in turn.
+  6. Compare the colours of step 1 with the Knowledge designer's (*The Knowledge designer, in a browser*, step 1).
+- **Expected**: one page with no tree beside it; a box as high as what stands to its right, its requirements above its sub-items; as many levels as fit and the mark on an item that does not fit; focus by the mark with a trail leading back and nothing written; a fold written to the registration alone and no undo step; a bad bullet one finding at its line with the rest of the page shown; a later version read-only with its reason; a document written from the companion alone opening with only `std.missingId`; the Knowledge designer's colours.
+- **Result 2026-10-23, the Spec 029 thread, `features/029-hierarchy-surface` on `9b3276bb1`, backend 5080 and Vite 5174, headless Chromium through Playwright (results read from the DOM, computed styles, screenshots and the files): steps 1 to 6 passed after one defect, found in step 5 and fixed with a guard.**
+  - Step 1: 14 boxes: *Storefront*, *Backend* and *Data* down the left, *Checkout* and *Mail* inside them, with their requirements to their right; *Guest checkout*, the third level, is not drawn and *Checkout* carries the mark, *1 more level*. *REQ-0002* is collapsed to its number, title and tags; *ITEM-0003*, also kept collapsed, is behind the mark. Three note icons: *Remark* on *REQ-0003*, *Question* on *REQ-0006*, *Idea* on *ITEM-0006*; the resolved *Warning* on *ITEM-0002* has none. One finding above the page: *REQ-0013 is numbered when the document is next changed: the file holds REQ-NEW.* at line 44. Dark: page `rgb(30, 41, 59)` with text `rgb(241, 245, 249)`, a level's box `rgba(255, 255, 255, 0.06)` over it, numbers `rgb(148, 163, 184)`, note icons `rgb(251, 191, 36)`, tags blue `rgb(40, 69, 108)`, default `rgb(51, 65, 85)`, green `rgb(43, 89, 63)`, orange `rgb(122, 67, 23)` and purple `rgb(73, 47, 100)`, each with the light text.
+  - Step 2: light: page `rgb(255, 255, 255)` with text `rgb(15, 23, 42)`, a level's box `rgba(0, 0, 0, 0.06)`, numbers `rgb(100, 116, 139)`, note icons `rgb(180, 83, 9)`, tags blue `rgb(211, 229, 239)`, default `rgb(241, 245, 249)`, green `rgb(219, 237, 219)`, orange `rgb(253, 227, 200)` and purple `rgb(232, 222, 238)`, each with the dark text.
+  - Step 3: the trail read *Web shop*, *ITEM-0001 Storefront*, *ITEM-0002 Checkout*, and the page held *Checkout*, its two requirements and *Guest checkout*, collapsed. Expanded, *Guest checkout* showed its two requirements. The title in the trail brought the whole page back and the trail went away.
+  - Step 4: *REQ-0001* and *REQ-0002* collapsed; Undo stayed disabled. The registration's `collapsed` block read `REQ-0001: yes` where it had read `ITEM-0003: yes` (the expansion of step 3), and the body's checksum was unchanged.
+  - Step 5, first run, **failed and is fixed with a guard**: each of the three tabs said *The document cannot be opened.* The workspace's designer service routed a path by registration only, so a requirement document without one, as an agent writes it, never opened; the explorer and the router of the three kinds already took it by its envelope. It now routes by the envelope first (`HierarchySurfaceFlow.Tests.cs`, `ADocumentWithoutARegistration_OpensByItsEnvelope`). Second run: `broken.md` drew 13 boxes and two findings, *This entry cannot be read: it is in no form this file's entries are written in.* at line 34 and the `REQ-NEW` one, with every other entry shown and its controls live; `later.md` drew all 14 boxes under *This document is written in DED 0.3, and this application reads DED 0.2 and earlier. It is left exactly as it is and cannot be changed here.*; `agent.md` drew its 3 boxes with three findings, each the `std.missingId` of an `ITEM-NEW` or `REQ-NEW`, and nothing else. An earlier `agent.md` that also named `ITEM-NEW` in an assessment drew a fourth finding, *ITEM-NEW names no item or requirement of this document.*, which the companion's rule that an assessment names an entry by its number explains.
+  - Step 6: the dark and light tag fills, the text on them and the page's text are the Knowledge designer's of 2026-10-10, token for token.
+  - **Not run in this pass:** a screenshot read by a person beside the Knowledge designer's, and the pane of the built-in browser.
+
+## The Hierarchical Requirement Designer beside a text editor and an agent (spec 029, task T070)
+
+**Why this is a browser pass and not a test:** a person typing on the page while the text editor and another program write the same file meets the watcher, the history, the stream, the page's focus and its layout at once. The module's suites cover each rule with the file system and the history but no page; the client's cover the bar in jsdom, which lays nothing out and moves no focus by itself.
+
+- **Preconditions**: a locally running developer build from the branch, and a scratch folder registered as a project holding a copy of `src/designers/hierarchical-requirement/examples/web-shop.md` and `web-shop.adp`. Two browser tabs on the project: one with `web-shop.md` open in the designer, one with it opened by *Open as text*. "Another program" is a script that writes the file as editors and agents do, to `web-shop.md.agent` and then moved over `web-shop.md`.
+- **Steps**:
+  1. On the page, double-click the title of *REQ-0004*, type *An order is confirmed by e-mail.* and press Enter. Read the file, the text editor and the Undo button.
+  2. Select *REQ-0007*, which has no description, press its *Add a description* control, type two lines and press Ctrl+Enter. Read the file and the text editor.
+  3. Press Undo. Read the file and the text editor.
+  4. In the text editor, add a word to *REQ-0006*'s title and press Ctrl+S. Read the file and the page.
+  5. Press Undo.
+  6. In a fresh pair of tabs, change *REQ-0001*'s title on the page, then let another program shorten *REQ-0009*'s title. Read the page, the text editor and the explorer.
+  7. Read the Undo button and press it if it is enabled. Read the file.
+  8. Double-click *REQ-0010*'s title and change it; let another program shorten *REQ-0008*'s title. Read the page. Press *Keep my text*, then Enter. Read the file and the text editor.
+  9. Double-click *REQ-0009*'s title and type *Lost text.*; let another program change *REQ-0007*'s title. Press *Show the file*.
+  10. Double-click *REQ-0007*'s title and change it; let another program delete *REQ-0007*'s line. Read the page. Press *Keep my text*, then Enter.
+  11. Let another program append two bytes that are not UTF-8. Read the page and double-click a title. Put the file back.
+- **Expected**: each edit on either side shown on the other without reopening; a page edit written with the numbering it owes (R17) and taken back by one undo; the text editor's save undone by the same Undo, the project's one history; an outside change leaving nothing to undo of what came before it and writing nothing; the bar over a field the file changed under, *Keep my text* writing the typed text over the file as it now is and *Show the file* writing nothing; a number gone under a field refused with R10's sentence; an unreadable file kept read-only with its reason, and the page itself again once it reads.
+- **Result 2026-10-23, the Spec 029 thread, `features/029-two-writers` on `ebf0b416b` and the fixes below, backend 5080 and Vite 5174, headless Chromium through Playwright (results read from the DOM, screenshots, the backend log and the files): steps 1 to 11 passed after three defects, found in steps 6, 8 and 10 and fixed with guards.**
+  - Step 1: the file's line read `- REQ-0004 An order is confirmed by e-mail. #mail category:functional state:done`, and the same edit wrote `REQ-0013` in place of `REQ-NEW` and the mark `<!-- last: ITEM-0007 REQ-0013 -->`; the text editor showed the line within the 1.5 seconds waited; Undo was enabled.
+  - Step 2: the file held the two lines under *REQ-0007*, indented by its bullet, CRLF as the file is; the text editor showed them.
+  - Step 3: the description was gone from the file and from the text editor.
+  - Step 4: the file read `- REQ-0006 A session ends after 30 minutes without activity. EDITED #security category:functional state:accepted`; the page showed the title with *EDITED*.
+  - Step 5: the backend's history logged *Undid SaveTextFileCommand*; *EDITED* was gone from the file and the page; *REQ-0004* kept the page's edit of step 1.
+  - Step 6, first run, **failed and is fixed with a guard**: the page and the text editor showed the shortened title, but the explorer listed `web-shop.md` twice and logged *An item with the same key has already been added. Key: web-shop.md* on the rename, and the application's selection of the file was refused afterwards as *This item is no longer available.* The explorer moved the copy's entry onto the file's path without taking the file's own entry away. It now keeps the file's entry and removes the copy's (`HierarchyModel.Tests.cs`, `OnWatcherEvent_RenamedOverAKnownFile_KeepsTheFile_AndRemovesTheCopy`, seen failing with that exception). Second run: one `web-shop.md`, no error.
+  - Step 7: Undo was enabled for about two seconds after the write; pressed, the backend answered *web-shop.md was changed by another program, so the edits made to it before that can no longer be undone.* and logged *Dropped 2 recorded changes*; the button then read *There is nothing to undo.* and was disabled, and the file was byte-identical to before the press. The ribbon shows no answer of an action it runs, so that sentence is in the log only; this holds for every tool and is not this designer's.
+  - Step 8, first run, **failed and is fixed with a guard**: pressing *Keep my text* took the focus from the field, whose leaving commits it, so the text was written and the field closed before the button said anything; *Show the file* would have written it too. The bar's buttons now keep the focus where it is, and the field commits nothing when the focus leaves it for the bar (`ConflictBar.test.tsx`, *keeps the field's focus when a bar button is pressed, and commits nothing when the focus leaves for the bar*, each half seen failing alone). Second run: the bar read *This file was changed outside the designer.*, the page showed *REQ-0008*'s shortened title around the field, which still held the typed text; after *Keep my text* and Enter the file and the text editor read `- REQ-0010 Personal data is removed on request. #legal #privacy category:non-functional`, with *REQ-0008*'s change kept.
+  - Step 9: the field closed, *Lost text.* was in no file, and the page showed *REQ-0007*'s new title.
+  - Step 10, first run of the client's tests, **failed and is fixed with a guard**: the field closed with its box when the file lost the entry, dropping the text without the bar's say. It is now kept under the bar (`ConflictBar.test.tsx`, *still sends the text of a number the file no longer has, for the file to refuse*, seen failing). In the browser: the bar and the field under it holding the typed title; after *Keep my text* and Enter the frame said *The file changed while you were editing, so this change was not written. The page now shows the file as it is.* and the file did not hold the text.
+  - Step 11: the page kept its 13 boxes under *This file cannot be read as a requirement document: The body is not valid UTF-8. It is left exactly as it is and cannot be changed here.*, and a double-click opened no field; put back, the line went and the text editor showed the file as it was.
+  - Found on the way, **a fourth defect, fixed with a step here**: double-clicking the title of one entry while another was selected opened nothing. The first click moved the selection, which took the *Add a description* line from the other box and moved every box below it up by a line, so the second click landed on the tags. The control is now an icon in the box's right margin, out of the flow. Check: select *REQ-0001*, then double-click *REQ-0010*'s title; a field opens. Seen failing before the change, with both clicks traced: the first on `.hs-title`, the second on `.hs-tags`.
+  - **Not run in this pass:** the dark theme, which this task changes nothing of beyond the bar's warning colours that the text editor's bar already uses, and the pane of the built-in browser.
+
+## Shaping the hierarchy on the Hierarchical Requirement Designer's page (spec 029, task T081)
+
+**Why this is a browser pass and not a test:** a new document made through the explorer's *Add…*, a key that travels from the page through the application's selection and context actions to the history, and a drag that finds the box under the pointer meet the dialog, the context stream, the page's focus and its layout at once. The module's suites cover each operation against the file and the history, and the wire test covers the key's call shape; the client's cover the controls in jsdom, which lays nothing out and moves no pointer over boxes.
+
+- **Preconditions**: a locally running developer build from the branch, and an empty scratch folder registered as a project, with one subfolder `requirements`.
+- **Steps**:
+  1. Right-click `requirements`, choose *Add…*, pick *etalii*, *Hierarchical Requirement Designer*, *Markdown*, name it *shaping* and press *Add*. Compare the file with the binding's template under the title *shaping*, and list the folder.
+  2. In *ITEM-0003*, press *New requirement*. Read the field that opens, type a title and press Enter. Read the file.
+  3. Select *REQ-0005* and press Ctrl+Enter; type a title and press Enter. Select *ITEM-0006* and press Ctrl+Shift+Enter; type and Enter. Select *ITEM-0003* and press Ctrl+Enter; type and Enter. Read the file and the ribbon.
+  4. Drag *REQ-0009* by its grip over the lower half of *REQ-0008* and let go. Read the page while dragging, and the file after.
+  5. Select the now empty *ITEM-0007* and press Delete.
+  6. Select *ITEM-0004* and press Delete. Read the question, press *Cancel*; press Delete again and then *Delete*. Read the file.
+  7. Press Undo. Read the file and the folder.
+- **Expected**: the document is the template byte for byte, with no registration beside it, and opens at once; every add asks nothing and opens the new entry's title selected for typing, numbered from the mark; Ctrl+Enter adds an entry of the selected one's kind directly below it and Ctrl+Shift+Enter a requirement at the end of the selected item; a drag shows where the entry would go and moves it with everything in it as one edit; a delete of an empty entry asks nothing and one of an entry something concerns asks the specification's question with *Cancel* as the default; each is one step of Undo.
+- **Result 2026-10-23, the Spec 029 thread, `features/029-shaping` on `de9292831` and the fix below, backend 5080 and Vite 5174, headless Chromium through Playwright (results read from the DOM, screenshots, the backend log and the files): steps 1 to 7 passed after one defect, found in step 3 and fixed with a guard.**
+  - Step 1: the dialog listed the designer under *etalii* with its one format, *Markdown*; the created `shaping.md` was byte-identical to the template with *shaping* as its title (2608 bytes, CRLF) and opened in a tab; the folder held `shaping.md` alone.
+  - Step 2: the field *Title of REQ-0010* opened holding *New requirement*, all of it selected; the file then read `  - REQ-0010 Every call to a service is retried once.` as the last line of *ITEM-0003*.
+  - Step 3, first run, **failed and is fixed with a guard**: Ctrl+Enter on *REQ-0005* did nothing, and the backend logged *Cannot run an action on watch ...: an unrecognised source resolved to nothing*. The actions answered for an entry, but no resolver turned the page's element id into one, so the host refused every key on an entry and every selection of one. The designer now registers a resolver for its entries (`EntrySelection.Tests.cs`, `AnEntry_IsSelectedAsItsFilesChild` and `CtrlEnter_OnAnEntryTheFileHolds_AddsBelowIt`, both seen failing with *This item is no longer available.*). Second run: the fields *Title of REQ-0011*, *Title of REQ-0012* and *Title of ITEM-0008* opened in turn; the file held `REQ-0011` directly below `REQ-0005`, `REQ-0012` last in *ITEM-0006*, and `ITEM-0008` at the top level directly below *ITEM-0003* and everything in it; with an item selected the ribbon offered *New item below* and *New requirement*.
+  - Step 4: while dragging, *REQ-0008*'s box carried the line below it (`hs-drop-after`); after letting go the file held `REQ-0009` directly below `REQ-0008` in *ITEM-0006*, and *ITEM-0007* held nothing.
+  - Step 5: no question; *ITEM-0007* was gone from the file.
+  - Step 6: the question read *Delete ITEM-0004 with everything in it? 4 entries, references or assessments concern it; the references and assessments are kept, and reported.*, with the focus on *Cancel*; after *Cancel* the file still held *ITEM-0004*; after *Delete* it held neither *ITEM-0004* nor *REQ-0005*.
+  - Step 7: *ITEM-0004* and everything in it were back, *REQ-0011* among them; the folder held `shaping.md` alone.
+  - Found on the way, and changed: the drag grip took the width of the box's header, so a long word of a level's title broke a letter earlier than before. The grip now stands in the box's left margin. Check: *ITEM-0003 Integration* reads on one line at a 1400-pixel-wide window.
+  - **Not run in this pass:** the dark theme, which this task adds nothing to beyond tokens the page already uses, and the pane of the built-in browser.
+
+## Assessments on the Hierarchical Requirement Designer's page (spec 029, task T088)
+
+**Why this is a browser pass and not a test:** the icon stands at a box's corner over a layout jsdom does not compute, appears on hover, and its list sits over the boxes beside it; a gesture in the list travels to the file, back as the page's next model, and into the project's history. The module's suites cover each operation against the fixtures and the history, and the client's cover the icon and the list in jsdom, which lays nothing out, hovers nothing and moves no focus as a browser does.
+
+- **Preconditions**: a locally running developer build from the branch, and a scratch folder registered as a project, holding the module's example `web-shop.md` and `web-shop.adp` in a subfolder `requirements`.
+- **Steps**:
+  1. Open `web-shop.md`. Read the icon at the top right of *REQ-0006*, *REQ-0003*, *ITEM-0006* and *ITEM-0002*, and of *REQ-0001* before and while the pointer is over it.
+  2. Click *REQ-0006*'s icon. Read the list. Choose *Remark*, type a text in *New assessment* and press *New assessment*. Read the file and the icon.
+  3. Press *Change* on the new remark, choose *Warning*, change its text, type a detail and press *Change*. Read the file.
+  4. Press *Resolve* on the question, read its line and the icon; press *Reopen* and read the line again.
+  5. Press *Remove* on the warning. Read the file. Press Escape.
+  6. Open *ITEM-0006*'s list and press *Resolve* on the idea, whose line has no checkbox. Read the line. Click another box.
+  7. Collapse *ITEM-0004* and read its icon and its list; expand it again.
+  8. Press *Change* on a note and then Escape.
+  9. Press Undo until nothing is left to undo. Compare the file with the example.
+- **Expected**: one open assessment shows its kind's icon, several the icon for several with their count, and a resolved one is not counted; a box with none offers the way to add only under the pointer or when selected; the list names each assessment's entry, its text and detail, resolved ones too; an add is written at the end of Assessments in the stored form with an open checkbox, a change sets kind, text and detail, a resolve writes one character and a line with no checkbox gets one; a collapsed item's icon counts what is inside it; Escape drops a change being typed, and otherwise closes the list, as a click outside does; every gesture is one step of Undo.
+- **Result 2026-10-23, the Spec 029 thread, `features/029-assessments` on `5e8170afb` and the fixes below, backend 5080 and Vite 5174, headless Chromium through Playwright, light and dark (results read from the DOM, screenshots, the backend log and the file): steps 1 to 9 passed after two defects, found in steps 1 and 5 and fixed with guards.**
+  - Step 1: *REQ-0006* showed the question's icon (`mdi-help-circle-outline`, *Question: Is 30 minutes right for the mobile app?*), *REQ-0003* the remark's though the file writes `remark` in lower case, *ITEM-0006* the idea's; *ITEM-0002*, whose one warning is resolved, showed the add icon, hidden like *REQ-0001*'s until the pointer was over the box. The icon stood 4 pixels from the box's right edge and 6 from its top.
+  - Step 2: the list *Assessments of REQ-0006* held the question with *Resolve*, *Change* and *Remove*. The file then ended `- [ ] Remark REQ-0006: A minute of grace would help on slow networks.` and the icon became the icon for several, with *2*.
+  - Step 2, first run, **found and fixed with a guard**: the icon for several said *2 open notes*, the page's own word, rather than the designer's. It now names the definition's list, *2 open assessments* (`NoteIcon.test.tsx`, *calls several open notes by the name the definition gives its list*, seen failing).
+  - Step 3: the line became `- [ ] Warning REQ-0006: Slow networks drop sessions.` with `  Seen in the field test.` below it.
+  - Step 4: `- [x] Question REQ-0006: ...`, the icon the warning's alone; after *Reopen*, `- [ ] Question REQ-0006: ...`.
+  - Step 5: the warning's two lines were gone. First run, **failed and is fixed with a guard**: Escape left the list open, because the removed note's button had held the focus and the list heard keys only inside itself. Escape now counts wherever the focus is, and opening a change puts the focus in its text (`NoteIcon.test.tsx`, *closes on Escape when the focus is no longer in it* and *drops a change on Escape and keeps the list*, each seen failing). Second run: the list closed.
+  - Step 6: the line became `- [x] Idea ITEM-0006: Move orders older than a year to cheaper storage.`; a click on *REQ-0009* closed the list.
+  - Step 7: collapsed, *ITEM-0004* showed the question of *REQ-0006* inside it, and its list held that question.
+  - Step 8: the change was dropped and the list stayed open.
+  - Step 9: six steps of Undo, one for each gesture of steps 2 to 6, after which the file was byte-identical to the example and Undo had nothing left.
+  - **Not run in this pass:** the pane of the built-in browser.
+
+## References on the Hierarchical Requirement Designer's page (spec 029, task T094)
+
+**Why this is a browser pass and not a test:** the lookup opens under a field near the page's bottom edge and takes the focus from it, a reference box flows inside a description's text, and following one moves the focus and expands levels through the registration and the page's width. The module's suite covers the references against their fixture, and the client's cover the lookup, the boxes and the reveal in jsdom, which lays nothing out, measures no page and scrolls nothing.
+
+- **Preconditions**: a locally running developer build from the branch, and a scratch folder registered as a project, holding the module's example `web-shop.md` and `web-shop.adp` in a subfolder `requirements`, at a window 1400 pixels wide.
+- **Steps**:
+  1. Open `web-shop.md` and read *REQ-0004*'s description.
+  2. Select *REQ-0009*, press *Add a description*, type `Kept apart from #`. Read the lookup. Type `guest`; then search `0005`. Press Enter, type `, which must not see it.` and press Ctrl+Enter. Read the file and the description.
+  3. Focus on *ITEM-0006*. Press the *REQ-0005* box in *REQ-0009*'s description. Read the trail, *REQ-0005*'s box, the file and the registration.
+  4. Back on the whole page, open *ITEM-0001*'s description, type ` #` at its end and press Escape; press Escape again. Read the field and the file.
+  5. Show *REQ-0005* by its box again, select it and press Delete, then *Delete*. Read the file, *REQ-0009*'s description and the findings.
+  6. Press Undo until nothing is left to undo. Compare the files with the example.
+  7. Open the lookup in *REQ-0009*, the last box on the page, in light and dark.
+- **Expected**: a reference stands as a box with its target's number and current title, flowing with the text; `#` opens a lookup of the document's numbered items and requirements, with the focus in it, narrowed by number or title; the pick is written in place of the `#` as the bracketed number; a box shows its target, moving the focus only as far as needed and expanding what hides it, without writing the Markdown file; Escape in the lookup keeps the `#` and the field; a deleted target leaves its reference as written, shown broken, with a finding at its line; the lookup is in sight wherever it opens.
+- **Result 2026-10-23, the Spec 029 thread, `features/029-references` on `84b32acd2` and the changes below, backend 5080 and Vite 5174, headless Chromium through Playwright, light and dark (results read from the DOM, screenshots, the backend log and the files): steps 1 to 7 passed after two defects, found in steps 1 and 7 and fixed.**
+  - Step 1, first run, **found and fixed**: the boxes were buttons, which a browser lays out as one block, so in an entry's column *REQ-0003 A customer pays by card, iDEAL or PayPal.* stood on lines of its own and broke the sentence around it. A box is now an inline element with the role of a button, focusable, that Enter or Space follows (`References.test.tsx`, *shows its target from the keyboard too*, seen failing); the layout itself only a browser shows. Second run: *Sent when* [REQ-0003 A customer pays by card, iDEAL or PayPal.] *succeeds, through the service of* [ITEM-0005 Mail]*.*, the boxes wrapping with the text.
+  - Step 2: the lookup *Refer to* held the focus and listed the 16 numbered items and requirements; `guest` left *ITEM-0003 Guest checkout*, `0005` left *REQ-0005* and *ITEM-0005*. The field then read *Kept apart from [REQ-0005], which must not see it.*, and the file held that line under *REQ-0009*; the description showed the box *REQ-0005 A customer can order without an account.*
+  - Step 3: the page is 870 pixels wide, so two levels fit; *REQ-0005* stands in *ITEM-0003*, the third level, collapsed. The trail read *Web shop › ITEM-0001 Storefront › ITEM-0002 Checkout*, *REQ-0005*'s box was shown, selected and in view, the Markdown file was unchanged, and the registration's `collapsed` block no longer held *ITEM-0003*.
+  - Step 4: Escape closed the lookup and left *What a customer sees and does in the shop. #* in the field, with the focus; the second Escape dropped the field, and the file was unchanged.
+  - Step 5: the question counted the one reference; after *Delete* the file no longer held *REQ-0005*, the line *Kept apart from [REQ-0005], which must not see it.* was kept, *REQ-0009*'s description showed *[REQ-0005]* as a broken box, *[REQ-0005] names nothing in this document*, and the findings listed *REQ-0005 names no item or requirement of this document.* at line 53, the line of that description.
+  - Step 6: two steps of Undo, the delete and the description, after which `web-shop.md` was byte-identical to the example. The registration still had *ITEM-0003* expanded: collapsing is not an undo step (FR-010).
+  - Step 7, first run, **found and fixed**: the lookup under *REQ-0009* stood below the page's bottom edge, one row of it in sight. It now scrolls itself into view when it opens; its bottom then met the page's at 734 pixels in both themes.
+  - **Not run in this pass:** the pane of the built-in browser.
+
+## Tags on the Hierarchical Requirement Designer's page (spec 029, task T101)
+
+**Why this is a browser pass and not a test:** the tag field opens a list under a box and takes the focus, and its list editor is laid out against the window where the list stood; both are placed by measuring the page, which jsdom does not lay out. The module's suite covers every tag operation against its fixtures and the history across both files, and the client's cover the field and the editor's gestures; what they cannot show is the place, the look beside the Knowledge designer's tag cell, and the two files on disk after each gesture of a real page.
+
+- **Preconditions**: a locally running developer build from the branch, and a scratch folder registered as a project, holding the module's example `web-shop.md` and `web-shop.adp` in a subfolder `requirements` and the Knowledge showcase's `yaml` folder in a subfolder `knowledge`, at a window 1400 pixels wide.
+- **Steps**:
+  1. Open `cities.yaml` and look at its *Tags* column. Open `web-shop.md` and look at *REQ-0004*'s box, before and with the pointer over it.
+  2. Select *REQ-0004* and press its *Add tag* control. Read where the focus is, type `SECUR`, read the list and press Enter. Read the file and the registration.
+  3. Type `user experience` and press Enter. Read the file and the registration's `tags` block.
+  4. Press the cross of *security*. Read the file. Press Escape.
+  5. Press *REQ-0004*'s tags, then *Edit tags*. Read where the editor stands and what it offers.
+  6. Rename *privacy* to `personal-data`. Read *REQ-0010* and the `tags` block.
+  7. Make *search* green and move *mail* up. Read the `tags` block and compare the Markdown file with the one before.
+  8. Delete *user-experience*, read the question, and press *Delete*. Read the file and the `tags` block. Press outside the editor.
+  9. Press Undo until nothing is left to undo. Compare the files with the example.
+  10. Delete `web-shop.adp` while the page is open. Read *REQ-0004*'s box; then make *mail* orange and read the registration.
+  11. Steps 1 to 10 in light and dark.
+- **Expected**: a box's tags stand below its title as the Knowledge designer's rounded tags, in their list's colours, before the category and the state; the add control shows on a box that is hovered or selected; the list has the focus and finds a member in any case, written with the list's spelling, or creates one from other text, written with `-` for a space and added last to the list; a member is taken off by its cross; the list editor stands where the list stood, adds nothing, and renames, recolours, moves and deletes a member, asking first, in the definition's words, when entries carry it; a rename or a delete writes both files and a colour or a place only the registration; each gesture is one step of undo, and undoing them all leaves both files as the example; a deleted registration leaves the page with its tags in the default colour, and the first change of a setting creates it again.
+- **Result 2026-10-23, the Spec 029 thread, `features/029-tags` on `40a6c9101` and the fixes below, backend 5080 and Vite 5174, headless Chromium through Playwright, light and dark (results read from the DOM, screenshots and the files): steps 1 to 11 passed after two defects, found in steps 2 and 5 and fixed with guards.**
+  - Step 1: the Knowledge designer draws *Port* and *Capital* as rounded tags in their colours; *REQ-0004* draws *mail* in yellow, then *functional* and *done*, the same tags. The add control was hidden until the box was hovered or selected.
+  - Step 2, first run, **found and fixed**: the list opened without the focus, so typing went nowhere until its search was pressed. Its search now takes the focus when it opens, as the Knowledge designer's does (`TagField.test.tsx`, *searches the list, which has the focus, …*, seen failing). Second run, in both themes: the focus was in the search; `SECUR` offered *security* and *Create “SECUR”*, Enter wrote `#mail #security` on *REQ-0004*'s line, and the `tags` block was unchanged.
+  - Step 3: the list offered only *Create “user experience”*; the line read `#mail #security #user-experience`, and the `tags` block ended with `user-experience: default`.
+  - Step 4: the line read `#mail #user-experience`; Escape closed the list and kept the box.
+  - Step 5, first run, **found and fixed**: the editor stood at the window's top left corner, over the hierarchy, because it measured the field, which draws no box of its own. It now takes the list's place on the screen (`TagField.test.tsx`, *opens the editor where the field's list was on the screen*, seen failing). Second run, in both themes: the editor stood where the list was, beside *REQ-0004*, listing the ten members with no row to add one, and the list had closed.
+  - Step 6: *REQ-0010* read `#legal #personal-data`, and `privacy: pink` became `personal-data: pink` in its place.
+  - Step 7: the block read `search: green` and had `mail` before `payment`; the Markdown file was byte-identical to the one before.
+  - Step 8: the question read *1 entries carry #user-experience. Delete it and remove it from them?*, the definition's sentence; after *Delete* the line read `#mail` and the block no longer held it. A press outside closed the editor.
+  - Step 9: seven steps of Undo, one for each gesture of steps 2 to 8, after which both files were byte-identical to the example.
+  - Step 10: the page kept its 14 boxes and *REQ-0004*'s *mail*, now in the default colour; making *mail* orange created `web-shop.adp` with every tag the entries carry in the `tags` block, *mail* orange and the rest default.
+  - **Not run in this pass:** the pane of the built-in browser.
+
+## Categories, states and filters on the Hierarchical Requirement Designer's page (spec 029, task T110)
+
+**Why this is a browser pass and not a test:** the pickers open their list under a box and the list editor stands where that list stood, both placed by measuring the page, which jsdom does not lay out; and narrowing, sorting and stored filters are only worth trusting on the example a person reads, with both files read from disk after each gesture. The module's suite covers every category, state and filter operation against the conformance fixtures and the history across both files, and the client's cover the query, the narrowing, the sort, the bar and the picker; what they cannot show is the place, the look in both themes, and the files of a real page.
+
+- **Preconditions**: a locally running developer build from the branch, and a scratch folder registered as a project, holding the module's example `web-shop.md` and `web-shop.adp` in a subfolder `requirements`, with the line `    Kept as [REQ-0099] says.` added under *REQ-0009*'s bullet so the page reports one finding, at a window 1400 pixels wide.
+- **Steps**:
+  1. Open `web-shop.md`. Read the filter bar's count and its stored filters, and *REQ-0003*'s labels.
+  2. Look at *REQ-0010*, which has no state, unselected; select it and press *State*. Read where the focus is, type `PROP`, read the list and press Enter. Read the file and the registration.
+  3. Select *REQ-0003*, press its state and pick *done*; press its category and *No category*. Read the file and the registration.
+  4. Select *REQ-0008*, press its category and *Edit categories*. Add `usability`; rename *technical* to `tech`; make *tech* orange and move *usability* up; delete *tech*, read the question and press *Delete*. Read the file and the `categories` block after each.
+  5. Type `#security`, then `category:FUNCTIONAL state:accepted state:proposed`, then `item:back*`. Read the count and the boxes each time.
+  6. Type `item:st*` and choose *State*, then *Title*, in the sort menu. Read the query and the order of the boxes; compare both files with those before step 5.
+  7. Pick *Open security* among the stored filters; rename it to `Security to decide`; remove it; type `#legal sort:title`, press *Store* and name it `Legal`. Read the `filters` block after each.
+  8. Type `#security sort:number`. Read the findings and whether *REQ-0009* is on the page; press the finding. Read the query, and whether *REQ-0009* is shown and selected.
+  9. Reload the page and open `web-shop.md` again. Read the stored filters.
+  10. Press Undo until nothing is left to undo. Compare the files with the example.
+  11. Steps 1 to 10 in light and dark.
+- **Expected**: a requirement's category and state stand after its tags as rounded tags in their lists' colours, and the way to give one shows on the selected box only; the picker's search has the focus and finds a member in any case; a pick or a clear writes the Markdown file alone; the list editor adds, renames, recolours, moves and deletes, asking first in the definition's words when requirements carry the member, and writes the registration, and the Markdown file too for a rename or a delete; the bar narrows as the query is typed, keeping the items that contain what stays, counts the requirements, and sorts the requirements within each item, writing nothing; a stored filter is applied by picking it, and storing, renaming and removing write the registration alone; a finding stays listed whatever the query hides, and pressing it takes the words that hide its entry out of the query and selects the entry; a stored filter is offered again after a reload; each gesture is one step of undo, and undoing them all leaves both files as the example.
+- **Result 2026-10-23, the Spec 029 thread, `features/029-narrowing` on `521f7765e` with this change and the fix below, backend 5080 and Vite 5174, headless Chromium through Playwright, light and dark (results read from the DOM, screenshots and the files): steps 1 to 11 passed after one defect, found in step 8 and fixed with a guard.**
+  - Step 1: *11 requirements*, the stored filters *Open security* and *Backend*; *REQ-0003* read *functional* and *accepted*.
+  - Step 2: the unselected box offered no state; selected, *State* opened the list with the focus in its search, `PROP` offered *proposed*, and Enter wrote `category:non-functional state:proposed` on *REQ-0010*'s line; the registration was unchanged.
+  - Step 3: the line read `category:functional state:done`, then `state:done`; the registration was unchanged.
+  - Step 4: the block gained `usability: default` with the Markdown file unchanged; the rename wrote `category:tech` on *REQ-0008* and `tech: brown` in *technical*'s place; then `usability: default` stood before `tech: orange`; the question read *1 requirements are tech. Delete it and clear them?*, the definition's sentence, and after *Delete* the line read `state:proposed` and the block held functional, non-functional and usability.
+  - Step 5: `#security` left *2 of 11 requirements*, *REQ-0006* and *REQ-0007* in *ITEM-0004*; the category and the two states left 3, *REQ-0001* in *ITEM-0001* and *REQ-0006* and *REQ-0007*; `item:back*` left 3, *ITEM-0004* with *ITEM-0005* and *REQ-0008* in it.
+  - Step 6: the menu offered *File order*, *Number*, *Title*, *Category* and *State*; the query became `item:st* sort:state`, with *REQ-0002* (proposed) before *REQ-0001* (accepted), then `item:st* sort:title`, with *REQ-0001* first again; both files were byte-identical to those before step 5.
+  - Step 7: the query read `#security state:proposed sort:state`; the block read `Security to decide: …` in its place, then held *Backend* alone, then `Backend: item:back* sort:number` and `Legal: #legal sort:title`; the Markdown file was unchanged.
+  - Step 8, first run, **found and fixed**: the finding *REQ-0099 names no item or requirement of this document.* at line 54 was listed but could not be pressed, because a finding stood at an entry only when its line was the entry's bullet, and this one is in *REQ-0009*'s description. A finding now stands at the entry whose bullet or description holds its line (`References.Tests.cs`, *ADeletedTarget_LeavesItsReferencesAsWritten_NamingNothing_AndAFindingAtEachLine*, seen failing). Second run: *REQ-0009* was not on the page; pressing the finding left the query `sort:number`, and *REQ-0009* was shown and selected.
+  - Step 9: the stored filters were *Backend* and *Legal*.
+  - Step 10: eleven steps of Undo, one for each gesture that writes, after which both files were byte-identical to the example.
+  - **Seen, not this change's:** an item's title in a narrow column breaks inside a word (*Backen d*), as it did before this change.
+  - **Not run in this pass:** the pane of the built-in browser.
+
+## The compiled SPARQL query canvas, in a browser (sparql-disl-fbl, task 10, Requirement 10.3)
+
+**Why this is a browser pass and not only tests:** `sparqlCompiledDefinition.test.tsx` proves that the definition compiled from `sparql-query.dis` draws the same markup as the hand-written one it replaces, over every document of the backend's parity transcript, and the library's tests prove the header band, the budget's notice, the literal label, the text badge and the `text` shape it now compiles, but jsdom computes no style from a stylesheet and lays nothing out: what a frame's dash, a path's dash, the header band or the banner computes to in each theme, where a node sits against a region's border, and what the `.adp` and the `.rq` hold after a drag, a refusal and an undo are decided between the specification, the stylesheet, the canvas, the stream and the files.
+
+- **Preconditions**: a build from the branch, signed in with `admin`/`changeme` (or the developer session), and a scratch folder `sparql-pass` added as a project, holding five queries each with an `.adp` of `w3c/sparql` and `body: <name>.rq`: the module's `optional.rq` and `aggregate.rq` (`src/examples/diagrams/sparql/w3c-sparql/`), and the backend fixtures `groups.rq`, `constructs.rq` and `over-the-bound.rq` (`src/diagrams/sparql/backend/EtAlii.Adp.Diagram.Sparql.Tests/Fixtures/`).
+- **Steps**, in the light theme and again in the dark, pressing *Fit to View* after opening each query:
+  1. Open `optional.rq`. Count the variable nodes, read where each sits against the OPTIONAL region, read the two edges and whether the region is painted before them.
+  2. Read which variable nodes carry the projection mark, in `optional.rq` and in `aggregate.rq`, against each query's SELECT list.
+  3. Open `groups.rq` and read each region's class, label and outline: its stroke, dash and corner radius.
+  4. Open `constructs.rq` and read the `foaf:knows+` edge's line against a plain one.
+  5. Read the header band of `constructs.rq`, `aggregate.rq` and `optional.rq`: its rows, their classes and styles, and where it sits.
+  6. Open `over-the-bound.rq` and read the banner.
+  7. In `constructs.rq` drag the anonymous variable `[]` (`anon:0`); in `groups.rq` drag each FILTER, BIND and VALUES annotation by its text. Read where each is afterwards, the refusal shown, and both files.
+  8. In `constructs.rq` drag `?name` down and to the right. Read both files. Press *Undo*. Read both files and the node's box.
+  9. Read the *Toolbox* panel with a query open.
+- **Expected**: `?x` drawn once, outside the dashed OPTIONAL frame, with its `foaf:mbox` edge crossing the frame's border to `?mbox` inside it, and the frame painted beneath the edges; the projection mark exactly on the projected variables; OPTIONAL and MINUS dashed 4 4, UNION and its branches solid, GRAPH and SERVICE dashed 2 3, each labelled with what it is and a branch with no label; a property path dashed 6 2 and a plain pattern solid, both ending in the solid arrow; the form in the primary colour and the modifiers in one muted row joined by " · ", between the title and the surface; the banner *Showing 500 of 505 elements — this query is larger than the diagram draws* in the warning colour, as a status region; the anonymous variable put back with the backend's sentence and nothing written; an annotation's move refused with its sentence, *An annotation stays with what it constrains; move that instead.*; a drag written to the `.adp`'s `layout:` block with the `.rq` byte-identical, and undone byte for byte; the panel saying the type offers no toolbox elements.
+- **Result 2026-10-23, agent-7-sparql-disl-fbl-10, `features/sparql-disl-fbl-10` on `eab39870c` with this task's changes uncommitted (the definition bundled from etalii.adp `c8c4a7f85`), a developer build (backend on 5382, Vite on 5376, both changed for the pass and reverted), headless Chromium 1194 driven by Playwright at 1600 by 1000 with real mouse input and `colorScheme` set per theme, in the developer session: steps 1 to 6, 8 and 9 pass in both themes; step 7 passes for the anonymous variable and cannot be run for an annotation, which nothing on the canvas can grab (the entry below).** Screenshots are named `<theme>-<query>.png` in the session's scratchpad; the values below were read from the page's DOM and computed styles and from the files on disk.
+  - Step 1: three variable nodes, `var:name`, `var:x` and `var:mbox`, each drawn once; `?name` and `?x` outside the frame `region:where/optional.0` (`sparql-region-optional`), `?mbox` inside it; the edges `foaf:name` from `?x` to `?name` and `foaf:mbox` from `?x` across the frame's border to `?mbox`, each `rgb(100, 116, 139)` at 1.5px (dark `rgb(148, 163, 184)`), undashed, ending in `url(#library-arrow)`; the region's group precedes the first edge in the document, so it is painted beneath it.
+  - Step 2: in `optional.rq` `?name` and `?mbox` carry `sparql-node-projected` and the mark `→` (`rgb(50, 205, 50)`, 12px) and `?x` neither, as `SELECT ?name ?mbox` says; in `aggregate.rq` only `?totalPrice`, of `?totalPrice`, `?auth`, `?book`, `?lprice` and `?org`, as `SELECT (SUM(?lprice) AS ?totalPrice)` says.
+  - Step 3: nine regions. `optional.0` and `optional.1` *OPTIONAL* and `minus.0` *MINUS* dashed `4px, 4px`; `union.0` *UNION* and its three branches, unlabelled, undashed; `graph.0` *GRAPH ?g* and `service.0` *SERVICE SILENT <http://example.org/sparql>* dashed `2px, 3px`. Every outline unfilled, stroked `rgb(226, 232, 240)` light and `rgb(51, 65, 85)` dark, with `rx` 4.
+  - Step 4: `foaf:knows+` dashed `6px, 2px`, the plain `a` edge undashed, both ending in `url(#library-arrow)`.
+  - Step 5: in `constructs.rq` a `HEADER.sparql-header-band` before the drawing surface, `display: flex`, 12px, on the surface colour (`rgb(255, 255, 255)`, dark `rgb(30, 41, 59)`) with a 1px border below, holding `sparql-header-form` *SELECT DISTINCT* in `rgb(50, 205, 50)` at weight 600 and one `sparql-header-modifier`, *FROM <http://example.org/graphs/people> · GROUP BY ?person ?name · HAVING (COUNT(?friend) > 1) · ORDER BY DESC(?friends) ?name · LIMIT 10 · OFFSET 5*, in `rgb(100, 116, 139)` (dark `rgb(148, 163, 184)`); in `aggregate.rq` *SELECT* and *GROUP BY ?org · HAVING (SUM(?lprice) > 10)*; in `optional.rq` *SELECT* alone, no modifier row.
+  - Step 6: *Showing 500 of 505 elements — this query is larger than the diagram draws*, `role="status"`, `data-notice-severity="warning"`, absolute at 8px from the top, 12px, in `rgb(180, 83, 9)` with a border of the same colour on `rgb(255, 255, 255)` light, `rgb(251, 191, 36)` on `rgb(30, 41, 59)` dark; 253 elements drawn.
+  - Step 7: the anonymous variable came back to its place (moved by 0 by 0) and the page showed *That is an anonymous variable - written as a blank node, it has no name to key a stored position by, so it takes its computed place.*; the backend logged the refusal; `constructs.adp` and `constructs.rq` byte-identical. Pressing each of the four annotations at the middle of its text hit `svg.library-canvas-surface`, because the text has `pointer-events: none`: the canvas panned by the drag (80 by 60), no move reached the backend, no sentence was shown, and both files stayed byte-identical.
+  - Step 8: `?name` moved by 90 by 60; `constructs.adp` went from `w3c/sparql`, `body: constructs.rq` to those two lines and `layout:`, `  var:name: 199.147 308.098`, each line CRLF, with `constructs.rq` byte-identical; after *Undo* the `.adp` was byte-identical to its start and the box back at its starting place to the pixel (`<theme>-dragged.png`, `<theme>-undone.png`).
+  - Step 9: *This diagram type offers no toolbox elements.* Before this task the library derived an item per element type for a canvas that handed it no palette; the canvas now hands it the backend's, which is empty (`SparqlCanvas.test.tsx`).
+- **Observations, not failures of this task:**
+  - The banner is placed over the top of the canvas, across the header band's right-hand side on a wide query, as the hand-written canvas placed it: its position is the stylesheet's.
+  - A region's corners are rounded 4 rather than the frame's 6, and it is drawn beneath the connections, because the specification puts a scope on the background layer (DISL 6.16); `sparqlCompiledDefinition.test.tsx` states both.
+
+## An annotation of a SPARQL query cannot be pressed, so its move refusal is never shown (found during sparql-disl-fbl task 10)
+
+**A defect, found by using the application; repaired in the library, and seen repaired in a browser.** An annotation (FILTER, BIND, VALUES) is a node with no body, the specification's `text` shape, so all there is to press is its label, and the library draws an element's label with `pointer-events: none`. A press on an annotation therefore lands on the canvas surface: it cannot be selected or dragged, and the specification's refusal of its move, *An annotation stays with what it constrains; move that instead.*, is unreachable from the canvas. The hand-written canvas drew the same markup (`sparqlCompiledDefinition.test.tsx` holds them equal), so this was true before the compiled definition; the backend's refusal itself is held by `SparqlSession.Tests.cs`. The repair is the library's, for every module: a selectable element of shape `none` now draws a transparent press target over its bounds (`library-bodyless-hit`), held by `DiagramCanvas.declared.test.tsx` ("gives a selectable element of shape `none` something to press"), which failed before the repair. The re-run found that repair incomplete: the annotation's group carries `canvas-hint`, whose rule sets `pointer-events: none`, and the property inherits, so the target took no press either. The target now states `pointer-events: all` inline, held by "keeps the hit target pressable inside a group a module made inert" in the same file, which failed before it (`expected '' to be 'all'`).
+
+- **Preconditions**: as the entry above; `groups.rq` open and fitted.
+- **Actions**: press the middle of the text *FILTER NOT EXISTS { ?s ex:hidden true }* and drag it 80 by 60; repeat for *BIND(?x * 2 AS ?doubled)*, *VALUES ?x { 1 2 3 }* and *FILTER(?x > 3)*. Read `document.elementFromPoint` at the text's middle before pressing.
+- **Expected**: the annotation is the element under the pointer; the drag is refused with the sentence above and the annotation stays where it was; both files are unchanged.
+- **Observed 2026-10-23, before the repair**, light and dark: the element under the pointer is `svg.library-canvas-surface`; the whole canvas pans by 80 by 60; no move reaches the backend and no sentence is shown; both files are unchanged. The same was observed after #649 alone, with `rect.library-bodyless-hit` present over each annotation and its computed `pointer-events` `none`.
+- **Result 2026-10-23, after the repair**, agent-7-sparql-disl-fbl-11, `features/sparql-disl-fbl-11` with the inline `pointer-events` uncommitted, a developer build (backend on 5392, Vite on 5386, both changed for the pass and reverted), headless Chromium 1194 driven by Playwright at 1600 by 1000 with real mouse input and `colorScheme` set per theme, in the developer session: **passes in both themes.** For each of the four annotations the element under the pointer at its text's middle is the annotation itself (`note:where/filter.0`, `note:where/bind.0`, `note:where/values.0`, `note:where/optional.0/filter.0`); the drag moved it by 0 by 0; the page showed *An annotation stays with what it constrains; move that instead.*; the backend logged "The module refused the move of note:... : An annotation stays with what it constrains; move that instead." once per drag, eight in all; `groups.adp` and `groups.rq` stayed byte-identical (`<theme>-refused-<id>.png`).
+- **Status: closed.**
+
+## The compiled Sankey canvas, in a browser (sankey-disl-fbl, task 8, Requirement 8.4)
+
+**Why this is a browser pass and not only tests:** `sankeyCompiledDefinition.test.tsx` proves that the definition compiled from `sankey.dis` draws the same markup as the hand-written one it replaces, and the library's tests prove the ribbon, the drag along one axis and the labels beyond an edge that it now compiles. However, jsdom computes no style from a stylesheet, lays nothing out and runs no backend. Whether bands meet edge to edge, what a bar or band computes to in each theme, and what the file holds after a gesture and its undo are only decided in a browser.
+
+- **Preconditions**: a build from the branch, signed in with `admin`/`changeme` (or the developer session), and a scratch folder added as a project. It holds a copy of `src/examples/diagrams/sankey/brightwater-coffee/` and two documents of `etalii/sankey`:
+  - `palette.skv`: one node per palette word, each flowing into `Hex` (`color: "#336699"`) or `Sink` in its own colour, and `Hex` flowing into `Sink` in `#aa3300`.
+  - `arrange.skv`: sources `A` and `B`, targets `X` and `Y` in that order, with `A` to `Y` and `B` to `X`, so the two bands cross.
+- **Steps**, in the light theme and again in the dark, pressing *Fit to View* after opening each document:
+  1. Open `brightwater-coffee.skv`. At each bar where two bands or more meet one side, read where each band's edges reach the bar.
+  2. Read each band's height down its length, at five points from its source to its target.
+  3. Read every label's side, alignment, size, weight, slant and colour.
+  4. Open `palette.skv` and read each bar's and band's computed fill against its theme token, and the hex colours.
+  5. In `brightwater-coffee.skv`, drag the first column's top node (Cafés) down past the second and to the right. While dragging, read where both nodes are drawn. Release, then read the file. Press *Undo*.
+  6. In `palette.skv`, drag with the right button from `Brown` to `Hex`. Read the file, then press *Undo*.
+  7. Select the band `Blue` to `Sink` and press `+`, `=`, Shift with `+`, `-` and Shift with `_`, reading the file after each. Then undo them.
+  8. Drag the toolbox's *Node* into the second column of `brightwater-coffee.skv`. Read the file, then press *Undo*.
+  9. Run *Thicker bands* from the canvas's context menu until it is no longer offered, then *Thinner bands* the same way, reading `thickness:` each time.
+  10. Open `arrange.skv`, run *Arrange diagram*, read the file and the positions, then press *Undo*.
+  11. Copy `not-yaml.skv` and `duplicate-key.skv` from the module's `Fixtures/` into the folder, each with an `.adp` naming it. Open each and right-click the empty canvas, then read the file.
+- **Expected**:
+  1. The bands at a bar stack edge to edge, from the bar's top to its bottom, with no gap and no overlap.
+  2. A band is as thick as its value all the way along, however steep, translucent at 0.42 over a hidden centre line.
+  3. Labels sit before the bar in the first column and after it elsewhere, 10 from the bar. The name is 13px bold and the value 12px, both in the bar's colour; the note is 11px italic in the muted text colour.
+  4. Each bar and band is in its word's token in both themes, and a hex colour is painted as written.
+  5. The dragged node stays in its column while the one it passes steps aside. The release moves its entry, and *Undo* restores the file byte for byte.
+  6. The right-button drag writes a new flow, and *Undo* removes it.
+  7. `+`, `=` and Shift with `+` each add one step, and `-` and Shift with `_` each take one off.
+  8. The drop writes a node with `column: 2`.
+  9. The thickness climbs to 10 and falls to 0.1, after which the entry is no longer offered.
+  10. *Arrange diagram* uncrosses the bands and *Undo* restores the file and the positions.
+  11. Neither body is drawn, no context menu opens, and neither file changes (finding B8, a body that is not YAML is read-only).
+- **Result 2026-10-24, agent-8-sankey-disl-fbl, `features/sankey-disl-fbl-8` at `3c018e25b` (the definition bundled from etalii.adp `0155d71`), a developer build (backend on 5585 with `Client__DevServerUrl` and `--urls`, Vite on 5584 with `--port`, so no file was changed for the ports), headless Chromium 1194 driven by Playwright at 1600 by 1000 with real mouse and keyboard input and `colorScheme` set per theme, in the developer session: all ten steps pass in both themes.** The values below come from the page's DOM and computed styles and from the files on disk. Screenshots are `<theme>-<step>.png` in the session's scratchpad.
+  - Step 1: five bar sides in `brightwater-coffee.skv` meet two bands or more. On each, the bands' edges ran from the bar's top to its bottom, and the largest gap between neighbours was 0.0002 units, for example Revenue's four inflows over its 560.
+  - Step 2: all 13 bands, sloping from -0.239 to 0.364, varied by 0 in height across the five points; for example Cafés to Revenue measured 294.4 at every point. Each had `fill-opacity` 0.42 and its centre line `opacity` 0.
+  - Step 3: the 4 nodes of the first column had every label `text-anchor: end`, ending 10 left of the bar; the 10 others had `start`, beginning 10 right of it. The name was 13px at weight 700 and the value 12px at 400, both in the bar's colour, for example `rgb(102, 102, 102)` light and `rgb(168, 168, 168)` dark for grey. The note was 11px italic in `rgb(100, 116, 139)` light and `rgb(148, 163, 184)` dark. Bars have a transparent stroke.
+  - Step 4: all twelve bars and bands equalled their tokens, and the label colour equalled the bar's.
+    - Light: grey `rgb(102, 102, 102)`, slate `rgb(47, 91, 138)`, purple `rgb(134, 25, 143)`, blue `rgb(29, 78, 216)`, teal `rgb(15, 118, 110)`, green `rgb(21, 128, 61)`, lime `rgb(77, 124, 15)`, yellow `rgb(161, 98, 7)`, orange `rgb(194, 65, 12)`, red `rgb(163, 21, 26)`, pink `rgb(190, 24, 93)`, brown `rgb(124, 74, 30)`.
+    - Dark: grey `rgb(168, 168, 168)`, slate `rgb(143, 176, 212)`, purple `rgb(232, 121, 249)`, blue `rgb(96, 165, 250)`, teal `rgb(45, 212, 191)`, green `rgb(74, 222, 128)`, lime `rgb(163, 230, 53)`, yellow `rgb(250, 204, 21)`, orange `rgb(251, 146, 60)`, red `rgb(248, 113, 113)`, pink `rgb(244, 114, 182)`, brown `rgb(214, 162, 111)`.
+    - `Hex` was `rgb(51, 102, 153)` and its band `rgb(170, 51, 0)` in both themes.
+  - Step 5: dragged 80 right and past Packaged coffee, Cafés stayed at its column's x (435.8 px) while Packaged coffee stepped up from 437.2 to 245.9 px. On release the file moved Cafés' entry after Packaged coffee's, and nothing else changed. The column redrew as Packaged coffee, Cafés, Wholesale & roasting, Licensing, and *Undo* made the file byte-identical again.
+  - Step 6: during the drag a `library-connect-preview` ran from Brown. On release the file gained `- from: brown`, `to: hex`, `value: 1`, a band `brown->hex` was drawn, and *Undo* made the file byte-identical.
+  - Step 7: the selected band's group took `canvas-selected`, and the band an outline in `rgb(124, 58, 237)` light and `rgb(167, 139, 250)` dark, 2px wide. The keys took `value` from 19 to 20, 21 and 22, then back to 21 and 20. Undoing the five made the file byte-identical.
+  - Step 8: the file gained a node `name: New node`, `column: 2`, with a fresh id, and *Undo* made the file byte-identical.
+  - Step 9: *Thicker bands* wrote 1.25, 1.56, 1.95, 2.44, 3.05, 3.81, 4.76, 5.95, 7.44, 9.3 and 10, after which the entry was disabled. *Thinner bands* wrote 8, 6.4, and on down to 0.11 and 0.1, after which it was disabled too.
+  - Step 10: *Arrange diagram* moved `X` after `Y` in the file, and 2 of the 4 nodes were drawn elsewhere. *Undo* made the file byte-identical and every node went back to where it was.
+- **Result 2026-10-24, agent-8-sankey-disl-fbl, `features/sankey-disl-fbl-12` from `develop` at `1d4b84081`, after every edit was written through the binding (task 11), with the same build, ports, browser and input as above: all eleven steps pass in both themes.** Steps 1 to 4, 7 and 9 read the same values as the result above, to the last digit:
+  - Step 1: the five bar sides again had a largest gap of 0.0002 units.
+  - Step 2: the 13 bands, sloping from -0.239 to 0.364, varied by 0 in height.
+  - Steps 3 and 4: the same sizes, weights and colours.
+  - Step 7: `value` from 19 to 20, 21 and 22, then back to 21 and 20.
+  - Step 9: the same ladder up to 10 and down to 0.1.
+  - The splices wrote what the line writer wrote on these documents, because none holds a comment, a quoted value or an unusual indentation where the gesture lands. Step 5 moved Cafés' four lines after Packaged coffee's. Step 6 added `- from: brown`, `to: hex`, `value: 1` at the end of `flows`. Step 8 added a node `name: New node`, `column: 2` after the last node. Step 10 moved `X`'s three lines after `Y`'s. After each, *Undo* made the file byte-identical.
+  - Step 11: on `not-yaml.skv` and `duplicate-key.skv` the canvas drew no element, a right-click opened no menu where `palette.skv`'s offered *Add node here*, *Arrange diagram*, *Thicker bands* and *Thinner bands*, and both files stayed byte-identical. The Errors and Warnings panel listed each body's one `sankey.unreadable` warning. The toolbox still showed *Node*. Its drop was not tried here; the parity transcript records that it is refused, like every edit of such a body.
+- **Observations, not failures of this task:**
+  - In headless Chromium on Linux the right button's press opens a context menu as the drag starts, because Linux sends `contextmenu` on the press where Windows sends it on the release. The drag still completed and wrote its flow, and the menu was dismissed with Escape. This is the platform, not the definition: the hand-written definition declared the same `connectOnRightDrag` and `backgroundMenu`.
+  - The examples, and `palette.skv`, are already arranged: *Arrange diagram* answers *This diagram is already arranged.* on them, so step 10 needs a document whose bands cross.
+
+## A requirement's title field is one line high and leaves its number in sight (hierarchical requirement designer, found in the app)
+
+**Found by Peter in the app, and invisible to every test.** #700 made the description field measure its height with its growth switched off, so that it can fill the box. The same field serves the title, whose growth along its line is what gives it its width: measured without it, the title field was 0 wide, so every character wrapped and the field was hundreds of pixels high. Its negative margin also let it start over the number's last pixel. jsdom lays nothing out, so only the running app shows it.
+
+- **Preconditions**: backend and client running; `src/examples/designers/hierarchical-requirement/web-shop` open as a project, `web-shop.md` open.
+- **Actions**:
+  1. Double-click the title of REQ-0003.
+  2. Press Escape, then double-click the title of ITEM-0002 Checkout.
+  3. Press Escape, then press *New requirement* under Checkout's requirements.
+- **Expected**: each time, the title field is one line high (24px) and starts to the right of the number, which stays fully visible.
+- **Result 2026-10-24, agent-1-requirement-item-layout, a developer build of `claude/project-thread-sh0t6x`, headless Chromium driven by Playwright at 1500 by 1100**:
+  - Before the fix, on `develop` at #705, step 1 failed: the field was 684px high and started 1px left of the number's right edge.
+  - After the fix, all three steps passed: the field was 24px high and started 4px right of the number's right edge, at REQ-0003, Checkout and the new REQ-0014 alike.
+
+## The compiled supply chain canvas, in a browser (supply-chain-disl-fbl, task 8, Requirement 8.4)
+
+**Why this is a browser pass and not only tests:** `supplyChainCompiledDefinition.test.tsx` proves that the definition compiled from `supply-chain.dis` draws the same markup as the hand-written one it replaces. `supplyChainShapeGeometry.test.ts` proves that the card's ornaments are the specification's parts, and `supplyChainTheme.test.ts` that its theme tokens are the custom properties the canvas paints with. However, jsdom computes no style, runs no animation, lays nothing out and runs no backend. What each stage's header is painted in, whether the goods move, where the lanes take a band, and what the file holds after a gesture and its undo are only decided in a browser.
+
+- **Preconditions**: a build from the branch, signed in with `admin`/`changeme` (or the developer session), and a scratch folder added as a project holding a copy of `src/examples/diagrams/supply-chain/` (`automotive/` and `gpu-memory/`). Keep a copy of `automotive.supply` to compare against.
+- **Steps**, in the light theme and again in the dark, on `automotive.supply`, pressing *Fit to View* after opening it:
+  1. Read each stage's header band, both of its parts, its share bar and its title, and each card's fill and outline.
+  2. Read each band's stroke width against its flow's volume, among flows of one unit.
+  3. Read the goods line along a band: its animation, its dash and its colour, and its dash offset at two moments. Then select a node and read the same of a band that is dimmed.
+  4. Read the path of a flow the layout routes through lanes.
+  5. Select the node *Lithium hydroxide refinery*, then the flow *Lithium carbonate*, then the frame *China*, and read the trace's marks after each. Click the empty canvas.
+  6. Select the node again. Press its + stepper, then its −. Press `+`, `=`, Shift with `+`, `-` and Shift with `_`, reading `quantity:` and what is selected after each. Undo all seven. Do the same for the flow's steppers and keys, reading `volume:`.
+  7. Drag each of the toolbox's eight entries onto empty canvas. Read the file, then press *Undo*.
+  8. Drag *Pilbara iron ore* (Australia) inside the frame of *China*. Read the file.
+  9. Right-click the empty canvas, run *Arrange diagram*, read the file, then press *Undo* twice.
+  10. Drag *Kolwezi cobalt mines*, the only member of *Central Africa*, to empty canvas, read the file and press *Undo*. Then drag it inside the frame of *China*, read the file and the frame of *Central Africa*, and press *Undo*.
+  11. Double-click the node's name, type a new one and press Enter. Read the file and press *Undo*. Do the same for the frame's name. For the flow's product, first double-click the flow, then select it and press F2.
+- **Expected**:
+  1. The seven headers are the seven stage colours in both themes, the title white on them, and a bar in its stage's colour. A card is the surface colour, outlined in the border colour.
+  2. Of one unit, a band is as broad as its share of the heaviest flow.
+  3. The goods move while their band is lit, and stand still on a dimmed band.
+  4. A laned flow is a chain of curves.
+  5. A node and a flow light what supplies them and what they supply, and dim the rest. A frame lights the chain through its members.
+  6. Each press steps the value by the entry's `step` while the selection stays. *Undo* restores the file byte for byte.
+  7. Each drop writes a node of its stage, or a group, at the drop point. *Undo* restores the file byte for byte.
+  8. The node joins `china` and is written where it was dropped.
+  9. *Arrange diagram* writes every node's position. The first *Undo* takes that back, and the second the drag.
+  10. Dropped on empty canvas, the node stays in its group, which follows it. Dropped inside another frame, it joins that group, and the group it left is written where its frame was, drawn empty.
+  11. Each rename writes the new name, and *Undo* restores the file byte for byte. F2 renames the product.
+- **Result 2026-10-26, agent-11-supply-chain-disl-fbl, `features/supply-chain-disl-fbl-8` as this entry's commit holds it (the definition bundled from etalii.adp `cf5131e`): all eleven steps pass in both themes.** The build was a developer build: backend on 5595 with `Client__DevServerUrl` and `--urls`, and Vite on 5594 with `--port`, so no file was changed for the ports. It ran in headless Chromium 141 driven by Playwright at 1600 by 1000, with real mouse and keyboard input and `colorScheme` set per theme. The developer environment opened the developer session, which showed no sign-in form. The values below come from the page's DOM and computed styles and from the file on disk. Screenshots are `<theme>-*.png` in the session's scratchpad.
+  - Step 1: headers, measured as each header's two parts, its bar, and the same in both themes:
+    - source `rgb(124, 74, 30)`
+    - processor `rgb(185, 28, 28)`
+    - producer `rgb(29, 78, 216)`
+    - integrator `rgb(15, 118, 110)`
+    - hub `rgb(71, 85, 105)`
+    - outlet `rgb(21, 128, 61)`
+    - consumer `rgb(190, 24, 93)`
+
+    Every title was `rgb(255, 255, 255)`. Cards were `rgb(255, 255, 255)` outlined `rgb(226, 232, 240)` in light, and `rgb(30, 41, 59)` outlined `rgb(51, 65, 85)` in dark. The name was 13px at weight 600 and the amount 20px, both `start`-anchored and in the text colour. The unit was 11px in the muted colour: `rgb(100, 116, 139)` light, `rgb(148, 163, 184)` dark.
+  - Step 2: in `kt LCE`, volumes 40, 80 and 100 drew 9, 15 and 18 wide. Stepping the first to 60 drew it 12 wide unselected. A selected band is drawn one wider.
+  - Step 3: the goods ran `supply-chain-goods-move` over 1.4s, dashed `1px, 13px`, at 0.4 of the band. They were `rgb(255, 255, 255)` light and `rgb(30, 41, 59)` dark, and their offset moved from -4.3px to -9.5px in half a second. On the dimmed band *Pilbara iron ore* to *Flat steel mill* the animation was `none` and the offset 0px, while a lit band kept moving.
+  - Step 4: 10 of the 25 flows are laned. *Tier-1 seating* to *Vehicle assembly plant* is a chain of 7 curves, and *Kolwezi cobalt mines* to *NMC cathode plant* one of 3, straight across each lane.
+  - Step 5, the same in both themes:
+    - The node marked 2 elements and 2 flows upstream, 10 and 11 downstream, 5 frames related, and 13 elements and 12 flows dimmed. Upstream were *Atacama lithium brine*, *Pilbara spodumene* and their two flows. Downstream ran *NMC cathode plant* through to *Private buyers* and *Company fleets*.
+    - The flow marked itself selected, 1 upstream, 11 downstream and 15 dimmed.
+    - The frame selected itself and its 3 members, each member with its steppers.
+    - A click on the empty canvas cleared every mark.
+  - Step 6:
+    - The node's `quantity:` went 120, 125 (+ stepper), 120 (−), then 125, 130, 135, 130, 125 for the five keys. *Lithium hydroxide refinery* stayed the one selection throughout, and seven undos left the file byte-identical.
+    - The flow's `volume:` went 40, 45 (+ stepper), 50 (`+`), 45, 40 (`-` twice), still selected, and was byte-identical after undo.
+  - Step 7: each of Source, Processor, Producer, Integrator, Hub, Outlet and Consumer wrote a node of that `type:`, named `New <stage>`, with `quantity: 0` and the drop point's `x` and `y`. Group wrote `name: New group` with its `x` and `y`. After each *Undo* the file was byte-identical.
+  - Step 8: `group: australia` became `group: china`, and `x: 640`, `y: 265` were written.
+  - Step 9: the background menu offered the seven *Add … here* entries, *Add group here* and *Arrange diagram*. *Arrange diagram* wrote an `x` and a `y` for every node. The first *Undo* left only the drag's three lines, and the second made the file byte-identical.
+  - Step 10: on empty canvas the node gained `x` and `y` and kept `group: central-africa`. Inside *China* it took `group: china` and its `x` and `y`, and *Central Africa* gained `x: -20`, `y: 0`, its frame still drawn and labelled `0 nodes`. Each *Undo* made the file byte-identical.
+  - Step 11: the inline editor opened on the name of *Lithium hydroxide refinery* and of *China*. Each rename wrote its line, and *Undo* made the file byte-identical. A double-click on the flow opened no editor and changed nothing. F2 on the selected flow opened it on `Lithium carbonate`, wrote `product: Renamed product`, and *Undo* made the file byte-identical.
+- **Observations, not failures of this task:**
+  - A double-click on a flow never renamed it, before this task or after. The hand-written definition declared an `activate` gesture for the flow's rename, but the library raises `activate` on an element alone. The compiled definition does not declare it, and its test names the difference. F2 and *Rename product…* rename the product.
+  - Selecting a frame selects its members as well, and each selected member draws its steppers.

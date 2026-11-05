@@ -22,6 +22,7 @@ public class SkosActionsTests : IDisposable
         + "ex:tea a skos:Concept ; skos:topConceptOf ex:scheme ; skos:prefLabel \"Tea\"@en .\r\n"
         + "ex:milk a skos:Concept ; skos:inScheme ex:scheme ; skos:prefLabel \"Milk\"@en .\r\n";
 
+    private readonly TestFolder _testFolder = TestFolder.Create("rdf-skos-actions");
     private readonly string _root;
     private readonly ServiceProvider _provider;
     private readonly RdfContextActionProvider _actions;
@@ -30,8 +31,7 @@ public class SkosActionsTests : IDisposable
 
     public SkosActionsTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
         _provider = new ServiceCollection()
             .AddSingleton<IReadOnlyList<DiagramDefinition>>(Diagram.Definitions)
             .AddCommands().AddHierarchyCommandHandlers()
@@ -49,7 +49,7 @@ public class SkosActionsTests : IDisposable
     public void Dispose()
     {
         _provider.Dispose();
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     private string WriteBody(string content, string name = "scheme.ttl")

@@ -1,0 +1,6 @@
+# Finding A9: ?x is bound by a VALUES block alone - no triple-pattern position and no defining
+# expression - and is projected, so the unbound-projection rule calls it unbound.
+SELECT ?x
+WHERE {
+  VALUES ?x { 1 2 }
+}

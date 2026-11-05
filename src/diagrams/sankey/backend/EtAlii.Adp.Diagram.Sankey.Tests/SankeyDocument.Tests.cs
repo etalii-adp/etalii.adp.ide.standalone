@@ -4,14 +4,18 @@ using Xunit;
 namespace EtAlii.Adp.Diagram.Sankey.Tests;
 
 /// <summary>
-/// The format: what the parser reads, what it reports instead of throwing, and that every write is
-/// a splice which leaves every line it did not mean to touch exactly as it was.
+/// The format: what the reader reads, what it reports instead of throwing, and that every write is
+/// a splice planned through the binding which leaves every line it did not mean to touch exactly as it was.
 /// </summary>
 public sealed class SankeyDocumentTests
 {
     private static string Fixture(string name) => Path.Combine(AppContext.BaseDirectory, "Fixtures", name);
 
     private static LineDocument Load(string name) => LineDocument.Parse(File.ReadAllText(Fixture(name)));
+
+    private static SankeyBody Body(string name) => SankeyBody.Parse(File.ReadAllText(Fixture(name)));
+
+    private static List<string> Lines(SankeyBody body) => [.. LineDocument.Parse(body.Text).Lines.Select(line => line.Text)];
 
     public static TheoryData<string> LineEndings => ["crlf-line-endings.skv", "lf-line-endings.skv", "no-trailing-newline.skv"];
 
@@ -23,8 +27,8 @@ public sealed class SankeyDocumentTests
         var bytes = await File.ReadAllBytesAsync(Fixture(fixture), TestContext.Current.CancellationToken);
 
         // Act.
-        var document = LineDocument.Parse(await File.ReadAllTextAsync(Fixture(fixture), TestContext.Current.CancellationToken));
-        SankeyParser.Parse(document);
+        var document = SankeyBody.Parse(await File.ReadAllTextAsync(Fixture(fixture), TestContext.Current.CancellationToken));
+        _ = document.Reading;
 
         // Assert.
         Assert.Equal(bytes, System.Text.Encoding.UTF8.GetBytes(document.Text));
@@ -35,7 +39,7 @@ public sealed class SankeyDocumentTests
     public void TheSmallFlow_ReadsEveryEntry(string fixture)
     {
         // Act.
-        var model = SankeyParser.Parse(Load(fixture));
+        var model = SankeyReader.Parse(Load(fixture).Text);
 
         // Assert.
         Assert.Empty(model.Problems);
@@ -58,7 +62,7 @@ public sealed class SankeyDocumentTests
     public void MalformedEntries_AreReported_AndTheRestStillReads()
     {
         // Act.
-        var model = SankeyParser.Parse(Load("malformed-entries.skv"));
+        var model = SankeyReader.Parse(Load("malformed-entries.skv").Text);
 
         // Assert: each reported, none of them fatal.
         Assert.Contains(model.Problems, problem => problem.Message.Contains("`thickness: wide`", StringComparison.Ordinal));
@@ -80,7 +84,7 @@ public sealed class SankeyDocumentTests
     public void TextThatIsNotYaml_IsOneProblem_AndAnEmptyModel()
     {
         // Act.
-        var model = SankeyParser.Parse(Load("not-yaml.skv"));
+        var model = SankeyReader.Parse(Load("not-yaml.skv").Text);
 
         // Assert.
         Assert.Contains("could not be read as YAML", Assert.Single(model.Problems).Message, StringComparison.Ordinal);
@@ -91,7 +95,7 @@ public sealed class SankeyDocumentTests
     public void AMissingHeader_IsReported()
     {
         // Act.
-        var model = SankeyParser.Parse(LineDocument.Parse("nodes: []\n"));
+        var model = SankeyReader.Parse("nodes: []\n");
 
         // Assert.
         Assert.Contains(model.Problems, problem => problem.Message.Contains("does not begin with", StringComparison.Ordinal));
@@ -101,17 +105,18 @@ public sealed class SankeyDocumentTests
     public void SettingANumber_ChangesThatLineOnly()
     {
         // Arrange.
-        var document = Load("lf-line-endings.skv");
-        var before = document.Lines.Select(line => line.Text).ToList();
-        var flow = SankeyParser.Parse(document).Flows[0];
+        var document = Body("lf-line-endings.skv");
+        var before = Lines(document);
+        var flow = document.Reading.Model.Flows[0];
 
         // Act.
-        Assert.True(SankeyWriter.SetNumber(document, flow.Range, "value", 12.5).WasApplied);
+        Assert.True(SankeyEdits.SetNumber(document, flow, "value", 12.5).WasApplied);
 
         // Assert.
-        var changed = Enumerable.Range(0, before.Count).Where(index => before[index] != document.Lines[index].Text).ToList();
-        Assert.Equal("    value: 12.5", document.Lines[Assert.Single(changed)].Text);
-        Assert.Equal(12.5, SankeyParser.Parse(document).Flows[0].Value);
+        var after = Lines(document);
+        var changed = Enumerable.Range(0, before.Count).Where(index => before[index] != after[index]).ToList();
+        Assert.Equal("    value: 12.5", after[Assert.Single(changed)]);
+        Assert.Equal(12.5, document.Reading.Model.Flows[0].Value);
     }
 
     [Theory]
@@ -122,35 +127,35 @@ public sealed class SankeyDocumentTests
     public void MovingANode_MovesItsLinesBesideTheAnchor_CommentsIncluded(string node, string anchor, bool after, string[] expected)
     {
         // Arrange.
-        var document = Load("lf-line-endings.skv");
-        var model = SankeyParser.Parse(document);
-        var count = document.Lines.Count;
+        var document = Body("lf-line-endings.skv");
+        var model = document.Reading.Model;
+        var count = Lines(document).Count;
 
         // Act.
-        var edit = SankeyWriter.MoveNode(document, model.Nodes.Single(entry => entry.Id == node), model.Nodes.Single(entry => entry.Id == anchor), after);
+        var edit = SankeyEdits.MoveNode(document, model.Nodes.Single(entry => entry.Id == node), model.Nodes.Single(entry => entry.Id == anchor), after);
 
         // Assert.
-        Assert.True(edit.WasApplied);
-        Assert.Equal(count, document.Lines.Count);
-        var moved = SankeyParser.Parse(document);
+        Assert.True(edit.WasApplied, edit.Refusal);
+        Assert.Equal(count, Lines(document).Count);
+        var moved = document.Reading.Model;
         Assert.Empty(moved.Problems);
         Assert.Equal(expected, moved.Nodes.Select(entry => entry.Id));
-        Assert.Contains(document.Lines, line => line.Text == "    name: Source A   # a comment the writer must keep");
+        Assert.Contains("    name: Source A   # a comment the writer must keep", Lines(document));
     }
 
     [Fact]
     public void AddingANodeBeforeAnother_PutsItThere_InTheDocumentsIndentation()
     {
         // Arrange.
-        var document = Load("lf-line-endings.skv");
-        var model = SankeyParser.Parse(document);
+        var document = Body("lf-line-endings.skv");
+        var model = document.Reading.Model;
 
         // Act.
         var node = new SankeyNode("n", "New: node", "", "", "", 3, "", new LineRange(0, 0));
-        Assert.True(SankeyWriter.AddNode(document, model, node, model.Nodes[3]).WasApplied);
+        Assert.True(SankeyEdits.AddNode(document, node, model.Nodes[3]).WasApplied);
 
         // Assert.
-        var added = SankeyParser.Parse(document);
+        var added = document.Reading.Model;
         Assert.Empty(added.Problems);
         Assert.Equal(["a", "b", "m", "n", "x", "y"], added.Nodes.Select(entry => entry.Id));
         Assert.Equal(("New: node", 3), (added.Nodes[3].Name, added.Nodes[3].Column!.Value));
@@ -167,28 +172,28 @@ public sealed class SankeyDocumentTests
     public void AText_ReadsBackAsItself(string value)
     {
         // Arrange.
-        var document = LineDocument.Parse("sankey: 1\nnodes:\n  - id: a\n    name: A\n");
-        var node = SankeyParser.Parse(document).Nodes[0];
+        var document = SankeyBody.Parse("sankey: 1\nnodes:\n  - id: a\n    name: A\n");
+        var node = document.Reading.Model.Nodes[0];
 
         // Act.
-        Assert.True(SankeyWriter.SetText(document, node.Range, "note", value, removeWhenEmpty: true).WasApplied);
+        Assert.True(SankeyEdits.SetText(document, node, "note", value, removeWhenEmpty: true).WasApplied);
 
         // Assert.
-        var read = SankeyParser.Parse(document);
+        var read = document.Reading.Model;
         Assert.Empty(read.Problems);
         Assert.Equal(value, read.Nodes[0].Note);
     }
 
     [Fact]
-    public void ADocumentWideKey_IsWrittenUnderTheHeader_WhenTheDocumentStatesNone()
+    public void ADocumentWideKey_IsWrittenWhereTheBindingOrdersIt_WhenTheDocumentStatesNone()
     {
         // Arrange.
-        var document = LineDocument.Parse("sankey: 1\nnodes: []\n");
+        var document = SankeyBody.Parse("sankey: 1\nnodes: []\n");
 
         // Act.
-        Assert.True(SankeyWriter.SetRootKey(document, -1, "thickness", "1.25").WasApplied);
+        Assert.True(SankeyEdits.SetThickness(document, 1.25).WasApplied);
 
-        // Assert.
+        // Assert: after the keys the binding orders before it, here the header alone (finding B12).
         Assert.Equal("sankey: 1\nthickness: 1.25\nnodes: []\n", document.Text);
     }
 

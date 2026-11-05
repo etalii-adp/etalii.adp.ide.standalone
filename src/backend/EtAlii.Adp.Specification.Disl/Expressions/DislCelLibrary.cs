@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Text.RegularExpressions;
 using EtAlii.Adp.Specification.Cel;
 
 namespace EtAlii.Adp.Specification.Disl;
@@ -24,6 +26,7 @@ internal static class DislCelLibrary
         ("incomingOf", 1, 1),
         ("outgoingOf", 1, 1),
         ("reachable", 1, 1),
+        ("predecessors", 1, 1),
         ("inCycle", 1, 1),
         ("positionIn", 1, 1),
         ("nodesOfType", 1, 2),
@@ -34,11 +37,15 @@ internal static class DislCelLibrary
         ("location", 0, 0),
     ];
 
-    /// <summary>Adds the library to <paramref name="environment"/>; <paramref name="enums"/> finds the enumerations <c>enumLabel</c> reads.</summary>
-    public static void Register(CelEnvironment environment, Func<string, DislEnum?> enums)
+    /// <summary>
+    /// Adds the library to <paramref name="environment"/>; <paramref name="enums"/> finds the enumerations <c>enumLabel</c>
+    /// reads, and <paramref name="axes"/> the axis ranges <c>axisRange</c> reads.
+    /// </summary>
+    public static void Register(CelEnvironment environment, Func<string, DislEnum?> enums, DislAxisRanges axes)
     {
         ArgumentNullException.ThrowIfNull(environment);
         ArgumentNullException.ThrowIfNull(enums);
+        ArgumentNullException.ThrowIfNull(axes);
 
         foreach ((string name, int min, int max) in Methods)
         {
@@ -47,8 +54,13 @@ internal static class DislCelLibrary
 
         environment.AddFunction(CelFunction.Receiver("cycles", 2, arguments => Cycles(arguments).Cycles.Select(cycle => (object?)cycle.Cast<object?>().ToList()).ToList(), CyclesCost));
         environment.AddFunction(CelFunction.Receiver("cyclesTruncated", 2, arguments => Cycles(arguments).Truncated, CyclesCost));
+        environment.AddFunction(CelFunction.Receiver("knots", 1, Knots, KnotsCost));
+        environment.AddFunction(new CelFunction("budget", CelCallStyle.Global, 0, 1, Budget, _ => 1));
         environment.AddFunction(CelFunction.Global("enumLabel", 2, arguments => EnumLabel(enums, arguments[0], arguments[1])));
+        environment.AddFunction(CelFunction.Global("axisRange", 2, arguments => AxisRange(axes, arguments[0], arguments[1])));
         environment.AddFunction(CelFunction.Receiver("avg", 0, arguments => Average(arguments[0]), arguments => arguments[0] is IReadOnlyList<object?> list ? list.Count : 1));
+        environment.AddFunction(CelFunction.Receiver("sum", 0, arguments => Sum(arguments[0]), arguments => arguments[0] is IReadOnlyList<object?> list ? list.Count : 1));
+        environment.AddFunction(CelFunction.Global("formatNumber", 2, arguments => FormatNumber(arguments[0], arguments[1])));
         environment.AddFunction(CelFunction.Receiver("center", 0, arguments => Center(arguments[0])));
         environment.AddFunction(CelFunction.Global("token", 1, arguments => throw new CelException($"The theme token '{Text(arguments[0])}' is resolved where the diagram is drawn; this runtime has no theme.")));
         environment.AddFunction(CelFunction.Global("color", 1, arguments => DislColor.Of(arguments[0])));
@@ -63,6 +75,63 @@ internal static class DislCelLibrary
         environment.AddFunction(CelFunction.Receiver("year", 0, arguments => YearMonth.YearOf(Int(arguments[0]))));
         environment.AddFunction(CelFunction.Receiver("month", 0, arguments => YearMonth.MonthOf(Int(arguments[0]))));
     }
+
+    /// <summary><c>axisRange(axis, value)</c> (§12.4): the id of the range of the axis that holds the value, or <c>''</c>.</summary>
+    private static string AxisRange(DislAxisRanges axes, object? axis, object? value)
+    {
+        var name = Text(axis);
+        return axes.Holding(name, Number(value)) ?? throw new CelException($"'{name}' is not an axis of this specification (§5.3).");
+    }
+
+    /// <summary><c>diagram.knots(relType)</c> (§12.4), on the diagram that receives it.</summary>
+    private static object Knots(IReadOnlyList<object?> arguments)
+    {
+        var diagram = Receiving(arguments[0]) ?? throw new CelException("knots() is a method of the diagram.");
+        return diagram.Knots(Text(arguments[1])).Select(knot => (object?)knot.Cast<object?>().ToList()).ToList();
+    }
+
+    /// <summary>A knot search is proportional to the relations of the type (§12.4).</summary>
+    private static long KnotsCost(IReadOnlyList<object?> arguments) =>
+        Receiving(arguments[0]) is { } diagram ? diagram.Relations.Count + diagram.Nodes.Count + 1 : 1;
+
+    /// <summary>
+    /// <c>budget(id)</c> (§12.4): the state of a budget of the diagram the calling expression has, as a map of
+    /// <c>shown</c>, <c>total</c>, <c>truncated</c> and <c>withheld</c>.
+    /// </summary>
+    private static object Budget(CelCall call)
+    {
+        var diagram = (call.Variables.TryGetValue("diagram", out var value) ? Receiving(value) : null)
+            ?? throw new CelException("budget() reads the budgets of the diagram, which this expression has none of.");
+        if (call.Arguments.Count == 0)
+        {
+            // Every budget at once: truncated and withheld when they are for any.
+            var states = diagram.Budgets;
+            return new CelMap
+            {
+                ["shown"] = states.Sum(state => state.Shown),
+                ["total"] = states.Sum(state => state.Total),
+                ["truncated"] = states.Any(state => state.Truncated),
+                ["withheld"] = states.Any(state => state.Withheld),
+            };
+        }
+        var id = Text(call.Arguments[0]);
+        var budget = diagram.Budget(id) ?? throw new CelException($"'{id}' is not a budget of this specification (§3.2.1).");
+        return new CelMap
+        {
+            ["shown"] = budget.Shown,
+            ["total"] = budget.Total,
+            ["truncated"] = budget.Truncated,
+            ["withheld"] = budget.Withheld,
+        };
+    }
+
+    /// <summary>The diagram a value is, also where a drawn diagram stands in for it.</summary>
+    private static DislDiagram? Receiving(object? value) => value switch
+    {
+        DislDiagram diagram => diagram,
+        DislDrawnDiagram drawn => drawn.Diagram,
+        _ => null,
+    };
 
     /// <summary><c>diagram.cycles(relType, max)</c> and <c>diagram.cyclesTruncated(relType, max)</c> (§12.4), on the diagram that receives them.</summary>
     private static (IReadOnlyList<IReadOnlyList<DislElement>> Cycles, bool Truncated) Cycles(IReadOnlyList<object?> arguments)
@@ -92,6 +161,51 @@ internal static class DislCelLibrary
         var list = value as IReadOnlyList<object?> ?? throw new CelException("avg() takes a list of numbers.");
         if (list.Count == 0) throw new CelException("avg() of an empty list has no value.");
         return list.Sum(item => item is long or double ? Number(item) : throw new CelException("avg() takes a list of numbers.")) / list.Count;
+    }
+
+    /// <summary>
+    /// <c>l.sum()</c> (§12.4): the total of a list of numbers, an int while every item is an int and a
+    /// double once one is not; the total of an empty list is the int 0.
+    /// </summary>
+    private static object Sum(object? value)
+    {
+        var list = value as IReadOnlyList<object?> ?? throw new CelException("sum() takes a list of numbers.");
+        if (list.All(item => item is long))
+        {
+            long total = 0;
+            foreach (var item in list)
+            {
+                try
+                {
+                    total = checked(total + (long)item!);
+                }
+                catch (OverflowException)
+                {
+                    throw new CelException("sum() of these ints overflows.");
+                }
+            }
+            return total;
+        }
+        return list.Sum(item => item is long or double ? Number(item) : throw new CelException("sum() takes a list of numbers."));
+    }
+
+    /// <summary>The number patterns <c>formatNumber</c> writes: digit placeholders with grouping, and decimals after one point.</summary>
+    private static readonly Regex NumberPattern = new(@"^[#,]*0[0,]*(\.[0#]+)?$|^#[#,]*(\.[0#]+)?$", RegexOptions.CultureInvariant);
+
+    /// <summary>
+    /// <c>formatNumber(n, pattern)</c> (§12.4): <paramref name="number"/> written by <paramref name="pattern"/>, with
+    /// <c>0</c> a digit always written, <c>#</c> one written when it is significant, <c>,</c> grouping by
+    /// thousands and <c>.</c> the decimal point, in the invariant culture. A half in the last kept decimal
+    /// rounds as .NET's custom numeric formats round it, which is what the hosts of this runtime write.
+    /// </summary>
+    private static string FormatNumber(object? number, object? pattern)
+    {
+        if (number is not (long or double) || pattern is not string text) throw new CelException("formatNumber() takes a number and a pattern.");
+        if (!NumberPattern.IsMatch(text))
+        {
+            throw new CelException($"'{text}' is not a number pattern this runtime writes: digits '0' and '#', grouping ',' and one decimal point '.'.");
+        }
+        return number is long integer ? integer.ToString(text, CultureInfo.InvariantCulture) : ((double)number).ToString(text, CultureInfo.InvariantCulture);
     }
 
     /// <summary><c>b.center()</c> on a Bounds (§12.2): <c>[x + width / 2, y + height / 2]</c>, as doubles.</summary>

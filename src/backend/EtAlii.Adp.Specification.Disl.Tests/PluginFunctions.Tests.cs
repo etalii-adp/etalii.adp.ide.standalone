@@ -91,4 +91,46 @@ public class PluginFunctionsTests
         Assert.Equal(["error at /plugins/org.example.a/celFunctions/0/name: 'size' is already a function of the DISL library or of another plugin (DISL §13.1.1)."], Specifications.Diagnostics(clash));
         Assert.Equal(["error at /plugins/org.example.b/celFunctions/0/params: The fallback of 'echo' reads its parameters by name, so each is declared as {name, type} (DISL §13.1.1)."], Specifications.Diagnostics(unnamed));
     }
+
+    [Fact]
+    public void AnImplementedFunction_ReceivesWhatItsUsesNames()
+    {
+        // Arrange.
+        object? received = null;
+        var json = Specifications.With("""
+            "plugins": { "org.example.count": { "provides": ["celFunctions"],
+              "celFunctions": [ { "name": "things", "params": [], "returns": "int", "uses": ["diagram"] } ] } },
+            "constraints": { "rules": [ { "id": "few", "scope": "diagram", "rule": "things() < 1", "message": "Too many." } ] }
+            """);
+        var specification = DislLoader.Load(Encoding.UTF8.GetBytes(json), new DislPluginFunctions().Add("things", (_, used) =>
+        {
+            received = used["diagram"];
+            return (long)((DislDiagram)used["diagram"]!).Nodes.Count;
+        })).Specification!;
+        var diagram = new DislDiagram(specification);
+        diagram.Add(new DislElement(diagram, specification.Metamodel.TypeOf("Thing")!, "t", new Dictionary<string, object?>()));
+
+        // Act.
+        var finding = Assert.Single(ConstraintEvaluator.Evaluate(specification, diagram, new DislConstraintOptions()));
+
+        // Assert.
+        Assert.Same(diagram, received);
+        Assert.Equal("Too many.", finding.Message);
+    }
+
+    [Fact]
+    public void TheNotApplicableMessage_ReadsTheOperationsId()
+    {
+        // Arrange.
+        var json = Specifications.With("""
+            "behavior": { "messages": { "std.notApplicable": { "cel": "'\\'' + operationId + '\\' does not apply here.'" } } }
+            """);
+
+        // Act.
+        var result = DislLoader.Load(Encoding.UTF8.GetBytes(json));
+
+        // Assert.
+        Assert.Empty(result.Diagnostics);
+        Assert.NotNull(result.Specification);
+    }
 }

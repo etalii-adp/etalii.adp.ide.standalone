@@ -1,0 +1,297 @@
+using EtAlii.Adp.Documents;
+using EtAlii.Adp.History;
+
+namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests.Parity;
+
+/// <summary>
+/// Turns an edit into a splice of the lines that edit affects, and nothing else.
+/// </summary>
+/// <remarks>
+/// <para>
+/// Every write in this module goes through here, and every one is a splice of a range the parser
+/// recorded. <b>Nothing serialises a model back to a file</b>, which is what makes "only the
+/// affected lines change" true by construction rather than by care - and what makes an unknown
+/// key survive for free, because a line nobody splices is a line nobody can damage. That is
+/// Requirement 2.3's byte-identical round trip: an unchanged document is not rewritten because
+/// there is no code path that could rewrite it.
+/// </para>
+/// <para>
+/// <b>A write invalidates the model that located it.</b> Line numbers after a splice have moved,
+/// so callers re-parse rather than adjusting ranges by hand - cheap, and it removes a class of
+/// off-by-one bug that is otherwise only found by an edit near the end of a file.
+/// </para>
+/// </remarks>
+public static class FdgWriter
+{
+    private const string ElementsSection = "elements:";
+    private const string ConnectionsSection = "connections:";
+
+    /// <summary>Rewrites an element's name. A Comment has none, and says so.</summary>
+    public static EditOutcome SetName(LineDocument document, FdgElement element, string name)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        ArgumentNullException.ThrowIfNull(element);
+
+        if (element.IsComment)
+        {
+            return EditOutcome.Refused("A Comment has no name; its text is what it says.");
+        }
+
+        LineSplice.SetKey(document, element.Range, "name", LineSplice.Quote(name));
+        return EditOutcome.Applied;
+    }
+
+    /// <summary>
+    /// Rewrites an element's description - prose the client is never sent. An empty one removes the
+    /// key rather than writing <c>description: ""</c>, as the design's command table asks.
+    /// </summary>
+    public static EditOutcome SetDescription(LineDocument document, FdgElement element, string description)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        ArgumentNullException.ThrowIfNull(element);
+
+        SetOrRemove(document, element.Range, "description", description);
+        return EditOutcome.Applied;
+    }
+
+    /// <summary>Rewrites a connection's description, the same way an element's is.</summary>
+    public static EditOutcome SetConnectionDescription(LineDocument document, FdgConnection connection, string description)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        ArgumentNullException.ThrowIfNull(connection);
+
+        SetOrRemove(document, connection.Range, "description", description);
+        return EditOutcome.Applied;
+    }
+
+    private static void SetOrRemove(LineDocument document, LineRange range, string key, string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            LineSplice.RemoveKey(document, range, key);
+        }
+        else
+        {
+            LineSplice.SetKey(document, range, key, LineSplice.Quote(value));
+        }
+    }
+
+    /// <summary>
+    /// Rewrites a Comment's text as a block scalar, so its newlines survive the round trip.
+    /// </summary>
+    /// <remarks>
+    /// <c>|-</c> rather than <c>|</c>: the clipped form keeps the author's last line without
+    /// adding a trailing newline the author did not write, which is what a byte comparison
+    /// notices first.
+    /// </remarks>
+    public static EditOutcome SetText(LineDocument document, FdgElement element, string text)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        ArgumentNullException.ThrowIfNull(element);
+
+        if (!element.IsComment)
+        {
+            return EditOutcome.Refused("Only a Comment carries text.");
+        }
+
+        var indent = LineSplice.KeyIndentWithin(document, element.Range);
+        List<string> lines =
+        [
+            $"{indent}text: |-",
+            .. text.Split('\n').Select(line => $"{indent}  {line.TrimEnd('\r')}")
+        ];
+
+        ReplaceKeyBlock(document, element.Range, "text", lines);
+        return EditOutcome.Applied;
+    }
+
+    /// <summary>Moves an element by rewriting its top-left corner.</summary>
+    public static EditOutcome MoveTo(LineDocument document, FdgElement element, double x, double y)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        ArgumentNullException.ThrowIfNull(element);
+
+        LineSplice.SetKey(document, element.Range, "x", DslNumber.Format(x));
+        LineSplice.SetKey(document, element.Range, "y", DslNumber.Format(y));
+        return EditOutcome.Applied;
+    }
+
+    /// <summary>
+    /// Resizes an element. Width is clamped to the minimum rather than refused, and a height is
+    /// written only for a Comment - the other four share <see cref="FdgGeometry.SharedHeight"/>
+    /// and storing it per element is what the shared constant exists to avoid.
+    /// </summary>
+    public static EditOutcome Resize(LineDocument document, FdgElement element, double width, double? height)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        ArgumentNullException.ThrowIfNull(element);
+
+        LineSplice.SetKey(document, element.Range, "width", DslNumber.Format(Math.Max(width, FdgGeometry.MinimumWidth)));
+
+        if (height is null)
+        {
+            return EditOutcome.Applied;
+        }
+
+        if (!element.IsComment)
+        {
+            return EditOutcome.Refused("Only a Comment has its own height; the others share one.");
+        }
+
+        LineSplice.SetKey(document, element.Range, "height", DslNumber.Format(Math.Max(height.Value, FdgGeometry.MinimumCommentHeight)));
+        return EditOutcome.Applied;
+    }
+
+    /// <summary>Rewrites a connection's name.</summary>
+    public static EditOutcome SetConnectionName(LineDocument document, FdgConnection connection, string name)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        ArgumentNullException.ThrowIfNull(connection);
+
+        LineSplice.SetKey(document, connection.Range, "name", LineSplice.Quote(name));
+        return EditOutcome.Applied;
+    }
+
+    /// <summary>
+    /// Removes an element and every connection touching it, bottom-up.
+    /// </summary>
+    /// <remarks>
+    /// <b>Descending by start line, because each removal moves every line after it.</b> Removing
+    /// top-down would leave the second range pointing at lines that have already shifted - the
+    /// same reason the counterpart module orders its removals this way.
+    /// </remarks>
+    public static EditOutcome RemoveElement(LineDocument document, FdgModel model, FdgElement element)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        ArgumentNullException.ThrowIfNull(model);
+        ArgumentNullException.ThrowIfNull(element);
+
+        var ranges = model.Connections
+            .Where(connection => connection.From == element.Id || connection.To == element.Id)
+            .Select(connection => connection.Range)
+            .Append(element.Range)
+            .OrderByDescending(range => range.Start)
+            .ToList();
+
+        foreach (var range in ranges)
+        {
+            document.Remove(range);
+        }
+
+        return EditOutcome.Applied;
+    }
+
+    /// <summary>Removes one connection.</summary>
+    public static EditOutcome Disconnect(LineDocument document, FdgConnection connection)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        ArgumentNullException.ThrowIfNull(connection);
+
+        document.Remove(connection.Range);
+        return EditOutcome.Applied;
+    }
+
+    /// <summary>Appends an element entry, matching whatever indentation the document already uses.</summary>
+    public static EditOutcome AddElement(LineDocument document, FdgModel model, FdgElement element)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        ArgumentNullException.ThrowIfNull(model);
+        ArgumentNullException.ThrowIfNull(element);
+
+        var ranges = model.Elements.Select(existing => existing.Range).ToList();
+        var at = LineSplice.InsertionPointFor(document, ranges, ElementsSection);
+        if (at < 0)
+        {
+            return EditOutcome.Refused($"The document has no `{ElementsSection}` section to add to.");
+        }
+
+        (string itemIndent, string dashGap, string keyIndent) = LineSplice.IndentOf(document, ranges);
+        List<string> lines =
+        [
+            $"{itemIndent}-{dashGap}id: {LineSplice.Quote(element.Id)}",
+            $"{keyIndent}type: {element.Type}",
+        ];
+
+        if (element.IsComment)
+        {
+            lines.Add($"{keyIndent}text: |-");
+            lines.AddRange(element.Text.Split('\n').Select(line => $"{keyIndent}  {line.TrimEnd('\r')}"));
+        }
+        else
+        {
+            lines.Add($"{keyIndent}name: {LineSplice.Quote(element.Name)}");
+        }
+
+        lines.Add($"{keyIndent}x: {DslNumber.Format(element.X)}");
+        lines.Add($"{keyIndent}y: {DslNumber.Format(element.Y)}");
+        lines.Add($"{keyIndent}width: {DslNumber.Format(Math.Max(element.Width, FdgGeometry.MinimumWidth))}");
+        if (element.IsComment)
+        {
+            lines.Add($"{keyIndent}height: {DslNumber.Format(Math.Max(element.DrawnHeight, FdgGeometry.MinimumCommentHeight))}");
+        }
+
+        document.Insert(at, lines);
+        return EditOutcome.Applied;
+    }
+
+    /// <summary>Appends a connection entry.</summary>
+    public static EditOutcome Connect(LineDocument document, FdgModel model, FdgConnection connection)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        ArgumentNullException.ThrowIfNull(model);
+        ArgumentNullException.ThrowIfNull(connection);
+
+        var ranges = model.Connections.Select(existing => existing.Range).ToList();
+        var at = LineSplice.InsertionPointFor(document, ranges, ConnectionsSection);
+        if (at < 0)
+        {
+            return EditOutcome.Refused($"The document has no `{ConnectionsSection}` section to add to.");
+        }
+
+        (string itemIndent, string dashGap, string keyIndent) = LineSplice.IndentOf(document, ranges);
+        List<string> lines =
+        [
+            $"{itemIndent}-{dashGap}id: {LineSplice.Quote(connection.Id)}",
+            $"{keyIndent}type: {connection.Type}",
+            $"{keyIndent}from: {LineSplice.Quote(connection.From)}",
+            $"{keyIndent}to: {LineSplice.Quote(connection.To)}",
+        ];
+
+        if (!string.IsNullOrEmpty(connection.Name))
+        {
+            lines.Add($"{keyIndent}name: {LineSplice.Quote(connection.Name)}");
+        }
+
+        document.Insert(at, lines);
+        return EditOutcome.Applied;
+    }
+
+    /// <summary>
+    /// Replaces a multi-line key's block, or writes it when the entry has none.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="LineSplice.SetKey"/> rewrites one line, which is right for a scalar and wrong
+    /// for a block scalar whose value spans several. This finds the key, walks to the end of its
+    /// indented block, and replaces the whole of it.
+    /// </remarks>
+    private static void ReplaceKeyBlock(LineDocument document, LineRange range, string key, IReadOnlyList<string> lines)
+    {
+        var at = LineSplice.FindKey(document, range, key);
+        if (at < 0)
+        {
+            document.Insert(range.End + 1, lines);
+            return;
+        }
+
+        var keyIndent = Indent(document.Lines[at].Text);
+        var end = at;
+        while (end + 1 <= range.End && Indent(document.Lines[end + 1].Text).Length > keyIndent.Length)
+        {
+            end++;
+        }
+
+        document.Replace(new LineRange(at, end), lines);
+    }
+
+    private static string Indent(string text) => text[..^text.TrimStart().Length];
+}

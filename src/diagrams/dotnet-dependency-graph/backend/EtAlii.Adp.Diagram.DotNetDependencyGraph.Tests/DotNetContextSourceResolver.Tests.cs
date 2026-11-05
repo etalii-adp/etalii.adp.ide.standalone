@@ -18,7 +18,8 @@ public sealed class DotNetContextSourceResolverTests : IDisposable
     private static readonly TimeSpan WaitLimit = TimeSpan.FromSeconds(15);
     private static readonly TimeSpan Silence = TimeSpan.FromMilliseconds(400);
 
-    private readonly string _root = Directory.CreateTempSubdirectory("ddg-resolver-").FullName;
+    private readonly TestFolder _testFolder = TestFolder.Create("ddg-resolver");
+    private readonly string _root;
     private readonly FakeTimeProvider _clock = new();
     private readonly DependencyGraphStore _store;
     private readonly DotNetContextSourceResolver _resolver;
@@ -27,6 +28,7 @@ public sealed class DotNetContextSourceResolverTests : IDisposable
 
     public DotNetContextSourceResolverTests()
     {
+        _root = _testFolder.Path;
         _store = new DependencyGraphStore(
             new SolutionReader(), new ProjectReader(), new PackageDescriptionReader(IoPath.Combine("no", "such", "cache")), SettleDelay, time: _clock);
         Write("App/App.csproj", """
@@ -55,14 +57,7 @@ public sealed class DotNetContextSourceResolverTests : IDisposable
     {
         _store.Dispose();
 
-        try
-        {
-            Directory.Delete(_root, recursive: true);
-        }
-        catch (IOException)
-        {
-            // A temp folder a virus scanner still holds is not a test failure.
-        }
+        _testFolder.Dispose();
     }
 
     [Fact]

@@ -59,9 +59,9 @@ public static class HookRunner
         ArgumentNullException.ThrowIfNull(specification);
         ArgumentNullException.ThrowIfNull(relation);
         ArgumentNullException.ThrowIfNull(ids);
-        if (!relation.Type.IsRelation) throw new ArgumentException($"{relation} is no relation, so it was not drawn.", nameof(relation));
-
-        return Run(specification, relation, null, "connect", [], ids, env, source);
+        return !relation.Type.IsRelation
+            ? throw new ArgumentException($"{relation} is no relation, so it was not drawn.", nameof(relation))
+            : Run(specification, relation, null, "connect", [], ids, env, source);
     }
 
     private static DislTransaction Run(

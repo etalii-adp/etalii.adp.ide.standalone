@@ -21,12 +21,13 @@ An editor's identity is a static `Editor` class — markdown's is [`Editor.cs`](
 - **`Extensions`** — the file extensions it serves, dot included; compared case-insensitively (the record lower-cases them at construction). Markdown claims `[".md", ".markdown"]`.
 - **`FileNames`** — exact-name claims for extensionless files (`Makefile`, `Dockerfile`, `LICENSE`). Markdown claims none.
 - **`IsFallback`** — see plain, below.
-- **`IsDefaultForSharedExtension`** — the opt-in tie-breaker for the one *legitimate* shared-extension case: when a raw editor and a format-aware one deliberately share an extension, exactly one declares itself the default and the other stays reachable through "Open with…". Neither shipped editor needs it.
+- **`IsDefaultForSharedExtension`** — the opt-in tie-breaker for the one *legitimate* shared-extension case: when a raw editor and a format-aware one deliberately share an extension, exactly one declares itself the default and the other stays reachable through "Open with…". No shipped editor needs it.
 - **`Build`** — registers the module's services; markdown's is a single line adding its `IEditorSessionFactory`.
 
 The class carries `[UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]`. Discovery finds it by reflection and nothing calls it by name, so without the attribute Rider reports it as unused. `JetBrains.Annotations` is referenced for every project in `src/Directory.Build.props`, so the module adds only the `using`:
 
 ```csharp
+using EtAlii.Adp.Sessions;
 using JetBrains.Annotations;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -98,7 +99,7 @@ For a new editor `foo`:
 
 1. `src/editors/foo/backend/EtAlii.Adp.Editor.Foo` (+ `.Tests`, `<OutputType>Exe</OutputType>`), both added to `EtAlii.Adp.slnx`.
 2. `Editor.cs` with the definition: id, title, description, icon, claims, `Build` registering your `IEditorSessionFactory`, and `[UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]` on the class.
-3. The session, on `TextFileBuffer`, with tests pinning round-trip shape (copy plain's fixtures approach).
+3. The session: `TextEditorSession` as it is, or a thin subclass of it, as json, markdown, xml and yaml have; write one on `TextFileBuffer` only when the backend needs more than the text, with tests pinning round-trip shape (copy plain's fixtures approach).
 4. `client/register.ts` matching `editor/foo`, and the panel it mounts: `TextEditorPanel` with the format's grammar, and an `analysis` if the format has findings or completion (see *The shared editor pieces*, and *Asking the backend about the text* when the backend answers it). A dependency of the panel's own goes in `client/package.json`, with its row in `docs/dependencies.md`. A heavy one is loaded with `import()`; one that imports a module of Node needs an alias in `src/client/vite.config.ts` (see *The client panel*).
 5. `examples/` with files the editor is for, and a byte-identical replica under `src/examples/editors/foo/` so the editor appears in the combined showcase project; the module's `Examples.Tests` opens every example, saves it unchanged and holds the replica to the same bytes. Examples whose line endings are the point (a CRLF file beside LF ones) get a `-text` line in `.gitattributes`, scoped to the module's examples and the replica by extension, as the JSON editor's are.
 6. No core edits, no shell edits beyond such an alias; one catalog row — `docs/tools.md` lists every tool type, editors included, with the Kind `Editor` and the origin `editor/foo`.

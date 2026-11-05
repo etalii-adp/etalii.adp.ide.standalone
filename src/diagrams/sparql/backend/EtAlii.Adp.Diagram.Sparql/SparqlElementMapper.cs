@@ -1,6 +1,7 @@
 using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Layout;
 using Google.Protobuf;
+using JetBrains.Annotations;
 
 namespace EtAlii.Adp.Diagram.Sparql;
 
@@ -15,9 +16,11 @@ public sealed class SparqlElementMapper
     public const string VariableType = "w3c/sparql+variable";
 
     /// <inheritdoc cref="VariableType" />
+    [UsedImplicitly] // Read only by reflection, into the cross-tier element-types fixture.
     public const string TermType = "w3c/sparql+term";
 
     /// <inheritdoc cref="VariableType" />
+    [Relation]
     public const string EdgeType = "w3c/sparql+edge";
 
     /// <inheritdoc cref="VariableType" />
@@ -30,6 +33,7 @@ public sealed class SparqlElementMapper
     public const string HeaderType = "w3c/sparql+header";
 
     /// <inheritdoc cref="VariableType" />
+    [UsedImplicitly] // Read only by reflection, into the cross-tier element-types fixture.
     public const string TruncationType = "w3c/sparql+truncation";
 
     /// <summary>The header band's element id - one per diagram, always present.</summary>
@@ -48,7 +52,17 @@ public sealed class SparqlElementMapper
         ArgumentNullException.ThrowIfNull(layout);
 
         var elements = new List<DiagramElement>();
+        AddRegions(elements, projection, layout);
+        AddNodes(elements, projection, layout);
+        AddEdges(elements, projection);
+        AddAnnotations(elements, projection);
+        elements.AddRange(SparqlChrome.Elements(projection));
+        return elements;
+    }
 
+    /// <summary>Every region, as a frame at its computed bounds.</summary>
+    private static void AddRegions(List<DiagramElement> elements, SparqlProjectionResult projection, SparqlLayoutResult layout)
+    {
         foreach (var region in projection.Regions)
         {
             var frame = layout.RegionBounds.TryGetValue(region.Id, out var bounds) ? bounds : default;
@@ -61,7 +75,11 @@ public sealed class SparqlElementMapper
                 Height = frame.Height,
             }));
         }
+    }
 
+    /// <summary>Every node at its position: a variable, a collapsed subquery or a concrete term.</summary>
+    private static void AddNodes(List<DiagramElement> elements, SparqlProjectionResult projection, SparqlLayoutResult layout)
+    {
         foreach (var node in projection.Nodes)
         {
             var at = layout.NodePositions.TryGetValue(node.Id, out var position) ? position : default;
@@ -101,7 +119,11 @@ public sealed class SparqlElementMapper
                     break;
             }
         }
+    }
 
+    /// <summary>Every edge, positioned by its ends rather than by a place of its own.</summary>
+    private static void AddEdges(List<DiagramElement> elements, SparqlProjectionResult projection)
+    {
         foreach (var edge in projection.Edges)
         {
             elements.Add(Pack(edge.Id, default, EdgeType, new SparqlEdgePayload
@@ -112,7 +134,11 @@ public sealed class SparqlElementMapper
                 IsPath = edge.IsPath,
             }));
         }
+    }
 
+    /// <summary>Every annotation, drawn beside what it is attached to.</summary>
+    private static void AddAnnotations(List<DiagramElement> elements, SparqlProjectionResult projection)
+    {
         foreach (var annotation in projection.Annotations)
         {
             elements.Add(Pack(annotation.Id, default, AnnotationType, new SparqlAnnotationPayload
@@ -122,23 +148,6 @@ public sealed class SparqlElementMapper
                 AttachedTo = annotation.AttachedToId,
             }));
         }
-
-        elements.Add(Pack(HeaderId, default, HeaderType, new SparqlHeaderPayload
-        {
-            Form = projection.HeaderForm,
-            ModifierRows = { projection.HeaderRows },
-        }));
-
-        if (projection.Truncated)
-        {
-            elements.Add(Pack(TruncationId, default, TruncationType, new SparqlTruncationPayload
-            {
-                Shown = projection.Shown,
-                Total = projection.Total,
-            }));
-        }
-
-        return elements;
     }
 
     /// <summary>
@@ -212,6 +221,7 @@ public sealed class SparqlElementMapper
             .Where(element => !positioned.Contains(element.Id) || delivered.Contains(element.Id))];
     }
 
-    private static DiagramElement Pack(string id, RegistrationPosition at, string type, IMessage payload) =>
+    /// <summary>One element of the wire: its id, its position, its type string and its payload, packed.</summary>
+    internal static DiagramElement Pack(string id, RegistrationPosition at, string type, IMessage payload) =>
         new(id, at.X, at.Y, type, $"type.googleapis.com/{payload.Descriptor.FullName}", payload.ToByteArray());
 }

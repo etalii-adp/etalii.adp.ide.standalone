@@ -1,6 +1,6 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.SupplyChain.Tests;
@@ -13,13 +13,13 @@ public sealed class SupplyChainCommandsTests : IDisposable
 {
     private readonly SupplyChainTestFolder _folder = new(Path.Combine(AppContext.BaseDirectory, "Fixtures", "crlf-line-endings.supply"), "small.supply");
     private readonly SupplyChainDocumentStore _store = new(new FileWriter());
-    private readonly SupplyChainTestDispatcher _dispatcher;
+    private readonly ICommandDispatcher _dispatcher;
     private readonly byte[] _original;
 
     public SupplyChainCommandsTests()
     {
         _original = File.ReadAllBytes(Body);
-        _dispatcher = new SupplyChainTestDispatcher(_store);
+        _dispatcher = TestHistory.Dispatcher(s => { s.AddSupplyChain(); s.AddSingleton<ISupplyChainDocumentStore>(_store); });
     }
 
     private string Body => _folder.Body;
@@ -154,17 +154,20 @@ public sealed class SupplyChainCommandsTests : IDisposable
     }
 
     [Fact]
-    public void TenStepsOfAFraction_ComeBackToAWholeNumber()
+    public async Task TenStepsOfAFraction_ComeBackToAWholeNumber()
     {
+        // Arrange.
+        await Dispatch(new SetSupplyChainPropertyCommand(Body, "plant", SupplyChainKeys.Quantity, "0"));
+        await Dispatch(new SetSupplyChainPropertyCommand(Body, "plant", SupplyChainKeys.Step, "0.1"));
+
         // Act.
-        double? value = 0;
         for (var i = 0; i < 10; i++)
         {
-            value = StepSupplyChainValueCommandHandler.Stepped(value, 0.1, 1, "quantity");
+            await Dispatch(new StepSupplyChainValueCommand(Body, "plant", 1));
         }
 
         // Assert.
-        Assert.Equal(1, value);
+        Assert.Equal(1, Parse().Nodes.Single(node => node.Id == "plant").Quantity);
     }
 
     [Fact]
@@ -301,5 +304,5 @@ public sealed class SupplyChainCommandsTests : IDisposable
         Assert.True(result.IsSuccess, result.Error);
     }
 
-    private SupplyChainModel Parse() => SupplyChainParser.Parse(LineDocument.Parse(File.ReadAllText(Body)));
+    private SupplyChainModel Parse() => SupplyChainReading.Parse(File.ReadAllText(Body));
 }

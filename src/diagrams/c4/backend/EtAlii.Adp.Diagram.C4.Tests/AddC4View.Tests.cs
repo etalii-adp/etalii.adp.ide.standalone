@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,6 +12,7 @@ namespace EtAlii.Adp.Diagram.C4.Tests;
 /// </summary>
 public class AddC4ViewTests : IDisposable
 {
+    private readonly TestFolder _testFolder = TestFolder.Create("c4-add-view");
     private readonly string _root;
     private readonly string _bodyPath;
     private readonly ServiceProvider _services;
@@ -38,8 +38,7 @@ public class AddC4ViewTests : IDisposable
 
     public AddC4ViewTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Diagram.C4.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
         _bodyPath = IoPath.Combine(_root, "banking.dsl");
         File.WriteAllText(_bodyPath, Model);
 
@@ -51,7 +50,7 @@ public class AddC4ViewTests : IDisposable
     public void Dispose()
     {
         _services.Dispose();
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     private AddC4ViewCommand AddContainers(string key = "containers") => new(
@@ -218,7 +217,7 @@ public class AddC4ViewTests : IDisposable
         await _history.ExecuteAsync(AddContainers(), TestContext.Current.CancellationToken);
 
         // Act.
-        var workspace = C4Parser.Parse(LineDocument.Parse(await File.ReadAllTextAsync(_bodyPath, TestContext.Current.CancellationToken)));
+        var workspace = C4Body.Read(await File.ReadAllTextAsync(_bodyPath, TestContext.Current.CancellationToken)).Workspace;
         var view = workspace.FindView("containers")!;
         var layout = C4LayoutEngine.Compute(workspace, view, C4Metrics.Default);
 

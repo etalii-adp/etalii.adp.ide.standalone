@@ -1,0 +1,11 @@
+supply-chain: 1
+# Finding B5: a key written twice in one mapping.
+nodes:
+  - id: mine
+    type: source
+    name: Mine
+    name: Second name
+  - id: plant
+    type: producer
+    name: Plant
+flows: []

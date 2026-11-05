@@ -1,0 +1,13 @@
+sankey: 1
+# B12: where a key an entry does not have yet is written, and a missing thickness.
+format: "{value} t"
+nodes:
+  - id: a
+    name: A
+    description: A node with a description and no colour, note, format or column.
+  - name: B
+    id: b
+flows:
+  - to: b
+    from: a
+    description: A flow with no value or step.

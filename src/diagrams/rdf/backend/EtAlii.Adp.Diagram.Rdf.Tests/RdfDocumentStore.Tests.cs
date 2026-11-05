@@ -11,18 +11,18 @@ namespace EtAlii.Adp.Diagram.Rdf.Tests;
 /// </summary>
 public class RdfDocumentStoreTests : IDisposable
 {
+    private readonly TestFolder _testFolder = TestFolder.Create("rdf-document-store");
     private readonly string _root;
     private readonly RdfDocumentStore _store = new(new FileWriter());
 
     public RdfDocumentStoreTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     private string CopyFixture(string name)

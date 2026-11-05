@@ -1,0 +1,22 @@
+supply-chain: 1
+# Finding B10: the first entry of each list is indented otherwise than the later ones.
+groups:
+    -   id: north
+        name: North
+    - id: south
+      name: South
+nodes:
+ -  id: mine
+    type: source
+    name: Mine
+    group: north
+ - id: plant
+   type: producer
+   name: Plant
+flows:
+  -    id: ore
+       from: mine
+       to: plant
+  - id: goods
+    from: plant
+    to: mine

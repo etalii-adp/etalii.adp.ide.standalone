@@ -1,0 +1,8 @@
+# Finding A10: two literals "1", typed by two datatypes whose IRIs end in the same segment.
+PREFIX ex: <http://example.org/>
+
+SELECT ?s
+WHERE {
+  ?s ex:first "1"^^<http://a.example/types#int> .
+  ?s ex:second "1"^^<http://b.example/types/int> .
+}

@@ -1,11 +1,10 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.SupplyChain;
 
 /// <summary>
-/// Writes the layered layout into the document: the positions <see cref="SupplyChainLayout"/>
-/// computes for every node, whatever the document stated before.
+/// The definition's <c>arrange</c>: its <c>chain</c> layout, which is the host's to run, written into the document as
+/// the positions <see cref="SupplyChainLayout"/> computes for every node, whatever the document stated before.
 /// </summary>
 /// <remarks>
 /// Written rather than cleared: a document whose nodes carry no coordinates is already drawn by
@@ -14,11 +13,6 @@ namespace EtAlii.Adp.Diagram.SupplyChain;
 public sealed class ArrangeSupplyChainCommandHandler(ISupplyChainDocumentStore documents) : SupplyChainEditHandler<ArrangeSupplyChainCommand>(documents)
 {
     /// <inheritdoc />
-    protected override EditOutcome Apply(LineDocument document, SupplyChainModel model, ArrangeSupplyChainCommand command)
-    {
-        var arranged = SupplyChainLayout.Of(model).Arranged;
-        return arranged.Count == 0
-            ? EditOutcome.Refused("There is nothing to arrange until this diagram has a node.")
-            : SupplyChainWriter.Place(document, model, arranged);
-    }
+    protected override EditOutcome Apply(SupplyChainBody document, SupplyChainModel model, ArrangeSupplyChainCommand command) =>
+        SupplyChainDefinition.Arrange(document, model);
 }

@@ -1,6 +1,8 @@
+using EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests.Parity;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Specification.Disl;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests;
@@ -23,14 +25,15 @@ namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests;
 /// </remarks>
 public sealed class FdgCommandsTests : IDisposable
 {
-    private readonly string _folder = Path.Combine(Path.GetTempPath(), "EtAlii.Adp.FdgCommandsTests", Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("EtAlii.Adp.FdgCommandsTests");
+    private readonly string _folder;
     private readonly FdgDocumentStore _store = new(new FileWriter());
     private readonly FdgTestDispatcher _dispatcher;
     private readonly byte[] _original;
 
     public FdgCommandsTests()
     {
-        Directory.CreateDirectory(_folder);
+        _folder = _testFolder.Path;
         File.Copy(FieldServiceExample.Path, Body);
         _original = File.ReadAllBytes(Body);
         _dispatcher = new FdgTestDispatcher(_store);
@@ -40,14 +43,7 @@ public sealed class FdgCommandsTests : IDisposable
 
     public void Dispose()
     {
-        try
-        {
-            Directory.Delete(_folder, recursive: true);
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            // A temp folder left behind is not a test failure.
-        }
+        _testFolder.Dispose();
     }
 
     public static TheoryData<string> EveryEdit =>
@@ -255,20 +251,20 @@ public sealed class FdgCommandsTests : IDisposable
     {
         // Arrange: another program holds the file, so the first open cannot read it.
         var store = new FdgDocumentStore(new FileWriter());
-        DocumentEntry<LineDocument, FdgModel> entry;
+        DocumentEntry<FdgBody, DislModel> entry;
         await using (new FileStream(Body, FileMode.Open, FileAccess.Read, FileShare.None))
         {
             entry = await store.GetOrLoadAsync(Body, TestContext.Current.CancellationToken);
         }
 
         Assert.False(entry.IsUsable);
-        Assert.Empty(entry.Model.Elements);
+        Assert.Empty(entry.Model.Diagram.Elements);
 
         // Act: an edit, and a save straight through the store.
         var edited = await new FdgTestDispatcher(store).DispatchAsync(
             new RenameFdgElementCommand(Body, "planning", "Plan"),
             TestContext.Current.CancellationToken);
-        var saved = await store.SaveAsync(Body, LineDocument.Parse("functional-decomposition-graph: 1\r\nelements: []\r\nconnections: []\r\n"), TestContext.Current.CancellationToken);
+        var saved = await store.SaveAsync(Body, FdgBody.Parse("functional-decomposition-graph: 1\r\nelements: []\r\nconnections: []\r\n"), TestContext.Current.CancellationToken);
 
         // Assert: both refused, and the file is still the real diagram.
         Assert.False(edited.IsSuccess);

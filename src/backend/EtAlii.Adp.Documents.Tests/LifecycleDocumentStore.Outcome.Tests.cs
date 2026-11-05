@@ -11,11 +11,12 @@ namespace EtAlii.Adp.Documents.Tests;
 /// </summary>
 public sealed class LifecycleDocumentStoreOutcomeTests : IDisposable
 {
-    private readonly string _folder = IoPath.Combine(IoPath.GetTempPath(), "adp-lifecycle-outcome-" + Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-lifecycle-outcome");
+    private readonly string _folder;
 
-    public LifecycleDocumentStoreOutcomeTests() => Directory.CreateDirectory(_folder);
+    public LifecycleDocumentStoreOutcomeTests() => _folder = _testFolder.Path;
 
-    public void Dispose() => TestFolder.TryDelete(_folder);
+    public void Dispose() => _testFolder.Dispose();
 
     private string PathOf(string name) => IoPath.Combine(_folder, name);
 

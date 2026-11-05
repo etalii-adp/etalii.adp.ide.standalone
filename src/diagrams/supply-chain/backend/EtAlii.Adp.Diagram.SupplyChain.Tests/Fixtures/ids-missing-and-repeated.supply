@@ -1,0 +1,30 @@
+supply-chain: 1
+# Finding A8: the sections in another order than groups, nodes, flows, an id held in two
+# sections, and entries with no id. The tool takes "first" as groups, then nodes, then flows.
+flows:
+  - id: shared
+    from: mine
+    to: plant
+    volume: 4
+  - from: plant
+    to: shop
+nodes:
+  - id: mine
+    type: source
+    name: Mine
+    group: north
+  - id: shared
+    type: producer
+    name: Plant that shares an id
+  - id: plant
+    type: producer
+    name: Plant
+    group: north
+  - type: outlet
+    name: A shop with no id
+groups:
+  - id: north
+    name: North
+  - name: A group with no id
+  - id: plant
+    name: A group that holds a node's id

@@ -18,7 +18,7 @@ public sealed class ContextServiceWatchReleaseTests : IDisposable
     private static readonly ShortGuid UserId = ShortGuid.NewShortGuid();
     private static readonly ShortGuid ProjectId = ShortGuid.NewShortGuid();
 
-    private readonly DirectoryInfo _root = Directory.CreateTempSubdirectory("context-watch-release-");
+    private readonly TestFolder _root = TestFolder.Create("context-watch-release");
 
     [Fact]
     public async Task AProjectActionsDiscoveryThatThrows_ReleasesTheHistory()
@@ -58,14 +58,14 @@ public sealed class ContextServiceWatchReleaseTests : IDisposable
         Assert.Equal(1, history.Releases);
     }
 
-    public void Dispose() => _root.Delete(recursive: true);
+    public void Dispose() => _root.Dispose();
 
     private ContextService CreateService(IHistoryStackStore history, IContextActionResolver actions)
     {
         var selections = new ContextSelectionStore();
         var interactions = new ContextInteractionStore();
         return new ContextService(
-            new OneProjectStore(new ProjectRecord(ProjectId, "project", new PathRecord(_root.FullName.Split(System.IO.Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries)))),
+            new OneProjectStore(new ProjectRecord(ProjectId, "project", new PathRecord(_root.Path.Split(System.IO.Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries)))),
             selections,
             new ContextSelectionResolver([]),
             actions,

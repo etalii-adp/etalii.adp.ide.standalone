@@ -2,6 +2,7 @@ using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -14,18 +15,19 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph.Tests;
 /// </summary>
 public sealed class GhgTriggersAndNotesEditingTests : IDisposable
 {
-    private readonly string _folder = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.GhgTriggersAndNotesEditingTests", Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("EtAlii.Adp.GhgTriggersAndNotesEditingTests");
+    private readonly string _folder;
     private readonly GhgDocumentStore _store = new(new FileWriter());
-    private readonly GhgTestDispatcher _dispatcher;
-    private readonly HistoryStackStore _historyStacks;
+    private readonly ICommandDispatcher _dispatcher;
+    private readonly IHistoryStackStore _historyStacks;
     private readonly byte[] _original;
 
     public GhgTriggersAndNotesEditingTests()
     {
-        Directory.CreateDirectory(_folder);
+        _folder = _testFolder.Path;
         File.Copy(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", "triggers-and-notes.ghg"), Body);
         _original = File.ReadAllBytes(Body);
-        _dispatcher = new GhgTestDispatcher(_store);
+        _dispatcher = TestHistory.Dispatcher(s => { s.AddGartnerHypeCycleGraph(); s.AddSingleton<IGhgDocumentStore>(_store); });
         _historyStacks = new HistoryStackStore(_dispatcher);
     }
 
@@ -33,15 +35,8 @@ public sealed class GhgTriggersAndNotesEditingTests : IDisposable
 
     public void Dispose()
     {
-        _historyStacks.Dispose();
-        try
-        {
-            Directory.Delete(_folder, recursive: true);
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            // A temp folder left behind is not a test failure.
-        }
+        (_historyStacks as IDisposable)?.Dispose();
+        _testFolder.Dispose();
     }
 
     private static int M(int year, int month = 1) => GhgScale.MonthIndex(year, month);
@@ -283,7 +278,7 @@ public sealed class GhgTriggersAndNotesEditingTests : IDisposable
             Assert.False((await store.GetOrLoadAsync(Body, TestContext.Current.CancellationToken)).IsUsable);
         }
 
-        var dispatcher = new GhgTestDispatcher(store);
+        var dispatcher = TestHistory.Dispatcher(s => { s.AddGartnerHypeCycleGraph(); s.AddSingleton<IGhgDocumentStore>(store); });
         ICommand[] commands =
         [
             new AddGhgTriggerCommand(Body, 0, 0),

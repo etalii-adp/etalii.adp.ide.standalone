@@ -1,0 +1,55 @@
+supply-chain: 1
+# Finding A5: the six legacy stage words read as the stage each became, the seven current words
+# read as themselves, and an unknown word is kept, reported and not drawn.
+nodes:
+  - id: mine
+    type: raw-material
+    name: Mine
+  - id: smelter
+    type: supplier
+    name: Smelter
+  - id: plant
+    type: manufacturer
+    name: Plant
+  - id: line
+    type: assembler
+    name: Assembly line
+  - id: depot
+    type: distributor
+    name: Depot
+  - id: shop
+    type: retailer
+    name: Shop
+  - id: well
+    type: source
+    name: Well
+  - id: refinery
+    type: processor
+    name: Refinery
+  - id: mill
+    type: producer
+    name: Mill
+  - id: works
+    type: integrator
+    name: Works
+  - id: port
+    type: hub
+    name: Port
+  - id: store
+    type: outlet
+    name: Store
+  - id: buyer
+    type: consumer
+    name: Buyer
+  - id: pit
+    type: quarry
+    name: Quarry
+flows:
+  - id: mine-to-smelter
+    from: mine
+    to: smelter
+    volume: 3
+  - id: pit-to-mill
+    from: pit
+    to: mill
+    volume: 2

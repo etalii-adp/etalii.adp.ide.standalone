@@ -6,17 +6,17 @@ namespace EtAlii.Adp.Hierarchy.Tests;
 
 public class HierarchyModelTests : IDisposable
 {
+    private readonly TestFolder _testFolder = TestFolder.Create("hierarchy-model");
     private readonly string _root;
 
     public HierarchyModelTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     private string CreateFolder(params string[] segments)
@@ -335,6 +335,33 @@ public class HierarchyModelTests : IDisposable
     }
 
     [Fact]
+    public void OnWatcherEvent_Created_ForAPathThatIsGoneAgain_MakesNoEntry_SoARenameBackStaysARename()
+    {
+        // macOS' FSEvents reports a file's creation late, even one from just before the watch began.
+        // Here it arrives after the file was renamed, the shape UndoRedoFlowTests met on every run.
+        var originalPath = CreateFile(segments: "original.txt");
+        var renamedPath = IoPath.Combine(_root, "renamed.txt");
+        var model = new HierarchyModel(_root, TestToolRouters.For());
+        var entry = model.ListChildren(null).Single();
+
+        File.Move(originalPath, renamedPath);
+        model.ApplyLocalRename(originalPath, renamedPath);
+
+        var changes = new List<HierarchyEntryChange>();
+        model.EntryChanged += changes.Add;
+
+        model.OnWatcherEvent(WatcherChangeTypes.Created, null, originalPath);
+        Assert.Empty(changes);
+
+        File.Move(renamedPath, originalPath);
+        model.ApplyLocalRename(renamedPath, originalPath);
+
+        var renamedBack = Assert.IsType<HierarchyEntryRenamed>(Assert.Single(changes, change => change is HierarchyEntryRenamed));
+        Assert.Equal(entry.Id, renamedBack.EntryId);
+        Assert.Equal("original.txt", renamedBack.NewName);
+    }
+
+    [Fact]
     public void OnWatcherEvent_ReplaceFileSequence_KeepsTheEntryAndItsId()
     {
         // The event sequence Windows' ReplaceFile actually raises when File.Replace rewrites a
@@ -383,6 +410,30 @@ public class HierarchyModelTests : IDisposable
         var renamed = Assert.IsType<HierarchyEntryRenamed>(raised);
         Assert.Equal(entry.Id, renamed.EntryId);
         Assert.Equal("new.txt", renamed.NewName);
+    }
+
+    [Fact]
+    public void OnWatcherEvent_RenamedOverAKnownFile_KeepsTheFile_AndRemovesTheCopy()
+    {
+        // Arrange: another program saves notes.md as many editors and agents do, by writing a copy beside it first.
+        var filePath = CreateFile("before", "notes.md");
+        var copyPath = CreateFile("after", "notes.md.tmp");
+        var model = new HierarchyModel(_root, TestToolRouters.For());
+        var listed = model.ListChildren(null);
+        var file = listed.Single(entry => entry.Name == "notes.md");
+        var copy = listed.Single(entry => entry.Name == "notes.md.tmp");
+        var changes = new List<HierarchyEntryChange>();
+        model.EntryChanged += changes.Add;
+
+        // Act: the copy is moved over the file.
+        File.Move(copyPath, filePath, overwrite: true);
+        model.OnWatcherEvent(WatcherChangeTypes.Renamed, copyPath, filePath);
+
+        // Assert: one notes.md, still the entry it was, so what is open or selected on it stays; the copy's entry is gone.
+        var after = model.ListChildren(null);
+        Assert.Equal(file.Id, Assert.Single(after).Id);
+        Assert.Equal("notes.md", after[0].Name);
+        Assert.Equal(copy.Id, Assert.IsType<HierarchyEntryRemoved>(Assert.Single(changes, change => change is not HierarchyEntryUpdated)).EntryId);
     }
 
     [Fact]
@@ -438,34 +489,27 @@ public class HierarchyModelTests : IDisposable
     {
         // Arrange.
         CreateFolder("real");
-        var outsideRoot = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(outsideRoot);
+        using var outsideFolder = TestFolder.Create("hierarchy-model-outside");
+        var outsideRoot = outsideFolder.Path;
+        var symlinkPath = IoPath.Combine(_root, "escape");
         try
         {
-            var symlinkPath = IoPath.Combine(_root, "escape");
-            try
-            {
-                Directory.CreateSymbolicLink(symlinkPath, outsideRoot);
-            }
-            catch (Exception)
-            {
-                // Creating a directory symlink requires a privilege this environment may not
-                // grant (e.g. no Developer Mode / not elevated) - nothing to assert without it.
-                return;
-            }
+            Directory.CreateSymbolicLink(symlinkPath, outsideRoot);
+        }
+        catch (Exception)
+        {
+            // Creating a directory symlink requires a privilege this environment may not
+            // grant (e.g. no Developer Mode / not elevated) - nothing to assert without it.
+            return;
+        }
 
-            // Act.
-            var model = new HierarchyModel(_root, TestToolRouters.For());
-            var children = model.ListChildren(null);
+        // Act.
+        var model = new HierarchyModel(_root, TestToolRouters.For());
+        var children = model.ListChildren(null);
 
         // Assert.
-            Assert.Contains(children, c => c.Name == "real");
-            Assert.DoesNotContain(children, c => c.Name == "escape");
-        }
-        finally
-        {
-            TestFolder.TryDelete(outsideRoot);
-        }
+        Assert.Contains(children, c => c.Name == "real");
+        Assert.DoesNotContain(children, c => c.Name == "escape");
     }
 
     [Fact]
@@ -505,36 +549,29 @@ public class HierarchyModelTests : IDisposable
     public void TryResolvePath_ForAnEntryTurnedIntoASymlinkEscapingTheRoot_ResolvesToNothing()
     {
         // Arrange.
-        var outsideRoot = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(outsideRoot);
-        try
-        {
-            var entryPath = CreateFolder("swapped");
-            var model = new HierarchyModel(_root, TestToolRouters.For());
-            var entryId = model.ListChildren(null).Single(c => c.Name == "swapped").Id;
+        using var outsideFolder = TestFolder.Create("hierarchy-model-outside");
+        var outsideRoot = outsideFolder.Path;
+        var entryPath = CreateFolder("swapped");
+        var model = new HierarchyModel(_root, TestToolRouters.For());
+        var entryId = model.ListChildren(null).Single(c => c.Name == "swapped").Id;
 
         // Act.
-            // Swap the real folder for a symlink pointing outside, exactly the case
-            // resolving straight from the listing-time path would walk into.
-            Directory.Delete(entryPath);
-            try
-            {
-                Directory.CreateSymbolicLink(entryPath, outsideRoot);
-            }
-            catch (Exception)
-            {
-                // Creating a directory symlink requires a privilege this environment may not
-                // grant (e.g. no Developer Mode / not elevated) - nothing to assert without it.
-                return;
-            }
-
-            // Assert.
-            Assert.False(model.TryResolvePath(entryId, out _, out _));
-        }
-        finally
+        // Swap the real folder for a symlink pointing outside, exactly the case
+        // resolving straight from the listing-time path would walk into.
+        Directory.Delete(entryPath);
+        try
         {
-            TestFolder.TryDelete(outsideRoot);
+            Directory.CreateSymbolicLink(entryPath, outsideRoot);
         }
+        catch (Exception)
+        {
+            // Creating a directory symlink requires a privilege this environment may not
+            // grant (e.g. no Developer Mode / not elevated) - nothing to assert without it.
+            return;
+        }
+
+        // Assert.
+        Assert.False(model.TryResolvePath(entryId, out _, out _));
     }
     [Fact]
     public void OnWatcherEvent_ForTheWritersScratchFile_RaisesNothingAndListsNothing()

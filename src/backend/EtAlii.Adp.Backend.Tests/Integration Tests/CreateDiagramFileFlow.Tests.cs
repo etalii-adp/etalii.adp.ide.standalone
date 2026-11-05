@@ -4,7 +4,6 @@ using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.Hierarchy.Wire;
-using EtAlii.Adp.TestSupport.Host;
 using Grpc.Core;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;

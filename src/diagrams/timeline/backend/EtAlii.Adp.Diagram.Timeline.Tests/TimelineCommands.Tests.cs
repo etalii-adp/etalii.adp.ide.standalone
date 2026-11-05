@@ -13,9 +13,8 @@ namespace EtAlii.Adp.Diagram.Timeline.Tests;
 /// </summary>
 public class TimelineCommandsTests : IDisposable
 {
-    private readonly string _workspace = IoPath.Combine(
-        IoPath.GetTempPath(),
-        "adp-timeline-commands-" + Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-timeline-commands");
+    private readonly string _workspace;
 
     private readonly TimelineDocumentStore _store = new(new FileWriter());
     private readonly IHistoryStackStore _historyStacks;
@@ -24,7 +23,7 @@ public class TimelineCommandsTests : IDisposable
 
     public TimelineCommandsTests()
     {
-        Directory.CreateDirectory(_workspace);
+        _workspace = _testFolder.Path;
         // The host's own command pipeline, with this module's registrations and this test's store.
         _historyStacks = TestHistory.For(services =>
         {
@@ -35,7 +34,7 @@ public class TimelineCommandsTests : IDisposable
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_workspace);
+        _testFolder.Dispose();
 
         GC.SuppressFinalize(this);
     }

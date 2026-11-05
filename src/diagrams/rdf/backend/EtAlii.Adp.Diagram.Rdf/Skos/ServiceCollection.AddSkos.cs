@@ -39,21 +39,7 @@ public static class ServiceCollectionAddSkosExtension
     /// The minimal document a new scheme diagram starts as - one scheme, one top concept with a
     /// preferred label, parsing and validating clean (nothing above info), so a fresh vocabulary
     /// opens as a vocabulary rather than a refusal.
+    /// It is the module binding's template for this reading (FBL §13), which writes the bytes the module wrote before.
     /// </summary>
-    private static string EmptyDocument(string baseName)
-    {
-        ArgumentNullException.ThrowIfNull(baseName);
-
-        var local = RdfLocalName.Of(baseName);
-        return "@prefix skos: <http://www.w3.org/2004/02/skos/core#> .\r\n"
-            + "@prefix ex: <http://example.org/> .\r\n"
-            + "\r\n"
-            + $"ex:{local} a skos:ConceptScheme ;\r\n"
-            + $"    skos:prefLabel \"{baseName}\"@en ;\r\n"
-            + $"    skos:hasTopConcept ex:{local}_top .\r\n"
-            + "\r\n"
-            + $"ex:{local}_top a skos:Concept ;\r\n"
-            + "    skos:prefLabel \"Top concept\"@en ;\r\n"
-            + $"    skos:topConceptOf ex:{local} .\r\n";
-    }
+    private static string EmptyDocument(string baseName) => RdfDefinitions.NewDocument(SkosOrigin, baseName);
 }

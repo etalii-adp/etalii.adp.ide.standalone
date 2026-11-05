@@ -15,13 +15,13 @@ namespace EtAlii.Adp.Diagram.Rdf.Tests;
 /// </summary>
 public class SkosSessionTests : IDisposable
 {
+    private readonly TestFolder _testFolder = TestFolder.Create("rdf-skos-session");
     private readonly string _root;
     private readonly ServiceProvider _provider;
 
     public SkosSessionTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
         _provider = new ServiceCollection()
             .AddSingleton<IReadOnlyList<DiagramDefinition>>(Diagram.Definitions)
             .AddCommands().AddHierarchyCommandHandlers()
@@ -32,7 +32,7 @@ public class SkosSessionTests : IDisposable
     public void Dispose()
     {
         _provider.Dispose();
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     private const string Vocabulary = """

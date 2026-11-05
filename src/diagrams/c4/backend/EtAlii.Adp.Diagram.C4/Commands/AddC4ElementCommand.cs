@@ -1,5 +1,8 @@
+using System.Globalization;
+using System.Text;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Specification.Fbl.Planning;
 
 namespace EtAlii.Adp.Diagram.C4;
 
@@ -20,16 +23,30 @@ public sealed record AddC4ElementCommand(
     string ParentId = "",
     string Identifier = "") : IDocumentEditCommand;
 
-/// <summary>Undoes an <see cref="AddC4ElementCommand"/>: removes the element it declared.</summary>
+/// <summary>Removes one element from a C4 model, as the binding removes it.</summary>
 /// <param name="CollapseParent">
-/// The element whose block the add had to open, when it did - so undoing the add takes the
-/// braces away again rather than leaving an empty block behind. Empty when the parent already
-/// had a block, or when there was no parent at all.
+/// No longer read: an add is undone by putting back the text it started from
+/// (<see cref="RestoreDocumentCommand{TStore}"/>), which takes away a block the add opened, so no
+/// removal has to close one; kept so the record keeps its shape.
 /// </param>
-public sealed record RemoveC4ElementCommand(string BodyPath, string Identifier, string CollapseParent = "") : IDocumentEditCommand;
+public sealed record RemoveC4ElementCommand(
+    string BodyPath,
+    string Identifier,
+    // ReSharper disable once NotAccessedPositionalProperty.Global - Reason: an undo now restores the text before the edit, so nothing reads CollapseParent; it is kept because c4-disl-fbl task 15 keeps every command record as it was.
+    string CollapseParent = "") : IDocumentEditCommand;
 
+/// <summary>
+/// Adds an element as the definition's add operation creates it - <c>&lt;identifier&gt; = &lt;keyword&gt; "Name"
+/// "Describe Name."</c>, with <c>"Technology"</c> for a container or a component - written by the library where the
+/// binding places it (c4-disl-fbl task 15, Requirement 5.4): a person or a software system at the end of the model, a
+/// container or a component as the last child of its parent, which gains a block when it has none. Undoing it puts
+/// back the text it started from.
+/// </summary>
 internal sealed class AddC4ElementCommandHandler(IC4DocumentStore documents) : C4EditHandler<AddC4ElementCommand>(documents)
 {
+    /// <summary>What the library says of an add into a block that is not closed.</summary>
+    private const string UnclosedBlock = "The block is not closed, so nothing can be added to it.";
+
     /// <inheritdoc />
     protected override async Task<CommandResult> RunAsync(AddC4ElementCommand command, CancellationToken cancellationToken) =>
         command.Name.Trim().Length == 0
@@ -40,61 +57,152 @@ internal sealed class AddC4ElementCommandHandler(IC4DocumentStore documents) : C
     protected override EditOutcome Apply(LineDocument body, C4Workspace model, AddC4ElementCommand command)
     {
         var name = command.Name.Trim();
-        if (C4Placement.Refuse(model, command.Kind, command.ParentId) is { } refusal)
+        if (Refuse(model, command.Kind, command.ParentId) is { } refusal)
         {
             return EditOutcome.Refused(refusal);
         }
 
         var identifier = command.Identifier.Length > 0
             ? command.Identifier
-            : C4Placement.IdentifierFor(model, name);
+            : IdentifierFor(model, name);
         if (model.Find(identifier) is not null)
         {
             return EditOutcome.Refused($"This model already has something called '{identifier}'.");
         }
 
-        return C4Placement.TryInsert(body, model, command.Kind, name, identifier, command.ParentId, out var error, out var openedBlock)
-            ? EditOutcome.UndoneBy(new RemoveC4ElementCommand(command.BodyPath, identifier, openedBlock ? command.ParentId : ""))
-            : EditOutcome.Refused(error);
+        // The text is the definition's: its add operation, run with the identifier made here (gap C11), gives the
+        // attributes and whether the element goes inside the parent at all, which a person or a software system
+        // dropped on another element does not.
+        var operation = C4ContextActionProvider.AddableKinds.First(addable => addable.Kind == command.Kind).Operation;
+        if (C4Definitions.Creation(model, C4Body.FileOf(command.BodyPath), null, null, operation, command.ParentId, name, identifier) is not { } created)
+        {
+            return EditOutcome.Refused("The element it would go inside is no longer in this model.");
+        }
+
+        var outcome = C4Body.Write(
+            body,
+            command,
+            read => created.ParentId is null
+                ? new ModelChange.Add(command.Kind.ToString(), identifier, created.Attributes)
+                : read.ReadingIdOf(command.ParentId) is { } parent
+                    ? new ModelChange.Add(command.Kind.ToString(), identifier, created.Attributes, parent)
+                    : null,
+            "The element it would go inside is no longer in this model.");
+
+        // A block that is never closed is the library's refusal too; it is said as it was said before (Requirement 5.5).
+        return outcome.Refusal == UnclosedBlock
+            ? EditOutcome.Refused(created.ParentId is null
+                ? "This document has no model block to add an element to."
+                : "That element's block is not closed, so nothing can be added to it.")
+            : outcome;
     }
+
+    /// <summary>Why this kind cannot go there, or null when it can.</summary>
+    private static string? Refuse(C4Workspace workspace, C4ElementKind kind, string parentId)
+    {
+        ArgumentNullException.ThrowIfNull(workspace);
+        ArgumentNullException.ThrowIfNull(parentId);
+        var parent = parentId.Length == 0 ? null : workspace.Find(parentId);
+        if (parentId.Length > 0 && parent is null)
+        {
+            return "The element it would go inside is no longer in this model.";
+        }
+
+        return kind switch
+        {
+            // The two things that stand on their own. Dropping one onto something else is a
+            // gesture that means nothing rather than one that is forbidden, so it is taken as
+            // "at the top" rather than refused.
+            C4ElementKind.Person or C4ElementKind.SoftwareSystem => null,
+
+            C4ElementKind.Container when parent is null =>
+                "A container lives inside a software system. Drop it on one.",
+            C4ElementKind.Container when parent.Kind != C4ElementKind.SoftwareSystem =>
+                $"A container lives inside a software system, not inside a {Spell(parent.Kind)}.",
+
+            C4ElementKind.Component when parent is null =>
+                "A component lives inside a container. Drop it on one.",
+            C4ElementKind.Component when parent.Kind != C4ElementKind.Container =>
+                $"A component lives inside a container, not inside a {Spell(parent.Kind)}.",
+
+            C4ElementKind.Container or C4ElementKind.Component => null,
+
+            // Deployment nodes, infrastructure nodes and instances live in a deployment
+            // environment, which is a different gesture.
+            _ => $"Adding a {Spell(kind)} from the toolbox is not supported yet.",
+        };
+    }
+
+    /// <summary>An identifier nothing in the model is using yet, derived from the name (gap C11, finding A9).</summary>
+    internal static string IdentifierFor(C4Workspace workspace, string name)
+    {
+        ArgumentNullException.ThrowIfNull(workspace);
+        ArgumentNullException.ThrowIfNull(name);
+        var builder = new StringBuilder();
+        foreach (var character in name)
+        {
+            if (char.IsLetterOrDigit(character))
+            {
+                builder.Append(builder.Length == 0 ? char.ToLowerInvariant(character) : character);
+            }
+        }
+
+        var candidate = builder.Length == 0 ? "element" : builder.ToString();
+        if (char.IsDigit(candidate[0]))
+        {
+            candidate = "_" + candidate;
+        }
+
+        if (workspace.Find(candidate) is null)
+        {
+            return candidate;
+        }
+
+        // `web`, `web2`, `web3`. Numbered rather than randomised, because an identifier is what
+        // a human reads in the diff.
+        for (var suffix = 2; ; suffix++)
+        {
+            var numbered = candidate + suffix.ToString(CultureInfo.InvariantCulture);
+            if (workspace.Find(numbered) is null)
+            {
+                return numbered;
+            }
+        }
+    }
+
+    private static string Spell(C4ElementKind kind) => kind switch
+    {
+        C4ElementKind.SoftwareSystem => "software system",
+        C4ElementKind.DeploymentNode => "deployment node",
+        C4ElementKind.InfrastructureNode => "infrastructure node",
+        C4ElementKind.ContainerInstance => "container instance",
+        C4ElementKind.SoftwareSystemInstance => "software system instance",
+        _ => kind.ToString().ToLowerInvariant(),
+    };
 }
 
+/// <summary>
+/// Removes an element as the binding removes it: its entry with the comments that lead it, and what the binding's
+/// <c>remove.cascade</c> takes with it, written by the library. An element with things inside it is refused rather
+/// than taking them too.
+/// </summary>
 internal sealed class RemoveC4ElementCommandHandler(IC4DocumentStore documents) : C4EditHandler<RemoveC4ElementCommand>(documents)
 {
+    private const string Gone = "That element is no longer in this model.";
+
     /// <inheritdoc />
     protected override EditOutcome Apply(LineDocument body, C4Workspace model, RemoveC4ElementCommand command)
     {
         if (model.Find(command.Identifier) is not { } element)
         {
-            return EditOutcome.Refused("That element is no longer in this model.");
+            return EditOutcome.Refused(Gone);
         }
 
-        var inverse = new AddC4ElementCommand(
-            command.BodyPath,
-            element.Kind,
-            element.Name,
-            element.ParentId ?? "",
-            element.Id);
-
-        // Resolved before the removal shifts anything: the parent whose block the add had to
-        // open, if it opened one.
-        var parent = command.CollapseParent.Length > 0 ? model.Find(command.CollapseParent) : null;
-
-        // Only ever undoing an add, so the element is a single line with no block of its own -
-        // anything with children was not added this way and is not removed this way either.
-        if (!C4Placement.TryRemove(body, element, out var error))
+        if (model.Elements.Any(child => child.ParentId is { } parent && string.Equals(parent, element.Id, StringComparison.OrdinalIgnoreCase)))
         {
-            return EditOutcome.Refused(error);
+            return EditOutcome.Refused("That element has things inside it, so removing it here would take them too.");
         }
 
-        if (parent is not null)
-        {
-            // The braces the add opened come off again. Without this, undoing an add would
-            // leave `container "Web" … { }` behind - not what was there before, which is the
-            // one thing undo has to deliver.
-            C4Placement.CollapseEmptyBlock(body, parent);
-        }
-
-        return EditOutcome.UndoneBy(inverse);
+        return C4Body.Write(body, command, read => read.ReadingIdOf(element.Id) is { } id ? new ModelChange.Remove(id) : null, Gone);
     }
 }

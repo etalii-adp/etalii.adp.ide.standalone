@@ -58,7 +58,18 @@ export function PropertyRow({ property, onCommit }: PropertyRowProps) {
   // changed it, and an undo certainly will have. While a slider's writes are still coming back,
   // a push is an echo of an earlier stop and not an answer: taking it would move the thumb back
   // under the pointer, and the next pointer move would write that stop again.
+  //
+  // Only a change is taken, never the first run. The draft already starts at the pushed value,
+  // and the first run happens after the row is on screen: a focus and a keystroke can land
+  // before it, and the run, closed over a row nobody was editing yet, would put the pushed value
+  // back over what was typed, so that the blur found nothing to write.
+  const seen = useRef({ value: property.value, editing });
   useEffect(() => {
+    const changed = seen.current.value !== property.value || seen.current.editing !== editing;
+    seen.current = { value: property.value, editing };
+    if (!changed) {
+      return;
+    }
     if (sliding.current !== null) {
       if (property.value !== sliding.current) {
         return;

@@ -42,8 +42,12 @@ public abstract record DislChange
 /// </summary>
 public abstract record HostAction
 {
-    /// <summary><c>layout</c>: run <paramref name="Algorithm"/> (section 10) over the diagram.</summary>
-    public sealed record Layout(string Algorithm) : HostAction;
+    /// <summary>
+    /// <c>layout</c>: run <paramref name="Algorithm"/> (section 10) over the diagram, refusing with <paramref name="NothingDrawn"/>
+    /// while its scope holds nothing the algorithm can place and with <paramref name="Unchanged"/> when it would change nothing
+    /// (DISL 0.3 §9.4): the action's <c>refusals</c>, evaluated; null where it states none, for the host's own sentence.
+    /// </summary>
+    public sealed record Layout(string Algorithm, string? NothingDrawn = null, string? Unchanged = null) : HostAction;
 
     /// <summary><c>plugin</c>: the plugin action <paramref name="Name"/> with its evaluated arguments.</summary>
     public sealed record Plugin(string Name, IReadOnlyDictionary<string, object?> Arguments) : HostAction;

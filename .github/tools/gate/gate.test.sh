@@ -1,49 +1,38 @@
 #!/bin/bash
-# gate.test.sh - the shared gate's own tests. Run by GateScriptTests inside `dotnet test`, so a
-# regression in the gate fails a gate rather than a landing:
+# gate.test.sh - the tests of the scripts beside it that still apply: retire.sh and
+# who-is-gating.sh, and the parts of gate-lib.sh they use. The Build workflow runs it in a job of
+# its own, `gate-scripts`; it is not part of the product test suite (etalii.adp spec 025, FR-096):
 #
 #   bash .github/tools/gate/gate.test.sh
 #
-# Hermetic. Everything it changes is built in a throwaway repository under a temp directory, with
-# its own git configuration; the real repository is only READ - processes.md for the guard, and
-# the scripts and fixtures under test. No npm or dotnet runs: the end-to-end cases gate a repository
-# without a src/ folder, so every gate command fails at its `cd`.
+# gate.sh and land.sh are not tested here. They are the local-merge process CLAUDE.md says no
+# longer applies - delivery is a pull request - and their cases, with the dotnet logs that were
+# their fixtures, were deleted with GateScriptTests, which ran this script inside `dotnet test`.
 #
-# Every defect the gate exists to refuse is a case here, beside a case that MUST PASS through the
+# Hermetic. Everything it changes is built in a throwaway repository under a temp directory, with
+# its own git configuration; the real repository is only READ - the scripts under test.
+#
+# Every defect a script exists to refuse is a case here, beside a case that MUST PASS through the
 # same capture - a check seen only to refuse proves nothing, since a harness that never ran refuses
 # too. Preconditions are asserted, not assumed: a planted husk that does not resolve to its main
-# checkout, or a fixture that lost its CRLF, stops the run as broken rather than letting a case
-# report on a question it never asked.
+# checkout stops the run as broken rather than letting a case report on a question it never asked.
 #
 # Ends in RESULT=selftest-green only when every case ran - the count must equal EXPECTED, so a
 # case that silently stops running is a failure too - and none was wrong.
 #
-# The fixtures are real dotnet logs, CRLF as dotnet writes it, from 2026-09-10 and before:
-# dotnet-green.log (Architect 1's scratch gate), dotnet-green-2.log and dotnet-red-flaky.log
-# (Developer 1: a genuine flaky failure, runner exit 2; one account name in a failure message
-# replaced, nothing else touched), dotnet-truncated-midflight.log and dotnet-invocation-error.log
-# (Developer 3: a run cut off while still listing assemblies, and dotnet's own one-line invocation
-# error - a run that tested nothing and never says "Zero tests ran"). Real logs alone would pass a
-# naive "green unless a failure is mentioned" verdict (Developer 1 measured it), so the variants
-# built from them, each differing in exactly one property, are what do the catching.
+# Run it as a user other than root: one retire.sh case needs a read-only directory to stop a
+# delete, and root writes into one anyway, so as root the run stops as broken rather than passing.
 set -u
 unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_COMMON_DIR GIT_OBJECT_DIRECTORY
 
 HERE=$(cd "$(dirname "$0")" && pwd)
 ROOT=$(cd "$HERE/../../.." && pwd)
-DOC="$ROOT/.spec-workflow/steering/processes.md"
-FIX="$HERE/fixtures"
 . "$HERE/gate-lib.sh"
 
 case "$(uname -s)" in MINGW* | MSYS* | CYGWIN*) MSYS=1 ;; *) MSYS=0 ;; esac
-# --quick runs everything except the two throwaway-repository sections at the end, which are what
-# makes the full suite expensive: they build real repositories, worktrees, build outputs and
-# MAX_PATH probes. Quick keeps the guard refusals, the verdict parsing, the logs, the tell and the
-# argument handling - the paths the board leans on every day.
-#
-# The counts are PINNED PER MODE and were measured rather than derived: the file has 155 report
-# call sites but runs 177 cases on msys, because several sit in loops, so subtracting call sites
-# would have given a confidently wrong number.
+# --quick runs everything except the throwaway-repository sections at the end, which are what
+# makes the full suite expensive: they build real repositories, worktrees and, on Windows, MAX_PATH
+# probes. Quick keeps the tree check, the tell, and the argument handling.
 QUICK=0
 case "${1:-}" in
   "") ;;
@@ -54,24 +43,13 @@ case "${1:-}" in
     ;;
 esac
 [ $# -le 1 ] || { echo "RESULT=selftest-broken (expected one argument at most; got $#)"; exit 2; }
-# MEASURED on Git Bash: quick runs 130 of the 205 cases, against 1274 s for the full suite. BOTH
-# msys numbers were run here - 130 in quick and 205 in full - rather than one being derived from the
-# other.
-#
-# THE 17 s FIGURE FOR QUICK NO LONGER REPRODUCES, and the reason is load rather than these cases. On
-# 2026-09-24, with six dotnet and thirty-six node processes belonging to other sessions, quick took
-# 332 s. The twenty-four cases added that day were timed on their own at 1.1 s all together, which
-# bounds their contribution and leaves the rest as contention - so 17 s was a QUIET-MACHINE figure
-# and was never labelled as one. Do not treat a slow quick run as a regression without measuring the
-# load first, and do not treat this paragraph as a new pin: no quiet-machine figure has been taken
-# since.
-#
-# On Linux, 126 in quick was MEASURED on 2026-09-26 (Ubuntu 24.04): develop's 116 plus the ten
-# who-owns cases, the same ten msys adds. 195 in full is NOT measured: msys-gated cases sit in both
-# the cheap and the skipped regions, so the case difference cannot simply be carried across, and
-# that pin assumes it can. A wrong pin fails LOUDLY with the true count in the same line, so the
-# first run on another platform corrects it rather than passing quietly.
-if [ "$MSYS" = 1 ]; then EXPECTED=205; EXPECTED_QUICK=130; else EXPECTED=195; EXPECTED_QUICK=126; fi
+# The counts are PINNED PER MODE. On Linux both were MEASURED on 2026-10-31, as a user other than
+# root: 57 in full and 32 in quick, after who-owns.sh left with spec-workflow (27 cases, 10 of them
+# in quick). The msys numbers are DERIVED, not measured: the 205 and 130 measured on Git Bash before
+# the gate.sh and land.sh cases left, less those cases (115 on msys, four of them msys-only in the
+# guard section, so 88 in quick), less the who-owns cases. A wrong pin fails LOUDLY with the true
+# count in the same line, so the first run on Git Bash corrects it rather than passing quietly.
+if [ "$MSYS" = 1 ]; then EXPECTED=63; EXPECTED_QUICK=32; else EXPECTED=57; EXPECTED_QUICK=32; fi
 [ "$QUICK" = 1 ] && EXPECTED=$EXPECTED_QUICK
 
 W=$(mktemp -d) || { echo "RESULT=selftest-broken (no temp dir)"; exit 2; }
@@ -109,162 +87,13 @@ mkrepo() {
   git init -q "$1" && git -C "$1" commit -q --allow-empty -m init && git -C "$1" config extensions.worktreeConfig true &&
     [ -z "$(git -C "$1" rev-parse --show-cdup)" ] && [ "$(git -C "$1" rev-parse --show-toplevel)" != "$REAL_TOP" ]
 }
-fingerprint() { # a main checkout's state: its branch, its tip, its configuration, its tracked files
-  printf '%s|%s|%s|%s' "$(git -C "$1" symbolic-ref -q HEAD)" "$(git -C "$1" rev-parse HEAD)" \
-    "$(cksum < "$1/.git/config")" "$(git -C "$1" status --porcelain --untracked-files=no | cksum)"
-}
 result_of() { printf '%s\n' "$1" | sed -n 's/^RESULT=\([a-z-]*\).*/\1/p' | tail -1; }
-winform() { cygpath -m "$1"; }
 
-echo "== extracting the guard from processes.md"
-extract_guard < "$DOC" > "$W/guard.sh"
-rc=$?
-report 0 "$rc" "the procedure's guard extracts as exactly one intact block"
-[ "$rc" = 0 ] && [ -s "$W/guard.sh" ] || broken "no guard to test - every guard case below depends on it"
-extract_guard < /dev/null > /dev/null
-report 2 "$?" "empty input is refused as no block"
-printf 'a document\nwith no guard in it\n' | extract_guard > /dev/null
-report 2 "$?" "a document without the block is refused"
-{ cat "$DOC"; printf '\n```sh\n'; cat "$W/guard.sh"; printf '```\n'; } | extract_guard > /dev/null
-report 3 "$?" "a document carrying the block twice is refused"
-sed 's/symbolic-ref/symbolic_ref/g' "$DOC" | extract_guard > /dev/null
-report 4 "$?" "a block without the detached check (an older block) is refused"
-sed 's/MAIN_TOP/MAIN_TIP/g' "$DOC" | extract_guard > /dev/null
-report 4 "$?" "a block without the main-checkout refusal is refused"
-
-echo "== the guard, against a repository with every kind of directory it must tell apart"
-R="$W/repo"
-mkrepo "$R" || broken "cannot create a repository"
-WT="$R/.claude/worktrees"
-mkdir -p "$WT"
-git -C "$R" worktree add -q --detach "$WT/mrgd1" develop || broken "cannot create a scratch tree"
-git -C "$R" worktree add -q -b feature "$WT/feat1" || broken "cannot create a feature worktree"
-mkdir -p "$WT/husk1/src" && echo source > "$WT/husk1/src/file.txt"
-mkdir -p "$WT/dangle1" && echo "gitdir: $W/nowhere" > "$WT/dangle1/.git"
-RT=$(git -C "$R" rev-parse --show-toplevel)
-[ "$(git -C "$WT/husk1" rev-parse --show-toplevel 2> /dev/null)" = "$RT" ] ||
-  broken "the planted husk does not resolve to its main checkout, so it would test nothing"
-git -C "$WT/feat1" symbolic-ref -q HEAD > /dev/null || broken "the planted feature worktree is not on a branch"
-git -C "$WT/mrgd1" symbolic-ref -q HEAD > /dev/null && broken "the planted scratch tree is not detached"
-FP_R=$(fingerprint "$R")
-
-guard_on() { # <path> - PASS if the guard verifies the path, ABORT if it refuses, ERROR otherwise
-  local out rc
-  out=$({ MAIN="$R"; MRG="$1"; . "$W/guard.sh"; echo "VERIFIED=$MRG_TOP"; } 2>&1)
-  rc=$?
-  case "$rc:$out" in
-    0:*VERIFIED=?*) echo PASS ;;
-    3:*ABORT*) echo ABORT ;;
-    *) echo "ERROR($rc)" ;;
-  esac
-}
-report PASS "$(guard_on "$WT/mrgd1")" "a detached scratch tree is verified"
-report PASS "$(guard_on "$WT/mrgd1/")" "... and with a trailing slash"
-report PASS "$(guard_on "$WT/mrgn1")" "an absent scratch path is created and verified"
-created=no
-if [ "$(git -C "$WT/mrgn1" rev-parse --show-toplevel 2> /dev/null)" = "$(git -C "$R" rev-parse --show-toplevel)/.claude/worktrees/mrgn1" ] &&
-  ! git -C "$WT/mrgn1" symbolic-ref -q HEAD > /dev/null; then created=yes; fi
-report yes "$created" "... as a detached worktree of its own"
-report ABORT "$(guard_on "$WT/husk1")" "a husk is refused"
-report ABORT "$(guard_on "$WT/husk1/")" "... and with a trailing slash"
-report ABORT "$(guard_on "$R")" "the main checkout is refused"
-report ABORT "$(guard_on "$R/")" "... and with a trailing slash"
-report ABORT "$(guard_on "$WT/feat1")" "a feature worktree (on a branch) is refused"
-report ABORT "$(guard_on "$WT/dangle1")" "a directory with a dangling .git file is refused"
-if [ "$MSYS" = 1 ]; then
-  report PASS "$(guard_on "$(winform "$WT/mrgd1")")" "a scratch tree spelled C:/... is verified"
-  up=$(winform "$WT/mrgd1" | tr '[:lower:]' '[:upper:]')
-  report PASS "$(guard_on "$up")" "... and spelled in upper case"
-  report ABORT "$(guard_on "$(winform "$WT/husk1")")" "a husk spelled C:/... is refused"
-  mkdir -p "$W/fakebin" && printf '#!/bin/sh\nexit 127\n' > "$W/fakebin/cygpath" && chmod +x "$W/fakebin/cygpath"
-  [ "$(PATH="$W/fakebin:$PATH" bash -c 'command -v cygpath')" = "$W/fakebin/cygpath" ] ||
-    broken "the fake cygpath is not the one a child resolves, so the missing-cygpath case would not run"
-  report ABORT "$(PATH="$W/fakebin:$PATH" guard_on "$WT/mrgd1")" "with cygpath missing the guard fails closed"
-fi
-report "$FP_R" "$(fingerprint "$R")" "the main checkout is untouched by all of the above"
-
-echo "== the verdict, against a real dotnet log and variants of it"
-REAL="$FIX/dotnet-green.log"
-[ -s "$REAL" ] || broken "the real log fixture is missing"
-CRS=$(tr -cd '\r' < "$REAL" | wc -c)
-LFS=$(tr -cd '\n' < "$REAL" | wc -c)
-[ "$CRS" -gt 0 ] && [ "$CRS" = "$LFS" ] || broken "the real log is not CRLF (CR=$CRS LF=$LFS) - is .gitattributes' -text rule in force?"
-V="$W/verdict"
-mkdir -p "$V"
-tr -d '\r' < "$REAL" > "$V/lf.log"
-: > "$V/empty.log"
-printf 'Zero tests ran\r\n  total: 0\r\n  failed: 0\r\n' > "$V/zero.log"
-head -150 "$REAL" > "$V/truncated.log"
-sed -b 's/failed: 0/failed: 3/' "$REAL" > "$V/failed3.log"
-sed -b 's/total: [0-9]*/total: 0/' "$REAL" > "$V/total0.log"
-sed -b '/^ *failed: /d' "$REAL" > "$V/nofailedline.log"
-for f in truncated failed3 total0 nofailedline; do
-  [ "$(tr -cd '\r' < "$V/$f.log" | wc -c)" -gt 0 ] || broken "variant $f lost its CRLF"
-  cmp -s "$V/$f.log" "$REAL" && broken "variant $f is a copy of the real log, so it would test nothing"
-done
-grep -q 'failed: 3' "$V/failed3.log" || broken "variant failed3 does not say failed: 3"
-tr -d '\r' < "$V/truncated.log" | grep -q 'total:' && broken "variant truncated still has its summary"
-# Developer 1's shape: cut at the summary, then an exit line appended after the runner returned.
-sed -b '/Test run summary/,$d' "$REAL" > "$V/trunc-exit.log" && printf 'GATE4_DOTNET_TEST_EXIT=0\n' >> "$V/trunc-exit.log"
-tr -d '\r' < "$V/trunc-exit.log" | grep -q 'total:' && broken "variant trunc-exit still has its summary"
-GREEN2="$FIX/dotnet-green-2.log"
-RED="$FIX/dotnet-red-flaky.log"
-MID="$FIX/dotnet-truncated-midflight.log"
-INV="$FIX/dotnet-invocation-error.log"
-for f in "$GREEN2" "$RED" "$MID" "$INV"; do
-  [ "$(tr -cd '\r' < "$f" 2> /dev/null | wc -c)" -gt 0 ] || broken "fixture $f is missing or not CRLF"
-done
-tr -d '\r' < "$GREEN2" | grep -q '^ *failed: 0$' || broken "the second green log does not say failed: 0"
-tr -d '\r' < "$RED" | grep -q '^ *failed: 1$' || broken "the red log does not say failed: 1"
-tr -d '\r' < "$MID" | grep -qE 'total:|Test run summary' && broken "the mid-flight log has a summary after all"
-grep -q 'Specify either' "$INV" || broken "the invocation-error log is not the invocation error"
-grep -q 'Zero tests ran' "$INV" && broken "the invocation-error log says Zero tests ran, so it would not test the phrase check's blind spot"
-
-verdict_of() { # <log> [NAME=value | -NAME ...] - the verdict with every gate at 0; -NAME unsets
-  local log=$1 kv
-  shift
-  (
-    export NPM_INSTALL_EXIT=0 NPM_TEST_EXIT=0 TC_EXIT=0 FMT_EXIT=0 DT_EXIT=0
-    for kv in "$@"; do
-      case "$kv" in -*) unset "${kv#-}" ;; *) export "$kv" ;; esac
-    done
-    gate_verdict "$log"
-    echo "$VERDICT"
-  )
-}
-report green "$(verdict_of "$REAL")" "all gates 0 and the real CRLF log: green"
-report green "$(verdict_of "$V/lf.log")" "... and the same log as LF: green"
-report refused "$(verdict_of "$W/no-such.log")" "the log is missing (deleted mid-run)"
-report refused "$(verdict_of "$V/empty.log")" "the log is empty"
-report refused "$(verdict_of "$V/zero.log")" "the log says Zero tests ran"
-report refused "$(verdict_of "$V/truncated.log")" "the log is truncated before its summary"
-report refused "$(verdict_of "$V/failed3.log")" "the log says failed: 3 behind an exit code of 0"
-report refused "$(verdict_of "$V/total0.log")" "the log says total: 0"
-report refused "$(verdict_of "$V/nofailedline.log")" "the log has no failed: line"
-report refused "$(verdict_of "$REAL" DT_EXIT=1)" "dotnet test exits 1"
-# A status that was never recorded - a step that did not run, an assignment lost in a subshell, a
-# misspelled name - with a complete, green log beside it (Developer 1's case, moved from the log to
-# the variable). Every status, every way of being absent: none may be read as 0.
-for s in NPM_INSTALL_EXIT NPM_TEST_EXIT TC_EXIT FMT_EXIT DT_EXIT; do
-  report refused "$(verdict_of "$REAL" "-$s")" "$s unset, beside a green log"
-  report refused "$(verdict_of "$REAL" "$s=")" "$s empty, beside a green log"
-  report refused "$(verdict_of "$REAL" "$s=x")" "$s not a number, beside a green log"
-done
-report refused "$(verdict_of "$REAL" TC_EXIT=2)" "typecheck exits 2"
-report refused "$(verdict_of "$REAL" FMT_EXIT=1)" "format exits 1"
-report refused "$(verdict_of "$REAL" NPM_INSTALL_EXIT=1)" "npm install exits 1"
-report refused "$(verdict_of "")" "no log path at all"
-report refused "$(verdict_of "$V/trunc-exit.log")" "truncated at its summary with an exit line appended after"
-report green "$(verdict_of "$GREEN2")" "a second real green run, another author's: green"
-report refused "$(verdict_of "$RED" DT_EXIT=2)" "a real red run (a flaky test, runner exit 2)"
-report refused "$(verdict_of "$RED")" "... and with its exit recorded as 0 the log alone refuses"
-report refused "$(verdict_of "$MID")" "a real run cut off mid-flight, every exit 0"
-report refused "$(verdict_of "$INV")" "a real invocation error that tested nothing and never says Zero tests ran"
-
-echo "== the post-gate tree check compares content, not what status reports"
+echo "== the tree check retire.sh makes compares content, not what status reports"
 # The shared gate's first real run: four gates green, then refused, because the client's pretest
 # rewrote generated files with LF over a CRLF checkout - `git status` said modified, `git diff`
-# found nothing. Planted here exactly: same content, other line endings.
+# found nothing. retire.sh asks the same question before it deletes a worktree. Planted here
+# exactly: same content, other line endings.
 R4="$W/repo4"
 mkrepo "$R4" || broken "cannot create the fourth repository"
 printf '* text=auto eol=crlf\n' > "$R4/.gitattributes" && printf 'line one\nline two\n' > "$R4/g.ts"
@@ -287,69 +116,6 @@ gate_tree_matches_head "$R4"
 report 1 "$?" "a staged change does not either"
 gate_tree_matches_head "$W/nowhere"
 report 2 "$?" "a tree that cannot be read is its own answer, not a match"
-
-echo "== a run's logs: its own directory, kept when refused, and never another run's"
-LP="$W/logs"
-mkdir -p "$LP"
-D1=$(gate_run_logs_dir "$LP" "20260912T100000Z-111")
-report 0 "$?" "a run gets its own log directory"
-echo green > "$D1/dotnet-test.log"
-D2=$(gate_run_logs_dir "$LP" "20260912T100500Z-222")
-report 0 "$?" "a second run gets a different one"
-report yes "$([ "$D1" != "$D2" ] && echo yes || echo no)" "... and the two are not the same directory"
-report no "$([ -e "$D2/dotnet-test.log" ] && echo yes || echo no)" "... the second cannot read the first's log (the defect the deletion once fixed)"
-gate_run_logs_dir "$LP" "20260912T100000Z-111" > /dev/null
-report 2 "$?" "a directory that already holds files is refused, never written into"
-KEPT=$(gate_keep_logs_red "$D1" "gates-red (dotnet-failed='1' )")
-report yes "$([ "$KEPT" = "$D1-red" ] && echo yes || echo no)" "a refused run's logs are kept under a -red name"
-report yes "$([ -f "$KEPT/dotnet-test.log" ] && echo yes || echo no)" "... with the logs themselves intact"
-report yes "$([ -f "$KEPT/WHAT-THIS-IS.txt" ] && grep -q "REFUSED" "$KEPT/WHAT-THIS-IS.txt" && echo yes || echo no)" "... a note inside saying what it is, for a reader who does not know the convention"
-report "$KEPT" "$(cat "$LP/last-red-run.txt" 2> /dev/null)" "... and a pointer beside it naming the newest kept run"
-report "$KEPT" "$(gate_keep_logs_red "$KEPT" again)" "keeping an already-kept directory leaves it where it is"
-# Pruning keeps the NEWEST of each kind. The timestamps are set apart deliberately: created in a
-# loop they land in the same second, "newest" becomes arbitrary, and a reversed sort order passes a
-# count-only assertion - which is exactly what a planted defect showed on 2026-09-12.
-for i in $(seq -w 1 12); do
-  mkdir -p "$LP/202609${i}T090000Z-90$i" "$LP/202609${i}T090000Z-91$i-red"
-  touch -d "2026-09-$i 09:00:00" "$LP/202609${i}T090000Z-90$i" "$LP/202609${i}T090000Z-91$i-red"
-done
-mkdir -p "$LP/somebody-investigating"
-gate_prune_logs "$LP" 10
-report 10 "$(ls -1d "$LP"/[0-9]*T[0-9]*Z-[0-9]* 2> /dev/null | grep -vc -- -red)" "pruning keeps ten plain run directories"
-report 10 "$(ls -1d "$LP"/[0-9]*T[0-9]*Z-[0-9]*-red 2> /dev/null | wc -l)" "... and ten kept-red ones"
-report yes "$([ -d "$LP/20260912T090000Z-9012" ] && [ -d "$LP/20260912T090000Z-9112-red" ] && echo yes || echo no)" "... keeps the NEWEST of each kind, not merely ten of them"
-report no "$([ -d "$LP/20260901T090000Z-9001" ] || [ -d "$LP/20260901T090000Z-9101-red" ] && echo yes || echo no)" "... and the oldest of each is the one that goes"
-report yes "$([ -d "$LP/somebody-investigating" ] && [ -f "$LP/last-red-run.txt" ] && echo yes || echo no)" "... and touches nothing that is not a run directory"
-# A rename that cannot happen must still say where the logs are. An existing, non-empty <dir>-red
-# blocks it the same on every platform - and is the case where plain mv would have moved this run's
-# logs INSIDE the other run's directory and printed that directory as if it were this run's.
-D3=$(gate_run_logs_dir "$LP" "20260912T110000Z-333") || broken "cannot create the blocked run's directory"
-echo mine > "$D3/merge.log"
-mkdir -p "$D3-red" && echo theirs > "$D3-red/merge.log" || broken "cannot plant the blocking directory"
-KEPT3=$(gate_keep_logs_red "$D3" "gates-red (format='2' )")
-report "$D3" "$KEPT3" "a refused run whose rename is blocked still names where its logs are"
-report mine "$(cat "$KEPT3/merge.log" 2> /dev/null)" "... and they are this run's own logs, not moved into another run's directory"
-report yes "$(grep -q "rename .* FAILED" "$KEPT3/WHAT-THIS-IS.txt" 2> /dev/null && echo yes || echo no)" "... with a note saying the rename failed and pruning will treat them as plain"
-report theirs "$(cat "$D3-red/merge.log" 2> /dev/null)" "... and the other run's kept logs are untouched"
-# The older gate wrote six logs straight into the parent. Only those six names go.
-for f in merge.log npm-install.log npm-test.log typecheck.log format.log dotnet-test.log notes.txt; do echo old > "$LP/$f"; done
-gate_remove_legacy_flat_logs "$LP"
-report 0 "$(ls -1 "$LP"/merge.log "$LP"/npm-install.log "$LP"/npm-test.log "$LP"/typecheck.log "$LP"/format.log "$LP"/dotnet-test.log 2> /dev/null | wc -l | tr -d ' ')" "the six flat logs of the older gate are removed from the parent"
-report yes "$([ -f "$LP/notes.txt" ] && [ -f "$LP/last-red-run.txt" ] && [ -d "$D3-red" ] && echo yes || echo no)" "... and nothing else in the parent is"
-
-echo "== test folders a run could not delete: counted, never judged"
-UD="$W/undeleted"
-report none "$(gate_undeleted_folders "$UD")" "no report directory means nothing was reported"
-mkdir -p "$UD"
-report none "$(gate_undeleted_folders "$UD")" "an empty report directory is none too"
-echo stray > "$UD/readme.txt"
-report none "$(gate_undeleted_folders "$UD")" "a file that is not a process's .log is not a report"
-printf 'gave up deleting A\ngave up deleting B\n' > "$UD/4302.log"
-report "1 file, 2 lines" "$(gate_undeleted_folders "$UD")" "one reporting process with two folders (the regressed-guard signature)"
-printf 'gave up deleting C\r\n' > "$UD/5100.log"
-printf 'gave up deleting D' >> "$UD/5100.log"
-report "2 files, 4 lines" "$(gate_undeleted_folders "$UD")" "two processes, CRLF lines and a last line without a newline all counted"
-report none "$(gate_undeleted_folders "")" "no directory named at all is none, not an error"
 
 echo "== the tell: is a gate running, and on which base"
 # The reader has FOUR outputs and silence is none of them. The first draft was
@@ -431,127 +197,10 @@ bash "$HERE/who-is-gating.sh" --require-free extra > /dev/null 2>&1; report 3 "$
 REFUSED=$(bash "$HERE/who-is-gating.sh" --typo-for-the-probe > /dev/null 2>&1; echo $?)
 report distinct "$([ "$REFUSED" != 2 ] && echo distinct || echo SHARED-WITH-UNREADABLE)" "refusal does not share the unreadable code, which is what lets a probe require it"
 
-echo "== who-owns.sh refuses an argument it does not understand, before reading anything"
-# Every case here refuses before the board is touched, so none of them depends on what the real
-# repository's specifications happen to be doing while this suite runs.
-bash "$HERE/who-owns.sh" > /dev/null 2>&1; report 3 "$?" "no argument is refused rather than answered for some default specification"
-bash "$HERE/who-owns.sh" --all extra > /dev/null 2>&1; report 3 "$?" "--all takes no second argument"
-bash "$HERE/who-owns.sh" some-spec --requireunowned > /dev/null 2>&1; report 3 "$?" "a MISTYPED flag is refused with the refusal code, not with the unreadable one"
-bash "$HERE/who-owns.sh" some-spec --require-unowned extra > /dev/null 2>&1; report 3 "$?" "a surplus argument is refused - the caller asked for something else than what would have run"
-OWNS_REFUSED=$(bash "$HERE/who-owns.sh" --typo-for-the-probe > /dev/null 2>&1; echo $?)
-report distinct "$([ "$OWNS_REFUSED" != 2 ] && echo distinct || echo SHARED-WITH-UNREADABLE)" "who-owns' refusal does not share its unreadable code either, for the same probe"
-
-echo "== who-owns: every missing input is UNREADABLE, never unowned"
-# This is the whole point of the instrument. A Developer was placed on a specification whose owner
-# was offline because two absences - an idle session list and unmarked tasks - read as "nobody is
-# here". Each case below is an input this reader does not have, and not one of them may answer that
-# the specification is free.
-report "OWNERSHIP_UNREADABLE=<no main checkout named>" "$(gate_who_owns '' spec)" "no main checkout is loud"
-gate_who_owns '' spec > /dev/null; report 2 "$?" "... and exits 2, so a caller cannot read it as a free specification"
-report "OWNERSHIP_UNREADABLE=<no specification named>" "$(gate_who_owns "$W" '')" "no specification named is loud too"
-report "OWNERSHIP_UNREADABLE=<refusing a specification name that is a path: ../../etc>" "$(gate_who_owns "$W" ../../etc)" "a name that is a path is refused rather than resolved somewhere outside the specifications"
-report "OWNERSHIP_UNREADABLE=<no specification folder at .spec-workflow/specs/nope>" "$(gate_who_owns "$W" nope)" "a specification that does not exist is unreadable, never unowned"
-
-echo "== gate.sh refuses to start without its four arguments"
-G="$HERE/gate.sh"
-out=$(bash "$G" 2>&1)
-report "1:missing-arguments" "$?:$(result_of "$out")" "no arguments"
-out=$(bash "$G" mrga1 some-branch some-identity 2>&1)
-report "1:missing-arguments" "$?:$(result_of "$out")" "three arguments (no message)"
-out=$(bash "$G" mrga1 some-branch some-identity "" 2>&1)
-report "1:missing-arguments" "$?:$(result_of "$out")" "an empty message"
-out=$(bash "$G" scratch some-branch some-identity "a message" 2>&1)
-report "1:bad-scratch-name" "$?:$(result_of "$out")" "a scratch name that is not mrg<N>"
-out=$(bash "$G" mrga1234 some-branch some-identity "a message" 2>&1)
-report "1:bad-scratch-name" "$?:$(result_of "$out")" "a scratch name too long to stay short"
-
 # Everything from here to the summary builds throwaway repositories, and it is the whole of the
 # difference between --quick and a full run. The body below is deliberately NOT re-indented: bash
 # does not care, and re-indenting it would hide a two-line change inside a 240-line diff.
 if [ "$QUICK" != 1 ]; then
-echo "== gate.sh and land.sh end to end, in a throwaway repository"
-R2="$W/repo2"
-mkrepo "$R2" || broken "cannot create the second repository"
-echo base > "$R2/f.txt" && git -C "$R2" add f.txt && git -C "$R2" commit -q -m "add f"
-git -C "$R2" switch -q -c clash develop~1 && echo clash > "$R2/f.txt" && git -C "$R2" add f.txt &&
-  git -C "$R2" commit -q -m "clash on f" && git -C "$R2" switch -q develop || broken "cannot build the clash branch"
-git -C "$R2" switch -q -c topic develop && echo topic > "$R2/t.txt" && git -C "$R2" add t.txt &&
-  git -C "$R2" commit -q -m "topic" && git -C "$R2" switch -q develop || broken "cannot build the topic branch"
-T2="$R2/.github/tools/gate"
-mkdir -p "$T2" "$R2/.spec-workflow/steering"
-cp "$HERE/gate.sh" "$HERE/gate-lib.sh" "$HERE/land.sh" "$T2/"
-G2="$T2/gate.sh"
-L2="$T2/land.sh"
-gate2() { bash "$G2" "$1" "$2" gate-selftest-identity "a merge message" 2>&1; }
-
-out=$(gate2 mrgt1 develop)
-report "3:aborted-not-develops-gate" "$?:$(result_of "$out")" "an uncommitted copy of the gate is refused"
-git -C "$R2" add .github && git -C "$R2" commit -q -m "the gate" || broken "cannot commit the gate"
-out=$(gate2 mrgt1 develop)
-report "3:aborted-cannot-read-procedure" "$?:$(result_of "$out")" "develop's gate with no processes.md on develop refuses"
-cp "$DOC" "$R2/.spec-workflow/steering/processes.md" && git -C "$R2" add .spec-workflow &&
-  git -C "$R2" commit -q -m "the procedure" || broken "cannot commit the procedure"
-echo "# drift" >> "$G2"
-out=$(gate2 mrgt1 develop)
-report "3:aborted-not-develops-gate" "$?:$(result_of "$out")" "a drifted copy of develop's gate is refused"
-git -C "$R2" checkout -q -- .github || broken "cannot restore the gate"
-WT2="$R2/.claude/worktrees"
-mkdir -p "$WT2/mrgh1/src" && echo source > "$WT2/mrgh1/src/file.txt"
-git -C "$R2" worktree add -q -b feat2 "$WT2/mrgf1" develop || broken "cannot create a feature worktree"
-[ "$(git -C "$WT2/mrgh1" rev-parse --show-toplevel 2> /dev/null)" = "$(git -C "$R2" rev-parse --show-toplevel)" ] ||
-  broken "the second husk does not resolve to its main checkout"
-DEV0=$(git -C "$R2" rev-parse develop)
-FP2=$(fingerprint "$R2")
-out=$(gate2 mrgh1 topic)
-report "3:aborted-by-guard" "$?:$(result_of "$out")" "gate.sh aimed at a husk stops at the guard"
-out=$(gate2 mrgf1 topic)
-report "3:aborted-by-guard" "$?:$(result_of "$out")" "gate.sh aimed at a feature worktree stops at the guard"
-report "$FP2" "$(fingerprint "$R2")" "... and neither touched the main checkout"
-out=$(gate2 mrgt1 no-such-branch)
-report "1:no-such-branch" "$?:$(result_of "$out")" "a branch that does not exist is refused"
-
-out=$(gate2 mrgt1 topic)
-rc=$?
-report "1:gates-red" "$rc:$(result_of "$out")" "a real run through every stage: the gates cannot pass without src/, so red"
-MERGED=$(printf '%s\n' "$out" | sed -n 's/^MERGED=//p')
-report "$DEV0" "$(git -C "$R2" rev-parse "${MERGED:-none}^1" 2> /dev/null)" "... the merge was made onto develop's tip"
-report "$DEV0" "$(git -C "$R2" rev-parse develop)" "... develop did not move"
-report "$FP2" "$(fingerprint "$R2")" "... the main checkout is untouched (no identity, no reset)"
-KEPT2=$(printf '%s
-' "$out" | sed -n 's/^KEPT_LOGS=//p')
-report yes "$([ -n "$KEPT2" ] && [ -d "$KEPT2" ] && echo yes || echo no)" "... the refused run's logs are kept, and the run says where"
-report yes "$([ -f "$KEPT2/merge.log" ] && echo yes || echo no)" "... with that run's own logs inside them"
-report none "$(printf '%s\n' "$out" | sed -n 's/^UNDELETED_FOLDERS=//p')" "... and it reports the test folders it could not delete, here none"
-report gate-selftest-identity "$(git -C "$WT2/mrgt1" config --worktree user.name)" "... the identity went into the scratch tree's own config"
-GD=$(git -C "$WT2/mrgt1" rev-parse --absolute-git-dir)
-report no "$([ -e "$GD/adp-gate.lock" ] && echo yes || echo no)" "... and the lock was released"
-mkdir "$GD/adp-gate.lock"
-out=$(gate2 mrgt1 topic)
-report "1:scratch-busy" "$?:$(result_of "$out")" "a scratch tree whose lock is held is refused"
-report yes "$([ -d "$GD/adp-gate.lock" ] && echo yes || echo no)" "... and the refused run left the other gate's lock alone"
-rm -rf "$GD/adp-gate.lock"
-out=$(gate2 mrgt1 clash)
-report "1:merge-conflict" "$?:$(result_of "$out")" "a conflicting branch is refused"
-report no "$(git -C "$WT2/mrgt1" rev-parse -q --verify MERGE_HEAD > /dev/null && echo yes || echo no)" "... and the half-merge was aborted"
-
-out=$(bash "$L2" "$DEV0" 2>&1)
-report "1:missing-arguments" "$?:$(result_of "$out")" "land.sh without its two arguments"
-out=$(bash "$L2" "$DEV0~1" "$MERGED" 2>&1)
-report "1:develop-moved-regate" "$?:$(result_of "$out")" "land.sh on a base develop has moved past"
-out=$(bash "$L2" "$DEV0" clash 2>&1)
-report "1:not-a-descendant" "$?:$(result_of "$out")" "land.sh with a commit that does not descend from the base"
-# Cut from develop so the branch carries the gate: switching to one that predates it would take
-# land.sh out of the working tree, and the case would test a missing file instead.
-git -C "$R2" switch -q -c elsewhere develop || broken "cannot switch the main checkout to another branch"
-ELSE0=$(git -C "$R2" rev-parse elsewhere)
-out=$(bash "$L2" "$DEV0" "$MERGED" 2>&1)
-report "1:main-checkout-not-on-develop" "$?:$(result_of "$out")" "land.sh with the main checkout on another branch"
-report "$ELSE0" "$(git -C "$R2" rev-parse elsewhere)" "... and that branch was not moved"
-git -C "$R2" switch -q develop
-out=$(bash "$L2" "$DEV0" "$MERGED" 2>&1)
-report "0:landed" "$?:$(result_of "$out")" "land.sh lands the gated commit"
-report "$MERGED" "$(git -C "$R2" rev-parse develop)" "... and develop is exactly that commit"
-
 echo "== retire.sh, in a throwaway repository"
 link_dir() { # <link> <target> - a directory link the way npm makes one here: a junction on Windows
   if [ "$MSYS" = 1 ]; then
@@ -707,92 +356,6 @@ else
   report yes "$([ -f "$WT3/stuck1/.git" ] && [ "$(git -C "$WT3/stuck1" rev-parse --show-toplevel 2> /dev/null)" = "$WT3/stuck1" ] && echo yes || echo no)" "... and leaves a worktree of its own, not a husk"
   chmod 755 "$WT3/stuck1/src/held"
 fi
-
-echo "== who-owns: a planted owner is SEEN, and removing the plant changes the answer"
-# THE CONTROL THIS SECTION EXISTS FOR. A clean "nobody is on this" from an instrument that could not
-# have found anybody is indistinguishable from a true one - seven mechanisms produced exactly that
-# shape here in one day. So an owner is planted and the reader must name it, then the plant is
-# removed and the answer must CHANGE. A reader that reported `unowned` throughout would pass a
-# suite that only ever asked it about free specifications.
-R5="$W/repo5"
-mkrepo "$R5" || broken "cannot create the ownership repository"
-S5="$R5/.spec-workflow/specs"
-mkdir -p "$S5/planted/Implementation Logs" "$S5/finished" "$S5/no-tasks" "$S5/fresh" "$S5/marked-no-logs" ||
-  broken "cannot create the planted specification folders"
-printf -- '- [ ] 1. an open task\n' > "$S5/planted/tasks.md"
-printf -- '- [x] 1. a marked task\n' > "$S5/finished/tasks.md"
-printf -- '# a specification with no tasks document\n' > "$S5/no-tasks/design.md"
-printf -- '- [ ] 1. nobody has started\n- [ ] 2. nor this\n' > "$S5/fresh/tasks.md"
-printf -- '- [x] 1. marked without a log\n- [ ] 2. still open\n' > "$S5/marked-no-logs/tasks.md"
-git -C "$R5" add .spec-workflow && git -C "$R5" -c user.name=planter commit -q -m "five specifications" ||
-  broken "cannot commit the planted specification folders"
-owns() { gate_who_owns "$R5" "$1" | sed -n '$p'; } # the verdict is always the last line
-# Preconditions, asserted rather than assumed: a harness whose plant did not take would report every
-# case as unowned and look green.
-[ -f "$S5/planted/tasks.md" ] || broken "the planted tasks document is not on disk"
-[ -n "$(git -C "$R5" log -n 1 --format=%H -- "$S5/planted")" ] || broken "the planted specification has no history"
-
-# THE WINDOW THE INSTRUMENT GOT WRONG BEFORE THIS PAIR EXISTED. A specification that has been written
-# and not implemented has an author, and that author is its Architect - so authorship alone reports
-# an owner for every freshly approved specification and refuses the placement it exists to inform.
-# The answer must flip at the first implementation and not before, which is what these two ask.
-report "OWNERSHIP=unowned REASON=no-implementation-yet" "$(owns fresh)" "written but not implemented is UNOWNED, even though its Architect is its most recent author"
-mkdir -p "$S5/fresh/Implementation Logs" && printf -- '# a log\n' > "$S5/fresh/Implementation Logs/task-1.md" &&
-  printf -- '# a log\n' > "$S5/planted/Implementation Logs/task-1.md" &&
-  git -C "$R5" add .spec-workflow && git -C "$R5" -c user.name=log-writer commit -q -m "a first log" ||
-  broken "cannot write the first implementation log"
-report "OWNER=log-writer EVIDENCE=recent-authorship" "$(owns fresh)" "... and ONE implementation log flips it, which is the moment ownership begins"
-report "OWNER=planter EVIDENCE=recent-authorship" "$(owns marked-no-logs)" "a marked box with no log is implemented too - some specifications are worked without logs"
-# An Architect amendment AFTER the Developer's log, so the last author of the folder and the last
-# author of a log are different people. The first draft of this case committed the log in the same
-# commit as the documents, which made both answers `planter` - it asserted the right string for the
-# wrong reason and would have passed with the distinction removed from the library entirely.
-printf -- '- [ ] 1. an open task, amended\n' > "$S5/planted/tasks.md" &&
-  git -C "$R5" add .spec-workflow && git -C "$R5" -c user.name=architect-amender commit -q -m "an amendment after the log" ||
-  broken "cannot write the architect's amendment"
-[ "$(git -C "$R5" log -n 1 --format=%an -- "$S5/planted")" = architect-amender ] ||
-  broken "the amendment is not the last author of the planted folder, so the case below tests nothing"
-report "OWNER=log-writer EVIDENCE=recent-authorship" "$(owns planted)" "the last LOG author is named, not the last author of the folder, so an Architect's amendment does not take the specification"
-report "OWNERSHIP=unowned REASON=every-task-marked" "$(owns finished)" "every box marked is the ONE direction the tasks document may end ownership in"
-report "OWNERSHIP_UNREADABLE=<no tasks document, so whether every task is done has no answer>" "$(owns no-tasks)" "no tasks document means the completion question has no answer, so neither has this"
-
-git -C "$R5" switch -q -c claude/planted-work develop &&
-  echo work > "$R5/w.txt" && git -C "$R5" add w.txt &&
-  git -C "$R5" -c user.name=branch-author commit -q -m "unlanded work" &&
-  git -C "$R5" switch -q develop || broken "cannot build the planted branch"
-report "OWNER=branch-author EVIDENCE=unlanded-branch" "$(owns planted)" "an unlanded branch named for the specification outranks the history: work set aside is not absent"
-
-git -C "$R5" worktree add -q "$W/wt-planted" claude/planted-work &&
-  git -C "$W/wt-planted" config --worktree user.name planted-owner || broken "cannot plant the worktree"
-[ "$(git -C "$W/wt-planted" config user.name)" = planted-owner ] || broken "the planted worktree identity did not take, so the strongest case would test nothing"
-report "OWNER=planted-owner EVIDENCE=worktree" "$(owns planted)" "A PLANTED OWNER IS SEEN, and named from the worktree's own identity rather than from any title"
-report 1 "$(gate_who_owns "$R5" planted | grep -c '^WORKTREE=.*COUNTS=yes')" "... and the worktree line says it counted, so the verdict can be traced to its evidence"
-
-git -C "$R5" worktree remove --force "$W/wt-planted" || broken "cannot remove the planted worktree"
-report "OWNER=branch-author EVIDENCE=unlanded-branch" "$(owns planted)" "REMOVING THE PLANT CHANGES THE ANSWER - without this the three cases above could all be one constant"
-git -C "$R5" branch -q -D claude/planted-work || broken "cannot delete the planted branch"
-report "OWNER=log-writer EVIDENCE=recent-authorship" "$(owns planted)" "... and removing the branch too falls back to the history, rather than to unowned"
-
-# A landed, clean worktree is a tree somebody did not retire. It is PRINTED, because a reader placing
-# work wants to know it is standing there, and it does not decide - which is what stops the
-# instrument reporting an owner for every finished specification whose author forgot to clean up.
-git -C "$R5" branch -q claude/finished-leftover develop &&
-  git -C "$R5" worktree add -q "$W/wt-finished" claude/finished-leftover || broken "cannot plant the leftover worktree"
-report 1 "$(gate_who_owns "$R5" finished | grep -c '^WORKTREE=.*BRANCH_STATE=landed.*COUNTS=no')" "a landed, clean worktree is reported and marked as not counting"
-report "OWNERSHIP=unowned REASON=every-task-marked" "$(owns finished)" "... and does not turn a finished specification back into an owned one"
-git -C "$R5" worktree remove --force "$W/wt-finished" && git -C "$R5" branch -q -D claude/finished-leftover || broken "cannot remove the leftover worktree"
-
-# The walk's own health figure. A walk that could answer nothing must say so rather than printing a
-# page of unreadables and exiting zero - which reads, at a glance, exactly like a quiet board.
-gate_who_owns_all "$R5" > /dev/null; report 0 "$?" "a walk that answered something exits zero"
-report 1 "$(gate_who_owns_all "$R5" | grep -c '^WALKED=5 answered=4 unreadable=1')" "... and prints what it could and could not answer, beside the answers themselves"
-R6="$W/repo6"
-mkrepo "$R6" || broken "cannot create the blind-walk repository"
-mkdir -p "$R6/.spec-workflow/specs/only-one" && printf '# no tasks\n' > "$R6/.spec-workflow/specs/only-one/design.md" &&
-  git -C "$R6" add .spec-workflow && git -C "$R6" -c user.name=planter commit -q -m "one unreadable specification" ||
-  broken "cannot build the blind-walk repository"
-gate_who_owns_all "$R6" > /dev/null; report 2 "$?" "a walk that could answer NOTHING exits 2 - a zero from a blind reader must not look like a quiet board"
-report 1 "$(gate_who_owns_all "$R6" | grep -c 'treat this reader as blind rather than the board as free')" "... and says which of the two it is, in words"
 
 fi  # end of the throwaway-repository sections, skipped by --quick
 

@@ -26,14 +26,15 @@ public class CausalLoopEmptyVariableIdTests : IDisposable
         + "variable a \"Alpha\"\r\n"
         + "variable \"\" \"Nameless\"\r\n";
 
-    private readonly string _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("causal-loop-empty-variable-id");
+    private readonly string _root;
     private readonly ServiceProvider _provider;
     private readonly CausalLoopDocumentStore _store = new(new FileWriter());
     private readonly CausalLoopContextActionProvider _actions;
 
     public CausalLoopEmptyVariableIdTests()
     {
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
         var sessions = new DiagramViewportRegistry();
         _provider = new ServiceCollection()
             .AddSingleton<IDiagramViewportRegistry>(sessions)
@@ -46,7 +47,7 @@ public class CausalLoopEmptyVariableIdTests : IDisposable
     public void Dispose()
     {
         _provider.Dispose();
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
         GC.SuppressFinalize(this);
     }
 

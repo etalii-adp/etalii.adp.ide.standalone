@@ -48,13 +48,14 @@ public class TextEditorSessionReadRetryTests : IDisposable
 
     private readonly FakeTimeProvider _clock = new();
 
-    private readonly string _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("text-read-retry");
+    private readonly string _root;
 
-    public TextEditorSessionReadRetryTests() => Directory.CreateDirectory(_root);
+    public TextEditorSessionReadRetryTests() => _root = _testFolder.Path;
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
         GC.SuppressFinalize(this);
     }
 

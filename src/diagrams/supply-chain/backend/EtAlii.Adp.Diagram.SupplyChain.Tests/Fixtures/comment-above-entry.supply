@@ -1,0 +1,20 @@
+supply-chain: 1
+groups:
+  # The northern region, described above its entry.
+  - id: north
+    name: North
+nodes:
+  # The mine, described above its entry.
+  - id: mine
+    type: source
+    name: Mine
+    group: north
+  # The plant, described above its entry.
+  - id: plant
+    type: producer
+    name: Plant
+flows:
+  # The ore, described above its entry.
+  - id: ore
+    from: mine
+    to: plant

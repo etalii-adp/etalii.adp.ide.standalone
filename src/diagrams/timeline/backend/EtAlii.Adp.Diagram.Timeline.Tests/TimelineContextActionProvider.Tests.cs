@@ -2,6 +2,7 @@ using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -13,24 +14,23 @@ namespace EtAlii.Adp.Diagram.Timeline.Tests;
 /// </summary>
 public class TimelineContextActionProviderTests : IDisposable
 {
-    private readonly string _workspace = IoPath.Combine(
-        IoPath.GetTempPath(),
-        "adp-timeline-actions-" + Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-timeline-actions");
+    private readonly string _workspace;
 
     private readonly TimelineDocumentStore _store = new(new FileWriter());
     private readonly TimelineContextActionProvider _actions;
-    private readonly HistoryStackStore _historyStacks;
+    private readonly IHistoryStackStore _historyStacks;
 
     public TimelineContextActionProviderTests()
     {
-        Directory.CreateDirectory(_workspace);
-        _historyStacks = new HistoryStackStore(new TimelineTestDispatcher(_store));
+        _workspace = _testFolder.Path;
+        _historyStacks = TestHistory.For(s => { s.AddTimeline(); s.AddSingleton<ITimelineDocumentStore>(_store); });
         _actions = new TimelineContextActionProvider(_historyStacks, _store);
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_workspace);
+        _testFolder.Dispose();
 
         GC.SuppressFinalize(this);
     }
@@ -338,9 +338,8 @@ public class TimelineContextActionProviderTests : IDisposable
 /// </summary>
 public class TimelineActionRealityTests : IDisposable
 {
-    private readonly string _workspace = IoPath.Combine(
-        IoPath.GetTempPath(),
-        "adp-timeline-reality-" + Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-timeline-reality");
+    private readonly string _workspace;
 
     private readonly TimelineDocumentStore _store = new(new FileWriter());
     private readonly TimelineContextActionProvider _actions;
@@ -348,14 +347,14 @@ public class TimelineActionRealityTests : IDisposable
 
     public TimelineActionRealityTests()
     {
-        Directory.CreateDirectory(_workspace);
+        _workspace = _testFolder.Path;
         _actions = new TimelineContextActionProvider(
-            new HistoryStackStore(new TimelineTestDispatcher(_store)), _store);
+            TestHistory.For(s => { s.AddTimeline(); s.AddSingleton<ITimelineDocumentStore>(_store); }), _store);
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_workspace);
+        _testFolder.Dispose();
 
         GC.SuppressFinalize(this);
     }
@@ -441,25 +440,24 @@ public class TimelineActionRealityTests : IDisposable
 /// </summary>
 public class TimelineRelationGestureTests : IDisposable
 {
-    private readonly string _workspace = IoPath.Combine(
-        IoPath.GetTempPath(),
-        "adp-timeline-relate-" + Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-timeline-relate");
+    private readonly string _workspace;
 
     private readonly TimelineDocumentStore _store = new(new FileWriter());
     private readonly TimelineContextActionProvider _actions;
-    private readonly HistoryStackStore _historyStacks;
+    private readonly IHistoryStackStore _historyStacks;
     private readonly ShortGuid _watchId = ShortGuid.NewShortGuid();
 
     public TimelineRelationGestureTests()
     {
-        Directory.CreateDirectory(_workspace);
-        _historyStacks = new HistoryStackStore(new TimelineTestDispatcher(_store));
+        _workspace = _testFolder.Path;
+        _historyStacks = TestHistory.For(s => { s.AddTimeline(); s.AddSingleton<ITimelineDocumentStore>(_store); });
         _actions = new TimelineContextActionProvider(_historyStacks, _store);
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_workspace);
+        _testFolder.Dispose();
 
         GC.SuppressFinalize(this);
     }

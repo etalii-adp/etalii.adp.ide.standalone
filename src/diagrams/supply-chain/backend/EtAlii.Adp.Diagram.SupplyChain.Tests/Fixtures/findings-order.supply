@@ -1,0 +1,32 @@
+supply-chain: 1
+# Finding A9: findings of every code interleaved by line, so that one list by line shows.
+groups:
+  - id: lonely
+    name: Nobody here
+  - name: No id
+nodes:
+  - id: a
+    type: source
+    name: A
+    group: elsewhere
+  - id: b
+    type: quarry
+    name: B
+  - id: a
+    type: hub
+    name: A again
+  - id: c
+    type: outlet
+    name: C
+    colour: blue
+flows:
+  - id: f1
+    from: a
+    to: nowhere
+  - id: f2
+    from: c
+    to: c
+  - from: a
+    to: c
+  - id: f3
+    from: c

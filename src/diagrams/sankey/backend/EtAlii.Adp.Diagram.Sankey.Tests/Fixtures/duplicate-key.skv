@@ -1,0 +1,12 @@
+sankey: 1
+# B9: a key written twice in one mapping.
+nodes:
+  - id: a
+    name: A
+    name: A twice
+  - id: b
+    name: B
+flows:
+  - from: a
+    to: b
+    value: 1

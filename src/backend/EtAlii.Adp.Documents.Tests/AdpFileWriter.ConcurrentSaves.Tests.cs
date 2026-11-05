@@ -29,13 +29,14 @@ public class AdpFileWriterConcurrentSavesTests : IDisposable
     private const string WaitedMessage = "Waited for another save to";
     private static readonly TimeSpan Patience = TimeSpan.FromSeconds(10);
 
-    private readonly string _folder = IoPath.Combine(IoPath.GetTempPath(), "adp-concurrent-saves-" + Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-concurrent-saves");
+    private readonly string _folder;
 
-    public AdpFileWriterConcurrentSavesTests() => Directory.CreateDirectory(_folder);
+    public AdpFileWriterConcurrentSavesTests() => _folder = _testFolder.Path;
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_folder);
+        _testFolder.Dispose();
         GC.SuppressFinalize(this);
     }
 

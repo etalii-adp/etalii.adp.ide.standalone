@@ -98,9 +98,10 @@ public abstract class DiagramActionProvider<TBody, TModel> : IContextActionProvi
             return ContextCommitResult.Failed(Unreadable(target));
         }
 
-        if (CommitCommand(target, entry, actionId, value) is not { } command)
+        var change = Commit(target, entry, actionId, value);
+        if (change.Command is not { } command)
         {
-            return ContextCommitResult.Failed($"'{actionId}' does not apply to this selection.");
+            return change.Refusal.Length == 0 ? ContextCommitResult.Succeeded : ContextCommitResult.Failed(change.Refusal);
         }
 
         var result = await _historyStacks.Get(target.Root).ExecuteAsync(command, cancellationToken);
@@ -183,6 +184,17 @@ public abstract class DiagramActionProvider<TBody, TModel> : IContextActionProvi
         ArgumentNullException.ThrowIfNull(entry);
         return CommitCommand(target, entry.Model, actionId, value);
     }
+
+    /// <summary>
+    /// What committing <paramref name="value"/> for <paramref name="actionId"/> on <paramref name="target"/> in
+    /// <paramref name="entry"/> is: the command <see cref="CommitCommand(ContextTarget, DocumentEntry{TBody, TModel}, string, string)"/>
+    /// makes, or, when it makes none, refused as not applying, by default. A module whose commit is refused with a
+    /// sentence of its own before any command is made, as a definition's operation refuses, answers here.
+    /// </summary>
+    protected virtual DiagramPropertyChange Commit(ContextTarget target, DocumentEntry<TBody, TModel> entry, string actionId, string value) =>
+        CommitCommand(target, entry, actionId, value) is { } command
+            ? DiagramPropertyChange.By(command)
+            : DiagramPropertyChange.Refused($"'{actionId}' does not apply to this selection.");
 
     /// <summary>Runs <paramref name="command"/> on the project's history.</summary>
     protected async ValueTask<ContextExecutionResult> DispatchAsync(ContextTarget target, ICommand command, CancellationToken cancellationToken)

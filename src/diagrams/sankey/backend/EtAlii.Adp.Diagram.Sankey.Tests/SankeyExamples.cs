@@ -16,18 +16,5 @@ internal static class SankeyExamples
     /// <summary>The recent US graduates.</summary>
     public static string RecentGraduates => Find("recent-graduates", "recent-graduates.skv");
 
-    private static string Find(string folder, string file)
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-        {
-            if (directory.Name == "sankey" && Directory.Exists(Path.Combine(directory.FullName, "backend")))
-            {
-                var path = Path.Combine(directory.FullName, "examples", folder, file);
-                return File.Exists(path) ? path : throw new InvalidOperationException($"The {folder} example is missing: {path}");
-            }
-        }
-
-        throw new InvalidOperationException(
-            $"No sankey folder above {AppContext.BaseDirectory}, so the examples cannot be found. That is a failure, not a skip.");
-    }
+    private static string Find(string folder, string file) => RepositoryPaths.Under("src", "diagrams", "sankey", "examples", folder, file);
 }

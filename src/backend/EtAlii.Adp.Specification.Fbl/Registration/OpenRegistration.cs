@@ -1,6 +1,7 @@
 using System.Text;
-using EtAlii.Adp.Specification.Fbl.History;
+using EtAlii.Adp.Specification.Fbl.Documents;
 using EtAlii.Adp.Specification.Fbl.Planning;
+using EtAlii.Adp.Specification.Fbl.Rules;
 
 namespace EtAlii.Adp.Specification.Fbl.Registration;
 
@@ -16,10 +17,20 @@ namespace EtAlii.Adp.Specification.Fbl.Registration;
 /// </remarks>
 public sealed class OpenRegistration : SplicedFile
 {
-    private OpenRegistration(byte[] bytes) : base(bytes)
+    /// <summary>The blocks the binding declares (FBL 0.7 §8.1), in the order it declares them.</summary>
+    private readonly IReadOnlyList<RegistrationBlockDeclaration> _declarations;
+
+    /// <summary>The headers the binding declares (FBL §8.1).</summary>
+    private readonly IReadOnlyList<string> _headers;
+
+    private OpenRegistration(byte[] bytes, RegistrationSettings settings) : base(bytes)
     {
-        Document = RegistrationDocument.Read(bytes);
+        _declarations = settings.Blocks;
+        _headers = settings.Headers;
+        Document = RegistrationDocument.Read(bytes, Declared);
     }
+
+    private string[] Declared => [.. _declarations.Select(declaration => declaration.Name)];
 
     internal RegistrationDocument Document { get; private set; }
 
@@ -29,41 +40,126 @@ public sealed class OpenRegistration : SplicedFile
     /// </summary>
     public IReadOnlySet<string>? KnownIds { get; set; }
 
+    /// <summary>
+    /// Whether the registration's <c>view</c> header names no view of its body (FBL 0.11 §9.3): the reading then shows no
+    /// view's content, and a placement is refused with nothing written. Set by the host, which reads the body.
+    /// </summary>
+    public bool ShowsNoView { get; set; }
+
     /// <summary>Whether DISL marks an id ephemeral: such an element's position is never stored (FBL §8.5).</summary>
     public Func<string, bool>? IsEphemeral { get; set; }
+
+    /// <summary>
+    /// The members a declared block stands for while it is absent, by its name, in their order: the initial and the
+    /// implicit members of its list, which the specification gives and the body implies (DESL 0.2 §5.5, §7.7.2). The
+    /// first change to such a block writes them all, with the change applied (FBL 0.7 §8.4); null, or a block it
+    /// gives nothing for, writes the changed entry alone.
+    /// </summary>
+    public Func<string, IReadOnlyList<KeyValuePair<string, string>>?>? AbsentMembers { get; set; }
+
+    /// <summary>
+    /// The entries of the declared block <paramref name="block"/> (FBL 0.7 §8.1), by key and value in their order, or null
+    /// when the registration does not hold it.
+    /// </summary>
+    public IReadOnlyList<KeyValuePair<string, string>>? BlockEntries(string block) =>
+        Document.Block(block)?.Entries.Select(entry => new KeyValuePair<string, string>(entry.Key, entry.Value)).ToList();
+
+    /// <summary>
+    /// The <c>identities:</c> block (FBL §8.6) as natural key to id, the first entry of a key; null when the registration holds
+    /// no such block, so that a host reads the legacy identities file instead (FBL 0.12 §8.7).
+    /// </summary>
+    public IReadOnlyDictionary<string, string>? Identities() => Document.Identities is null ? null : Document.IdentityMap();
 
     /// <summary>The natural keys the reading has, when known: an <c>identities</c> entry for any other key is stale (FBL §8.6).</summary>
     public IReadOnlySet<string>? KnownKeys { get; set; }
 
-    public static OpenRegistration Open(byte[] bytes) => new(bytes ?? throw new ArgumentNullException(nameof(bytes)));
+    /// <summary>
+    /// The resources the body holds for the reading's resource capture, when the reading selects by one
+    /// (<see cref="FblModel.Resources"/>): a <c>resource</c> header naming none of them is <c>fbl.missing-resource</c>
+    /// (FBL 0.10 §8.2). Null when not known, or the reading selects by no capture.
+    /// </summary>
+    public IReadOnlyList<string>? KnownResources { get; set; }
+
+    /// <summary>
+    /// The <c>resource</c> header's value, which selects the resource a reading shows (FBL 0.10 §8.2), or null when the
+    /// registration has none. Read as every header is (FBL §8.1): in the header region, by its exact key, separated from
+    /// its value by a colon and a space.
+    /// </summary>
+    public string? Resource => Document.Resource;
+
+    public static OpenRegistration Open(byte[] bytes) => new(bytes ?? throw new ArgumentNullException(nameof(bytes)), new RegistrationSettings());
+
+    /// <summary>Opens a registration through its binding, which declares its headers and blocks (FBL 0.7 §8.1).</summary>
+    public static OpenRegistration Open(byte[] bytes, FblBinding binding)
+    {
+        ArgumentNullException.ThrowIfNull(binding);
+        return new OpenRegistration(bytes ?? throw new ArgumentNullException(nameof(bytes)), binding.Registration);
+    }
+
+    /// <summary>
+    /// What reading the registration reports (FBL §8.1, §8.5, 0.7 §8.1): the headers and blocks neither FBL nor the
+    /// binding declares, and, when <see cref="KnownIds"/> is set, the entries for ids the body does not have.
+    /// </summary>
+    public IReadOnlyList<Finding> Findings(string fileName)
+    {
+        var findings = new List<Finding>();
+        findings.AddRange(Document.UnknownHeaders(_headers, fileName));
+        findings.AddRange(Document.UnknownBlocks(fileName));
+        if (KnownIds is { } ids) findings.AddRange(Document.StaleEntries(ids, fileName, _declarations));
+        if (KnownResources is { } resources) findings.AddRange(Document.MissingResource(resources, fileName));
+        return findings;
+    }
 
     private PlanResult Plan(ModelChange change)
     {
         switch (change)
         {
             case ModelChange.Save:
-                return new PlanResult.Planned(Edit.Empty);
+                return new PlanResult.Planned(SpliceEdit.Empty);
+            case ModelChange.Place when ShowsNoView:
+                return new PlanResult.Refused("This view is not in the document, so its positions cannot be stored.");
             case ModelChange.Place place:
                 if (IsEphemeral?.Invoke(place.Id) == true)
                 {
                     return new PlanResult.Refused($"The position of '{place.Id}' is kept for this session only, because its id changes whenever the file is edited.");
                 }
-                return new PlanResult.Planned(new Edit(PlanPlace(place)));
+                return new PlanResult.Planned(new SpliceEdit(PlanPlace(place)));
             case ModelChange.Identify identify:
-                return new PlanResult.Planned(new Edit(PlanIdentify(identify)));
+                return new PlanResult.Planned(new SpliceEdit(PlanIdentify(identify)));
+            case ModelChange.Setting setting:
+                if (Declaration(setting.Block) is not { } declaration)
+                {
+                    return new PlanResult.Refused($"The binding declares no block '{setting.Block}'.");
+                }
+                try
+                {
+                    return new PlanResult.Planned(new SpliceEdit(DeclaredBlockWriter.Plan(Document, _declarations, declaration, setting, KnownIds, AbsentMembers?.Invoke(setting.Block))));
+                }
+                catch (RefusedException refused)
+                {
+                    return new PlanResult.Refused(refused.Message);
+                }
             default:
-                throw new ArgumentException("A registration is changed only by placing elements and storing ids.", nameof(change));
+                throw new ArgumentException("A registration is changed only by placing elements, storing ids and writing settings.", nameof(change));
         }
     }
 
+    /// <summary>
+    /// Plans and applies <paramref name="change"/>. A setting of a block declared <c>history: false</c> is applied
+    /// outside the history (FBL 0.7 §7.1): no undo step, and the history carried over it.
+    /// </summary>
     public PlanResult Change(ModelChange change)
     {
         var result = Plan(change);
-        if (result is PlanResult.Planned planned) Apply(planned.Edit);
+        if (result is not PlanResult.Planned planned) return result;
+        if (change is ModelChange.Setting setting && Declaration(setting.Block) is { InHistory: false }) ApplyOutsideHistory(planned.Edit);
+        else Apply(planned.Edit);
         return result;
     }
 
-    protected override void Reread() => Document = RegistrationDocument.Read(Bytes);
+    private RegistrationBlockDeclaration? Declaration(string name) => _declarations.FirstOrDefault(declaration => declaration.Name == name);
+
+    protected override void Reread() => Document = RegistrationDocument.Read(Bytes, Declared);
 
     private List<Splice> PlanPlace(ModelChange.Place place)
     {

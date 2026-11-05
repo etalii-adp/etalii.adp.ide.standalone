@@ -26,21 +26,7 @@ namespace EtAlii.Adp.Diagram.CausalLoopDiagram.Tests;
 /// </remarks>
 public class ExamplesTests
 {
-    internal static string ExamplesRoot
-    {
-        get
-        {
-            // Up out of bin/Debug/net10.0 and across to the module's examples folder.
-            var directory = new DirectoryInfo(AppContext.BaseDirectory);
-            while (directory is not null && !Directory.Exists(IoPath.Combine(directory.FullName, "examples")))
-            {
-                directory = directory.Parent;
-            }
-
-            Assert.SkipWhen(directory is null, "The module's examples folder was not found from the test output.");
-            return IoPath.Combine(directory.FullName, "examples");
-        }
-    }
+    internal static string ExamplesRoot => RepositoryPaths.Under("src", "diagrams", "causal-loop-diagram", "examples");
 
     private static CausalLoopModel Load(string name)
     {
@@ -80,6 +66,9 @@ public class ExamplesTests
     [InlineData("reference")]
     [InlineData("on-call")]
     [InlineData("business-philosophy")]
+    [InlineData("mental-health")]
+    [InlineData("life-insurance")]
+    [InlineData("uk-cod-population")]
     public void AnExample_SitsBesideItsOwnRegistration(string name)
     {
         // Act.
@@ -102,13 +91,16 @@ public class ExamplesTests
     {
         // Act & assert.
         // So that an example added without a test is a failure rather than a silent gap.
-        Assert.Equal(["business-philosophy", "on-call", "reference"], [.. Names().OrderBy(name => name, StringComparer.Ordinal)]);
+        Assert.Equal(["business-philosophy", "life-insurance", "mental-health", "on-call", "reference", "uk-cod-population"], [.. Names().OrderBy(name => name, StringComparer.Ordinal)]);
     }
 
     [Theory]
     [InlineData("reference")]
     [InlineData("on-call")]
     [InlineData("business-philosophy")]
+    [InlineData("mental-health")]
+    [InlineData("life-insurance")]
+    [InlineData("uk-cod-population")]
     public void AnExample_Parses_AndEveryLinkAndLoopNamesADeclaredVariable(string name)
     {
         // Act.
@@ -257,6 +249,82 @@ public class ExamplesTests
         Assert.All(model.Loops, loop => Assert.False(loop.Disagrees, $"{loop.Identifier} disagrees with its arithmetic."));
     }
 
+    /// <summary>
+    /// The mental health example, like the business philosophy one, claims every cycle its links form
+    /// with the label its arithmetic gives, so it opens with no finding at all. Its norm and its three
+    /// constraints of the system sit outside every loop on purpose, and one added link back into them
+    /// would quietly make a cycle nobody named; this holds the readme's claim that there is none.
+    /// </summary>
+    [Fact]
+    public async Task TheMentalHealthExample_NamesEveryCycle_AndOpensWithNoFinding()
+    {
+        // Arrange.
+        var model = Load("mental-health");
+
+        // Act.
+        var findings = await Judge("mental-health");
+
+        // Assert.
+        Assert.Empty(findings);
+        Assert.Equal(8, model.Loops.Count);
+        Assert.Equal(6, model.Loops.Count(loop => loop.Computed == LoopPolarityResult.Reinforcing));
+        Assert.Equal(2, model.Loops.Count(loop => loop.Computed == LoopPolarityResult.Balancing));
+        Assert.All(model.Loops, loop => Assert.False(loop.Disagrees, $"{loop.Identifier} disagrees with its arithmetic."));
+    }
+
+    /// <summary>
+    /// The life insurance example is redrawn from a published figure that marks four of its loops and
+    /// leaves the other cycles its arrows make unmarked. The example claims all of them, each with the
+    /// label its arithmetic gives, so that it opens with no finding; the figure's four come first.
+    /// </summary>
+    [Fact]
+    public async Task TheLifeInsuranceExample_NamesEveryCycle_AndOpensWithNoFinding()
+    {
+        // Arrange.
+        var model = Load("life-insurance");
+
+        // Act.
+        var findings = await Judge("life-insurance");
+
+        // Assert.
+        Assert.Empty(findings);
+        Assert.Equal(38, model.Loops.Count);
+        Assert.Equal(29, model.Loops.Count(loop => loop.Computed == LoopPolarityResult.Reinforcing));
+        Assert.Equal(9, model.Loops.Count(loop => loop.Computed == LoopPolarityResult.Balancing));
+        Assert.All(model.Loops, loop => Assert.False(loop.Disagrees, $"{loop.Identifier} disagrees with its arithmetic."));
+    }
+
+    /// <summary>
+    /// The UK cod population example is redrawn from a handwritten academic figure whose own R and B
+    /// marks are kept. Four of them disagree with their arrows, and the readme names them; the loops
+    /// through carrying capacity, which the figure joins without a polarity, are undecidable. Every
+    /// other cycle is named with its arithmetic, so nothing is unlabelled and nothing else is reported.
+    /// </summary>
+    [Fact]
+    public async Task TheUkCodPopulationExample_KeepsTheFiguresLabels_AndReportsExactlyWhatTheReadmeSays()
+    {
+        // Arrange.
+        var model = Load("uk-cod-population");
+
+        // Act.
+        var findings = await Judge("uk-cod-population");
+
+        // Assert.
+        Assert.Equal(35, model.Loops.Count);
+        Assert.Equal(14, model.Loops.Count(loop => loop.Computed == LoopPolarityResult.Reinforcing));
+        Assert.Equal(9, model.Loops.Count(loop => loop.Computed == LoopPolarityResult.Balancing));
+        Assert.Equal(12, model.Loops.Count(loop => loop.Computed == LoopPolarityResult.Undecidable));
+
+        Assert.Equal(
+            ["B2", "B3", "R2", "R3"],
+            [.. model.Loops.Where(loop => loop.Disagrees).Select(loop => loop.Identifier).Order(StringComparer.Ordinal)]);
+
+        Assert.DoesNotContain(findings, finding => finding.RuleId == CausalLoopValidator.UnlabelledLoopRuleId);
+        Assert.Equal(4, findings.Count(finding => finding.RuleId == CausalLoopValidator.LabelDisagreesRuleId));
+        Assert.Equal(12, findings.Count(finding => finding.RuleId == CausalLoopValidator.UndecidableLoopRuleId));
+        Assert.Equal(16, findings.Count);
+    }
+
     // ---- the layout the reader will actually see ------------------------------------------------
 
     /// <summary>
@@ -268,6 +336,9 @@ public class ExamplesTests
     [InlineData("reference")]
     [InlineData("on-call")]
     [InlineData("business-philosophy")]
+    [InlineData("mental-health")]
+    [InlineData("life-insurance")]
+    [InlineData("uk-cod-population")]
     public void AnExample_ArrangesWithoutOverlap(string name)
     {
         // Act.

@@ -1,6 +1,6 @@
 import type { Binding } from "../definition/binding";
-import type { BuiltInRoute, BuiltInShape, MarkerKind, SegmentDeclaration } from "../definition/diagramDefinition";
-import type { DislCustomShape, DislShapeRef } from "./disTypes";
+import type { BuiltInRoute, BuiltInShape, DecorationDeclaration, MarkerKind, SegmentDeclaration } from "../definition/diagramDefinition";
+import type { DislCustomShape, DislNodeNotation, DislShapeRef } from "./disTypes";
 
 /**
  * What DISL's built-in shapes, markers and routings are called in this library.
@@ -26,8 +26,11 @@ interface CatalogEntry {
 const SHAPES: Readonly<Record<string, CatalogEntry>> = {
   // A node with no body: only its icon, labels and decorations are drawn.
   none: { shape: "none", draws: {}, defaults: {} },
+  // DISL's `text` (Appendix B.2): a label with no outline, which is the body-less node.
+  text: { shape: "none", draws: {}, defaults: {} },
   rect: { shape: "box", draws: {}, defaults: {} },
   ellipse: { shape: "ellipse", draws: {}, defaults: {} },
+  circle: { shape: "circle", draws: {}, defaults: {} },
   pill: { shape: "pill", draws: {}, defaults: {} },
   diamond: { shape: "diamond", draws: {}, defaults: {} },
   hexagon: { shape: "hexagon", draws: { inset: 0.25, orientation: "flat" }, defaults: { inset: 0.25, orientation: "flat" } },
@@ -43,7 +46,26 @@ const SHAPES: Readonly<Record<string, CatalogEntry>> = {
 };
 
 /** The DISL built-in shape names this library can draw. */
-export const DISL_SHAPE_NAMES: readonly string[] = Object.keys(SHAPES);
+export const DISL_SHAPE_NAMES: readonly string[] = [...Object.keys(SHAPES), "line"];
+
+/**
+ * DISL's `line` (§6.7), which is two drawings rather than one with a parameter: across its box or down
+ * it, by its `orientation`. DISL gives that parameter no default, so a line that states none is refused.
+ */
+function lineOf(params: Readonly<Record<string, unknown>>): BuiltInShape {
+  for (const key of Object.keys(params)) {
+    if (key !== "orientation") {
+      throw new Error(`The library draws "line" with no "${key}" parameter; the specification sets one.`);
+    }
+  }
+  if (params.orientation === "horizontal") {
+    return "horizontal-line";
+  }
+  if (params.orientation === "vertical") {
+    return "vertical-line";
+  }
+  throw new Error(`The library draws "line" along its "orientation", horizontal or vertical; the specification asks for ${JSON.stringify(params.orientation)}.`);
+}
 
 /** The shape a reference names, split into its name and its parameters. */
 export function shapeNameOf(ref: DislShapeRef): { name: string; params: Readonly<Record<string, unknown>> } {
@@ -57,6 +79,10 @@ export function shapeNameOf(ref: DislShapeRef): { name: string; params: Readonly
  */
 export function libraryShapeOf(ref: DislShapeRef): BuiltInShape | undefined {
   const { name, params } = shapeNameOf(ref);
+  if (name === "line") {
+    return lineOf(params);
+  }
+
   const entry = SHAPES[name];
   if (entry === undefined) {
     return undefined;
@@ -128,4 +154,17 @@ export interface CustomShapeBinding {
    * Bindable as a library binding.
    */
   segments?: (context: { shape: DislCustomShape; params: Readonly<Record<string, unknown>>; bind: (value: unknown) => Binding }) => SegmentDeclaration;
+  /**
+   * The ornaments the library shape is drawn with for the custom shape's parts beside its body (DISL §6.8
+   * `parts`): a band across a card, a bar along its foot. Given the custom shape, the parameters the node
+   * binds it with, the compiler's reading of a Bindable, and the node's notation, whose fixed size the
+   * parts' boxes are measured in and whose `partStyles` name each part's style. The module's geometry
+   * test evaluates the parts and compares them with what this returns.
+   */
+  decorations?: (context: {
+    shape: DislCustomShape;
+    params: Readonly<Record<string, unknown>>;
+    bind: (value: unknown) => Binding;
+    node: DislNodeNotation;
+  }) => readonly DecorationDeclaration[];
 }

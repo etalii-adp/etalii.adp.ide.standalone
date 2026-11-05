@@ -43,11 +43,11 @@ public sealed class TimelineDocumentStore(IFileWriter writer) : LifecycleDocumen
         var model = TimelineYamlSyntax.Check(body.Text) is null ? TimelineReading.Of(body.Text) : TimelineModel.Empty;
         if (Refusal(body.Text) is not { } refusal)
         {
-            return new(model, []);
+            return new ParseOutcome<TimelineModel>(model, []);
         }
 
         _logger.Debug("A timeline does not parse at line {Line}: {Reason}", refusal.Line, refusal.Message);
-        return new(model, [new ParseProblem(refusal.Line - 1, refusal.Message)], $"it does not parse at line {refusal.Line}. {refusal.Message}");
+        return new ParseOutcome<TimelineModel>(model, [new ParseProblem(refusal.Line - 1, refusal.Message)], $"it does not parse at line {refusal.Line}. {refusal.Message}");
     }
 
     /// <summary>

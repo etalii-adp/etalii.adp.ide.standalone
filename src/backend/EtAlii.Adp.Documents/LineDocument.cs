@@ -170,6 +170,26 @@ public sealed class LineDocument : ITextBody<LineDocument>
         _lines.InsertRange(range.Start, lines);
     }
 
+    /// <summary>
+    /// Replaces the <paramref name="count"/> lines at <paramref name="start"/> with <paramref name="lines"/>, each with
+    /// the terminator it carries, leaving every other line exactly as it was. A count of zero inserts.
+    /// </summary>
+    /// <remarks>
+    /// For a writer that has already decided every byte, such as a planner that gives a new line the ending of the line
+    /// it is inserted at in a file whose endings are mixed: <see cref="Replace"/> and <see cref="Insert"/> infer the new
+    /// lines' terminators from the document's majority, which would write other bytes than the ones planned.
+    /// </remarks>
+    public void Splice(int start, int count, IReadOnlyList<Line> lines)
+    {
+        ArgumentNullException.ThrowIfNull(lines);
+        ArgumentOutOfRangeException.ThrowIfNegative(start);
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(start + count, _lines.Count);
+
+        _lines.RemoveRange(start, count);
+        _lines.InsertRange(start, lines);
+    }
+
     /// <summary>Inserts lines before <paramref name="index"/>, touching no existing line.</summary>
     /// <remarks>
     /// Appending to a file whose last line has no terminator would otherwise run the new line onto

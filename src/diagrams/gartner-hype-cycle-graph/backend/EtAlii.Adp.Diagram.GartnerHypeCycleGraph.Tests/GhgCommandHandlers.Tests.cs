@@ -1,5 +1,6 @@
 using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph.Tests;
 
@@ -12,7 +13,7 @@ public sealed class GhgCommandHandlersTests : EditHandlerContract<IGhgDocumentSt
 
     protected override IGhgDocumentStore Warning(IGhgDocumentStore store, string warning) => new WarningStore(store, warning);
 
-    protected override ICommandDispatcher Dispatcher(IGhgDocumentStore store) => new GhgTestDispatcher(store);
+    protected override ICommandDispatcher Dispatcher(IGhgDocumentStore store) => TestHistory.Dispatcher(s => { s.AddGartnerHypeCycleGraph(); s.AddSingleton(store); });
 
     protected override ICommand EditOf(string bodyPath) => new RenameGhgElementCommand(bodyPath, "industrial-revolution", "First industrial revolution");
 

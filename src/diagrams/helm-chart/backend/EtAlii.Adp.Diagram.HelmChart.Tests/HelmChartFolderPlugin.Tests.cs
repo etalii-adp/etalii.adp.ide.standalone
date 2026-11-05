@@ -51,14 +51,14 @@ public class HelmChartFolderPluginTests
         Assert.Contains(read.Elements, element => element is { Type: "Includes", Source: "tpl:templates/deployment.yaml", Target: "tpl:templates/_helpers.tpl" });
     }
 
-    public static TheoryData<string> Charts() => [.. HelmTranscript.Corpus()];
+    public static TheoryData<string> Charts() => [.. HelmCorpus.Charts()];
 
     [Theory]
     [MemberData(nameof(Charts))]
     public void TheRelationsThatMayHaveAnOpenEnd_AreTheOnesTheGraphMade(string chart)
     {
         // Arrange: today's graph over today's reading, kept as the oracle, against what the plugin delivers through the binding.
-        var folder = IoPath.Combine(HelmTranscript.SourceFolder, chart);
+        var folder = IoPath.Combine(HelmCorpus.SourceFolder, chart);
         var graph = Parity.HelmGraph.Derive(new HandWrittenHelmReader().Read(folder));
 
         // Act.

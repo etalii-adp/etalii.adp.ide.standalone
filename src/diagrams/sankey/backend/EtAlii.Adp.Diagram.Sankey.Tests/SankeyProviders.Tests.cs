@@ -2,6 +2,7 @@ using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.Sankey.Tests;
@@ -11,20 +12,20 @@ public sealed class SankeyProvidersTests : IDisposable
 {
     private readonly SankeyTestFolder _folder = new(Path.Combine(AppContext.BaseDirectory, "Fixtures", "lf-line-endings.skv"), "small.skv");
     private readonly SankeyDocumentStore _store = new(new FileWriter());
-    private readonly HistoryStackStore _historyStacks;
+    private readonly IHistoryStackStore _historyStacks;
     private readonly SankeyContextPropertyProvider _properties;
     private readonly SankeyContextActionProvider _actions;
 
     public SankeyProvidersTests()
     {
-        _historyStacks = new HistoryStackStore(new SankeyTestDispatcher(_store));
+        _historyStacks = TestHistory.For(s => { s.AddSankey(); s.AddSingleton<ISankeyDocumentStore>(_store); });
         _properties = new SankeyContextPropertyProvider(_historyStacks, _store);
         _actions = new SankeyContextActionProvider(_historyStacks, _store);
     }
 
     public void Dispose()
     {
-        _historyStacks.Dispose();
+        (_historyStacks as IDisposable)?.Dispose();
         _folder.Dispose();
     }
 
@@ -204,16 +205,18 @@ public sealed class SankeyProvidersTests : IDisposable
     }
 
     [Fact]
-    public async Task ABodyThatIsNotYaml_IsRefusedUpFront_AndWritesNothing()
+    public async Task ABodyThatIsNotYaml_OffersNothing_IsRefusedUpFront_AndWritesNothing()
     {
         // Arrange.
         const string broken = "sankey: 1\nnodes: []\nflows: \"never closed\n";
         await File.WriteAllTextAsync(_folder.Body, broken, TestContext.Current.CancellationToken);
 
         // Act.
+        var offered = await _actions.DiscoverAsync(Target(GestureIds.Placement(0, 0)), TestContext.Current.CancellationToken);
         var added = await _actions.ExecuteAsync(Target(GestureIds.Placement(0, 0)), SankeyContextActionProvider.AddActionId, TestContext.Current.CancellationToken);
 
         // Assert.
+        Assert.Empty(offered);
         Assert.Contains("could not be read", Assert.IsType<ContextExecutionFailed>(added).Message, StringComparison.Ordinal);
         Assert.Equal(broken, await File.ReadAllTextAsync(_folder.Body, TestContext.Current.CancellationToken));
         var entry = await _store.GetOrLoadAsync(_folder.Body, TestContext.Current.CancellationToken);
@@ -224,8 +227,14 @@ public sealed class SankeyProvidersTests : IDisposable
     [Fact]
     public void ThePalette_OffersANode_AddedByTheAddAction()
     {
+        // Arrange.
+        var services = new ServiceCollection();
+        services.AddSankey();
+        using var provider = services.BuildServiceProvider();
+
         // Act.
-        var item = Assert.Single(new SankeyToolboxProvider().Items);
+        var toolbox = Assert.Single(provider.GetServices<IDiagramToolboxProvider>());
+        var item = Assert.Single(toolbox.Items);
 
         // Assert.
         Assert.Equal(SankeyContextActionProvider.AddActionId, item.DropActionId);
@@ -234,7 +243,7 @@ public sealed class SankeyProvidersTests : IDisposable
     private ContextTarget Target(string elementId) =>
         ContextTarget.ForElement(_folder.Body, elementId, ProjectRoot.From(_folder.Folder), ShortGuid.NewShortGuid());
 
-    private SankeyModel Parse() => SankeyParser.Parse(LineDocument.Parse(File.ReadAllText(_folder.Body)));
+    private SankeyModel Parse() => SankeyReader.Parse(File.ReadAllText(_folder.Body));
 
     /// <summary>A store whose every document reads as one that could not be read.</summary>
     private sealed class UnreadableStore(ISankeyDocumentStore inner) : ISankeyDocumentStore
@@ -245,11 +254,11 @@ public sealed class SankeyProvidersTests : IDisposable
             remove => inner.Changed -= value;
         }
 
-        public async ValueTask<DocumentEntry<LineDocument, SankeyModel>> GetOrLoadAsync(string path, CancellationToken cancellationToken) => await inner.GetOrLoadAsync(path, cancellationToken) with { Unreadable = "it is locked" };
+        public async ValueTask<DocumentEntry<SankeyBody, SankeyModel>> GetOrLoadAsync(string path, CancellationToken cancellationToken) => await inner.GetOrLoadAsync(path, cancellationToken) with { Unreadable = "it is locked" };
 
-        public DocumentEntry<LineDocument, SankeyModel>? Get(string path) => inner.Get(path) is { } held ? held with { Unreadable = "it is locked" } : null;
+        public DocumentEntry<SankeyBody, SankeyModel>? Get(string path) => inner.Get(path) is { } held ? held with { Unreadable = "it is locked" } : null;
 
-        public Task<DocumentSaveResult> SaveAsync(string path, LineDocument document, CancellationToken cancellationToken) => inner.SaveAsync(path, document, cancellationToken);
+        public Task<DocumentSaveResult> SaveAsync(string path, SankeyBody document, CancellationToken cancellationToken) => inner.SaveAsync(path, document, cancellationToken);
 
         public Task ReloadAsync(string path, CancellationToken cancellationToken) => inner.ReloadAsync(path, cancellationToken);
 

@@ -5,8 +5,11 @@ namespace EtAlii.Adp.Diagram.Sparql;
 /// it as the entry's error, so a broken file opens as unavailable rather than not at all - and a
 /// SPARQL Update document is refused through this same door, by name.
 /// </summary>
-public sealed class SparqlParseException(string message, int line) : Exception(message)
+public sealed class SparqlParseException(string message, int line, int column) : Exception(message)
 {
     /// <summary>The line the parser stopped at, 1-based, ready to show a person.</summary>
     public int Line { get; } = line;
+
+    /// <summary>The column the parser stopped at on <see cref="Line"/>, 1-based.</summary>
+    public int Column { get; } = column;
 }

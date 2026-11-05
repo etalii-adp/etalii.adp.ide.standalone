@@ -54,7 +54,7 @@ public class C4DerivedLinesTests
         // Act.
         var failures = readings
             .SelectMany(reading => reading.Views.Select(each => (reading, each.View)))
-            .SelectMany(pair => C4Disl.Of(pair.reading.Workspace, pair.View, C4Definitions.For(pair.View.Kind).Specification, pair.reading.File).Findings
+            .SelectMany(pair => C4Body.Of(pair.reading.Workspace, pair.View, C4Definitions.For(pair.View.Kind).Specification, pair.reading.File).Findings
                 .Select(finding => $"{pair.reading.Name}, view {pair.View.Key}: {finding.Code} {finding.Message}"))
             .Where(line => codes.Any(code => line.Contains(code, StringComparison.Ordinal)))
             .ToList();
@@ -76,7 +76,7 @@ public class C4DerivedLinesTests
             foreach ((C4View view, _) in reading.Views)
             {
                 var specification = C4Definitions.For(view.Kind).Specification;
-                var relations = C4Disl.Of(reading.Workspace, view, specification, reading.File).Diagram.Relations;
+                var relations = C4Body.Of(reading.Workspace, view, specification, reading.File).Diagram.Relations;
                 var stored = relations.Where(relation => !relation.IsDerived).Select(relation => relation.Id).ToHashSet(specification.IdComparer);
                 shared.AddRange(relations.Where(relation => relation.IsDerived && stored.Contains(relation.Id)).Select(relation => $"{reading.Name}, view {view.Key}: {relation.Type.Name} {relation.Id}"));
             }

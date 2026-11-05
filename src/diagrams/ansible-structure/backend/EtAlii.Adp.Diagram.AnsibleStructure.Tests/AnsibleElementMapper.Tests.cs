@@ -184,25 +184,19 @@ public partial class AnsibleElementMapperTests
     public void AnId_SurvivesAnEditElsewhereInTheTree()
     {
         // Arrange.
-        var scratch = CopyFixture("infrastructure");
-        try
-        {
-            var before = Ids(scratch);
+        using var copy = CopyFixture("infrastructure");
+        var scratch = copy.Path;
+        var before = Ids(scratch);
 
-            // Act.
-            // A change that has nothing to do with the nginx role.
-            File.AppendAllText(IoPath.Combine(scratch, "dbservers.yml"), "\n# a comment\n");
-            var after = Ids(scratch);
+        // Act.
+        // A change that has nothing to do with the nginx role.
+        File.AppendAllText(IoPath.Combine(scratch, "dbservers.yml"), "\n# a comment\n");
+        var after = Ids(scratch);
 
-            // Assert.
-            Assert.Contains("role:nginx", before);
-            Assert.Contains("role:nginx", after);
-            Assert.Contains("taskfile:roles/nginx/tasks/tls.yml", after);
-        }
-        finally
-        {
-            TestFolder.TryDelete(scratch);
-        }
+        // Assert.
+        Assert.Contains("role:nginx", before);
+        Assert.Contains("role:nginx", after);
+        Assert.Contains("taskfile:roles/nginx/tasks/tls.yml", after);
     }
 
     // ---- the viewport ----------------------------------------------------------------------------
@@ -274,35 +268,29 @@ public partial class AnsibleElementMapperTests
     {
         // Arrange.
         var before = Everything("infrastructure");
-        var scratch = CopyFixture("infrastructure");
-        try
-        {
-            File.Delete(IoPath.Combine(scratch, "dbservers.yml"));
-            var project = Reader.Read(scratch);
-            var after = Mapper.Visible(AnsibleModels.ModelOf(project), DiagramViewport.Unbounded);
+        using var copy = CopyFixture("infrastructure");
+        var scratch = copy.Path;
+        File.Delete(IoPath.Combine(scratch, "dbservers.yml"));
+        var project = Reader.Read(scratch);
+        var after = Mapper.Visible(AnsibleModels.ModelOf(project), DiagramViewport.Unbounded);
 
-            // Act.
-            var deltas = DiagramDiff.Between(before, after);
+        // Act.
+        var deltas = DiagramDiff.Between(before, after);
 
-            // Assert.
-            var removed = Assert.IsType<DiagramRemoveDelta>(deltas[0]);
-            Assert.Contains("playbook:dbservers.yml", removed.ElementIds);
-            // The rest is no longer resent whole: an add carries only what is new or changed
-            // (backend-centralization R4.2), where this used to assert an add of everything.
-            var now = after.ToDictionary(element => element.Id, StringComparer.Ordinal);
-            var unchanged = before
-                .Where(was => now.TryGetValue(was.Id, out var @is) && DiagramDiff.Same(was, @is))
-                .Select(was => was.Id)
-                .ToHashSet(StringComparer.Ordinal);
-            Assert.NotEmpty(unchanged);
-            Assert.DoesNotContain(
-                deltas.OfType<DiagramAddDelta>().SelectMany(delta => delta.Elements),
-                element => unchanged.Contains(element.Id));
-        }
-        finally
-        {
-            TestFolder.TryDelete(scratch);
-        }
+        // Assert.
+        var removed = Assert.IsType<DiagramRemoveDelta>(deltas[0]);
+        Assert.Contains("playbook:dbservers.yml", removed.ElementIds);
+        // The rest is no longer resent whole: an add carries only what is new or changed
+        // (backend-centralization R4.2), where this used to assert an add of everything.
+        var now = after.ToDictionary(element => element.Id, StringComparer.Ordinal);
+        var unchanged = before
+            .Where(was => now.TryGetValue(was.Id, out var @is) && DiagramDiff.Same(was, @is))
+            .Select(was => was.Id)
+            .ToHashSet(StringComparer.Ordinal);
+        Assert.NotEmpty(unchanged);
+        Assert.DoesNotContain(
+            deltas.OfType<DiagramAddDelta>().SelectMany(delta => delta.Elements),
+            element => unchanged.Contains(element.Id));
     }
 
     [Fact]
@@ -327,19 +315,10 @@ public partial class AnsibleElementMapperTests
             .Select(element => element.Id)];
     }
 
-    private static string CopyFixture(string fixture)
+    private static TestFolder CopyFixture(string fixture)
     {
-        var source = IoPath.Combine("Fixtures", fixture);
-        var destination = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(destination);
-        foreach (var folder in Directory.GetDirectories(source, "*", SearchOption.AllDirectories))
-        {
-            Directory.CreateDirectory(IoPath.Combine(destination, IoPath.GetRelativePath(source, folder)));
-        }
-        foreach (var file in Directory.GetFiles(source, "*", SearchOption.AllDirectories))
-        {
-            File.Copy(file, IoPath.Combine(destination, IoPath.GetRelativePath(source, file)));
-        }
+        var destination = TestFolder.Create("ansible-element-mapper");
+        TestFolder.CopyTree(IoPath.Combine("Fixtures", fixture), destination.Path);
         return destination;
     }
 

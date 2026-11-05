@@ -282,10 +282,10 @@ public sealed class ProjectValidator
         {
             // A designer's document is two files, and this one's body is not there: said
             // against the registration, which is the file that names it.
-            if (collector.MarkConsidered(designer.RegistrationPath))
+            if (designer.RegistrationPath is { } registration && collector.MarkConsidered(registration))
             {
                 collector.FilesConsidered++;
-                collector.AddCore(designer.RegistrationPath, "The file this registration names does not exist.");
+                collector.AddCore(registration, "The file this registration names does not exist.");
             }
             return;
         }

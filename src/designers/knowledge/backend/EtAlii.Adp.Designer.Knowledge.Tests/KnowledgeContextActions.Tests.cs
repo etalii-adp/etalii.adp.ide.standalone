@@ -15,13 +15,15 @@ namespace EtAlii.Adp.Designer.Knowledge.Tests;
 /// </summary>
 public sealed class KnowledgeContextActionsTests : IDisposable
 {
-    private readonly string _root = Directory.CreateTempSubdirectory("adp-knowledge-actions-").FullName;
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-knowledge-actions");
+    private readonly string _root;
     private readonly KnowledgeDocuments _documents = new();
     private readonly HistoryStackStore _histories;
     private readonly KnowledgeContextActionProvider _provider;
 
     public KnowledgeContextActionsTests()
     {
+        _root = _testFolder.Path;
         var services = new Handlers
         {
             [typeof(ICommandHandler<KnowledgeEditCommand>)] = new KnowledgeEditCommandHandler(_documents, new FileWriter()),
@@ -35,14 +37,7 @@ public sealed class KnowledgeContextActionsTests : IDisposable
     public void Dispose()
     {
         _histories.Dispose();
-        try
-        {
-            Directory.Delete(_root, recursive: true);
-        }
-        catch (IOException)
-        {
-            // The temp folder is the system's to clear.
-        }
+        _testFolder.Dispose();
     }
 
     private string Cities => IoPath.Combine(_root, "cities.yaml");

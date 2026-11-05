@@ -31,17 +31,16 @@ public class MindmapDocumentStoreLostEditTests : IDisposable
         </map>
         """;
 
-    private readonly string _root = IoPath.Combine(
-        IoPath.GetTempPath(),
-        "adp-mindmap-lost-edit-" + Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-mindmap-lost-edit");
+    private readonly string _root;
 
     private readonly MindmapDocumentStore _store = new(new FileWriter());
 
-    public MindmapDocumentStoreLostEditTests() => Directory.CreateDirectory(_root);
+    public MindmapDocumentStoreLostEditTests() => _root = _testFolder.Path;
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
 
         GC.SuppressFinalize(this);
     }

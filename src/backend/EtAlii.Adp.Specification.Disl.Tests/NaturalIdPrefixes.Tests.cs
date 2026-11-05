@@ -129,7 +129,7 @@ public class NaturalIdPrefixesTests
     {
         var attributes = new Dictionary<string, object?> { ["tag"] = id, ["feeds"] = feeds.Cast<object?>().ToList() };
         if (spare is not null) attributes["spare"] = spare;
-        return new(id, true, "Tank", "tank", false, attributes, null, null, null, null, new Span(0, 0), line);
+        return new FblElement(id, true, "Tank", "tank", false, attributes, null, null, null, null, new Span(0, 0), line);
     }
 
     [Fact]

@@ -13,6 +13,7 @@ public sealed class OwlElementMapper
     public const string NodeType = "w3c/owl+node";
 
     /// <inheritdoc cref="NodeType" />
+    [Relation]
     public const string EdgeType = "w3c/owl+edge";
 
     /// <inheritdoc cref="NodeType" />

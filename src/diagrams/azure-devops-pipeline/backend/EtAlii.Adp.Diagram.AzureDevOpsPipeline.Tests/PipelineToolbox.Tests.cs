@@ -1,7 +1,7 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Files;
-using EtAlii.Adp.History;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -16,9 +16,8 @@ namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline.Tests;
 /// </summary>
 public class PipelineToolboxTests : IDisposable
 {
-    private readonly string _workspace = IoPath.Combine(
-        IoPath.GetTempPath(),
-        "adp-pipeline-toolbox-" + Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-pipeline-toolbox");
+    private readonly string _workspace;
 
     private ProjectRoot Root => ProjectRoot.From(_workspace);
 
@@ -29,13 +28,13 @@ public class PipelineToolboxTests : IDisposable
 
     public PipelineToolboxTests()
     {
-        Directory.CreateDirectory(_workspace);
-        _actions = new PipelineContextActionProvider(new HistoryStackStore(new PipelineTestDispatcher(_store)), _store, _views);
+        _workspace = _testFolder.Path;
+        _actions = new PipelineContextActionProvider(TestHistory.For(s => { s.AddAzurePipeline(); s.AddSingleton<IPipelineDocumentStore>(_store); }), _store, _views);
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_workspace);
+        _testFolder.Dispose();
 
         GC.SuppressFinalize(this);
     }
@@ -91,19 +90,7 @@ public class PipelineToolboxTests : IDisposable
         // Assert.
         // The client renders a palette it does not understand, so an entry with no label, icon or
         // description is one the user cannot tell apart from the others.
-        Assert.All(_toolbox.Items, AssertItem);
-        return;
-
-        static void AssertItem(ToolboxItemDefinition item)
-        {
-            ArgumentNullException.ThrowIfNull(item);
-
-            Assert.NotEmpty(item.Id);
-            Assert.NotEmpty(item.Label);
-            Assert.NotEmpty(item.Icon);
-            Assert.NotEmpty(item.Description);
-            Assert.NotEmpty(item.DropActionId);
-        }
+        Assert.All(_toolbox.Items, ToolboxItems.AssertComplete);
     }
 
     [Fact]
@@ -227,7 +214,7 @@ public class PipelineToolboxTests : IDisposable
         // no separate drop path that could have been forgotten.
         var path = Write();
         var before = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
-        var historyStacks = new HistoryStackStore(new PipelineTestDispatcher(_store));
+        var historyStacks = TestHistory.For(s => { s.AddAzurePipeline(); s.AddSingleton<IPipelineDocumentStore>(_store); });
         var actions = new PipelineContextActionProvider(historyStacks, _store, _views);
         var item = _toolbox.Items.Single(candidate => candidate.Id == "azure-pipeline.toolbox.job");
 

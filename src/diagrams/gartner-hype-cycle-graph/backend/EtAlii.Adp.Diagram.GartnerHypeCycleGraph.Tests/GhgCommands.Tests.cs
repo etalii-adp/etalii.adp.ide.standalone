@@ -1,6 +1,7 @@
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph.Tests;
@@ -21,31 +22,25 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph.Tests;
 /// </remarks>
 public sealed class GhgCommandsTests : IDisposable
 {
-    private readonly string _folder = Path.Combine(Path.GetTempPath(), "EtAlii.Adp.GhgCommandsTests", Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("EtAlii.Adp.GhgCommandsTests");
+    private readonly string _folder;
     private readonly GhgDocumentStore _store = new(new FileWriter());
-    private readonly GhgTestDispatcher _dispatcher;
+    private readonly ICommandDispatcher _dispatcher;
     private readonly byte[] _original;
 
     public GhgCommandsTests()
     {
-        Directory.CreateDirectory(_folder);
+        _folder = _testFolder.Path;
         File.Copy(GhgModuleFiles.Example, Body);
         _original = File.ReadAllBytes(Body);
-        _dispatcher = new GhgTestDispatcher(_store);
+        _dispatcher = TestHistory.Dispatcher(s => { s.AddGartnerHypeCycleGraph(); s.AddSingleton<IGhgDocumentStore>(_store); });
     }
 
     private string Body => Path.Combine(_folder, "technology-trends.ghg");
 
     public void Dispose()
     {
-        try
-        {
-            Directory.Delete(_folder, recursive: true);
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            // A temp folder left behind is not a test failure.
-        }
+        _testFolder.Dispose();
     }
 
     private static int M(int year, int month = 1) => GhgScale.MonthIndex(year, month);
@@ -282,7 +277,7 @@ public sealed class GhgCommandsTests : IDisposable
         Assert.False(entry.IsUsable);
         Assert.Empty(entry.Model.Trends);
 
-        var edited = await new GhgTestDispatcher(store).DispatchAsync(
+        var edited = await TestHistory.Dispatcher(s => { s.AddGartnerHypeCycleGraph(); s.AddSingleton<IGhgDocumentStore>(store); }).DispatchAsync(
             new RenameGhgElementCommand(Body, "railways", "Railroads"),
             TestContext.Current.CancellationToken);
         var saved = await store.SaveAsync(Body, GhgBody.Parse(GhgParser.EmptyDocument("\n")), TestContext.Current.CancellationToken);

@@ -18,6 +18,7 @@ internal abstract record DislDerivedRelation
     /// <param name="Target">The target of a group's relation.</param>
     /// <param name="Id">A group's id, or null when it states none and the id is made from the ends.</param>
     /// <param name="Sources">The elements a group's relation is derived from, or null when it states none.</param>
+    /// <param name="Owner">The element a group's relation belongs to, or null when it states none and its ends decide it.</param>
     /// <param name="Attributes">Its <c>attributes</c>, by name, in declaration order.</param>
     public sealed record Mapped(
         DislDerivedField From,
@@ -26,6 +27,7 @@ internal abstract record DislDerivedRelation
         DislDerivedField Target,
         DislDerivedField? Id,
         DislDerivedField? Sources,
+        DislDerivedField? Owner,
         IReadOnlyList<(string Name, DislDerivedField Value)> Attributes) : DislDerivedRelation;
 }
 

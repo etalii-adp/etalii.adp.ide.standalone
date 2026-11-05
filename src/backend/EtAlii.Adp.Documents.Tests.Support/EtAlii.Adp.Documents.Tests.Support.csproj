@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The contracts every module's document store, reloader and edit handler tests derive from
+    (code-structure FR-035), and the line-document contract.
+  -->
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3.assert" />
+    <PackageReference Include="xunit.v3.extensibility.core" />
+    <ProjectReference Include="..\EtAlii.Adp.Diagram\EtAlii.Adp.Diagram.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.History\EtAlii.Adp.History.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Tests.Support\EtAlii.Adp.Tests.Support.csproj" />
+  </ItemGroup>
+
+</Project>

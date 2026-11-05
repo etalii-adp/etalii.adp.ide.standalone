@@ -1,5 +1,6 @@
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Specification.Fbl.Planning;
 
 namespace EtAlii.Adp.Diagram.Databricks;
 
@@ -17,8 +18,33 @@ public sealed class AddDatabricksResourceCommandHandler(IDatabricksDocumentStore
     : DatabricksEditHandler<AddDatabricksResourceCommand>(documents)
 {
     /// <inheritdoc />
-    protected override EditOutcome Apply(LineDocument body, DatabricksModel model, AddDatabricksResourceCommand command) => Outcome(
-        BundleWriter.AddResourceSkeleton(body, model.Bundle, command.Kind, command.Key));
+    /// <remarks>
+    /// The resource is a new member of <c>resources.jobs</c> or <c>resources.pipelines</c>, named by its key, planned by
+    /// the binding's insert (FBL 0.14 section 6.2) with its name and a skeleton complete enough to open. The module's own
+    /// sentences are answered first, before anything is planned (Requirement 6.4).
+    /// </remarks>
+    protected override EditOutcome Apply(LineDocument body, DatabricksModel model, AddDatabricksResourceCommand command)
+    {
+        if (command.Key.Length == 0)
+        {
+            return EditOutcome.Refused("A resource needs a key.");
+        }
+
+        if (command.Kind is not ("jobs" or "pipelines"))
+        {
+            return EditOutcome.Refused($"There is no '{command.Kind}' resource kind to add.");
+        }
+
+        if (model.Bundle.Resources.Any(resource => resource.Kind == command.Kind && resource.Key == command.Key))
+        {
+            return EditOutcome.Refused($"A {command.Kind} resource named '{command.Key}' is already there.");
+        }
+
+        return DatabricksEdits.Bundle(body, _ => new ModelChange.Add(
+            "Resource",
+            null,
+            DatabricksEdits.Attributes(("resourceKind", command.Kind), ("key", command.Key), ("name", command.Key))));
+    }
 }
 
 /// <inheritdoc cref="SetDatabricksBundleNameCommand" />
@@ -26,6 +52,18 @@ public sealed class SetDatabricksBundleNameCommandHandler(IDatabricksDocumentSto
     : DatabricksEditHandler<SetDatabricksBundleNameCommand>(documents)
 {
     /// <inheritdoc />
-    protected override EditOutcome Apply(LineDocument body, DatabricksModel model, SetDatabricksBundleNameCommand command) => Outcome(
-        BundleWriter.SetName(body, model.Bundle, command.Name));
+    protected override EditOutcome Apply(LineDocument body, DatabricksModel model, SetDatabricksBundleNameCommand command)
+    {
+        if (command.Name.Length == 0)
+        {
+            return EditOutcome.Refused("A bundle needs a name.");
+        }
+
+        if (model.Bundle.Reading is not { } reading || DatabricksEdits.OneOf(reading, "Bundle") is null)
+        {
+            return EditOutcome.Refused("The file has no bundle: section to name.");
+        }
+
+        return DatabricksEdits.Bundle(body, read => new ModelChange.Set(DatabricksEdits.OneOf(read, "Bundle")!, DatabricksEdits.Attributes(("name", command.Name))));
+    }
 }

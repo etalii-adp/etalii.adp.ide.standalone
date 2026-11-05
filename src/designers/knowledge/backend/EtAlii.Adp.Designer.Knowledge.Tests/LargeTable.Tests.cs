@@ -23,18 +23,17 @@ public sealed class LargeTableTests : IDisposable
     private const int Rows = 10_000;
     private const int Window = 60;
 
-    private readonly string _root = Directory.CreateTempSubdirectory("adp-knowledge-large-").FullName;
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-knowledge-large");
+    private readonly string _root;
+
+    public LargeTableTests()
+    {
+        _root = _testFolder.Path;
+    }
 
     public void Dispose()
     {
-        try
-        {
-            Directory.Delete(_root, recursive: true);
-        }
-        catch (IOException)
-        {
-            // A watcher may still be letting go; the temp folder is the system's to clear.
-        }
+        _testFolder.Dispose();
     }
 
     /// <summary>A table of <paramref name="rows"/> rows by rule: a name, a number, one of three sizes and a tick on every other row.</summary>

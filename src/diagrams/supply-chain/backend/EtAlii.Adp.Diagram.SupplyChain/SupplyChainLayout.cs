@@ -36,6 +36,9 @@ public sealed class SupplyChainLayout
     /// <summary>The clear space between two bands that share a layer.</summary>
     private const double BandGap = 32;
 
+    /// <summary>The band key of the ungrouped nodes; no group id holds a control character.</summary>
+    private const string Ungrouped = "\u0000ungrouped";
+
     private static readonly ConditionalWeakTable<SupplyChainModel, SupplyChainLayout> Cache = new();
 
     private SupplyChainLayout(
@@ -213,12 +216,54 @@ public sealed class SupplyChainLayout
 
         var laneSlots = new Dictionary<string, List<string>>(StringComparer.Ordinal);
         var laneTarget = new Dictionary<string, string>(StringComparer.Ordinal);
+        AddLaneSlots(flows, forward, layer, index, neighbours, laneSlots, laneTarget);
+
+        // The bands, in document order of their first member; a lane joins the band of the node its
+        // flow delivers to.
+        var byId = nodes.ToDictionary(node => node.Id, StringComparer.Ordinal);
+        var bands = index.Keys
+            .GroupBy(BandKey, StringComparer.Ordinal)
+            .Select(group => group.ToList())
+            .ToList();
+
+        var rows = Order(bands, index, layer, neighbours, out var bandOrder);
+        var placed = Place(bands, bandOrder, rows, layer, BandKey);
+
+        foreach (var node in nodes)
+        {
+            result[node.Id] = placed[node.Id];
+        }
+
+        // A lane is drawn through its slot's middle, where a card in that slot would have its centre.
+        foreach ((string flowId, List<string> slots) in laneSlots)
+        {
+            lanes[flowId] = [.. slots.Select(slot => (placed[slot].X + (SupplyChainGeometry.NodeWidth / 2), placed[slot].Y + (SupplyChainGeometry.NodeHeight / 2)))];
+        }
+
+        return result;
+
+        string BandKey(string id) => groupOf(byId[laneTarget.GetValueOrDefault(id, id)]) ?? Ungrouped;
+    }
+
+    /// <summary>
+    /// Joins every flow's ends, giving a forward flow that skips layers one slot in each layer it
+    /// crosses, joined in a chain from its source to its target.
+    /// </summary>
+    private static void AddLaneSlots(
+        IReadOnlyList<SupplyChainFlow> flows,
+        Dictionary<string, List<string>> forward,
+        Dictionary<string, int> layer,
+        Dictionary<string, int> index,
+        Dictionary<string, List<string>> neighbours,
+        Dictionary<string, List<string>> laneSlots,
+        Dictionary<string, string> laneTarget)
+    {
         foreach (var flow in flows)
         {
             (int from, int to) = (layer[flow.From], layer[flow.To]);
             if (to - from <= 1 || !forward[flow.From].Contains(flow.To))
             {
-                Join(flow.From, flow.To);
+                Join(neighbours, flow.From, flow.To);
                 continue;
             }
 
@@ -231,28 +276,37 @@ public sealed class SupplyChainLayout
                 layer[slot] = crossed;
                 neighbours[slot] = [];
                 laneTarget[slot] = flow.To;
-                Join(previous, slot);
+                Join(neighbours, previous, slot);
                 slots.Add(slot);
                 previous = slot;
             }
 
-            Join(previous, flow.To);
+            Join(neighbours, previous, flow.To);
             laneSlots[flow.Id] = slots;
         }
+    }
 
-        // The bands, in document order of their first member; a lane joins the band of the node its
-        // flow delivers to.
-        const string ungrouped = "\u0000ungrouped";
-        var byId = nodes.ToDictionary(node => node.Id, StringComparer.Ordinal);
-        var bands = index.Keys
-            .GroupBy(BandKey, StringComparer.Ordinal)
-            .Select(group => group.ToList())
-            .ToList();
+    private static void Join(Dictionary<string, List<string>> neighbours, string a, string b)
+    {
+        neighbours[a].Add(b);
+        neighbours[b].Add(a);
+    }
 
+    /// <summary>
+    /// The barycentre passes: the bands in their final order, and within each band the members of
+    /// each layer in their order.
+    /// </summary>
+    private static Dictionary<(int Band, int Layer), List<string>> Order(
+        List<List<string>> bands,
+        Dictionary<string, int> index,
+        Dictionary<string, int> layer,
+        Dictionary<string, List<string>> neighbours,
+        out List<int> bandOrder)
+    {
         // A position to sort by, refined each pass: start from document order.
         var rank = index.Keys.ToDictionary(id => id, id => (double)index[id], StringComparer.Ordinal);
 
-        List<int> bandOrder = [.. Enumerable.Range(0, bands.Count)];
+        bandOrder = [.. Enumerable.Range(0, bands.Count)];
         // Within a band, the members of each layer in their order.
         var rows = new Dictionary<(int Band, int Layer), List<string>>();
         for (var pass = 0; pass < 8; pass++)
@@ -269,31 +323,48 @@ public sealed class SupplyChainLayout
                 }
             }
 
-            // The global rank: bands in order, then row within the band.
-            var offset = 0.0;
-            foreach (var band in bandOrder)
-            {
-                var height = 0;
-                foreach (((int rowBand, var _), List<string> members) in rows)
-                {
-                    if (rowBand != band)
-                    {
-                        continue;
-                    }
-
-                    for (var row = 0; row < members.Count; row++)
-                    {
-                        rank[members[row]] = offset + row;
-                    }
-
-                    height = Math.Max(height, members.Count);
-                }
-
-                offset += height + 1;
-            }
+            Rank(bandOrder, rows, rank);
         }
 
-        // Drop the bands onto a per-layer skyline, in order.
+        return rows;
+
+        double Barycentre(string id) => neighbours[id].Count == 0 ? rank[id] : neighbours[id].Average(other => rank[other]);
+    }
+
+    /// <summary>The global rank: bands in order, then row within the band.</summary>
+    private static void Rank(List<int> bandOrder, Dictionary<(int Band, int Layer), List<string>> rows, Dictionary<string, double> rank)
+    {
+        var offset = 0.0;
+        foreach (var band in bandOrder)
+        {
+            var height = 0;
+            foreach (((int rowBand, var _), List<string> members) in rows)
+            {
+                if (rowBand != band)
+                {
+                    continue;
+                }
+
+                for (var row = 0; row < members.Count; row++)
+                {
+                    rank[members[row]] = offset + row;
+                }
+
+                height = Math.Max(height, members.Count);
+            }
+
+            offset += height + 1;
+        }
+    }
+
+    /// <summary>Drop the bands onto a per-layer skyline, in order.</summary>
+    private static Dictionary<string, (double X, double Y)> Place(
+        List<List<string>> bands,
+        List<int> bandOrder,
+        Dictionary<(int Band, int Layer), List<string>> rows,
+        Dictionary<string, int> layer,
+        Func<string, string> bandKey)
+    {
         var placed = new Dictionary<string, (double X, double Y)>(StringComparer.Ordinal);
         var layers = layer.Values.Max() + 1;
         var skyline = new double[layers];
@@ -301,7 +372,7 @@ public sealed class SupplyChainLayout
         {
             var spanned = bands[band].Select(id => layer[id]).ToList();
             (int first, int last) = (spanned.Min(), spanned.Max());
-            var grouped = BandKey(bands[band][0]) != ungrouped;
+            var grouped = bandKey(bands[band][0]) != Ungrouped;
             var header = grouped ? SupplyChainGeometry.GroupHeader : 0;
             var footer = grouped ? SupplyChainGeometry.GroupPadding : 0;
 
@@ -333,26 +404,7 @@ public sealed class SupplyChainLayout
             }
         }
 
-        foreach (var node in nodes)
-        {
-            result[node.Id] = placed[node.Id];
-        }
-
-        // A lane is drawn through its slot's middle, where a card in that slot would have its centre.
-        foreach ((string flowId, List<string> slots) in laneSlots)
-        {
-            lanes[flowId] = [.. slots.Select(slot => (placed[slot].X + (SupplyChainGeometry.NodeWidth / 2), placed[slot].Y + (SupplyChainGeometry.NodeHeight / 2)))];
-        }
-
-        return result;
-
-        double Barycentre(string id) => neighbours[id].Count == 0 ? rank[id] : neighbours[id].Average(other => rank[other]);
-        string BandKey(string id) => groupOf(byId[laneTarget.GetValueOrDefault(id, id)]) ?? ungrouped;
-        void Join(string a, string b)
-        {
-            neighbours[a].Add(b);
-            neighbours[b].Add(a);
-        }
+        return placed;
     }
 
     /// <summary>

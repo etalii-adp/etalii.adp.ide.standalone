@@ -1,0 +1,14 @@
+supply-chain: 1
+# Finding B8: a first placement adds x and y to entries that state neither.
+nodes:
+  - id: mine
+    type: source
+    name: Mine
+    quantity: 3
+  - id: plant
+    type: producer
+    name: Plant
+flows:
+  - id: ore
+    from: mine
+    to: plant

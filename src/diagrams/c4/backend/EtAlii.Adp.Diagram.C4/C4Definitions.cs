@@ -17,7 +17,7 @@ namespace EtAlii.Adp.Diagram.C4;
 /// today's wire ids by each definition's <c>x-c4</c> block, and so are <b>the findings</b> (task 9),
 /// ordered as today by <see cref="C4FindingOrder"/>, and so is <b>what a view draws</b> (task 10): its
 /// members, its lines, its title and its legend (<see cref="Drawing"/>). The toolbox is the origin's. A menu
-/// and a row are derived from the definition of the view's own kind, over the model <see cref="C4Disl"/>
+/// and a row are derived from the definition of the view's own kind, over the model <see cref="C4Body"/>
 /// builds from the parser's reading; a target with no view is derived from the origin's definition. A
 /// line the view derives rather than a stored relationship, and an unknown id, get nothing (finding A10).
 /// </para>
@@ -27,7 +27,7 @@ namespace EtAlii.Adp.Diagram.C4;
 /// </para>
 /// <para>
 /// The definitions declare one plugin function, <c>writtenEnd</c>, which the module implements from its
-/// reading (<see cref="C4Disl.Plugins"/>): the identifier an end is written with, also when it names no
+/// reading (<see cref="C4Body.Plugins"/>): the identifier an end is written with, also when it names no
 /// element.
 /// </para>
 /// </remarks>
@@ -49,7 +49,7 @@ internal static class C4Definitions
     /// <summary>Loaded on first use, so registering the types loads nothing.</summary>
     private static readonly Lazy<BundledDefinitionSet> _set = new(() => BundledDefinitionSet.Load(
         typeof(C4Definitions).Assembly,
-        C4Disl.Plugins(),
+        C4Body.Plugins(),
         Types.Select(type => type.Resource)));
 
     /// <summary>The six definitions, in the order of <see cref="Types"/>.</summary>
@@ -132,10 +132,10 @@ internal static class C4Definitions
     {
         ArgumentNullException.ThrowIfNull(elementId);
         var specification = DefinitionOf(view, origin).Specification;
-        var diagram = C4Disl.Of(workspace, view, specification, file).Diagram;
+        var diagram = C4Body.Of(workspace, view, specification, file).Diagram;
         DislMenuTarget? target = elementId.Length == 0
             ? DislMenuTarget.Canvas(diagram)
-            : C4Disl.ElementOf(diagram, elementId) is { } element
+            : C4Body.ElementOf(diagram, elementId) is { } element
                 ? DislMenuTarget.Element(element)
                 : null;
         return target is null
@@ -166,8 +166,8 @@ internal static class C4Definitions
             return null;
         }
 
-        var diagram = C4Disl.Of(workspace, view, specification, file).Diagram;
-        var on = C4Disl.ElementOf(diagram, elementId);
+        var diagram = C4Body.Of(workspace, view, specification, file).Diagram;
+        var on = C4Body.ElementOf(diagram, elementId);
         if (elementId.Length > 0 && on is null)
         {
             return null;
@@ -186,8 +186,8 @@ internal static class C4Definitions
     {
         ArgumentNullException.ThrowIfNull(elementId);
         var specification = DefinitionOf(view, origin).Specification;
-        var diagram = C4Disl.Of(workspace, view, specification, file).Diagram;
-        return C4Disl.ElementOf(diagram, elementId) is { } element
+        var diagram = C4Body.Of(workspace, view, specification, file).Diagram;
+        return C4Body.ElementOf(diagram, elementId) is { } element
             ? [.. FormDerivation.Derive(specification, element, EnvOf(diagram), IdsOf(specification)).Select(DislDiagramDefinition.Row)]
             : [];
     }
@@ -210,8 +210,8 @@ internal static class C4Definitions
     {
         ArgumentNullException.ThrowIfNull(parentId);
         var specification = DefinitionOf(view, origin).Specification;
-        var diagram = C4Disl.Build(workspace, view, specification, file).Diagram;
-        var parent = C4Disl.ElementOf(diagram, parentId);
+        var diagram = C4Body.Build(workspace, view, specification, file).Diagram;
+        var parent = C4Body.ElementOf(diagram, parentId);
         if (parentId.Length > 0 && parent is null)
         {
             return null;
@@ -270,7 +270,7 @@ internal static class C4Definitions
         ArgumentNullException.ThrowIfNull(workspace);
         ArgumentNullException.ThrowIfNull(origin);
         var specification = DefinitionOf(null, origin).Specification;
-        var model = C4Disl.OfTheWholeModel(workspace, specification, file, kind => For(kind).Specification);
+        var model = C4Body.OfTheWholeModel(workspace, specification, file, kind => For(kind).Specification);
         foreach (var finding in model.Findings)
         {
             _logger.Warning("{File} under {Origin}: {Code} {Message}, which the tool does not report", file, origin.Key, finding.Code, finding.Message);
@@ -441,15 +441,15 @@ internal static class C4Definitions
     /// </summary>
     private static (DislDiagram Diagram, IReadOnlyDictionary<DislElement, C4Element> Elements, IReadOnlyList<DislElement> Shown, List<DislElement> Nodes) Shown(C4Workspace workspace, string file, C4View view, DislSpecification specification)
     {
-        var model = C4Disl.Of(workspace, view, specification, file);
+        var model = C4Body.Of(workspace, view, specification, file);
         foreach (var finding in model.Findings)
         {
             _logger.Warning("{File}, view {View}: {Code} {Message}, which the tool does not report", file, view.Key, finding.Code, finding.Message);
         }
 
         var diagram = model.Diagram;
-        var elements = C4Disl.ElementsOf(diagram, workspace);
-        var shown = C4Disl.ShownView(diagram, view).Members;
+        var elements = C4Body.ElementsOf(diagram, workspace);
+        var shown = C4Body.ShownView(diagram, view).Members;
         List<DislElement> nodes =
         [
             .. InStatementOrder(shown.Where(member => !member.Type.IsRelation), elements, view, diagram)
@@ -465,8 +465,8 @@ internal static class C4Definitions
         var asWritten = !line.IsDerived || (line.Sources.Count == 1 && ReferenceEquals(statement.Source, line.Source) && ReferenceEquals(statement.Target, line.Target));
         return new C4DrawnLine(
             line.Id,
-            asWritten ? C4Disl.WrittenEndOf(statement, "source") : line.Source?.Id ?? "",
-            asWritten ? C4Disl.WrittenEndOf(statement, "target") : line.Target?.Id ?? "",
+            asWritten ? C4Body.WrittenEndOf(statement, "source") : line.Source?.Id ?? "",
+            asWritten ? C4Body.WrittenEndOf(statement, "target") : line.Target?.Id ?? "",
             TextOf(line, "description"),
             TextOf(line, "technology"),
             TextOf(line, "order"));

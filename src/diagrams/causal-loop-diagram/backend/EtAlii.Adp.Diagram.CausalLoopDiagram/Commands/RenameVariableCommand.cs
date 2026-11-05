@@ -17,10 +17,10 @@ public sealed class RenameVariableCommandHandler(ICausalLoopDocumentStore docume
 
         if (!CausalLoopEdits.IsUsableName(command.Name)) return EditOutcome.Refused(CausalLoopEdits.UnusableName);
         if (!model.Declares(command.Id)) return EditOutcome.Refused(CausalLoopEdits.NoSuchVariable);
-        if (model.Declares(command.Name)) return EditOutcome.Refused(CausalLoopEdits.AlreadyDeclared);
-
-        // The binding carries the name into every link and loop that refers to it, in the same edit: a
-        // rename that left them behind would turn every link through the variable into a dangling one.
-        return CausalLoopEdits.Set(body, CausalLoopEdits.VariableId(command.Id), "Variable", ("name", command.Name));
+        return model.Declares(command.Name)
+            ? EditOutcome.Refused(CausalLoopEdits.AlreadyDeclared)
+            // The binding carries the name into every link and loop that refers to it, in the same edit: a
+            // rename that left them behind would turn every link through the variable into a dangling one.
+            : CausalLoopEdits.Set(body, CausalLoopEdits.VariableId(command.Id), "Variable", ("name", command.Name));
     }
 }

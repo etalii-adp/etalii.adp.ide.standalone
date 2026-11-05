@@ -13,6 +13,10 @@ public class ViewAndFileMembersTests
         "metamodel": { "types": { "Topic": { "attributes": { "text": { "type": "string" } }, "children": { "allowed": ["Topic"] } } } }
         """));
 
+    private static readonly DislSpecification Linked = Specifications.Loaded(Specifications.With("""
+        "metamodel": { "types": { "Topic": {} }, "relations": { "Link": { "source": "Topic", "target": "Topic" } } }
+        """));
+
     private static readonly DislSpecification Shadowed = Specifications.Loaded(Specifications.With("""
         "metamodel": { "diagram": { "attributes": { "file": { "type": "string", "default": "stored" } } }, "types": { "Topic": {} } }
         """));
@@ -38,6 +42,31 @@ public class ViewAndFileMembersTests
 
         // Assert.
         Assert.Equal(expected, value);
+    }
+
+    /// <summary>
+    /// A selection a host binds is read by <c>view.selected</c> (DISL 12.2): every element is bound a view, and the
+    /// selected ones are those whose view says so, nodes and relations alike.
+    /// </summary>
+    [Fact]
+    public void TheSelection_IsReadFromTheViewsTheHostBound()
+    {
+        // Arrange.
+        var diagram = new DislDiagram(Linked);
+        var first = diagram.AddNode("Topic", "a");
+        var second = diagram.AddNode("Topic", "b");
+        var link = diagram.AddRelation("Link", "a-b", first, second);
+        first.View = new CelMap { ["selected"] = false };
+        second.View = new CelMap { ["selected"] = true };
+        link.View = new CelMap { ["selected"] = true };
+
+        // Act.
+        var selected = Evaluate(Linked, "(diagram.nodes.filter(e, e.view.selected) + diagram.relations.filter(e, e.view.selected)).map(e, e.id)", first, diagram);
+        var self = Evaluate(Linked, "self.view.selected", second, diagram);
+
+        // Assert.
+        Assert.Equal(new List<object?> { "b", "a-b" }, Assert.IsAssignableFrom<IReadOnlyList<object?>>(selected));
+        Assert.Equal(true, self);
     }
 
     [Fact]

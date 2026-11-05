@@ -83,7 +83,7 @@ public sealed record SparqlAnnotation(
 
 /// <summary>
 /// Everything the canvas draws, in deterministic order: same model, same elements, same order.
-/// Produced by <see cref="SparqlProjection"/> as a pure function of the model.
+/// Filled by <see cref="SparqlDefinition.Drawing"/> from the model the bundled definition derives.
 /// </summary>
 /// <param name="Nodes">The drawn nodes, first-mention order.</param>
 /// <param name="Edges">The pattern and subquery-join edges, source order.</param>

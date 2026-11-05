@@ -245,6 +245,20 @@ internal static class HandWrittenDatabricks
     }
 
     /// <summary>
+    /// The dependencies of the job's other tasks on the task keyed <paramref name="taskKey"/>, as the module's
+    /// <c>JobWriter.ReferencesTo</c> counted them for the removal's confirmation before databricks-disl-fbl task 12 removed it.
+    /// </summary>
+    public static IReadOnlyList<JobDependency> ReferencesTo(JobModel job, string taskKey)
+    {
+        ArgumentNullException.ThrowIfNull(job);
+        return job.Tasks
+            .Where(task => task.Key != taskKey)
+            .SelectMany(task => task.DependsOn)
+            .Where(dependency => dependency.TaskKey == taskKey)
+            .ToList();
+    }
+
+    /// <summary>
     /// What removing the task <paramref name="target"/> names asked first, as <c>DatabricksContextActionProvider</c>
     /// counted it: its own dependencies and every one naming it; null when there is none, or no such task.
     /// </summary>
@@ -258,7 +272,7 @@ internal static class HandWrittenDatabricks
             return null;
         }
 
-        var going = selected.Task.DependsOn.Count + JobWriter.ReferencesTo(selected.Job, selected.Task.Key).Count;
+        var going = selected.Task.DependsOn.Count + ReferencesTo(selected.Job, selected.Task.Key).Count;
         return going == 0
             ? null
             : new RemovalConfirmation(

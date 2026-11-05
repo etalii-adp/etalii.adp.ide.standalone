@@ -10,11 +10,12 @@ namespace EtAlii.Adp.Documents.Tests;
 /// </summary>
 public sealed class LifecycleDocumentStoreWriterTests : IDisposable
 {
-    private readonly string _folder = IoPath.Combine(IoPath.GetTempPath(), "adp-lifecycle-writer-" + Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-lifecycle-writer");
+    private readonly string _folder;
 
-    public LifecycleDocumentStoreWriterTests() => Directory.CreateDirectory(_folder);
+    public LifecycleDocumentStoreWriterTests() => _folder = _testFolder.Path;
 
-    public void Dispose() => TestFolder.TryDelete(_folder);
+    public void Dispose() => _testFolder.Dispose();
 
     [Fact]
     public async Task ASave_WaitsForItsWriter_WithoutBlocking_ThenTellsTheSessions()

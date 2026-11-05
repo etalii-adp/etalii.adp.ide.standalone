@@ -1,4 +1,5 @@
 using Google.Protobuf;
+using JetBrains.Annotations;
 
 namespace EtAlii.Adp.Diagram.AgentActivityDiagram;
 
@@ -26,12 +27,18 @@ public sealed class AadElementMapper
 {
     private const string Prefix = "etalii/agent-activity-diagram+";
 
+    [UsedImplicitly] // Read only by reflection, into the cross-tier element-types fixture.
     public const string ProjectType = Prefix + "project";
     public const string SpecificationType = Prefix + "specification";
+    [UsedImplicitly] // Read only by reflection, into the cross-tier element-types fixture.
     public const string AgentType = Prefix + "agent";
+    [UsedImplicitly] // Read only by reflection, into the cross-tier element-types fixture.
     public const string LocationType = Prefix + "location";
+    [UsedImplicitly] // Read only by reflection, into the cross-tier element-types fixture.
     public const string EnvironmentType = Prefix + "environment";
+    [Relation]
     public const string RelationType = Prefix + "relation";
+    [UsedImplicitly] // Read only by reflection, into the cross-tier element-types fixture.
     public const string ViewType = Prefix + "view";
 
     /// <summary>The id of the element that carries the diagram's own settings. No file entry can have it: an id cannot hold a space.</summary>

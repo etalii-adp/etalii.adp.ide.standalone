@@ -42,7 +42,7 @@ import { BEFORE_GAP, labelKey, layoutLabels, wrappedLabelRegion, type LaidOutLab
 import { wavyUnderlinePath } from "./definition/wavyUnderline";
 import { resolveDecorations, type ResolvedDecoration } from "./definition/decorations";
 import { resolveBackground } from "./definition/background";
-import { resolveChromeText, resolveLegend } from "./definition/chrome";
+import { resolveChromeBand, resolveChromeText, resolveLegend } from "./definition/chrome";
 import { actionForGesture, actionForKey, flagOf, type ElementGesture } from "./definition/actions";
 import { isCustomShape } from "./definition/diagramDefinition";
 import { outlineEdgePoint, outlineOf } from "./shapes/outline";
@@ -879,6 +879,13 @@ export function DiagramCanvasCore({
         if (onOutline !== null) {
           return onOutline;
         }
+      }
+
+      // A circle is drawn within its box at half the shorter side, so a line meets that circle
+      // rather than the box; no shape drew as a circle before, so no existing drawing moves.
+      if (type !== undefined && !isCustomShape(type.shape) && shapeOf(type.shape, sourceOf(element)) === "circle" && (dx !== 0 || dy !== 0)) {
+        const scale = Math.min(bounds.width, bounds.height) / 2 / Math.hypot(dx, dy);
+        return { x: centre.x + dx * scale, y: centre.y + dy * scale };
       }
 
       // A type drawn by edge is a small shape starting lines in every direction, where the box's
@@ -1975,6 +1982,19 @@ export function DiagramCanvasCore({
             return beforeLabelPlacement({ x: bounds.x, y: bounds.y + bounds.height / 2 }, BEFORE_GAP, text);
           }
 
+          // A LABEL THE ELEMENT PLACES ITSELF OPENS OVER ITS TEXT: its offset is the element's own,
+          // left of the mark included, so the editor starts or ends where the drawn line does,
+          // centred on the line - 4 above the baseline of a 12px text. A centred one opens as below.
+          if (declared.offsetBinding !== undefined) {
+            const line = layoutLabels([declared], sourceOf(element), bounds, 1, shape).find((candidate) => candidate.editable);
+            if (line !== undefined && line.anchor === "start") {
+              return asideLabelPlacement({ x: line.x, y: line.y - 4 }, 0, text);
+            }
+            if (line !== undefined && line.anchor === "end") {
+              return beforeLabelPlacement({ x: line.x, y: line.y - 4 }, 0, text);
+            }
+          }
+
           // A PLAIN CENTRED LABEL OPENS OVER THE ELEMENT, which is what `placement: "inside"`
           // meant and what a single-label type wants: the editor is the box. A label that
           // states an offset or an editor box is one line of a composite card, and opens over
@@ -2202,6 +2222,13 @@ export function DiagramCanvasCore({
   const title = resolveChromeText(definition.chrome?.title, chromeSource);
   const legend = definition.chrome?.legend;
   const legendEntries = resolveLegend(legend, chromeSource);
+  // THE HEADER BAND AND THE NOTICES (DISL §6.13): the band between the title and the surface, the
+  // notices below everything else, each a status region a reader's assistive technology announces.
+  const header = resolveChromeBand(definition.chrome?.header, chromeSource);
+  const notices = (definition.chrome?.notices ?? []).flatMap((notice) => {
+    const resolved = resolveChromeText(notice, chromeSource);
+    return resolved === null ? [] : [{ notice, resolved }];
+  });
 
   return (
     <>
@@ -2209,6 +2236,15 @@ export function DiagramCanvasCore({
       <div className={title.className} {...dataAttributesOf(definition.chrome?.title?.data)}>
         {title.text}
       </div>
+    )}
+    {header !== null && (
+      <header className={header.className} {...dataAttributesOf(definition.chrome?.header?.data)}>
+        {header.rows.map((row, index) => (
+          <span key={index} className={row.className}>
+            {row.text}
+          </span>
+        ))}
+      </header>
     )}
     <div
       ref={rootRef}
@@ -2468,6 +2504,11 @@ export function DiagramCanvasCore({
         ))}
       </div>
     )}
+    {notices.map(({ notice, resolved }) => (
+      <p key={notice.id} className={resolved.className} role="status" data-notice-position={notice.position} data-notice-severity={notice.severity} {...dataAttributesOf(notice.data)}>
+        {resolved.text}
+      </p>
+    ))}
     </>
   );
 }
@@ -3731,7 +3772,12 @@ function renderShapeBody(
   switch (shape) {
     case "none":
       // No body at all: this element is its labels and its decorations. Rows 2, 8, 14 and 25.
-      return null;
+      // Both of those take no pointer events, so a selectable one gets a transparent press
+      // target over its bounds; without it the element could never be pressed, selected, or
+      // shown its move refusal. An unselectable one stays inert. The target states its own
+      // `pointer-events` inline, because the property inherits and a module class on the group
+      // (`canvas-hint` is one) would otherwise switch the target off as well.
+      return type.selectable === false ? null : <rect className="library-bodyless-hit" x={bounds.x} y={bounds.y} width={bounds.width} height={bounds.height} style={{ pointerEvents: "all" }} />;
     case "moment": {
       // A DIAMOND rather than a circle, because that is what the notation that justified this
       // shape draws: `SpanElement` renders a moment as `M x-r y L x y-r L x+r y L x y+r Z`, and
@@ -3836,6 +3882,34 @@ function renderShapeBody(
           {centredText(element, label)}
         </g>
       );
+    case "circle":
+      // Always round, at the box's lesser side, as DISL's `circle` is however the box is sized.
+      return (
+        <g>
+          <circle className={shapeClass} cx={element.x} cy={element.y} r={Math.min(bounds.width, bounds.height) / 2} style={paint} />
+          {centredText(element, label)}
+        </g>
+      );
+    case "horizontal-line":
+    case "vertical-line": {
+      // A line through the box's middle, edge to edge, with the box as its press target where it can
+      // be picked: a stroke a few units thick is too thin to press.
+      const across = shape === "horizontal-line";
+      return (
+        <g>
+          {type.selectable === false ? null : <rect className="library-bodyless-hit" x={bounds.x} y={bounds.y} width={bounds.width} height={bounds.height} style={{ pointerEvents: "all" }} />}
+          <line
+            className={shapeClass}
+            x1={across ? bounds.x : element.x}
+            y1={across ? element.y : bounds.y}
+            x2={across ? bounds.x + bounds.width : element.x}
+            y2={across ? element.y : bounds.y + bounds.height}
+            style={paint}
+          />
+          {centredText(element, label)}
+        </g>
+      );
+    }
     case "person": {
       // The head first and the body over it, so the body covers the head's bottom. The body is
       // the outline: no polygon is stated for it, so the edge point and the text region are the box's.
@@ -4435,7 +4509,9 @@ function dragLanding(
   dx: number,
   dy: number,
 ): Point {
-  const clamped = clampToDragBounds(definition.dragBounds, element, dx, dy);
+  // A type dragged along one axis keeps the other where the model has it, before any bound or snap.
+  const axis = elementTypes.get(element.type)?.dragAxis;
+  const clamped = clampToDragBounds(definition.dragBounds, element, axis === "y" ? 0 : dx, axis === "x" ? 0 : dy);
   const snap = definition.snap;
   if (snap === undefined) {
     return clamped;
@@ -4444,8 +4520,8 @@ function dragLanding(
   const { width, height } = elementBounds(element, elementTypes.get(element.type));
   const source = sourceOf(element);
   return {
-    x: snapLeadingEdge(clamped.x, width, snap.x, source),
-    y: snapLeadingEdge(clamped.y, height, snap.y, source),
+    x: axis === "y" ? clamped.x : snapLeadingEdge(clamped.x, width, snap.x, source),
+    y: axis === "x" ? clamped.y : snapLeadingEdge(clamped.y, height, snap.y, source),
   };
 }
 

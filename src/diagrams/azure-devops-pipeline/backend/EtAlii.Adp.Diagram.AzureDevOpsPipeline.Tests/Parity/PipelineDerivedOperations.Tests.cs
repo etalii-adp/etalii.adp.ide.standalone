@@ -1,6 +1,7 @@
 using System.Text;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Files;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using Path = System.IO.Path;
 
@@ -112,7 +113,7 @@ public class PipelineDerivedOperationsTests
             // The command, through a store of its own, on the file as it was.
             await File.WriteAllBytesAsync(body, original, TestContext.Current.CancellationToken);
             var store = new PipelineDocumentStore(new FileWriter());
-            var result = await new PipelineTestDispatcher(store).DispatchAsync(command(workspace), TestContext.Current.CancellationToken);
+            var result = await TestHistory.Dispatcher(s => { s.AddAzurePipeline(); s.AddSingleton<IPipelineDocumentStore>(store); }).DispatchAsync(command(workspace), TestContext.Current.CancellationToken);
             var actual = result.IsSuccess ? Pipeline((await new PipelineDocumentStore(new FileWriter()).GetOrLoadAsync(ProjectRoot.From(workspace), body, TestContext.Current.CancellationToken)).Model) : $"refused: {result.Error}";
 
             if (actual == $"refused: {ThroughAMerge}" && expected != actual) return;

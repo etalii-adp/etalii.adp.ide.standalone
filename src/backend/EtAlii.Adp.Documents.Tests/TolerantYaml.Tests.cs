@@ -10,17 +10,17 @@ namespace EtAlii.Adp.Documents.Tests;
 /// </summary>
 public class TolerantYamlTests : IDisposable
 {
+    private readonly TestFolder _testFolder = TestFolder.Create("tolerant-yaml");
     private readonly string _scratch;
 
     public TolerantYamlTests()
     {
-        _scratch = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_scratch);
+        _scratch = _testFolder.Path;
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_scratch);
+        _testFolder.Dispose();
     }
 
     [Fact]

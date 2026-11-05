@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
@@ -18,7 +17,7 @@ namespace EtAlii.Adp.Diagram.C4.Tests;
 public class C4FindingsTests
 {
     private static IReadOnlyList<DiagramProblem> Validate(string dsl) =>
-        C4Findings.Of(C4Parser.Parse(LineDocument.Parse(dsl)));
+        C4Findings.Of(C4Body.Read(dsl).Workspace);
 
     private static string[] RuleIds(string dsl) => Validate(dsl).Select(problem => problem.RuleId).ToArray();
 
@@ -650,10 +649,9 @@ public class C4FindingsTests
                 }
             }
             """;
-        var workspace = C4Parser.Parse(LineDocument.Parse(dsl));
+        var workspace = C4Body.Read(dsl).Workspace;
 
         // Act.
-        C4ElementKind[] Shown(string key) => [.. C4Findings.MembersOf(workspace, workspace.FindView(key)!).Select(element => element.Kind).Distinct().Order()];
 
         // Assert.
         Assert.Equal([C4ElementKind.Person, C4ElementKind.SoftwareSystem], Shown("context"));
@@ -663,6 +661,9 @@ public class C4FindingsTests
         Assert.Contains(C4ElementKind.Component, Shown("components"));
         Assert.Contains(C4ElementKind.DeploymentNode, Shown("deployment"));
         Assert.DoesNotContain(C4ElementKind.Person, Shown("deployment"));
+        return;
+
+        C4ElementKind[] Shown(string key) => [.. C4Findings.MembersOf(workspace, workspace.FindView(key)!).Select(element => element.Kind).Distinct().Order()];
     }
 
     [Fact]

@@ -1,0 +1,20 @@
+supply-chain: 1
+# Finding B7: a changed value, a trailing comment and the author's quotes.
+groups:
+  - id: north   # the north
+    name: 'North region'  # single quoted
+nodes:
+  - id: mine
+    type: raw-material   # a legacy word with a comment
+    name: "Mine"   # double quoted, with a comment
+    quantity: 10   # tonnes a day
+    group: north
+  - id: plant
+    type: producer
+    name: Plant
+flows:
+  - id: ore
+    from: mine
+    to: plant
+    product: 'Ore'  # quoted product
+    volume: 6 # a comment

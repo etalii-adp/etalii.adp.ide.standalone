@@ -41,4 +41,12 @@ public sealed class GroupScope
     /// <c>where/optional.0</c> and deeper - the stable half of every region-derived id.
     /// </summary>
     public string Path { get; internal set; } = "";
+
+    /// <summary>
+    /// Where the group is written: from its keyword (<c>OPTIONAL</c>, <c>MINUS</c>, <c>GRAPH</c>,
+    /// <c>SERVICE</c>) or its opening brace to its closing brace; a <c>UNION</c> from its first
+    /// branch's brace to its last's. A <c>CONSTRUCT WHERE</c> template shares its where clause's; a
+    /// <c>DESCRIBE</c> with no where clause has none.
+    /// </summary>
+    public SparqlSpan Span { get; internal set; }
 }

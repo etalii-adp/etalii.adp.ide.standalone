@@ -1,4 +1,5 @@
 using System.Text.Json;
+using EtAlii.Adp.Specification.Fbl.Grammar;
 using EtAlii.Adp.Specification.Json;
 
 namespace EtAlii.Adp.Specification.Fbl.Documents;
@@ -12,13 +13,13 @@ namespace EtAlii.Adp.Specification.Fbl.Documents;
 public static class FblDocumentLoader
 {
     /// <summary>The FBL major version this library reads, and the newest minor it reads in full; a document of a newer one loads with a warning.</summary>
-    private static readonly LanguageVersion Fbl = new("FBL", 0, 5, "FBL §2.7");
+    private static readonly LanguageVersion Fbl = new("FBL", 0, 9, "FBL §2.7");
 
     public static IReadOnlyList<LoadDiagnostic> Load(string path, out FblDocument? document) =>
-        Load(ReadShared(path), out document);
+        Load(ReadShared(path), Path.GetDirectoryName(Path.GetFullPath(path)), out document);
 
     /// <summary>Reads at the sharing the repository's own reader uses, so a concurrent save is never refused.</summary>
-    private static byte[] ReadShared(string path)
+    internal static byte[] ReadShared(string path)
     {
         using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
         using var buffer = new MemoryStream();
@@ -26,7 +27,21 @@ public static class FblDocumentLoader
         return buffer.ToArray();
     }
 
-    public static IReadOnlyList<LoadDiagnostic> Load(byte[] json, out FblDocument? document)
+    public static IReadOnlyList<LoadDiagnostic> Load(byte[] json, out FblDocument? document) =>
+        LoadBeside(json, null, out document);
+
+    /// <summary>
+    /// Loads a document whose files beside it are in <paramref name="folder"/>: the grammar file and the imports of a
+    /// binding of the <c>grammar</c> family (FBL 0.9 §4.9). Without a folder, a binding that names a grammar file is refused.
+    /// </summary>
+    public static IReadOnlyList<LoadDiagnostic> Load(byte[] json, string? folder, out FblDocument? document) =>
+        LoadBeside(json, BesideFiles.InFolder(folder), out document);
+
+    /// <summary>
+    /// Loads a document whose files beside it are <paramref name="files"/>: those of its folder, or those a module embeds
+    /// beside it (<see cref="BundledBinding"/>). Without them, a binding that names a grammar file is refused.
+    /// </summary>
+    internal static IReadOnlyList<LoadDiagnostic> LoadBeside(byte[] json, BesideFiles? files, out FblDocument? document)
     {
         var problems = new List<LoadDiagnostic>();
         document = null;
@@ -80,6 +95,11 @@ public static class FblDocumentLoader
                 if (binding is not null)
                 {
                     BindingChecker.Check(binding, pointer, problems);
+                    if (binding.Body is { Family: Family.Grammar, Grammar: { } grammar })
+                    {
+                        grammar.Built = GrammarBuild.Build(grammar, files, pointer + "/body", problems);
+                        if (grammar.Built is { } built) GrammarChecks.CheckSelectors(binding, built, pointer, problems);
+                    }
                     result[property.Name] = binding;
                 }
             }

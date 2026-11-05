@@ -29,6 +29,7 @@ public sealed class CausalLoopElementMapper
     public const string VariableType = "systems/causal-loop+variable";
 
     /// <summary>A causal link, drawn between two variables.</summary>
+    [Relation]
     public const string LinkType = "systems/causal-loop+link";
 
     /// <summary>A loop label, drawn among the variables it runs through.</summary>

@@ -13,18 +13,18 @@ public class HierarchyModelNestingTests : IDisposable
 {
     private static readonly DiagramDefinition Mindmap = new(new ToolOrigin("freeplane", "mindmap"), "Mind map", Extension: ".mm");
 
+    private readonly TestFolder _testFolder = TestFolder.Create("model-nesting");
     private readonly string _root;
     private readonly IDiagramDefinitionCatalog _catalog = new TestDiagramDefinitionCatalog(Mindmap);
 
     public HierarchyModelNestingTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     private string CreateRegistration(string baseName)

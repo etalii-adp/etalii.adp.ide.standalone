@@ -1,0 +1,28 @@
+supply-chain: 1
+# Finding B4: groups, nodes and flows share one id space; every later holder is reported, and an
+# edit finds the first.
+groups:
+  - id: twin
+    name: Group twin
+nodes:
+  - id: mine
+    type: source
+    name: First mine
+    quantity: 1
+  - id: mine
+    type: source
+    name: Second mine
+    quantity: 2
+  - id: twin
+    type: producer
+    name: Node twin
+  - id: plant
+    type: producer
+    name: Plant
+flows:
+  - id: mine
+    from: mine
+    to: plant
+  - id: ore
+    from: mine
+    to: plant

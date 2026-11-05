@@ -14,7 +14,8 @@ namespace EtAlii.Adp.Diagram.Sparql;
 /// Repositioning is the only mutating gesture this module has, and it never touches the
 /// <c>.rq</c>: it dispatches the core <see cref="SetRegistrationLayoutCommand"/>, which writes
 /// the <c>.adp</c>'s <c>layout:</c> block. The query file has no writer anywhere in this module,
-/// so its byte-identical round trip holds by construction rather than by care.
+/// and a write that reached its body would be stopped twice: by the binding's <c>readOnly</c> and
+/// by <see cref="SparqlQueryPlugin"/>'s refusing <c>Plan</c>.
 /// </para>
 /// <para>
 /// Following the store, the baseline, the viewport and the dispatch are the session base's; this
@@ -27,20 +28,19 @@ public sealed class SparqlSession(
     ISparqlDocumentStore documents,
     SparqlElementMapper mapper,
     IHistoryStack? history = null)
-    : DocumentDiagramSession<string, SparqlQueryModel>(bodyPath, documents, history)
+    : DocumentDiagramSession<string, SparqlDocument>(bodyPath, documents, history)
 {
     private readonly SparqlElementMapper _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
 
     /// <inheritdoc />
-    protected override string ParentRefusal =>
-        "A query's structure comes from its text, so nothing here can be moved into a different group. Dragging changes where an element sits on the canvas.";
+    protected override string ParentRefusal => SparqlDefinition.ReparentRefusal;
 
     /// <summary>
     /// Stores an authored position in the registration's <c>layout:</c> block, as one undoable
     /// command - the module's single mutating gesture, and one that leaves the query untouched
     /// (Requirement 5.1, 6.3).
     /// </summary>
-    protected override DiagramPlacement PlacementOf(SparqlQueryModel model, string elementId, double x, double y)
+    protected override DiagramPlacement PlacementOf(SparqlDocument model, string elementId, double x, double y)
     {
         if (registrationPath is not { Length: > 0 })
         {
@@ -48,42 +48,17 @@ public sealed class SparqlSession(
             return DiagramPlacement.Refused("This query was opened without a registration, so there is nowhere to store a position. Register the file to arrange it.");
         }
 
-        var refusal = Refusal(elementId);
-        return refusal.Length > 0
+        // Why this element cannot carry an authored position (Requirement 5.4): chrome by its own sentence, an element
+        // by the definition's, the notation's refusal of a move of its kind or the reason of its ephemeral id rule.
+        return (SparqlChrome.MoveRefusal(elementId) ?? SparqlDefinition.MoveRefusal(model, elementId)) is { } refusal
             ? DiagramPlacement.Refused(refusal)
             : DiagramPlacement.By(new SetRegistrationLayoutCommand(registrationPath, elementId, x, y));
     }
 
-    /// <summary>Why this element cannot carry an authored position, or empty when it can (Requirement 5.4).</summary>
-    private static string Refusal(string elementId)
-    {
-        if (elementId.StartsWith("anon:", StringComparison.Ordinal))
-        {
-            return "That is an anonymous variable - written as a blank node, it has no name to key a stored position by, so it takes its computed place.";
-        }
-
-        if (elementId.StartsWith("edge:", StringComparison.Ordinal))
-        {
-            return "An edge is drawn between its endpoints; move one of those instead.";
-        }
-
-        if (elementId.StartsWith("note:", StringComparison.Ordinal))
-        {
-            return "An annotation stays with what it constrains; move that instead.";
-        }
-
-        return elementId switch
-        {
-            SparqlElementMapper.HeaderId => "The header band states the query's form and modifiers, and stays at the top of the diagram.",
-            SparqlElementMapper.TruncationId => "That banner reports the truncation and is not something this diagram can move.",
-            _ => ""
-        };
-    }
-
     /// <inheritdoc />
-    protected override IReadOnlyList<DiagramElement> Render(SparqlQueryModel model, DiagramViewport viewport)
+    protected override IReadOnlyList<DiagramElement> Render(SparqlDocument model, DiagramViewport viewport)
     {
-        var projection = SparqlProjection.Project(model);
+        var projection = model.Drawing;
         var stored = registrationPath is { Length: > 0 }
             ? RegistrationLayout.Read(registrationPath)
             : new Dictionary<string, RegistrationPosition>(StringComparer.Ordinal);

@@ -260,11 +260,12 @@ public static class OperationInterpreter
     }
 
     /// <param name="isA">Whether the operation's target is of a type, or null when it runs on the diagram.</param>
-    private static string? Unavailable(DislSpecification specification, DislOperation operation, DislDiagram diagram, Func<string, bool>? isA, Dictionary<string, object?> variables)
+    internal static string? Unavailable(DislSpecification specification, DislOperation operation, DislDiagram diagram, Func<string, bool>? isA, Dictionary<string, object?> variables)
     {
         if (!operation.AppliesTo(isA)) return NotApplicable(specification, diagram, operation.Id);
 
         if (DislReason.First(specification.Operations.EditGate, specification, Gate(diagram, variables)) is { } gated) return gated;
+        if (DislBudgets.Changes(operation) is { } changes && DislBudgets.WithheldReason(diagram, changes == "view") is { } withheld) return withheld;
 
         // An operation that is not an object threw here when it was read from the JSON at run time, and still does.
         if (operation.NotAnObject is { } malformed) throw new InvalidOperationException(malformed);

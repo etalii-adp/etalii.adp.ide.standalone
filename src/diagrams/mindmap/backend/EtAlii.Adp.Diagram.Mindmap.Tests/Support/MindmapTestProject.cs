@@ -15,11 +15,12 @@ namespace EtAlii.Adp.Diagram.Mindmap.Tests;
 /// </summary>
 internal sealed class MindmapTestProject : IDisposable
 {
+    private readonly TestFolder _folder = TestFolder.Create("mindmap-test-project");
     private readonly ServiceProvider _services;
 
     public MindmapTestProject()
     {
-        Root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
+        Root = _folder.Path;
         Directory.CreateDirectory(IoPath.Combine(Root, "docs"));
         AdpPath = IoPath.Combine(Root, "docs", "architecture.adp");
         BodyPath = IoPath.Combine(Root, "docs", "architecture.mm");
@@ -78,7 +79,7 @@ internal sealed class MindmapTestProject : IDisposable
     public void Dispose()
     {
         _services.Dispose();
-        TestFolder.TryDelete(Root);
+        _folder.Dispose();
     }
 
 }

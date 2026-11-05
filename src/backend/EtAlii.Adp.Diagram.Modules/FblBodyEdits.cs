@@ -29,7 +29,7 @@ public sealed class FblBodyEdits
     private readonly TextMemo<LineIndex> _lines = new();
 
     // While a batch is open, the changes asked for and their edits, planned against the body as it was.
-    private List<(ModelChange Change, Edit Edit)>? _batch;
+    private List<(ModelChange Change, SpliceEdit Edit)>? _batch;
 
     /// <summary>The edits of <paramref name="body"/>, each changed body remembered in <paramref name="recent"/>.</summary>
     public FblBodyEdits(OpenBody body, RecentBodies recent)
@@ -85,7 +85,7 @@ public sealed class FblBodyEdits
         if (_batch is not null) throw new InvalidOperationException("A batch is already open on this body.");
 
         _batch = [];
-        List<(ModelChange Change, Edit Edit)> batch;
+        List<(ModelChange Change, SpliceEdit Edit)> batch;
         try
         {
             writes();
@@ -110,7 +110,7 @@ public sealed class FblBodyEdits
     }
 
     /// <summary>The edits of a batch as one, when no two of them touch and none needs a snapshot to undo; else null.</summary>
-    private static Edit? Combined(List<(ModelChange Change, Edit Edit)> batch)
+    private static SpliceEdit? Combined(List<(ModelChange Change, SpliceEdit Edit)> batch)
     {
         var edits = batch.Select(planned => planned.Edit).Where(edit => edit.Splices.Count > 0).ToList();
         if (edits.Count == 0 || edits.Any(edit => edit.Snapshot)) return null;
@@ -121,6 +121,6 @@ public sealed class FblBodyEdits
             if (edits[index - 1].Splices.Max(splice => splice.End) >= edits[index].Splices.Min(splice => splice.Start)) return null;
         }
 
-        return new Edit([.. edits.SelectMany(edit => edit.Splices)]);
+        return new SpliceEdit([.. edits.SelectMany(edit => edit.Splices)]);
     }
 }

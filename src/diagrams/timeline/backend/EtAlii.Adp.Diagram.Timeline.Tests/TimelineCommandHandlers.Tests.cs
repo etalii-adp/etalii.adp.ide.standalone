@@ -1,6 +1,7 @@
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace EtAlii.Adp.Diagram.Timeline.Tests;
 
@@ -13,7 +14,7 @@ public sealed class TimelineCommandHandlersTests : EditHandlerContract<ITimeline
 
     protected override ITimelineDocumentStore Warning(ITimelineDocumentStore store, string warning) => new WarningStore(store, warning);
 
-    protected override ICommandDispatcher Dispatcher(ITimelineDocumentStore store) => new TimelineTestDispatcher(store);
+    protected override ICommandDispatcher Dispatcher(ITimelineDocumentStore store) => TestHistory.Dispatcher(s => { s.AddTimeline(); s.AddSingleton(store); });
 
     protected override ICommand EditOf(string bodyPath) => new RenameTimelineElementCommand(bodyPath, "k7Qv2mXa", "Exploration");
 

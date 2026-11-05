@@ -37,8 +37,8 @@ namespace EtAlii.Adp.Backend.Tests;
 /// that span modules moved out of this one (code-structure T304).
 /// </para>
 /// <para>
-/// <b>And it sweeps the host harness, <c>EtAlii.Adp.TestSupport.Host</c>.</b> Since spec 025 the
-/// flow tests take their host from its <see cref="TestSupport.Host.HostFixture"/> rather than
+/// <b>And it sweeps the host harness, <c>EtAlii.Adp.Backend.Tests.Support</c>.</b> Since spec 025 the
+/// flow tests take their host from its <see cref="HostFixture"/> rather than
 /// building one each, so the one override that matters most lives there - in a project not named
 /// <c>*.Tests</c>, which a sweep of the test projects alone would never read. The harness is also
 /// the canary that the walk still finds what it guards: it must be among the sources that boot the
@@ -55,7 +55,7 @@ public class ProblemStoreIsolationTests
     private const string ThisFile = "ProblemStoreIsolation.Tests.cs";
 
     /// <summary>The project the flow tests' host comes from, and the file in it that boots that host.</summary>
-    private const string HarnessProject = "EtAlii.Adp.TestSupport.Host";
+    private const string HarnessProject = "EtAlii.Adp.Backend.Tests.Support";
 
     private const string HarnessFile = "HostFixture.cs";
 
@@ -108,7 +108,7 @@ public class ProblemStoreIsolationTests
             + Environment.NewLine
             + string.Join(Environment.NewLine, leaking.Select(name => "  " + name))
             + Environment.NewLine
-            + "Take the host from HostFixture in EtAlii.Adp.TestSupport.Host, or copy its "
+            + "Take the host from HostFixture in EtAlii.Adp.Backend.Tests.Support, or copy its "
             + "RemoveAll<IProblemStore>() override, pointing the replacement at a temp root the test deletes when it disposes.");
     }
 

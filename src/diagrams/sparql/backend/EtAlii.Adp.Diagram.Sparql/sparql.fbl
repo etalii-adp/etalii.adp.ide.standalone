@@ -1,0 +1,36 @@
+{
+  "$schema": "https://etalii.net/adp/fbl/schema/0.1/fbl.schema.json#/$defs/Document",
+  "fbl": "0.2",
+  "doc": "A SPARQL 1.1 query (definitions/diagrams/sparql-query.dis, sparql-query.md): a binding whose reader is a persistence plugin (section 11), because the query grammar, the prologue's prefixes, nested group patterns and property paths are no declared family. The plugin net.etalii.adp.w3c.sparqlQuery wraps the module's tokenizer and parser and delivers one record per entry with its span; it refuses every plan, and the binding is read-only, so the two stop a write independently. A .rq file is a SPARQL query wherever it is, so the claim is not shared. Positions are the registration's, written by the host's layout command, never by this binding.",
+  "bindings": {
+    "query": {
+      "title": "SPARQL 1.1 query",
+      "claims": {
+        "extensions": [
+          ".rq"
+        ],
+        "origins": [
+          "w3c/sparql"
+        ]
+      },
+      "body": {
+        "kind": "file"
+      },
+      "reader": {
+        "plugin": "net.etalii.adp.w3c.sparqlQuery",
+        "version": "^1.0.0"
+      },
+      "readOnly": "A query diagram offers no edits: it reads the .rq file, which is edited in a text editor.",
+      "text": {
+        "newline": "crlf",
+        "finalNewline": true
+      },
+      "registration": {
+        "createOnFirstPlacement": false
+      },
+      "template": {
+        "text": "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\r\n\r\nSELECT ?subject ?label\r\nWHERE {\r\n  ?subject rdfs:label ?label .\r\n}\r\nLIMIT 100\r\n"
+      }
+    }
+  }
+}

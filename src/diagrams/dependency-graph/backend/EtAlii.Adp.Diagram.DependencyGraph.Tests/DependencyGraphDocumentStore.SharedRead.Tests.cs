@@ -12,15 +12,14 @@ namespace EtAlii.Adp.Diagram.DependencyGraph.Tests;
 /// </summary>
 public class DependencyGraphDocumentStoreSharedReadTests : IDisposable
 {
-    private readonly string _workspace = IoPath.Combine(
-        IoPath.GetTempPath(),
-        "adp-depgraph-store-" + Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-depgraph-store");
+    private readonly string _workspace;
 
-    public DependencyGraphDocumentStoreSharedReadTests() => Directory.CreateDirectory(_workspace);
+    public DependencyGraphDocumentStoreSharedReadTests() => _workspace = _testFolder.Path;
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_workspace);
+        _testFolder.Dispose();
 
         GC.SuppressFinalize(this);
     }

@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Text.RegularExpressions;
 using EtAlii.Adp.Specification.Json;
 
@@ -161,7 +161,16 @@ internal static partial class DislExpressionWalker
             {
                 // A layout action's refusals are Messages (§9.4), not value positions.
                 if (key == "refusals" && path[^1] == "layout") return frame.As(Mode.Literal);
+                // The keys of a set and of a create's attributes are attribute names, whatever they are called (§9.4).
+                if (path[^1] == "set" || path is [.., "create", "attributes"]) return frame;
                 return ActionNames.Contains(key) || (key == "label" && path[^1] == "editLabel") ? null : frame;
+            }
+
+            // A Bindable bound to an attribute, a token or a param names it (§2.5 b): it is not CEL, also where the
+            // property it binds is an Expression, as a badge's visible.
+            if (frame.Mode == Mode.Expression && key is "attribute" or "token" or "param" && value.ValueKind == JsonValueKind.String && !owner.TryGetProperty("cel", out _))
+            {
+                return null;
             }
 
             // A type map (§11.2) holds names only: its attributes map a binding's attribute names to the
@@ -183,7 +192,7 @@ internal static partial class DislExpressionWalker
                 "behavior" => Behavior(frame, key, path),
                 "notation" or "viewpoints" => Notation(frame, key, path),
                 "coordinates" => Coordinates(frame, key),
-                "language" => key is "order" or "unit" or "measure" && path.Contains("budgets") ? frame.As(Mode.Expression) : frame,
+                "language" => path.Contains("budgets") ? Budget(frame, key, path) : frame,
                 _ => frame,
             };
 
@@ -207,9 +216,12 @@ internal static partial class DislExpressionWalker
             // An attribute's derived expression is an Expression in the element context; its CEL default is the create context's.
             if (key == "derived" && path is [.., "attributes", _]) return frame.In(DislContext.Element).As(Mode.Expression);
             if (key == "default" && path is [.., "attributes", _]) return frame.In(DislContext.Create).As(Mode.Literal);
+            // An attribute's outOfRange message (§4.3) is a Message in the gesture:change context, with min and max.
+            if (key == "outOfRange" && path is [.., "attributes", _]) return frame.In(DislContext.GestureChange).Binding(["min", "max"]).As(Mode.Literal);
             // An attribute's read-only reasons (§4.3) are Reasons in the element context.
             if (key == "readOnlyReasons" && path is [.., "attributes", _]) return frame.In(DislContext.Element).As(Mode.Literal);
-            if (key == "display") return frame.In(DislContext.DataTypeDisplay).As(Mode.Literal);
+            // A data type's display (§4.4); a derived attribute that happens to be called display is the derived type's, below.
+            if (key == "display" && path is not [.., "derived", "attributes"]) return frame.In(DislContext.DataTypeDisplay).As(Mode.Literal);
 
             // A derived type (§4.11): from is the derive context, every other expression the deriveItem context.
             if (key == "derived" && path is [.., "types" or "relations", _])
@@ -231,9 +243,9 @@ internal static partial class DislExpressionWalker
             }
 
             // Each member of a derived type's attributes is an Expression of the deriveItem context (§4.11.3).
-            if (path is [.., "derived", "attributes"]) return frame.In(DislContext.DeriveItem).As(Mode.Expression);
-
-            return frame.As(Mode.Literal);
+            return path is [.., "derived", "attributes"]
+                ? frame.In(DislContext.DeriveItem).As(Mode.Expression)
+                : frame.As(Mode.Literal);
         }
 
         private static Frame Persistence(Frame frame, string key, IReadOnlyList<string> path)
@@ -300,7 +312,13 @@ internal static partial class DislExpressionWalker
                     var entry = owner.TryGetProperty("forEach", out _) && key != "forEach"
                         ? frame.Binding(named is null ? ["item", "index"] : [named, "item", "index"])
                         : frame;
-                    return key == "args" ? entry.As(Mode.Expression) : entry;
+                    // A picker's candidates are an Expression, and each row's label sees the candidate as item (§7.3).
+                    return key switch
+                    {
+                        "args" or "candidates" => entry.As(Mode.Expression),
+                        "candidateLabel" => entry.Binding(["item"]),
+                        _ => entry,
+                    };
                 }
                 return frame;
             }
@@ -349,6 +367,21 @@ internal static partial class DislExpressionWalker
             };
         }
 
+        /// <summary>
+        /// A budget's members (§3.2.1): its order and unit Expressions and a <c>cel</c> measure in the budget context - the
+        /// types a <c>count</c> measure names being literal - its notice's text in the chrome context, its finding's message in
+        /// the constraint context and its withheld reason in the element context.
+        /// </summary>
+        private static Frame Budget(Frame frame, string key, IReadOnlyList<string> path) => key switch
+        {
+            "order" or "unit" when path[^1] != "measure" => frame.In(DislContext.Budget).As(Mode.Expression),
+            "measure" => frame.In(DislContext.Budget).As(Mode.Literal),
+            "notice" => frame.In(DislContext.Chrome).As(Mode.Literal),
+            "finding" => frame.In(DislContext.Constraint).As(Mode.Literal),
+            "withhold" => frame.In(DislContext.Element).As(Mode.Literal),
+            _ => frame,
+        };
+
         private static Frame Behavior(Frame frame, string key, IReadOnlyList<string> path)
         {
             if (path.Count == 1)
@@ -364,6 +397,9 @@ internal static partial class DislExpressionWalker
                     _ => frame,
                 };
             }
+
+            // std.notApplicable is worded in the operation context, with operationId bound (§9.1, §12.3).
+            if (key == "std.notApplicable" && path is [_, "messages"]) return frame.In(DislContext.Operation).Binding(["operationId"]);
 
             // An operation whose body is a simulation (§9.3, §9.6): its initial, next and until are
             // Expressions of the simulation context, which binds state and step besides the operation's p.
@@ -425,6 +461,8 @@ internal static partial class DislExpressionWalker
             {
                 "categories" => frame.In(DislContext.Categories).As(Mode.Expression),
                 "snapping" or "snap" => frame.In(DislContext.Snap).As(Mode.Literal),
+                // An axis's outOfRange message works as an attribute's (§5.3, §4.3).
+                "outOfRange" => frame.In(DislContext.GestureChange).Binding(["min", "max"]).As(Mode.Literal),
                 _ => frame
             };
         }

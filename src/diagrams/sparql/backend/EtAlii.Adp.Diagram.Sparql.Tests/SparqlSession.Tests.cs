@@ -14,13 +14,13 @@ namespace EtAlii.Adp.Diagram.Sparql.Tests;
 /// </summary>
 public class SparqlSessionTests : IDisposable
 {
+    private readonly TestFolder _testFolder = TestFolder.Create("sparql-session");
     private readonly string _root;
     private readonly ServiceProvider _provider;
 
     public SparqlSessionTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
         _provider = new ServiceCollection()
             .AddSingleton<IReadOnlyList<DiagramDefinition>>(Diagram.Definitions)
             .AddCommands().AddHierarchyCommandHandlers()
@@ -31,7 +31,7 @@ public class SparqlSessionTests : IDisposable
     public void Dispose()
     {
         _provider.Dispose();
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     private string CopyFixture(string name)
@@ -180,6 +180,34 @@ public class SparqlSessionTests : IDisposable
     }
 
     [Fact]
+    public async Task AStoredPositionNamingNoElement_IsLeftInTheRegistration_AndGivesNoFinding()
+    {
+        // Arrange: a position for a variable the query does not have, beside one it does (Requirement 7.3).
+        var body = CopyFixture("groups.rq");
+        var registration = WriteRegistration("groups.rq");
+        await File.AppendAllTextAsync(registration, "layout:\r\n  var:x: 640 480\r\n  var:nobody: 10 20\r\n", TestContext.Current.CancellationToken);
+        var before = await File.ReadAllTextAsync(registration, TestContext.Current.CancellationToken);
+        var validator = _provider.GetServices<IDiagramValidator>().Single(candidate => candidate.Origin == ServiceCollectionAddSparqlExtension.SparqlOrigin);
+        var text = await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken);
+
+        // Act.
+        await using var session = Open(body, registration);
+        var elements = await session.BaselineElementsAsync(TestContext.Current.CancellationToken);
+        var opened = await File.ReadAllTextAsync(registration, TestContext.Current.CancellationToken);
+        var problems = await validator.ValidateAsync(new DiagramValidationRequest(text, "groups.rq", ProjectRoot.From(_root), body, registration), CancellationToken.None);
+        Assert.Equal("", await session.MoveElementToAsync("var:x", 320, 200, CancellationToken.None));
+
+        // Assert: nothing is drawn for it and nothing reports it, opening rewrites nothing, and a move elsewhere keeps it.
+        Assert.DoesNotContain(elements, element => element.Id == "var:nobody");
+        Assert.Equal(640, Assert.Single(elements, element => element.Id == "var:x").X);
+        Assert.Equal(before, opened);
+        Assert.Empty(problems);
+        var moved = await File.ReadAllTextAsync(registration, TestContext.Current.CancellationToken);
+        Assert.Contains("var:x: 320 200", moved, StringComparison.Ordinal);
+        Assert.Contains("var:nobody: 10 20", moved, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task Repositioning_WritesTheRegistrationAndLeavesTheQueryByteIdentical()
     {
         // Arrange.
@@ -216,17 +244,20 @@ public class SparqlSessionTests : IDisposable
         Assert.Equal(original, await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken));
     }
 
+    // Each surface is one the query holds: the refusal of an element is derived from its type, so an id the model does not
+    // hold is refused by nothing (sparql-disl-fbl, task 8). groups.rq writes no blank node, so the anonymous variable is
+    // taken from constructs.rq, which writes four.
     [Theory]
-    [InlineData("anon:0", "anonymous variable")]
-    [InlineData("edge:var:s|ex:p|var:x|0", "endpoints")]
-    [InlineData("note:where/filter.0", "annotation stays")]
-    [InlineData(SparqlElementMapper.HeaderId, "header band")]
-    [InlineData(SparqlElementMapper.TruncationId, "banner")]
-    public async Task EachUnmovableSurface_RefusesWithItsOwnReason(string elementId, string expected)
+    [InlineData("constructs.rq", "anon:0", "anonymous variable")]
+    [InlineData("groups.rq", "edge:var:s|ex:p|var:x|0", "endpoints")]
+    [InlineData("groups.rq", "note:where/filter.0", "annotation stays")]
+    [InlineData("groups.rq", SparqlElementMapper.HeaderId, "header band")]
+    [InlineData("groups.rq", SparqlElementMapper.TruncationId, "banner")]
+    public async Task EachUnmovableSurface_RefusesWithItsOwnReason(string fixture, string elementId, string expected)
     {
         // Arrange.
-        var body = CopyFixture("groups.rq");
-        await using var session = Open(body, WriteRegistration("groups.rq"));
+        var body = CopyFixture(fixture);
+        await using var session = Open(body, WriteRegistration(fixture));
 
         // Act.
         var refusal = await session.MoveElementToAsync(elementId, 10, 10, CancellationToken.None);

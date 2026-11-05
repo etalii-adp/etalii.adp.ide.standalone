@@ -83,7 +83,7 @@ public sealed class PipelineBody : ITextBody<PipelineBody>
     public DislModel Disl => _disl.Of(_body.Bytes, () => DislModelBuilder.From(_body.Model, PipelineDefinition.Specification));
 
     /// <summary>The edit <see cref="Write"/> or <see cref="Restore"/> applied last, its offsets in the bytes before it; null before either.</summary>
-    public Edit? LastEdit { get; private set; }
+    public SpliceEdit? LastEdit { get; private set; }
 
     /// <summary>
     /// What the store keeps of the body: its model, or, for a body that is not YAML, the empty model, the
@@ -154,7 +154,7 @@ public sealed class PipelineBody : ITextBody<PipelineBody>
     /// the others are applied.
     /// </remarks>
     /// <returns>The one edit applied, empty when nothing changed.</returns>
-    public Edit Batch(Action writes)
+    public SpliceEdit Batch(Action writes)
     {
         ArgumentNullException.ThrowIfNull(writes);
         if (_batch is not null) throw new InvalidOperationException("A batch is already open on this body.");
@@ -173,7 +173,7 @@ public sealed class PipelineBody : ITextBody<PipelineBody>
             _batch = null;
         }
 
-        var edit = new Edit(planned.Splices);
+        var edit = new SpliceEdit(planned.Splices);
         _body.Apply(edit);
         Remember();
         return edit;
@@ -204,7 +204,7 @@ public sealed class PipelineBody : ITextBody<PipelineBody>
         var splices = planner.Splices;
         if (splices.Count == 0) return EditOutcome.Unchanged;
 
-        var edit = new Edit(splices);
+        var edit = new SpliceEdit(splices);
         _body.Apply(edit);
         LastEdit = edit;
         Remember();
@@ -215,7 +215,7 @@ public sealed class PipelineBody : ITextBody<PipelineBody>
     public void Restore(IReadOnlyList<Splice> splices)
     {
         ArgumentNullException.ThrowIfNull(splices);
-        var edit = new Edit(splices);
+        var edit = new SpliceEdit(splices);
         _body.Apply(edit);
         LastEdit = edit;
         Remember();

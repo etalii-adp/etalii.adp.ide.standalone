@@ -1,0 +1,100 @@
+using EtAlii.Adp.Designer;
+using EtAlii.Adp.Diagram;
+using EtAlii.Adp.Diagram.Tests.Support;
+using EtAlii.Adp.Editor;
+using EtAlii.Adp.Hierarchy;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace EtAlii.Adp.History.Tests.Support;
+
+/// <summary>
+/// A real <see cref="IHistoryStackStore"/> over the real dispatcher and the real handlers,
+/// built from the same <c>AddCommands</c> the host uses.
+/// </summary>
+/// <remarks>
+/// Deliberately not a stub. A context action provider's job is now to raise the right command
+/// rather than to change anything itself, and a stub that records commands would let a
+/// provider raise one no handler can carry out and still pass. Running the actual pipeline
+/// keeps these tests checking what the user would get, and it is what lets them assert that
+/// an action can be undone.
+/// </remarks>
+public static class TestHistory
+{
+    /// <summary>
+    /// The per-project store a provider now takes. A test hands this to the provider and
+    /// reaches the stack it asserts on through <see cref="IHistoryStackStore.Get"/> with the
+    /// same root path it put on its targets, so the two see the same history.
+    /// </summary>
+    private static IHistoryStackStore CreateStore(params DiagramDefinition[] definitions) =>
+        Services(definitions).GetRequiredService<IHistoryStackStore>();
+
+    /// <summary>
+    /// The stack for a single project, for a test that only ever works within one root: it
+    /// gets the store's stack for <paramref name="rootPath"/> and asserts undo/redo on it
+    /// directly, while the provider it drives reaches the same stack through the store.
+    /// </summary>
+    public static IHistoryStack Create(string rootPath, out IHistoryStackStore store, params DiagramDefinition[] definitions)
+    {
+        store = CreateStore(definitions);
+        return store.Get(ProjectRoot.From(rootPath));
+    }
+
+    /// <summary>
+    /// The stack for a single project in a host that has designer types: the handlers are
+    /// then told which tool serves a file, as the real host tells them.
+    /// </summary>
+    public static IHistoryStack Create(string rootPath, out IHistoryStackStore store, IReadOnlyList<DesignerDefinition> designers)
+    {
+        store = new ServiceCollection()
+            .AddSingleton<IDiagramDefinitionCatalog>(new TestDiagramDefinitionCatalog())
+            .AddSingleton<IDesignerDefinitionCatalog>(new DesignerDefinitionCatalog { All = designers })
+            .AddSingleton<DiagramFileRouter>()
+            .AddSingleton<DesignerFileRouter>()
+            .AddSingleton(new EditorResolver(new EditorDefinitionCatalog { All = [] }))
+            .AddSingleton<ToolRouter>()
+            .AddCommands().AddHierarchyCommandHandlers()
+            .BuildServiceProvider()
+            .GetRequiredService<IHistoryStackStore>();
+        return store.Get(ProjectRoot.From(rootPath));
+    }
+
+    /// <summary>
+    /// The per-project store of a host whose command pipeline is the real one, with the
+    /// registrations <paramref name="configure"/> adds: <c>TestHistory.For(s => s.AddTimeline())</c>
+    /// gives a module test the dispatcher the host builds, so a command with no handler fails
+    /// here as it would in the application. A test that drives a store it holds registers that
+    /// store after the module's registrations, so it is the one resolved whether the module adds
+    /// its own with TryAdd or with Add.
+    /// </summary>
+    public static IHistoryStackStore For(Action<IServiceCollection> configure) =>
+        Pipeline(configure).GetRequiredService<IHistoryStackStore>();
+
+    /// <summary>
+    /// The dispatcher of the same pipeline as <see cref="For"/>, for a test that runs a command
+    /// once without a history, or hands a dispatcher to a history it builds itself.
+    /// </summary>
+    public static ICommandDispatcher Dispatcher(Action<IServiceCollection> configure) =>
+        Pipeline(configure).GetRequiredService<ICommandDispatcher>();
+
+    private static ServiceProvider Pipeline(Action<IServiceCollection> configure)
+    {
+        ArgumentNullException.ThrowIfNull(configure);
+        var services = new ServiceCollection()
+            .AddSingleton<IDiagramDefinitionCatalog>(new TestDiagramDefinitionCatalog());
+        configure(services);
+        return services
+            .AddCommands().AddHierarchyCommandHandlers()
+            .BuildServiceProvider();
+    }
+
+    /// <summary>
+    /// The handlers ask the catalog whether a file is a diagram's registration file with a
+    /// body sibling; a test that cares hands in the definitions it wants known, and one that
+    /// does not gets an empty catalog rather than the process-wide cache.
+    /// </summary>
+    private static ServiceProvider Services(DiagramDefinition[] definitions) => new ServiceCollection()
+        .AddSingleton<IDiagramDefinitionCatalog>(new TestDiagramDefinitionCatalog(definitions))
+        .AddCommands().AddHierarchyCommandHandlers()
+        .BuildServiceProvider();
+
+}

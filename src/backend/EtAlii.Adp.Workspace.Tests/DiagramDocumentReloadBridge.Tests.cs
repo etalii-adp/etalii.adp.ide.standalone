@@ -18,22 +18,19 @@ public class DiagramDocumentReloadBridgeTests : IDisposable
     private static readonly TimeSpan _arrival = TimeSpan.FromSeconds(10);
     private static readonly TimeSpan _silence = TimeSpan.FromMilliseconds(300);
 
+    private readonly TestFolder _testFolder = TestFolder.Create("reload-bridge");
     private readonly string _root;
     private readonly ProjectFileEvents _events = new();
 
     public DiagramDocumentReloadBridgeTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
     }
 
     public void Dispose()
     {
         _events.Dispose();
-        if (Directory.Exists(_root))
-        {
-            Directory.Delete(_root, recursive: true);
-        }
+        _testFolder.Dispose();
     }
 
     /// <summary>Records every reload and every deletion it is told of, for the test to await.</summary>

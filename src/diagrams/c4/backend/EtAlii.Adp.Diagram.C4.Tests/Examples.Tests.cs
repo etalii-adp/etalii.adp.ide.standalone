@@ -34,7 +34,7 @@ public class ExamplesTests
     private static string[] ModelsOf(string project) =>
         Directory.GetFiles(IoPath.Combine(ExamplesRoot, project), "*.dsl", SearchOption.AllDirectories);
 
-    private static C4Workspace Read(string dslPath) => C4Parser.Parse(LineDocument.Parse(File.ReadAllText(dslPath)));
+    private static C4Workspace Read(string dslPath) => C4Body.Read(File.ReadAllText(dslPath)).Workspace;
 
     [Theory]
     [MemberData(nameof(EveryProject))]
@@ -61,7 +61,7 @@ public class ExamplesTests
 
         // Assert.
         Assert.Equal(text, document.Text);
-        Assert.NotEmpty(C4Parser.Parse(document).Elements);
+        Assert.NotEmpty(C4Body.Read(document.Text).Workspace.Elements);
     }
 
     [Theory]

@@ -145,18 +145,17 @@ public class RoutingTests
     }
 }
 
-/// <summary>A folder under the system's temporary folder, deleted when disposed.</summary>
+/// <summary>
+/// A <see cref="TestFolder"/> that can also hold links, deleted when disposed: the links that
+/// are junctions first, since a recursive delete refuses them.
+/// </summary>
 internal sealed class TemporaryFolder : IDisposable
 {
-    public TemporaryFolder()
-    {
-        Path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "fbl-" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(Path);
-    }
+    private readonly TestFolder _folder = TestFolder.Create("fbl");
 
     private readonly List<string> _junctions = [];
 
-    public string Path { get; }
+    public string Path => _folder.Path;
 
     public string Write(string relative, string text)
     {
@@ -206,6 +205,6 @@ internal sealed class TemporaryFolder : IDisposable
             Directory.Delete(junction);
         }
 
-        if (Directory.Exists(Path)) Directory.Delete(Path, recursive: true);
+        _folder.Dispose();
     }
 }

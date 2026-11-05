@@ -15,6 +15,7 @@ namespace EtAlii.Adp.Diagram.CausalLoopDiagram.Tests;
 /// </summary>
 public class CausalLoopSessionTests : IDisposable
 {
+    private readonly TestFolder _testFolder = TestFolder.Create("causal-loop-session");
     private readonly string _root;
     private readonly string _bodyPath;
     private readonly string _registrationPath;
@@ -33,8 +34,7 @@ public class CausalLoopSessionTests : IDisposable
 
     public CausalLoopSessionTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
         _bodyPath = IoPath.Combine(_root, "feedback.cld");
         _registrationPath = IoPath.Combine(_root, "feedback.adp");
         File.WriteAllText(_bodyPath, Corpus);
@@ -46,7 +46,7 @@ public class CausalLoopSessionTests : IDisposable
     public void Dispose()
     {
         _provider.Dispose();
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
         GC.SuppressFinalize(this);
     }
 

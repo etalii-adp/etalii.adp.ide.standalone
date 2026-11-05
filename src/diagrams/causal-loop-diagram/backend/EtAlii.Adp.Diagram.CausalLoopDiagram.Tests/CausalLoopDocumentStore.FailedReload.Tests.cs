@@ -23,13 +23,14 @@ public class CausalLoopDocumentStoreFailedReloadTests : IDisposable
         + "variable b \"Beta\"\r\n"
         + "link a -> b +\r\n";
 
-    private readonly string _workspace = IoPath.Combine(IoPath.GetTempPath(), "adp-causal-loop-failed-reload-" + Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-causal-loop-failed-reload");
+    private readonly string _workspace;
 
-    public CausalLoopDocumentStoreFailedReloadTests() => Directory.CreateDirectory(_workspace);
+    public CausalLoopDocumentStoreFailedReloadTests() => _workspace = _testFolder.Path;
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_workspace);
+        _testFolder.Dispose();
         GC.SuppressFinalize(this);
     }
 

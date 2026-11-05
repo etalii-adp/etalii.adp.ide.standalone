@@ -123,6 +123,8 @@ internal static class HandWrittenCausalLoop
             [
                 new ContextPropertyDefinition(CausalLoopContextPropertyProvider.VariableLabelProperty, "Label", variable.Label, Group: IdentityGroup),
                 new ContextPropertyDefinition(CausalLoopContextPropertyProvider.VariableIdProperty, "Identifier", variable.Id, Group: IdentityGroup),
+                new ContextPropertyDefinition(CausalLoopContextPropertyProvider.VariableStartProperty, "Starting level", WordOf(entry.Document.Text, variable.Id, "start") ?? "0.5", Group: "Flow page"),
+                new ContextPropertyDefinition(CausalLoopContextPropertyProvider.VariablePushProperty, "Outside push", WordOf(entry.Document.Text, variable.Id, "push") ?? "0", Group: "Flow page"),
             ];
         }
 
@@ -350,6 +352,14 @@ internal static class HandWrittenCausalLoop
         };
     }
 
+    /// <summary>The value of the word <paramref name="key"/> on the line that declares <paramref name="variable"/>; null for none.</summary>
+    private static string? WordOf(string text, string variable, string key) =>
+        text.Split('\n')
+            .Select(line => line.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries))
+            .Where(words => words is ["variable", var name, ..] && name == variable)
+            .SelectMany(words => words)
+            .FirstOrDefault(word => word.StartsWith(key + "=", StringComparison.Ordinal))?[(key.Length + 1)..];
+
     /// <summary>What setting <paramref name="propertyId"/> to <paramref name="value"/> on <paramref name="elementId"/> was, as <c>Change</c> answered it.</summary>
     public static DiagramPropertyChange Change(CausalLoopModel model, string body, string elementId, string propertyId, string value)
     {
@@ -358,7 +368,7 @@ internal static class HandWrittenCausalLoop
         if (propertyId == CausalLoopContextPropertyProvider.LinkWeightProperty && ParseWeight(value) is null && value.Trim().Length > 0)
         {
             return DiagramPropertyChange.Refused(
-                $"'{value}' is not a number. A weight is an annotation this diagram records and never evaluates; leave it empty to remove it.");
+                $"'{value}' is not a number. A weight is this link's starting strength in a flow page; leave it empty to remove it.");
         }
 
         if (propertyId == CausalLoopContextPropertyProvider.LinkPolarityProperty && ParsePolarity(value) is null)

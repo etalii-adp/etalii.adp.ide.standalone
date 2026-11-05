@@ -1,6 +1,6 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Files;
-using EtAlii.Adp.History;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.AgentBehaviorModelling.Tests;
@@ -26,9 +26,9 @@ public sealed class AbmProvidersTests : IDisposable
     private ContextTarget Target(string body, ToolOrigin? origin) =>
         ContextTarget.ForElement(body, "1.1", ProjectRoot.From(_folder.Path), origin: origin);
 
-    private AbmContextActionProvider Actions => new(new HistoryStackStore(new AbmTestDispatcher(_store)), _store);
+    private AbmContextActionProvider Actions => new(TestHistory.For(s => { s.AddAgentBehaviorModelling(); s.AddSingleton<IAbmDocumentStore>(_store); }), _store);
 
-    private AbmContextPropertyProvider Properties => new(new HistoryStackStore(new AbmTestDispatcher(_store)), _store);
+    private AbmContextPropertyProvider Properties => new(TestHistory.For(s => { s.AddAgentBehaviorModelling(); s.AddSingleton<IAbmDocumentStore>(_store); }), _store);
 
     [Fact]
     public async Task ANodeOfABehaviorModel_HasItsMenuAndItsRows()

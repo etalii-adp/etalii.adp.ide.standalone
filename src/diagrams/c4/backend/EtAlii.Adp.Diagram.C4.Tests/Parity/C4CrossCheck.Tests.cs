@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Specification.Fbl;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.C4.Tests.Parity;
@@ -12,23 +13,27 @@ namespace EtAlii.Adp.Diagram.C4.Tests.Parity;
 /// </summary>
 public partial class C4CrossCheckTests
 {
-    /// <summary>The C4 kinds the binding has rules for; the others (components, deployment) it does not read.</summary>
-    private static readonly IReadOnlyDictionary<C4ElementKind, string> _types = new Dictionary<C4ElementKind, string>
-    {
-        [C4ElementKind.Person] = "Person",
-        [C4ElementKind.SoftwareSystem] = "SoftwareSystem",
-        [C4ElementKind.Container] = "Container",
-    };
-
     public static TheoryData<string> Files() => ModuleCrossCheck.Files("structurizr");
 
+    /// <summary>
+    /// Reads every file through the vendored binding and through the module. The binding reads all eight kinds under the
+    /// module's type names, and a relationship as an element of its own whose ends are its <c>from</c> and <c>to</c>
+    /// (FBL 0.11); the workspace, a view's statements and a dynamic view's interactions are no element of the module.
+    /// </summary>
     [Theory]
     [MemberData(nameof(Files))]
     public void TheBindingReadsTheIdsTheModuleReads(string file) =>
-        ModuleCrossCheck.Check("structurizr", file, element => element.IsRelation ? $"{element.Source}->{element.Target}" : element.IdIsStored ? element.Id : null, Module);
+        ModuleCrossCheck.Check("structurizr", file, IdOf, Module);
+
+    private static string? IdOf(FblElement element) => element.Type switch
+    {
+        "Relationship" => $"{element.Attributes.GetValueOrDefault("from")}->{element.Attributes.GetValueOrDefault("to")}",
+        "Workspace" or "ViewInclude" or "Interaction" => null,
+        _ => element.IdIsStored ? element.Id : null,
+    };
 
     /// <summary>The ids C4Parser makes for an element without an identifier: kind, name slug, counter.</summary>
-    [GeneratedRegex("^(person|softwaresystem|container)_[A-Za-z0-9]+_[0-9]+$", RegexOptions.CultureInvariant)]
+    [GeneratedRegex("^(person|softwaresystem|container|component|deploymentnode|infrastructurenode|containerinstance|softwaresysteminstance)_[A-Za-z0-9]+_[0-9]+$", RegexOptions.CultureInvariant)]
     private static partial Regex GeneratedId();
 
     private static IReadOnlyDictionary<string, SortedSet<string>> Module(string text)
@@ -37,7 +42,7 @@ public partial class C4CrossCheckTests
         var workspace = C4Parser.Parse(LineDocument.Parse(text));
         foreach (var element in workspace.Elements)
         {
-            if (_types.TryGetValue(element.Kind, out var type) && !GeneratedId().IsMatch(element.Id)) ModuleCrossCheck.Add(ids, type, element.Id);
+            if (!GeneratedId().IsMatch(element.Id)) ModuleCrossCheck.Add(ids, element.Kind.ToString(), element.Id);
         }
         foreach (var relationship in workspace.Relationships) ModuleCrossCheck.Add(ids, "Relationship", $"{relationship.SourceId}->{relationship.DestinationId}");
         return ids;

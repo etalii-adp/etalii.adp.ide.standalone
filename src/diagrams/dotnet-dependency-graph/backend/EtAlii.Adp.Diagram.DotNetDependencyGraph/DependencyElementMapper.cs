@@ -1,4 +1,5 @@
 using Google.Protobuf;
+using JetBrains.Annotations;
 
 namespace EtAlii.Adp.Diagram.DotNetDependencyGraph;
 
@@ -23,8 +24,11 @@ namespace EtAlii.Adp.Diagram.DotNetDependencyGraph;
 public sealed class DependencyElementMapper
 {
     /// <summary>The mime-style element kinds this type puts on the wire.</summary>
+    [UsedImplicitly] // Read only by reflection, into the cross-tier element-types fixture.
     public const string ProjectType = "dotnet/dependency-graph+project";
+    [UsedImplicitly] // Read only by reflection, into the cross-tier element-types fixture.
     public const string PackageType = "dotnet/dependency-graph+package";
+    [Relation]
     public const string EdgeType = "dotnet/dependency-graph+edge";
 
     private static readonly string PayloadTypeUrl =

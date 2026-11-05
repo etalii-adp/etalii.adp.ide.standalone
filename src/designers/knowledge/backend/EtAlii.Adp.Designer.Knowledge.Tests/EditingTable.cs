@@ -63,6 +63,15 @@ internal sealed class EditingTable : IAsyncDisposable
 
     public byte[] Bytes() => File.ReadAllBytes(Path);
 
+    /// <summary>The settings of the column <paramref name="id"/>, as the session shows them now.</summary>
+    public IReadOnlyDictionary<string, string> ColumnSettings(string id) => Session.Baseline().Columns.Single(column => column.Id == id).Settings;
+
+    /// <summary>The settings of the column called <paramref name="name"/>, as the session shows them now.</summary>
+    public IReadOnlyDictionary<string, string> ColumnSettingsNamed(string name) => Session.Baseline().Columns.Single(column => column.Name == name).Settings;
+
+    /// <summary>The ids of the rows shown now, in order, leaving out group headers and the new-row line.</summary>
+    public IReadOnlyList<string> ShownRowIds() => [.. Lines().Where(line => line.Id.Length > 0).Select(line => line.Id)];
+
     /// <summary>The table's lines as the session shows them now, all of them.</summary>
     public IReadOnlyList<TableRow> Lines()
     {

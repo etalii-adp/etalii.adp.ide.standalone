@@ -32,14 +32,15 @@ public class MindmapDocumentStoreFailedSaveTests : IDisposable
         </map>
         """;
 
-    private readonly string _root = IoPath.Combine(IoPath.GetTempPath(), "adp-mindmap-failed-save-" + Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-mindmap-failed-save");
+    private readonly string _root;
     private readonly MindmapDocumentStore _store = new(new FileWriter());
 
-    public MindmapDocumentStoreFailedSaveTests() => Directory.CreateDirectory(_root);
+    public MindmapDocumentStoreFailedSaveTests() => _root = _testFolder.Path;
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
 
         GC.SuppressFinalize(this);
     }

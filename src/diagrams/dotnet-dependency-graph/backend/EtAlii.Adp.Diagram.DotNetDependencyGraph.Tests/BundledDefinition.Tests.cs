@@ -1,5 +1,4 @@
 using System.Reflection;
-using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using EtAlii.Adp.Specification.Disl;
 using Xunit;
@@ -10,60 +9,20 @@ namespace EtAlii.Adp.Diagram.DotNetDependencyGraph.Tests;
 /// The DISL definition bundled from etalii-adp/etalii.adp is the bytes its provenance says it is,
 /// and it loads.
 /// </summary>
-/// <remarks>
-/// <b>The hash is computed over the embedded resource</b>, the bytes the module will load, not over the
-/// file on disk - so a build that embedded a stale or rewritten copy fails here too. Re-bundle with
-/// <c>src/diagrams/tools/bundle-disl.sh dotnet-dependency-graph &lt;etalii.adp checkout&gt;</c>, never by hand.
-/// </remarks>
-public sealed partial class BundledDefinitionTests
+public sealed class BundledDefinitionTests : BundledDefinitionContract<BundledDefinitionTests>, IBundledDefinitions
 {
-    private static readonly Assembly _module = typeof(Diagram).Assembly;
+    public static Assembly Module => typeof(Diagram).Assembly;
 
-    [GeneratedRegex("^[0-9a-f]{40}$")]
-    private static partial Regex FullRevision();
+    public static string ModuleFolder => "dotnet-dependency-graph";
 
-    /// <summary>The sha256 in provenance.json is the sha256 of the embedded <c>.dis</c> bytes.</summary>
-    [Fact]
-    public void TheBundledDefinition_HashesToItsProvenance()
-    {
-        var provenance = _module.ResourceJson("dotnet-dependency-graph.provenance.json");
-
-        var actual = Convert.ToHexStringLower(SHA256.HashData(_module.ResourceBytes("dotnet-dependency-graph.dis")));
-
-        Assert.Equal(provenance.GetProperty("sha256").GetString(), actual);
-    }
-
-    /// <summary>The provenance names the upstream file and a full 40-hex revision, never a short or symbolic one.</summary>
-    [Fact]
-    public void TheProvenance_NamesAFullRevisionOfTheUpstreamFile()
-    {
-        var provenance = _module.ResourceJson("dotnet-dependency-graph.provenance.json");
-
-        Assert.Equal("etalii-adp/etalii.adp", provenance.GetProperty("repository").GetString());
-        Assert.Equal("definitions/diagrams/dotnet-dependency-graph.dis", provenance.GetProperty("path").GetString());
-        Assert.Matches(FullRevision(), provenance.GetProperty("revision").GetString()!);
-    }
-
-    /// <summary>The bundled definition is this module's: its language id, and its origin, title and icon equal the catalog's.</summary>
-    [Fact]
-    public void TheBundledDefinition_IsThisModulesLanguage()
-    {
-        var language = _module.ResourceJson("dotnet-dependency-graph.dis").GetProperty("language");
-
-        Assert.Equal("net.etalii.adp.dotnet.dependency-graph", language.GetProperty("id").GetString());
-        Assert.Equal(Diagram.DependencyGraph.Origin.Key, language.GetProperty("origin").GetString());
-        Assert.Equal(Diagram.DependencyGraph.Title, language.GetProperty("label").GetString());
-        Assert.Equal(Diagram.DependencyGraph.Icon, language.GetProperty("icon").GetString());
-    }
-
-    /// <summary>The runtime loads the definition with no error and no warning, so nothing in it is silently not read.</summary>
-    [Fact]
-    public void TheBundledDefinition_LoadsWithoutDiagnostics()
-    {
-        var loaded = BundledDefinition.Load(_module, "dotnet-dependency-graph.dis");
-
-        Assert.Empty(loaded.Diagnostics);
-    }
+    public static IReadOnlyList<BundledDefinitionExpectation> Definitions { get; } =
+    [
+        new("dotnet-dependency-graph", Diagram.DependencyGraph.Origin.Key, "net.etalii.adp.dotnet.dependency-graph")
+        {
+            Title = Diagram.DependencyGraph.Title,
+            Icon = Diagram.DependencyGraph.Icon,
+        },
+    ];
 
     /// <summary>
     /// Persistence is the module's FBL binding, without the <c>files</c> DISL 11.2 forbids beside it (finding A1), and
@@ -73,7 +32,7 @@ public sealed partial class BundledDefinitionTests
     public void ThePersistence_IsFbl_WithoutFiles_AndAPatternThatAdmitsTodaysIds()
     {
         // Arrange.
-        var persistence = _module.ResourceJson("dotnet-dependency-graph.dis").GetProperty("persistence");
+        var persistence = Module.ResourceJson("dotnet-dependency-graph.dis").GetProperty("persistence");
         var project = "project:src/Pipeline.Core/Pipeline.Core.csproj";
         var reference = $"depends:{project}->project:{new string('a', 200)}/Deep.csproj";
 
@@ -97,7 +56,7 @@ public sealed partial class BundledDefinitionTests
     public void TheRevealProjectFileOperation_HandsBackThePluginWithItsArguments()
     {
         // Arrange.
-        var specification = BundledDefinition.Load(_module, "dotnet-dependency-graph.dis").Specification;
+        var specification = BundledDefinition.Load(Module, "dotnet-dependency-graph.dis").Specification;
         var diagram = new DislDiagram(specification);
         var project = diagram.AddNode("Project", "p", new Dictionary<string, object?> { ["name"] = "App", ["path"] = "src/App/App.csproj" });
 

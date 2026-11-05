@@ -138,7 +138,7 @@ public static class ShaclProperties
         // The gate, not the projection: the same decision the menu asks, so a blank-rooted or
         // truncated selection is refused here exactly as it is refused everywhere else.
         var decision = ShaclEditGate.For(entry.Model, target.ElementId, RdfSelection.IsTruncated(entry));
-        return decision is { Applies: true, Available: true } && decision.ShapeIri.Length > 0
+        return decision is { Applies: true, Available: true, ShapeIri.Length: > 0 }
             ? new SetShaclLiteralCommand(target.ResolvedFullPath, decision.ShapeIri, predicateIri, value)
             : null;
     }

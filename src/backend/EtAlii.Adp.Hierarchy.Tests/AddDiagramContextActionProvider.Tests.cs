@@ -13,6 +13,7 @@ public class AddDiagramContextActionProviderTests : IDisposable
     private static readonly DiagramDefinition SystemContext = new(new ToolOrigin("c4", "context"), "System Context");
     private static readonly DiagramDefinition ClassDiagram = new(new ToolOrigin("uml", "class"), "Class diagram");
 
+    private readonly TestFolder _testFolder = TestFolder.Create("add-diagram");
     private readonly string _root;
     private static readonly DiagramDocumentFactories NoFactories = new([]);
     private readonly IHistoryStackStore _historyStacks;
@@ -21,8 +22,7 @@ public class AddDiagramContextActionProviderTests : IDisposable
 
     public AddDiagramContextActionProviderTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
         _history = TestHistory.Create(_root, out _historyStacks);
         var catalog = new DiagramDefinitionCatalog { All = [SystemContext, ClassDiagram] };
         _provider = new AddDiagramContextActionProvider(_historyStacks, NoFactories, catalog, new DiagramFileRouter(catalog));
@@ -30,7 +30,7 @@ public class AddDiagramContextActionProviderTests : IDisposable
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     private ContextTarget FolderTarget(string path) => new(ContextScope.Hierarchy, path, IsContainer: true, ShortGuid.NewShortGuid(), Root: ProjectRoot.From(_root));

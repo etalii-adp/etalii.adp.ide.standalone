@@ -14,13 +14,16 @@ public sealed class WatchedTreeTests : IDisposable
     private static readonly TimeSpan Patience = TimeSpan.FromSeconds(10);
     private static readonly TimeSpan Silence = TimeSpan.FromMilliseconds(300);
 
-    private readonly string _root = Directory.CreateTempSubdirectory("adp-watched-tree-").FullName;
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-watched-tree");
+    private readonly string _root;
     private readonly ProjectFileEvents _events = new();
+
+    public WatchedTreeTests() => _root = _testFolder.Path;
 
     public void Dispose()
     {
         _events.Dispose();
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     [Fact]

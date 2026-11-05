@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Layout;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
@@ -53,7 +52,7 @@ public class C4LayoutCrowdingTests
         dsl.AppendLine("    }");
         dsl.AppendLine("}");
 
-        return C4Parser.Parse(LineDocument.Parse(dsl.ToString()));
+        return C4Body.Read(dsl.ToString()).Workspace;
     }
 
     /// <summary>
@@ -177,7 +176,7 @@ public class C4LayoutCrowdingTests
     /// pairwise nudging. Real rank structure did.
     /// </remarks>
     private static C4Workspace TheModelThatBrokeIt() =>
-        C4Parser.Parse(LineDocument.Parse(File.ReadAllText(IoPath.Combine("Fixtures", "crowded-component-view.dsl"))));
+        C4Body.Read(File.ReadAllText(IoPath.Combine("Fixtures", "crowded-component-view.dsl"))).Workspace;
 
     [Fact]
     public void OnTheModelThisWasFoundOn_NothingIsDrawnOnAnythingElse()

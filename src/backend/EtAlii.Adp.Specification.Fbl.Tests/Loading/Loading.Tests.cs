@@ -2,7 +2,6 @@ using System.Text;
 using EtAlii.Adp.Specification.Fbl.Documents;
 using EtAlii.Adp.Specification.Fbl.Expressions;
 using EtAlii.Adp.Specification.Fbl.Tests.Routing;
-using EtAlii.Adp.Specification.Fbl.Tests.Support;
 using EtAlii.Adp.Specification.Json;
 using Xunit;
 
@@ -54,15 +53,18 @@ public class LoadingTests
         Assert.Contains(problems, p => p is { Severity: LoadSeverity.Error, Pointer: "/fbl" });
     }
 
+    /// <summary>The library reads FBL up to 0.9 (etalii.adp spec 072, Requirement 2.1), so 0.10 is the newer minor that warns.</summary>
     [Fact]
     public void ANewerMinorVersionLoadsWithAWarning()
     {
         // Act.
-        var problems = FblDocumentLoader.Load(Encoding.UTF8.GetBytes($$"""{ "fbl": "0.6", "bindings": { "t": {{Binding()}} } }"""), out var document);
+        var problems = FblDocumentLoader.Load(Encoding.UTF8.GetBytes($$"""{ "fbl": "0.10", "bindings": { "t": {{Binding()}} } }"""), out var document);
 
         // Assert.
         Assert.NotNull(document);
-        Assert.Equal(LoadSeverity.Warning, Assert.Single(problems).Severity);
+        var warning = Assert.Single(problems);
+        Assert.Equal(LoadSeverity.Warning, warning.Severity);
+        Assert.Equal("This runtime knows FBL up to 0.9; what FBL 0.10 adds is not read (FBL §2.7).", warning.Message);
     }
 
     [Theory]
@@ -109,6 +111,8 @@ public class LoadingTests
     [Theory]
     [InlineData("0.2")]
     [InlineData("0.5")]
+    [InlineData("0.8")] // etalii.adp spec 072, Requirement 2.1: the library reads FBL 0.8 and 0.9 in full.
+    [InlineData("0.9")]
     public void AVersionThisLibraryKnowsLoadsWithoutAWarning(string version)
     {
         // Act.
@@ -413,10 +417,73 @@ public class LoadingTests
         Assert.Equal("0.2", helmVersion);
         Assert.Equal("Helm chart", helm.Title);
         Assert.Empty(helm.Claims.Suggest);
-        Assert.Equal(["person", "softwareSystem", "container"], structurizr.AllRules.Where(r => r.Opens).Select(r => r.Name));
+        Assert.Equal(["softwareSystem", "container", "component", "deploymentNode"], structurizr.AllRules.Where(r => r.Opens).Select(r => r.Name));
         Assert.Equal(["language"], turtle.Registration.Headers);
         Assert.False(helm.Registration.CreateOnFirstPlacement);
         Assert.False(timeline.Registration.CreateOnFirstPlacement);
+    }
+
+    /// <summary>
+    /// FBL 0.8 §14.1 step 6 for an insert's <c>constant</c> (etalii.adp spec 033): it is given only in the yaml and
+    /// json families and never beside <c>emit</c>, its values are scalars, and its key is not one that the same rule
+    /// writes: a writable attribute binding, <c>id.from</c>, or a relation's <c>source</c> or <c>target</c>.
+    /// </summary>
+    [Theory]
+    [InlineData("yaml", """{ "name": "item", "type": "Item", "at": "/items/*", "id": { "from": { "key": "id" } }, "attributes": { "kind": { "key": "type" } }, "insert": { "place": "end", "container": "/items", "constant": { "type": "task" } } }""", "/bindings/t/elements/0/insert/constant/type")]
+    [InlineData("json", """{ "name": "item", "type": "Item", "at": "/items/*", "id": { "from": { "key": "type" } }, "insert": { "place": "end", "container": "/items", "constant": { "type": "task" } } }""", "/bindings/t/elements/0/insert/constant/type")]
+    [InlineData("yaml", """{ "name": "item", "type": "Item", "at": "/items/*", "id": { "from": { "key": "id" } }, "insert": { "place": "end", "container": "/items", "emit": "- id: {id}", "constant": { "type": "task" } } }""", "/bindings/t/elements/0/insert/constant")]
+    [InlineData("lines", """{ "name": "item", "type": "Item", "line": "^(?<id>.*)$", "id": { "from": { "group": "id" } }, "insert": { "place": "end", "emit": "{id}", "constant": { "type": "task" } } }""", "/bindings/t/elements/0/insert/constant")]
+    [InlineData("xml", """{ "name": "item", "type": "Item", "at": "/items/item", "id": { "from": { "attribute": "id" } }, "insert": { "place": "end", "container": "/items", "constant": { "type": "task" } } }""", "/bindings/t/elements/0/insert/constant")]
+    [InlineData("yaml", """{ "name": "item", "type": "Item", "at": "/items/*", "id": { "from": { "key": "id" } }, "insert": { "place": "end", "container": "/items", "constant": { "type": ["task"] } } }""", "/bindings/t/elements/0/insert/constant/type")]
+    public void AnInsertConstantIsRefusedWhereFbl08Step6ForbidsIt(string family, string element, string pointer)
+    {
+        // Arrange.
+        var binding = $$"""{ "claims": { "extensions": [".t"] }, "body": { "kind": "file", "family": "{{family}}" }, "reader": "declared", "elements": [{{element}}] }""";
+
+        // Act.
+        var problems = Load(binding, "0.8");
+
+        // Assert.
+        Assert.Contains(problems, p => p.Severity == LoadSeverity.Error && p.Pointer == pointer);
+    }
+
+    [Theory]
+    [InlineData("source")]
+    [InlineData("target")]
+    public void AnInsertConstantOnARelationEndsKeyIsRefused(string end)
+    {
+        // Arrange.
+        var relation = $$"""{ "name": "link", "type": "Link", "at": "/links/*", "source": { "key": "from", "reference": { "to": ["item"] } }, "target": { "key": "to", "reference": { "to": ["item"] } }, "insert": { "place": "end", "container": "/links", "constant": { "{{(end == "source" ? "from" : "to")}}": "a" } } }""";
+
+        // Act.
+        var problems = Load(Binding(extra: $", \"relations\": [{relation}]"), "0.8");
+
+        // Assert.
+        Assert.Contains(problems, p => p.Severity == LoadSeverity.Error && p.Pointer == "/bindings/t/relations/0/insert/constant/" + (end == "source" ? "from" : "to"));
+    }
+
+    [Fact]
+    public void AnInsertConstantOnAKeyARuleOnlyReadsIsAccepted()
+    {
+        // Arrange: the attribute is read-only, so the constant is the key's one writer.
+        var element = """{ "name": "item", "type": "Item", "at": "/items/*", "id": { "from": { "key": "id" } }, "attributes": { "kind": { "key": "type", "readOnly": true } }, "insert": { "place": "end", "container": "/items", "keys": ["id", "type"], "constant": { "type": "task", "size": 3, "done": false, "none": null } } }""";
+
+        // Act.
+        var problems = Load(Binding(elements: $"[{element}]"), "0.8");
+
+        // Assert.
+        Assert.DoesNotContain(problems, p => p.Severity == LoadSeverity.Error);
+    }
+
+    [Fact]
+    public void TheVendoredRefusedBindingIsRefusedForItsRuleTaskOnly()
+    {
+        // Act.
+        var problems = FblDocumentLoader.Load(Path.Combine(Repository.Conformance, "refused", "insert-constant-collision.fbl"), out _);
+
+        // Assert: refused at the task's constant, and its note, which reads the same key read-only, is not.
+        var error = Assert.Single(problems, p => p.Severity == LoadSeverity.Error);
+        Assert.Equal("/bindings/board/elements/0/insert/constant/type", error.Pointer);
     }
 
     private static IReadOnlyDictionary<string, FblBinding> Vendored(string file, out string version)

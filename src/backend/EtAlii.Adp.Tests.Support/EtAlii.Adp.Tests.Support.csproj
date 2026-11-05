@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Test support every test project needs: TestFolder, RepositoryPaths, Eventually, FakeClocks and
+    EmbeddedResources. src/Directory.Build.targets attaches it to every *.Tests project, with its
+    namespace as a global using. Support for one area lives in that area's own *.Tests.Support
+    project, which a test project references when it uses it.
+    
+    No support project is named *.Tests: that suffix would compile LogCapture into it, whose
+    [ModuleInitializer] must run once per TEST project - the trap Directory.Build.targets documents.
+  -->
+
+  <ItemGroup>
+    <!-- Every test project compiles LogCapture in (src/Directory.Build.targets), which builds a Serilog pipeline. -->
+    <PackageReference Include="Serilog" />
+    <!-- FakeClocks: the one clock is advanced, never slept on (code-structure FR-051). -->
+    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" />
+    <PackageReference Include="xunit.v3.assert" />
+    <PackageReference Include="xunit.v3.extensibility.core" />
+    <!-- TestFolder's report seams are internal; its own tests live in the core test project. -->
+    <InternalsVisibleTo Include="EtAlii.Adp.Tests" />
+  </ItemGroup>
+
+</Project>

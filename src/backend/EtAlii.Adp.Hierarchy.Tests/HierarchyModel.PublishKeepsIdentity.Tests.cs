@@ -20,18 +20,18 @@ public class HierarchyModelPublishKeepsIdentityTests : IDisposable
     private static readonly TimeSpan Patience = TimeSpan.FromSeconds(10);
     private static readonly TimeSpan Silence = TimeSpan.FromMilliseconds(500);
 
+    private readonly TestFolder _testFolder = TestFolder.Create("publish-identity");
     private readonly string _root;
     private readonly IDiagramDefinitionCatalog _catalog = new TestDiagramDefinitionCatalog(Mindmap);
 
     public HierarchyModelPublishKeepsIdentityTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     [Fact]

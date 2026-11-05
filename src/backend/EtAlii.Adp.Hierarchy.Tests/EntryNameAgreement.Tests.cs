@@ -11,10 +11,13 @@ namespace EtAlii.Adp.Hierarchy.Tests;
 /// </summary>
 public sealed class EntryNameAgreementTests : IDisposable
 {
-    private readonly string _root = Directory.CreateTempSubdirectory("adp-entry-names-").FullName;
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-entry-names");
+    private readonly string _root;
     private readonly RenameEntryCommandHandler _handler = new(new EmptyCatalog(), new FileWriter());
 
-    public void Dispose() => TestFolder.TryDelete(_root);
+    public EntryNameAgreementTests() => _root = _testFolder.Path;
+
+    public void Dispose() => _testFolder.Dispose();
 
     [Theory]
     [InlineData("")]

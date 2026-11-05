@@ -117,6 +117,32 @@ public class LineDocumentTests
         Assert.Equal("crlf\r\nlf\n", document.Text);
     }
 
+    [Fact]
+    public void ASplice_KeepsTheTerminatorsItIsGiven_RatherThanTheDocumentsMajority()
+    {
+        // Arrange: a tie, which the majority gives to CRLF.
+        var document = LineDocument.Parse("a\r\nb\n");
+
+        // Act: a line inserted after the LF line, terminated as that line is.
+        document.Splice(2, 0, [new Line("c", "\n")]);
+
+        // Assert.
+        Assert.Equal("a\r\nb\nc\n", document.Text);
+    }
+
+    [Fact]
+    public void ASplice_ReplacesExactlyItsLines()
+    {
+        // Arrange.
+        var document = LineDocument.Parse("a\nb\nc");
+
+        // Act.
+        document.Splice(1, 2, [new Line("x", "\r\n"), new Line("y", "")]);
+
+        // Assert.
+        Assert.Equal("a\nx\r\ny", document.Text);
+    }
+
     // ---- replace ----------------------------------------------------------------------------
 
     [Fact]

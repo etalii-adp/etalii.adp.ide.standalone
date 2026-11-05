@@ -15,18 +15,18 @@ public class SplitMoveTests : IDisposable
 {
     private static readonly TimeSpan _grace = TimeSpan.FromSeconds(1);
 
+    private readonly TestFolder _testFolder = TestFolder.Create("split-move");
     private readonly string _root;
     private readonly FakeTimeProvider _time = new();
 
     public SplitMoveTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
         GC.SuppressFinalize(this);
     }
 

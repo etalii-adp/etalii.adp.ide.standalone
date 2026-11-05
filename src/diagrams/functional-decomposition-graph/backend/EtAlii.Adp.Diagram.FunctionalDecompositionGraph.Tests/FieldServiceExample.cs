@@ -11,25 +11,6 @@ namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests;
 internal static class FieldServiceExample
 {
     /// <summary>The example's <c>.fdg</c> body.</summary>
-    public static string Path
-    {
-        get
-        {
-            // Up out of bin/Debug/net10.0 to this module's own folder, by name - not to the first
-            // folder that happens to contain an examples directory.
-            for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-            {
-                if (directory.Name == "functional-decomposition-graph")
-                {
-                    var path = System.IO.Path.Combine(directory.FullName, "examples", "field-service", "field-service.fdg");
-                    return !File.Exists(path)
-                        ? throw new InvalidOperationException($"The field-service example is missing: {path}")
-                        : path;
-                }
-            }
-
-            throw new InvalidOperationException(
-                $"No functional-decomposition-graph folder above {AppContext.BaseDirectory}, so the example cannot be found. That is a failure, not a skip.");
-        }
-    }
+    public static string Path =>
+        RepositoryPaths.Under("src", "diagrams", "functional-decomposition-graph", "examples", "field-service", "field-service.fdg");
 }

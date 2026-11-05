@@ -24,6 +24,7 @@ public sealed class SankeyElementMapper
     public const string NodeType = Prefix + "node";
 
     /// <summary>The library type of a flow.</summary>
+    [Relation]
     public const string FlowType = Prefix + "flow";
 
     /// <summary>Where a node's labels sit when it is in the first column: before the bar.</summary>

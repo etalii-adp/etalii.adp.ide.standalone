@@ -20,18 +20,18 @@ public class HierarchyModelDiagramStateTests : IDisposable
     private static readonly EditorDefinition Plain = new("plain", "Plain Text", IsFallback: true);
     private static readonly EditorDefinition Markdown = new("markdown", "Markdown", Extensions: [".md"]);
 
+    private readonly TestFolder _testFolder = TestFolder.Create("model-diagram-state");
     private readonly string _root;
     private readonly IDiagramDefinitionCatalog _catalog = new TestDiagramDefinitionCatalog(Mindmap, Pipeline, Structure);
 
     public HierarchyModelDiagramStateTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     private HierarchyModel Model() =>

@@ -1,6 +1,7 @@
 using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Layout;
 using Google.Protobuf;
+using JetBrains.Annotations;
 
 namespace EtAlii.Adp.Diagram.AgentBehaviorModelling;
 
@@ -32,39 +33,49 @@ public sealed class AbmElementMapper
     public const string ChildIdPrefix = "child:";
 
     /// <summary>The library type of a Do in order node.</summary>
+    [UsedImplicitly] // Read only by reflection, into the cross-tier element-types fixture.
     public const string SequenceType = Prefix + AbmNodeKinds.Sequence;
 
     /// <summary>The library type of a Try in order node.</summary>
     public const string FallbackType = Prefix + AbmNodeKinds.Fallback;
 
     /// <summary>The library type of a Do together node.</summary>
+    [UsedImplicitly] // Read only by reflection, into the cross-tier element-types fixture.
     public const string ParallelType = Prefix + AbmNodeKinds.Parallel;
 
     /// <summary>The library type of a Retry node.</summary>
     public const string RetryType = Prefix + AbmNodeKinds.Retry;
 
     /// <summary>The library type of a Repeat until node.</summary>
+    [UsedImplicitly] // Read only by reflection, into the cross-tier element-types fixture.
     public const string RepeatType = Prefix + AbmNodeKinds.Repeat;
 
     /// <summary>The library type of an Only while node.</summary>
+    [UsedImplicitly] // Read only by reflection, into the cross-tier element-types fixture.
     public const string GuardType = Prefix + AbmNodeKinds.Guard;
 
     /// <summary>The library type of an Ask approval before node.</summary>
+    [UsedImplicitly] // Read only by reflection, into the cross-tier element-types fixture.
     public const string ApprovalType = Prefix + AbmNodeKinds.Approval;
 
     /// <summary>The library type of a Check node.</summary>
+    [UsedImplicitly] // Read only by reflection, into the cross-tier element-types fixture.
     public const string CheckType = Prefix + AbmNodeKinds.Check;
 
     /// <summary>The library type of a Do node.</summary>
+    [UsedImplicitly] // Read only by reflection, into the cross-tier element-types fixture.
     public const string ActionType = Prefix + AbmNodeKinds.Action;
 
     /// <summary>The library type of an Ask the user node.</summary>
+    [UsedImplicitly] // Read only by reflection, into the cross-tier element-types fixture.
     public const string AskType = Prefix + AbmNodeKinds.Ask;
 
     /// <summary>The library type of a Delegate node.</summary>
+    [UsedImplicitly] // Read only by reflection, into the cross-tier element-types fixture.
     public const string DelegateType = Prefix + AbmNodeKinds.Delegate;
 
     /// <summary>The library type of a parent-to-child connection.</summary>
+    [Relation]
     public const string ChildType = Prefix + "child";
 
     /// <summary>The library type a node kind is drawn as.</summary>

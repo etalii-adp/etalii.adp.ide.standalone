@@ -1,0 +1,9 @@
+supply-chain: 1
+# Finding B14: no groups and no flows section; the first entry of each brings its section.
+nodes:
+  - id: mine
+    type: source
+    name: Mine
+  - id: plant
+    type: producer
+    name: Plant

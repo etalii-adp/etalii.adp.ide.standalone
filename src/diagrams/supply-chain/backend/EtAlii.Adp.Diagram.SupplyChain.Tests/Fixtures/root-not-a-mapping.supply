@@ -1,0 +1,4 @@
+# Finding B14: a body whose root is a sequence, not a mapping.
+- id: mine
+  type: source
+  name: Mine

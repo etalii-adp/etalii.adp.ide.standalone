@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- xUnit v3 test projects are executables: the test host is the project itself. -->
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\EtAlii.Adp.Designer.HierarchicalRequirement\EtAlii.Adp.Designer.HierarchicalRequirement.csproj" />
+    <!-- The module's flows over the real host. -->
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Backend.Tests.Support\EtAlii.Adp.Backend.Tests.Support.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Test support of the areas these tests use; see src/Directory.Build.targets. -->
+    <Using Include="EtAlii.Adp.Backend.Tests.Support" />
+  </ItemGroup>
+
+</Project>

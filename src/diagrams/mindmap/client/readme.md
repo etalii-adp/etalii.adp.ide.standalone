@@ -33,7 +33,7 @@ without that, nothing here could resolve `react`.
   thing a reader picks, so the specification's branch edge says `selectable: false` and a press on
   one is a press on the background. That is a decision about the notation, not an omission; making
   branches selectable is a separate question for the user
-  ([centralized-selection](../../../../.spec-workflow/specs/centralized-selection/requirements.md),
+  ([centralized-selection](https://github.com/etalii-adp/etalii.adp.ide.standalone/blob/bd7e2ea95b8e4195bf6f8d97f7aede9ab4dc3ad8/.spec-workflow/specs/centralized-selection/requirements.md),
   Requirement 2.4).
 
 See [../../readme.md](../../readme.md) for what this folder is for, and

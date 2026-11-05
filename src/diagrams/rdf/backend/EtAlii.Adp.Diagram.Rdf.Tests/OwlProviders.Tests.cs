@@ -37,6 +37,7 @@ public class OwlProvidersTests : IDisposable
         + "    rdfs:domain :Pizza ;\r\n"
         + "    rdfs:range :Topping .\r\n";
 
+    private readonly TestFolder _testFolder = TestFolder.Create("rdf-owl-providers");
     private readonly string _root;
     private readonly ServiceProvider _provider;
     private readonly RdfContextActionProvider _actions;
@@ -45,8 +46,7 @@ public class OwlProvidersTests : IDisposable
 
     public OwlProvidersTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
         _provider = new ServiceCollection()
             .AddSingleton<IReadOnlyList<DiagramDefinition>>(Diagram.Definitions)
             .AddCommands().AddHierarchyCommandHandlers()
@@ -64,7 +64,7 @@ public class OwlProvidersTests : IDisposable
     public void Dispose()
     {
         _provider.Dispose();
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     private string WriteBody(string content, string name = "ontology.ttl")

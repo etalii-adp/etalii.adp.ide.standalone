@@ -152,6 +152,21 @@ jobs:
         working-directory: src/client
         run: npm run typecheck
 
+  # The tests of the scripts under .github/tools/gate/ that still apply: retire.sh, who-owns.sh and
+  # who-is-gating.sh. They ran inside `dotnet test` until etalii.adp spec 025 (FR-096) took them out
+  # of the product test suite, so they get a job of their own; `release` waits for it, as it waited
+  # for them inside `backend-tests`. The full run takes seconds on Linux. The runner's user is not
+  # root, which one retire.sh case needs: it stops a delete with a read-only directory.
+  gate-scripts:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Gate scripts' tests
+        run: bash .github/tools/gate/gate.test.sh
+
   # JetBrains InspectCode, the engine Rider runs, over the whole solution (rider-warnings-cleanup).
   # A job of its own rather than a step in a gate job, so a red run names which failed and the
   # four local gates stay four; it is not a local gate, and `release` does not wait for it. The
@@ -263,7 +278,7 @@ jobs:
   release:
     # Publishing is the merge's reward: pull requests gate only (Requirement 4.3).
     if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
-    needs: [backend-tests, style, client]
+    needs: [backend-tests, style, client, gate-scripts]
     runs-on: ubuntu-latest
     # Release runs serialise rather than overlap (contracts-and-build-hygiene Requirement 3). Two
     # runs publishing at once is how one commit came to carry two version numbers.

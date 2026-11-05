@@ -45,6 +45,9 @@ public static class ServiceCollectionAddDatabricksExtension
         services.AddSingleton<ICommandHandler<ConnectDatabricksTasksCommand>, ConnectDatabricksTasksCommandHandler>();
         services.AddSingleton<ICommandHandler<DisconnectDatabricksTasksCommand>, DisconnectDatabricksTasksCommandHandler>();
         services.AddSingleton<ICommandHandler<RenameDatabricksTaskCommand>, RenameDatabricksTaskCommandHandler>();
+        services.AddSingleton<ICommandHandler<DatabricksStepsCommand>, DatabricksStepsCommandHandler>();
+        services.AddSingleton<ICommandHandler<CarryDatabricksPositionCommand>, CarryDatabricksPositionCommandHandler>();
+        services.AddSingleton<ICommandHandler<RestoreDatabricksRegistrationCommand>, RestoreDatabricksRegistrationCommandHandler>();
         services.AddSingleton<ICommandHandler<SetDatabricksRunIfCommand>, SetDatabricksRunIfCommandHandler>();
         services.AddSingleton<ICommandHandler<SetDatabricksClusterCommand>, SetDatabricksClusterCommandHandler>();
         services.AddSingleton<ICommandHandler<AddDatabricksResourceCommand>, AddDatabricksResourceCommandHandler>();
@@ -85,7 +88,7 @@ public static class ServiceCollectionAddDatabricksExtension
                 opening.BodyPath,
                 opening.RegistrationPath,
                 origin,
-                DatabricksHeaders.ReadResourceKey(opening.RegistrationPath),
+                DatabricksBody.ResourceOf(opening.RegistrationPath),
                 provider.GetRequiredService<IDatabricksDocumentStore>(),
                 provider.GetRequiredService<DatabricksElementMapper>(),
                 provider.GetRequiredService<IHistoryStackStore>().Get(opening.Root)));

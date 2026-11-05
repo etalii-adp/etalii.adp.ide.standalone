@@ -1,5 +1,6 @@
 using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -8,40 +9,27 @@ namespace EtAlii.Adp.Diagram.Timeline.Tests;
 /// <summary>"Arrange diagram" on a timeline: only rows change, nothing overlaps, and one undo puts it back.</summary>
 public class TimelineArrangementTests : IDisposable
 {
-    private readonly string _workspace = IoPath.Combine(IoPath.GetTempPath(), "adp-timeline-arrange-" + Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-timeline-arrange");
+    private readonly string _workspace;
     private readonly TimelineDocumentStore _store = new(new FileWriter());
-    private readonly HistoryStackStore _historyStacks;
+    private readonly IHistoryStackStore _historyStacks;
 
     public TimelineArrangementTests()
     {
-        Directory.CreateDirectory(_workspace);
-        _historyStacks = new HistoryStackStore(new TimelineTestDispatcher(_store));
+        _workspace = _testFolder.Path;
+        _historyStacks = TestHistory.For(s => { s.AddTimeline(); s.AddSingleton<ITimelineDocumentStore>(_store); });
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_workspace);
+        _testFolder.Dispose();
         GC.SuppressFinalize(this);
     }
 
     private IHistoryStack History => _historyStacks.Get(ProjectRoot.From(_workspace));
 
     /// <summary>The module's own roadmap: thirty elements scattered over seventeen rows.</summary>
-    private static string Roadmap
-    {
-        get
-        {
-            for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-            {
-                if (directory.Name == "timeline" && Directory.Exists(IoPath.Combine(directory.FullName, "examples")))
-                {
-                    return File.ReadAllText(IoPath.Combine(directory.FullName, "examples", "example-2", "roadmap.tml"));
-                }
-            }
-
-            throw new InvalidOperationException("No timeline folder above the test binary. That is a failure, not a skip.");
-        }
-    }
+    private static string Roadmap => File.ReadAllText(RepositoryPaths.Under("src", "diagrams", "timeline", "examples", "example-2", "roadmap.tml"));
 
     private string Write(string content)
     {
@@ -170,12 +158,9 @@ public class TimelineArrangementTests : IDisposable
 
         // Assert: every link leaving a moment for something later runs to another row.
         var leaving = model.Connections
-            .Where(connection => IsMoment(byId[connection.From]) && byId[connection.To].Begin.Value > byId[connection.From].Begin.Value)
+            .Where(connection => !byId[connection.From].HasReadableEnd && byId[connection.To].Begin.Value > byId[connection.From].Begin.Value)
             .ToList();
         Assert.NotEmpty(leaving);
         Assert.All(leaving, connection => Assert.NotEqual(rows[connection.From], rows[connection.To]));
-        return;
-
-        static bool IsMoment(TimelineElement element) => element.End is not { IsReadable: true };
     }
 }

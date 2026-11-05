@@ -14,7 +14,7 @@ namespace EtAlii.Adp.Diagram.SupplyChain;
 /// anything drawn.
 /// </para>
 /// </remarks>
-public sealed class SupplyChainContextSourceResolver : DiagramElementSourceResolver<LineDocument, SupplyChainModel>
+public sealed class SupplyChainContextSourceResolver : DiagramElementSourceResolver<SupplyChainBody, SupplyChainModel>
 {
     private readonly SupplyChainElementMapper _mapper;
     private readonly SupplyChainSelections _selections;

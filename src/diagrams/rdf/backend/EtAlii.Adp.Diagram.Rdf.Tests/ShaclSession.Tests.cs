@@ -16,13 +16,13 @@ namespace EtAlii.Adp.Diagram.Rdf.Tests;
 /// </summary>
 public class ShaclSessionTests : IDisposable
 {
+    private readonly TestFolder _testFolder = TestFolder.Create("rdf-shacl-session");
     private readonly string _root;
     private readonly ServiceProvider _provider;
 
     public ShaclSessionTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
         _provider = new ServiceCollection()
             .AddSingleton<IReadOnlyList<DiagramDefinition>>(Diagram.Definitions)
             .AddCommands().AddHierarchyCommandHandlers()
@@ -33,7 +33,7 @@ public class ShaclSessionTests : IDisposable
     public void Dispose()
     {
         _provider.Dispose();
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
         GC.SuppressFinalize(this);
     }
 

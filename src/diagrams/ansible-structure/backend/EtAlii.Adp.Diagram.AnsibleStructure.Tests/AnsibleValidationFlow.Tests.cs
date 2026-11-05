@@ -29,7 +29,7 @@ public class AnsibleValidationFlowTests : IDisposable
     private static readonly TimeSpan SettleDelay = TimeSpan.FromMilliseconds(200);
     private static readonly TimeSpan WaitLimit = TimeSpan.FromSeconds(20);
 
-    private readonly string _appDataRoot;
+    private readonly TestFolder _testFolder = TestFolder.Create("ansible-validation-flow");
     private readonly string _projectFolder;
     private readonly string _infrastructure;
     private readonly ServiceProvider _provider;
@@ -40,8 +40,8 @@ public class AnsibleValidationFlowTests : IDisposable
 
     public AnsibleValidationFlowTests()
     {
-        _appDataRoot = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.IntegrationTests", Guid.NewGuid().ToString("N"));
-        _projectFolder = IoPath.Combine(_appDataRoot, "sample-project");
+        var appDataRoot = _testFolder.Path;
+        _projectFolder = IoPath.Combine(appDataRoot, "sample-project");
         _infrastructure = IoPath.Combine(_projectFolder, "infrastructure");
         Directory.CreateDirectory(_projectFolder);
 
@@ -55,7 +55,7 @@ public class AnsibleValidationFlowTests : IDisposable
         services.AddSingleton<DiagramValidators>();
         services.AddSingleton<ProjectValidator>();
         services.AddSingleton<IProblemStore>(provider => new ProblemStore(
-            _appDataRoot, provider.GetRequiredService<DiagramFileRouter>(), provider.GetRequiredService<DiagramValidators>(), provider.GetRequiredService<TimeProvider>()));
+            appDataRoot, provider.GetRequiredService<DiagramFileRouter>(), provider.GetRequiredService<DiagramValidators>(), provider.GetRequiredService<TimeProvider>()));
         services.AddSingleton<ProjectFileEvents>();
         services.AddSingleton(provider => new ProblemMaintenance(
             provider.GetRequiredService<IProblemStore>(),
@@ -72,7 +72,7 @@ public class AnsibleValidationFlowTests : IDisposable
     public void Dispose()
     {
         _provider.Dispose();
-        TestFolder.TryDelete(_appDataRoot);
+        _testFolder.Dispose();
     }
 
     [Fact]

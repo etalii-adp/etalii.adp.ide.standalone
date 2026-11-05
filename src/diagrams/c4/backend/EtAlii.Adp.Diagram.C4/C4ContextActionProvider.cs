@@ -38,7 +38,7 @@ public sealed class C4ContextActionProvider(IHistoryStackStore historyStacks, IC
     public const string SetProtocolActionId = "c4.set-protocol";
 
     /// <summary>The add actions the toolbox and the empty canvas name, and the operation of the definition each runs.</summary>
-    private static readonly (C4ElementKind Kind, string Operation)[] AddableKinds =
+    internal static readonly (C4ElementKind Kind, string Operation)[] AddableKinds =
     [
         (C4ElementKind.Person, "addPerson"),
         (C4ElementKind.SoftwareSystem, "addSoftwareSystem"),
@@ -66,7 +66,7 @@ public sealed class C4ContextActionProvider(IHistoryStackStore historyStacks, IC
         ArgumentNullException.ThrowIfNull(target);
         ArgumentNullException.ThrowIfNull(entry);
         return entry.IsUsable
-            ? C4Definitions.Menus(entry.Model, C4Disl.FileOf(target.ResolvedFullPath), C4Definitions.ViewOf(entry.Model, target.Origin), target.Origin, ElementOrCanvas(target.ElementId))
+            ? C4Definitions.Menus(entry.Model, C4Body.FileOf(target.ResolvedFullPath), C4Definitions.ViewOf(entry.Model, target.Origin), target.Origin, ElementOrCanvas(target.ElementId))
             : [];
     }
 
@@ -89,7 +89,7 @@ public sealed class C4ContextActionProvider(IHistoryStackStore historyStacks, IC
 
         var entry = await LoadAsync(target, cancellationToken);
         return entry.IsUsable
-            ? C4Definitions.Drop(entry.Model, C4Disl.FileOf(target.ResolvedFullPath), C4Definitions.ViewOf(entry.Model, target.Origin), target.Origin, ElementOrCanvas(target.ElementId), dropActionId)
+            ? C4Definitions.Drop(entry.Model, C4Body.FileOf(target.ResolvedFullPath), C4Definitions.ViewOf(entry.Model, target.Origin), target.Origin, ElementOrCanvas(target.ElementId), dropActionId)
             : null;
     }
 
@@ -208,7 +208,7 @@ public sealed class C4ContextActionProvider(IHistoryStackStore historyStacks, IC
     /// <summary>
     /// The add <paramref name="kind"/> named <paramref name="value"/> run on <paramref name="parentId"/>, as
     /// today's command writes it. The definition's operation is run first, with the identifier the
-    /// module makes from the name handed to it (<see cref="C4Placement.IdentifierFor"/>, standing in for
+    /// module makes from the name handed to it (<see cref="AddC4ElementCommandHandler.IdentifierFor"/>, standing in for
     /// gap C11): where it creates the element, the command declares it under that identifier, inside the
     /// parent the operation puts it in, which is none for a person or a software system dropped on another
     /// element; where it refuses, or the parent is not one it is for, the command is built as before and
@@ -216,9 +216,9 @@ public sealed class C4ContextActionProvider(IHistoryStackStore historyStacks, IC
     /// </summary>
     private static AddC4ElementCommand AddCommand(string bodyPath, C4Workspace model, ToolOrigin? origin, C4ElementKind kind, string value, string parentId)
     {
-        var identifier = C4Placement.IdentifierFor(model, value.Trim());
+        var identifier = AddC4ElementCommandHandler.IdentifierFor(model, value.Trim());
         var operation = AddableKinds.First(addable => addable.Kind == kind).Operation;
-        var created = C4Definitions.Creation(model, C4Disl.FileOf(bodyPath), C4Definitions.ViewOf(model, origin), origin, operation, parentId, value, identifier);
+        var created = C4Definitions.Creation(model, C4Body.FileOf(bodyPath), C4Definitions.ViewOf(model, origin), origin, operation, parentId, value, identifier);
         return created is { } creation && creation.Id == identifier
             ? new AddC4ElementCommand(bodyPath, kind, value, creation.ParentId is null ? "" : parentId, identifier)
             : new AddC4ElementCommand(bodyPath, kind, value, parentId);

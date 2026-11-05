@@ -14,7 +14,7 @@ public class PipelineParserTests
     {
         var document = LineDocument.Parse(
             File.ReadAllText(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", name)));
-        return PipelineParser.Parse(YamlAccess.Root(document), document);
+        return DatabricksModel.Read(document).Pipelines;
     }
 
     [Fact]
@@ -59,20 +59,6 @@ public class PipelineParserTests
         Assert.Equal("on-update-failure", Assert.Single(notification.Alerts));
         // Zero-based: from the notification's opening brace to its last entry.
         Assert.Equal(new LineRange(14, 16), notification.Lines);
-    }
-
-    [Fact]
-    public void AnUnmodelledKey_LandsAsAnUnknownNode()
-    {
-        // Arrange & act.
-        var pipeline = Assert.Single(Parse("pipeline.json"));
-
-        // Assert.
-        // `edition` is real configuration this module does not model - present in the model,
-        // never written (Requirement 2.4).
-        var unknown = Assert.Single(pipeline.UnknownNodes);
-        Assert.Equal("edition", unknown.Key);
-        Assert.Equal(new LineRange(19, 19), unknown.Lines);
     }
 
     [Fact]

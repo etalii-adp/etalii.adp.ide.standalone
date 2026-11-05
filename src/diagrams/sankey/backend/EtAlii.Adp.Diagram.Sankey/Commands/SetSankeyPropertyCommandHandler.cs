@@ -1,5 +1,4 @@
 using System.Globalization;
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.Sankey;
@@ -12,7 +11,7 @@ public sealed class SetSankeyPropertyCommandHandler(ISankeyDocumentStore documen
         Read(command, out _, out _, out _) is { } refusal ? CommandResult.Failure(refusal) : await base.RunAsync(command, cancellationToken);
 
     /// <inheritdoc />
-    protected override EditOutcome Apply(LineDocument document, SankeyModel model, SetSankeyPropertyCommand command)
+    protected override EditOutcome Apply(SankeyBody document, SankeyModel model, SetSankeyPropertyCommand command)
     {
         _ = Read(command, out var value, out var number, out var column);
 
@@ -21,11 +20,11 @@ public sealed class SetSankeyPropertyCommandHandler(ISankeyDocumentStore documen
             return command.Key switch
             {
                 SankeyKeys.Name => value.Length > 0
-                    ? SankeyWriter.SetText(document, node.Range, command.Key, value, removeWhenEmpty: false)
+                    ? SankeyEdits.SetText(document, node, command.Key, value, removeWhenEmpty: false)
                     : EditOutcome.Refused("A node needs a name."),
                 SankeyKeys.Color or SankeyKeys.Note or SankeyKeys.Format or SankeyKeys.Description =>
-                    SankeyWriter.SetText(document, node.Range, command.Key, value, removeWhenEmpty: true),
-                SankeyKeys.Column => SankeyWriter.SetNumber(document, node.Range, command.Key, column),
+                    SankeyEdits.SetText(document, node, command.Key, value, removeWhenEmpty: true),
+                SankeyKeys.Column => SankeyEdits.SetNumber(document, node, command.Key, column),
                 _ => Unknown(command.Key),
             };
         }
@@ -34,8 +33,8 @@ public sealed class SetSankeyPropertyCommandHandler(ISankeyDocumentStore documen
         {
             return command.Key switch
             {
-                SankeyKeys.Color or SankeyKeys.Description => SankeyWriter.SetText(document, flow.Range, command.Key, value, removeWhenEmpty: true),
-                SankeyKeys.Value or SankeyKeys.Step => SankeyWriter.SetNumber(document, flow.Range, command.Key, number),
+                SankeyKeys.Color or SankeyKeys.Description => SankeyEdits.SetText(document, flow, command.Key, value, removeWhenEmpty: true),
+                SankeyKeys.Value or SankeyKeys.Step => SankeyEdits.SetNumber(document, flow, command.Key, number),
                 _ => Unknown(command.Key),
             };
         }

@@ -123,6 +123,10 @@ async function collapsePath(segments) {
 }
 
 async function shoot(name) {
+  // The pointer is left where the last click put it; on a page that shows controls under the pointer, such as the
+  // hierarchical requirement designer's boxes, it would show them on whatever stands there. The explorer's empty bottom
+  // corner shows nothing.
+  await page.mouse.move(4, 896);
   await sleep(1200);
   await page.screenshot({ path: path.join(outDir, name) });
   console.log("captured " + name);
@@ -227,6 +231,8 @@ const shots = [
 
   // The knowledge designer: a table, not a canvas, so nothing to wait for or fit.
   { name: "knowledge.png", path: ["designers", "knowledge", "yaml", "cities.yaml", "cities.adp"], fit: false, expectDrawing: false, collapse: ["designers"] },
+  // The hierarchical requirement designer: one page of boxes, not a canvas, so nothing to fit.
+  { name: "hierarchical-requirement.png", path: ["designers", "hierarchical-requirement", "web-shop", "web-shop.md", "web-shop.adp"], fit: false, expectDrawing: false, collapse: ["designers"] },
 
   // The text editors: no canvas, so nothing to wait for or fit.
   { name: "markdown-editor.png", path: ["editors", "markdown", "guide.md"], fit: false, expectDrawing: false },

@@ -35,7 +35,7 @@ public class SourceLineEndingsTests
     [Fact]
     public void NoSourceFileCarriesAStrayCarriageReturn()
     {
-        var src = SourceRoot();
+        var src = RepositoryPaths.Under("src");
         var offenders = new List<string>();
 
         foreach (var file in Directory.EnumerateFiles(src, "*.cs", SearchOption.AllDirectories))
@@ -60,23 +60,5 @@ public class SourceLineEndingsTests
         }
 
         Assert.True(offenders.Count == 0, string.Join(Environment.NewLine, offenders));
-    }
-
-    /// <summary>The src folder, found by walking up - the family's shared idiom.</summary>
-    private static string SourceRoot()
-    {
-        var directory = AppContext.BaseDirectory;
-        for (var depth = 0; depth < 12; depth++)
-        {
-            var candidate = IoPath.Combine(directory, "src", "backend");
-            if (File.Exists(IoPath.Combine(candidate, "EtAlii.Adp.slnx")))
-            {
-                return IoPath.Combine(directory, "src");
-            }
-
-            directory = IoPath.GetDirectoryName(directory) ?? throw new InvalidOperationException("src was not found above the test assembly.");
-        }
-
-        throw new InvalidOperationException("src was not found above the test assembly.");
     }
 }

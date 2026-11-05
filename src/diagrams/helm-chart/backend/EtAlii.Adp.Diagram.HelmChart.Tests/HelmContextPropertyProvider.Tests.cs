@@ -17,13 +17,14 @@ namespace EtAlii.Adp.Diagram.HelmChart.Tests;
 /// </remarks>
 public class HelmContextPropertyProviderTests : IDisposable
 {
+    private readonly TestFolder _testFolder = TestFolder.Create("helm-context-property-provider");
     private readonly string _root;
     private readonly HelmChartStore _store = new();
     private readonly HelmContextPropertyProvider _provider;
 
     public HelmContextPropertyProviderTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
+        _root = _testFolder.Path;
         TestFolder.CopyTree(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", "well-formed"), _root);
         _provider = new HelmContextPropertyProvider(_store);
     }
@@ -31,7 +32,7 @@ public class HelmContextPropertyProviderTests : IDisposable
     public void Dispose()
     {
         _store.Dispose();
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     [Fact]

@@ -48,8 +48,9 @@ public static class SkosLayout
             AddTo(broadersOf, edge.ToId, edge.FromId);
         }
 
-        var positions = new Dictionary<string, RegistrationPosition>(StringComparer.Ordinal);
-        var placed = new HashSet<string>(StringComparer.Ordinal);
+        var placer = new BandPlacer(acyclic, broadersOf);
+        var positions = placer.Positions;
+        var placed = placer.Placed;
         var y = 0d;
 
         foreach (var scheme in projection.Schemes.OrderBy(s => s.Iri, StringComparer.Ordinal))
@@ -59,14 +60,14 @@ public static class SkosLayout
                 .Where(concept => concept.SchemeIris.Contains(scheme.Iri) && !placed.Contains(concept.Id))
                 .Select(concept => concept.Id)
                 .ToHashSet(StringComparer.Ordinal);
-            y = PlaceBand(members, y + RegionHeader) + RegionGap;
+            y = placer.PlaceBand(members, y + RegionHeader) + RegionGap;
         }
 
         var unfiled = projection.Concepts.Where(concept => !placed.Contains(concept.Id)).Select(concept => concept.Id)
             .ToHashSet(StringComparer.Ordinal);
         if (unfiled.Count > 0)
         {
-            y = PlaceBand(unfiled, y) + RegionGap;
+            y = placer.PlaceBand(unfiled, y) + RegionGap;
         }
 
         var collections = projection.Collections.OrderBy(c => c.Iri, StringComparer.Ordinal).ToList();
@@ -78,10 +79,21 @@ public static class SkosLayout
         }
 
         return new SkosLayoutResult(positions, cycles);
+    }
+
+    /// <summary>
+    /// Places the concepts of one band after another over the acyclic hierarchy, recording every
+    /// position and every concept placed so far.
+    /// </summary>
+    private sealed class BandPlacer(IReadOnlyList<SkosEdge> acyclic, Dictionary<string, List<string>> broadersOf)
+    {
+        public Dictionary<string, RegistrationPosition> Positions { get; } = new(StringComparer.Ordinal);
+
+        public HashSet<string> Placed { get; } = new(StringComparer.Ordinal);
 
         // Layers a band's members: layer 0 is everyone with no broader inside the band, then
         // longest-path depth below over the acyclic hierarchy. Returns the y just past the band.
-        double PlaceBand(HashSet<string> members, double top)
+        public double PlaceBand(HashSet<string> members, double top)
         {
             var depth = Layering.LongestPath(
                 members.Order(StringComparer.Ordinal),
@@ -122,8 +134,8 @@ public static class SkosLayout
                     var indent = (bandColumns - row.Count) / 2d;
                     for (var x = 0; x < row.Count; x++)
                     {
-                        positions[row[x]] = new RegistrationPosition((indent + x) * ColumnWidth, rowTop);
-                        placed.Add(row[x]);
+                        Positions[row[x]] = new RegistrationPosition((indent + x) * ColumnWidth, rowTop);
+                        Placed.Add(row[x]);
                     }
 
                     rowTop += RowHeight;
@@ -136,7 +148,7 @@ public static class SkosLayout
         }
 
         // The mean place of a concept's already-placed broader concepts, or MaxValue when it has none.
-        double BroaderPosition(string id, Dictionary<string, int> sequence)
+        private double BroaderPosition(string id, Dictionary<string, int> sequence)
         {
             var places = broadersOf.TryGetValue(id, out var broaders)
                 ? broaders.Where(sequence.ContainsKey).Select(broader => (double)sequence[broader]).ToList()

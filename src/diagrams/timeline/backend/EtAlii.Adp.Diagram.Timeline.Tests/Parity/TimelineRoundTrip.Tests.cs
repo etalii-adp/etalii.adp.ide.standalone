@@ -4,6 +4,7 @@ using System.Text.RegularExpressions;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Specification.Fbl.Planning;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using Path = System.IO.Path;
 
@@ -17,14 +18,16 @@ namespace EtAlii.Adp.Diagram.Timeline.Tests.Parity;
 /// </summary>
 public sealed class TimelineRoundTripTests : IDisposable
 {
+    private static readonly TimelineTranscript _transcript = new();
+
     private readonly TestFolder _folder = TestFolder.Create("EtAlii.Adp.TimelineRoundTrip");
 
     public void Dispose() => _folder.Dispose();
 
-    public static TheoryData<string> Documents() => [.. TimelineTranscript.Corpus()];
+    public static TheoryData<string> Documents() => [.. _transcript.Files()];
 
     private static Task<byte[]> ReadAsync(string relative) =>
-        File.ReadAllBytesAsync(Path.Combine(TimelineTranscript.SourceFolder, relative), TestContext.Current.CancellationToken);
+        File.ReadAllBytesAsync(Path.Combine(_transcript.SourceFolder, relative), TestContext.Current.CancellationToken);
 
     private async Task<string> CopyAsync(byte[] bytes)
     {
@@ -37,7 +40,7 @@ public sealed class TimelineRoundTripTests : IDisposable
     public void TheCorpusHoldsTheLineEndingAndFinalNewlineFixtures()
     {
         // Arrange.
-        var corpus = TimelineTranscript.Corpus();
+        var corpus = _transcript.Files();
 
         // Act.
         var names = corpus.Select(Path.GetFileName).ToList();
@@ -139,7 +142,7 @@ public sealed class TimelineRoundTripTests : IDisposable
         {
             var path = await CopyAsync(bytes);
             var store = new TimelineDocumentStore(new FileWriter());
-            using var history = new HistoryStackStore(new TimelineTestDispatcher(store));
+            var history = TestHistory.For(s => { s.AddTimeline(); s.AddSingleton<ITimelineDocumentStore>(store); });
             var stack = history.Get(ProjectRoot.From(_folder.Path));
 
             // Act.

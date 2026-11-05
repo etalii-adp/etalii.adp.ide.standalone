@@ -15,18 +15,8 @@ public class ShaclExamplesTests
 {
     private static readonly ToolOrigin _origin = new("w3c", "shacl");
 
-    /// <summary>The examples folder, found from the test binary rather than from a hard-coded depth.</summary>
-    private static string ExamplesRoot()
-    {
-        var directory = new DirectoryInfo(AppContext.BaseDirectory);
-        while (directory is not null && !Directory.Exists(IoPath.Combine(directory.FullName, "src", "diagrams")))
-        {
-            directory = directory.Parent;
-        }
-
-        Assert.NotNull(directory);
-        return IoPath.Combine(directory.FullName, "src", "diagrams", "rdf", "examples", "shacl");
-    }
+    /// <summary>The examples folder.</summary>
+    private static string ExamplesRoot() => RepositoryPaths.Under("src", "diagrams", "rdf", "examples", "shacl");
 
     public static TheoryData<string> Folders() => new("w3c-shacl", "fair-data-point");
 

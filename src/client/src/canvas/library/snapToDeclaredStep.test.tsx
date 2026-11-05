@@ -215,3 +215,30 @@ describe("the lattice is declared per axis, and may be read per element", () => 
     expect(missing?.x).toBe(87);
   });
 });
+
+describe("a type dragged along one axis", () => {
+  const along = (dragAxis: "x" | "y", snap?: SnapDeclaration): DiagramDefinition => ({
+    ...definitionWith(snap ?? {}),
+    elementTypes: [{ id: "node", shape: "box", sizing: "model", anchors: { kind: "edge" }, dragAxis }],
+  });
+
+  it("keeps the other axis where the model has it, on release and during the drag", () => {
+    expect(dragBy(along("y"), [resting], "a", 130, 70)).toEqual({ x: 50, y: 90 });
+    expect(dragBy(along("x"), [resting], "a", 130, 70)).toEqual({ x: 180, y: 20 });
+
+    const { container, unmount } = mount(along("y"), [resting]);
+    const target = container.querySelector('[data-element-id="a"]')!;
+    fireEvent(target, pointer("pointerdown", { clientX: 0, clientY: 0 }));
+    fireEvent(target, pointer("pointermove", { clientX: 130, clientY: 70 }));
+    const group = container.querySelector('[data-element-id="a"] g[transform]');
+    const translate = /translate\(\s*(-?[\d.]+)[\s,]+(-?[\d.]+)\s*\)/.exec(group?.getAttribute("transform") ?? "");
+    expect(translate, "the box drew no transform to read a position from").not.toBeNull();
+    expect(Number(translate![1])).toBeCloseTo(0, 5);
+    fireEvent(target, pointer("pointerup", { clientX: 130, clientY: 70 }));
+    unmount();
+  });
+
+  it("snaps only the axis it moves along", () => {
+    expect(dragBy(along("y", { x: { step: 1000 }, y: { step: STEP } }), [resting], "a", 600, 70)).toEqual({ x: 50, y: 80 });
+  });
+});

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type HTMLAttributes } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type HTMLAttributes } from "react";
 import { createPortal } from "react-dom";
 import { usePointerGesture } from "../../../canvas/gesture/usePointerGesture";
 import type { TableGesture } from "../api/tableEvents";
@@ -19,6 +19,10 @@ export interface OptionsEditorProps {
   position: { x: number; y: number };
   raise: (gesture: TableGesture) => void;
   onClose: () => void;
+  /** Whether a new option can be added from the panel; true for a column, whose options are made here. */
+  addable?: boolean;
+  /** What deleting an option some rows have asks, for the option and how many have it; the table's words when absent. */
+  deleteQuestion?: (option: TableOption, uses: number) => string;
 }
 
 /**
@@ -29,30 +33,54 @@ export interface OptionsEditorProps {
  * <b>A name is committed when its field is left or Enter is pressed</b>, not on every key: a
  * rename is an edit of the file, and one per letter would be a write per letter.
  */
-export function OptionsEditor({ column, position, raise, onClose }: OptionsEditorProps) {
+export function OptionsEditor({ column, position, raise, onClose, addable = true, deleteQuestion = tableDeleteQuestion }: OptionsEditorProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const [adding, setAdding] = useState("");
   const listRef = useRef<HTMLUListElement>(null);
+  // The option being dragged, how far, and the place it would be dropped at, while a drag lasts.
+  const [moving, setMoving] = useState<{ from: number; to: number; dy: number; step: number } | null>(null);
 
-  // An option is put in its place by dragging its handle: one gesture, when the drag ends, as a sort's is.
+  /** Where an option dragged `dy` pixels from its line would go, and how far apart the lines stand; null without its line. */
+  const placeOf = (option: TableOption, dy: number) => {
+    // Where the lines stand in the list, which the shifts a drag shows leave alone, unlike their place on the screen.
+    const lines = Array.from(listRef.current?.querySelectorAll<HTMLElement>(":scope > li") ?? [], (line) => ({ left: line.offsetTop, right: line.offsetTop + line.offsetHeight }));
+    const from = column.options.findIndex((candidate) => candidate.id === option.id);
+    const line = lines[from];
+    if (line === undefined) {
+      return null;
+    }
+    const next = lines[from + 1] ?? lines[from - 1];
+    const step = next === undefined ? line.right - line.left : Math.abs(next.left - line.left);
+    return { from, to: dropIndex(from, (line.left + line.right) / 2 + dy, lines), dy, step };
+  };
+
+  // An option is put in its place by dragging its handle: one gesture, when the drag ends, as a sort's is. While it is
+  // dragged, it follows the pointer and the others make way for it, as the list would stand once it is dropped.
   const drag = usePointerGesture<TableOption>({
     onPress: () => {},
+    onDragMove: (option, _dx, dy) => setMoving(placeOf(option, dy)),
     onDragEnd: (option, _dx, dy) => {
-      const lines = Array.from(listRef.current?.querySelectorAll<HTMLElement>("li") ?? [], (line) => {
-        const rect = line.getBoundingClientRect();
-        return { left: rect.top, right: rect.bottom };
-      });
-      const from = column.options.findIndex((candidate) => candidate.id === option.id);
-      const line = lines[from];
-      if (line === undefined) {
-        return;
-      }
-      const to = dropIndex(from, (line.left + line.right) / 2 + dy, lines);
-      if (to !== from) {
-        raise({ kind: "moveOption", columnId: column.id, targetId: option.id, index: to });
+      setMoving(null);
+      const place = placeOf(option, dy);
+      if (place !== null && place.to !== place.from) {
+        raise({ kind: "moveOption", columnId: column.id, targetId: option.id, index: place.to });
       }
     },
+    onDragAbandon: () => setMoving(null),
   });
+
+  /** How a line stands while an option is dragged: the dragged one under the pointer, the ones it passed a line further. */
+  const shiftOf = (index: number): CSSProperties | undefined => {
+    if (moving === null) {
+      return undefined;
+    }
+    const { from, to, dy, step } = moving;
+    if (index === from) {
+      return { transform: `translateY(${dy}px)`, zIndex: 1, position: "relative" };
+    }
+    const shift = from < to && index > from && index <= to ? -step : from > to && index >= to && index < from ? step : 0;
+    return { transform: `translateY(${shift}px)`, transition: "transform 0.12s ease" };
+  };
 
   // Leaving the panel - a press anywhere else, or Escape - closes it.
   useEffect(() => {
@@ -89,27 +117,40 @@ export function OptionsEditor({ column, position, raise, onClose }: OptionsEdito
     <div ref={panelRef} className="table-options-editor" role="dialog" aria-label={`Options of ${column.name}`} style={{ left: Math.max(PANEL_MARGIN, position.x), top: position.y }}>
       <ul className="table-options-list" ref={listRef}>
         {column.options.map((option, index) => (
-          <OptionLine key={option.id} column={column} option={option} index={index} count={column.options.length} raise={raise} handle={drag.press(option)} />
+          <OptionLine
+            key={option.id}
+            column={column}
+            option={option}
+            index={index}
+            count={column.options.length}
+            raise={raise}
+            handle={drag.press(option)}
+            deleteQuestion={deleteQuestion}
+            style={shiftOf(index)}
+            dragging={moving?.from === index}
+          />
         ))}
       </ul>
-      <div className="table-options-add">
-        <input
-          type="text"
-          aria-label="New option"
-          placeholder="Add an option…"
-          value={adding}
-          onChange={(event) => setAdding(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") {
-              event.preventDefault();
-              add();
-            }
-          }}
-        />
-        <button type="button" disabled={adding.trim() === ""} onClick={add}>
-          Add
-        </button>
-      </div>
+      {addable && (
+        <div className="table-options-add">
+          <input
+            type="text"
+            aria-label="New option"
+            placeholder="Add an option…"
+            value={adding}
+            onChange={(event) => setAdding(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                add();
+              }
+            }}
+          />
+          <button type="button" className="dialog-button dialog-button-primary table-options-add-button" disabled={adding.trim() === ""} onClick={add}>
+            Add
+          </button>
+        </div>
+      )}
     </div>,
     document.body,
   );
@@ -123,9 +164,19 @@ interface OptionLineProps {
   index: number;
   count: number;
   raise: (gesture: TableGesture) => void;
+  deleteQuestion: (option: TableOption, uses: number) => string;
+  /** Where it stands while an option is dragged. */
+  style?: CSSProperties;
+  /** Whether it is the option being dragged. */
+  dragging: boolean;
 }
 
-function OptionLine({ column, option, index, count, raise, handle }: OptionLineProps) {
+/** What deleting an option of a table's column asks. */
+function tableDeleteQuestion(_option: TableOption, uses: number): string {
+  return uses === 1 ? "1 row has this option. Deleting it clears that value." : `${uses} rows have this option. Deleting it clears those values.`;
+}
+
+function OptionLine({ column, option, index, count, raise, handle, deleteQuestion, style, dragging }: OptionLineProps) {
   const [name, setName] = useState(option.name);
 
   // The model's name is the truth: a rename that was refused, or made elsewhere, shows here.
@@ -151,7 +202,7 @@ function OptionLine({ column, option, index, count, raise, handle }: OptionLineP
   };
 
   return (
-    <li className="table-options-line" data-option-id={option.id}>
+    <li className={`table-options-line${dragging ? " table-options-dragging" : ""}`} data-option-id={option.id} style={style}>
       <span className="mdi mdi-drag-vertical table-sort-handle" role="img" aria-label={`Move option ${option.name}`} {...handle} />
       <OptionTag label={option.name} color={option.color} />
       <input
@@ -190,11 +241,11 @@ function OptionLine({ column, option, index, count, raise, handle }: OptionLineP
       {asking && (
         // An option some rows have is not deleted on one press: its author is told how many first.
         <div className="table-options-ask" role="alertdialog" aria-label={`Delete ${option.name}?`}>
-          <span>{uses === 1 ? "1 row has this option. Deleting it clears that value." : `${uses} rows have this option. Deleting it clears those values.`}</span>
-          <button type="button" onClick={remove}>
+          <span>{deleteQuestion(option, uses)}</span>
+          <button type="button" className="dialog-button dialog-button-danger table-options-add-button" onClick={remove}>
             Delete
           </button>
-          <button type="button" onClick={() => setAsking(false)}>
+          <button type="button" className="dialog-button dialog-button-neutral table-options-add-button" onClick={() => setAsking(false)}>
             Keep
           </button>
         </div>

@@ -1,4 +1,5 @@
 using Google.Protobuf;
+using JetBrains.Annotations;
 
 namespace EtAlii.Adp.Diagram.Rdf;
 
@@ -16,12 +17,15 @@ public sealed class SkosElementMapper
     public const string SchemeType = "w3c/skos+scheme";
 
     /// <inheritdoc cref="ConceptType" />
+    [UsedImplicitly] // Read only by reflection, into the cross-tier element-types fixture.
     public const string CollectionType = "w3c/skos+collection";
 
     /// <inheritdoc cref="ConceptType" />
+    [Relation]
     public const string EdgeType = "w3c/skos+edge";
 
     /// <inheritdoc cref="ConceptType" />
+    [UsedImplicitly] // Read only by reflection, into the cross-tier element-types fixture.
     public const string TruncationType = "w3c/skos+truncation";
 
     /// <summary>The drawn vocabulary, plus the family truncation banner when the budget cut it.</summary>

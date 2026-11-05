@@ -1,5 +1,3 @@
-using Xunit;
-
 namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline.Tests.Parity;
 
 /// <summary>
@@ -11,24 +9,4 @@ namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline.Tests.Parity;
 /// regenerating - <c>ADP_WRITE_PARITY_TRANSCRIPTS=1</c> rewrites the file before comparing - and the diff of the
 /// checked-in file is then the review of that change (Requirement 1.4).
 /// </remarks>
-public sealed class PipelineTranscriptTests
-{
-    [Fact]
-    public async Task TodaysCode_ReproducesTheCheckedInTranscript_ByteForByte()
-    {
-        // Arrange.
-        var cancellationToken = TestContext.Current.CancellationToken;
-
-        // Act.
-        var generated = await PipelineTranscript.GenerateAsync(cancellationToken);
-        if (Environment.GetEnvironmentVariable("ADP_WRITE_PARITY_TRANSCRIPTS") == "1")
-        {
-            await File.WriteAllBytesAsync(PipelineTranscript.CheckedInPath, generated, cancellationToken);
-        }
-
-        var checkedIn = await File.ReadAllBytesAsync(PipelineTranscript.CheckedInPath, cancellationToken);
-
-        // Assert.
-        Assert.True(checkedIn.AsSpan().SequenceEqual(generated), TranscriptText.FirstDifference(checkedIn, generated));
-    }
-}
+public sealed class PipelineTranscriptTests : TranscriptTests<PipelineTranscript>;

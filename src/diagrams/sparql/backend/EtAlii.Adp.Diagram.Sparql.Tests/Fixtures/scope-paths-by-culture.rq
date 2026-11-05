@@ -1,0 +1,21 @@
+# Finding A11: variables whose first scope paths compare differently by culture.
+# ?s first appears in where/graph.0 and ?b in where/optional.0: a Hawaiian collation puts the
+# vowel before the consonant. ?deep first appears in where/optional.1/optional.0 beside
+# where/optional.10 of ?x10: a Thai collation ignores the punctuation between them.
+PREFIX ex: <http://example.org/>
+
+SELECT *
+WHERE {
+  GRAPH ex:g { ?s ex:in ex:here }
+  OPTIONAL { ?s ex:b ?b }
+  OPTIONAL { ?s ex:c ?c OPTIONAL { ?s ex:deep ?deep } }
+  OPTIONAL { ?s ex:o2 ?x2 }
+  OPTIONAL { ?s ex:o3 ?x3 }
+  OPTIONAL { ?s ex:o4 ?x4 }
+  OPTIONAL { ?s ex:o5 ?x5 }
+  OPTIONAL { ?s ex:o6 ?x6 }
+  OPTIONAL { ?s ex:o7 ?x7 }
+  OPTIONAL { ?s ex:o8 ?x8 }
+  OPTIONAL { ?s ex:o9 ?x9 }
+  OPTIONAL { ?s ex:o10 ?x10 }
+}

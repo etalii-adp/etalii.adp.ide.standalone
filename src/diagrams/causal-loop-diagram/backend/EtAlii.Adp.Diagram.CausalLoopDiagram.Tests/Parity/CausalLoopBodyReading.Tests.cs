@@ -11,14 +11,14 @@ namespace EtAlii.Adp.Diagram.CausalLoopDiagram.Tests.Parity;
 /// </summary>
 public class CausalLoopBodyReadingTests
 {
-    public static TheoryData<string> Documents() => [.. CausalLoopTranscript.Corpus()];
+    public static TheoryData<string> Documents() => [.. CausalLoopCorpus.Paths()];
 
     [Theory]
     [MemberData(nameof(Documents))]
     public async Task TheBindingReads_WhatTheParserReads(string relative)
     {
         // Arrange.
-        var text = await File.ReadAllTextAsync(Path.Combine(CausalLoopTranscript.SourceFolder, relative), TestContext.Current.CancellationToken);
+        var text = await File.ReadAllTextAsync(Path.Combine(CausalLoopCorpus.SourceFolder, relative), TestContext.Current.CancellationToken);
         var parsed = CausalLoopParser.Parse(CausalLoopDocument.Parse(text));
 
         // Act.
@@ -37,7 +37,7 @@ public class CausalLoopBodyReadingTests
     public void TheCorpus_HasTheLenientSpellingsAndTheUnreadableLines()
     {
         // Assert: the comparison above is not vacuous for the two cases it is for.
-        var corpus = CausalLoopTranscript.Corpus();
+        var corpus = CausalLoopCorpus.Paths();
         Assert.Contains(corpus, path => path.EndsWith("/lenient-spellings.cld", StringComparison.Ordinal));
         Assert.Contains(corpus, path => path.EndsWith("/unreadable-lines.cld", StringComparison.Ordinal));
     }

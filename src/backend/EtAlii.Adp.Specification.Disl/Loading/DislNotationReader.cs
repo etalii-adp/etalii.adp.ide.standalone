@@ -19,9 +19,15 @@ internal static class DislNotationReader
         if (!root.TryGetProperty("notation", out var notation)) return DislNotation.None;
 
         var labels = new List<(string Type, DislTypeLabels Labels)>();
+        var refusals = new List<(string Type, bool IsEdge, IReadOnlyDictionary<string, IReadOnlyList<DislReason>> Gestures)>();
         foreach (var kind in new[] { "nodes", "edges" })
         {
-            foreach (var type in DislJson.Members(notation, kind)) labels.Add((type.Name, Labels(specification, type.Value, JsonPointer.Append(JsonPointer.Append("/notation", kind), type.Name))));
+            foreach (var type in DislJson.Members(notation, kind))
+            {
+                var pointer = JsonPointer.Append(JsonPointer.Append("/notation", kind), type.Name);
+                labels.Add((type.Name, Labels(specification, type.Value, pointer)));
+                refusals.Add((type.Name, kind == "edges", Refusals(specification, type.Value, JsonPointer.Append(pointer, "refusals"))));
+            }
         }
 
         var malformed = DislFieldReader.NotAnObject(notation);
@@ -36,7 +42,22 @@ internal static class DislNotationReader
         var canvas = malformed is null && notation.TryGetProperty("canvas", out var declaredCanvas) && declaredCanvas.ValueKind == JsonValueKind.Object
             ? Canvas(specification, declaredCanvas, "/notation/canvas")
             : null;
-        return new DislNotation(Names(notation), labels, edges, edgesMalformed, canvas, malformed);
+        return new DislNotation(Names(notation), labels, edges, edgesMalformed, canvas, malformed, refusals);
+    }
+
+    /// <summary>A node or edge notation's <c>refusals</c> (§6.9): per gesture its Reason[]; one Reason that is not in a list is read as a list of it.</summary>
+    private static Dictionary<string, IReadOnlyList<DislReason>> Refusals(DislSpecification specification, JsonElement type, string pointer)
+    {
+        var gestures = new Dictionary<string, IReadOnlyList<DislReason>>(StringComparer.Ordinal);
+        if (type.ValueKind != JsonValueKind.Object || !type.TryGetProperty("refusals", out var refusals) || refusals.ValueKind != JsonValueKind.Object) return gestures;
+        foreach (var gesture in refusals.EnumerateObject())
+        {
+            var at = JsonPointer.Append(pointer, gesture.Name);
+            gestures[gesture.Name] = gesture.Value.ValueKind == JsonValueKind.Array
+                ? DislFieldReader.Reasons(specification, gesture.Value, at)
+                : [DislFieldReader.Reason(specification, gesture.Value, at)];
+        }
+        return gestures;
     }
 
     public static DislViewpoints Viewpoints(DislSpecification specification, JsonElement root)
@@ -85,18 +106,21 @@ internal static class DislNotationReader
     }
 
     /// <summary>
-    /// The text a label's inline editor opens on. Its <c>text</c> is a Bindable (§2.5 b), whose bare string is always a
-    /// literal, so the editor opens on that string itself (behaviour change B-40). A bare string in <c>editText</c>
-    /// (<paramref name="key"/>) is compiled in the element context with the entered text's <c>value</c> bound, as the
-    /// runtime always read it, and opens on no text when it does not compile; any other value is an Expression.
+    /// The text a label's inline editor opens on (§6.12): its <c>editText</c>, a Message or an <c>{attribute}</c>, else
+    /// its <c>text</c>, a Bindable (<paramref name="key"/> says which). A bare string is literal text in both: a
+    /// Bindable's is always a literal (§2.5 b, behaviour change B-40), and a Message's is a LocalizedText (§2.3, B-41).
+    /// An object with <c>cel</c> is an Expression, an <c>{attribute}</c> binding the value of that attribute (B-42), and
+    /// any other object in <c>editText</c> a LocalizedText map, its locale's text (§2.3, B-42); anything else is an
+    /// Expression without source, which opens on no text.
     /// </summary>
-    private static DislBindable EditText(DislSpecification specification, string key, JsonElement text, string pointer)
+    private static DislBindable EditText(DislSpecification specification, string key, JsonElement text, string pointer) => text.ValueKind switch
     {
-        if (text.ValueKind != JsonValueKind.String) return new DislBindable.Expression(DislFieldReader.Expression(specification, text, pointer));
-        var source = text.GetString()!;
-        if (key == "text") return new DislBindable.Literal(source);
-        return new DislBindable.Expression(new DislExpressionField(pointer, source, specification.Programs.TryGet(DislProgramKey.Of(DislContext.Element, source, ["value"]), out var program, out _) ? program : null));
-    }
+        JsonValueKind.String => new DislBindable.Literal(text.GetString()),
+        JsonValueKind.Object when text.TryGetProperty("cel", out _) => new DislBindable.Expression(DislFieldReader.Expression(specification, text, pointer)),
+        JsonValueKind.Object when JsonProperties.String(text, "attribute") is { } attribute => new DislBindable.Attribute(attribute),
+        JsonValueKind.Object when key == "editText" => new DislBindable.Literal(DislFieldReader.LocalizedText(text)),
+        _ => new DislBindable.Expression(DislFieldReader.Expression(specification, text, pointer)),
+    };
 
     private static DislEdgeNotation Edge(JsonElement edge) =>
         DislFieldReader.NotAnObject(edge) is { } malformed
@@ -150,12 +174,12 @@ internal static class DislNotationReader
         var computed = legend.TryGetProperty("computed", out var declared) && declared.ValueKind == JsonValueKind.Object && declared.TryGetProperty("key", out var key)
             ? new DislLegendComputed(
                 DislFieldReader.Expression(specification, key, JsonPointer.Append(computedAt, "key")),
-                declared.TryGetProperty("order", out var order) ? DislFieldReader.Expression(specification, order, JsonPointer.Append(computedAt, "order")) : null,
-                declared.TryGetProperty("label", out var label) ? DislFieldReader.Message(specification, label, JsonPointer.Append(computedAt, "label")) : null)
+                DislFieldReader.OptionalExpression(specification, declared, computedAt, "order"),
+                DislFieldReader.OptionalMessage(specification, declared, computedAt, "label"))
             : null;
         return new DislCanvasLegend(
             !(legend.TryGetProperty("visible", out var visible) && visible.ValueKind == JsonValueKind.False),
-            legend.TryGetProperty("title", out var title) ? DislFieldReader.Message(specification, title, JsonPointer.Append(pointer, "title")) : null,
+            DislFieldReader.OptionalMessage(specification, legend, pointer, "title"),
             JsonProperties.String(legend, "from") == "drawn",
             JsonProperties.StringOrStrings(legend, "entries"),
             computed,

@@ -23,7 +23,7 @@ export type Extensions = { [key: `x-${string}`]: unknown };
 
 export interface DislDocument extends Extensions {
   disl: string;
-  language: { id: string; version: string; label?: string };
+  language: { id: string; version: string; label?: string; limits?: DislLimits };
   metamodel: DislMetamodel;
   coordinates?: DislCoordinates;
   notation: DislNotation;
@@ -67,11 +67,12 @@ export interface DislType extends Extensions {
 }
 
 /** A relation end: a type name, a list of them, or an end object naming its types and role (DISL §4.9). */
-export type DislRelationEnd = string | readonly string[] | { types: string | readonly string[]; role?: string };
+export type DislRelationEnd = string | readonly string[] | { types: string | readonly string[]; role?: string; min?: number; max?: number };
 
 export interface DislRelation extends Extensions {
   abstract?: boolean;
-  extends?: string;
+  /** Its supertypes, one name or a list of them (DISL §4.7). */
+  extends?: string | readonly string[];
   label?: string;
   source: DislRelationEnd;
   target: DislRelationEnd;
@@ -97,6 +98,32 @@ export interface DislAxis {
   unit?: string;
   scale?: number | { unit: Bindable<string>; size: number };
   ruler?: DislRuler;
+  /** The axis's title (DISL §5.3). */
+  label?: string;
+  /** The domain's bounds (DISL §5.3). */
+  min?: number;
+  max?: number;
+  /** Whether the domain increases towards the negative canvas direction (DISL §5.3). */
+  reversed?: boolean;
+  /** What a gesture or a typed value past `min` or `max` does (DISL §5.3, §4.3). */
+  outOfRange?: { drag?: "clamp" | "refuse"; typed?: "clamp" | "refuse"; message?: string };
+  /** Named ranges of the domain, drawn as bands (DISL §5.3). */
+  ranges?: readonly DislAxisRange[];
+  /** The labels at the two ends of the axis, by domain end (DISL §5.3). */
+  endLabels?: { min?: string; max?: string };
+}
+
+/** A named part of an axis's domain (DISL §5.3 `$defs/AxisRange`), drawn as a band. */
+export interface DislAxisRange {
+  id: string;
+  label?: string;
+  from: number;
+  to: number;
+  fill?: unknown;
+  style?: string | Readonly<Record<string, unknown>>;
+  /** The line drawn at `from`. */
+  separator?: unknown;
+  labelPosition?: "start" | "center" | "end";
 }
 
 export interface DislRuler extends Extensions {
@@ -110,9 +137,11 @@ export interface DislRuler extends Extensions {
 
 export interface DislCoordinateSystem {
   kind: string;
-  /** An axis name, or an inline axis. */
-  x: string | DislAxis;
-  y: string | DislAxis;
+  /** The direction of the positive y axis on screen (DISL §5.7). Default `y-down`. */
+  orientation?: "y-down" | "y-up";
+  /** An axis name, or an inline axis; a system may declare none (DISL §5). */
+  x?: string | DislAxis;
+  y?: string | DislAxis;
 }
 
 export interface DislNotation {
@@ -176,7 +205,7 @@ export type DislShapeRef = string | { type: string; params?: Readonly<Record<str
 export interface DislLabel extends Extensions {
   id: string;
   text: Bindable<string>;
-  position?: string | { anchor: readonly [number, number]; offset?: readonly [number, number]; align?: "start" | "center" | "end" };
+  position?: string | { anchor: readonly [number, number]; offset?: readonly [number, number] | { cel: string } | { attribute: string }; align?: "start" | "center" | "end" };
   distance?: number;
   editable?: boolean | "inline" | "multiline";
   wrap?: "none" | "word";
@@ -214,6 +243,8 @@ export interface DislAnchors extends Extensions {
   mode?: "outline" | "center" | "fixed" | "sides";
   points?: readonly { id: string; x: number; y: number }[];
   sides?: readonly ("top" | "right" | "bottom" | "left")[];
+  /** Whether the ends on one side are spread along it rather than meeting at its middle (DISL §6.9). */
+  spread?: boolean;
   /** Where an edge's end is drawn (DISL 0.3 §6.9): at its anchor (`point`, the default), or where the line crosses the outline. */
   drawnFrom?: "point" | "outline";
 }
@@ -238,7 +269,11 @@ export interface DislBadge extends Extensions {
   id: string;
   icon?: string;
   position?: string;
-  visible?: boolean | string | { cel: string };
+  /** What it is drawn as: a `line` beside its node at a side (DISL §6.9). */
+  shape?: DislShapeRef;
+  /** How long a line badge is, along its orientation. */
+  size?: number;
+  visible?: boolean | string | { cel: string } | { attribute: string };
   tooltip?: Bindable<string>;
   /** The operation a press runs. */
   onClick?: string;
@@ -246,6 +281,8 @@ export interface DislBadge extends Extensions {
   pack?: boolean;
   /** The text it shows. */
   text?: Bindable<string>;
+  /** How far it sits from its corner, `[dx, dy]` (DISL §6.9). */
+  offset?: readonly [number, number];
   style?: string | Readonly<Record<string, unknown>>;
 }
 
@@ -270,6 +307,8 @@ export interface DislNodeNotation extends Extensions {
   doubleClick?: string;
   connectable?: boolean;
   deletable?: boolean;
+  /** Whether a press picks the node; omitted, it does (DISL 6.7). */
+  selectable?: boolean;
   conditions?: readonly { when: string; style: string }[];
   compartments?: readonly DislCompartment[];
   badges?: readonly DislBadge[];
@@ -298,6 +337,8 @@ export interface DislEdgeNotation extends Extensions {
   reconnectable?: boolean;
   /** Whether a press on the edge selects it (DISL §6.10); `false` makes a press on it a press on the background. */
   selectable?: boolean;
+  /** The style each interaction state layers over the edge's own (DISL §6.10). */
+  states?: Readonly<Partial<Record<"hover" | "selected", string | Readonly<Record<string, unknown>>>>>;
   /**
    * How a new connection is drawn (DISL 0.3 §6.10): the pointer button, where it starts and the modifier keys
    * held; which end of the relation each named anchor starts (`from`); and the tool the gesture runs (`tool`).
@@ -403,9 +444,19 @@ export interface DislFilter {
 }
 
 export interface DislCanvas {
+  /** A fixed drawing area, in canvas units (DISL §6.13). */
+  bounds?: { x: number; y: number; w: number; h: number };
+  /** Whether the drawing area is stretched to the pane (DISL §6.13). Default `none`. */
+  fit?: "none" | "stretch";
+  /** Space kept around the bounds (DISL §6.13 Insets): one number for every side, or each side's own. */
+  margin?: number | { top?: number; right?: number; bottom?: number; left?: number };
   /** What the canvas says once its document is read and holds nothing to draw (DISL §6.13). */
   empty?: { text: string; when?: string };
   filters?: Readonly<Record<string, DislFilter>>;
+  /** The band of rows between the title and the drawing surface (DISL §6.13 `canvas.header`). */
+  header?: { rows: readonly DislLabel[]; style?: unknown; visible?: unknown };
+  /** Status notices outside the drawing (DISL §6.13); one with a budget's id replaces that budget's own. */
+  notices?: readonly (DislNoticeText & { id: string })[];
   /** The title drawn above the drawing surface (DISL §6.13 `canvas.title`). */
   title?: { id?: string; text: Bindable<string>; style?: string | Readonly<Record<string, unknown>>; editable?: boolean };
   /**
@@ -420,6 +471,26 @@ export interface DislCanvas {
     entries?: readonly string[];
     computed?: { key?: unknown; label: unknown; swatch?: { shape?: unknown; fill?: unknown } };
   };
+}
+
+/** The language's limits (DISL §3.2): what the canvas reads of them is each budget's notice (§3.2.1). */
+export interface DislLimits {
+  budgets?: Readonly<Record<string, DislBudget>>;
+}
+
+/** A budget (DISL §3.2.1), as far as the canvas draws it: whether it cuts what is drawn, and its notice. */
+export interface DislBudget {
+  truncate?: boolean;
+  measure?: unknown;
+  notice?: boolean | DislNoticeText;
+}
+
+/** A notice's text and where it shows (DISL §6.13 `$defs/Notice`). */
+export interface DislNoticeText {
+  text?: Bindable<string>;
+  severity?: "info" | "warning" | "error";
+  position?: "top" | "bottom" | "top-left" | "top-right" | "bottom-left" | "bottom-right";
+  visible?: unknown;
 }
 
 export interface DislViewpoint {

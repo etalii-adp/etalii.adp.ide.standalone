@@ -15,7 +15,7 @@ namespace EtAlii.Adp.Diagram.AnsibleStructure.Tests.Parity;
 /// </remarks>
 public class AnsibleDerivedFindingsTests
 {
-    public static TheoryData<string> Folders() => [.. AnsibleTranscript.Corpus()];
+    public static TheoryData<string> Folders() => [.. AnsibleCorpus.Folders()];
 
     [Theory]
     [MemberData(nameof(Folders))]

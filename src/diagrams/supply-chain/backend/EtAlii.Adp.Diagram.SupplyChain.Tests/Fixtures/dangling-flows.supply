@@ -1,0 +1,23 @@
+supply-chain: 1
+# Finding B3: flows whose ends name no node, a flow from a missing node to itself, and a flow with
+# an absent end beside a node with no id.
+nodes:
+  - id: mine
+    type: source
+    name: Mine
+  - type: producer
+    name: A plant with no id
+flows:
+  - id: loop-from-nowhere
+    from: ghost
+    to: ghost
+  - id: no-end
+    from: mine
+  - id: no-start
+    to: mine
+  - id: to-nowhere
+    from: mine
+    to: nowhere
+  - id: from-nowhere
+    from: nowhere
+    to: mine

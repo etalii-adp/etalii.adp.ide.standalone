@@ -10,4 +10,4 @@ namespace EtAlii.Adp.Diagram.SupplyChain;
 /// this type is what the module's registrations, its reloader and the shared restore command
 /// resolve, so a document of another type can never reach them.
 /// </remarks>
-public interface ISupplyChainDocumentStore : IDiagramDocumentStore<LineDocument, SupplyChainModel>;
+public interface ISupplyChainDocumentStore : IDiagramDocumentStore<SupplyChainBody, SupplyChainModel>;

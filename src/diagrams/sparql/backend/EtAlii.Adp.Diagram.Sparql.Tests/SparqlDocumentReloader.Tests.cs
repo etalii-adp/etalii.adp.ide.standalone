@@ -16,7 +16,7 @@ public sealed class SparqlDocumentReloaderTests : DocumentReloaderContract<ISpar
 
     protected override ISparqlDocumentStore CreateStore() => new SparqlDocumentStore();
 
-    protected override async Task<bool> IsEmptyAsync(ISparqlDocumentStore store, string path, CancellationToken cancellationToken) => ReferenceEquals((await store.GetOrLoadAsync(path, cancellationToken)).Model, SparqlQueryModel.Empty);
+    protected override async Task<bool> IsEmptyAsync(ISparqlDocumentStore store, string path, CancellationToken cancellationToken) => ReferenceEquals((await store.GetOrLoadAsync(path, cancellationToken)).Model, SparqlDocument.Empty);
 
     protected override void OnChanged(ISparqlDocumentStore store, Action<string> changed) =>
         store.Changed += (_, args) => changed(args.Path);

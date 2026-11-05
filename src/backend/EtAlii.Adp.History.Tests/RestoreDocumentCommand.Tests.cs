@@ -11,20 +11,14 @@ namespace EtAlii.Adp.History.Tests;
 /// </summary>
 public sealed class RestoreDocumentCommandTests : IDisposable
 {
-    private readonly string _folder = IoPath.Combine(IoPath.GetTempPath(), "adp-restore-" + Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-restore");
+    private readonly string _folder;
 
-    public RestoreDocumentCommandTests() => Directory.CreateDirectory(_folder);
+    public RestoreDocumentCommandTests() => _folder = _testFolder.Path;
 
     public void Dispose()
     {
-        try
-        {
-            Directory.Delete(_folder, recursive: true);
-        }
-        catch (IOException)
-        {
-            // A temp folder a virus scanner still holds is not a test failure.
-        }
+        _testFolder.Dispose();
     }
 
     [Fact]
@@ -42,6 +36,22 @@ public sealed class RestoreDocumentCommandTests : IDisposable
         Assert.Equal("before the edit\r\n", await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
         Assert.Equal([path], store.Reloaded);
         Assert.Same(redo, result.Inverse);
+    }
+
+    [Fact]
+    public async Task ARestoreOfAFileWithAByteOrderMark_KeepsIt()
+    {
+        // Spec 071, T012: undoing an edit of a file somebody else wrote gives its bytes back, the mark included.
+        var path = IoPath.Combine(_folder, "body.yml");
+        await File.WriteAllBytesAsync(path, [0xEF, 0xBB, 0xBF, .. "after the edit"u8.ToArray()], TestContext.Current.CancellationToken);
+        var store = new FirstStore();
+
+        var result = await new RestoreDocumentCommandHandler<FirstStore>(store, new FileWriter())
+            .ExecuteAsync(new RestoreDocumentCommand<FirstStore>(path, "before the edit", new SampleEdit(), After: "after the edit"), TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsSuccess, result.Error);
+        byte[] expected = [0xEF, 0xBB, 0xBF, .. "before the edit"u8.ToArray()];
+        Assert.Equal(expected, await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]

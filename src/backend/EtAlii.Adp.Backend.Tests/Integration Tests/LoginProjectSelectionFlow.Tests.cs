@@ -1,6 +1,5 @@
 using EtAlii.Adp.Authentication.Wire;
 using EtAlii.Adp.Projects.Wire;
-using EtAlii.Adp.TestSupport.Host;
 using Grpc.Core;
 using Xunit;
 using Path = EtAlii.Adp.Documents.Wire.Path;

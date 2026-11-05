@@ -29,6 +29,10 @@ internal static class DislFieldReader
         _ => (null, pointer),
     };
 
+    /// <summary>The Expression member <paramref name="name"/> of <paramref name="owner"/> at <paramref name="pointer"/>, or null when it has none.</summary>
+    public static DislExpressionField? OptionalExpression(DislSpecification specification, JsonElement owner, string pointer, string name) =>
+        owner.TryGetProperty(name, out var json) ? Expression(specification, json, JsonPointer.Append(pointer, name)) : null;
+
     /// <summary>A value position of an action (§2.5 d): a string or an object is an Expression, anything else the value it reads as.</summary>
     public static DislActionValue Value(DislSpecification specification, JsonElement json, string pointer) =>
         json.ValueKind is JsonValueKind.String or JsonValueKind.Object
@@ -40,9 +44,17 @@ internal static class DislFieldReader
     {
         JsonValueKind.String => new DislMessage.Plain(json.GetString()!),
         JsonValueKind.Object when json.TryGetProperty("cel", out _) => new DislMessage.Cel(Expression(specification, json, pointer)),
-        JsonValueKind.Object => new DislMessage.Localized(DislEvaluation.Localized(json.EnumerateObject().Select(entry => (entry.Name, entry.Value.ValueKind == JsonValueKind.String ? entry.Value.GetString() : null)))),
+        JsonValueKind.Object => new DislMessage.Localized(LocalizedText(json)),
         _ => new DislMessage.None(),
     };
+
+    /// <summary>The Message member <paramref name="name"/> of <paramref name="owner"/> at <paramref name="pointer"/>, or null when it has none.</summary>
+    public static DislMessage? OptionalMessage(DislSpecification specification, JsonElement owner, string pointer, string name) =>
+        owner.TryGetProperty(name, out var json) ? Message(specification, json, JsonPointer.Append(pointer, name)) : null;
+
+    /// <summary>A LocalizedText map's text (§2.3), as <see cref="DislEvaluation.Localized"/> selects it; null when it has none.</summary>
+    public static string? LocalizedText(JsonElement map) =>
+        DislEvaluation.Localized(map.EnumerateObject().Select(entry => (entry.Name, entry.Value.ValueKind == JsonValueKind.String ? entry.Value.GetString() : null)));
 
     /// <summary>A list of Reasons (§2.3) at <paramref name="pointer"/>; none when it is not a list.</summary>
     public static IReadOnlyList<DislReason> Reasons(DislSpecification specification, JsonElement json, string pointer)

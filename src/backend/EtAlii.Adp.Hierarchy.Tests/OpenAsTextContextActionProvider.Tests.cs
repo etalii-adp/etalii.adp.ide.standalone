@@ -15,17 +15,17 @@ namespace EtAlii.Adp.Hierarchy.Tests;
 /// </summary>
 public class OpenAsTextContextActionProviderTests : IDisposable
 {
+    private readonly TestFolder _testFolder = TestFolder.Create("open-as-text");
     private readonly string _root;
 
     public OpenAsTextContextActionProviderTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     private static readonly DiagramDefinition Mindmap =

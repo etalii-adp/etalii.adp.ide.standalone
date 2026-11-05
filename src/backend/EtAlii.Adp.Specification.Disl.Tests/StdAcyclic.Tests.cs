@@ -10,9 +10,9 @@ public class StdAcyclicTests
         "metamodel": {
           "types": { "Box": {} },
           "relations": {
-            "Owns": { "abstract": true, "acyclic": true, "source": "Box", "target": "Box" },
+            "Owns": { "abstract": true, "acyclic": true, "source": "Box", "target": "Box", "allowSelfLoops": true },
             "Child": { "extends": "Owns", "allowSelfLoops": true },
-            "Part": { "extends": "Owns", "acyclic": true },
+            "Part": { "extends": "Owns", "acyclic": true, "allowSelfLoops": false },
             "Shows": { "source": "Box", "target": "Box" }
           }
         }

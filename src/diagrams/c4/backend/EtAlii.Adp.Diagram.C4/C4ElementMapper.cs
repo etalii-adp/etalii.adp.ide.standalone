@@ -14,6 +14,7 @@ public sealed class C4ElementMapper
 {
     /// <summary>The mime-style element kinds C4 puts on the wire.</summary>
     public const string NodeType = "c4/model+node";
+    [Relation]
     public const string RelationshipType = "c4/model+relationship";
     public const string BoundaryType = "c4/model+boundary";
     public const string ViewType = "c4/model+view";
@@ -22,14 +23,14 @@ public sealed class C4ElementMapper
     private const string ViewElementId = "c4:view";
 
     private readonly C4Metrics _metrics;
-    private readonly C4LayoutSidecar _sidecar;
+    private readonly C4Positions _positions;
 
-    public C4ElementMapper(C4Metrics metrics, C4LayoutSidecar sidecar)
+    public C4ElementMapper(C4Metrics metrics, C4Positions positions)
     {
         ArgumentNullException.ThrowIfNull(metrics);
-        ArgumentNullException.ThrowIfNull(sidecar);
+        ArgumentNullException.ThrowIfNull(positions);
         _metrics = metrics;
-        _sidecar = sidecar;
+        _positions = positions;
     }
 
     /// <summary>
@@ -43,15 +44,17 @@ public sealed class C4ElementMapper
     /// (<see cref="C4Definitions.Drawing"/>); where it goes, the boundaries and the viewport filter are this
     /// class's and the layout's (c4-disl-fbl Requirements 3.4 and 3.5).
     /// </remarks>
-    public IReadOnlyList<DiagramElement> Visible(C4Workspace workspace, C4View view, DiagramViewport viewport, string? bodyPath = null)
+    public IReadOnlyList<DiagramElement> Visible(C4Workspace workspace, C4View view, DiagramViewport viewport, string? bodyPath = null, string? registrationPath = null)
     {
         ArgumentNullException.ThrowIfNull(workspace);
         ArgumentNullException.ThrowIfNull(view);
 
-        var drawing = C4Definitions.Drawing(workspace, C4Disl.FileOf(bodyPath ?? ""), view);
+        var drawing = C4Definitions.Drawing(workspace, C4Body.FileOf(bodyPath ?? ""), view);
 
         // Whatever the user arranged by hand, layered over the computed arrangement.
-        var authored = bodyPath is { Length: > 0 } ? _sidecar.Read(bodyPath, view.Key) : null;
+        var authored = bodyPath is { Length: > 0 }
+            ? _positions.Read(bodyPath, registrationPath, view.Key, workspace.Elements.Select(element => element.Id).ToHashSet(StringComparer.Ordinal))
+            : null;
         var layout = C4LayoutEngine.Compute(workspace, view, _metrics, authored, drawing.Members);
         var shown = drawing.Members.Where(element => layout.Boxes.ContainsKey(element.Id)).ToArray();
 
@@ -140,7 +143,7 @@ public sealed class C4ElementMapper
     {
         ArgumentNullException.ThrowIfNull(workspace);
         ArgumentNullException.ThrowIfNull(view);
-        return C4Definitions.Drawing(workspace, C4Disl.FileOf(""), view).Title;
+        return C4Definitions.Drawing(workspace, C4Body.FileOf(""), view).Title;
     }
 
     private DiagramElement ToElement(C4Element element, Rect box, IReadOnlyList<C4ElementStyle> styles)

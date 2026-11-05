@@ -47,6 +47,9 @@ public static class DislModelBuilder
     /// <summary>A derived type whose <c>from</c> or per-item expressions failed (§4.11.5).</summary>
     public const string DerivedFailed = "std.derivedFailed";
 
+    /// <summary>Derived nodes whose computed parent does not allow them, drawn at the top level instead (§4.11.2).</summary>
+    public const string Containment = "std.containment";
+
     /// <summary>The model of <paramref name="reading"/> under <paramref name="specification"/>, built headless.</summary>
     public static DislModel From(FblModel reading, DislSpecification specification) => From(reading, specification, new DislEnv());
 
@@ -140,7 +143,8 @@ public static class DislModelBuilder
 
     /// <summary>
     /// Completes a diagram whose stored elements are in place (§14.2): the derived ids of its nodes,
-    /// ancestors first, then its derived relations, then the derived ids of its stored relations.
+    /// ancestors first, then its derived node types and its derived relations (§4.11.5), then the
+    /// derived ids of its stored relations.
     /// </summary>
     /// <returns>The runtime's findings, in the order they arose.</returns>
     public static IReadOnlyList<Finding> Complete(DislDiagram diagram)
@@ -148,20 +152,21 @@ public static class DislModelBuilder
         ArgumentNullException.ThrowIfNull(diagram);
         List<Finding> findings = [];
         DerivedIds(diagram, diagram.Nodes, findings);
+        DerivedNodes(diagram, findings);
         DerivedRelations(diagram, findings);
         DerivedIds(diagram, [.. diagram.Relations.Where(relation => !relation.IsDerived)], findings);
         return findings;
     }
 
     /// <summary>
-    /// The ids of the <c>derived</c> strategy (§11.5.2), in the identity context, in the order given;
-    /// an id computed twice is reported as <c>std.duplicateId</c> unless the specification switches that built-in off (§8.1).
+    /// The ids of the <c>derived</c> strategy (§11.5.2), in the identity context, in the order given. An id computed
+    /// twice is kept by both holders, the first in reading order first, and is not reported here: the constraints report
+    /// it as <c>std.duplicateId</c> on the later holder's line, with the built-in's settings (§8.7, §11.5.4), as they report
+    /// a written id held twice.
     /// </summary>
     private static void DerivedIds(DislDiagram diagram, IReadOnlyList<DislElement> elements, List<Finding> findings)
     {
         var specification = diagram.Specification;
-        var computed = new Dictionary<string, DislElement>(specification.IdComparer);
-        var reportsDuplicates = specification.Constraints.BuiltIn(FindingCodes.DuplicateId).Enabled;
         foreach (var element in elements)
         {
             var rule = specification.IdRuleOf(element.Type.Name);
@@ -183,11 +188,102 @@ public static class DislModelBuilder
 
             element.Id = id;
             element.IdIsStored = false;
-            if (!computed.TryAdd(id, element) && reportsDuplicates)
+        }
+    }
+
+    /// <summary>
+    /// The derived node types (§4.11.2), in the order of <c>metamodel.types</c>: each type's items, grouped by its
+    /// <c>key</c>, each group giving one node with its <c>id</c>, <c>attributes</c>, <c>parent</c>, <c>slot</c> and
+    /// <c>sources</c>. Each type's <c>from</c> sees the stored elements and the derived nodes of the types before it.
+    /// </summary>
+    private static void DerivedNodes(DislDiagram diagram, List<Finding> findings)
+    {
+        var taken = new Dictionary<string, DislElement>(diagram.Specification.IdComparer);
+        foreach (var element in diagram.Elements) taken.TryAdd(element.Id, element);
+        foreach (var type in diagram.Specification.Metamodel.Types.Values)
+        {
+            if (type is not { DerivedNode: { } derived, Abstract: false }) continue;
+            var run = new DerivedItems(diagram, type, findings);
+            if (derived.From.Evaluate(run.Variables) is not IReadOnlyList<object?> items)
             {
-                findings.Add(new Finding(FindingCodes.DuplicateId, FindingSeverity.Warning, $"The id '{id}' is computed for two elements; the first keeps it.", null));
+                run.NoItems();
+                continue;
+            }
+
+            var groups = Groups(derived.Key, run, items);
+            for (var index = 0; index < groups.Count; index++)
+            {
+                var group = groups[index];
+                DerivedNode(run, derived, group, new Dictionary<string, object?>(run.Variables) { ["item"] = group[0], ["group"] = group, ["index"] = (long)index }, taken);
+            }
+            run.Report();
+        }
+    }
+
+    /// <summary>The node one group of a derived node type gives, bound as <paramref name="item"/>; none when it is dropped.</summary>
+    private static void DerivedNode(DerivedItems run, DislDerivedNode derived, List<object?> group, Dictionary<string, object?> item, Dictionary<string, DislElement> taken)
+    {
+        if (derived.Id.Evaluate(item) is not string id)
+        {
+            run.Fail("the id of an item is not a string");
+            return;
+        }
+
+        // A failing per-item expression drops the item (§4.11.5).
+        var attributes = new Dictionary<string, object?>(StringComparer.Ordinal);
+        foreach ((string name, DislDerivedField value) in derived.Attributes)
+        {
+            var computed = value.Evaluate(item);
+            if (computed is CelError error)
+            {
+                run.Fail(error.Message);
+                return;
+            }
+            attributes[name] = computed;
+        }
+
+        // Without sources, the group when its items are elements (§4.11.2).
+        IReadOnlyList<DislElement> sources = group.All(member => member is DislElement) ? [.. group.Cast<DislElement>()] : [];
+        if (derived.Sources is { } derivedSources)
+        {
+            if (derivedSources.Evaluate(item) is not IReadOnlyList<object?> list)
+            {
+                run.Fail("the sources of an item are not a list");
+                return;
+            }
+            sources = [.. list.OfType<DislElement>()];
+        }
+
+        DislElement? parent = null;
+        if (derived.Parent?.Evaluate(item) is { } computedParent)
+        {
+            if (computedParent is CelError error)
+            {
+                run.Fail(error.Message);
+                return;
+            }
+            parent = computedParent as DislElement;
+            if (parent is { Type.IsRelation: true } || parent is not null && !parent.Type.ChildTypes.Any(child => run.Type.Linearisation.Contains(child)))
+            {
+                run.Uncontained();
+                parent = null;
             }
         }
+        var slot = parent is null ? null : derived.Slot?.Evaluate(item) as string;
+
+        if (taken.TryGetValue(id, out var holder))
+        {
+            run.Taken(id, holder);
+            return;
+        }
+        taken[id] = run.Diagram.Add(new DislElement(run.Diagram, run.Type, id, attributes)
+        {
+            Parent = parent,
+            Slot = slot,
+            IsDerived = true,
+            Sources = sources,
+            IdIsStored = false,
+        });
     }
 
     /// <summary>The derived relation types (§4.11.3), in the order of <c>metamodel.relations</c>.</summary>
@@ -264,25 +360,29 @@ public static class DislModelBuilder
             sources = [.. list.OfType<DislElement>()];
         }
 
+        var owner = new StatedOwner(false, null);
+        if (derived.Owner is { } derivedOwner && !run.Owner(derivedOwner.Evaluate(item), out owner)) return;
+
         var attributes = new Dictionary<string, object?>(StringComparer.Ordinal);
         foreach ((string name, DislDerivedField value) in derived.Attributes)
         {
             attributes[name] = value.Evaluate(item);
         }
-        run.Add(id, from, to, attributes, sources);
+        run.Add(id, from, to, attributes, sources, owner);
     }
 
     /// <summary>
-    /// The items of a derived type grouped by its <c>key</c> (§4.11.3): items with equal keys (CEL
+    /// The items of a derived type grouped by its <c>key</c> (§4.11.2, §4.11.3): items with equal keys (CEL
     /// <c>==</c>) are one group, the groups in the order of their first item; without a key every item
     /// is a group of its own. An item whose key fails, or is not a string, number, bool or list of
-    /// those, is dropped.
+    /// those, is dropped. Keys are looked up by hash, so grouping is linear in the items.
     /// </summary>
     private static List<List<object?>> Groups(DislDerivedField? keyed, DerivedItems run, IReadOnlyList<object?> items)
     {
         if (keyed is null) return [.. items.Select(item => new List<object?> { item })];
 
-        var groups = new List<(object? Key, List<object?> Members)>();
+        var groups = new List<List<object?>>();
+        var byKey = new Dictionary<object, List<object?>>(KeyComparer.Instance);
         for (var index = 0; index < items.Count; index++)
         {
             var bound = new Dictionary<string, object?>(run.Variables) { ["item"] = items[index], ["group"] = new List<object?> { items[index] }, ["index"] = (long)index };
@@ -297,15 +397,45 @@ public static class DislModelBuilder
                 run.Fail("the key of an item is not a string, number, bool or list of those");
                 continue;
             }
-            var found = groups.FindIndex(group => CelEquality.Equal(group.Key, key));
-            if (found >= 0) groups[found].Members.Add(items[index]);
-            else groups.Add((key, [items[index]]));
+            if (byKey.TryGetValue(key!, out var members))
+            {
+                members.Add(items[index]);
+            }
+            else
+            {
+                members = [items[index]];
+                byKey[key!] = members;
+                groups.Add(members);
+            }
         }
-        return [.. groups.Select(group => group.Members)];
+        return groups;
 
         static bool IsKey(object? key) => IsScalar(key) || key is IReadOnlyList<object?> list && list.All(IsScalar);
 
         static bool IsScalar(object? key) => key is string or long or double or bool;
+    }
+
+    /// <summary>
+    /// Keys compared as CEL's <c>==</c> compares them (<see cref="CelEquality"/>), hashed so that keys it calls equal
+    /// hash alike: a number by its value as a double, so that an int and a double of one value meet, a list by its members.
+    /// </summary>
+    private sealed class KeyComparer : IEqualityComparer<object>
+    {
+        public static KeyComparer Instance { get; } = new();
+
+        bool IEqualityComparer<object>.Equals(object? x, object? y) => CelEquality.Equal(x, y);
+
+        int IEqualityComparer<object>.GetHashCode(object key) => Hash(key);
+
+        private static int Hash(object? key) => key switch
+        {
+            string text => StringComparer.Ordinal.GetHashCode(text),
+            long number => ((double)number).GetHashCode(),
+            double number => number.GetHashCode(),
+            bool flag => flag.GetHashCode(),
+            IReadOnlyList<object?> list => list.Aggregate(17, (hash, member) => unchecked((hash * 31) + Hash(member))),
+            _ => 0,
+        };
     }
 
     /// <summary>
@@ -363,10 +493,13 @@ public static class DislModelBuilder
             sources = [.. list.OfType<DislElement>()];
         }
 
+        var owner = new StatedOwner(false, null);
+        if (map.TryGetValue("owner", out var stated) && !run.Owner(stated, out owner)) return;
+
         var attributes = map
             .Where(entry => run.Type.Attributes.ContainsKey(entry.Key))
             .ToDictionary(entry => entry.Key, entry => entry.Value, StringComparer.Ordinal);
-        run.Add(id, from, to, attributes, sources);
+        run.Add(id, from, to, attributes, sources, owner);
     }
 
     private static bool Allows(DislRelationEnd? end, object? value) =>
@@ -432,7 +565,7 @@ public static class DislModelBuilder
         private DislElement Node(FblElement element, DislTypeMapping mapping, DislType type)
         {
             if (_built.TryGetValue(element, out var done)) return done;
-            var parent = element.ParentId is { } parentId && typed.FirstOrDefault(entry => entry.Element.Id == parentId) is { Element: not null } owner && !owner.Type.IsRelation
+            var parent = element.ParentId is { } parentId && typed.FirstOrDefault(entry => entry.Element.Id == parentId) is { Element: not null, Type.IsRelation: false } owner
                 ? Node(owner.Element, owner.Mapping, owner.Type)
                 : null;
             var attributes = Attributes(element, mapping, type, _specification.Metamodel, out var host, out _);
@@ -501,13 +634,19 @@ public static class DislModelBuilder
     /// One derived relation type's items as they become relations (§4.11.3, §4.9): the variables its expressions
     /// read, the relations it adds, and what it drops, reported once its items are done.
     /// </summary>
+    /// <summary>The <c>owner</c> a derived relation states (§4.11.3): whether it states one, and the node it names, null for the diagram.</summary>
+    private readonly record struct StatedOwner(bool IsStated, DislElement? Element);
+
     private sealed class DerivedItems(DislDiagram diagram, DislType type, List<Finding> findings)
     {
         private readonly HashSet<string> _failures = new(StringComparer.Ordinal);
         private readonly Dictionary<string, int> _badEnds = new(StringComparer.Ordinal);
         private readonly Dictionary<string, int> _repeats = new(StringComparer.Ordinal);
+        private int _uncontained;
 
         public DislType Type => type;
+
+        public DislDiagram Diagram => diagram;
 
         /// <summary>What the type's expressions read besides an item: <c>diagram</c> and <c>env</c>.</summary>
         public Dictionary<string, object?> Variables { get; } = new() { ["diagram"] = diagram, ["env"] = diagram.Env.ToCel() };
@@ -540,7 +679,30 @@ public static class DislModelBuilder
         }
 
         /// <summary>Adds the derived relation, unless its id is taken (§4.11.5).</summary>
-        public void Add(string id, DislElement from, DislElement to, Dictionary<string, object?> attributes, IReadOnlyList<DislElement> sources)
+        /// <summary>
+        /// The <c>owner</c> an item states (§4.11.3) as <paramref name="owner"/>: a node, or null for the diagram.
+        /// False, with the item dropped, when it fails or is neither.
+        /// </summary>
+        public bool Owner(object? value, out StatedOwner owner)
+        {
+            owner = new StatedOwner(true, value as DislElement);
+            switch (value)
+            {
+                case null or DislDiagram:
+                    owner = new StatedOwner(true, null);
+                    return true;
+                case DislElement { Type.IsRelation: false }:
+                    return true;
+                case CelError error:
+                    Fail(error.Message);
+                    return false;
+                default:
+                    Fail("the owner of an item is not a node or the diagram");
+                    return false;
+            }
+        }
+
+        public void Add(string id, DislElement from, DislElement to, Dictionary<string, object?> attributes, IReadOnlyList<DislElement> sources, StatedOwner owner)
         {
             if (diagram.ElementById(id) is { } taken)
             {
@@ -556,10 +718,19 @@ public static class DislModelBuilder
                 IsDerived = true,
                 Sources = sources,
                 IdIsStored = false,
+                OwnerIsStated = owner.IsStated,
+                StatedOwner = owner.Element,
             });
         }
 
-        /// <summary>Reports the items dropped: why, then how many for an end the declaration does not allow.</summary>
+        /// <summary>Notes a node whose computed parent does not allow it, which is drawn at the top level (§4.11.2).</summary>
+        public void Uncontained() => _uncontained++;
+
+        /// <summary>Reports a derived node whose id an element computed or read earlier holds; it is not drawn (§4.11.5).</summary>
+        public void Taken(string id, DislElement holder) =>
+            findings.Add(new Finding(DerivedId, FindingSeverity.Warning, $"{type.Name} '{id}' has the id of {holder}; it is not drawn.", null));
+
+        /// <summary>Reports the items dropped: why, then how many for an end the declaration does not allow, then the nodes drawn at the top level.</summary>
         public void Report()
         {
             foreach (var failure in _failures)
@@ -569,6 +740,10 @@ public static class DislModelBuilder
             foreach ((string end, int count) in _badEnds)
             {
                 findings.Add(new Finding(DerivedEnds, FindingSeverity.Warning, $"{count} item(s) of {type.Name} were dropped: their {end} is not one its declaration allows.", null));
+            }
+            if (_uncontained > 0)
+            {
+                findings.Add(new Finding(Containment, FindingSeverity.Warning, $"{_uncontained} {type.Name} node(s) are drawn at the top level: their computed parent does not allow them.", null));
             }
         }
 

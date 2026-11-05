@@ -1,3 +1,4 @@
+using System.Globalization;
 using EtAlii.Adp.Specification.Cel;
 
 namespace EtAlii.Adp.Specification.Disl;
@@ -11,7 +12,8 @@ namespace EtAlii.Adp.Specification.Disl;
 /// <b>Built-ins</b>: <c>std.unparseable</c> and <c>std.unreadableEntry</c> as the reader raised them
 /// (<see cref="DislConstraintOptions.ReaderFindings"/>); <c>std.duplicateId</c> over the written ids;
 /// <c>std.endpoints</c> from each relation type's ends, <c>allowSelfLoops</c> and <c>allowParallel</c>;
-/// <c>std.references</c> for a relation end that names nothing. Each takes its <c>code</c>,
+/// <c>std.references</c> for a relation end that names nothing; <c>std.facets</c> for a stored number
+/// outside its attribute's <c>min</c> or <c>max</c>. Each takes its <c>code</c>,
 /// <c>severity</c>, <c>message</c> and <c>enabled</c> from <c>constraints.builtIn</c> - a <c>code</c>
 /// that is a <c>{cel}</c> object is computed per finding in the message's context (DISL 0.3 §8.1),
 /// falling back to the built-in's id - and <c>oncePerGroup</c> (DISL 0.3 §8.1; <c>second</c> or
@@ -78,7 +80,9 @@ public static class ConstraintEvaluator
             run.Endpoints();
             run.Acyclic();
             run.References();
+            run.Facets();
             run.Rules();
+            run.Budgets();
         }
         return run.Ordered();
     }
@@ -116,6 +120,23 @@ public static class ConstraintEvaluator
             }
         }
 
+        /// <summary>
+        /// A budget's <c>finding</c> (§3.2.1), one diagram-level finding while it is exceeded, with the budget's id as
+        /// the finding's code and constraint.
+        /// </summary>
+        public void Budgets()
+        {
+            var budgets = specification.Budgets;
+            var states = diagram.Budgets;
+            for (var index = 0; index < budgets.Count; index++)
+            {
+                if (budgets[index] is not { FindingSeverity: { } severity } budget || !states[index].Exceeded) continue;
+                var variables = Variables(diagram, null);
+                var message = budget.FindingMessage?.Text(variables, budget.Id) ?? budget.Id;
+                _found.Add((new DislFinding("budget:" + budget.Id, budget.Id, severity, message, [], null), -1, null));
+            }
+        }
+
         /// <summary><c>std.duplicateId</c>: per written id held by several stored elements, each later holder, in reading order.</summary>
         public void DuplicateIds()
         {
@@ -146,10 +167,10 @@ public static class ConstraintEvaluator
                 var type = relation.Type;
                 if (!Allows(type.Source, source)) violations.Add((relation, "source"));
                 if (!Allows(type.Target, target)) violations.Add((relation, "target"));
-                if (ReferenceEquals(source, target) && !(type.AllowSelfLoops ?? true)) violations.Add((relation, "selfLoop"));
-                if (!(type.AllowParallel ?? true))
+                if (ReferenceEquals(source, target) && !type.AllowSelfLoops) violations.Add((relation, "selfLoop"));
+                if (!type.AllowParallel)
                 {
-                    var directed = type.Directed ?? true;
+                    var directed = type.Directed;
                     var key = directed || source.GetHashCode() <= target.GetHashCode() ? (type, source, target) : (type, target, source);
                     if (!parallels.TryGetValue(key, out var group)) parallels[key] = group = [];
                     group.Add(relation);
@@ -249,6 +270,50 @@ public static class ConstraintEvaluator
             {
                 var detail = new CelMap { ["end"] = end, ["missingId"] = id ?? "", ["attribute"] = end };
                 Add(setting, "std.references", relation, detail, $"The {end} '{id}' of this {relation.Type.Name} names nothing.", relation);
+            }
+        }
+
+        /// <summary>
+        /// <c>std.facets</c> from an attribute's <c>min</c> and <c>max</c> (§4.3): per stored element in model
+        /// order, and per <c>int</c> or <c>number</c> attribute it holds in its type's attribute order, a value
+        /// below <c>min</c> or above <c>max</c>, binding <c>detail</c> with <c>attribute</c>, <c>facet</c>
+        /// (<c>min</c> or <c>max</c>) and <c>limit</c>. A struct's fields (§4.4) are checked in its place, in field
+        /// order, with <c>attribute</c> their dotted path (<c>extent.across</c>). The value is kept as stored: a facet
+        /// reports, it does not correct (§4.3's <c>outOfRange</c> applies to an edit only).
+        /// </summary>
+        public void Facets()
+        {
+            var setting = Setting("std.facets");
+            if (!setting.Enabled) return;
+            foreach (var element in diagram.Elements.Where(element => !element.IsDerived))
+            {
+                foreach (var attribute in element.Type.Attributes.Values)
+                {
+                    if (element.Attributes.TryGetValue(attribute.Name, out var stored)) Check(element, attribute, attribute.Name, stored);
+                }
+            }
+
+            void Check(DislElement element, DislAttribute attribute, string path, object? stored)
+            {
+                if (stored is CelMap fields)
+                {
+                    foreach (var field in attribute.Fields)
+                    {
+                        if (fields.TryGetValue(field.Name, out var held)) Check(element, field, path + "." + field.Name, held);
+                    }
+                    return;
+                }
+                if (stored is not (double or long)) return;
+                var value = Convert.ToDouble(stored, CultureInfo.InvariantCulture);
+                if (attribute.Min is { } min && value < min) Facet(element, path, "min", min, value, "minimum");
+                if (attribute.Max is { } max && value > max) Facet(element, path, "max", max, value, "maximum");
+            }
+
+            void Facet(DislElement element, string path, string facet, double limit, double value, string noun)
+            {
+                var detail = new CelMap { ["attribute"] = path, ["facet"] = facet, ["limit"] = limit };
+                var text = value.ToString(CultureInfo.InvariantCulture);
+                Add(setting, "std.facets", element, detail, $"'{WrittenId(element)}' has {path} {text}; the {noun} is {limit.ToString(CultureInfo.InvariantCulture)}.", element);
             }
         }
 

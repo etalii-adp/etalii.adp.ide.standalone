@@ -54,12 +54,9 @@ public sealed class MindmapFreeplanePlugin : IPersistencePlugin
         // Read-only, as the validator always judged it: no id is assigned, so the model is the file
         // exactly as written.
         var outcome = MindmapDocument.Outcome(Encoding.UTF8.GetString(body.Bytes), assignMissingIds: false);
-        if (!outcome.IsUsable)
-        {
-            return new PluginReadResult([], [new Finding(FindingCodes.Unparseable, FindingSeverity.Error, outcome.Unreadable, null)], true);
-        }
-
-        return new PluginReadResult(Elements(outcome.Model), [], false);
+        return !outcome.IsUsable
+            ? new PluginReadResult([], [new Finding(FindingCodes.Unparseable, FindingSeverity.Error, outcome.Unreadable, null)], true)
+            : new PluginReadResult(Elements(outcome.Model), [], false);
     }
 
     /// <summary>

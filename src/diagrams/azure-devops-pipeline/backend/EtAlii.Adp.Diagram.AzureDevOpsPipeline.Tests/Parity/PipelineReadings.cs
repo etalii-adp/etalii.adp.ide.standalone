@@ -13,9 +13,9 @@ internal sealed class PipelineReadings : IDisposable
 {
     private const string Unknown = "parity:unknown";
 
-    private readonly string _folder;
+    private readonly TestFolder _folder;
 
-    private PipelineReadings(string folder, DocumentEntry<PipelineBody, PipelineModel> entry)
+    private PipelineReadings(TestFolder folder, DocumentEntry<PipelineBody, PipelineModel> entry)
     {
         _folder = folder;
         var drawn = new PipelineElementMapper(PipelineMetrics.Default)
@@ -46,11 +46,11 @@ internal sealed class PipelineReadings : IDisposable
     public static async Task<PipelineReadings> OpenAsync(string path, CancellationToken cancellationToken)
     {
         var document = PipelineCorpus.Documents().Single(candidate => candidate.Relative == path);
-        var folder = Path.Combine(Path.GetTempPath(), "EtAlii.Adp.PipelineReadings", Guid.NewGuid().ToString("N"));
-        PipelineCorpus.CopyFolder(Path.Combine(PipelineCorpus.SourceFolder, document.Root), folder);
-        var entry = await new PipelineDocumentStore(new FileWriter()).GetOrLoadAsync(ProjectRoot.From(folder), Path.Combine(folder, document.InFolder), cancellationToken);
+        var folder = TestFolder.Create("EtAlii.Adp.PipelineReadings");
+        PipelineCorpus.CopyFolder(Path.Combine(PipelineCorpus.SourceFolder, document.Root), folder.Path);
+        var entry = await new PipelineDocumentStore(new FileWriter()).GetOrLoadAsync(ProjectRoot.From(folder.Path), folder.Combine(document.InFolder), cancellationToken);
         return new PipelineReadings(folder, entry);
     }
 
-    public void Dispose() => TestFolder.TryDelete(_folder);
+    public void Dispose() => _folder.Dispose();
 }

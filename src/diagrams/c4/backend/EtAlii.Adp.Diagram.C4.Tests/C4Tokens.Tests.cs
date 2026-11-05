@@ -12,7 +12,7 @@ public class C4TokensTests
     public void SplitWithSpans_KeepsAQuotedArgumentWhole_HoweverMuchWhitespaceItHas()
     {
         // Act.
-        var tokens = C4Tokens.SplitWithSpans("        s = softwareSystem \"Internet Banking System\" \"Lets customers view accounts.\"");
+        var tokens = C4LineSurgery.SplitWithSpans("        s = softwareSystem \"Internet Banking System\" \"Lets customers view accounts.\"");
 
         // Assert.
         Assert.Equal(["s", "=", "softwareSystem", "Internet Banking System", "Lets customers view accounts."], tokens.Select(t => t.Value));
@@ -26,7 +26,7 @@ public class C4TokensTests
         // Arrange.
         const string line = "    web = container \"Web App\" \"Serves.\" \"React\"";
 
-        var tokens = C4Tokens.SplitWithSpans(line);
+        var tokens = C4LineSurgery.SplitWithSpans(line);
 
         // Act and assert, step by step.
         var name = tokens[3];
@@ -37,7 +37,7 @@ public class C4TokensTests
     public void SplitWithSpans_StopsAtAComment()
     {
         // Act.
-        var tokens = C4Tokens.SplitWithSpans("    u = person \"User\" // the person who uses it");
+        var tokens = C4LineSurgery.SplitWithSpans("    u = person \"User\" // the person who uses it");
 
         // Assert.
         Assert.Equal(["u", "=", "person", "User"], tokens.Select(t => t.Value));
@@ -50,7 +50,7 @@ public class C4TokensTests
     [InlineData("    web = container \"Web App\" \"Serves.\" \"React\"", 2, 2, "Kotlin", "    web = container \"Web App\" \"Serves.\" \"Kotlin\"")]
     public void ReplaceArgument_ChangesOnlyThatArgument(string line, int keyword, int argument, string value, string expected)
     {
-        Assert.Equal(expected, C4Tokens.ReplaceArgument(line, keyword, argument, value));
+        Assert.Equal(expected, C4LineSurgery.ReplaceArgument(line, keyword, argument, value));
     }
 
     [Fact]
@@ -58,7 +58,7 @@ public class C4TokensTests
     {
         const string line = "    s = softwareSystem \"Old\" \"desc\" {";
 
-        var result = C4Tokens.ReplaceArgument(line, 2, 0, "New");
+        var result = C4LineSurgery.ReplaceArgument(line, 2, 0, "New");
 
         Assert.Equal("    s = softwareSystem \"New\" \"desc\" {", result);
     }
@@ -70,7 +70,7 @@ public class C4TokensTests
         const string line = "    u = person \"User\" \"desc\" // who uses it";
 
         // Act.
-        var result = C4Tokens.ReplaceArgument(line, 2, 0, "Customer");
+        var result = C4LineSurgery.ReplaceArgument(line, 2, 0, "Customer");
 
         // Assert.
         Assert.Equal("    u = person \"Customer\" \"desc\" // who uses it", result);
@@ -83,7 +83,7 @@ public class C4TokensTests
         const string line = "    web = container \"Web App\" \"Serves.\"";
 
         // Act.
-        var result = C4Tokens.ReplaceArgument(line, 2, 2, "React");
+        var result = C4LineSurgery.ReplaceArgument(line, 2, 2, "React");
 
         // Assert.
         Assert.Equal("    web = container \"Web App\" \"Serves.\" \"React\"", result);
@@ -98,7 +98,7 @@ public class C4TokensTests
         const string line = "    web = container \"Web App\"";
 
         // Act.
-        var result = C4Tokens.ReplaceArgument(line, 2, 2, "React");
+        var result = C4LineSurgery.ReplaceArgument(line, 2, 2, "React");
 
         // Assert.
         Assert.Equal("    web = container \"Web App\" \"\" \"React\"", result);
@@ -109,7 +109,7 @@ public class C4TokensTests
     {
         const string line = "    s = softwareSystem \"System\" {";
 
-        var result = C4Tokens.ReplaceArgument(line, 2, 1, "A description.");
+        var result = C4LineSurgery.ReplaceArgument(line, 2, 1, "A description.");
 
         Assert.Equal("    s = softwareSystem \"System\" \"A description.\" {", result);
     }
@@ -121,7 +121,7 @@ public class C4TokensTests
         const string line = "    s = softwareSystem \"System\"";
 
         // Act.
-        var result = C4Tokens.ReplaceArgument(line, 2, 0, "the \"good\" one");
+        var result = C4LineSurgery.ReplaceArgument(line, 2, 0, "the \"good\" one");
 
         // Assert.
         Assert.Equal("    s = softwareSystem \"the \\\"good\\\" one\"", result);
@@ -135,7 +135,7 @@ public class C4TokensTests
         const string line = "    person \"User\" \"desc\"";
 
         // Act.
-        var result = C4Tokens.ReplaceArgument(line, 0, 0, "Customer");
+        var result = C4LineSurgery.ReplaceArgument(line, 0, 0, "Customer");
 
         // Assert.
         Assert.Equal("    person \"Customer\" \"desc\"", result);

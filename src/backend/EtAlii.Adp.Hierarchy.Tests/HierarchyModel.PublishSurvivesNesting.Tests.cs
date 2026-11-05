@@ -19,19 +19,19 @@ public class HierarchyModelPublishSurvivesNestingTests : IDisposable
     private static readonly TimeSpan Patience = TimeSpan.FromSeconds(10);
     private static readonly TimeSpan Silence = TimeSpan.FromMilliseconds(500);
 
+    private readonly TestFolder _testFolder = TestFolder.Create("publish-nesting");
     private readonly string _root;
     private readonly IDiagramDefinitionCatalog _catalog = new TestDiagramDefinitionCatalog(Mindmap);
     private readonly List<string> _events = [];
 
     public HierarchyModelPublishSurvivesNestingTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     [Fact]

@@ -21,7 +21,8 @@ public sealed class SetVariableLabelCommandHandler(ICausalLoopDocumentStore docu
         ArgumentNullException.ThrowIfNull(command);
 
         if (!model.Declares(command.Id)) return EditOutcome.Refused(CausalLoopEdits.NoSuchVariable);
-        if (!CausalLoopEdits.IsUsableText(command.Label)) return EditOutcome.Refused(CausalLoopEdits.UnusableText);
-        return CausalLoopEdits.Set(body, CausalLoopEdits.VariableId(command.Id), "Variable", ("label", CausalLoopEdits.Text(command.Label)));
+        return !CausalLoopEdits.IsUsableText(command.Label)
+            ? EditOutcome.Refused(CausalLoopEdits.UnusableText)
+            : CausalLoopEdits.Set(body, CausalLoopEdits.VariableId(command.Id), "Variable", ("label", CausalLoopEdits.Text(command.Label)));
     }
 }

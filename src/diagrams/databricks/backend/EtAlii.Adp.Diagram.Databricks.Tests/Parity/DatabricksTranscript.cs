@@ -88,7 +88,7 @@ internal static class DatabricksTranscript
     private static readonly ToolOrigin[] _origins = [.. Diagram.Definitions.Select(definition => definition.Origin)];
 
     /// <summary>The base names each type's new document is written for (finding B20).</summary>
-    private static readonly string[] _newBaseNames = ["parity", "Nightly Ingest.job", "2024", "Ünïcode \"quoted\"", "null", "--", " "];
+    internal static readonly string[] NewBaseNames = ["parity", "Nightly Ingest.job", "2024", "Ünïcode \"quoted\"", "null", "--", " "];
 
     /// <summary>
     /// The ways a registration's <c>resource:</c> header is written that the transcript records the reading
@@ -135,7 +135,7 @@ internal static class DatabricksTranscript
                 foreach (var factory in services.GetServices<IDiagramDocumentFactory>())
                 {
                     json.WriteStartObject(factory.Origin.Key);
-                    foreach (var baseName in _newBaseNames)
+                    foreach (var baseName in NewBaseNames)
                     {
                         json.WriteString(baseName, NewDocument(factory, baseName));
                     }
@@ -199,7 +199,7 @@ internal static class DatabricksTranscript
             foreach (var text in _resourceHeaders)
             {
                 await File.WriteAllTextAsync(registration, text, cancellationToken);
-                lines.Add($"{TranscriptText.Quoted(text)} => {TranscriptText.Quoted(DatabricksHeaders.ReadResourceKey(registration))}");
+                lines.Add($"{TranscriptText.Quoted(text)} => {TranscriptText.Quoted(DatabricksBody.ResourceOf(registration))}");
             }
 
             json.WritePropertyName("resourceHeaders");
@@ -222,23 +222,23 @@ internal static class DatabricksTranscript
     {
         var documents = new List<Document>();
         var fixtures = Path.Combine(ModuleFolder, "backend", TestProject, "Fixtures");
-        foreach (var body in Sorted(Directory.GetFiles(fixtures).Where(IsBody)))
+        foreach (var body in Directory.GetFiles(fixtures).Where(IsBody).Order(StringComparer.Ordinal))
         {
-            documents.Add(new Document(RelativeToSource(body), await File.ReadAllBytesAsync(body, cancellationToken), []));
+            documents.Add(new Document(RepositoryPaths.RelativeToSource(body), await File.ReadAllBytesAsync(body, cancellationToken), []));
         }
 
         var examples = Directory.GetFiles(Path.Combine(ModuleFolder, "examples"), "*", SearchOption.AllDirectories)
             .Concat(Directory.GetFiles(Path.Combine(SourceFolder, "examples", "diagrams", "databricks"), "*", SearchOption.AllDirectories))
             .Where(IsBody);
-        foreach (var body in Sorted(examples))
+        foreach (var body in examples.Order(StringComparer.Ordinal))
         {
             var companions = new List<(string, byte[])>();
-            foreach (var file in Sorted(Directory.GetFiles(Path.GetDirectoryName(body)!)).Where(file => !string.Equals(file, body, StringComparison.Ordinal)))
+            foreach (var file in Directory.GetFiles(Path.GetDirectoryName(body)!).Order(StringComparer.Ordinal).Where(file => !string.Equals(file, body, StringComparison.Ordinal)))
             {
                 companions.Add((Path.GetFileName(file), await File.ReadAllBytesAsync(file, cancellationToken)));
             }
 
-            documents.Add(new Document(RelativeToSource(body), await File.ReadAllBytesAsync(body, cancellationToken), companions));
+            documents.Add(new Document(RepositoryPaths.RelativeToSource(body), await File.ReadAllBytesAsync(body, cancellationToken), companions));
         }
 
         await using var services = Services();
@@ -249,14 +249,9 @@ internal static class DatabricksTranscript
         }
 
         return documents;
-
-        static IEnumerable<string> Sorted(IEnumerable<string> paths) => paths.Order(StringComparer.Ordinal);
     }
 
     private static bool IsBody(string path) => Path.GetExtension(path) is ".yml" or ".yaml" or ".json";
-
-    /// <summary>A path as the transcript names it: relative to <c>src/</c>, with forward slashes.</summary>
-    private static string RelativeToSource(string path) => Path.GetRelativePath(SourceFolder, path).Replace('\\', '/');
 
     private static async Task WriteDocumentAsync(Utf8JsonWriter json, Document document, Dictionary<string, string> recorded, CancellationToken cancellationToken)
     {
@@ -316,7 +311,7 @@ internal static class DatabricksTranscript
         foreach ((string path, string origin) in await session.RegistrationsAsync(cancellationToken))
         {
             var text = await File.ReadAllTextAsync(path, cancellationToken);
-            lines.Add($"{Path.GetFileName(path)} | {TranscriptText.Quoted(text)} => {origin}, resource {TranscriptText.Quoted(DatabricksHeaders.ReadResourceKey(path))}");
+            lines.Add($"{Path.GetFileName(path)} | {TranscriptText.Quoted(text)} => {origin}, resource {TranscriptText.Quoted(DatabricksBody.ResourceOf(path))}");
         }
 
         if (lines.Count == 0)
@@ -676,12 +671,12 @@ internal static class DatabricksTranscript
         }
 
         // Removals: one nothing touches, asked nothing; one that takes dependencies with it, asked first.
-        if (keyed.FirstOrDefault(task => task.DependsOn.Count == 0 && JobWriter.ReferencesTo(job, task.Key).Count == 0) is { } untouched)
+        if (keyed.FirstOrDefault(task => task.DependsOn.Count == 0 && HandWrittenDatabricks.ReferencesTo(job, task.Key).Count == 0) is { } untouched)
         {
             await script.ExecuteAsync($"task:{untouched.Key}", DatabricksContextActionProvider.RemoveTaskActionId, Mode.RevertWithRedo);
         }
 
-        if (keyed.FirstOrDefault(task => task.DependsOn.Count + JobWriter.ReferencesTo(job, task.Key).Count > 0) is { } touched)
+        if (keyed.FirstOrDefault(task => task.DependsOn.Count + HandWrittenDatabricks.ReferencesTo(job, task.Key).Count > 0) is { } touched)
         {
             await script.ExecuteAsync($"task:{touched.Key}", DatabricksContextActionProvider.RemoveTaskActionId, Mode.Revert);
             await script.CommitAsync($"task:{touched.Key}", DatabricksContextActionProvider.RemoveTaskActionId, "", Mode.RevertWithRedo);
@@ -824,7 +819,7 @@ internal static class DatabricksTranscript
 
         /// <summary>A session of <paramref name="origin"/> over the document, as the host opens one through <paramref name="registration"/>.</summary>
         public DatabricksSession Open(ToolOrigin origin, string? registration, bool withHistory = true) =>
-            new(Body, registration, origin, DatabricksHeaders.ReadResourceKey(registration), Documents, Mapper, withHistory ? Stack : null);
+            new(Body, registration, origin, DatabricksBody.ResourceOf(registration), Documents, Mapper, withHistory ? Stack : null);
 
         /// <summary>What a session of <paramref name="origin"/> opened through <paramref name="registration"/> draws first.</summary>
         public async Task<IReadOnlyList<DiagramElement>> DrawAsync(ToolOrigin origin, string? registration, CancellationToken cancellationToken)

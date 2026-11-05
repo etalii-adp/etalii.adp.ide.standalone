@@ -106,7 +106,7 @@ while editing the description alone.
   two-value fallback (`payload.key || payload.kind`) renders the very value being renamed - the
   `|| kind` is an empty-state placeholder, not a second value. Deployment targets are frames and
   are not renamed. **Its edges are pending, not exempt**: they select since
-  [centralized-selection](../../../../../.spec-workflow/specs/centralized-selection/requirements.md)
+  [centralized-selection](https://github.com/etalii-adp/etalii.adp.ide.standalone/blob/bd7e2ea95b8e4195bf6f8d97f7aede9ab4dc3ad8/.spec-workflow/specs/centralized-selection/requirements.md)
   (Requirement 2.1), so a relabelled edge can now be reached by a gesture, and the relabel prompt
   qualifies and should be marked.
 - **azure-devops-pipeline** - display names, on stages, jobs, steps and templates. A stage's editor

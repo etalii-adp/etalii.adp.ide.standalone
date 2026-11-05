@@ -279,7 +279,7 @@ internal static class C4Transcript
         foreach (var view in workspace.Views)
         {
             var origin = C4Corpus.OriginOf(view.Kind);
-            var authored = session.Sidecar.Read(session.Body, view.Key);
+            var authored = session.Positions.Read(session.Body, null, view.Key, workspace.Elements.Select(element => element.Id).ToHashSet(StringComparer.Ordinal));
             var layout = C4LayoutEngine.Compute(workspace, view, C4Metrics.Default, authored);
             var drawn = session.Mapper.Visible(workspace, view, DiagramViewport.Unbounded, session.Body);
             var targets = new List<string>();
@@ -389,14 +389,16 @@ internal static class C4Transcript
             lifted ??= drawn.FirstOrDefault(element => element.Type == C4ElementMapper.RelationshipType && !relationshipIds.Contains(element.Id))?.Id;
             if (drawn.FirstOrDefault(element => element.Type == C4ElementMapper.NodeType) is { } moved)
             {
-                await script.MoveAsync(view.Key, moved.Id, moved.X + 40, moved.Y + 20.5);
+                var registration = await script.RegisterAsync(view);
+                await script.MoveAsync(view.Key, moved.Id, moved.X + 40, moved.Y + 20.5, registration);
             }
         }
 
         var firstView = workspace.Views.Count > 0 ? workspace.Views[0].Key : "parity-missing";
-        await script.MoveAsync(firstView, Unknown, 10, 10);
-        await script.MoveAsync(firstView, "c4:view", 10, 10);
-        await script.MoveAsync("parity-missing", workspace.Elements.FirstOrDefault()?.Id ?? Unknown, 10, 10);
+        var firstRegistration = workspace.Views.Count > 0 ? Script.RegistrationPathOf(session, workspace.Views[0]) : null;
+        await script.MoveAsync(firstView, Unknown, 10, 10, firstRegistration);
+        await script.MoveAsync(firstView, "c4:view", 10, 10, firstRegistration);
+        await script.MoveAsync("parity-missing", workspace.Elements.FirstOrDefault()?.Id ?? Unknown, 10, 10, null);
 
         // One element of each kind: its rows, its menu's actions and their commits.
         var picked = _scriptedKinds
@@ -518,7 +520,7 @@ internal static class C4Transcript
             Body = body;
             Services = new ServiceCollection().AddCommands().AddHierarchyCommandHandlers().AddC4().BuildServiceProvider();
             Documents = Services.GetRequiredService<IC4DocumentStore>();
-            Sidecar = Services.GetRequiredService<C4LayoutSidecar>();
+            Positions = Services.GetRequiredService<C4Positions>();
             Mapper = Services.GetRequiredService<C4ElementMapper>();
             History = Services.GetRequiredService<IHistoryStackStore>();
             Actions = new C4ContextActionProvider(History, Documents);
@@ -533,7 +535,7 @@ internal static class C4Transcript
 
         public IC4DocumentStore Documents { get; }
 
-        public C4LayoutSidecar Sidecar { get; }
+        public C4Positions Positions { get; }
 
         public C4ElementMapper Mapper { get; }
 
@@ -626,11 +628,28 @@ internal static class C4Transcript
                 return (result.Completed ? "ok" : $"refused: {result.Error}") + next;
             });
 
-        /// <summary>A drag on the view <paramref name="viewKey"/>, as the session of that view takes a drop.</summary>
-        public Task MoveAsync(string viewKey, string target, double x, double y) =>
+        /// <summary>The registration <see cref="RegisterAsync"/> writes beside the body for <paramref name="view"/>, opened or not.</summary>
+        public static string RegistrationPathOf(Session session, C4View view) =>
+            Path.Combine(session.Folder, $"parity-move-{session.Model.Views.ToList().IndexOf(view)}.adp");
+
+        /// <summary>
+        /// A registration beside the body that opens <paramref name="view"/>, recorded as a step of its own, so that the
+        /// view's drags are opened through it and a position the body has no layout file for lands in its
+        /// <c>layout:</c> block (c4-disl-fbl task 16, Q3).
+        /// </summary>
+        public async Task<string> RegisterAsync(C4View view)
+        {
+            var path = RegistrationPathOf(session, view);
+            await File.WriteAllTextAsync(path, $"{C4Corpus.OriginOf(view.Kind).Key}\nbody: {Path.GetFileName(session.Body)}\nview: {view.Key}\n", cancellationToken);
+            await RecordAsync($"register view {TranscriptText.Quoted(view.Key)} as {Path.GetFileName(path)}", "ok");
+            return path;
+        }
+
+        /// <summary>A drag on the view <paramref name="viewKey"/>, as the session of that view opened through <paramref name="registration"/> takes a drop.</summary>
+        public Task MoveAsync(string viewKey, string target, double x, double y, string? registration) =>
             StepAsync($"move {target} on view {TranscriptText.Quoted(viewKey)} to {Number(x)}, {Number(y)}", true, async () =>
             {
-                await using var view = new C4Session(session.Body, viewKey, session.Documents, session.Mapper, session.Stack);
+                await using var view = new C4Session(session.Body, viewKey, session.Documents, session.Mapper, session.Stack, registration);
                 var refusal = await view.MoveElementToAsync(target, x, y, cancellationToken);
                 return refusal.Length == 0 ? "ok" : $"refused: {refusal}";
             });
@@ -723,7 +742,7 @@ internal static class C4Transcript
         private async Task<(string Text, string? Sidecar, Dictionary<string, string> Registrations)> ReadAsync()
         {
             var text = TranscriptText.Decode(await File.ReadAllBytesAsync(session.Body, cancellationToken));
-            var path = C4LayoutSidecar.PathFor(session.Body);
+            var path = C4Positions.LegacyPathFor(session.Body);
             var sidecar = File.Exists(path)
                 ? TranscriptText.Decode(await File.ReadAllBytesAsync(path, cancellationToken)).Replace("\r\n", "\n", StringComparison.Ordinal)
                 : null;

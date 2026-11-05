@@ -1,5 +1,6 @@
 using System.Reflection;
 using EtAlii.Adp.Specification.Fbl.Documents;
+using EtAlii.Adp.Specification.Json;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.C4.Tests;
@@ -17,13 +18,16 @@ public class C4BindingTests
     private static readonly Assembly _module = typeof(Diagram).Assembly;
 
     [Fact]
-    public void TheEmbeddedBinding_LoadsWithNoErrorAndNoWarning()
+    public void TheEmbeddedBinding_LoadsWithItsGrammarAndNoErrorAndNoWarningButItsVersion()
     {
-        // Act.
-        var problems = FblDocumentLoader.Load(_module.ResourceBytes("structurizr.fbl"), out var document);
+        // Act: loaded as a module loads it, with the grammar the module embeds beside it.
+        var problems = BundledBinding.Load(_module, "structurizr.fbl", out var document);
 
-        // Assert.
-        Assert.Empty(problems);
+        // Assert: the grammar builds, and the one problem is the warning that the binding is of a later FBL than the
+        // library reads (FBL 2.7; etalii.adp spec 072 Requirement 8.1: such a binding loads, with that warning).
+        var warning = Assert.Single(problems);
+        Assert.Equal(LoadSeverity.Warning, warning.Severity);
+        Assert.Equal("/fbl", warning.Pointer);
         Assert.True(document!.Bindings.ContainsKey("workspace"));
     }
 

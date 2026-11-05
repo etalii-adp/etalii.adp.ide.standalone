@@ -18,21 +18,20 @@ public class RdfCommandsTests : IDisposable
         + "ex:alice ex:knows ex:bob ;\r\n"
         + "    ex:name \"Alice\" . # who else\r\n";
 
-    private readonly string _root;
+    private readonly TestFolder _testFolder = TestFolder.Create("rdf-commands");
     private readonly RdfDocumentStore _store = new(new FileWriter());
     private readonly string _path;
 
     public RdfCommandsTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
-        _path = IoPath.Combine(_root, "graph.ttl");
+        var root = _testFolder.Path;
+        _path = IoPath.Combine(root, "graph.ttl");
         File.WriteAllText(_path, Corpus);
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     private async Task AssertRoundTrips(ICommand command, Func<ICommand, Task<CommandResult>> execute)

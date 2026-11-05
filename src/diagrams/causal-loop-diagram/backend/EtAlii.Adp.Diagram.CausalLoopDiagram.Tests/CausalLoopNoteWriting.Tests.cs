@@ -28,8 +28,8 @@ public class CausalLoopNoteWritingTests
     public async Task ANoteSet_ReadsBackAsSet_AndAnEmptyOneAsNone_ChangingOnlyItsLine(string fixture, string from, string to)
     {
         // Arrange.
-        var relative = CausalLoopTranscript.Corpus().Single(path => path.EndsWith("/" + fixture, StringComparison.Ordinal));
-        var original = await File.ReadAllTextAsync(IoPath.Combine(CausalLoopTranscript.SourceFolder, relative), TestContext.Current.CancellationToken);
+        var relative = CausalLoopCorpus.Paths().Single(path => path.EndsWith("/" + fixture, StringComparison.Ordinal));
+        var original = await File.ReadAllTextAsync(IoPath.Combine(CausalLoopCorpus.SourceFolder, relative), TestContext.Current.CancellationToken);
         var store = new CausalLoopMemoryStore { [Path] = original };
         var handler = new SetLinkLabelCommandHandler(store);
 

@@ -44,6 +44,12 @@ internal sealed class ActionRunner(DislSpecification specification, DislDiagram 
     /// </summary>
     public Dictionary<DislElement, DislElement>? Before { get; set; }
 
+    /// <summary>
+    /// Whether the values set are typed by the user, in a form or an inline label (DISL 0.3 §4.3): a number past its
+    /// attribute's <c>min</c> or <c>max</c> is then refused, or stopped at the bound under <c>outOfRange.typed: "clamp"</c>.
+    /// </summary>
+    public bool Typed { get; init; }
+
     /// <summary>Why the transaction was refused, or null while it stands.</summary>
     private string? Refusal { get; set; }
 
@@ -60,6 +66,39 @@ internal sealed class ActionRunner(DislSpecification specification, DislDiagram 
             if (!Action(action, variables)) return false;
         }
         return true;
+    }
+
+    /// <summary>
+    /// What <paramref name="actions"/> assign where they are a row's <c>write</c> on the diagram's own form: each <c>set</c>
+    /// and <c>unset</c> that applies, a forgotten attribute null, in order. A diagram is no element a change can name, so
+    /// nothing is stored here, and any other action is refused.
+    /// </summary>
+    public IReadOnlyList<(string Name, object? Value)> DiagramAssignments(DislActionList actions, Dictionary<string, object?> variables)
+    {
+        ArgumentNullException.ThrowIfNull(actions);
+        ArgumentNullException.ThrowIfNull(variables);
+        var assigned = new List<(string Name, object? Value)>();
+        foreach (var action in actions.Actions)
+        {
+            if (action.When is { } when && !when.Holds(variables)) continue;
+            switch (action)
+            {
+                case DislAction.Set set:
+                    foreach ((string name, DislActionValue declared) in set.Values)
+                    {
+                        if (!Value(declared, variables, out var value)) return assigned;
+                        assigned.Add((name, Stored(value)));
+                    }
+                    break;
+                case DislAction.Unset unset:
+                    assigned.AddRange(unset.Names.Select(name => (name, (object?)null)));
+                    break;
+                default:
+                    Refuse($"The action at {action.At} is none a form on the diagram can run.");
+                    return assigned;
+            }
+        }
+        return assigned;
     }
 
     public bool Refuse(string reason)
@@ -83,10 +122,11 @@ internal sealed class ActionRunner(DislSpecification specification, DislDiagram 
         DislAction.ForEach forEach => ForEach(forEach, variables),
         DislAction.Select select => Select(select, variables),
         DislAction.EditLabel editLabel => EditLabel(editLabel, variables),
-        DislAction.Layout layout => Layout(layout),
+        DislAction.Layout layout => Layout(layout, variables),
         DislAction.View view => View(view, variables),
         DislAction.Plugin plugin => Plugin(plugin, variables),
         DislAction.Abort abort => Abort(abort, variables),
+        DislAction.Call call => Call(call, variables),
         DislAction.Unsupported unsupported => Refuse($"This runtime cannot run a `{unsupported.Kind}` action yet ({unsupported.At})."),
         _ => Refuse($"The action at {action.At} is none this runtime knows."),
     };
@@ -102,6 +142,7 @@ internal sealed class ActionRunner(DislSpecification specification, DislDiagram 
             if (!Value(declared, variables, out var value)) return false;
             values[name] = Stored(value);
         }
+        if (Typed && !InRange(target, values, variables)) return false;
         return Store(target, values);
     }
 
@@ -202,10 +243,10 @@ internal sealed class ActionRunner(DislSpecification specification, DislDiagram 
         return true;
     }
 
-    /// <summary>A <c>layout</c>: its <c>algorithm</c>, handed to the host.</summary>
-    private bool Layout(DislAction.Layout layout)
+    /// <summary>A <c>layout</c>: its <c>algorithm</c> and its <c>refusals</c>, evaluated, handed to the host.</summary>
+    private bool Layout(DislAction.Layout layout, Dictionary<string, object?> variables)
     {
-        _host.Add(new HostAction.Layout(layout.Algorithm));
+        _host.Add(new HostAction.Layout(layout.Algorithm, layout.NothingDrawn?.Text(variables, layout.Algorithm), layout.Unchanged?.Text(variables, layout.Algorithm)));
         return true;
     }
 
@@ -240,6 +281,51 @@ internal sealed class ActionRunner(DislSpecification specification, DislDiagram 
         Malformed(plugin.Malformed);
         _host.Add(new HostAction.Plugin(plugin.Name, arguments));
         return true;
+    }
+
+    /// <summary>How deep one <c>call</c> may run another, so that an operation that calls itself is refused rather than run forever.</summary>
+    private const int CallDepth = 16;
+
+    private int _calls;
+
+    /// <summary>
+    /// A <c>call</c> (§9.4): the operation it names, refused as that operation is when it is not available on the caller's
+    /// <c>self</c>, then its actions run in this transaction with its <c>args</c> as <c>p</c>; its plugin, if it is one, handed back.
+    /// </summary>
+    private bool Call(DislAction.Call call, Dictionary<string, object?> variables)
+    {
+        if (specification.Operations.Find(call.Operation) is not { } operation) return Refuse($"There is no operation '{call.Operation}'.");
+        if (_calls >= CallDepth) return Refuse($"The call of '{call.Operation}' at {call.At} goes deeper than {CallDepth} calls.");
+        if (!Values(call.Arguments, variables, out var arguments)) return false;
+
+        var p = new CelMap();
+        foreach ((string name, object? value) in arguments) p[name] = value;
+        var self = variables.GetValueOrDefault("self");
+        var called = new Dictionary<string, object?>(variables, StringComparer.Ordinal)
+        {
+            ["p"] = p,
+            ["selection"] = variables.GetValueOrDefault("selection") ?? (self is DislElement ? new List<object?> { self } : new List<object?>()),
+            ["position"] = variables.GetValueOrDefault("position"),
+        };
+        if (OperationInterpreter.Unavailable(specification, operation, diagram, self is DislElement element ? element.IsA : null, called) is { } reason) return Refuse(reason);
+
+        if (operation.Plugin is { } plugin)
+        {
+            var handed = new Dictionary<string, object?>(StringComparer.Ordinal);
+            foreach ((string name, DislActionValue.Literal value) in plugin.Arguments) handed[name] = value.Evaluate(called);
+            _host.Add(new HostAction.Plugin(plugin.Name, handed));
+            return true;
+        }
+
+        _calls++;
+        try
+        {
+            return Run(operation.Actions, called);
+        }
+        finally
+        {
+            _calls--;
+        }
     }
 
     /// <summary>An <c>abort</c>: the transaction refused with its <c>message</c>, or the runtime's own.</summary>
@@ -338,6 +424,40 @@ internal sealed class ActionRunner(DislSpecification specification, DislDiagram 
         element.Retype(specification.Metamodel.TypeOf(type)!, change.Attributes);
         _changes.Add(change);
         return true;
+    }
+
+    /// <summary>
+    /// Holds each typed number of <paramref name="values"/> to its attribute's bounds (§4.3): stopped at the bound under
+    /// <c>typed: "clamp"</c>, else the transaction is refused with <c>outOfRange.message</c> in the context
+    /// <c>gesture:change</c> plus <c>min</c> and <c>max</c>, or with the runtime's sentence.
+    /// </summary>
+    internal bool InRange(DislElement target, Dictionary<string, object?> values, Dictionary<string, object?> variables)
+    {
+        foreach ((string name, object? value) in values.ToList())
+        {
+            if (target.Type.Attributes.GetValueOrDefault(name) is not { } attribute) continue;
+            if (value is not (double or long)) continue;
+            var number = Convert.ToDouble(value, System.Globalization.CultureInfo.InvariantCulture);
+            var below = attribute.Min is { } min && number < min;
+            var bound = below ? attribute.Min : attribute.Max is { } max && number > max ? max : null;
+            if (bound is not { } limit) continue;
+            if (attribute.TypedOutOfRange == "clamp")
+            {
+                values[name] = value is long && double.IsInteger(limit) ? (long)limit : limit;
+                continue;
+            }
+            var context = new Dictionary<string, object?>(variables)
+            {
+                ["self"] = target, ["attribute"] = name, ["oldValue"] = target.ValueOf(name), ["newValue"] = value,
+                ["min"] = attribute.Min, ["max"] = attribute.Max,
+            };
+            var noun = below ? "minimum" : "maximum";
+            var sentence = $"'{target.Id}' cannot have {name} {Invariant(number)}; the {noun} is {Invariant(limit)}.";
+            return Refuse(attribute.OutOfRangeMessage?.Text(context, sentence) ?? sentence);
+        }
+        return true;
+
+        static string Invariant(double number) => number.ToString(System.Globalization.CultureInfo.InvariantCulture);
     }
 
     /// <summary>Stores <paramref name="values"/> on <paramref name="target"/>, as one change.</summary>

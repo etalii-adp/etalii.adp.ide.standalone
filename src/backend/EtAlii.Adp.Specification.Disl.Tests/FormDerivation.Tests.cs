@@ -170,4 +170,120 @@ public class FormDerivationTests
         Assert.Equal(["One", "2", "3"], rows[0].Candidates);
         Assert.Equal(["Alpha", "b", "c"], rows[1].Candidates);
     }
+
+    /// <summary>The diagram's own form (§7.5, <c>for: "diagram"</c>): its rows read the attributes of <c>metamodel.diagram</c>, with <c>self</c> the diagram.</summary>
+    private static readonly DislSpecification DiagramForm = Specifications.Loaded(Specifications.With("""
+        "metamodel": {
+          "diagram": { "attributes": {
+            "title": { "type": "string" },
+            "count": { "type": "int", "default": 3 },
+            "heading": { "type": "string", "derived": "self.title + ' (' + string(self.nodes.size()) + ')'" } } },
+          "types": { "Box": { "attributes": { "title": { "type": "string" } } } } },
+        "forms": {
+          "box": { "for": "Box", "items": [ { "attribute": "title", "label": "Box title" } ] },
+          "header": { "for": "diagram", "items": [ { "kind": "section", "label": "Query", "items": [
+            { "attribute": "title", "label": "Title" },
+            { "attribute": "count", "label": "Count" },
+            { "attribute": "heading", "id": "head", "label": "Heading", "widget": "readonly", "readOnlyReasons": ["The heading is read from the title."] },
+            { "kind": "computed", "label": "Boxes", "value": { "cel": "string(diagram.nodes.size()) + ' of them'" } } ] } ] } }
+        """));
+
+    [Fact]
+    public void TheDiagramsOwnForm_GivesItsRows_FromTheDiagramsAttributes()
+    {
+        // Arrange.
+        var diagram = new DislDiagram(DiagramForm, new Dictionary<string, object?> { ["title"] = "Query" });
+        diagram.AddNode("Box", "b", new Dictionary<string, object?> { ["title"] = "Inner" });
+
+        // Act.
+        var rows = FormDerivation.Derive(DiagramForm, diagram, new DislEnv(), WireIdMap.None);
+
+        // Assert.
+        Assert.Equal(
+        [
+            "title | Title | Query | - | editable | group Query",
+            "count | Count | 3 | - | editable | group Query",
+            "head | Heading | Query (1) | readonly | read-only (The heading is read from the title.) | group Query",
+            "Boxes | Boxes | 1 of them | - | editable | group Query",
+        ], Lines(rows));
+    }
+
+    [Fact]
+    public void ADiagramWithoutAFormForIt_HasNoRows_AndAnElementsFormIsNotTheDiagrams()
+    {
+        // Arrange.
+        var specification = Specifications.Loaded(Specifications.With("""
+            "metamodel": { "diagram": { "attributes": { "title": { "type": "string" } } }, "types": { "Box": { "attributes": { "title": { "type": "string" } } } } },
+            "forms": { "box": { "for": "Box", "items": [ { "attribute": "title" } ] } }
+            """));
+        var diagram = new DislDiagram(specification, new Dictionary<string, object?> { ["title"] = "Query" });
+        var box = diagram.AddNode("Box", "b", new Dictionary<string, object?> { ["title"] = "Inner" });
+
+        // Act and assert.
+        Assert.Empty(FormDerivation.Derive(specification, diagram, new DislEnv(), WireIdMap.None));
+        Assert.Equal("Inner", Assert.Single(FormDerivation.Derive(specification, box, new DislEnv(), WireIdMap.None)).Value);
+    }
+
+    /// <summary>
+    /// A property row keyed by its form's type (<c>"&lt;Type&gt;/&lt;key&gt;"</c> in the <c>x-</c> block's <c>properties</c>):
+    /// two forms whose items share a key map to two wire ids, a subtype takes its ancestor's, the diagram's form is
+    /// keyed by <c>diagram</c>, and a key with no type-keyed entry keeps the plain one.
+    /// </summary>
+    private static readonly DislSpecification TypeKeyedRows = Specifications.Loaded(Specifications.With("""
+        "metamodel": {
+          "diagram": { "attributes": { "label": { "type": "string" } } },
+          "types": {
+            "Region": { "attributes": { "label": { "type": "string" } } },
+            "Frame": { "extends": "Region" },
+            "Note": { "attributes": { "label": { "type": "string" } } } } },
+        "forms": {
+          "region": { "for": ["Region"], "items": [ { "attribute": "label", "id": "label" } ] },
+          "note": { "for": ["Note"], "items": [ { "attribute": "label", "id": "label" } ] },
+          "diagram": { "for": "diagram", "items": [ { "attribute": "label", "id": "label" } ] } },
+        "x-test": { "properties": { "Region/label": "test.region.label", "diagram/label": "test.diagram.label", "label": "test.label" } }
+        """));
+
+    [Fact]
+    public void ARowsId_IsKeyedByItsFormsType_BeforeItsKeyAlone()
+    {
+        // Arrange.
+        var ids = WireIdMap.Of(TypeKeyedRows, "x-test");
+        var diagram = new DislDiagram(TypeKeyedRows, new Dictionary<string, object?> { ["label"] = "d" });
+        var region = diagram.AddNode("Region", "r", new Dictionary<string, object?> { ["label"] = "r" });
+        var frame = diagram.AddNode("Frame", "f", new Dictionary<string, object?> { ["label"] = "f" });
+        var note = diagram.AddNode("Note", "n", new Dictionary<string, object?> { ["label"] = "n" });
+
+        // Act and assert.
+        Assert.Equal("test.region.label", Assert.Single(FormDerivation.Derive(TypeKeyedRows, region, new DislEnv(), ids)).Id);
+        Assert.Equal("test.region.label", Assert.Single(FormDerivation.Derive(TypeKeyedRows, frame, new DislEnv(), ids)).Id);
+        Assert.Equal("test.label", Assert.Single(FormDerivation.Derive(TypeKeyedRows, note, new DislEnv(), ids)).Id);
+        Assert.Equal("test.diagram.label", Assert.Single(FormDerivation.Derive(TypeKeyedRows, diagram, new DislEnv(), ids)).Id);
+    }
+
+    private static readonly DislSpecification AbsentRows = Specifications.Loaded(Specifications.With("""
+        "disl": "0.3",
+        "metamodel": { "types": { "Mark": { "attributes": {
+          "offset": { "type": "number" },
+          "note": { "type": "string" } } } } },
+        "forms": { "mark": { "for": ["Mark"], "items": [
+          { "attribute": "offset", "label": "Offset", "showAbsent": false },
+          { "attribute": "note", "label": "Note" } ] } }
+        """));
+
+    [Fact]
+    public void AFieldThatShowsNoAbsentValue_HasNoRowWhileItsValueIsAbsent_AndOneOnceItIsStored()
+    {
+        // Arrange.
+        var diagram = new DislDiagram(AbsentRows);
+        var bare = diagram.AddNode("Mark", "bare", new Dictionary<string, object?>());
+        var placed = diagram.AddNode("Mark", "placed", new Dictionary<string, object?> { ["offset"] = 2.0 });
+
+        // Act.
+        var bareRows = FormDerivation.Derive(AbsentRows, bare, new DislEnv(), WireIdMap.None);
+        var placedRows = FormDerivation.Derive(AbsentRows, placed, new DislEnv(), WireIdMap.None);
+
+        // Assert: showAbsent false hides the row of an absent value only (DISL 7.5); a field without it is shown empty.
+        Assert.Equal(["note"], bareRows.Select(row => row.Id));
+        Assert.Equal(["offset", "note"], placedRows.Select(row => row.Id));
+    }
 }

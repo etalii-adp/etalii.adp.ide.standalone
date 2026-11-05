@@ -240,21 +240,22 @@ public sealed class KnowledgeViewTests
         var many = new KnowledgeCondition("people", "at-least", "500");
 
         // Act.
-        var all = Shown(new KnowledgeFilterGroup(false, [large, seen]));
-        var any = Shown(new KnowledgeFilterGroup(true, [large, seen]));
-        var nested = Shown(new KnowledgeFilterGroup(false, [large, new KnowledgeFilterGroup(true, [seen, many])]));
+        var all = Shown(table, new KnowledgeFilterGroup(false, [large, seen]));
+        var any = Shown(table, new KnowledgeFilterGroup(true, [large, seen]));
+        var nested = Shown(table, new KnowledgeFilterGroup(false, [large, new KnowledgeFilterGroup(true, [seen, many])]));
 
         // Assert.
         Assert.All(table.Rows, row => Assert.Equal(Is(row, large) && Is(row, seen), all.Contains(row.Id)));
         Assert.All(table.Rows, row => Assert.Equal(Is(row, large) || Is(row, seen), any.Contains(row.Id)));
         Assert.All(table.Rows, row => Assert.Equal(Is(row, large) && (Is(row, seen) || Is(row, many)), nested.Contains(row.Id)));
         Assert.True(all.Count < nested.Count && nested.Count < any.Count);
-        return;
-
-        bool Is(KnowledgeRow row, KnowledgeCondition condition) => Means(row, condition.PropertyId, condition.Operator, condition.Value);
-
-        HashSet<string> Shown(KnowledgeFilterGroup filter) => [.. Lines(table, View(filter)).Select(line => line.Id)];
     }
+
+    /// <summary>Whether <paramref name="row"/> meets <paramref name="condition"/>, by this test's own reading of it.</summary>
+    private static bool Is(KnowledgeRow row, KnowledgeCondition condition) => Means(row, condition.PropertyId, condition.Operator, condition.Value);
+
+    /// <summary>The ids of the lines <paramref name="filter"/> lets through in <paramref name="table"/>.</summary>
+    private static HashSet<string> Shown(KnowledgeTable table, KnowledgeFilterGroup filter) => [.. Lines(table, View(filter)).Select(line => line.Id)];
 
     [Fact]
     public void AConditionThatIsNotFinished_FiltersNothing_AndARowAddedHereStaysInSight()
@@ -335,10 +336,10 @@ public sealed class KnowledgeViewTests
 
         // Small, Medium, Large is the options' order; by name it would be Large, Medium, Small.
         Assert.Equal(["small", "medium", "large"], rows.Select(row => One(row, "size", "option")).OfType<string>().Distinct());
-        return;
-
-        int Size(KnowledgeRow row) => One(row, "size", "option") is { } id ? Array.FindIndex(Sizes, option => option.Id == id) : int.MaxValue;
     }
+
+    /// <summary>Where a row's size stands among the options, last when it has none.</summary>
+    private static int Size(KnowledgeRow row) => One(row, "size", "option") is { } id ? Array.FindIndex(Sizes, option => option.Id == id) : int.MaxValue;
 
     [Fact]
     public void ASort_IsOfTheRowsTheFilterLetsThrough()

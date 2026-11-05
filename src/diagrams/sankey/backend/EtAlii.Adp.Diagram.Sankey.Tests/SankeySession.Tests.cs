@@ -1,6 +1,6 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.Sankey.Tests;
@@ -15,6 +15,9 @@ public sealed class SankeySessionTests : IDisposable
     private readonly SankeyDocumentStore _store = new(new FileWriter());
 
     public void Dispose() => _folder.Dispose();
+
+    /// <summary>The host's command pipeline over this test's store.</summary>
+    private ICommandDispatcher Dispatcher() => TestHistory.Dispatcher(s => { s.AddSankey(); s.AddSingleton<ISankeyDocumentStore>(_store); });
 
     [Fact]
     public async Task AFreshSession_DeliversEveryNodeAndFlow_NodesFirst()
@@ -70,7 +73,7 @@ public sealed class SankeySessionTests : IDisposable
     public async Task DraggingANodeBelowItsNeighbour_MovesItsEntryAfterIt()
     {
         // Arrange.
-        using var history = new HistoryStack(new SankeyTestDispatcher(_store));
+        using var history = new HistoryStack(Dispatcher());
         await using var session = new SankeySession(_folder.Body, _store, new SankeyElementMapper(), history);
         var layout = SankeyLayout.Of((await _store.GetOrLoadAsync(_folder.Body, TestContext.Current.CancellationToken)).Model);
         var cafes = layout.Boxes["cafes"];
@@ -91,7 +94,7 @@ public sealed class SankeySessionTests : IDisposable
     {
         // Arrange.
         var original = await File.ReadAllBytesAsync(_folder.Body, TestContext.Current.CancellationToken);
-        using var history = new HistoryStack(new SankeyTestDispatcher(_store));
+        using var history = new HistoryStack(Dispatcher());
         await using var session = new SankeySession(_folder.Body, _store, new SankeyElementMapper(), history);
         var box = SankeyLayout.Of((await _store.GetOrLoadAsync(_folder.Body, TestContext.Current.CancellationToken)).Model).Boxes["wholesale"];
 
@@ -109,9 +112,9 @@ public sealed class SankeySessionTests : IDisposable
     public void APlace_IsBeforeTheFirstLowerNode_OrAfterTheLast(double centreY, string anchor, bool after)
     {
         // Arrange: a small column of three.
-        var layout = SankeyLayout.Of(SankeyParser.Parse(LineDocument.Parse(
+        var layout = SankeyLayout.Of(SankeyReader.Parse(
             "sankey: 1\nnodes:\n  - id: a\n  - id: m\n  - id: b\n  - id: z\n    column: 2\nflows:\n" +
-            "  - from: a\n    to: z\n    value: 1\n  - from: m\n    to: z\n    value: 1\n  - from: b\n    to: z\n    value: 1\n")));
+            "  - from: a\n    to: z\n    value: 1\n  - from: m\n    to: z\n    value: 1\n  - from: b\n    to: z\n    value: 1\n"));
 
         // Act.
         var place = SankeySession.PlaceOf(layout, "m", centreY);
@@ -137,7 +140,7 @@ public sealed class SankeySessionTests : IDisposable
     public async Task DraggingSomethingThatIsNotANode_IsRefused()
     {
         // Arrange.
-        using var history = new HistoryStack(new SankeyTestDispatcher(_store));
+        using var history = new HistoryStack(Dispatcher());
         await using var session = new SankeySession(_folder.Body, _store, new SankeyElementMapper(), history);
 
         // Act.
@@ -151,7 +154,7 @@ public sealed class SankeySessionTests : IDisposable
     public async Task AnEditFromAnotherConnection_ReachesThisOne()
     {
         // Arrange.
-        using var history = new HistoryStack(new SankeyTestDispatcher(_store));
+        using var history = new HistoryStack(Dispatcher());
         await using var watching = new SankeySession(_folder.Body, _store, new SankeyElementMapper());
         await using var editing = new SankeySession(_folder.Body, _store, new SankeyElementMapper(), history);
         _ = await watching.BaselineAsync(TestContext.Current.CancellationToken);
@@ -169,7 +172,7 @@ public sealed class SankeySessionTests : IDisposable
     public async Task ADisposedSession_HearsNoMoreEdits()
     {
         // Arrange.
-        using var history = new HistoryStack(new SankeyTestDispatcher(_store));
+        using var history = new HistoryStack(Dispatcher());
         var watching = new SankeySession(_folder.Body, _store, new SankeyElementMapper());
         await using var editing = new SankeySession(_folder.Body, _store, new SankeyElementMapper(), history);
         _ = await watching.BaselineAsync(TestContext.Current.CancellationToken);
@@ -192,7 +195,7 @@ public sealed class SankeySessionTests : IDisposable
         Assert.Equal("", refusal);
     }
 
-    private SankeyModel Parse() => SankeyParser.Parse(LineDocument.Parse(File.ReadAllText(_folder.Body)));
+    private SankeyModel Parse() => SankeyReader.Parse(File.ReadAllText(_folder.Body));
 
     private static SankeyNodePayload Node(IReadOnlyList<DiagramElement> delivered, string id) =>
         SankeyNodePayload.Parser.ParseFrom(delivered.Single(element => element.Id == id).Payload.ToArray());

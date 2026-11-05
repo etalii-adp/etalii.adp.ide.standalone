@@ -40,7 +40,7 @@ public sealed class MindmapSessionDepartureTests : IDisposable
     // Inside the Hierarchy branch, which is FOLDED in the fixture: never visible, never delivered.
     private const string HiddenInAFoldedBranch = "ID_88117426";
 
-    private readonly string _root;
+    private readonly TestFolder _testFolder = TestFolder.Create("EtAlii.Adp.MindmapSessionDepartureTests");
     private readonly string _bodyPath;
     private readonly ServiceProvider _services;
     private readonly IMindmapDocumentStore _documents;
@@ -51,9 +51,8 @@ public sealed class MindmapSessionDepartureTests : IDisposable
 
     public MindmapSessionDepartureTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.MindmapSessionDepartureTests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
-        _bodyPath = IoPath.Combine(_root, "architecture.mm");
+        var root = _testFolder.Path;
+        _bodyPath = IoPath.Combine(root, "architecture.mm");
         File.Copy("Fixtures/architecture.mm", _bodyPath);
 
         // The same wiring the host uses, as in MindmapSessionTests.
@@ -64,13 +63,13 @@ public sealed class MindmapSessionDepartureTests : IDisposable
             .BuildServiceProvider();
         _documents = _services.GetRequiredService<IMindmapDocumentStore>();
         _views = _services.GetRequiredService<MindmapViewState>();
-        _history = _services.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(_root));
+        _history = _services.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(root));
     }
 
     public void Dispose()
     {
         _services.Dispose();
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     private MindmapSession Open() => new(_watchId, _bodyPath, _documents, _views, _mapper, _history);

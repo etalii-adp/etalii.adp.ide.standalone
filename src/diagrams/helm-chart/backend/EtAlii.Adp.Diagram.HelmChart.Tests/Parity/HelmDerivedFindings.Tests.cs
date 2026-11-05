@@ -18,7 +18,7 @@ namespace EtAlii.Adp.Diagram.HelmChart.Tests.Parity;
 /// </remarks>
 public class HelmDerivedFindingsTests
 {
-    public static TheoryData<string> Charts() => [.. HelmTranscript.Corpus()];
+    public static TheoryData<string> Charts() => [.. HelmCorpus.Charts()];
 
     [Theory]
     [MemberData(nameof(Charts))]
@@ -93,7 +93,7 @@ public class HelmDerivedFindingsTests
     /// <summary>A copy of <paramref name="chart"/>, a path relative to <c>src/</c>, with the empty directories git cannot store made in it.</summary>
     private static TestFolder Copy(string chart)
     {
-        var source = Path.Combine(HelmTranscript.SourceFolder, chart);
+        var source = Path.Combine(HelmCorpus.SourceFolder, chart);
         var copy = TestFolder.Create("EtAlii.Adp.HelmDerivedFindings");
         TestFolder.CopyTree(source, copy.Path);
         foreach (var directory in HelmTranscript.EmptyDirectories.GetValueOrDefault(Path.GetFileName(source), []))

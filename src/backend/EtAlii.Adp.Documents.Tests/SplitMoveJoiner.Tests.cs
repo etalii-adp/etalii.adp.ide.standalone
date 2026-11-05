@@ -12,6 +12,7 @@ namespace EtAlii.Adp.Documents.Tests;
 /// </summary>
 public class SplitMoveJoinerTests : IDisposable
 {
+    private readonly TestFolder _testFolder = TestFolder.Create("split-move-joiner");
     private readonly string _root;
     private static readonly TimeSpan _grace = TimeSpan.FromSeconds(1);
 
@@ -21,15 +22,14 @@ public class SplitMoveJoinerTests : IDisposable
 
     public SplitMoveJoinerTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
         _joiner = new SplitMoveJoiner(_delivered.Add, _grace, _time);
     }
 
     public void Dispose()
     {
         _joiner.Dispose();
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     private string CreateFile(string name)

@@ -1,4 +1,5 @@
 using EtAlii.Adp.Context;
+using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Sessions;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,7 +18,7 @@ public static class ServiceCollectionAddSankeyExtension
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        services.AddEmptyDocument(Diagram.Sankey.Origin, SankeyParser.EmptyDocument);
+        services.AddEmptyDocument(Diagram.Sankey.Origin, SankeyBody.Template);
         services.AddSingleton<SankeyElementMapper>();
 
         // One document per path, shared by every connection viewing it; TryAdd so a test keeps its own.
@@ -31,7 +32,7 @@ public static class ServiceCollectionAddSankeyExtension
         services.AddDiagramDocumentReloader<ISankeyDocumentStore>(Diagram.Sankey.Origin);
         services.AddSingleton<IContextSourceResolver, SankeyContextSourceResolver>();
 
-        services.AddSingleton<IDiagramToolboxProvider, SankeyToolboxProvider>();
+        services.AddSingleton<IDiagramToolboxProvider>(new DislToolboxProvider(Diagram.Sankey.Origin, SankeyDefinition.Definition));
         services.AddSingleton<IContextActionProvider, SankeyContextActionProvider>();
         services.AddSingleton<IContextPropertyProvider, SankeyContextPropertyProvider>();
 

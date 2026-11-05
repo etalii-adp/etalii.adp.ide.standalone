@@ -1,0 +1,26 @@
+sankey: 1
+# B3: a value that will not read is passed over, and the rest of its entry is read and drawn.
+thickness: wide
+flow-color: sideways
+format: "{value} kWh"
+nodes:
+  - id: a
+    name: A
+    color: teal
+    column: first
+  - id: b
+    name: B
+    column: 0
+  - id: c
+    name: C
+    column: -2
+flows:
+  - from: a
+    to: b
+    value: lots
+    step: some
+    color: orange
+  - from: b
+    to: c
+    value: 4
+    step: .nan

@@ -1,5 +1,3 @@
-using Xunit;
-
 namespace EtAlii.Adp.Diagram.AnsibleStructure.Tests.Parity;
 
 /// <summary>
@@ -13,24 +11,4 @@ namespace EtAlii.Adp.Diagram.AnsibleStructure.Tests.Parity;
 /// <c>ADP_WRITE_PARITY_TRANSCRIPTS=1</c> rewrites the file before comparing - and the diff of the
 /// checked-in file is then the review of that change (Requirement 1.4).
 /// </remarks>
-public sealed class AnsibleTranscriptTests
-{
-    [Fact]
-    public async Task TheModule_ReproducesTheCheckedInTranscript_ByteForByte()
-    {
-        // Arrange.
-        var cancellationToken = TestContext.Current.CancellationToken;
-
-        // Act.
-        var generated = await AnsibleTranscript.GenerateAsync(cancellationToken);
-        if (Environment.GetEnvironmentVariable("ADP_WRITE_PARITY_TRANSCRIPTS") == "1")
-        {
-            await File.WriteAllBytesAsync(AnsibleTranscript.CheckedInPath, generated, cancellationToken);
-        }
-
-        var checkedIn = await File.ReadAllBytesAsync(AnsibleTranscript.CheckedInPath, cancellationToken);
-
-        // Assert.
-        Assert.True(checkedIn.AsSpan().SequenceEqual(generated), TranscriptText.FirstDifference(checkedIn, generated));
-    }
-}
+public sealed class AnsibleTranscriptTests : TranscriptTests<AnsibleTranscript>;

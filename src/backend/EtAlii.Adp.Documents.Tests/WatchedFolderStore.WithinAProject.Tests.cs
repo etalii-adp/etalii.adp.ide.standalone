@@ -17,13 +17,15 @@ public sealed class WatchedFolderStoreWithinAProjectTests : IDisposable
     private static readonly TimeSpan SettleDelay = TimeSpan.FromMilliseconds(50);
     private static readonly TimeSpan Silence = TimeSpan.FromMilliseconds(400);
 
-    private readonly string _root = Directory.CreateTempSubdirectory("adp-store-within-").FullName;
+    private readonly TestFolder _testFolder = TestFolder.Create("adp-store-within");
+    private readonly string _root;
     private readonly ProjectFileEvents _events = new();
     private readonly FakeTimeProvider _clock = new();
     private readonly CountingStore _store;
 
     public WatchedFolderStoreWithinAProjectTests()
     {
+        _root = _testFolder.Path;
         _store = new CountingStore(_events, _clock);
     }
 
@@ -31,7 +33,7 @@ public sealed class WatchedFolderStoreWithinAProjectTests : IDisposable
     {
         _store.Dispose();
         _events.Dispose();
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     [Fact]

@@ -16,16 +16,16 @@ public class DesignerFileRouterTests : IDisposable
         "Fixture sheet",
         Formats: [new DesignerFormat("YAML", ".yaml"), new DesignerFormat("JSON", ".json")]);
 
+    private readonly TestFolder _testFolder = TestFolder.Create("designer-file-router");
     private readonly string _root;
     private readonly DesignerFileRouter _router = new(new DesignerDefinitionCatalog { All = [Sheet] });
 
     public DesignerFileRouterTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
     }
 
-    public void Dispose() => TestFolder.TryDelete(_root);
+    public void Dispose() => _testFolder.Dispose();
 
     private string Write(string name, string content)
     {

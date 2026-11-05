@@ -19,25 +19,25 @@ flowchart LR
     src --> tests["tests/<br/>the host's tests that span modules"]
 ```
 
-`src/TestSupport` is **not** a project. It holds two source files, the log capture, that `src/Directory.Build.targets` compiles *into* each `*.Tests` project, deliberately rather than as a referenced assembly — the reasoning is in that file and is load-bearing. Do not confuse it with `EtAlii.Adp.TestSupport`, which **is** a project, under `src/backend`, and which the same file attaches to every `*.Tests` project as a project reference: helpers that do not install themselves per assembly (`TestFolder` among them) live there, where every core and module test project reaches them, its namespace a global using of each.
+`src/TestSupport` is **not** a project. It holds two source files, the log capture, that `src/Directory.Build.targets` compiles *into* each `*.Tests` project, deliberately rather than as a referenced assembly — the reasoning is in that file and is load-bearing. Do not confuse it with the `*.Tests.Support` projects under `src/backend`, which **are** projects: one per area, holding the helpers that do not install themselves per assembly. `EtAlii.Adp.Tests.Support` (`TestFolder`, `RepositoryPaths`, `Eventually` and the rest) is attached by the same file to every `*.Tests` project as a project reference, its namespace a global using of each. The others, for documents, files, history, diagrams, DISL, FBL and the flow host, are referenced by the test projects that use them, each with its namespace as a global using beside the reference. None is named `*.Tests`, because that suffix would compile the log capture into it.
 
 ## The solution, with its counts
 
-`src/backend/EtAlii.Adp.slnx` holds **144** projects: the core projects at its root, the modules in one solution folder per kind (`/Diagrams/`, `/editors/`, `/designers/`) and the test project that spans modules in `/tests/`, so the whole thing opens and builds as one solution in Rider:
+`src/backend/EtAlii.Adp.slnx` holds **152** projects: the core projects at its root, the modules in one solution folder per kind (`/Diagrams/`, `/editors/`, `/designers/`) and the test project that spans modules in `/tests/`, so the whole thing opens and builds as one solution in Rider:
 
 | Split | Count |
 | --- | --- |
-| core | **45** |
+| core | **51** |
 | diagram | **86** |
 | editor | **10** |
-| designer | **2** |
+| designer | **4** |
 | spanning modules | **1** |
-| production | **96** |
-| test | **48** |
+| production | **103** |
+| test | **49** |
 
-Those are **two different splits of the same 144**, and a figure appearing in both tables is a coincidence rather than a correspondence, which is exactly what makes a wrong classification look right.
+Those are **two different splits of the same 152**, and a figure appearing in both tables is a coincidence rather than a correspondence, which is exactly what makes a wrong classification look right.
 
-There are **167** tracked `.csproj` files under `src/`, which is **23** more than the solution holds. Every one of the 23 is fixture or example data of the dotnet-dependency-graph module — a module whose subject matter *is* reading `.csproj` files, so its test fixtures and its showcase project are themselves `.csproj`, in `src/diagrams/dotnet-dependency-graph` and in the showcase copy under `src/examples/`. **A page giving the tracked count as the number of projects would be wrong in the confident direction.**
+There are **175** tracked `.csproj` files under `src/`, which is **23** more than the solution holds. Every one of the 23 is fixture or example data of the dotnet-dependency-graph module — a module whose subject matter *is* reading `.csproj` files, so its test fixtures and its showcase project are themselves `.csproj`, in `src/diagrams/dotnet-dependency-graph` and in the showcase copy under `src/examples/`. **A page giving the tracked count as the number of projects would be wrong in the confident direction.**
 
 ## The relative-path trap
 
@@ -47,11 +47,11 @@ Classifying by path segment — "count the ones containing `backend`" as the cor
 
 ## The core projects
 
-**23** production:
+**29** production:
 
 | Concern | Project |
 | --- | --- |
-| Shared primitives | `EtAlii.Adp` |
+| Shared primitives, and the tool-definition scan and catalog every kind's discovery uses | `EtAlii.Adp` |
 | Host and composition, including serving the built client and proxying to the Vite dev server | `EtAlii.Adp.Backend.Service` |
 | Sign-in: the authenticator, the login and which calls need no session | `EtAlii.Adp.Authentication` |
 | Open documents and the shared wire vocabulary | `EtAlii.Adp.Documents` |
@@ -61,19 +61,25 @@ Classifying by path segment — "count the ones containing `backend`" as the cor
 | Errors and warnings | `EtAlii.Adp.Problems` |
 | Known projects and workspace roots | `EtAlii.Adp.Projects` |
 | Every kind of session: sign-in sessions (the session store, the session context and the interceptor that checks every call), the tool-session contracts of the three kinds with their factory contracts and registries, the document session and the text editor session a module builds on, the viewport registry, and the connection and project sessions that acquire and release what a connection holds; it references the diagram, designer, editor and history projects, never the reverse | `EtAlii.Adp.Sessions` |
-| Workspace tree, kept current from the project's file events | `EtAlii.Adp.Hierarchy` |
+| Workspace tree, kept current from the project's file events, which tool opens each file, and the commands that create, rename and delete entries | `EtAlii.Adp.Hierarchy` |
 | Geometry with no dependency: the rectangle, the viewport test's operand, row packing, the row a drag snaps to, text width and graph layering | `EtAlii.Adp.Layout` |
 | Diagram-type abstractions, including the diagram definition and validation contracts; it references the documents project and the shared primitives only | `EtAlii.Adp.Diagram` |
 | The bases a module builds on: the provider frame, the element source resolvers, a bundled DISL definition as a module's palette, menus and rows, and the viewport test | `EtAlii.Adp.Diagram.Modules` |
-| The services a connection calls, its connections and their streams, the table wire, the editor plumbing and the reload bridge | `EtAlii.Adp.Workspace` |
+| The diagram, editor, designer and workspace services a connection calls, its connections and their streams, the table wire, the editor plumbing and the reload bridge | `EtAlii.Adp.Workspace` |
 | Editor-family abstractions | `EtAlii.Adp.Editor` |
-| Designer-family abstractions: the definition, its discovery and its catalog | `EtAlii.Adp.Designer` |
-| Test helpers shipped as a project, referenced by every test project | `EtAlii.Adp.TestSupport` |
-| The in-process host the flow tests drive: one host per test class, a signed-in session, stream probes and the steps the flows share | `EtAlii.Adp.TestSupport.Host` |
+| Designer-family abstractions: the definition, its discovery and its catalog, and the models the table and hierarchy surface sessions speak | `EtAlii.Adp.Designer` |
+| Test helpers every test project needs (temporary folders, repository paths, waiting, the fake clock, embedded resources), referenced by every test project | `EtAlii.Adp.Tests.Support` |
+| The contracts a module's document store, reloader and edit handler tests derive from | `EtAlii.Adp.Documents.Tests.Support` |
+| The watched-folder store contract and the file system watcher helpers | `EtAlii.Adp.Files.Tests.Support` |
+| The command pipeline for tests: a history stack and tool routers outside any host | `EtAlii.Adp.History.Tests.Support` |
+| Test support for diagrams: the test catalog, drawn connections, the element source resolver contract, the context helpers and the parity-transcript harness | `EtAlii.Adp.Diagram.Tests.Support` |
+| The contract a module with a bundled DISL definition derives its tests from | `EtAlii.Adp.Specification.Disl.Tests.Support` |
+| The FBL real-file corpus and the module cross-checks over it | `EtAlii.Adp.Specification.Fbl.Tests.Support` |
+| The in-process host the flow tests drive: one host per test class, a signed-in session, stream probes and the steps the flows share | `EtAlii.Adp.Backend.Tests.Support` |
 | Reading and writing bodies through FBL bindings (Format Binding Language) | `EtAlii.Adp.Specification.Fbl` |
 | Evaluating CEL expressions (Common Expression Language), for FBL and DISL alike | `EtAlii.Adp.Specification.Cel` |
-| What the DISL and FBL loaders share: the diagnostic a loader reports and its severity | `EtAlii.Adp.Specification.Json` |
-| Loading DISL specifications (Diagram Specification Language) and the bundled definitions, building a diagram's model from a reading, and deriving its toolbox, context menus, property rows, findings and gesture refusals, and running its operations, hooks and deletion policy, and giving the FBL library the attribute types of a binding | `EtAlii.Adp.Specification.Disl` |
+| What the DISL and FBL loaders share: the diagnostic a loader reports and its severity, JSON pointers, duplicate-key detection, scalar and property reading, and the language version | `EtAlii.Adp.Specification.Json` |
+| Loading DISL specifications (Diagram Specification Language) and the bundled definitions, building a diagram's model from a reading, and deriving its toolbox, context menus, property rows, findings and gesture refusals, resolving a toolbox drop by its drop targets, and running its operations, hooks, deletion policy and retyping, and giving the FBL library the attribute types of a binding | `EtAlii.Adp.Specification.Disl` |
 
 **22** test: `EtAlii.Adp.Tests`, `EtAlii.Adp.Authentication.Tests`, `EtAlii.Adp.Backend.Tests`, `EtAlii.Adp.Client.Tests`, `EtAlii.Adp.Context.Tests`, `EtAlii.Adp.Designer.Tests`, `EtAlii.Adp.Diagram.Tests`, `EtAlii.Adp.Diagram.Modules.Tests`, `EtAlii.Adp.Documents.Tests`, `EtAlii.Adp.Editor.Tests`, `EtAlii.Adp.Hierarchy.Tests`, `EtAlii.Adp.History.Tests`, `EtAlii.Adp.HostLogging.Tests`, `EtAlii.Adp.Layout.Tests`, `EtAlii.Adp.Problems.Tests`, `EtAlii.Adp.Projects.Tests`, `EtAlii.Adp.Repository.Tests`, `EtAlii.Adp.Sessions.Tests`, `EtAlii.Adp.Specification.Cel.Tests`, `EtAlii.Adp.Specification.Disl.Tests`, `EtAlii.Adp.Specification.Fbl.Tests`, `EtAlii.Adp.Workspace.Tests`.
 
@@ -90,14 +96,14 @@ A diagram type is `src/diagrams/<type>/` with up to five parts:
 - `backend/` — its project, `EtAlii.Adp.Diagram.<Type>`, and `.Tests` where it has tests of its own
 - `api/` — its own `.proto`, when it has wire messages of its own
 - `client/` — its canvas and registration
-- `definition/` — its DISL definition (`<type>.dis`, its prose and `provenance.json`; one `<type>.dis` with its own `<type>.provenance.json` per type where several types read one body, as C4's six do), bundled from etalii-adp/etalii.adp by `src/diagrams/tools/bundle-disl.sh`, when the type is specified in DISL; the backend embeds it and the client compiles its notation
+- `definition/` — its DISL definition (`<type>.dis`, its prose and `provenance.json`, and its `<type>.fbl` when the binding ships with the definition; one `<type>.dis` with its own `<type>.provenance.json` per type where several types read one body, as C4's six do), bundled from etalii-adp/etalii.adp by `src/diagrams/tools/bundle-disl.sh`, when the type is specified in DISL; the backend embeds it and the client compiles its notation
 - `examples/` — documents a reader can open
 
-Editors are the same shape under `src/editors/<type>/`, with `EtAlii.Adp.Editor.<Type>`. Designers are too, under `src/designers/<type>/`, with `EtAlii.Adp.Designer.<Type>`; the first is `src/designers/knowledge`. [creating-a-diagram-module.md](creating-a-diagram-module.md) walks one module end to end.
+Editors are the same shape under `src/editors/<type>/`, with `EtAlii.Adp.Editor.<Type>`. Designers are similar, under `src/designers/<type>/`, with `EtAlii.Adp.Designer.<Type>`: `src/designers/knowledge` and `src/designers/hierarchical-requirement`, with no `api/`, since a designer speaks core's `designers.proto`, and a `definition/` that holds the DESL `<type>.des` and its `<type>.fbl`. [creating-a-diagram-module.md](creating-a-diagram-module.md) walks one module end to end.
 
 ## Namespaces, and the folders that do not contribute
 
-Namespaces are `EtAlii.Adp.<Area>`, following the project rather than the folder tree — `EtAlii.Adp.Backend.Service`, `EtAlii.Adp.Context`, `EtAlii.Adp.Diagram`. A test project appends `.Tests`. Outside .NET the same intent is spelled the language's own way, as `com.etalii.adp.<area>`. .NET types and their files are `PascalCase`; the client follows its own tooling's convention, kept consistent within the client.
+Namespaces are the project's name, `EtAlii.Adp.<Area>`, followed by every folder that is not skipped (below) — `EtAlii.Adp.Backend.Service`, `EtAlii.Adp.Context`, `EtAlii.Adp.Diagram`. A test project appends `.Tests`. .NET types and their files are `PascalCase`; the client follows its own tooling's convention, kept consistent within the client.
 
 **`EtAlii.Adp.Diagram` is singular, and carries no `Backend` segment.** A plural form and a `Backend`-prefixed form have both been written down as though they existed — three times between them, one of which was the naming rule's own worked example, so the rule told a reader checking against it the wrong answer. **This page cannot spell either form**, even to deny it: the guard rejects any `EtAlii.Adp.*` name on it that is not a project in the solution, which is what found the third instance and then immediately caught this sentence's first draft.
 
@@ -111,7 +117,7 @@ The skips are declared per project in a `.csproj.DotSettings` file, and `Namespa
 
 A test project sits beside its subject as `<Project>.Tests`, or is named for its purpose as `EtAlii.Adp.<Purpose>.Tests` where it has no single subject project: `EtAlii.Adp.Client.Tests` runs the client suite, `EtAlii.Adp.Repository.Tests` holds the guards whose subject is the repository itself - its documents, scripts and conventions - and `EtAlii.Adp.HostLogging.Tests` exists to hold **one class on purpose**. That class asserts which host's pipeline the process-wide `Log.Logger` points at, and a test assembly is its own process, so no other class's host can move it; a second host-booting class there ends that. Inside one, `Fixtures/**` is **test input, not product** — and for the modules whose round-trip requirement compares bytes, those fixtures are marked `-text` in `.gitattributes` so git does not rewrite their line endings and turn the test into a test of git.
 
-**A flow that tests one module and names its types lives in that module's own test project**, which references `EtAlii.Adp.TestSupport.Host` for the host and the steps the flows share; `src/diagrams/timeline/backend/EtAlii.Adp.Diagram.Timeline.Tests/TimelineFlow.Tests.cs` is one. **A test of the host that spans modules lives in `EtAlii.Adp.Modules.Tests`**, in `src/tests/EtAlii.Adp.Modules.Tests/`: what every module draws and declares, every shipped example as its canvas receives it, the restore and the claims several modules share, and the checks that core names no module. It sits outside `src/backend` so that it is no core project, and it reaches the modules through the host project, which deploys them all. `EtAlii.Adp.Backend.Tests` names no module in code; it still holds the other flows, some of which test one module too, through its examples alone.
+**A flow that tests one module lives in that module's own test project**, whether or not it names the module's types, and that project references `EtAlii.Adp.Backend.Tests.Support` for the host and the steps the flows share; `src/diagrams/timeline/backend/EtAlii.Adp.Diagram.Timeline.Tests/TimelineFlow.Tests.cs` is one. **A test of the host that spans modules lives in `EtAlii.Adp.Modules.Tests`**, in `src/tests/EtAlii.Adp.Modules.Tests/`: what every module draws and declares, every shipped example as its canvas receives it and every example registration opened against the catalog, the restore and the claims several modules share, and the checks that core names no module. It sits outside `src/backend` so that it is no core project, and it reaches the modules through the host project, which deploys them all. `EtAlii.Adp.Backend.Tests` names no module in code and **holds no flow that tests one module**: its flows test the host itself, some of them through one module's documents as the vehicle - a mind map for selection, problems and the toolbox, a knowledge table for the workspace stream.
 
 `src/fixtures/cross-tier/` is a different thing with a similar name: **one JSON file per rule the backend and the client must agree on**, each carrying its cases and the rule's own statement in a `reason` field, and read by both suites. Two parts of it are generated rather than written: its `example-models/` folder, where `ShippedExampleModelsTests` writes every shipped example as the stream a canvas receives and the client's emitter guard mounts every canvas on it, and `element-types.json`, which `ElementTypesTests` writes from each module's own type constants; both tests are in `EtAlii.Adp.Modules.Tests`. Each test rewrites its file and fails when the checked-in copy is stale. It sits outside both because a client test reaching into the backend's folders would invert the dependency the whole tree is arranged to avoid. Beside that folder, `src/fixtures/schema-reference-cases.json` is the same kind of file for the editor family: where a schema reference points, read by the client's `resolveSchemaReference` and by the XML editor's C# twin of it, `SchemaReferenceRules`.
 

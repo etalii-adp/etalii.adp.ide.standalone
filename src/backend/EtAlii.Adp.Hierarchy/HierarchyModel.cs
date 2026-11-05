@@ -186,6 +186,18 @@ public sealed class HierarchyModel
             switch (change.Kind)
             {
                 case FileEventKind.Created when facts is not null:
+                    // A Created whose path is gone again is not a new entry: macOS' FSEvents reports
+                    // a file's creation late, even one from just before the watch began, and by then
+                    // the file may have been renamed. Taken at face value it mints an entry for a
+                    // path nothing is at, which a rename back onto that path then reads as a replace
+                    // and never raises the Renamed. A file that came and went stays unlisted, and the
+                    // Deleted that follows has nothing to remove.
+                    if (!facts.Exists)
+                    {
+                        _logger.Verbose("Dropping a Created watcher event for {Path}, which is no longer on disk", change.Path);
+                        break;
+                    }
+
                     refresh = _tree.OnCreated(change.Path, facts);
                     break;
                 case FileEventKind.Deleted when facts is not null:

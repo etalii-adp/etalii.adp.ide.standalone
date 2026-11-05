@@ -30,7 +30,8 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
 
         """;
 
-    private readonly string _root = IoPath.Combine(IoPath.GetTempPath(), $"wardley-properties-{Guid.NewGuid():N}");
+    private readonly TestFolder _testFolder = TestFolder.Create("wardley-properties");
+    private readonly string _root;
     private readonly ServiceProvider _services;
     private readonly IWardleyDocumentStore _documents;
     private readonly WardleyContextPropertyProvider _provider;
@@ -38,7 +39,7 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
 
     public WardleyContextPropertyProviderTests()
     {
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
         _services = new ServiceCollection().AddCommands().AddHierarchyCommandHandlers().AddWardleyMap().BuildServiceProvider();
         _documents = _services.GetRequiredService<IWardleyDocumentStore>();
         _provider = _services.GetServices<IContextPropertyProvider>().OfType<WardleyContextPropertyProvider>().Single();
@@ -49,7 +50,7 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
     public void Dispose()
     {
         _services.Dispose();
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     // ---- what is shown ------------------------------------------------------------------------

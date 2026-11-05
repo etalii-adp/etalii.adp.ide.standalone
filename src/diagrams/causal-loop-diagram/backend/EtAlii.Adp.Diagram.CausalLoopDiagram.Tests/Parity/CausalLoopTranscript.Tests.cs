@@ -1,5 +1,3 @@
-using Xunit;
-
 namespace EtAlii.Adp.Diagram.CausalLoopDiagram.Tests.Parity;
 
 /// <summary>
@@ -12,24 +10,4 @@ namespace EtAlii.Adp.Diagram.CausalLoopDiagram.Tests.Parity;
 /// regenerating - <c>ADP_WRITE_PARITY_TRANSCRIPTS=1</c> rewrites the file before comparing - and the
 /// diff of the checked-in file is then the review of that change.
 /// </remarks>
-public sealed class CausalLoopTranscriptTests
-{
-    [Fact]
-    public async Task TodaysCode_ReproducesTheCheckedInTranscript_ByteForByte()
-    {
-        // Arrange.
-        var cancellationToken = TestContext.Current.CancellationToken;
-
-        // Act.
-        var generated = await CausalLoopTranscript.GenerateAsync(cancellationToken);
-        if (Environment.GetEnvironmentVariable("ADP_WRITE_PARITY_TRANSCRIPTS") == "1")
-        {
-            await File.WriteAllBytesAsync(CausalLoopTranscript.CheckedInPath, generated, cancellationToken);
-        }
-
-        var checkedIn = await File.ReadAllBytesAsync(CausalLoopTranscript.CheckedInPath, cancellationToken);
-
-        // Assert.
-        Assert.True(checkedIn.AsSpan().SequenceEqual(generated), TranscriptText.FirstDifference(checkedIn, generated));
-    }
-}
+public sealed class CausalLoopTranscriptTests : TranscriptTests<CausalLoopTranscript>;

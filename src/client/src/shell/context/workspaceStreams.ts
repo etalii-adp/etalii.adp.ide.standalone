@@ -1,7 +1,14 @@
 import { base64Encode } from "@bufbuild/protobuf/wire";
 import { Code, ConnectError } from "@connectrpc/connect";
 import type { Delta } from "../../generated/deltas_pb";
-import type { TableBaseline, TableChange, TableStreamMessage } from "../../generated/designers_pb";
+import type {
+  HierarchySurfaceEditOutcome,
+  HierarchySurfaceModel,
+  HierarchySurfaceStreamMessage,
+  TableBaseline,
+  TableChange,
+  TableStreamMessage,
+} from "../../generated/designers_pb";
 import type { HierarchyMessage } from "../../generated/hierarchy_pb";
 import type { DiagramStreamMessage } from "../../generated/workspace_pb";
 
@@ -85,6 +92,12 @@ class Feed<T> implements AsyncIterable<T> {
  */
 export type TableStreamEvent = { kind: "baseline"; baseline: TableBaseline } | { kind: "change"; change: TableChange };
 
+/**
+ * One event of a hierarchy surface stream as its consumer reads it: the whole model, sent on open and
+ * after every change, or what became of a gesture.
+ */
+export type HierarchySurfaceStreamEvent = { kind: "model"; model: HierarchySurfaceModel } | { kind: "outcome"; outcome: HierarchySurfaceEditOutcome };
+
 /** What a diagram stream needs from the connection that carries it: its two unary calls. */
 export interface DiagramStreamCalls {
   open: (streamId: Uint8Array) => Promise<unknown>;
@@ -108,6 +121,7 @@ export class WorkspaceStreams {
   private readonly connectedWaiters = new Set<() => void>();
   private readonly diagrams = new Map<string, Feed<Delta>>();
   private readonly tables = new Map<string, Feed<TableStreamEvent>>();
+  private readonly surfaces = new Map<string, Feed<HierarchySurfaceStreamEvent>>();
   private readonly hierarchies = new Set<Feed<HierarchyMessage>>();
 
   /** The number of diagram streams this tab has open on its connection. */
@@ -139,6 +153,10 @@ export class WorkspaceStreams {
       feed.end();
     }
     this.tables.clear();
+    for (const feed of this.surfaces.values()) {
+      feed.end();
+    }
+    this.surfaces.clear();
     for (const feed of this.hierarchies) {
       feed.fail(new Error(HIERARCHY_LOST_TEXT));
     }
@@ -185,6 +203,22 @@ export class WorkspaceStreams {
     }
   }
 
+  hierarchySurface(message: HierarchySurfaceStreamMessage) {
+    const streamId = message.streamId?.value;
+    const feed = streamId === undefined ? undefined : this.surfaces.get(base64Encode(streamId));
+    if (feed === undefined) {
+      // A stream this tab already closed, whose last events were on their way.
+      return;
+    }
+    if (message.event.case === "model") {
+      feed.push({ kind: "model", model: message.event.value });
+    } else if (message.event.case === "outcome") {
+      feed.push({ kind: "outcome", outcome: message.event.value });
+    } else if (message.event.case === "ended") {
+      feed.end();
+    }
+  }
+
   /** The hierarchy's changes, until the connection drops or `signal` aborts. */
   async *watchHierarchy(signal: AbortSignal): AsyncGenerator<HierarchyMessage> {
     const feed = new Feed<HierarchyMessage>();
@@ -215,6 +249,11 @@ export class WorkspaceStreams {
    */
   openTable(streamId: Uint8Array, calls: DiagramStreamCalls, signal: AbortSignal): AsyncGenerator<TableStreamEvent> {
     return this.open(this.tables, streamId, calls, signal);
+  }
+
+  /** One hierarchy surface's events on the connection, under a stream id the caller made, as a table's are. */
+  openHierarchySurface(streamId: Uint8Array, calls: DiagramStreamCalls, signal: AbortSignal): AsyncGenerator<HierarchySurfaceStreamEvent> {
+    return this.open(this.surfaces, streamId, calls, signal);
   }
 
   private async *open<T>(feeds: Map<string, Feed<T>>, streamId: Uint8Array, calls: DiagramStreamCalls, signal: AbortSignal): AsyncGenerator<T> {

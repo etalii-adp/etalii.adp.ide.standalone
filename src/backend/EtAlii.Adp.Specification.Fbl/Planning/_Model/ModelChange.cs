@@ -2,7 +2,7 @@ namespace EtAlii.Adp.Specification.Fbl.Planning;
 
 /// <summary>
 /// One model change, as a DISL transaction makes it and as a conformance fixture's step names it
-/// (FBL §6.4, §15.3). Planning turns it into one <see cref="Edit"/> or a refusal.
+/// (FBL §6.4, §15.3). Planning turns it into one <see cref="SpliceEdit"/> or a refusal.
 /// </summary>
 public abstract record ModelChange
 {
@@ -18,6 +18,13 @@ public abstract record ModelChange
     /// one type in three slots). Null chooses the first rule of the type that can insert.
     /// </param>
     public sealed record Add(string Type, string? Id, IReadOnlyDictionary<string, object?> Attributes, string? ParentId = null, int? Index = null, string? Slot = null) : ModelChange;
+
+    /// <summary>
+    /// Adds an entry on a line of its own right after the entry <paramref name="After"/>, whatever that entry's type
+    /// (FBL §11.2, the position <c>{after}</c>; etalii.adp spec 074): a statement that belongs beside a header it is not a
+    /// sibling of.
+    /// </summary>
+    public sealed record AddAfter(string Type, IReadOnlyDictionary<string, object?> Attributes, string After) : ModelChange;
 
     /// <summary>
     /// Moves an element, with everything it contains, under <paramref name="NewParentId"/> (to the top
@@ -50,6 +57,14 @@ public abstract record ModelChange
     /// entry is from then on found by <paramref name="NewId"/>, and can be named by it.
     /// </summary>
     public sealed record StoreId(string Id, string NewId) : ModelChange;
+
+    /// <summary>
+    /// Changes an entry of a block of the registration that the binding declares (FBL 0.7 §8.1, §8.4, §15.3): gives the
+    /// entry <paramref name="Key"/> of <paramref name="Block"/> a new <paramref name="Value"/>, moves it to
+    /// <paramref name="Position"/> in a <c>kept</c> block, renames it to <paramref name="Rename"/>, or removes it. A setting
+    /// with a position and no value moves the entry; one with a value and no entry of that key adds it.
+    /// </summary>
+    public sealed record Setting(string Block, string Key, string? Value = null, SettingPosition? Position = null, string? Rename = null, bool RemoveEntry = false) : ModelChange;
 
     /// <summary>Saves without a change: no splice (FBL §15.3).</summary>
     public sealed record Save : ModelChange;

@@ -43,6 +43,22 @@ public class AdpRegistrationTests
         Assert.Null(registration.View);
     }
 
+    [Theory]
+    [InlineData("type/x\nview: first\nview: last\n", "last", "first")]
+    [InlineData("type/x\nview:\nview: last\n", "last", null)]
+    [InlineData("type/x\nview: first\nview:\n", null, "first")]
+    [InlineData("type/x\nbody: a.txt\nview: only\n", "only", "only")]
+    public void Parse_OfTwoViewHeaders_ViewTakesTheLast_AndFirstViewTheFirst(string text, string? view, string? firstView)
+    {
+        // Act: the hierarchy has always read the last view: header and c4 the first; both answers
+        // are kept, so that moving c4 onto this reader changed neither (code-structure T295).
+        var registration = AdpRegistration.Parse(text);
+
+        // Assert.
+        Assert.Equal(view, registration.View);
+        Assert.Equal(firstView, registration.FirstView);
+    }
+
     [Fact]
     public void Parse_SkipsBlankLinesBetweenHeaders_AndStopsAfterEightLines()
     {

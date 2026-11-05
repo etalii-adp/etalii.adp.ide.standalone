@@ -5,7 +5,8 @@ using System.Text.RegularExpressions;
 namespace EtAlii.Adp.Specification.Fbl.Yaml;
 
 /// <summary>Scalars as the YAML 1.2 core schema reads them, and as FBL §6.3 writes them.</summary>
-internal static partial class YamlScalars
+/// <remarks>Public because azure-devops-pipeline's planner writes its scalars through it (spec 025 T302, by T226's rule that a type another project uses is public).</remarks>
+public static partial class YamlScalars
 {
     [GeneratedRegex("^[-+]?[0-9]+$", RegexOptions.CultureInvariant)]
     private static partial Regex Decimal();
@@ -50,6 +51,13 @@ internal static partial class YamlScalars
     }
 
     /// <summary>
+    /// Whether YAML 1.1 reads <paramref name="value"/> as a number: it matches one of 1.1's number forms and holds a
+    /// digit before any exponent, so that <c>e1</c>, an exponent with nothing to raise, stays a string.
+    /// </summary>
+    private static bool IsYaml11Number(string value) =>
+        Yaml11Number().IsMatch(value) && value.TakeWhile(c => c is not ('e' or 'E')).Any(char.IsAsciiDigit);
+
+    /// <summary>
     /// FBL §6.3: a string is plain-safe when it is not empty; has no leading or trailing whitespace;
     /// no line break or control character; does not start with an indicator; contains neither ': '
     /// nor ' #' and does not end with ':'; and reads back as the same string under the YAML 1.2 core
@@ -62,7 +70,7 @@ internal static partial class YamlScalars
         if (Typed(value) is not string) return false;
         var lower = value.ToLowerInvariant();
         if (lower is "yes" or "no" or "on" or "off" or "y" or "n" or "true" or "false" or "null" or "~") return false;
-        if (Yaml11Number().IsMatch(value) && value.Any(char.IsAsciiDigit)) return false;
+        if (IsYaml11Number(value)) return false;
         return !Timestamp().IsMatch(value) || timeTyped;
     }
 
@@ -91,7 +99,7 @@ internal static partial class YamlScalars
         if (IsPlainSafe(value, timeTyped)) return true;
         if (value.Length < 2 || value[0] != '-' || char.IsWhiteSpace(value[1]) || value.StartsWith("---", StringComparison.Ordinal)) return false;
         if (!IsPlainSafe("x" + value[1..], timeTyped)) return false;
-        return Typed(value) is string && !(Yaml11Number().IsMatch(value) && value.Any(char.IsAsciiDigit));
+        return Typed(value) is string && !IsYaml11Number(value);
     }
 
     public static string DoubleQuoted(string value)

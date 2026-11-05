@@ -5,14 +5,14 @@ using YamlDotNet.Core;
 namespace EtAlii.Adp.Diagram.Databricks;
 
 /// <summary>
-/// What one Databricks configuration file parsed to under each of the family's readings.
+/// What one Databricks configuration file reads as under each of the family's readings.
 /// </summary>
 /// <remarks>
 /// All three readings are carried at once because one file legitimately serves several: a
 /// <c>databricks.yml</c> is a bundle that may also declare jobs and pipelines inline, and a
-/// resource file holds jobs the bundle diagram counts and the job diagram opens. Each parser
-/// simply finds nothing where its structures are absent, so the empty readings cost one pass
-/// each over an already-loaded tree.
+/// resource file holds jobs the bundle diagram counts and the job diagram opens. Each is the
+/// binding's reading of one origin over one open body (<see cref="DatabricksBody"/>), and finds
+/// nothing where its structures are absent.
 /// </remarks>
 /// <param name="Bundle">The file read as a bundle; <see cref="BundleModel.Empty"/> where it is not one.</param>
 /// <param name="Jobs">Every job the file declares, in file order.</param>
@@ -31,11 +31,9 @@ public sealed record DatabricksModel(
     /// <exception cref="YamlException">The document is not YAML (or JSON, the same door).</exception>
     public static DatabricksModel Read(LineDocument document)
     {
-        var root = YamlAccess.Root(document);
-        return new DatabricksModel(
-            BundleParser.Parse(root, document),
-            JobParser.Parse(root, document),
-            PipelineParser.Parse(root, document));
+        ArgumentNullException.ThrowIfNull(document);
+        DatabricksSyntax.Check(document.Text);
+        return DatabricksReadings.Model(DatabricksBody.Open(document.Text));
     }
 
     /// <summary>

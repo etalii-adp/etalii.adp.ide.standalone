@@ -74,18 +74,16 @@ public class HelmCrossCheckTests
             }
         }
         if (chart.Crds is not null) ModuleCrossCheck.Add(ids, "Crds", "crds");
-        foreach (var entry in chart.Vendored) ModuleCrossCheck.Add(ids, entry.Sealed ? "Archive" : "Subchart", Vendored(entry));
+        foreach (var entry in chart.Vendored) ModuleCrossCheck.Add(ids, entry.Sealed ? "Archive" : "Subchart", HandWrittenHelm.VendoredId(entry));
         foreach (var resolved in DependencyResolution.Match(chart.Dependencies, chart.Vendored).Dependencies)
         {
             var dependency = $"dep:{resolved.Dependency.EffectiveName}";
             ModuleCrossCheck.Add(ids, "Dependency", dependency);
             ModuleCrossCheck.Add(ids, "Resolves", resolved.Vendored is { } vendored
-                ? $"edge:{dependency}|Resolves|{Vendored(vendored)}|"
+                ? $"edge:{dependency}|Resolves|{HandWrittenHelm.VendoredId(vendored)}|"
                 : $"edge:{dependency}|Resolves||{resolved.Dependency.EffectiveName}");
         }
         if (chart.Lock is { } chartLock) ModuleCrossCheck.Add(ids, "Lock", $"lock:{chartLock.RelativePath}");
         return ids;
-
-        static string Vendored(VendoredEntry entry) => $"{(entry.Sealed ? "tgz" : "sub")}:{entry.RelativePath}";
     }
 }

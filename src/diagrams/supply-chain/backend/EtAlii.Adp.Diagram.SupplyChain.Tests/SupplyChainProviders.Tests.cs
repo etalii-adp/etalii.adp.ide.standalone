@@ -2,6 +2,7 @@ using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.SupplyChain.Tests;
@@ -11,20 +12,20 @@ public sealed class SupplyChainProvidersTests : IDisposable
 {
     private readonly SupplyChainTestFolder _folder = new(Path.Combine(AppContext.BaseDirectory, "Fixtures", "lf-line-endings.supply"), "small.supply");
     private readonly SupplyChainDocumentStore _store = new(new FileWriter());
-    private readonly HistoryStackStore _historyStacks;
+    private readonly IHistoryStackStore _historyStacks;
     private readonly SupplyChainContextPropertyProvider _properties;
     private readonly SupplyChainContextActionProvider _actions;
 
     public SupplyChainProvidersTests()
     {
-        _historyStacks = new HistoryStackStore(new SupplyChainTestDispatcher(_store));
+        _historyStacks = TestHistory.For(s => { s.AddSupplyChain(); s.AddSingleton<ISupplyChainDocumentStore>(_store); });
         _properties = new SupplyChainContextPropertyProvider(_historyStacks, _store);
         _actions = new SupplyChainContextActionProvider(_historyStacks, _store);
     }
 
     public void Dispose()
     {
-        _historyStacks.Dispose();
+        (_historyStacks as IDisposable)?.Dispose();
         _folder.Dispose();
     }
 
@@ -185,7 +186,7 @@ public sealed class SupplyChainProvidersTests : IDisposable
     public void ThePalette_OffersEveryStageAndAGroup_AddedByItsOwnAction()
     {
         // Act.
-        var items = new SupplyChainToolboxProvider().Items;
+        var items = SupplyChainDefinition.Toolbox;
 
         // Assert.
         Assert.Equal(
@@ -203,7 +204,7 @@ public sealed class SupplyChainProvidersTests : IDisposable
             .ToDictionary(action => action.Id, action => action.Icon);
 
         // Assert: one icon per entry, each its palette entry's, and no two alike.
-        var palette = new SupplyChainToolboxProvider().Items;
+        var palette = SupplyChainDefinition.Toolbox;
         Assert.Equal(palette.ToDictionary(item => item.DropActionId, item => item.Icon), adds);
         Assert.Equal(palette.Count, palette.Select(item => item.Icon).Distinct(StringComparer.Ordinal).Count());
     }
@@ -211,5 +212,5 @@ public sealed class SupplyChainProvidersTests : IDisposable
     private ContextTarget Target(string elementId) =>
         ContextTarget.ForElement(_folder.Body, elementId, ProjectRoot.From(_folder.Folder), ShortGuid.NewShortGuid());
 
-    private SupplyChainModel Parse() => SupplyChainParser.Parse(LineDocument.Parse(File.ReadAllText(_folder.Body)));
+    private SupplyChainModel Parse() => SupplyChainReading.Parse(File.ReadAllText(_folder.Body));
 }

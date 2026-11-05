@@ -70,13 +70,14 @@ public sealed class RdfDocumentReloaderTests : DocumentReloaderContract<IRdfDocu
         foreach (var reading in readings)
         {
             var told = new List<string>();
-            void Told(object? sender, DocumentChangedEventArgs args) => told.Add(args.Path);
             store.Changed += Told;
             var reloader = Assert.Single(reloaders, r => r.Origin == new ToolOrigin("w3c", reading));
             await File.AppendAllTextAsync(body, $"<http://example.org/{reading}> <http://example.org/y> <http://example.org/z> .\r\n", TestContext.Current.CancellationToken);
             await reloader.ReloadAsync(ProjectRoot.From(folder.Path), body, TestContext.Current.CancellationToken);
             store.Changed -= Told;
             Assert.Equal([body], told);
+            continue;
+            void Told(object? sender, DocumentChangedEventArgs args) => told.Add(args.Path);
         }
     }
 }

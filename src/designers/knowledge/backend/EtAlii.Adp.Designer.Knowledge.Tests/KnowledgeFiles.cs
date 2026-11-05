@@ -8,20 +8,6 @@ namespace EtAlii.Adp.Designer.Knowledge.Tests;
 /// <summary>The module's shipped example documents, and a place to copy one to for a test that changes it.</summary>
 internal static class KnowledgeFiles
 {
-    private static readonly Lazy<string> _examples = new(() =>
-    {
-        for (var folder = new DirectoryInfo(AppContext.BaseDirectory); folder is not null; folder = folder.Parent)
-        {
-            var candidate = IoPath.Combine(folder.FullName, "src", "designers", "knowledge", "examples");
-            if (Directory.Exists(candidate))
-            {
-                return candidate;
-            }
-        }
-
-        throw new InvalidOperationException("The Knowledge module's examples folder was not found above the test's output folder.");
-    });
-
     /// <summary>The three formats a knowledge file comes in, by extension.</summary>
     public static TheoryData<string> Extensions => [".yaml", ".json", ".xml"];
 
@@ -51,19 +37,19 @@ internal static class KnowledgeFiles
     }
 
     /// <summary>The folder of the designer's bundled definition: its specification, its bindings and their prose.</summary>
-    public static string DefinitionFolder => IoPath.GetFullPath(IoPath.Combine(_examples.Value, "..", "definition"));
+    public static string DefinitionFolder => IoPath.GetFullPath(IoPath.Combine(ExamplesFolder, "..", "definition"));
 
     /// <summary>The module's examples folder.</summary>
-    public static string ExamplesFolder => _examples.Value;
+    public static string ExamplesFolder => RepositoryPaths.Under("src", "designers", "knowledge", "examples");
 
     /// <summary>The repository's <c>src</c> folder.</summary>
-    public static string SourceFolder => IoPath.GetFullPath(IoPath.Combine(_examples.Value, "..", "..", ".."));
+    public static string SourceFolder => IoPath.GetFullPath(IoPath.Combine(ExamplesFolder, "..", "..", ".."));
 
     /// <summary>The designer's examples in the showcase project: the copies a reader opens.</summary>
     public static string ShowcaseFolder => IoPath.Combine(SourceFolder, "examples", "designers", "knowledge");
 
     /// <summary>The path of a shipped example.</summary>
-    private static string Example(string name) => IoPath.Combine(_examples.Value, name);
+    private static string Example(string name) => IoPath.Combine(ExamplesFolder, name);
 
     /// <summary>The bytes of a shipped example.</summary>
     public static byte[] ExampleBytes(string name) => File.ReadAllBytes(Example(name));

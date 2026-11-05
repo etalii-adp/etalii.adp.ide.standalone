@@ -61,6 +61,11 @@ public class YamlScalarsTests
     [InlineData("12:30", false)]
     [InlineData("2026-10-01", false)]
     [InlineData("2026-10-01T09:00:00", false)]
+    // An exponent with no digits before it is no number in either schema: an id such as e1 stays plain.
+    [InlineData("e1", true)]
+    [InlineData("E5", true)]
+    [InlineData(".e2", true)]
+    [InlineData("1e5", false)]
     public void APlainSafeStringIsWrittenPlain(string value, bool safe)
     {
         // Act and assert.

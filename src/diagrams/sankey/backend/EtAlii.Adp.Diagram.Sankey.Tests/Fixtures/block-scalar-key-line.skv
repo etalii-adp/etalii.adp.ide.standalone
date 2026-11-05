@@ -1,0 +1,14 @@
+sankey: 1
+# B16: a line of a block-scalar description that starts with a key.
+nodes:
+  - id: a
+    description: |
+      color: this line is part of the description
+      name: and so is this one
+    name: A
+  - id: b
+    name: B
+flows:
+  - from: a
+    to: b
+    value: 1

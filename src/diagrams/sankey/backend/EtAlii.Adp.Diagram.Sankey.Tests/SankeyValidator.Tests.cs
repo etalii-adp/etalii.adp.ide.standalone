@@ -1,18 +1,18 @@
-using EtAlii.Adp.Documents;
+using EtAlii.Adp.Diagram.Sankey.Tests.Parity;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.Sankey.Tests;
 
-/// <summary>The rules, each reported on the line it breaks, and none reported for a clean document.</summary>
+/// <summary>The rules, each reported by the validator on the line it breaks, and none reported for a clean document.</summary>
 public sealed class SankeyValidatorTests
 {
     private static string Fixture(string name) => Path.Combine(AppContext.BaseDirectory, "Fixtures", name);
 
     [Fact]
-    public void EveryRule_IsReportedOnTheBrokenDocument()
+    public async Task EveryRule_IsReportedOnTheBrokenDocument()
     {
         // Act.
-        var breaches = SankeyValidator.Validate(SankeyParser.Parse(LineDocument.Parse(File.ReadAllText(Fixture("rules-broken.skv")))));
+        var breaches = await ProblemsAsync(Fixture("rules-broken.skv"));
 
         // Assert.
         Assert.Equal(
@@ -25,13 +25,13 @@ public sealed class SankeyValidatorTests
     }
 
     [Fact]
-    public void AnUnreadableEntry_IsAWarning_NotAnError()
+    public async Task AnUnreadableEntry_IsAWarning_NotAnError()
     {
         // Act.
-        var breaches = SankeyValidator.Validate(SankeyParser.Parse(LineDocument.Parse(File.ReadAllText(Fixture("malformed-entries.skv")))));
+        var breaches = await ProblemsAsync(Fixture("malformed-entries.skv"));
 
         // Assert.
-        Assert.All(breaches.Where(breach => breach.RuleId == SankeyRuleIds.UnreadableEntry), breach => Assert.True(breach.IsWarning));
+        Assert.All(breaches.Where(breach => breach.RuleId == SankeyRuleIds.UnreadableEntry), breach => Assert.Equal(DiagramProblemSeverity.Warning, breach.Severity));
         Assert.NotEmpty(breaches);
     }
 
@@ -58,12 +58,19 @@ public sealed class SankeyValidatorTests
 
     [Theory]
     [MemberData(nameof(CleanDocuments))]
-    public void ACleanDocument_ReportsNothing(string path)
+    public async Task ACleanDocument_ReportsNothing(string path)
     {
         // Act.
-        var breaches = SankeyValidator.Validate(SankeyParser.Parse(LineDocument.Parse(File.ReadAllText(path))));
+        var breaches = await ProblemsAsync(path);
 
         // Assert.
         Assert.Empty(breaches);
+    }
+
+    /// <summary>What the validator reports for the document at <paramref name="path"/>.</summary>
+    private static async Task<IReadOnlyList<DiagramProblem>> ProblemsAsync(string path)
+    {
+        var text = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
+        return await new SankeyValidator().ValidateAsync(new DiagramValidationRequest(text, Path.GetFileNameWithoutExtension(path), default, path, null), TestContext.Current.CancellationToken);
     }
 }

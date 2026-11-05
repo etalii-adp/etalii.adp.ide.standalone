@@ -1,6 +1,6 @@
 # XML editor: browser checks
 
-What only a running application shows, from the End-to-End section of the [design](../../../.spec-workflow/specs/xml-editor/design.md). Run them against a local build, signed in with the checked-in `admin`/`changeme` placeholder, with `src/examples/` open as the project. Every check is done in the light theme and again in the dark theme. The results below were taken in a cloud session, in headless Chromium driven by Playwright, the theme switched by the browser's colour-scheme preference.
+What only a running application shows, from the End-to-End section of the [design](https://github.com/etalii-adp/etalii.adp.ide.standalone/blob/bd7e2ea95b8e4195bf6f8d97f7aede9ab4dc3ad8/.spec-workflow/specs/xml-editor/design.md). Run them against a local build, signed in with the checked-in `admin`/`changeme` placeholder, with `src/examples/` open as the project. Every check is done in the light theme and again in the dark theme. The results below were taken in a cloud session, in headless Chromium driven by Playwright, the theme switched by the browser's colour-scheme preference.
 
 | # | Check | Steps | Expected | Result |
 | --- | --- | --- | --- | --- |

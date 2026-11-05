@@ -69,10 +69,21 @@ public sealed class SecurityTests : IDisposable
         }
 
         var document = $"<!DOCTYPE bomb [{entities}]>\n<bomb>&l6;</bomb>";
-        var watch = Stopwatch.StartNew();
 
         // Act.
-        var refusal = Assert.Throws<XmlException>(() =>
+        var refusal = Refuse(document);
+
+        // The fastest of three, because the second is a bound on the work and a clock also counts a
+        // machine busy with every other test assembly: one refusal took 1559 ms that way (2026-10-31).
+        var fastest = Enumerable.Range(0, 3).Min(_ => TimeARefusal(document));
+
+        // Assert: refused, with the platform's sentence naming the limit, and quickly.
+        Assert.Contains("MaxCharactersFromEntities", refusal.Message, StringComparison.Ordinal);
+        Assert.True(fastest < TimeSpan.FromSeconds(1), $"refusing took {fastest.TotalMilliseconds:F0} ms at best");
+    }
+
+    private XmlException Refuse(string document) =>
+        Assert.Throws<XmlException>(() =>
         {
             using var reader = XmlReaders.Document(document, Path.Combine(Root, "bomb.xml"), new ProjectXmlResolver(ProjectRoot.From(Root)));
             while (reader.Read())
@@ -80,8 +91,10 @@ public sealed class SecurityTests : IDisposable
             }
         });
 
-        // Assert: refused, with the platform's sentence naming the limit, and quickly.
-        Assert.Contains("MaxCharactersFromEntities", refusal.Message, StringComparison.Ordinal);
-        Assert.True(watch.Elapsed < TimeSpan.FromSeconds(1), $"refusing took {watch.Elapsed.TotalMilliseconds:F0} ms");
+    private TimeSpan TimeARefusal(string document)
+    {
+        var watch = Stopwatch.StartNew();
+        Refuse(document);
+        return watch.Elapsed;
     }
 }

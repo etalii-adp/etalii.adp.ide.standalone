@@ -45,7 +45,10 @@ export interface BandDeclaration {
   start: DeclaredNumber;
   end: DeclaredNumber;
   label?: Binding;
-  /** A rule at the band's leading edge - wardley's boundary between two stages. */
+  /**
+   * A rule at the band's leading edge, a boundary between two stages. Once per entry of a
+   * collection it is skipped for the first entry; a band without `each` draws its own.
+   */
   edge?: boolean;
   /** Bound, it resolves against the ITEM - wardley numbers its bands `wardley-band-0…3`. */
   className?: string | Binding;
@@ -316,8 +319,9 @@ export function resolveBackground(
       );
 
       // The leading edge, skipped for the first band: wardley draws a boundary BETWEEN stages,
-      // and a rule on the outermost edge would double the axis already drawn there.
-      if (band.edge === true && index > 0) {
+      // and a rule on the outermost edge would double the axis already drawn there. A band
+      // declared outright is no entry of a list: it asks for its own rule, and gets it.
+      if (band.edge === true && (index > 0 || band.each === undefined)) {
         lines.push(
           vertical
             ? { x1: atX(start), y1: extent.y, x2: atX(start), y2: extent.y + extent.height, className: suffixed(itemClass(band.className, item, source), "edge"), key: `${key}-edge` }

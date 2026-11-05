@@ -38,6 +38,12 @@ internal sealed record Candidate(Rule? Rule, BlockRule? Block, Entry Entry, IRea
 /// <summary>A word of a lines or blocks group (FBL §4.6), with its span (quotes included) and its text (quotes excluded).</summary>
 internal sealed record Word(string Text, Span Span, bool Quoted);
 
+/// <summary>
+/// One item of a word slot of an attribute with <c>many</c> (FBL 0.7 §4.6): its value, the span the value is written
+/// in (the word's group <c>value</c>, or the whole word), and the word it is in.
+/// </summary>
+internal sealed record WordItem(string Value, Span ValueSpan, Word Word);
+
 /// <summary>What reading one slot of one entry gave.</summary>
 internal sealed record SlotRead(object? Value, Span? Span, bool Present, bool Writable, string? Reason = null)
 {
@@ -51,8 +57,17 @@ internal sealed record SlotRead(object? Value, Span? Span, bool Present, bool Wr
     /// <summary>For a group read as words: every word of the group, so references inside it can be rewritten one by one.</summary>
     public IReadOnlyList<Word>? Words { get; init; }
 
+    /// <summary>For a word slot of an attribute with <c>many</c> (FBL 0.7 §4.6): every word of the group it holds, in order; null for any other slot.</summary>
+    public IReadOnlyList<WordItem>? Items { get; init; }
+
     /// <summary>The quote the value is written in on the wire, when the span includes one.</summary>
     public string? Quote { get; init; }
+
+    /// <summary>
+    /// The further slot of an attribute's <c>or</c> the value was read from (FBL 0.15 §4.9), as the binding a set of it
+    /// is written by; null when the attribute's own slot was read.
+    /// </summary>
+    public AttributeBinding? By { get; init; }
 
     /// <summary>The value as written, before maps or conversion, for keeping a map's wire value.</summary>
     public string? Wire { get; init; }
@@ -65,6 +80,12 @@ internal sealed record SlotRead(object? Value, Span? Span, bool Present, bool Wr
 
     /// <summary>The style name of a written scalar (FBL 0.5 §2.4), which says whether it is quoted.</summary>
     public string? Style { get; init; }
+
+    /// <summary>
+    /// For a value read from an attribute's <c>secondary</c> slot (FBL 0.10 §5.2): its own slot, which is absent and
+    /// is where writing the attribute writes. Null for a value read from its own slot.
+    /// </summary>
+    public SlotRead? Own { get; init; }
 
     /// <summary>
     /// The written text of the slot (FBL §4.1.5): what the author wrote for a true scalar, otherwise
@@ -87,6 +108,9 @@ internal sealed class ReadElement
     public bool IdStored { get; set; }
 
     public SlotRead? IdRead { get; set; }
+
+    /// <summary>The key the element's id is kept under in the identities, its ordinal included (FBL 0.12 §8.6); null without a sidecar id.</summary>
+    public string? IdentityKey { get; set; }
 
     /// <summary>The value references name this element by: its stored id, or the attribute its own rules reference it by.</summary>
     public string Key { get; set; } = "";
@@ -146,7 +170,7 @@ internal abstract class FamilyReader(BodyText text, FblBinding binding, FblOptio
 
     protected FblBinding Binding { get; } = binding;
 
-    private FblOptions Options { get; } = options;
+    protected FblOptions Options { get; } = options;
 
     /// <summary>Where and why the body is unreadable (FBL §7.5), or null.</summary>
     public (int Offset, string Message)? Unreadable { get; protected set; }
@@ -224,6 +248,12 @@ internal abstract class FamilyReader(BodyText text, FblBinding binding, FblOptio
     /// <summary>Reads a slot that is the family's own: a key, an attribute, text, a group, a capture.</summary>
     public abstract SlotRead Read(Candidate candidate, Slot slot);
 
+    /// <summary>
+    /// Reads a word slot of an attribute the tool type's specification gives <c>many</c> (FBL 0.7 §4.6): every word of
+    /// the group that matches, each an item. A family without words reads it as any other slot.
+    /// </summary>
+    public virtual SlotRead ReadMany(Candidate candidate, Slot slot) => Read(candidate, slot);
+
     /// <summary>Reads the slot named <paramref name="name"/> of an enclosing entry, for a <c>parent</c> slot naming no attribute.</summary>
     public abstract SlotRead ReadRaw(Entry entry, string name);
 
@@ -288,16 +318,69 @@ internal abstract class FamilyReader(BodyText text, FblBinding binding, FblOptio
     /// the add gives. Only <c>insert.keys</c> is written when the rule names them. A computed attribute
     /// and one under a <c>child</c> mapping write nothing. An empty value is written as a set writes it,
     /// and left out only under <c>empty: "remove"</c>; the planner has refused it under <c>refuse</c>
-    /// (FBL 0.6 §6.2, spec 025 B-09).
+    /// (FBL 0.6 §6.2, spec 025 B-09). The insert's constants are written as they are, with no binding: one that
+    /// <c>insert.keys</c> names at its place there, every other after the other keys in the constant's member
+    /// order (FBL 0.8 §6.2, etalii.adp spec 033).
     /// </summary>
     protected static IEnumerable<InsertedValue> InsertValues(InsertRequest request)
     {
         var rule = request.Rule;
+        var keys = rule.Insert!.Keys;
+        var constant = rule.Insert.Constant ?? [];
+        var levels = ChildLevels(request);
         foreach (var key in rule.KeyOrder(null))
         {
-            if (rule.Insert!.Keys.Count > 0 && !rule.Insert.Keys.Contains(key)) continue;
+            if (keys.Count > 0 && !keys.Contains(key)) continue;
+            var given = constant.FirstOrDefault(c => c.Key == key);
+            if (given.Key is not null)
+            {
+                if (keys.Contains(key)) yield return new InsertedValue(key, given.Value, null);
+                continue;
+            }
             if (InsertValue(request, key) is { } value) yield return value;
         }
+
+        // FBL 0.10 §6.2: a level of child that keys names at its place there, every other after the entry's other keys
+        // and before its constants.
+        foreach (var key in keys)
+        {
+            if (levels.FirstOrDefault(level => level.Key == key) is { } named) yield return named;
+        }
+        foreach (var level in levels.Where(level => !keys.Contains(level.Key))) yield return level;
+        foreach ((string key, object? value) in constant)
+        {
+            if (!keys.Contains(key)) yield return new InsertedValue(key, value, null);
+        }
+    }
+
+    /// <summary>
+    /// The levels of <c>child</c> a new entry gets for the attributes bound under them that the add gives a value
+    /// (FBL 0.10 §6.2), outermost first: each a key with the members of its mapping, the keys of its attributes and
+    /// the deeper levels, in the order of the attributes' bindings. An empty value under <c>empty: "remove"</c> gives
+    /// none, as at the top level, and a level a <c>*</c> or a capture names cannot be written, so the add is refused.
+    /// </summary>
+    private static List<InsertedValue> ChildLevels(InsertRequest request)
+    {
+        var rule = request.Rule;
+        var levels = new List<InsertedValue>();
+        foreach ((string name, AttributeBinding binding) in rule.Attributes)
+        {
+            if (binding is not { Child: { } child, Kind: SlotKind.Key(var key) }) continue;
+            if (!request.Values.TryGetValue(name, out var value) || (NewText.IsEmpty(value) && binding.Empty == EmptyRule.Remove)) continue;
+            var members = levels;
+            foreach (var segment in child.Trim('/').Split('/'))
+            {
+                if (segment.Length == 0 || segment.Contains('*', StringComparison.Ordinal) || segment.StartsWith('{')) Plan.Refuse($"A new {rule.Type} cannot write its {name} under {child}.");
+                if (members.FirstOrDefault(existing => existing.Key == segment && existing.Members is not null) is not { } level)
+                {
+                    level = new InsertedValue(segment, null, null) { Members = [] };
+                    members.Add(level);
+                }
+                members = level.Members!;
+            }
+            members.Add(new InsertedValue(key, value, binding));
+        }
+        return levels;
     }
 
     private static InsertedValue? InsertValue(InsertRequest request, string key)
@@ -337,6 +420,21 @@ internal abstract class FamilyReader(BodyText text, FblBinding binding, FblOptio
         plan.Add(SpliceOperation.RemoveEntry, span, "");
         plan.Add(SpliceOperation.InsertEntry, offset, offset, Text.Text(span));
     }
+
+    /// <summary>
+    /// Whether a new or moved entry takes its place from its position among its siblings, and a move may
+    /// change its parent (FBL 0.7 §6.3): true for a family whose nesting is its indentation, false where
+    /// the binding's insert place alone decides and a position is a plugin's to honour.
+    /// </summary>
+    public virtual bool PlacesByPosition => false;
+
+    /// <summary>
+    /// Moves <paramref name="element"/>'s entry, with everything it contains, to <paramref name="index"/> among
+    /// <paramref name="parent"/>'s children as they are without it (the top level when it is null). Only a
+    /// family that <see cref="PlacesByPosition"/> plans one.
+    /// </summary>
+    public virtual void MoveTo(Plan plan, ReadElement element, ReadElement? parent, int index) =>
+        Plan.Refuse($"This file's binding cannot move a {element.Rule.Type} to another parent; only a persistence plugin can.");
 
     // ---- shared helpers ----
 
@@ -415,10 +513,14 @@ internal abstract class FamilyReader(BodyText text, FblBinding binding, FblOptio
 internal sealed record SlotChange(string Attribute, AttributeBinding Binding, Rule Rule, SlotRead Read, object? Value, bool IsEmpty);
 
 /// <summary>One key of a new entry and the value written under it, with the attribute binding it comes from; none for an id, a source or a target.</summary>
-internal sealed record InsertedValue(string Key, object? Value, AttributeBinding? Binding);
+internal sealed record InsertedValue(string Key, object? Value, AttributeBinding? Binding)
+{
+    /// <summary>For a level of <c>child</c> (FBL 0.10 §6.2): what its mapping holds, in order; null for a key with a value.</summary>
+    public List<InsertedValue>? Members { get; init; }
+}
 
-/// <summary>What adding an element or relation needs to know (FBL §6.2).</summary>
-internal sealed record InsertRequest(Rule Rule, string? Id, IReadOnlyDictionary<string, object?> Values, ReadElement? Parent, ReadElement? Source, ReadElement? Target);
+/// <summary>What adding an element or relation needs to know (FBL §6.2); <paramref name="Index"/> is the position among its siblings, for a family that <see cref="FamilyReader.PlacesByPosition"/>.</summary>
+internal sealed record InsertRequest(Rule Rule, string? Id, IReadOnlyDictionary<string, object?> Values, ReadElement? Parent, ReadElement? Source, ReadElement? Target, int? Index = null, ReadElement? After = null);
 
 /// <summary>Thrown inside planning when a change cannot be made; the edit is refused with its message (FBL §6.4).</summary>
 internal sealed class RefusedException(string reason) : Exception(reason);

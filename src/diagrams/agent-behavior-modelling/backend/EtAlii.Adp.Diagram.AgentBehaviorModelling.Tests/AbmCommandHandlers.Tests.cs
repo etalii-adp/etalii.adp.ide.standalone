@@ -1,5 +1,6 @@
 using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace EtAlii.Adp.Diagram.AgentBehaviorModelling.Tests;
 
@@ -12,7 +13,7 @@ public sealed class AbmCommandHandlersTests : EditHandlerContract<IAbmDocumentSt
 
     protected override IAbmDocumentStore Warning(IAbmDocumentStore store, string warning) => new WarningStore(store, warning);
 
-    protected override ICommandDispatcher Dispatcher(IAbmDocumentStore store) => new AbmTestDispatcher(store);
+    protected override ICommandDispatcher Dispatcher(IAbmDocumentStore store) => TestHistory.Dispatcher(s => { s.AddAgentBehaviorModelling(); s.AddSingleton(store); });
 
     protected override ICommand EditOf(string bodyPath) => new RenameAbmNodeCommand(bodyPath, "1.1", "Understand the bug report");
 

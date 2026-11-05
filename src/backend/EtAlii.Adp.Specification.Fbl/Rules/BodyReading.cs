@@ -1,4 +1,6 @@
+using System.Globalization;
 using EtAlii.Adp.Specification.Cel;
+using EtAlii.Adp.Specification.Fbl.Bullets;
 using EtAlii.Adp.Specification.Fbl.Documents;
 using EtAlii.Adp.Specification.Fbl.Expressions;
 using EtAlii.Adp.Specification.Fbl.Json;
@@ -60,6 +62,10 @@ internal sealed class BodyReading
     /// <summary>The views the body's view blocks define (FBL §4.7), in document order.</summary>
     private List<FblView> Views { get; } = [];
 
+    /// <summary>The entry of the view the reading shows (FBL 0.11 §9.3); null when it shows none.</summary>
+    private Entry? _selectedView;
+    private string? _selectedViewName;
+
     /// <summary>The values of the binding's resource capture (FBL §8.2) in document order: the resources the body holds.</summary>
     private List<string> Resources { get; } = [];
 
@@ -83,9 +89,11 @@ internal sealed class BodyReading
         {
             Documents.Family.Lines => new LinesFamily(text, binding, options, blocks: false),
             Documents.Family.Blocks => new LinesFamily(text, binding, options, blocks: true),
+            Documents.Family.Bullets => new BulletsFamily(text, binding, options),
             Documents.Family.Yaml => new YamlFamily(text, binding, options),
             Documents.Family.Json => new JsonFamily(text, binding, options),
             Documents.Family.Xml => new XmlFamily(text, binding, options),
+            Documents.Family.Grammar => new Grammar.GrammarFamily(text, binding, options),
             _ => throw new ArgumentOutOfRangeException(nameof(binding)),
         };
     }
@@ -100,6 +108,8 @@ internal sealed class BodyReading
 
     public static BodyReading Read(byte[] bytes, FblBinding binding, FblOptions options)
     {
+        // A reading of an origin is read by the rules that origin admits, with its own resource capture (FBL 0.10 §5.1, §8.2).
+        binding = binding.ForOrigin(options.Origin);
         var text = new BodyText(bytes);
         var family = CreateFamily(text, binding, options);
         var reading = new BodyReading(text, binding, options, family);
@@ -127,6 +137,7 @@ internal sealed class BodyReading
         reading.Claim();
         reading._isClaiming = false;
         reading._claiming = null;
+        reading.EmptyWhenTheResourceIsMissing();
         reading.Resolve();
         if (options.ReportUnboundKeys) reading.ReportUnboundKeys();
         family.AfterRead(reading.ClaimedBy);
@@ -203,7 +214,7 @@ internal sealed class BodyReading
         {
             if (rule.At == at)
             {
-                foreach (var slot in rule.Attributes.Select(Slot? (attribute) => attribute.Value).Append(rule.Id?.From).OfType<Slot>())
+                foreach (var slot in rule.Attributes.SelectMany(attribute => new[] { attribute.Value, attribute.Value.Secondary }).Append(rule.Id?.From).OfType<Slot>())
                 {
                     if (slot.Child is { } child) Step(child);
                     else if (slot.Kind is SlotKind.Key(var key)) keys.Add(key);
@@ -259,6 +270,7 @@ internal sealed class BodyReading
         {
             foreach (var candidate in Family.Candidates(rule)) Offer(offered, candidate);
         }
+        ReadViews();
         foreach (var entry in Family.Entries)
         {
             if (!offered.TryGetValue(entry, out var candidates)) continue;
@@ -270,11 +282,19 @@ internal sealed class BodyReading
                 if (candidate.Rule is { } rule)
                 {
                     if (!SelectedResource(candidate)) continue;
+                    if (rule.SelectedView && !InSelectedView(entry)) continue;
                     if (rule.When is { } when)
                     {
                         var holds = Evaluate(when, candidate, out var problem);
                         if (problem is not null) error ??= problem;
                         if (holds is not true) continue;
+                    }
+                    if (Options.UnreadableTypes.Contains(rule.Type))
+                    {
+                        // The specification maps the rule's type as unreadable (FBL 0.7 §4.8, DESL §5.2): the entry
+                        // is the rule's, an unreadable entry, and what it holds is not looked into.
+                        error = "it is in no form this file's entries are written in.";
+                        break;
                     }
                     var element = new ReadElement { Rule = rule, Candidate = candidate, Line = Text.Position(entry.Own.Start).Line };
                     ReadSlots(element);
@@ -311,6 +331,53 @@ internal sealed class BodyReading
         }
     }
 
+    /// <summary>
+    /// The views of a grammar body (FBL 0.11 §4.9, §9.3): each entry of a block rule with a <c>view</c> slot, named by the
+    /// slot's value, and the one the reading shows: the one the registration's <c>view</c> header names, ignoring the case
+    /// of ASCII letters, else the first in document order of the blocks whose <c>origins</c> admit the reading's origin, or
+    /// of every view block when none has <c>origins</c>. A header that names no view selects none.
+    /// </summary>
+    private void ReadViews()
+    {
+        var views = new List<(FblView View, Entry Entry, BlockRule Block)>();
+        foreach (var block in Binding.Blocks.Where(block => block.ViewSlot is not null))
+        {
+            foreach (var candidate in Family.BlockCandidates(block))
+            {
+                if (ViewName(candidate, block.ViewSlot!) is not { } name) continue;
+                views.Add((new FblView(name, block.Name, candidate.Entry.Own, Text.Position(candidate.Entry.Own.Start).Line), candidate.Entry, block));
+            }
+        }
+        if (views.Count == 0) return;
+        views.Sort((a, b) => a.Entry.Own.Start.CompareTo(b.Entry.Own.Start));
+        Views.AddRange(views.Select(view => view.View));
+        var ofOrigin = views.Any(view => view.Block.Origins is not null)
+            ? views.Where(view => view.Block.Origins is { } origins && Options.Origin is { } origin && origins.Contains(origin)).ToList()
+            : views;
+        var selected = Options.View is { } header
+            ? views.FirstOrDefault(view => string.Equals(view.View.Name, header, StringComparison.OrdinalIgnoreCase))
+            : ofOrigin.FirstOrDefault();
+        _selectedView = selected.Entry;
+        _selectedViewName = selected.View?.Name;
+    }
+
+    /// <summary>The name a view's slot gives it: the value of its <c>{node}</c> slot, or of its <c>{value}</c> expression; null when it gives none.</summary>
+    private string? ViewName(Candidate candidate, Slot slot)
+    {
+        if (slot.Kind is SlotKind.Value(var expression)) return Evaluate(expression, candidate, out _) is { } value ? NewText.Plain(value, null) : null;
+        return Family.Read(candidate, slot) is { Present: true, Value: { } read } ? NewText.Plain(read, null) : null;
+    }
+
+    /// <summary>Whether <paramref name="entry"/> is the entry of the view the reading shows, or inside it (FBL 0.11 §4.9).</summary>
+    private bool InSelectedView(Entry entry)
+    {
+        for (var at = entry; at is not null; at = at.Parent)
+        {
+            if (at == _selectedView) return true;
+        }
+        return false;
+    }
+
     private static void Offer(Dictionary<Entry, List<Candidate>> offered, Candidate candidate)
     {
         if (!offered.TryGetValue(candidate.Entry, out var list))
@@ -335,6 +402,31 @@ internal sealed class BodyReading
         _resource ??= Options.Resource ?? value;
         return value == _resource;
     }
+
+    /// <summary>
+    /// A <c>resource</c> header naming a resource the body does not hold opens the reading empty (FBL 0.10 §8.2): the
+    /// body is not unreadable, and the finding <c>fbl.missing-resource</c> is the registration's, at its header's line.
+    /// </summary>
+    private void EmptyWhenTheResourceIsMissing()
+    {
+        if (Binding.Registration.ResourceCapture is null || Options.Resource is not { } named || Resources.Contains(named)) return;
+        foreach (var element in Elements)
+        {
+            _claims.Remove(element.Entry);
+            _byEntry.Remove(element.Entry);
+        }
+        Elements.Clear();
+    }
+
+    /// <summary>
+    /// The value the reading's resource capture is bound to (FBL §8.2), by the capture's name: the resource the
+    /// registration names, else the first in document order; empty when the reading selects none. A container of a
+    /// new entry resolves its <c>{capture}</c> segment by it when no element of the reading bound it.
+    /// </summary>
+    public IReadOnlyDictionary<string, string> ResourceCaptures =>
+        Binding.Registration.ResourceCapture is { } capture && (Options.Resource ?? _resource) is { } selected
+            ? new Dictionary<string, string>(StringComparer.Ordinal) { [capture] = selected }
+            : new Dictionary<string, string>(StringComparer.Ordinal);
 
     // ---- CEL ----
 
@@ -453,7 +545,8 @@ internal sealed class BodyReading
         var rule = element.Rule;
         foreach ((string name, AttributeBinding binding) in rule.Attributes)
         {
-            var read = ReadSlot(element.Candidate, binding, element);
+            var many = binding is { Flag: false } && (binding.Word is not null || binding.Kind is SlotKind.Node) && Options.Many?.Invoke(rule.Type, name) == true;
+            var read = ReadSlot(element.Candidate, binding, element, many);
             element.Slots[name] = read;
             object? value = read.Present ? read.Value : null;
             var mode = ReadModes.Of(rule, name, binding, Options);
@@ -462,7 +555,7 @@ internal sealed class BodyReading
             if (scalar && mode == ReadMode.Text) value = read.Written;
             if (read.Present && binding.Map is { } map && value is string wire)
             {
-                var mapped = map.FirstOrDefault(m => m.Key == wire);
+                var mapped = map.FirstOrDefault(m => string.Equals(m.Key, wire, rule.CaseInsensitive ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal));
                 if (mapped.Key is not null)
                 {
                     value = mapped.Value;
@@ -515,9 +608,9 @@ internal sealed class BodyReading
         return replacement;
     }
 
-    public SlotRead ReadSlot(Candidate candidate, Slot slot, ReadElement element)
+    public SlotRead ReadSlot(Candidate candidate, Slot slot, ReadElement element, bool many = false)
     {
-        var read = ReadSlotUnchecked(candidate, slot, element);
+        var read = many ? Family.ReadMany(candidate, slot) : ReadSlotUnchecked(candidate, slot, element);
         var reason = (slot as AttributeBinding)?.ReadOnly ?? element.Rule.ReadOnly ?? Binding.ReadOnly;
         if (reason is not null && read.Writable) read = read with { Writable = false, Reason = reason };
         return read;
@@ -550,8 +643,37 @@ internal sealed class BodyReading
             });
             if (overriding.Present) return overriding with { Node = new OverrideNode(overriding.Node) };
         }
-        return Family.Read(candidate, slot);
+        if (slot is AttributeBinding { Secondary: { } secondary } && Family.Read(candidate, slot) is { Present: false } own)
+        {
+            // FBL 0.10 §5.2: the secondary is read only when the attribute's own slot is absent.
+            var second = Family.Read(candidate, SecondarySlot(secondary));
+            return second.Present ? second with { Own = own } : own;
+        }
+        var first = Family.Read(candidate, slot);
+        if (first.Present || slot is not AttributeBinding { Or.Count: > 0 } binding) return first;
+        foreach (var further in binding.Or)
+        {
+            // FBL 0.15 §4.9 (Further slots): the first slot present is the value, written as that slot writes.
+            var by = FurtherSlot(binding, further);
+            var other = ReadSlotUnchecked(candidate, by, element);
+            if (other.Present) return other with { By = by };
+        }
+        return first;
     }
+
+    /// <summary>
+    /// A further slot of <paramref name="binding"/> (FBL 0.15 §4.9) as an attribute binding of its own: the place, its
+    /// <c>match</c>, <c>escape</c> and <c>split</c> the further slot's, every other option the attribute's.
+    /// </summary>
+    private static AttributeBinding FurtherSlot(AttributeBinding binding, Slot further) => binding with
+    {
+        Kind = further.Kind, Child = further.Child, Word = further.Word, Flag = further.Flag, Match = further.Match,
+        Escape = further.Escape, Split = further.Split, Items = further.Items, Gather = [], Or = [], Override = null, Secondary = null,
+    };
+
+    /// <summary>An attribute's <c>secondary</c> as a slot of its own (FBL 0.10 §5.2), read as it is written, and removed, never given a value, when the attribute is written.</summary>
+    internal static AttributeBinding SecondarySlot(Slot secondary) =>
+        new() { Kind = secondary.Kind, Child = secondary.Child, Word = secondary.Word, Empty = EmptyRule.Remove };
 
     // ---- ids, references, containment (FBL §5.3 to §5.5) ----
 
@@ -579,6 +701,8 @@ internal sealed class BodyReading
             element.PositionInSlot = positions.GetValueOrDefault(slot);
             positions[slot] = element.PositionInSlot + 1;
         }
+        var holders = new Dictionary<(string? Kind, string Key), int>();
+        foreach (var element in Elements.Where(e => !e.IsRelation)) IdentityKeyOf(element, holders);
         foreach (var element in Elements.Where(e => !e.IsRelation)) AssignId(element);
         foreach (var element in Elements.Where(e => !e.IsRelation)) element.Key = KeyOf(element);
         var dangling = new List<ReadElement>();
@@ -593,6 +717,7 @@ internal sealed class BodyReading
             Elements.Remove(relation);
             _byEntry.Remove(relation.Entry);
         }
+        foreach (var relation in Elements.Where(e => e.IsRelation)) IdentityKeyOf(relation, holders);
         foreach (var relation in Elements.Where(e => e.IsRelation))
         {
             AssignId(relation);
@@ -626,10 +751,9 @@ internal sealed class BodyReading
             element.Id = PlaceId(element);
             return;
         }
-        if (rule.Id?.SidecarKey is { } keyExpression)
+        if (element.IdentityKey is { } key)
         {
-            var key = Evaluate(keyExpression, element.Candidate, out _);
-            if (key is not null && Options.Identities.TryGetValue(NewText.Plain(key, null), out var stored))
+            if (Options.Identities.TryGetValue(rule.Id?.SidecarKind is { } kind ? $"{kind}:{key}" : key, out var stored))
             {
                 element.Id = stored;
                 element.IdStored = true;
@@ -643,6 +767,20 @@ internal sealed class BodyReading
             PositionInSlot = element.PositionInSlot,
         };
         element.Id = Options.DeriveId?.Invoke(request) ?? PlaceId(element);
+    }
+
+    /// <summary>
+    /// The key the element's id is kept under (FBL §5.3, 0.12 §8.6): its rule's <c>sidecar.key</c>; with <c>ordinal</c>, each
+    /// later holder of one key in the rule's kind, or in the binding without one, counted in document order, followed by the
+    /// ordinal with <c>{n}</c> replaced by its place, 2 for the second. The relations follow the elements, as they are read.
+    /// </summary>
+    private void IdentityKeyOf(ReadElement element, Dictionary<(string? Kind, string Key), int> holders)
+    {
+        if (element.Rule.Id is not { SidecarKey: { } expression } id || Evaluate(expression, element.Candidate, out _) is not { } value) return;
+        var key = NewText.Plain(value, null);
+        var holder = holders.GetValueOrDefault((id.SidecarKind, key)) + 1;
+        holders[(id.SidecarKind, key)] = holder;
+        element.IdentityKey = holder > 1 && id.SidecarOrdinal is { } ordinal ? key + ordinal.Replace("{n}", holder.ToString(CultureInfo.InvariantCulture), StringComparison.Ordinal) : key;
     }
 
     private static string PlaceId(ReadElement element) => $"{element.Rule.Name}@{element.Line}";
@@ -746,11 +884,18 @@ internal sealed class BodyReading
             e.SourceElement?.Id,
             e.TargetElement?.Id,
             e.Entry.Own,
-            e.Line)).ToList(),
+            e.Line)
+        {
+            IdentityKind = e.Rule.Id?.SidecarKind,
+            IdentityKey = e.IdentityKey,
+            // Where each value read from the body is written (FBL §11.2's spans): for a flag, the first node that holds it (FBL 0.18 §4.9).
+            ValueSpans = e.Slots.Where(slot => slot.Value is { Present: true, Writable: true, Span: not null }).ToDictionary(slot => slot.Key, slot => slot.Value.Span!.Value, StringComparer.Ordinal),
+        }).ToList(),
         _findings.ToList(),
         Unreadable is not null)
     {
         Views = Views.ToList(),
+        SelectedView = _selectedViewName,
         Resources = Resources.ToList(),
     };
 }

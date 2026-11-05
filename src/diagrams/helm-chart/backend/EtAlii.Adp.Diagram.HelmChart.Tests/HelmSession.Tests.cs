@@ -17,6 +17,7 @@ public class HelmSessionTests : IAsyncDisposable, IDisposable
     private static readonly TimeSpan SettleDelay = TimeSpan.FromMilliseconds(HelmDefinition.Binding.Body.Settle);
     private static readonly TimeSpan WaitLimit = TimeSpan.FromSeconds(10);
 
+    private readonly TestFolder _testFolder = TestFolder.Create("helm-session");
     private readonly string _root;
     private readonly string _adpPath;
     private readonly ServiceProvider _provider;
@@ -25,8 +26,7 @@ public class HelmSessionTests : IAsyncDisposable, IDisposable
 
     public HelmSessionTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
         File.WriteAllText(IoPath.Combine(_root, "Chart.yaml"), "apiVersion: v2\nname: sessioned\nversion: 1.0.0\n");
         File.WriteAllText(IoPath.Combine(_root, "values.yaml"), "replicaCount: 1\n");
         _adpPath = IoPath.Combine(_root, "helm-chart.adp");
@@ -43,7 +43,7 @@ public class HelmSessionTests : IAsyncDisposable, IDisposable
     {
         _provider.Dispose();
         _store.Dispose();
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     public ValueTask DisposeAsync()

@@ -97,13 +97,16 @@ internal abstract record DislAction(string At, DislExpressionField? When)
     public sealed record EditLabel(string At, DislExpressionField? When, DislActionValue? Target, string? Label) : DislAction(At, When);
 
     /// <summary>A <c>layout</c> by its <c>algorithm</c>, handed to the host.</summary>
-    public sealed record Layout(string At, DislExpressionField? When, string Algorithm) : DislAction(At, When);
+    public sealed record Layout(string At, DislExpressionField? When, string Algorithm, DislMessage? NothingDrawn = null, DislMessage? Unchanged = null) : DislAction(At, When);
 
     /// <summary>A <c>view</c> of its <c>target</c>, by default <c>self</c>: its values, or for <c>filters</c> and <c>groups</c> a map of them, handed to the host.</summary>
     public sealed record View(string At, DislExpressionField? When, DislActionValue? Target, IReadOnlyList<DislViewValue> Values, string? Malformed) : DislAction(At, When);
 
     /// <summary>A <c>plugin</c> call of the plugin it names with its <c>args</c>, handed to the host.</summary>
     public sealed record Plugin(string At, DislExpressionField? When, IReadOnlyList<(string Name, DislActionValue Value)> Arguments, string Name, string? Malformed) : DislAction(At, When);
+
+    /// <summary>A <c>call</c> of the operation it names, with its <c>args</c> as that operation's parameters, in the same transaction.</summary>
+    public sealed record Call(string At, DislExpressionField? When, string Operation, IReadOnlyList<(string Name, DislActionValue Value)> Arguments) : DislAction(At, When);
 
     /// <summary>An <c>abort</c>: the transaction refused with its <c>message</c>, or the runtime's own.</summary>
     public sealed record Abort(string At, DislExpressionField? When, DislActionValue? Message) : DislAction(At, When);

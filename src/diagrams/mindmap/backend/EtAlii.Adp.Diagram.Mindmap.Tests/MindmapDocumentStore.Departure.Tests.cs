@@ -31,11 +31,12 @@ public sealed class MindmapDocumentStoreDepartureTests : IDisposable
         </map>
         """;
 
-    private readonly string _folder = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.MindmapDocumentStoreDepartureTests", Guid.NewGuid().ToString("N"));
+    private readonly TestFolder _testFolder = TestFolder.Create("EtAlii.Adp.MindmapDocumentStoreDepartureTests");
+    private readonly string _folder;
 
     public MindmapDocumentStoreDepartureTests()
     {
-        Directory.CreateDirectory(_folder);
+        _folder = _testFolder.Path;
         File.WriteAllText(Body, Map);
     }
 
@@ -43,7 +44,7 @@ public sealed class MindmapDocumentStoreDepartureTests : IDisposable
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_folder);
+        _testFolder.Dispose();
     }
 
     [Fact]

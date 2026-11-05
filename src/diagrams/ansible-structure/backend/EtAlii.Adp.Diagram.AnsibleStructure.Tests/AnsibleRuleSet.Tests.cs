@@ -211,19 +211,13 @@ public class AnsibleRuleSetTests
         // Arrange.
         // Ansible resolves these without any inventory entry, so reporting them would fire on
         // ordinary, correct playbooks - which is how a panel teaches people to stop reading it.
-        var scratch = Tree(
+        using var tree = Tree(
             ("site.yml", $"---\n- name: A play\n  hosts: {hosts}\n"),
             ("inventories/production/hosts.yml", "---\nall:\n  children:\n    web:\n      hosts:\n        a.example.com:\n"));
+        var scratch = tree.Path;
 
-        try
-        {
-            // Act and assert.
-            Assert.DoesNotContain(Derived(Reader.Read(scratch)), p => p.RuleId == AnsibleRules.UnmatchedHosts);
-        }
-        finally
-        {
-            TestFolder.TryDelete(scratch);
-        }
+        // Act and assert.
+        Assert.DoesNotContain(Derived(Reader.Read(scratch)), p => p.RuleId == AnsibleRules.UnmatchedHosts);
     }
 
     [Fact]
@@ -232,36 +226,24 @@ public class AnsibleRuleSetTests
         // Arrange.
         // "No inventory defines it" presupposes there are inventories to do the defining. A team
         // that keeps theirs outside the folder would otherwise be warned about every play.
-        var scratch = Tree(("site.yml", "---\n- name: A play\n  hosts: web\n"));
+        using var tree = Tree(("site.yml", "---\n- name: A play\n  hosts: web\n"));
+        var scratch = tree.Path;
 
-        try
-        {
-            // Act and assert.
-            Assert.DoesNotContain(Derived(Reader.Read(scratch)), p => p.RuleId == AnsibleRules.UnmatchedHosts);
-        }
-        finally
-        {
-            TestFolder.TryDelete(scratch);
-        }
+        // Act and assert.
+        Assert.DoesNotContain(Derived(Reader.Read(scratch)), p => p.RuleId == AnsibleRules.UnmatchedHosts);
     }
 
     [Fact]
     public void AGroupThatIsDefined_IsNotWarnedAbout()
     {
         // Arrange.
-        var scratch = Tree(
+        using var tree = Tree(
             ("site.yml", "---\n- name: A play\n  hosts: web\n"),
             ("inventories/production/hosts.yml", "---\nall:\n  children:\n    web:\n      hosts:\n        a.example.com:\n"));
+        var scratch = tree.Path;
 
-        try
-        {
-            // Act and assert.
-            Assert.DoesNotContain(Derived(Reader.Read(scratch)), p => p.RuleId == AnsibleRules.UnmatchedHosts);
-        }
-        finally
-        {
-            TestFolder.TryDelete(scratch);
-        }
+        // Act and assert.
+        Assert.DoesNotContain(Derived(Reader.Read(scratch)), p => p.RuleId == AnsibleRules.UnmatchedHosts);
     }
 
     [Fact]
@@ -271,27 +253,21 @@ public class AnsibleRuleSetTests
         // The claim "no inventory defines it" has to survive the inventory being INI - the
         // format the vendored tomcat-memcached-failover corpus uses, where the groups are
         // plainly defined and the warning was simply wrong.
-        var scratch = Tree(
+        using var tree = Tree(
             ("site.yml", "---\n- name: A play\n  hosts: web\n"),
             ("hosts", "[web]\na.example.com\nb.example.com\n"));
+        var scratch = tree.Path;
 
-        try
-        {
-            // Act and assert.
-            Assert.DoesNotContain(Derived(Reader.Read(scratch)), p => p.RuleId == AnsibleRules.UnmatchedHosts);
-        }
-        finally
-        {
-            TestFolder.TryDelete(scratch);
-        }
+        // Act and assert.
+        Assert.DoesNotContain(Derived(Reader.Read(scratch)), p => p.RuleId == AnsibleRules.UnmatchedHosts);
     }
 
-    private static string Tree(params (string Path, string Content)[] files)
+    private static TestFolder Tree(params (string Path, string Content)[] files)
     {
-        var root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
+        var root = TestFolder.Create("ansible-rule-set");
         foreach ((string path, string content) in files)
         {
-            var full = IoPath.Combine(root, path);
+            var full = root.Combine(path);
             Directory.CreateDirectory(IoPath.GetDirectoryName(full)!);
             File.WriteAllText(full, content);
         }

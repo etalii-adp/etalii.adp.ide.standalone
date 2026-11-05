@@ -31,19 +31,19 @@ public class AddDiagramContextActionProviderDesignersTests : IDisposable
     /// <summary>Declares no format: nothing of it can be added.</summary>
     private static readonly DesignerDefinition Fixed = new("fixture/fixed", "Fixed");
 
+    private readonly TestFolder _testFolder = TestFolder.Create("add-diagram-designers");
     private readonly string _root;
     private readonly IHistoryStack _history;
     private readonly AddDiagramContextActionProvider _provider;
 
     public AddDiagramContextActionProviderDesignersTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
         _history = TestHistory.Create(_root, out var historyStacks, [Sheet, Unfinished, Fixed]);
         _provider = Provider(historyStacks, [ClassDiagram], new SheetTemplate());
     }
 
-    public void Dispose() => TestFolder.TryDelete(_root);
+    public void Dispose() => _testFolder.Dispose();
 
     private static AddDiagramContextActionProvider Provider(
         IHistoryStackStore historyStacks, DiagramDefinition[] diagrams, params IDesignerDocumentTemplate[] templates)

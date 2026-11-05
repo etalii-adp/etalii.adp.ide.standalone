@@ -51,7 +51,7 @@ public class TemplatesTests
         // Assert.
         Assert.Contains("ex:Animals_2 a skos:ConceptScheme ;\r\n", skos, StringComparison.Ordinal);
         Assert.Contains("skos:prefLabel \"Animals 2\"@en", skos, StringComparison.Ordinal);
-        Assert.Contains("ex:Animals_2 rdfs:label \"Animals 2\" .\r\n", rdf, StringComparison.Ordinal);
+        Assert.Contains("ex:Animals_2 a ex:Resource ;\r\n    rdfs:label \"Animals 2\" .\r\n", rdf, StringComparison.Ordinal);
     }
 
     [Theory]
@@ -65,6 +65,19 @@ public class TemplatesTests
     {
         // Act and assert.
         Assert.Equal(key, TemplateWriter.Key(baseName));
+    }
+
+    [Theory]
+    [InlineData("My_Job.yml", "my_job My_Job")]
+    [InlineData("Nightly Ingest.yml", "nightly_ingest Nightly_Ingest")]
+    [InlineData("2024 Roadmap.json", "_2024_roadmap _2024_Roadmap")]
+    public void TheLowerKeyPlaceholder_IsTheKeyInLowerCase(string fileName, string expected)
+    {
+        // Act: FBL 0.10 section 13.
+        var text = TemplateWriter.Replace("{key:lower} {key}", fileName, rule => "N-" + rule);
+
+        // Assert.
+        Assert.Equal(expected, text);
     }
 
     [Fact]

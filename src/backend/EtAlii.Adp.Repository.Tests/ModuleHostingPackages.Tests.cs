@@ -94,7 +94,7 @@ public class ModuleHostingPackagesTests
             .SelectMany(Directory.EnumerateDirectories)
             .SelectMany(project => Directory.EnumerateFiles(project, "*.csproj", SearchOption.TopDirectoryOnly))
             .Where(project => !IoPath.GetFileNameWithoutExtension(project).EndsWith(".Tests", StringComparison.Ordinal))
-            .Where(project => !IoPath.GetFileNameWithoutExtension(project).Contains(".TestSupport", StringComparison.Ordinal));
+            .Where(project => !IoPath.GetFileNameWithoutExtension(project).EndsWith(".Tests.Support", StringComparison.Ordinal));
 
     /// <summary>The project and every project it reaches through its project references.</summary>
     private static IEnumerable<string> Closure(string project)

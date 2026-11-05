@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
@@ -35,7 +34,7 @@ public class AddC4ElementTests : IDisposable
         }
         """;
 
-    private readonly string _root;
+    private readonly TestFolder _testFolder = TestFolder.Create("c4-add-element");
     private readonly string _bodyPath;
     private readonly ServiceProvider _services;
     private readonly IHistoryStack _history;
@@ -43,16 +42,15 @@ public class AddC4ElementTests : IDisposable
 
     public AddC4ElementTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.C4.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
-        _bodyPath = IoPath.Combine(_root, "model.dsl");
+        var root = _testFolder.Path;
+        _bodyPath = IoPath.Combine(root, "model.dsl");
         File.WriteAllText(_bodyPath, Model);
 
         _services = new ServiceCollection()
             .AddCommands().AddHierarchyCommandHandlers()
             .AddC4()
             .BuildServiceProvider();
-        _history = _services.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(_root));
+        _history = _services.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(root));
         _documents = _services.GetRequiredService<IC4DocumentStore>();
     }
 
@@ -60,7 +58,7 @@ public class AddC4ElementTests : IDisposable
     {
         GC.SuppressFinalize(this);
         _services.Dispose();
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     private async Task<CommandResult> AddAsync(C4ElementKind kind, string name, string parentId = "") =>
@@ -224,7 +222,7 @@ public class AddC4ElementTests : IDisposable
         await _history.UndoAsync(TestContext.Current.CancellationToken);
 
         // Act.
-        var workspace = C4Parser.Parse(LineDocument.Parse(OnDisk()));
+        var workspace = C4Body.Read(OnDisk()).Workspace;
 
         // Assert.
         // The point: braces balance whatever order the edits happened in.
@@ -238,22 +236,23 @@ public class AddC4ElementTests : IDisposable
     {
         // Arrange.
         // The add gave `web` its first braces. If the user then writes a comment in that block,
-        // undoing the add must remove the element and leave the comment - collapsing the block
-        // would delete something ADP never wrote, which is precisely what Requirement 3.3
-        // forbids and what the whole line-surgery approach exists to avoid.
+        // undoing the add must not delete something ADP never wrote (Requirement 3.3). Undo is
+        // by bytes since c4-disl-fbl task 15 (Q1, finding B21), so a file written since the add
+        // is not overwritten: the undo is refused as a drifted body is, and both stay.
         await AddAsync(C4ElementKind.Component, "Controller", parentId: "web");
 
         var document = (await _documents.GetOrLoadAsync(_bodyPath, TestContext.Current.CancellationToken)).Document;
         var opened = document.CodeLines().Single(line => line.Code.Contains("container \"Web\"", StringComparison.Ordinal));
         document.InsertLine(opened.Number + 1, "                // Components arrive here as the design settles.");
         await _documents.SaveAsync(_bodyPath, document, TestContext.Current.CancellationToken);
+        var written = OnDisk();
 
         // Act.
         await _history.UndoAsync(TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Contains("// Components arrive here as the design settles.", OnDisk(), StringComparison.Ordinal);
-        Assert.DoesNotContain("Controller", OnDisk(), StringComparison.Ordinal);
+        Assert.Equal(written, OnDisk());
     }
 
 }

@@ -1,3 +1,4 @@
+using EtAlii.Adp.Diagram.C4.Tests.Parity;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
@@ -14,20 +15,20 @@ namespace EtAlii.Adp.Diagram.C4.Tests;
 /// </summary>
 public class C4SessionTests : IDisposable
 {
+    private readonly TestFolder _testFolder = TestFolder.Create("c4-session");
     private readonly string _root;
     private readonly C4DocumentStore _documents = new(new FileWriter());
-    private readonly C4ElementMapper _mapper = new(C4Metrics.Default, new C4LayoutSidecar(new FileWriter()));
+    private readonly C4ElementMapper _mapper = new(C4Metrics.Default, new C4Positions(new FileWriter()));
     private readonly IHistoryStackStore _historyStacks = new ServiceCollection().AddCommands().AddHierarchyCommandHandlers().AddC4().BuildServiceProvider().GetRequiredService<IHistoryStackStore>();
 
     public C4SessionTests()
     {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Diagram.C4.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
+        _root = _testFolder.Path;
     }
 
     public void Dispose()
     {
-        TestFolder.TryDelete(_root);
+        _testFolder.Dispose();
     }
 
     private const string Model = """
@@ -85,6 +86,23 @@ public class C4SessionTests : IDisposable
         Assert.Equal("containers", (await session.ViewAsync(TestContext.Current.CancellationToken))!.Key);
         // The container view shows the container; the context view would not.
         Assert.Contains(Added(await session.BaselineAsync(TestContext.Current.CancellationToken)), element => element.Id == "web");
+    }
+
+    [Fact]
+    public async Task ARegistrationNamingTwoViews_OpensTheFirst()
+    {
+        // Arrange: c4 has always opened the first view: header, where AdpRegistration's View takes
+        // the last; reading the registration through AdpRegistration keeps c4's answer (code-structure
+        // T295). The second view is also the document's first, so ignoring the header fails here too.
+        var body = WriteModel();
+        var adp = IoPath.Combine(_root, "two-views.adp");
+        await File.WriteAllTextAsync(adp, "c4/container\nbody: model.dsl\nview: containers\nview: context\n", TestContext.Current.CancellationToken);
+
+        // Act.
+        await using var session = Open(body, adp);
+
+        // Assert.
+        Assert.Equal("containers", (await session.ViewAsync(TestContext.Current.CancellationToken))!.Key);
     }
 
     [Fact]

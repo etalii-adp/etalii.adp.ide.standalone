@@ -11,7 +11,7 @@ function superellipseLevel(x: number, y: number, w: number, h: number, n: number
 describe("the DISL shape catalog", () => {
   it("names only shapes the library has", () => {
     // The trapezoid and the cylinder are admitted only at the library's own parameters, not DISL's defaults.
-    const ASKED: Readonly<Record<string, Readonly<Record<string, unknown>>>> = { trapezoid: { inset: 0.15, direction: "down" }, cylinder: { cap: 12 } };
+    const ASKED: Readonly<Record<string, Readonly<Record<string, unknown>>>> = { trapezoid: { inset: 0.15, direction: "down" }, cylinder: { cap: 12 }, line: { orientation: "horizontal" } };
     const asDrawn = (name: string) => (name in ASKED ? { type: name, params: ASKED[name] } : name);
     for (const name of DISL_SHAPE_NAMES) {
       expect(BUILT_IN_SHAPES, name).toContain(libraryShapeOf(asDrawn(name)));

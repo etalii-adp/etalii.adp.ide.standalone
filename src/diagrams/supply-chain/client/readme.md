@@ -9,7 +9,10 @@ This is a workspace package (`@adp/diagram-supply-chain-client`). It lives outsi
 | `register.ts` | The entry point the shell finds; it imports `supply-chain.css` so the look arrives with the module. |
 | `supplyChainIds.ts` | Every id the client and the backend agree on - stages, types, actions, properties - stated once. |
 | `supplyChainModel.ts` | Folds the delta stream into groups, nodes and flows, and formats an amount for a card or a band. |
-| `SupplyChainCanvas.tsx` | The definition, the fold into the library's model, the stepper elements, and the handlers. |
+| `SupplyChainCanvas.tsx` | The definition, compiled from the bundled `../definition/supply-chain.dis`, the fold into the library's model, the stepper elements, and the handlers. |
+| `supplyChainBindings.ts` | What the library cannot read from the specification: the payload paths of its CEL, the classes, the card's ornaments, the steppers' types and the second keys, and which of the specification's labels and markers the module draws itself. |
+| `supplyChainFlow.tsx` | The flow's route through its lanes, and what is drawn along it: the goods, the arrowhead and the volume pill. |
+| `supplyChainHandWrittenDefinition.ts` | The definition as it was stated by hand, kept for tests only as the oracle the compiled one is held to. |
 | `supply-chain.css` | **All** of the appearance: the stage palette in both themes, the bands, the goods animation and the trace. |
 
 ## What the canvas draws
