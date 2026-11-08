@@ -62,7 +62,7 @@ public class RdfDocumentStoreLostEditTests : IDisposable
         File.Copy(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", "constructs.ttl"), path);
         var entry = await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
         var document = entry.Document;
-        document.Insert(0, ["# lost-edit marker"]);
+        document.Lines.Insert(0, ["# lost-edit marker"]);
 
         // The edit is in memory and nowhere else yet, which is the precondition the store tests
         // beside this one never establish.

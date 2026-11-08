@@ -20,4 +20,4 @@ namespace EtAlii.Adp.Diagram.Rdf;
 /// one instance serves all four origins.
 /// </para>
 /// </remarks>
-public interface IRdfDocumentStore : IDiagramDocumentStore<LineDocument, RdfModel>;
+public interface IRdfDocumentStore : IDiagramDocumentStore<RdfBody, RdfModel>;

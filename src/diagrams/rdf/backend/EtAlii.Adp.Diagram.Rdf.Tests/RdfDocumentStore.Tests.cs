@@ -65,7 +65,7 @@ public class RdfDocumentStoreTests : IDisposable
         // Assert.
         // A freshly created diagram opens, and the first save creates the file.
         Assert.True(entry.IsUsable);
-        Assert.Empty(entry.Document.Lines);
+        Assert.Empty(entry.Document.Lines.Lines);
         Assert.Empty(entry.Model.Triples);
     }
 

@@ -98,6 +98,50 @@ public sealed class LifecycleDocumentStoreHooksTests : IDisposable
         Assert.Empty(store.Heard);
     }
 
+    [Fact]
+    public async Task EveryBodyAnEntryHolds_IsToldItsPath_WhetherOpenedSavedEditedReloadedOrMissing()
+    {
+        // Arrange.
+        var path = Write("before\n");
+        var missing = IoPath.Combine(_folder, "missing.txt");
+        var store = new LocatingStore();
+        var token = TestContext.Current.CancellationToken;
+
+        // Act.
+        var opened = (await store.GetOrLoadAsync(path, token)).Model;
+        await store.SaveAsync(path, LocatedLines.Parse("saved\n"), token);
+        var saved = store.Get(path)!.Model;
+        await store.SaveAsync(path, store.Get(path)!, _ => "", token);
+        var edited = store.Get(path)!.Model;
+        await File.WriteAllTextAsync(path, "written elsewhere\n", token);
+        await store.ReloadAsync(path, token);
+        var reloaded = store.Get(path)!.Model;
+        var absent = (await store.GetOrLoadAsync(missing, token)).Model;
+
+        // Assert.
+        Assert.Equal(["notes.txt", "notes.txt", "notes.txt", "notes.txt", "missing.txt"], [opened, saved, edited, reloaded, absent]);
+    }
+
+    /// <summary>A store whose model is the name of the file its body was told it is in, or <c>nowhere</c>.</summary>
+    private sealed class LocatingStore() : LifecycleDocumentStore<LocatedLines, string>(new FileWriter())
+    {
+        protected override LocatedLines Read(string text) => LocatedLines.Parse(text);
+
+        protected override LocatedLines Locate(string path, LocatedLines body) => body.At(IoPath.GetFileName(path));
+
+        protected override string TextOf(LocatedLines body) => body.Text;
+
+        protected override ParseOutcome<string> Parse(LocatedLines body) => new(body.Name, []);
+    }
+
+    /// <summary>A text, with the name of the file it was told it is in.</summary>
+    private sealed record LocatedLines(string Text, string Name) : ITextBody<LocatedLines>
+    {
+        public static LocatedLines Parse(string text) => new(text, "nowhere");
+
+        public LocatedLines At(string name) => this with { Name = name };
+    }
+
     /// <summary>A store over plain lines that records what it is told, and warns of every save.</summary>
     private sealed class KeepingStore : LifecycleDocumentStore<LineDocument, string>
     {

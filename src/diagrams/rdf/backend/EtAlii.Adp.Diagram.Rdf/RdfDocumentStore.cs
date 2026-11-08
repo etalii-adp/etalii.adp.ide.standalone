@@ -19,15 +19,18 @@ namespace EtAlii.Adp.Diagram.Rdf;
 /// of the store.
 /// </para>
 /// </remarks>
-public sealed class RdfDocumentStore(IFileWriter writer) : LifecycleDocumentStore<LineDocument, RdfModel>(writer), IRdfDocumentStore
+public sealed class RdfDocumentStore(IFileWriter writer) : LifecycleDocumentStore<RdfBody, RdfModel>(writer), IRdfDocumentStore
 {
     /// <inheritdoc />
-    protected override LineDocument Read(string text) => LineDocument.Parse(text);
+    protected override RdfBody Read(string text) => RdfBody.Parse(text);
 
     /// <inheritdoc />
-    protected override string TextOf(LineDocument body) => body.Text;
-
+    /// <remarks>The body's name tells its plugin the body's syntax, the stand-in for gap 5.</remarks>
+    protected override RdfBody Locate(string path, RdfBody body) => body.At(path);
 
     /// <inheritdoc />
-    protected override ParseOutcome<RdfModel> Parse(LineDocument body) => RdfParser.Outcome(body);
+    protected override string TextOf(RdfBody body) => body.Text;
+
+    /// <inheritdoc />
+    protected override ParseOutcome<RdfModel> Parse(RdfBody body) => RdfParser.Outcome(body.Lines);
 }

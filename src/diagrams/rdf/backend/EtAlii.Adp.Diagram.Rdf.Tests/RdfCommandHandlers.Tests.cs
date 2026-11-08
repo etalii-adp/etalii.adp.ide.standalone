@@ -1,5 +1,4 @@
 using EtAlii.Adp.Diagram.Rdf.Shacl;
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
@@ -14,7 +13,7 @@ namespace EtAlii.Adp.Diagram.Rdf.Tests;
 /// command of each reading - RDF, SKOS and SHACL alike run on the one handler base (code-structure
 /// FR-022, FR-033).
 /// </summary>
-public sealed class RdfCommandHandlersTests : EditHandlerContract<IRdfDocumentStore, LineDocument, RdfModel>
+public sealed class RdfCommandHandlersTests : EditHandlerContract<IRdfDocumentStore, RdfBody, RdfModel>
 {
     private const string SaveWarning = "The handlers' test warning: something beside the file was not kept.";
 
@@ -131,5 +130,5 @@ public sealed class RdfCommandHandlersTests : EditHandlerContract<IRdfDocumentSt
     };
 
     private sealed class WarningStore(IRdfDocumentStore inner, string warning)
-        : WarningDocumentStore<LineDocument, RdfModel>(inner, warning), IRdfDocumentStore;
+        : WarningDocumentStore<RdfBody, RdfModel>(inner, warning), IRdfDocumentStore;
 }

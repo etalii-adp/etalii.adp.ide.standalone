@@ -65,7 +65,7 @@ public class ShaclPropertiesTests : IDisposable
         GC.SuppressFinalize(this);
     }
 
-    private async Task<DocumentEntry<LineDocument, RdfModel>> EntryAsync() => await _provider.GetRequiredService<IRdfDocumentStore>().GetOrLoadAsync(_body, TestContext.Current.CancellationToken);
+    private async Task<DocumentEntry<RdfBody, RdfModel>> EntryAsync() => await _provider.GetRequiredService<IRdfDocumentStore>().GetOrLoadAsync(_body, TestContext.Current.CancellationToken);
 
     private ContextTarget Target(string elementId, ToolOrigin? origin) =>
         new(ContextScope.DiagramElement, _body, false, ShortGuid.NewShortGuid(), ProjectRoot.From(_root), default, elementId) { Origin = origin };

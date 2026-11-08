@@ -16,12 +16,28 @@ namespace EtAlii.Adp.Diagram.Rdf;
 /// </remarks>
 /// <typeparam name="TCommand">The command handled.</typeparam>
 public abstract class RdfEditHandler<TCommand>(IRdfDocumentStore documents)
-    : DocumentEditHandler<TCommand, IRdfDocumentStore, LineDocument, RdfModel>(documents)
+    : DocumentEditHandler<TCommand, IRdfDocumentStore, RdfBody, RdfModel>(documents)
     where TCommand : IDocumentEditCommand
 {
     /// <inheritdoc />
     /// <remarks>The run edits only a body the store could read, so its copy parses.</remarks>
-    protected sealed override RdfModel Parse(LineDocument body) => RdfParser.Parse(body);
+    protected sealed override RdfModel Parse(RdfBody body) => RdfParser.Parse(body.Lines);
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// The command's writer splices the body's lines, as every command did before the body was read through the
+    /// plugin (Q5, stage one), and the body is told so, so that it is read again when asked.
+    /// </remarks>
+    protected sealed override EditOutcome Apply(RdfBody body, RdfModel model, TCommand command)
+    {
+        ArgumentNullException.ThrowIfNull(body);
+        var outcome = Apply(body.Lines, model, command);
+        body.Changed();
+        return outcome;
+    }
+
+    /// <summary>Changes the lines of a body, whose model is <paramref name="model"/>, as <paramref name="command"/> asks, or says why not.</summary>
+    protected abstract EditOutcome Apply(LineDocument body, RdfModel model, TCommand command);
 
     /// <summary>A writer's answer as an outcome: its refusal, or applied when it has none.</summary>
     protected static EditOutcome Outcome(string refusal)
