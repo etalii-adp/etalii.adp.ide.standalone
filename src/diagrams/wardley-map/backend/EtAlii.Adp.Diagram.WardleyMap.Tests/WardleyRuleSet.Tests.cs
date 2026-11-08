@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using EtAlii.Adp.Diagram.WardleyMap.Tests.Parity;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Files;
@@ -265,25 +266,46 @@ public sealed class WardleyRuleSetTests
     [Fact]
     public void ValidationIsBoundedEvenOnALargeMap()
     {
-        // Arrange. Requirement 14.9 - a pathological document must not hang a "Validate all",
-        // so the rules are lookups rather than scans. A thousand components linked in a chain
-        // is well past what this notation is used at.
-        var text = string.Join(
-            "\n",
-            new[] { "anchor Business [0.95, 0.63]" }
-                .Concat(Enumerable.Range(0, 1000).Select(index => $"component C{index} [0.5, 0.5]"))
-                .Concat(Enumerable.Range(0, 999).Select(index => $"C{index}->C{index + 1}")));
+        // Arrange. Requirement 14.9 - a pathological document must not hang a "Validate all", so the rules are
+        // lookups rather than scans. A thousand components linked in a chain is well past what this notation is used
+        // at. What is guarded is how the time grows, not the time itself: a wall-clock bound fails on a busy machine
+        // (it did, nightly, on the Stability workflow) while saying nothing a ratio does not. Validation that is linear
+        // takes about four times as long on a map four times as large, and one that scans per element sixteen times.
+        // Each map is validated a few times, under names of its own each time so that nothing is reused, and the
+        // fastest run counts, which leaves out a pause that happens to fall inside one of them.
+        Assert.Empty(Validate(ChainedMap(100, "Warm")));
 
         // Act.
-        var started = DateTime.UtcNow;
-        var problems = Validate(text + "\n");
-        var took = DateTime.UtcNow - started;
+        var small = Fastest(1000);
+        var large = Fastest(4000);
 
-        // Assert. Generous on purpose: this is a guard against an accidental quadratic, not a
-        // benchmark, and a tight bound would be a test that fails on a busy machine.
-        Assert.Empty(problems);
-        Assert.True(took < TimeSpan.FromSeconds(2), $"validation took {took}");
+        // Assert. Halfway, as a ratio, between linear and quadratic, so either side has a factor of two to spare.
+        var growth = large.TotalMilliseconds / Math.Max(small.TotalMilliseconds, 1);
+        Assert.True(growth < 8, $"validation took {small} for 1,000 components and {large} for 4,000, {growth:F1} times as long");
     }
+
+    private static TimeSpan Fastest(int components)
+    {
+        var fastest = TimeSpan.MaxValue;
+        for (var run = 0; run < 3; run++)
+        {
+            var text = ChainedMap(components, $"R{components}x{run}");
+            var stopwatch = Stopwatch.StartNew();
+            var problems = Validate(text);
+            stopwatch.Stop();
+            Assert.Empty(problems);
+            fastest = stopwatch.Elapsed < fastest ? stopwatch.Elapsed : fastest;
+        }
+
+        return fastest;
+    }
+
+    private static string ChainedMap(int components, string prefix) =>
+        string.Join(
+            "\n",
+            new[] { "anchor Business [0.95, 0.63]" }
+                .Concat(Enumerable.Range(0, components).Select(index => $"component {prefix}C{index} [0.5, 0.5]"))
+                .Concat(Enumerable.Range(0, components - 1).Select(index => $"{prefix}C{index}->{prefix}C{index + 1}"))) + "\n";
 }
 
 /// <summary>
