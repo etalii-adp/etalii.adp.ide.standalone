@@ -23,7 +23,9 @@ public sealed record AddRdfTripleCommand(
 public sealed class AddRdfTripleCommandHandler(IRdfDocumentStore documents) : RdfEditHandler<AddRdfTripleCommand>(documents)
 {
     /// <inheritdoc />
-    protected override EditOutcome Apply(LineDocument body, RdfModel model, AddRdfTripleCommand command)
+    protected override EditOutcome Apply(LineDocument body, RdfModel model, AddRdfTripleCommand command) => Apply(body, model, command, RdfSyntax.Turtle);
+
+    protected override EditOutcome Apply(LineDocument body, RdfModel model, AddRdfTripleCommand command, RdfSyntax syntax)
     {
         RdfTerm objectTerm = command.ObjectIri.Length > 0
             ? new IriTerm(command.ObjectIri, "")
@@ -34,6 +36,6 @@ public sealed class AddRdfTripleCommandHandler(IRdfDocumentStore documents) : Rd
                 "");
 
         return Outcome(
-            RdfWriter.AddTriple(body, model, command.SubjectIri, command.PredicateIri, objectTerm));
+            RdfWriter.AddTriple(body, model, command.SubjectIri, command.PredicateIri, objectTerm, syntax));
     }
 }

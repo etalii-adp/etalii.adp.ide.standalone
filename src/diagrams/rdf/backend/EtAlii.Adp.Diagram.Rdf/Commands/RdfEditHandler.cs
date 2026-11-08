@@ -31,13 +31,23 @@ public abstract class RdfEditHandler<TCommand>(IRdfDocumentStore documents)
     protected sealed override EditOutcome Apply(RdfBody body, RdfModel model, TCommand command)
     {
         ArgumentNullException.ThrowIfNull(body);
-        var outcome = Apply(body.Lines, model, command);
+        ArgumentNullException.ThrowIfNull(command);
+
+        // The body handed here is the edit's copy, which was parsed from text and was never told its path, so the
+        // syntax is read from the command's.
+        var outcome = Apply(body.Lines, model, command, RdfBody.SyntaxOf(command.BodyPath));
         body.Changed();
         return outcome;
     }
 
     /// <summary>Changes the lines of a body, whose model is <paramref name="model"/>, as <paramref name="command"/> asks, or says why not.</summary>
     protected abstract EditOutcome Apply(LineDocument body, RdfModel model, TCommand command);
+
+    /// <summary>
+    /// The edit of <paramref name="command"/> in a body written in <paramref name="syntax"/>; by default the edit of
+    /// <see cref="Apply(LineDocument, RdfModel, TCommand)"/>, which writes Turtle whatever the body is.
+    /// </summary>
+    protected virtual EditOutcome Apply(LineDocument body, RdfModel model, TCommand command, RdfSyntax syntax) => Apply(body, model, command);
 
     /// <summary>A writer's answer as an outcome: its refusal, or applied when it has none.</summary>
     protected static EditOutcome Outcome(string refusal)

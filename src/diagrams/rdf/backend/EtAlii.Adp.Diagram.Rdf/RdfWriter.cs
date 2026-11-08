@@ -29,8 +29,10 @@ public static class RdfWriter
     /// <summary>
     /// States one more triple: appended to the subject's existing statement as a <c>;</c>
     /// continuation matching its indentation, or as a new statement at the end of the document.
+    /// In an N-Triples body (<paramref name="syntax"/>), which has neither <c>;</c> nor <c>a</c>, it is a
+    /// statement line of its own below the subject's last one, its predicate written in full (finding B7).
     /// </summary>
-    public static string AddTriple(LineDocument document, RdfModel model, string subjectIri, string predicateIri, RdfTerm objectTerm)
+    public static string AddTriple(LineDocument document, RdfModel model, string subjectIri, string predicateIri, RdfTerm objectTerm, RdfSyntax syntax = RdfSyntax.Turtle)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(model);
@@ -43,8 +45,8 @@ public static class RdfWriter
             return BlankRefusal;
         }
 
-        // rdf:type is written as Turtle's own keyword, the way an author would.
-        var predicate = predicateIri == RdfVocabulary.Type ? "a" : Compress(model, predicateIri);
+        // rdf:type is written as Turtle's own keyword, the way an author would; N-Triples has none.
+        var predicate = predicateIri == RdfVocabulary.Type && syntax == RdfSyntax.Turtle ? "a" : Compress(model, predicateIri);
         var written = $"{predicate} {WriteTerm(model, objectTerm)}";
         var anchor = model.Triples
             .Where(t => t.Subject is IriTerm subject && subject.Iri == subjectIri)
@@ -67,11 +69,18 @@ public static class RdfWriter
             return "";
         }
 
+        var lineIndex = document.Index();
+        var terminatorLine = lineIndex.LineOf(anchor.TerminatorOffset);
+        if (syntax == RdfSyntax.NTriples)
+        {
+            // Every N-Triples statement is a line of its own: the new one goes below the subject's last.
+            document.Insert(terminatorLine + 1, [$"{IndentOf(document.Lines[anchor.Statement.Start].Text)}{Compress(model, subjectIri)} {written} ."]);
+            return "";
+        }
+
         // The statement's '.' becomes a ';', and the new pair goes on its own line below,
         // indented the way the block's continuation lines are - or one step in from the
         // subject where the statement was a single line.
-        var lineIndex = document.Index();
-        var terminatorLine = lineIndex.LineOf(anchor.TerminatorOffset);
         var terminatorColumn = anchor.TerminatorOffset - lineIndex.StartOf(terminatorLine);
         var lineText = document.Lines[terminatorLine].Text;
 

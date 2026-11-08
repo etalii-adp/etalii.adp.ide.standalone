@@ -1123,9 +1123,9 @@
           "do": "commit rdf.add-resource on new:240,160 = \"<http://example.org/parity>\"",
           "answer": "ok",
           "hunks": [
-            "@6 -1 +\"<http://example.org/parity> a <http://www.w3.org/ns/shacl#NodeShape> ;\\n    a <http://www.w3.org/2000/01/rdf-schema#Resource> .\\n\""
+            "@7 -0 +\"<http://example.org/parity> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/01/rdf-schema#Resource> .\\n\""
           ],
-          "sha256": "0233a9eff3cda9b03cff33fb003e122b236cd9a33b8352117c2a7a2c9bbca0e6"
+          "sha256": "7fe0f04cc014817cb309d5e389b74e370395c441ec140f0f6d19a2d8796b98ab"
         },
         {
           "do": "execute rdf.add-prefix on new:240,160",
@@ -1138,7 +1138,7 @@
           "hunks": [
             "@1 -0 +\"@prefix parity: <http://example.org/parity#> .\\n\""
           ],
-          "sha256": "bc206a685885a89e043aa407ed68b0758627e36afce164602376c9294222a2a1"
+          "sha256": "12a218b85d3e1ebaedbe4c677aa5f148b5f82bbcf1f309d96f990005d5c63005"
         }
       ],
       "undoAll": "3 undone; the original text is back"
@@ -2911,9 +2911,9 @@
           "do": "commit rdf.add-resource on new:240,160 = \"<http://example.org/parity>\"",
           "answer": "ok",
           "hunks": [
-            "@427 -1 +\"<http://example.org/parity> a <http://www.w3.org/ns/shacl#NodeShape> ;\\n    a <http://www.w3.org/2000/01/rdf-schema#Resource> .\\n\""
+            "@428 -0 +\"<http://example.org/parity> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/01/rdf-schema#Resource> .\\n\""
           ],
-          "sha256": "7281267deb0e581aae8cbaae0c286c80b79791e0f6f2eb9180111e9ffcbb7c09"
+          "sha256": "4e8221953caf65f0bbc46507a0de3139d9794b7756aa3077598eb2c0d91eb44e"
         },
         {
           "do": "execute rdf.add-prefix on new:240,160",
@@ -2926,7 +2926,7 @@
           "hunks": [
             "@1 -0 +\"@prefix parity: <http://example.org/parity#> .\\n\""
           ],
-          "sha256": "cf6d3fb7bc34fb1d0463d96800771d8833af15cb19204524d995d3a3e53772f1"
+          "sha256": "d1d4e579c0f9504d5edac645bb50e2f278b4b7ba37ddd90e648887c9d0e566fa"
         }
       ],
       "undoAll": "3 undone; the original text is back"

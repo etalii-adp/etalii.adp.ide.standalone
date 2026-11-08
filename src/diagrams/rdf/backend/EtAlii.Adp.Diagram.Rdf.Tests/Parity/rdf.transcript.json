@@ -3107,17 +3107,17 @@
           "do": "set res:http://example.org/alice rdf.label = \"Parity value\"",
           "answer": "ok",
           "hunks": [
-            "@3 -1 +\"<http://example.org/alice> <http://xmlns.com/foaf/0.1/knows> _:b0 ;\\n    <http://www.w3.org/2000/01/rdf-schema#label> \\\"Parity value\\\" .\\n\""
+            "@4 -0 +\"<http://example.org/alice> <http://www.w3.org/2000/01/rdf-schema#label> \\\"Parity value\\\" .\\n\""
           ],
-          "sha256": "262ea1f1b10338ff05148e7bacf19c01959ca72ff76992c416a1f2c001816405"
+          "sha256": "75e2796dd74b5f8a77b895992227c9021889e16c263f2da2394ef7c043be3f57"
         },
         {
           "do": "set res:http://example.org/alice rdf.comment = \"Parity value\"",
           "answer": "ok",
           "hunks": [
-            "@4 -1 +\"    <http://www.w3.org/2000/01/rdf-schema#label> \\\"Parity value\\\" ;\\n    <http://www.w3.org/2000/01/rdf-schema#comment> \\\"Parity value\\\" .\\n\""
+            "@5 -0 +\"<http://example.org/alice> <http://www.w3.org/2000/01/rdf-schema#comment> \\\"Parity value\\\" .\\n\""
           ],
-          "sha256": "ad2a51d832dbafa89768b53f6fd9df088c7f1d6e159bba06e524386ec73f72f3"
+          "sha256": "238d29324809d8063bfe3d65916e6a09da80a0e962c463a922db250f169f209f"
         },
         {
           "do": "execute rdf.add-resource on new:240,160",
@@ -3128,9 +3128,9 @@
           "do": "commit rdf.add-resource on new:240,160 = \"<http://example.org/parity>\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"\\n<http://example.org/parity> a <http://www.w3.org/2000/01/rdf-schema#Resource> .\\n\""
+            "@7 -0 +\"\\n<http://example.org/parity> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/01/rdf-schema#Resource> .\\n\""
           ],
-          "sha256": "7d7bef00fff0813f59756f11b6400aac0a242aa2245a00955a8e0c99f553aa73"
+          "sha256": "feca084eb99d0fecf35779c4bfbd4da5c4bf80dc542fa162fa989c3bcf1832dd"
         },
         {
           "do": "execute rdf.add-prefix on new:240,160",
@@ -3143,7 +3143,7 @@
           "hunks": [
             "@1 -0 +\"@prefix parity: <http://example.org/parity#> .\\n\""
           ],
-          "sha256": "e22b58c322043f8091e3986cd0aaf18ea416e9d0ca5a8804ca81816096d40448"
+          "sha256": "8dfbdf3d3fdda26059bd4e42e8729ce817c4e5c264988ece0757d20eca864033"
         },
         {
           "do": "execute rdf.rename-resource on res:http://example.org/alice",
@@ -3154,9 +3154,9 @@
           "do": "commit rdf.rename-resource on res:http://example.org/alice = \"<http://example.org/alice>Parity\"",
           "answer": "ok",
           "hunks": [
-            "@2 -3 +\"<<http://example.org/alice>Parity> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://xmlns.com/foaf/0.1/Person> .\\n<<http://example.org/alice>Parity> <http://xmlns.com/foaf/0.1/name> \\\"Alice\\\" .\\n<<http://example.org/alice>Parity> <http://xmlns.com/foaf/0.1/knows> _:b0 ;\\n\""
+            "@2 -5 +\"<<http://example.org/alice>Parity> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://xmlns.com/foaf/0.1/Person> .\\n<<http://example.org/alice>Parity> <http://xmlns.com/foaf/0.1/name> \\\"Alice\\\" .\\n<<http://example.org/alice>Parity> <http://xmlns.com/foaf/0.1/knows> _:b0 .\\n<<http://example.org/alice>Parity> <http://www.w3.org/2000/01/rdf-schema#label> \\\"Parity value\\\" .\\n<<http://example.org/alice>Parity> <http://www.w3.org/2000/01/rdf-schema#comment> \\\"Parity value\\\" .\\n\""
           ],
-          "sha256": "40f561e8ff819fb786a0e246e940339705ca877991588f1578034eb407377a90"
+          "sha256": "b94e37b1969878d4e96eee6c0cf78c1e6f4fa2c955fbea697aa2fd030235ffe5"
         },
         {
           "do": "execute rdf.remove-resource on res:http://example.org/alice",
@@ -41175,17 +41175,17 @@
           "do": "set res:http://www.wikidata.org/entity/Q7186 rdf.label = \"Parity value\"",
           "answer": "ok",
           "hunks": [
-            "@425 -1 +\"<http://www.wikidata.org/entity/Q7186> <http://www.wikidata.org/prop/direct/P12451> \\\"151059345\\\" ;\\n    <http://www.w3.org/2000/01/rdf-schema#label> \\\"Parity value\\\" .\\n\""
+            "@426 -0 +\"<http://www.wikidata.org/entity/Q7186> <http://www.w3.org/2000/01/rdf-schema#label> \\\"Parity value\\\" .\\n\""
           ],
-          "sha256": "3f8f8bc95fb9a265fd300b03a28300e054409b7fee3e968c36cb5d47938012e4"
+          "sha256": "6a543995bcc9eb685af38081f1de9eef26185e12387186d30f6f1cf0c74eeefe"
         },
         {
           "do": "set res:http://www.wikidata.org/entity/Q7186 rdf.comment = \"Parity value\"",
           "answer": "ok",
           "hunks": [
-            "@426 -1 +\"    <http://www.w3.org/2000/01/rdf-schema#label> \\\"Parity value\\\" ;\\n    <http://www.w3.org/2000/01/rdf-schema#comment> \\\"Parity value\\\" .\\n\""
+            "@427 -0 +\"<http://www.wikidata.org/entity/Q7186> <http://www.w3.org/2000/01/rdf-schema#comment> \\\"Parity value\\\" .\\n\""
           ],
-          "sha256": "86f1b6268b43e30df7079c83a703086167da2129e0de8141c8fdea97ad508c1f"
+          "sha256": "aa5f4d238871677b69fde9fe72b534038ff4b8755c8b5cfa8fcf5afbb73b47d9"
         },
         {
           "do": "execute rdf.add-resource on new:240,160",
@@ -41196,9 +41196,9 @@
           "do": "commit rdf.add-resource on new:240,160 = \"<http://example.org/parity>\"",
           "answer": "ok",
           "hunks": [
-            "@428 -0 +\"\\n<http://example.org/parity> a <http://www.w3.org/2000/01/rdf-schema#Resource> .\\n\""
+            "@428 -0 +\"\\n<http://example.org/parity> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/01/rdf-schema#Resource> .\\n\""
           ],
-          "sha256": "5e8363c7a06d7082c2c6775016be5f44b9b5bd4c5b0bdc7b4b4e113f3652504a"
+          "sha256": "1e2ac0ec48bfef8de2cca3686c701c8773bf179797a8f62e8bdbfc3b9f3bb84f"
         },
         {
           "do": "execute rdf.add-prefix on new:240,160",
@@ -41211,7 +41211,7 @@
           "hunks": [
             "@1 -0 +\"@prefix parity: <http://example.org/parity#> .\\n\""
           ],
-          "sha256": "85ab917235a030e8de671acba41f04228235e40e9e335b4e23d0326b5c6648cb"
+          "sha256": "b5d21feb805d310e8a1a481de58df1e4f9f8d0679a3f369c2d134c0e86f132e8"
         },
         {
           "do": "execute rdf.connect on rel:res:http://www.wikidata.org/entity/Q7186->res:http://www.wikidata.org/entity/Q5",
@@ -41222,9 +41222,9 @@
           "do": "commit rdf.connect on rel:res:http://www.wikidata.org/entity/Q7186->res:http://www.wikidata.org/entity/Q5 = \"<http://example.org/parity>\"",
           "answer": "ok",
           "hunks": [
-            "@428 -1 +\"    <http://www.w3.org/2000/01/rdf-schema#comment> \\\"Parity value\\\" ;\\n    <http://example.org/parity> <http://www.wikidata.org/entity/Q5> .\\n\""
+            "@429 -0 +\"<http://www.wikidata.org/entity/Q7186> <http://example.org/parity> <http://www.wikidata.org/entity/Q5> .\\n\""
           ],
-          "sha256": "7aa5f725cc204f80854540558b759b15d399d2205d89048222cff0ef0b4b60a1"
+          "sha256": "154fca43433badd935429fbfc7bb3168258cfe0375d9d99b5a4961df9e793691"
         },
         {
           "do": "execute rdf.remove-edge on edge:res:http://www.wikidata.org/entity/Q7186|http://www.wikidata.org/prop/direct/P31|res:http://www.wikidata.org/entity/Q5",
@@ -41232,7 +41232,7 @@
           "hunks": [
             "@2 -1 +\"\""
           ],
-          "sha256": "4dbefd897310c6272b08d4a7cdbe0cddbc6ddedc895aaad1584ae79ed671467b"
+          "sha256": "6e378e1eb9521e8dd4160ea1b36f6c14343453ce1ca1589b959909ff3137adf6"
         },
         {
           "do": "execute rdf.rename-resource on res:http://www.wikidata.org/entity/Q7186",
@@ -41242,8 +41242,8 @@
         {
           "do": "commit rdf.rename-resource on res:http://www.wikidata.org/entity/Q7186 = \"<http://www.wikidata.org/entity/Q7186>Parity\"",
           "answer": "ok",
-          "summary": "424 lines replaced by 424 in 1 hunks",
-          "sha256": "53c536c00639825bf569f13b18e2ad6bcc6d1f65eccbdf2571269e486d294c3d"
+          "summary": "427 lines replaced by 427 in 1 hunks",
+          "sha256": "47395861fff8b83d0f35c61e6df6bf6e0068b7a5349b7438dda50edf0d896fec"
         },
         {
           "do": "execute rdf.remove-resource on res:http://www.wikidata.org/entity/Q7186",
