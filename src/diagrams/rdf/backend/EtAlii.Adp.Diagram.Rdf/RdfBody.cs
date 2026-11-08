@@ -105,7 +105,7 @@ public sealed class RdfBody : ITextBody<RdfBody>
     }
 
     /// <summary>The syntax a file of <paramref name="fileName"/> is written in: N-Triples for <c>.nt</c>, Turtle otherwise.</summary>
-    private static RdfSyntax SyntaxOf(string fileName) =>
+    internal static RdfSyntax SyntaxOf(string fileName) =>
         string.Equals(Path.GetExtension(fileName), ".nt", StringComparison.OrdinalIgnoreCase) ? RdfSyntax.NTriples : RdfSyntax.Turtle;
 
     /// <summary>
