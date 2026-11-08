@@ -31,7 +31,7 @@ internal static class RdfCorpus
     public static string ParityFolder => Path.Combine(ModuleFolder, "backend", TestProject, "Parity");
 
     /// <summary>The bodies, as paths relative to <c>src/</c> with forward slashes, in the order they are recorded.</summary>
-    private static IReadOnlyList<string> Bodies()
+    public static IReadOnlyList<string> Bodies()
     {
         var fixtures = Directory.GetFiles(Path.Combine(ModuleFolder, "backend", TestProject, "Fixtures"));
         var examples = Directory.GetFiles(Path.Combine(ModuleFolder, "examples"), "*", SearchOption.AllDirectories);

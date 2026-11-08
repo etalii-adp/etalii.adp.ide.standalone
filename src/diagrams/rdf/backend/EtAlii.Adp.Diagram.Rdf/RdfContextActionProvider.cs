@@ -381,7 +381,7 @@ public sealed class RdfContextActionProvider : IContextActionProvider
         return result.IsSuccess ? ContextCommitResult.Succeeded : ContextCommitResult.Failed(result.Error);
     }
 
-    private static ICommand? CommandFor(DocumentEntry<LineDocument, RdfModel> entry, ContextTarget target, string actionId, string value)
+    private static ICommand? CommandFor(DocumentEntry<RdfBody, RdfModel> entry, ContextTarget target, string actionId, string value)
     {
         if (Shacl.ShaclActions.CommandFor(entry, target, actionId, value) is { } shaclCommand)
         {

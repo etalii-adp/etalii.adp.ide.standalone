@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Sessions;
@@ -29,7 +28,7 @@ namespace EtAlii.Adp.Diagram.Rdf;
 /// </para>
 /// </remarks>
 /// <typeparam name="TProjection">What the reading projects a document's model into.</typeparam>
-public sealed class RdfFamilySession<TProjection> : DocumentDiagramSession<LineDocument, RdfModel>
+public sealed class RdfFamilySession<TProjection> : DocumentDiagramSession<RdfBody, RdfModel>
 {
     private readonly string? _registrationPath;
 

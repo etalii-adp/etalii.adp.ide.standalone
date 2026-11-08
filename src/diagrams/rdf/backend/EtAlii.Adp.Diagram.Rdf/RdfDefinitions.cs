@@ -12,8 +12,8 @@ namespace EtAlii.Adp.Diagram.Rdf;
 /// <c>w3c-turtle.fbl#turtle</c>, which the four name as their persistence and whose templates are the new documents.
 /// </summary>
 /// <remarks>
-/// Nothing derives from the definitions yet (rdf-disl-fbl task 6). Their plugin functions are the turtle plugin's,
-/// which this module does not implement yet, so they load without implementations.
+/// Nothing derives from the definitions yet (rdf-disl-fbl task 7). Their plugin functions are the turtle plugin's,
+/// loaded with the ones <see cref="RdfTurtlePlugin.Functions"/> implements; the rest fall back as declared.
 /// </remarks>
 internal static class RdfDefinitions
 {
@@ -29,7 +29,7 @@ internal static class RdfDefinitions
     /// <summary>Loaded on first use, so registering the readings loads nothing.</summary>
     private static readonly Lazy<BundledDefinitionSet> _set = new(() => BundledDefinitionSet.Load(
         typeof(RdfDefinitions).Assembly,
-        DislPluginFunctions.None,
+        RdfTurtlePlugin.Functions(),
         Readings.Select(reading => reading.Resource)));
 
     private static readonly Lazy<FblBinding> _binding = new(() => BundledBinding.Load(typeof(RdfDefinitions).Assembly, "w3c-turtle.fbl", "turtle"));
@@ -39,7 +39,7 @@ internal static class RdfDefinitions
     public static BundledDefinitionSet Set => _set.Value;
 
     /// <summary>The binding every body of the four readings is read with.</summary>
-    private static FblBinding Binding => _binding.Value;
+    internal static FblBinding Binding => _binding.Value;
 
     /// <summary>The definition of the reading <paramref name="origin"/> names.</summary>
     /// <exception cref="KeyNotFoundException">No reading has that origin.</exception>

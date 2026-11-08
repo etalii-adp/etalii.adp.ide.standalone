@@ -20,7 +20,7 @@ public sealed class RdfContextSourceResolver(
     DiagramFileRouter router,
     IRdfDocumentStore documents,
     Func<RdfModel, string, DiagramElement?> drawn)
-    : DiagramElementSourceResolver<LineDocument, RdfModel>(router, documents)
+    : DiagramElementSourceResolver<RdfBody, RdfModel>(router, documents)
 {
     /// <inheritdoc />
     protected override ToolOrigin Origin { get; } = origin;
@@ -34,7 +34,7 @@ public sealed class RdfContextSourceResolver(
         "New element");
 
     /// <inheritdoc />
-    protected override (IReadOnlyList<string> Path, string Text)? Describe(DocumentEntry<LineDocument, RdfModel> entry, string elementId)
+    protected override (IReadOnlyList<string> Path, string Text)? Describe(DocumentEntry<RdfBody, RdfModel> entry, string elementId)
     {
         ArgumentNullException.ThrowIfNull(entry);
 

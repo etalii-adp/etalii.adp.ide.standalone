@@ -31,10 +31,10 @@ public abstract class LifecycleDocumentStore<TBody, TModel> : IDiagramDocumentSt
     protected LifecycleDocumentStore(IFileWriter writer)
     {
         _lifecycle = new WritableDocumentLifecycle<DocumentEntry<TBody, TModel>>(
-            (_, text) => ReadEntry(text),
+            ReadEntry,
             entry => TextOf(entry.Document),
             writer,
-            (_, unavailability, reason) => Unavailable(unavailability, reason));
+            Unavailable);
     }
 
     /// <inheritdoc />
@@ -60,7 +60,7 @@ public abstract class LifecycleDocumentStore<TBody, TModel> : IDiagramDocumentSt
                 $"{IoPath.GetFileName(path)} could not be read, so it was not written: {current.Unreadable}");
         }
 
-        var entry = Entry(document);
+        var entry = Entry(Locate(path, document));
         var result = await _lifecycle.SaveAsync(path, entry, cancellationToken);
         if (!result.Failed)
         {
@@ -114,7 +114,7 @@ public abstract class LifecycleDocumentStore<TBody, TModel> : IDiagramDocumentSt
             }
 
             before = TextOf(current.Document);
-            var body = Read(before);
+            var body = Locate(path, Read(before));
             var refusal = edit(body);
             if (refusal.Length > 0)
             {
@@ -161,6 +161,18 @@ public abstract class LifecycleDocumentStore<TBody, TModel> : IDiagramDocumentSt
     /// <summary>The body a text reads as; an empty text is a new, empty document.</summary>
     protected abstract TBody Read(string text);
 
+    /// <summary>
+    /// The body the file at <paramref name="path"/> holds, as <paramref name="body"/> was read without its path:
+    /// <paramref name="body"/> itself unless the module's reading depends on the file's name, as RDF's does on
+    /// its extension. Every body a document entry holds has been through here, whether it was opened, reloaded,
+    /// saved or edited.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="Read"/> is handed the text alone, as an edit's copy is (<see cref="ITextBody{TSelf}.Parse"/>),
+    /// so the path is told here, where the store knows it.
+    /// </remarks>
+    protected virtual TBody Locate(string path, TBody body) => body;
+
     /// <summary>The text <paramref name="body"/> is saved as.</summary>
     protected abstract string TextOf(TBody body);
 
@@ -206,17 +218,17 @@ public abstract class LifecycleDocumentStore<TBody, TModel> : IDiagramDocumentSt
 
     private DocumentEntry<TBody, TModel> Entry(TBody body) => new(body, Parse(body));
 
-    private DocumentEntry<TBody, TModel> ReadEntry(string text)
+    private DocumentEntry<TBody, TModel> ReadEntry(string path, string text)
     {
-        var body = Read(text);
+        var body = Locate(path, Read(text));
         var outcome = Parse(body);
         return new DocumentEntry<TBody, TModel>(body, outcome.IsUsable ? outcome with { Unreadable = UnreadableOf(body) } : outcome);
     }
 
     // A missing body opens as a new, empty document, which is usable whatever its parser makes of no text.
-    private DocumentEntry<TBody, TModel> Unavailable(DocumentUnavailability unavailability, string reason)
+    private DocumentEntry<TBody, TModel> Unavailable(string path, DocumentUnavailability unavailability, string reason)
     {
-        var empty = Entry(Read(""));
+        var empty = Entry(Locate(path, Read("")));
         return unavailability == DocumentUnavailability.Missing
             ? empty with { Unreadable = "" }
             : empty with { Unreadable = reason.Length > 0 ? reason : "the body could not be read" };
