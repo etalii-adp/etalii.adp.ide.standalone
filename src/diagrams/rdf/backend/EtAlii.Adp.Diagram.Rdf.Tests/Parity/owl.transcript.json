@@ -1748,9 +1748,9 @@
           "do": "commit rdf.add-resource on new:240,160 = \"<http://example.org/parity>\"",
           "answer": "ok",
           "hunks": [
-            "@5 -0 +\"\\n<http://example.org/parity> a <http://www.w3.org/2000/01/rdf-schema#Resource> .\\n\""
+            "@5 -0 +\"\\n<http://example.org/parity> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/01/rdf-schema#Resource> .\\n\""
           ],
-          "sha256": "a43e862fffc1da70b1acfeb217cf0db1a6d84d402d9c9663c85a31bf642e6224"
+          "sha256": "75758c946dc27867e007b0d5e84ff2a723cac86abc68107cfab6826b5ae23164"
         },
         {
           "do": "execute rdf.add-prefix on new:240,160",
@@ -1763,7 +1763,7 @@
           "hunks": [
             "@1 -0 +\"@prefix parity: <http://example.org/parity#> .\\n\""
           ],
-          "sha256": "74408aa3f5ca81c2b510fcf2114bcc10c201977645f1ab287291908b7bd94e72"
+          "sha256": "dd7ab3c86d9cd6cb4564e25db8e3743b0ca3c494fb73a7551a73ee36837a37ad"
         }
       ],
       "undoAll": "2 undone; the original text is back"
@@ -6232,9 +6232,9 @@
           "do": "commit rdf.add-resource on new:240,160 = \"<http://example.org/parity>\"",
           "answer": "ok",
           "hunks": [
-            "@426 -0 +\"\\n<http://example.org/parity> a <http://www.w3.org/2000/01/rdf-schema#Resource> .\\n\""
+            "@426 -0 +\"\\n<http://example.org/parity> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/01/rdf-schema#Resource> .\\n\""
           ],
-          "sha256": "8463960748d185b342fe45d93eb60a92a3b239078d1029997fa70efd2fd9ad1a"
+          "sha256": "8a5f9e49ee21f96bbeacb25c416ad0e47dc9b67d81fc74d70a121736fff07a30"
         },
         {
           "do": "execute rdf.add-prefix on new:240,160",
@@ -6247,7 +6247,7 @@
           "hunks": [
             "@1 -0 +\"@prefix parity: <http://example.org/parity#> .\\n\""
           ],
-          "sha256": "02713daba985bfc4c907e6918c93521389b978ad620ca4f4e5fca49c2be08ded"
+          "sha256": "158859fd899395afd2a073311dfedfdcfbb473fbab8bfabe93676075ef1082da"
         }
       ],
       "undoAll": "2 undone; the original text is back"
