@@ -230,6 +230,38 @@ public class DislLoaderTests
             Specifications.Diagnostics(json));
     }
 
+    [Fact]
+    public void AnOperationForTheSelection_Loads()
+    {
+        // DISL §9.3: an operation's for is a list of types, "diagram" or "selection".
+        var json = Specifications.With("""
+            "metamodel": { "types": { "Thing": {} } },
+            "behavior": { "operations": {
+              "group": { "label": "Group", "for": "selection", "actions": [] },
+              "groupThings": { "label": "Group things", "for": ["Thing", "selection"], "actions": [] } } }
+            """);
+
+        Assert.Empty(Specifications.Diagnostics(json));
+    }
+
+    [Fact]
+    public void TheSelection_IsNoTargetOfAContextMenuOrAConstraint()
+    {
+        // Only an operation's for may name the selection (DISL §9.3); a context menu's for and a constraint's scope name types.
+        var json = Specifications.With("""
+            "metamodel": { "types": { "Thing": {} } },
+            "toolbox": { "contextMenus": [ { "for": ["selection"], "tools": [] } ] },
+            "constraints": { "rules": [ { "id": "r", "scope": "selection", "rule": "true" } ] }
+            """);
+
+        Assert.Equal(
+            [
+                "error at /toolbox/contextMenus/0/for: 'selection' is not a type of this specification (DISL §2.7).",
+                "error at /constraints/rules/0/scope: 'selection' is not a type of this specification (DISL §2.7).",
+            ],
+            Specifications.Diagnostics(json));
+    }
+
     // Step 8.
 
     [Fact]

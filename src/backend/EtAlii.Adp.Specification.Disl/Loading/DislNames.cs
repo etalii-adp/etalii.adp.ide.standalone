@@ -14,6 +14,9 @@ internal static class DislNames
     /// <summary>The words a context menu's <c>for</c>, a constraint's <c>scope</c> or an operation's <c>for</c> may use besides type names.</summary>
     private static readonly HashSet<string> TargetWords = new(StringComparer.Ordinal) { "diagram", "connection", "node", "relation", "port", "*" };
 
+    /// <summary>The words an operation's <c>for</c> may use besides type names: the target words and <c>selection</c> (DISL §9.3).</summary>
+    private static readonly HashSet<string> OperationTargetWords = new(TargetWords, StringComparer.Ordinal) { "selection" };
+
     public static void Resolve(DislSpecification specification, List<LoadDiagnostic> diagnostics)
     {
         var operations = specification.Operations.Declared.Select(operation => operation.Id).ToHashSet(StringComparer.Ordinal);
@@ -60,7 +63,7 @@ internal static class DislNames
         foreach (var operation in specification.Operations.Declared)
         {
             var pointer = JsonPointer.Append("/behavior/operations", operation.Id);
-            resolver.Targets(operation.For, pointer, "for");
+            resolver.Targets(operation.For, pointer, "for", OperationTargetWords);
             if (operation.ParamsForm is { } form && !forms.Contains(form))
             {
                 diagnostics.Add(DislLoader.Error(JsonPointer.Append(pointer, "paramsForm"), $"'{form}' is not a form of this specification (DISL §9.3)."));
@@ -133,10 +136,14 @@ internal static class DislNames
             else if (relation && !type.IsRelation) diagnostics.Add(DislLoader.Error(at, $"'{name}' is not a relation type (DISL §7.3)."));
         }
 
-        /// <summary>A property naming what something applies to: types, or one of the words <c>diagram</c>, <c>connection</c> and the like.</summary>
-        public void Targets(IReadOnlyList<string> names, string pointer, string property)
+        /// <summary>
+        /// A property naming what something applies to: types, or one of <paramref name="words"/> - by default the words
+        /// <c>diagram</c>, <c>connection</c> and the like.
+        /// </summary>
+        public void Targets(IReadOnlyList<string> names, string pointer, string property, IReadOnlySet<string>? words = null)
         {
-            foreach (var name in names.Where(name => !TargetWords.Contains(name)))
+            var admitted = words ?? TargetWords;
+            foreach (var name in names.Where(name => !admitted.Contains(name)))
             {
                 Name(name, JsonPointer.Append(pointer, property));
             }
