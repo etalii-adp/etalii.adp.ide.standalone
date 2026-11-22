@@ -26,8 +26,8 @@ The tool it describes is the standalone module `src/diagrams/causal-loop-diagram
 | Computed loop polarity | enum `LoopPolarity`, derived `Loop.computed` | Reinforcing, balancing, undecidable, from the count of negative links around the cycle. |
 | Cycle enumeration | `causalCycles` of the plugin `net.etalii.adp.systems.cldCycles`, with `diagram.cycles('CausalLink', max)` as its fallback, and `diagram.cyclesTruncated` | DISL 12.4 and 13.1.1. The plugin is the tool's order; see [Other differences: the order of cycles](#other-differences-a-runtime-will-meet). |
 | The body | `persistence.format: "fbl"`, binding `cld` | The standalone module's own copy of the binding; `typeMap` maps its entry types onto the metamodel. |
-| Positions | `persistence.view.store: ["bounds"]` | Stored in the `.adp` registration's `layout:` block under the element ids, never in the body. |
-| Ring layout | layout `ring`, `circular` with `adp.ring.*` options | See [gap 5](#5-disl-the-seating-order-and-radius-of-circular). |
+| Positions | `persistence.view.store: ["bounds"]`, the Variable's `placement.anchor: "center"`, and the binding's `registration.layoutPoint: "anchor"` (FBL 0.20) | Stored in the `.adp` registration's `layout:` block under the element ids, never in the body: the centre of each variable's pill, which the binding declares by naming the placement anchor as its layout point. |
+| Ring layout | layout `ring`, the capability `layout.ring` | See [gap 5](#5-disl-the-seating-order-and-radius-of-circular), closed by the capability. |
 | Arrange diagram | operation `arrange`, layout `selfOrganizing` from the plugin `net.etalii.adp.systems.cld` | The layout stays code; the plugin provides it alone and is not required to read the document. |
 
 ## What the definition now states
@@ -45,6 +45,7 @@ The previous companion, written against DISL 0.1, listed twelve aspects DISL cou
 | A count in a menu label | `'Remove variable (with ' + n + ' references)'`, with `n` from `removalCount` |
 | A toolbox entry dropped onto a variable | `drop.targets` on the Link and Loop tools, `elsewhere: refuse` with "Drop a link or a loop onto a variable." |
 | The empty-canvas sentence | `canvas.empty`: "This causal loop diagram states no variables yet." |
+| The standalone tool's look, which the definition follows since 2026-11-22 (the owner's ruling in chat: where the definition and standalone look different, the definition changes to standalone's look) | links drawn in `color.text.muted`, in the `link` style and the link's `line`; the selected state's `color.selected` on a variable and a loop as on a link; and the loop captions in `#4DAAFC` and `#FB923C` in dark mode |
 | The mirrored marker of a balancing loop | NodeIcon `flip: horizontal` under a condition on `computed` |
 | Fields that read `+`, `s`, `-`, `o` and weights | FormItem `parse` with `accepts`, `write` and `refusal` on polarity and weight |
 | Arrange's refusal when nothing is drawn | `layout` action `refusals.nothingDrawn` |
@@ -101,7 +102,7 @@ A host meets a second limit under this one. The standalone canvas draws a label 
 
 ### 5. DISL: the seating order and radius of `circular`
 
-Finding A9; DISL D.2, open question 9. The ring a document opens on seats the variables in a depth-first walk of the links in declaration order, starting at the top and running clockwise, on a radius that grows with the widest variable and the count so that no two overlap. DISL names `circular` and defines neither; the specification carries both as `adp.ring.*` options, which no runtime is required to read. **Would resolve it:** an order and a radius rule for `circular` in DISL's standard layouts, or a way for a definition to state them.
+Finding A9; DISL D.2, open question 9. The ring a document opens on seats the variables in a depth-first walk of the links in declaration order, starting at the top and running clockwise, on a radius that grows with the widest variable and the count so that no two overlap. DISL names `circular` and defines neither; the specification carries both as `adp.ring.*` options, which no runtime is required to read. **Would resolve it:** an order and a radius rule for `circular` in DISL's standard layouts, or a way for a definition to state them. **Closed for the description (spec 076, 2026-11-05):** its layout names the capability `layout.ring` (ATD §13.6), whose contract states the order, the start, the direction and the radius, as every other tool's computed layout is stated; the `.dis` keeps its `adp.ring.*` options.
 
 ### 6. DISL: a committed value that did not change
 
@@ -144,6 +145,8 @@ These are not language gaps. Each is a place the transcript shows the tool doing
 - **The declared order.** `constraints.order` lists three codes. The other codes share one position after them, sorted by line, and the findings of `unlabelledLoop`, which have no line, come last. That is one reading of DISL's rule for unlisted codes and for findings without a line; the transcript records the order the tool gives, which a runtime checks itself against.
 - **The turn of an undecidable loop's marker.** The specification mirrors the loop arrow for a balancing loop only, so an undecidable loop's arrow turns clockwise, as a reinforcing one's does. The standalone canvas drew it anticlockwise before it was compiled from this specification. **Ruled by the owner in chat, 2026-10-14:** keep the specification's drawing, clockwise. A third value of `flip` under a condition on `undecidable` would have been the alternative, which DISL can state, so it was a choice and not a gap.
 - **Tooltips.** The specification states a tooltip for a variable, a loop and a link in CEL. The standalone canvas has no CEL and reads a CEL text from the payload its backend computes; no payload carries a tooltip, and a variable's payload carries neither its name nor its label separately, from which one could be built. So the standalone tool draws no tooltip, as it drew none before. A host concern, not a gap: the payload would have to carry the text.
+- **Where the empty-canvas sentence stands.** DISL 6.13 draws `canvas.empty` centred on the canvas, in its style. The standalone canvas writes it at the top left. A host that follows the definition centres it; the standalone position is recorded here rather than stated, since the definition cannot move it.
+- **The colour of a delay mark.** The two strokes of a delayed link are midMarkers, drawn in the link's stroke colour, `color.text.muted`. The standalone canvas draws them in `color.text`. A marker colour of its own would be one more style; the difference is small enough to record.
 - **A loop that is not a cycle.** `std.references` reports a loop member that names no variable under `causal-loop.loop-is-not-a-cycle`; no fixture of the corpus has such a loop, so that case is not in the transcript.
 
 ## Pending with the owner
