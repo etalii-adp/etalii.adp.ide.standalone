@@ -1,9 +1,9 @@
 {
   "$schema": "https://etalii.net/adp/disl/schema/0.2/disl.schema.json#/$defs/Specification",
-  "disl": "0.3",
+  "disl": "0.10",
   "language": {
     "id": "net.etalii.adp.generic.dependencies",
-    "version": "1.1.0",
+    "version": "1.1.2",
     "origin": "generic/dependencies",
     "label": "Dependency graph",
     "doc": {
@@ -20,7 +20,7 @@
     "homepage": "https://etalii.net/adp",
     "icon": "mdi-graph-outline",
     "fileExtension": "dgr",
-    "requires": { "conformance": "standard", "features": ["placement.bound", "edge.bezier", "label.parse", "persist.yaml"] }
+    "requires": { "conformance": "standard", "features": ["placement.bound", "edge.bezier", "label.parse"] }
   },
 
   "metamodel": {
@@ -143,9 +143,17 @@
     "theme": {
       "tokens": {
         "color.surface": "#FFFFFF",
-        "color.border": "#8892A6",
-        "color.text": "#1C2333",
-        "color.text.muted": "#5A6376"
+        "color.border": "#E2E8F0",
+        "color.text": "#0F172A",
+        "color.text.muted": "#64748B"
+      },
+      "modes": {
+        "dark": {
+          "color.surface": "#1E293B",
+          "color.border": "#334155",
+          "color.text": "#F1F5F9",
+          "color.text.muted": "#94A3B8"
+        }
       },
       "followSystem": true
     },
@@ -376,6 +384,10 @@
         "message": { "cel": "'The id \\'' + detail.id + '\\' is declared more than once, which makes every reference to it ambiguous.'" },
         "doc": "Nodes and dependencies share one id space. Each second and later declaration is reported, at its first line; nodes are read before dependencies."
       },
+      "std.missingId": {
+        "enabled": false,
+        "doc": "Reported by missingId instead, which names a node by its label and reads `self.id` as the file writes it (persistence.writtenId)."
+      },
       "std.references": {
         "enabled": false,
         "doc": "Reported by danglingSource and danglingTarget instead, which leave an end written empty or not written at all unreported, as the tool does, and which read the id an end is written with."
@@ -494,6 +506,7 @@
       "stable": true,
       "doc": "New ids are ShortGuids: a version 4 GUID written as 25 characters of base 36. Hand-written ids such as `api-gateway` are kept as they are."
     },
+    "writtenId": "storedId",
     "view": { "store": [] },
     "collaboration": { "mode": "none" },
     "typeMap": {
