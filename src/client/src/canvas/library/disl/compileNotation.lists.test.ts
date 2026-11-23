@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { layoutCompartments, compartmentsHeight } from "../definition/compartments";
 import { compileNotation, type NotationBindings } from "./compileNotation";
 import { parseDisl, type DislDocument } from "./disTypes";
@@ -86,9 +86,13 @@ function withCard(change: (node: DislDocument["notation"]["nodes"][string]) => D
 }
 
 describe("compileNotation, DISL 0.4", () => {
-  it("reads a specification of DISL 0.4, and still refuses one it was not written against", () => {
+  it("reads a specification of DISL 0.4, reads a later minor version with a warning, and refuses a later major version", () => {
     expect(parseDisl(JSON.stringify(specOf()))["disl"]).toBe("0.4");
-    expect(() => parseDisl(JSON.stringify({ ...specOf(), disl: "0.6" }))).toThrow(/declares "0.6"/);
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    expect(parseDisl(JSON.stringify({ ...specOf(), disl: "0.10" }))["disl"]).toBe("0.10");
+    expect(warn).toHaveBeenCalledWith("This client knows DISL up to 0.5; what DISL 0.10 adds is not read (DISL §2.9).");
+    warn.mockRestore();
+    expect(() => parseDisl(JSON.stringify({ ...specOf(), disl: "1.0" }))).toThrow(/declares "1.0"/);
   });
 
   it("reads a specification of DISL 0.5 as one of 0.4, which it extends by the person shape alone", () => {

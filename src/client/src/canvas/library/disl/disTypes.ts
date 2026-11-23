@@ -521,14 +521,23 @@ export interface DislLayout {
   respect?: string;
 }
 
+/** The newest DISL version this client was written against: what a later minor version adds is not read. */
+const KNOWN_MINOR = 5;
+
 /**
- * The bundled text as a document, refusing a DISL version this client was not written against.
- * A `.dis` is JSON (DISL §2.1); the bundle is the backend's own copy, so both tiers read one file.
+ * The bundled text as a document. A `.dis` is JSON (DISL §2.1); the bundle is the backend's own copy, so both tiers read
+ * one file. DISL §2.9: a higher major version is refused; a higher minor version is read, what it adds left unread, with
+ * a warning, as the backend's runtime reads it.
  */
 export function parseDisl(text: string): DislDocument {
   const document = JSON.parse(text) as DislDocument;
-  if (document.disl !== "0.3" && document.disl !== "0.4" && document.disl !== "0.5") {
-    throw new Error(`This client reads DISL 0.3, 0.4 and 0.5; the bundled specification declares "${String(document.disl)}".`);
+  const version = /^(\d+)\.(\d+)$/.exec(String(document.disl));
+  if (!version || Number(version[1]) !== 0) {
+    throw new Error(`This client reads DISL 0.x; the bundled specification declares "${String(document.disl)}".`);
+  }
+
+  if (Number(version[2]) > KNOWN_MINOR) {
+    console.warn(`This client knows DISL up to 0.${KNOWN_MINOR}; what DISL ${String(document.disl)} adds is not read (DISL §2.9).`);
   }
 
   return document;
