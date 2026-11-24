@@ -140,7 +140,7 @@ async function shoot(name) {
  * cold backend and was captured as an empty canvas with only its title - a picture that looks
  * like a broken product and would have been committed as one, since nothing about it fails.
  */
-async function openDocument(segments, { fit = true, expectDrawing = true, zoomIn = 0, theme = "dark" } = {}) {
+async function openDocument(segments, { fit = true, expectDrawing = true, zoomIn = 0, zoomAt = null, theme = "dark" } = {}) {
   // The app follows prefers-color-scheme, so the theme is the emulated one rather than whatever
   // the machine running the script happens to prefer.
   await page.emulateMediaFeatures([{ name: "prefers-color-scheme", value: theme }]);
@@ -162,7 +162,30 @@ async function openDocument(segments, { fit = true, expectDrawing = true, zoomIn
   for (let step = 0; step < zoomIn; step++) {
     await clickAria("Zoom In", { optional: true });
   }
+  // A drawing too large for any one zoom to read whole is shown by a part of it instead: `zoomAt`
+  // wheels in on a point of the canvas, given as fractions of its width and height, so the part
+  // chosen stays under the pointer rather than drifting to the middle as the buttons zoom.
+  if (zoomAt) {
+    await wheelZoomAt(zoomAt);
+  }
   return true;
+}
+
+/** Wheels in `steps` times at the point (`x`, `y`), fractions of the canvas that draws the document. */
+async function wheelZoomAt({ x, y, steps }) {
+  const box = await page.evaluate(() => {
+    const canvas = document.querySelector("[data-element-id]")?.closest("svg");
+    if (!canvas) return null;
+    const r = canvas.getBoundingClientRect();
+    return { left: r.left, top: r.top, width: r.width, height: r.height };
+  });
+  if (box === null) return;
+  await page.mouse.move(box.left + box.width * x, box.top + box.height * y);
+  for (let step = 0; step < steps; step++) {
+    await page.mouse.wheel({ deltaY: -300 });
+    await sleep(150);
+  }
+  await sleep(800);
 }
 
 /** Closes the current document tab so the next shot starts clean. */
@@ -195,6 +218,10 @@ const shots = [
   { name: "mindmap.png", path: ["diagrams", "mindmap", "example 1", "mindmap.mm", "mindmap.adp"], collapse: ["diagrams", "mindmap"] },
   { name: "wardley-map.png", path: ["diagrams", "wardley-map", "example 1", "tea.owm", "tea.adp"], collapse: ["diagrams", "wardley-map"] },
   { name: "timeline.png", path: ["diagrams", "timeline", "example-2", "roadmap.tml", "roadmap.adp"], collapse: ["diagrams", "timeline"] },
+  // The Marvel universe: its 47 key events, and all 428. Neither reads fitted
+  // whole, so each is wheeled in on the start of its story.
+  { name: "timeline-marvel-universe-overview.png", path: ["diagrams", "timeline", "marvel-universe-overview", "marvel-universe-overview.tml", "marvel-universe-overview.adp"], zoomAt: { x: 0.5, y: 0.03, steps: 3 }, collapse: ["diagrams", "timeline"] },
+  { name: "timeline-marvel-universe.png", path: ["diagrams", "timeline", "marvel-universe", "marvel-universe.tml", "marvel-universe.adp"], zoomAt: { x: 0.49, y: 0.003, steps: 12 }, collapse: ["diagrams", "timeline"] },
   { name: "azure-pipeline.png", path: ["diagrams", "azure-devops-pipeline", "example 1", "multi-stage.yml", "multi-stage.adp"], collapse: ["diagrams", "azure-devops-pipeline"] },
   { name: "dependency-graph.png", path: ["diagrams", "dependency-graph", "example-1", "services.dgr", "services.adp"], collapse: ["diagrams", "dependency-graph"] },
   { name: "functional-decomposition-graph.png", path: ["diagrams", "functional-decomposition-graph", "field-service", "field-service.fdg", "field-service.adp"], collapse: ["diagrams", "functional-decomposition-graph"] },
