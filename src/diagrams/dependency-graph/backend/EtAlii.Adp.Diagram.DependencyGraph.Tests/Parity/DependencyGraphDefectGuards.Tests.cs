@@ -147,7 +147,7 @@ public sealed class DependencyGraphDefectGuardsTests : IDisposable
 
         // Act.
         var result = await _historyStacks.Get(ProjectRoot.From(_workspace)).ExecuteAsync(new RenameDependencyGraphElementCommand(path, "aaa", "Renamed"), TestContext.Current.CancellationToken);
-        var text = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
+        var text = DependencyGraphWrittenDocumentId.Without(await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
 
         // Assert: one 'label', changed in place, in a body that still reads.
         Assert.True(result.IsSuccess, result.Error);

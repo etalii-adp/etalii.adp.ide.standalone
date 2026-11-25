@@ -66,6 +66,12 @@ public abstract record ModelChange
     /// </summary>
     public sealed record Setting(string Block, string Key, string? Value = null, SettingPosition? Position = null, string? Rename = null, bool RemoveEntry = false) : ModelChange;
 
+    /// <summary>
+    /// Writes <paramref name="Id"/> as the body's document id (FBL 0.23 §17.2), as load-time validation does for a document
+    /// that has none: in the slot the binding's <c>document.id</c> names, which no rule need bind.
+    /// </summary>
+    public sealed record SetDocumentId(string Id) : ModelChange;
+
     /// <summary>Saves without a change: no splice (FBL §15.3).</summary>
     public sealed record Save : ModelChange;
 }

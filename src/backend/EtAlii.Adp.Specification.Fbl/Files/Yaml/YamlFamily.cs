@@ -216,6 +216,29 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
         return true;
     }
 
+    /// <summary>
+    /// FBL 0.23 §17.2: the document id written into the root mapping, which no rule need bind: its value replaced where the key
+    /// is present, else a new line after the root's first key when that holds a scalar, as a schema marker such as
+    /// <c>timeline: 1</c> does, and before the first key otherwise.
+    /// </summary>
+    public override void WriteDocumentId(Plan plan, DocumentIdSlot slot, string id)
+    {
+        if (slot.Key is not { } key || Root?.Value is not { Kind: ValueKind.Mapping, Entries.Count: > 0 } mapping || mapping.Flow is not null)
+        {
+            Plan.Refuse($"The {Binding.Name} file has no mapping to write '{slot.Key}' in.");
+            return;
+        }
+        if (mapping.Member(key) is { } member)
+        {
+            var written = Scalar(id, member.Value, null, member.Indent);
+            if (written != Text.Text(member.Value.Span)) plan.Add(SpliceOperation.ReplaceValue, member.Value.Span, written);
+            return;
+        }
+        var first = mapping.Entries[0];
+        var offset = first.Value.Kind == ValueKind.Scalar ? LineEndAfter(first) : first.LineSpan?.Start ?? first.Own.Start;
+        plan.Add(SpliceOperation.InsertKey, offset, offset, NewLine(offset, [Indentation(first.Indent) + key + ": " + Scalar(id, null, null, first.Indent)]));
+    }
+
     /// <summary>A key the entry lacks goes at its place in the rule's key order: after the nearest present key before it, else before the nearest after it.</summary>
     private void InsertKey(Plan plan, TreeValue mapping, string key, SlotChange change)
     {

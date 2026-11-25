@@ -6,6 +6,7 @@ using EtAlii.Adp.Specification.Disl;
 using EtAlii.Adp.Specification.Fbl;
 using EtAlii.Adp.Specification.Fbl.Documents;
 using EtAlii.Adp.Specification.Fbl.History;
+using EtAlii.Adp.Specification.Fbl.Links;
 using EtAlii.Adp.Specification.Fbl.Planning;
 
 namespace EtAlii.Adp.Diagram.Timeline;
@@ -93,6 +94,16 @@ public sealed class TimelineBody
     {
         var model = OpenBody.Open(bytes, LoadedBinding.Value, LoadedOptions.Value).Model;
         return (DislModelBuilder.From(model, TimelineDefinition.Specification).Diagram, model.DocumentId);
+    }
+
+    /// <summary>
+    /// What opening <paramref name="text"/> finds to write with its first edit (FBL 17.4, <see cref="DislOpening"/>): a document id
+    /// where it has none, and its links as resolution in <paramref name="workspace"/> finds them; null when it finds nothing.
+    /// </summary>
+    internal static string? Pending(string text, LinkWorkspace? workspace)
+    {
+        var body = OpenBody.Open(Encoding.UTF8.GetBytes(text), LoadedBinding.Value, LoadedOptions.Value);
+        return DislOpening.Pending(body, TimelineDefinition.Specification, DislModelBuilder.From(body.Model, TimelineDefinition.Specification).Diagram, workspace);
     }
 
     /// <summary>A body for <paramref name="text"/>. Never throws on content: a body the library cannot read reads as unreadable.</summary>

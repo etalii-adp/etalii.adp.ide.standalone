@@ -1,5 +1,6 @@
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Files;
+using EtAlii.Adp.Links;
 using EtAlii.Adp.Specification.Fbl;
 using Serilog;
 
@@ -21,7 +22,9 @@ namespace EtAlii.Adp.Diagram.Timeline;
 /// the store, and nothing is written to it until it parses (Requirement 2.4).
 /// </para>
 /// </remarks>
-public sealed class TimelineDocumentStore(IFileWriter writer) : LifecycleDocumentStore<LineDocument, TimelineModel>(writer), ITimelineDocumentStore
+/// <param name="writer">What publishes a save.</param>
+/// <param name="links">The workspace's index of links, which opening a timeline validates its links against; null where there is none.</param>
+public sealed class TimelineDocumentStore(IFileWriter writer, ILinkIndex? links = null) : LifecycleDocumentStore<LineDocument, TimelineModel>(writer), ITimelineDocumentStore
 {
     private static readonly ILogger _logger = Log.ForContext<TimelineDocumentStore>();
 
@@ -30,6 +33,10 @@ public sealed class TimelineDocumentStore(IFileWriter writer) : LifecycleDocumen
 
     /// <inheritdoc />
     protected override string TextOf(LineDocument body) => body.Text;
+
+    /// <inheritdoc />
+    /// <remarks>Load-time validation (FBL 17.4): a document id where it has none, and its links as resolution finds them.</remarks>
+    protected override string? PendingOf(string path, LineDocument body) => TimelineBody.Pending(body.Text, links?.WorkspaceOf(path));
 
 
     /// <inheritdoc />

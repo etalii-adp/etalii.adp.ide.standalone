@@ -460,6 +460,12 @@ public sealed partial class DependencyGraphTranscript() : TranscriptAdapter("dep
                 _minted[id] = $"{{minted-{_minted.Count + 1}}}";
             }
 
+            // The document id the first edit writes where the document has none (FBL 17.4) is new on every run too.
+            foreach (var id in DocumentId().Matches(after).Select(match => match.Value).Where(id => !_text.Contains(id, StringComparison.Ordinal) && !_minted.ContainsKey(id)))
+            {
+                _minted[id] = "{document-id}";
+            }
+
             json.WriteStartObject();
             json.WriteString("do", step);
             json.WriteString("answer", Mask(answer));
@@ -474,6 +480,10 @@ public sealed partial class DependencyGraphTranscript() : TranscriptAdapter("dep
         /// <summary>A minted id as an action writes it: a <see cref="ShortGuid"/>, after <c>id:</c>.</summary>
         [GeneratedRegex(@"(?<=\bid: )[0-9a-z]{25}\b", RegexOptions.CultureInvariant)]
         private static partial Regex MintedId();
+
+        /// <summary>A document id as the first edit writes it: eight characters, after a top-level <c>id:</c>.</summary>
+        [GeneratedRegex(@"(?<=^id: )[0-9a-z]{8}(?=\r?$)", RegexOptions.CultureInvariant | RegexOptions.Multiline)]
+        private static partial Regex DocumentId();
 
         private string Mask(string text) =>
             _minted.Aggregate(text, (masked, entry) => masked.Replace(entry.Key, entry.Value, StringComparison.Ordinal));

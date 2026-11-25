@@ -41,6 +41,11 @@ internal static class EditPlanner
                 case ModelChange.StoreId store:
                     PlanStoreId(plan, store);
                     break;
+                case ModelChange.SetDocumentId documentId:
+                    if (reading.Binding.Document is not { } slot) Planning.Plan.Refuse("This file's binding keeps no document id.");
+                    else if (documentId.Id.Length == 0) Planning.Plan.Refuse("A document id cannot be empty.");
+                    else reading.Family.WriteDocumentId(plan, slot, documentId.Id);
+                    break;
                 case ModelChange.Retype:
                     return new PlanResult.Refused("This file's binding cannot change an element's type; only a persistence plugin can.");
                 case ModelChange.Place or ModelChange.Identify:
