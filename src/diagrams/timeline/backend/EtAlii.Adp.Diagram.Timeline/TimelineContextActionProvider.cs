@@ -93,10 +93,10 @@ public sealed class TimelineContextActionProvider(IHistoryStackStore historyStac
         TimelineDefinition.Menus(entry.Model, elementId);
 
     /// <inheritdoc />
-    protected override DislDiagram? LinkedDiagramOf(DocumentEntry<LineDocument, TimelineModel> entry) => TimelineDefinition.DiagramOf(entry.Model);
+    protected override DislDiagram LinkedDiagramOf(DocumentEntry<LineDocument, TimelineModel> entry) => TimelineDefinition.DiagramOf(entry.Model);
 
     /// <inheritdoc />
-    protected override ICommand? Relink(ContextTarget target, DocumentEntry<LineDocument, TimelineModel> entry, LinkFix fix, string? link) =>
+    protected override ICommand Relink(ContextTarget target, LinkFix fix, string? link) =>
         new SetTimelineLinkCommand(target.ResolvedFullPath, target.ElementId, link, fix.CachedName);
 
     /// <inheritdoc />

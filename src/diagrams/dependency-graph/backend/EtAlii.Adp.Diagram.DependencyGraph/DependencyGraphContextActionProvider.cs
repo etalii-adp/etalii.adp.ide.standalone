@@ -97,10 +97,10 @@ public sealed class DependencyGraphContextActionProvider(IHistoryStackStore hist
         DependencyGraphDefinition.Menus(entry.Document, elementId);
 
     /// <inheritdoc />
-    protected override DislDiagram? LinkedDiagramOf(DocumentEntry<DependencyGraphBody, DislModel> entry) => entry.Document.Disl.Diagram;
+    protected override DislDiagram LinkedDiagramOf(DocumentEntry<DependencyGraphBody, DislModel> entry) => entry.Document.Disl.Diagram;
 
     /// <inheritdoc />
-    protected override ICommand? Relink(ContextTarget target, DocumentEntry<DependencyGraphBody, DislModel> entry, LinkFix fix, string? link) =>
+    protected override ICommand Relink(ContextTarget target, LinkFix fix, string? link) =>
         new SetDependencyGraphLinkCommand(target.ResolvedFullPath, target.ElementId, link, fix.CachedName);
 
     /// <inheritdoc />

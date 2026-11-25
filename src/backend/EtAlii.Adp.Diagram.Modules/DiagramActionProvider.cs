@@ -76,7 +76,7 @@ public abstract class DiagramActionProvider<TBody, TModel> : IContextActionProvi
         var entry = await LoadAsync(target, cancellationToken);
         if (!entry.IsUsable) return new ContextExecutionFailed(Unreadable(target));
         return DislLinkFixes.IsFix(actionId) && LinkedDiagramOf(entry) is { } diagram
-            ? await _linkFixes.ExecuteAsync(diagram, target, actionId, (fix, link) => Relink(target, entry, fix, link), cancellationToken)
+            ? await _linkFixes.ExecuteAsync(diagram, target, actionId, (fix, link) => Relink(target, fix, link), cancellationToken)
             : await RunAsync(target, entry, actionId, cancellationToken);
     }
 
@@ -108,7 +108,7 @@ public abstract class DiagramActionProvider<TBody, TModel> : IContextActionProvi
 
         if (actionId == DislLinkFixes.ChooseActionId && LinkedDiagramOf(entry) is { } diagram)
         {
-            return await _linkFixes.ChooseAsync(diagram, target, value, (fix, link) => Relink(target, entry, fix, link), cancellationToken);
+            return await _linkFixes.ChooseAsync(diagram, target, value, (fix, link) => Relink(target, fix, link), cancellationToken);
         }
 
         var change = Commit(target, entry, actionId, value);
@@ -159,7 +159,7 @@ public abstract class DiagramActionProvider<TBody, TModel> : IContextActionProvi
     /// The command that sets the link of the element <paramref name="fix"/> names to <paramref name="link"/>, or, when it is
     /// null, removes the link and names the element by <see cref="LinkFix.CachedName"/>; null when the module cannot.
     /// </summary>
-    protected virtual ICommand? Relink(ContextTarget target, DocumentEntry<TBody, TModel> entry, LinkFix fix, string? link) => null;
+    protected virtual ICommand? Relink(ContextTarget target, LinkFix fix, string? link) => null;
 
     /// <summary>
     /// The actions <paramref name="target"/> offers in <paramref name="entry"/>: those its element

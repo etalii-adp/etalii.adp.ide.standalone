@@ -18,7 +18,7 @@ namespace EtAlii.Adp.Diagram.Modules;
 public sealed class LinkFixActions(IHistoryStackStore historyStacks, ILinkIndex? links)
 {
     /// <summary>The finding of the target element's link, when one stands.</summary>
-    public LinkFix? FixOf(DislDiagram diagram, ContextTarget target)
+    private LinkFix? FixOf(DislDiagram diagram, ContextTarget target)
     {
         ArgumentNullException.ThrowIfNull(target);
         return DislLinkFixes.Of(diagram, target.ElementId, links?.WorkspaceOf(target.ResolvedFullPath));

@@ -36,7 +36,7 @@ public static class DislLinkFixes
         ArgumentNullException.ThrowIfNull(diagram);
         var element = diagram.Elements.FirstOrDefault(candidate => !candidate.IsDerived && (candidate.Id == elementId || WrittenIdOf(candidate) == elementId));
         if (element?.Type.LinkedAttribute is not { } attribute || element.ValueOf(attribute) is not string { Length: > 0 } text) return null;
-        return DislLinkFindings.FindingOf(text, workspace) is { } finding ? new LinkFix(element.Id, attribute, text, finding) : null;
+        return DislLinkFindings.FindingOf(text, workspace) is { } finding ? new LinkFix(text, finding) : null;
     }
 
     /// <summary>The group of fixes on the element's menu; empty when nothing is to be fixed.</summary>
@@ -85,8 +85,8 @@ public static class DislLinkFixes
         element.HostAttributes.TryGetValue(StoredId, out var id) && id is string { Length: > 0 } written ? written : element.Id;
 }
 
-/// <summary>A linked element whose link has a finding: the element, the attribute that holds the link, its text and the finding.</summary>
-public sealed record LinkFix(string ElementId, string Attribute, string Text, LinkFinding Finding)
+/// <summary>The link of a linked element whose link has a finding: its text and the finding.</summary>
+public sealed record LinkFix(string Text, LinkFinding Finding)
 {
     /// <summary>The name the link caches, which names the element once the link is removed; empty when it caches none.</summary>
     public string CachedName => FblLink.Parse(Text)?.Name ?? "";
