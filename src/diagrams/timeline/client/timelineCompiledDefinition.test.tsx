@@ -262,15 +262,28 @@ function drawingOf(route: DiagramDefinition["relationTypes"][number]["route"]): 
   return { name: ref.customRoute, paths: points.map(([from, to]) => ref.path(from, to, [])) };
 }
 
-/** The compiled definition with the decisions the opening comment names taken back out. */
+/** Whether a label is the link mark of DISL 0.12 (spec 092), which only an element with a link draws. */
+function isTheLinkMark(label: LabelDeclaration): boolean {
+  return label.when !== undefined && "path" in label.when && label.when.path === "payload.link";
+}
+
+/** The element types of DISL 0.12's links between tools (spec 092): a period and a moment that stand for an element of another document. */
+const LINKED_TYPES: readonly string[] = ["linkedperiod", "linkedmoment"];
+
+/**
+ * The compiled definition with the decisions the opening comment names taken back out, and with those of DISL
+ * 0.12's links between tools (etalii.adp spec 092), which the oracle predates: the linked period and moment, which
+ * a connection may start or end at, and the link mark that only an element with a link draws.
+ */
 function withoutDecisions(definition: DiagramDefinition): unknown {
   const relation = definition.relationTypes[0]!;
+  const unlinked = (types: readonly string[] | undefined) => types?.filter((type) => !LINKED_TYPES.includes(type));
   return {
     ...definition,
     actions: undefined,
-    elementTypes: definition.elementTypes.map((type) => ({
+    elementTypes: definition.elementTypes.filter((type) => !LINKED_TYPES.includes(type.id)).map((type) => ({
       ...type,
-      labels: type.labels?.map((label: LabelDeclaration) => {
+      labels: type.labels?.filter((label) => !isTheLinkMark(label)).map((label: LabelDeclaration) => {
         const text = "path" in label.text && label.text.path === "element.label" ? { template: "{element.label}" } : label.text;
         return { ...label, text, ...(label.className === "timeline-label canvas-node-label" && label.placement === undefined ? { placement: "inside" } : {}) };
       }),
@@ -281,12 +294,26 @@ function withoutDecisions(definition: DiagramDefinition): unknown {
       route: drawingOf(relation.route),
       // The library's default line ends in an arrow, which is what the oracle drew by stating no style.
       style: relation.style?.endMarker === "arrow" && relation.style.startMarker === undefined ? undefined : relation.style,
-      endpoints: { ...relation.endpoints, source: { elementTypes: relation.endpoints.source.elementTypes } },
+      endpoints: { ...relation.endpoints, source: { elementTypes: unlinked(relation.endpoints.source.elementTypes) }, target: { ...relation.endpoints.target, elementTypes: unlinked(relation.endpoints.target.elementTypes) } },
     }],
   };
 }
 
 describe("the timeline's compiled definition", () => {
+  it("draws a linked element's link mark, and the broken mark for a link that names no target (spec 092)", () => {
+    const base = element("lp", "period", 100, 1, 780, "Noord-Holland", true);
+    const withPayload = (extra: Record<string, unknown>): DiagramModelElement => ({ ...base, payload: { ...(base.payload as object), ...extra } });
+
+    const linked = drawn(TIMELINE_DEFINITION, { elements: [withPayload({ link: "$k3f9x2ma@provinces.yaml#nh.Name=Noord-Holland", linked: {} })], connections: [] });
+    const broken = drawn(TIMELINE_DEFINITION, { elements: [withPayload({ link: "not a link" })], connections: [] });
+    const ordinary = drawn(TIMELINE_DEFINITION, { elements: [base], connections: [] });
+
+    expect(linked).toContain("\u21aa");
+    expect(linked).not.toContain("\u26a0");
+    expect(broken).toContain("\u21aa\u26a0");
+    expect(ordinary).not.toContain("\u21aa");
+  });
+
   it("draws what the hand-written definition drew, element for element", () => {
     const compiled = drawn(TIMELINE_DEFINITION, { elements: ELEMENTS, connections: connections(TIMELINE_DEFINITION.relationTypes[0]!.id) });
 

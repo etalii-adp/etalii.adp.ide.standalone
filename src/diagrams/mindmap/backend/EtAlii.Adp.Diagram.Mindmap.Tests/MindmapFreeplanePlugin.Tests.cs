@@ -48,6 +48,27 @@ public class MindmapFreeplanePluginTests
     }
 
     [Fact]
+    public void TheCentralTopicsAdpId_IsTheDocumentId_AndANodeWithAnAdpLinkIsALinkedNode()
+    {
+        // Arrange: plugin 0.2.0, mindmap.md 3.8 (spec 092), in the shape of spec 089's ideas.mm.
+        const string text = "<map version=\"freeplane 1.11.5\">\n<node TEXT=\"Ideas\" ID=\"ID_1\">\n<attribute NAME=\"adp-id\" VALUE=\"m8c1u4wa\"/>\n" +
+            "<node TEXT=\"Launch\" ID=\"ID_2\">\n<attribute NAME=\"adp-link\" VALUE=\"$t5h8w1rz@release.tml#launch.text=Launch\"/>\n</node>\n" +
+            "<node TEXT=\"Plain\" ID=\"ID_3\"><attribute NAME=\"other\" VALUE=\"x\"/></node>\n</node>\n</map>\n";
+
+        // Act.
+        var result = Read(text);
+
+        // Assert.
+        Assert.Equal("m8c1u4wa", result.Elements[0].Attributes["documentId"]);
+        Assert.Equal(("LinkedNode", "linkedNode"), (result.Elements[1].Type, result.Elements[1].Rule));
+        Assert.Equal("$t5h8w1rz@release.tml#launch.text=Launch", result.Elements[1].Attributes["linkedElement"]);
+        Assert.Equal("Launch", result.Elements[1].Attributes["text"]);
+        Assert.Equal("Node", result.Elements[2].Type);
+        Assert.False(result.Elements[2].Attributes.ContainsKey("linkedElement"));
+        Assert.False(result.Elements[1].Attributes.ContainsKey("documentId"));
+    }
+
+    [Fact]
     public void ALink_IsReadOnlyWhenTheFileHasOne_EvenAnEmptyOne()
     {
         // Arrange.

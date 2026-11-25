@@ -16,6 +16,11 @@ import { MINDMAP_BINDINGS } from "./mindmapBindings";
  * its `backendKey`, and the module listens for none by id, so the compiled actions carry the wire ids
  * of the specification's `x-mindmap` block (`mindmap.add-child`), where the hand-written ones were
  * local names (`add-child`). Nothing a user sees or the backend receives depends on that id.
+ *
+ * One type is new: DISL 0.12's `LinkedNode` (etalii.adp spec 092), a node that stands for an element of another
+ * document. It is drawn as a node is, but for its text, which is its target's name and so is not edited in place,
+ * and a branch connects to and from it as to a node, so the oracle gains it as
+ * {@link withTheLinkedNode} says.
  */
 const HAND_WRITTEN: DiagramDefinition = assertValidDiagramDefinition({
   elementTypes: [
@@ -86,6 +91,24 @@ const HAND_WRITTEN: DiagramDefinition = assertValidDiagramDefinition({
   },
 });
 
+/** The oracle with the linked node: the node's drawing under its own id with no label edited in place, and every relation's ends admitting it beside the node. */
+function withTheLinkedNode(definition: DiagramDefinition): DiagramDefinition {
+  const node = definition.elementTypes.find((type) => type.id === "node")!;
+  const admitting = (types: readonly string[] | undefined) => (types?.includes("node") ? [...types, "linked-node"] : types);
+  return {
+    ...definition,
+    elementTypes: [...definition.elementTypes, { ...node, id: "linked-node", labels: node.labels?.map(({ editable: _editable, ...label }) => label) }],
+    relationTypes: definition.relationTypes.map((relation) => ({
+      ...relation,
+      endpoints: {
+        ...relation.endpoints,
+        source: { ...relation.endpoints.source, elementTypes: admitting(relation.endpoints.source.elementTypes) },
+        target: { ...relation.endpoints.target, elementTypes: admitting(relation.endpoints.target.elementTypes) },
+      },
+    })),
+  } as DiagramDefinition;
+}
+
 /** A definition with its actions in id order: the library matches an action by its key or gesture, never by its place in the list. */
 function byActionId(definition: DiagramDefinition): DiagramDefinition {
   return { ...definition, actions: [...(definition.actions ?? [])].sort((a, b) => a.id.localeCompare(b.id)) };
@@ -95,10 +118,10 @@ describe("the mind map's compiled definition", () => {
   it("is the hand-written definition it replaced, to the last key", () => {
     const compiled = assertValidDiagramDefinition(compileNotation(parseDisl(disText), MINDMAP_BINDINGS));
 
-    expect(byActionId(compiled)).toEqual(byActionId(HAND_WRITTEN));
+    expect(byActionId(compiled)).toEqual(byActionId(withTheLinkedNode(HAND_WRITTEN)));
   });
 
   it("is what the canvas draws", () => {
-    expect(byActionId(MINDMAP_DEFINITION)).toEqual(byActionId(HAND_WRITTEN));
+    expect(byActionId(MINDMAP_DEFINITION)).toEqual(byActionId(withTheLinkedNode(HAND_WRITTEN)));
   });
 });

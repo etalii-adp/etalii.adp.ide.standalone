@@ -34,6 +34,14 @@ message TimelineElementPayload {
   // record carries no label of its own - its absence here surfaced as a rename that produced no
   // wire change at all, which is the bug that put this field in.
   string label = 5;
+
+  // The link a linked period or moment stands for (FBL 17.1, spec 092), as written; empty for an
+  // ordinary element. Its label is then the target's name the link caches.
+  string link = 6;
+
+  // Whether the link names its target well enough to draw the link mark rather than the broken
+  // mark. Until the workspace's index resolves links (spec 092, pull request E), a link that parses.
+  bool linked = 7;
 }
 
 // A line from one element to another, meaning whatever the author says it means.

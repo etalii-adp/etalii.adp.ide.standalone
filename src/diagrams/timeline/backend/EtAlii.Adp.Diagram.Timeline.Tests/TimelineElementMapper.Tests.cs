@@ -64,6 +64,26 @@ public class TimelineElementMapperTests
     }
 
     [Fact]
+    public void ALinkedPeriodAndMoment_AreDrawnAsAPeriodAndAMoment_NamedByTheirLinkWithTheLinkOnThePayload()
+    {
+        // Act: spec 089's linked elements of a timeline (spec 092, FR-001, FR-005).
+        var elements = _mapper.Elements(Parse("timeline: 1\r\nid: t1m2l3n4\r\nelements:\r\n  - id: lp\r\n    link: $k3f9x2ma@provinces.yaml#nh.Name=Noord-Holland\r\n    begin: 2026-01-05\r\n    end: 2026-01-09\r\n    row: 0\r\n  - id: lm\r\n    link: not a link\r\n    begin: 2026-02-01\r\n    row: 1\r\n"));
+
+        // Assert.
+        var period = elements.Single(element => element.Id == "lp");
+        var moment = elements.Single(element => element.Id == "lm");
+        Assert.Equal(TimelineElementMapper.PeriodType, period.Type);
+        Assert.Equal(TimelineElementMapper.MomentType, moment.Type);
+        var linked = TimelineElementPayload.Parser.ParseFrom(period.Payload.Span);
+        Assert.Equal("Noord-Holland", linked.Label);
+        Assert.Equal("$k3f9x2ma@provinces.yaml#nh.Name=Noord-Holland", linked.Link);
+        Assert.True(linked.Linked);
+        var broken = TimelineElementPayload.Parser.ParseFrom(moment.Payload.Span);
+        Assert.Equal("not a link", broken.Link);
+        Assert.False(broken.Linked);
+    }
+
+    [Fact]
     public void ThePayloadCarriesTheTimesAsWritten()
     {
         // Act.

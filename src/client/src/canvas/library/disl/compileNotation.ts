@@ -447,6 +447,15 @@ function isKeptSwitch(filter: { control?: string; persist?: boolean }): boolean 
   return filter.control === "switch" && filter.persist === true;
 }
 
+/**
+ * A link between tools (DISL 4.12, spec 092): `has(self.<attribute>)` asks whether the payload carries the member at
+ * all, which is how the backend sends a link and a resolved target for every tool type; `!has(...)` its absence.
+ */
+function hasCondition(expression: string): Condition | undefined {
+  const has = /^(!?)has\(self\.([A-Za-z_][A-Za-z0-9_]*)\)$/.exec(expression.trim());
+  return has === null ? undefined : { path: `payload.${has[2]}`, is: has[1] === "!" ? "absent" : "present" };
+}
+
 function fail(message: string): never {
   throw new Error(`compileNotation: ${message}`);
 }
@@ -1034,6 +1043,21 @@ class Compiler {
       return { path: whole };
     }
 
+    // A choice between two texts by whether the payload carries a member (DISL 4.12, spec 092):
+    // `has(self.linked) ? '↪' : '↪⚠'`, the link mark of a linked element and of one that does not resolve.
+    const choice = /^(!?)has\(self\.([A-Za-z_][A-Za-z0-9_]*)\)\s*\?\s*'([^'{}\\]*)'\s*:\s*'([^'{}\\]*)'$/.exec(expression.trim());
+    if (choice !== null) {
+      const path = `payload.${choice[2]}`;
+      const [whenPresent, whenAbsent] = choice[1] === "!" ? [choice[4]!, choice[3]!] : [choice[3]!, choice[4]!];
+      return {
+        parts: [
+          { template: whenPresent, when: { path, is: "present" } },
+          { template: whenAbsent, when: { path, is: "absent" } },
+        ],
+        join: "",
+      };
+    }
+
     // A count that declines its noun: `string(self.n) + (self.n == 1 ? ' one' : ' other')`.
     const count = /^string\(self\.([A-Za-z_][A-Za-z0-9_]*)\)\s*\+\s*\(\s*self\.\1\s*==\s*1\s*\?\s*' ([^'{}\\]+)'\s*:\s*' ([^'{}\\]+)'\s*\)$/.exec(expression.trim());
     if (count !== null) {
@@ -1269,6 +1293,11 @@ class Compiler {
       return bound;
     }
 
+    const has = hasCondition(expression);
+    if (has !== undefined) {
+      return has;
+    }
+
     const flag = /^(!?)self\.([A-Za-z_][A-Za-z0-9_]*)$/.exec(expression);
     if (flag !== null) {
       return { path: `payload.${flag[2]}`, is: flag[1] === "!" ? "false" : "true" };
@@ -1489,6 +1518,11 @@ class Compiler {
     const bound = expression === undefined ? undefined : this.bindings.celConditions?.[expression];
     if (bound !== undefined) {
       return bound;
+    }
+
+    const has = expression === undefined ? undefined : hasCondition(expression);
+    if (has !== undefined) {
+      return has;
     }
 
     const term = expression === undefined ? null : /^(.+?)\s*!=\s*''$/.exec(expression.trim());

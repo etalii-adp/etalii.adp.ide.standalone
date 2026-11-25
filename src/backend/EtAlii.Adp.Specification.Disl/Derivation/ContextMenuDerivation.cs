@@ -245,6 +245,7 @@ public static class ContextMenuDerivation
 
         var kind = tool.Kind;
         var operation = Operation(specification, tool.Operation);
+        if (!env.Lookup && operation is not null && operation.Actions.Actions.Any(action => action is DislAction.Lookup)) return null;
 
         var arguments = new Dictionary<string, object?>(bindings, StringComparer.Ordinal);
         foreach ((string name, DislExpressionField value) in tool.Arguments) arguments[name] = value.Evaluate(variables);

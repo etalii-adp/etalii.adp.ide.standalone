@@ -1,4 +1,5 @@
 using System.Numerics;
+using System.Security.Cryptography;
 
 namespace EtAlii.Adp.Specification.Disl;
 
@@ -21,7 +22,8 @@ public static class DislIds
 
     /// <summary>
     /// The specification's own strategy (§11.5.1), for the strategies a runtime can mint without the
-    /// model: <c>uuid-v4</c> and <c>uuid-v7</c>, in <c>hex</c>, <c>base64url</c> or <c>base36</c>.
+    /// model: <c>uuid-v4</c> and <c>uuid-v7</c>, in <c>hex</c>, <c>base64url</c> or <c>base36</c>, and
+    /// <c>nanoid</c> with its <c>alphabet</c> and <c>length</c> (DISL 0.12).
     /// </summary>
     public static IIdSource Of(DislSpecification specification)
     {
@@ -31,8 +33,35 @@ public static class DislIds
         {
             "uuid-v4" => new Uuids(Guid.NewGuid, encoding),
             "uuid-v7" => new Uuids(Guid.CreateVersion7, encoding),
+            "nanoid" => new Nanoids(specification.IdRuleOf("").Alphabet, specification.IdRuleOf("").Length),
             var strategy => throw new NotSupportedException($"This runtime cannot mint ids of strategy '{strategy}' without the model; give the interpreter an id source."),
         };
+    }
+
+    /// <summary>
+    /// A new document id by the specification's <c>persistence.documentId</c> (DISL 0.12, FBL 17.2), as
+    /// <c>{newid:document}</c> of a binding's template is replaced; null when it declares none.
+    /// </summary>
+    public static string? NewDocumentId(DislSpecification specification)
+    {
+        ArgumentNullException.ThrowIfNull(specification);
+        return specification.DocumentIdRule is { Strategy: "nanoid" } rule ? Nanoid(rule.Alphabet, rule.Length) : null;
+    }
+
+    /// <summary>
+    /// A <c>nanoid</c> id (§11.5, DISL 0.12): <paramref name="length"/> characters drawn from a
+    /// cryptographically secure source, of nanoid's 64 (<c>A-Za-z0-9_-</c>) or, for <c>base36</c>, of <c>0-9a-z</c>.
+    /// </summary>
+    public static string Nanoid(string alphabet, int length) =>
+        RandomNumberGenerator.GetString(alphabet == "base36" ? Base36Characters : NanoidCharacters, length);
+
+    private const string Base36Characters = "0123456789abcdefghijklmnopqrstuvwxyz";
+
+    private const string NanoidCharacters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-";
+
+    private sealed class Nanoids(string alphabet, int length) : IIdSource
+    {
+        public string Next(string type) => Nanoid(alphabet, length);
     }
 
     private sealed class FixedIds(IReadOnlyList<string> ids) : IIdSource

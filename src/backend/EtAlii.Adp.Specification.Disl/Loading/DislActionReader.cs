@@ -18,7 +18,7 @@ internal static class DislActionReader
     private static readonly string[] Kinds =
     [
         "set", "unset", "create", "connect", "delete", "move", "resize", "retype", "reparent", "reorder", "view",
-        "let", "if", "forEach", "select", "reveal", "highlight", "editLabel", "openForm", "notify", "layout", "abort", "call", "plugin",
+        "let", "if", "forEach", "select", "reveal", "highlight", "editLabel", "openForm", "notify", "layout", "abort", "call", "plugin", "lookup",
     ];
 
     /// <summary>The action list at <paramref name="pointer"/>; an empty one for a value that is not a list.</summary>
@@ -85,6 +85,7 @@ internal static class DislActionReader
             "layout" => new DislAction.Layout(at, when, JsonProperties.String(body, "algorithm") ?? "", Refusal(specification, body, bodyAt, "nothingDrawn"), Refusal(specification, body, bodyAt, "unchanged")),
             "view" => new DislAction.View(at, when, Target(specification, action, at), View(specification, body, bodyAt), DislFieldReader.NotAnObject(body)),
             "plugin" => Plugin(specification, action, at, when, body),
+            "lookup" => Lookup(action, at, when, body),
             "abort" => new DislAction.Abort(at, when, Member(specification, body, bodyAt, "message")),
             "call" when body.ValueKind == JsonValueKind.String => new DislAction.Call(
                 at,
@@ -136,6 +137,21 @@ internal static class DislActionReader
                 : new DislViewValue(property.Name, DislFieldReader.Value(specification, property.Value, propertyAt), null));
         }
         return values;
+    }
+
+    /// <summary>
+    /// A <c>lookup</c> action (DISL 0.12 §9.4): the linked type it <c>create</c>s, whether as a <c>child</c> of <c>self</c> or <c>at</c>
+    /// the pointer, the origins it narrows the lookup to, and the name the created element is bound to. Its members are names, never CEL.
+    /// </summary>
+    private static DislAction.Lookup Lookup(JsonElement action, string at, DislExpressionField? when, JsonElement body)
+    {
+        if (body.ValueKind != JsonValueKind.Object) return new DislAction.Lookup(at, when, "", "child", [], JsonProperties.String(action, "as"), $"The lookup at {at} is not an object (DISL §9.4).");
+        var create = JsonProperties.String(body, "create");
+        var placement = JsonProperties.String(body, "as") ?? "child";
+        var malformed = create is null
+            ? $"The lookup at {at} names no type to create (DISL §9.4)."
+            : placement is not ("child" or "at") ? $"The lookup at {at} places its element as '{placement}', which is neither 'child' nor 'at' (DISL §9.4)." : null;
+        return new DislAction.Lookup(at, when, create ?? "", placement, JsonProperties.Strings(body, "origins"), JsonProperties.String(action, "as"), malformed);
     }
 
     /// <summary>A <c>plugin</c> action: its <c>args</c>, and the plugin its body names; a body that is neither a string nor null threw once the args were read.</summary>

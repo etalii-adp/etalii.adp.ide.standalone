@@ -105,6 +105,12 @@ internal abstract record DislAction(string At, DislExpressionField? When)
     /// <summary>A <c>plugin</c> call of the plugin it names with its <c>args</c>, handed to the host.</summary>
     public sealed record Plugin(string At, DislExpressionField? When, IReadOnlyList<(string Name, DislActionValue Value)> Arguments, string Name, string? Malformed) : DislAction(At, When);
 
+    /// <summary>
+    /// A <c>lookup</c> (DISL 0.12 §9.4): the host's lookup opened, and for the element picked one of type <c>LinkedType</c> made, as the last
+    /// child of <c>self</c> (<c>Placement</c> <c>child</c>) or at the pointer (<c>at</c>), bound to <c>As</c>; <c>Origins</c> narrows the lookup.
+    /// </summary>
+    public sealed record Lookup(string At, DislExpressionField? When, string LinkedType, string Placement, IReadOnlyList<string> Origins, string? As, string? Malformed) : DislAction(At, When);
+
     /// <summary>A <c>call</c> of the operation it names, with its <c>args</c> as that operation's parameters, in the same transaction.</summary>
     public sealed record Call(string At, DislExpressionField? When, string Operation, IReadOnlyList<(string Name, DislActionValue Value)> Arguments) : DislAction(At, When);
 

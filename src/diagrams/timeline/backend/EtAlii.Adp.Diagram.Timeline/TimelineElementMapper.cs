@@ -1,5 +1,6 @@
 using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Layout;
+using EtAlii.Adp.Specification.Fbl.Links;
 using Google.Protobuf;
 
 namespace EtAlii.Adp.Diagram.Timeline;
@@ -168,6 +169,8 @@ public sealed class TimelineElementMapper
             Row = element.Row,
             DateOnly = element.Begin.Precision == TimelinePrecision.Date,
             Label = element.Label,
+            Link = element.Link ?? "",
+            Linked = FblLink.Parse(element.Link) is not null,
         };
 
         // x is the begin when it is readable; an unreadable one lands at the epoch rather than

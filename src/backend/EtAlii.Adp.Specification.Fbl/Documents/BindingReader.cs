@@ -59,7 +59,23 @@ internal static partial class BindingReader
             Template = Object(json, "template", pointer, "A binding's template", problems) is { } t
                 ? new TemplateSettings(JsonProperties.String(t, "text") ?? "", Strings(t, "byOrigin", pointer + "/template", "A template's byOrigin", problems))
                 : null,
+            Document = ReadDocumentId(json, pointer, problems),
         };
+    }
+
+    /// <summary>
+    /// <c>document.id</c> (FBL 17.2): <c>{ "key": … }</c> or <c>{ "attribute": … }</c>; a slot that names neither is a problem
+    /// at <c>document/id</c>, and the binding then keeps no document id.
+    /// </summary>
+    private static DocumentIdSlot? ReadDocumentId(JsonElement json, string pointer, List<LoadDiagnostic> problems)
+    {
+        if (Object(json, "document", pointer, "A binding's document", problems) is not { } document) return null;
+        if (Object(document, "id", pointer + "/document", "A document's id", problems) is not { } id) return null;
+        var key = JsonProperties.String(id, "key");
+        var attribute = JsonProperties.String(id, "attribute");
+        if (key is not null || attribute is not null) return new DocumentIdSlot(key, attribute);
+        problems.Add(new LoadDiagnostic(pointer + "/document/id", LoadSeverity.Error, "A document id names the root key or the root element's attribute that holds it (FBL 17.2)."));
+        return null;
     }
 
     /// <summary>A plugin reader's <c>args</c> (FBL §11.1): an object, kept as written for the plugin, which alone knows its keys.</summary>

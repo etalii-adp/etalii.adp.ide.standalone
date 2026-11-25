@@ -260,6 +260,9 @@ internal abstract class FamilyReader(BodyText text, FblBinding binding, FblOptio
     /// <summary>The header check (FBL §5.6): whether the mark is there with the right value.</summary>
     public abstract bool HeaderHolds(HeaderSettings header);
 
+    /// <summary>The document id the body's root holds in <paramref name="slot"/> (FBL 17.2), null when it holds none or the family keeps none.</summary>
+    public virtual string? DocumentId(DocumentIdSlot slot) => null;
+
     /// <summary>Findings about entries no rule claimed, once reading is done.</summary>
     public virtual void AfterRead(Func<Entry, string?> claimedBy)
     {

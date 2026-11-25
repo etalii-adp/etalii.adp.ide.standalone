@@ -21,6 +21,10 @@ export interface DependencyGraphElement {
   y: number;
   label: string;
   row: number;
+  /** The link a linked node stands for (FBL 17.1, spec 092); absent for an ordinary node. */
+  link?: string;
+  /** Whether the link names its target, so that the link mark rather than the broken mark is drawn. */
+  linked?: boolean;
 }
 
 /** A directed depends-on edge: `fromElementId` depends on `toElementId`. */
@@ -83,6 +87,7 @@ function added(model: DependencyGraphModel, elements: readonly Element[]): Depen
           y: element.position?.y ?? 0,
           label: payload.label,
           row: payload.row,
+          ...(payload.link !== "" ? { link: payload.link, linked: payload.linked } : {}),
         });
         break;
       }

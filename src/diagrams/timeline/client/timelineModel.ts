@@ -24,6 +24,10 @@ export interface TimelineElement {
   row: number;
   dateOnly: boolean;
   isPeriod: boolean;
+  /** The link a linked period or moment stands for (FBL 17.1, spec 092); absent for an ordinary element. */
+  link?: string;
+  /** Whether the link names its target, so that the link mark rather than the broken mark is drawn. */
+  linked?: boolean;
 }
 
 export interface TimelineConnection {
@@ -90,6 +94,7 @@ function added(model: TimelineModel, elements: readonly Element[]): TimelineMode
           row: payload.row,
           dateOnly: payload.dateOnly,
           isPeriod: element.type === PERIOD,
+          ...(payload.link !== "" ? { link: payload.link, linked: payload.linked } : {}),
         });
         break;
       }

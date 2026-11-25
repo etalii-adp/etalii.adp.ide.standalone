@@ -34,9 +34,10 @@ internal sealed record DependencyGraphReading(FblModel Model, IReadOnlyList<int>
         ArgumentNullException.ThrowIfNull(reading);
         if (reading.Unreadable) return new DependencyGraphReading(reading, []);
 
-        var ordered = reading.Elements.Where(element => element.Type == "Node")
+        // A linked node (spec 092) is a node, read in its place among the others.
+        var ordered = reading.Elements.Where(element => element.Type is "Node" or "LinkedNode")
             .Concat(reading.Elements.Where(element => element.Type == "Dependency"))
-            .Concat(reading.Elements.Where(element => element.Type is not "Node" and not "Dependency"))
+            .Concat(reading.Elements.Where(element => element.Type is not "Node" and not "LinkedNode" and not "Dependency"))
             .ToList();
 
         var taken = new HashSet<string>(StringComparer.Ordinal);

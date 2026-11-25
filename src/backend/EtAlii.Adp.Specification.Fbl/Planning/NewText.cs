@@ -125,7 +125,8 @@ internal static class NewText
             shape = new TimeShape(false, 0, null);
             return true;
         }
-        if (text[10] is not ('T' or 't' or ' ')) return false;
+        // A date followed by a separator and less than a time ("2027-01-04 edited") is no date-time.
+        if (text[10] is not ('T' or 't' or ' ') || text.Length < 19) return false;
         var rest = text[19..];
         var fraction = 0;
         if (rest.StartsWith('.'))

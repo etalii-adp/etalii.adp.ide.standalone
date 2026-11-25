@@ -22,11 +22,11 @@ public static class ServiceCollectionAddDependencyGraphExtension
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        // The binding's template: the version marker and an empty element list, and nothing else. An
+        // The binding's template: the version marker, a new document id (FBL 17.2, spec 092) and an empty element list, and nothing else. An
         // empty graph is a valid one, and a placeholder node would be the first thing every user deletes. The base name is
         // not written - a graph has no title line in its schema. CRLF, the house style, since a new
         // file has no style of its own to keep.
-        services.AddEmptyDocument(Diagram.DependencyGraph.Origin, DependencyGraphBody.Binding.Template!.Text);
+        services.AddEmptyDocument(Diagram.DependencyGraph.Origin, baseName => DocumentTemplate.Text(DependencyGraphBody.Binding, DependencyGraphDefinition.Specification, baseName + ".dgr"));
         services.AddSingleton<DependencyGraphElementMapper>();
 
         // One document per path, shared by every connection viewing it. TryAdd rather than Add

@@ -194,6 +194,9 @@ internal abstract class TreeFamily(BodyText text, FblBinding binding, FblOptions
         _ => "plain",
     };
 
+    public override string? DocumentId(DocumentIdSlot slot) =>
+        slot.Key is { } key && Root?.Value.Member(key) is { Value.Kind: ValueKind.Scalar } member && member.Value.Text.Length > 0 ? member.Value.Text : null;
+
     public override bool HeaderHolds(HeaderSettings header)
     {
         if (header.Key is null) return true;

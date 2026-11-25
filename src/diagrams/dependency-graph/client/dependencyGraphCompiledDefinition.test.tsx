@@ -221,20 +221,42 @@ function drawingOf(route: DiagramDefinition["relationTypes"][number]["route"]): 
 }
 
 /** The compiled definition with the decisions the opening comment names taken back out. */
+/** Whether a label is the link mark of DISL 0.12 (spec 092), which only an element with a link draws. */
+function isTheLinkMark(label: LabelDeclaration): boolean {
+  return label.when !== undefined && "path" in label.when && label.when.path === "payload.link";
+}
+
+/**
+ * The definition without the decisions the oracle predates. Beside those the header names, DISL 0.12's links
+ * between tools (etalii.adp spec 092) add the linked node, which a dependency may start or end at, and the link
+ * mark that only an element with a link draws; and the specification now states the empty canvas's hint.
+ */
 function withoutDecisions(definition: DiagramDefinition): unknown {
   const relation = definition.relationTypes[0]!;
-  const { actions: _actions, backgroundMenu: _menu, backgroundPlacement: _placement, ...rest } = definition;
+  const { actions: _actions, backgroundMenu: _menu, backgroundPlacement: _placement, chrome: _chrome, ...rest } = definition;
+  const withoutLinkedNode = (types: readonly string[] | undefined) => types?.filter((type) => type !== "linkednode");
   return {
     ...rest,
-    elementTypes: definition.elementTypes.map((type) => ({
+    elementTypes: definition.elementTypes.filter((type) => type.id !== "linkednode").map((type) => ({
       ...type,
-      labels: type.labels?.map((label: LabelDeclaration) => ({
+      labels: type.labels?.filter((label) => !isTheLinkMark(label)).map((label: LabelDeclaration) => ({
         ...label,
         text: "path" in label.text && label.text.path === "element.label" ? { template: "{element.label}" } : label.text,
         ...(label.placement === undefined ? { placement: "inside" } : {}),
       })),
     })),
-    relationTypes: [{ ...relation, id: "depends", route: drawingOf(relation.route) }],
+    relationTypes: [
+      {
+        ...relation,
+        id: "depends",
+        route: drawingOf(relation.route),
+        endpoints: {
+          ...relation.endpoints,
+          source: { ...relation.endpoints.source, elementTypes: withoutLinkedNode(relation.endpoints.source.elementTypes) },
+          target: { ...relation.endpoints.target, elementTypes: withoutLinkedNode(relation.endpoints.target.elementTypes) },
+        },
+      },
+    ],
   };
 }
 

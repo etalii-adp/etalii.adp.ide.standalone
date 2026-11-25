@@ -65,6 +65,9 @@ public sealed record FblModel(IReadOnlyList<FblElement> Elements, IReadOnlyList<
     /// <summary>The resources a body holds (FBL §8.2): the values of the binding's resource capture, in document order.</summary>
     public IReadOnlyList<string> Resources { get; init; } = [];
 
+    /// <summary>The document id the body holds in its binding's <c>document.id</c> slot (FBL 17.2), null when it holds none or the binding declares none.</summary>
+    public string? DocumentId { get; init; }
+
     /// <summary>
     /// The view a registration's <c>view</c> header selects (FBL §9.3): the one of that name, ignoring
     /// case; without the header, the first in document order; null when there is none.

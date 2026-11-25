@@ -50,6 +50,26 @@ describe("timelineModel", () => {
     expect(model.connections.get("ccc")).toMatchObject({ fromElementId: "aaa", toElementId: "bbb", label: "gates" });
   });
 
+  it("carries a linked element's link, and whether it names its target, and nothing of either for an ordinary one", () => {
+    // Arrange: a linked period, a linked moment whose link does not parse, and an ordinary moment (spec 092).
+    const payload = (link: string, linked: boolean) =>
+      toBinary(TimelineElementPayloadSchema, create(TimelineElementPayloadSchema, { begin: "2026-01-05", row: 0, dateOnly: true, label: "Noord-Holland", link, linked }));
+    const delta = addDelta(
+      element("lp", PERIOD, payload("$k3f9x2ma@provinces.yaml#nh.Name=Noord-Holland", true)),
+      element("lm", MOMENT, payload("not a link", false)),
+      element("m", MOMENT, payload("", false)),
+    );
+
+    // Act.
+    const model = applyDelta(emptyModel, delta);
+
+    // Assert.
+    expect(model.elements.get("lp")).toMatchObject({ label: "Noord-Holland", link: "$k3f9x2ma@provinces.yaml#nh.Name=Noord-Holland", linked: true });
+    expect(model.elements.get("lm")).toMatchObject({ link: "not a link", linked: false });
+    expect(model.elements.get("m")).not.toHaveProperty("link");
+    expect(model.elements.get("m")).not.toHaveProperty("linked");
+  });
+
   it("skips a foreign element without decoding it", () => {
     // Arrange.
     // Several modules share one delta stream, and this payload is NOT a timeline payload: bytes

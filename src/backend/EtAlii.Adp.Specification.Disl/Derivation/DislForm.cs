@@ -94,6 +94,15 @@ internal sealed record DislFormItem
 
     public IReadOnlyList<DislReason> ReadOnlyReasons { get; init; } = [];
 
+    /// <summary>
+    /// Its own <c>readOnly</c> where it is an Expression (§7.2): its <c>readOnlyReasons</c> apply only while it holds, as a linked
+    /// node's name is read-only and an ordinary node's is not (DISL 0.12 §4.12); null when it states none or states a boolean.
+    /// </summary>
+    public DislExpressionField? ReadOnlyWhen { get; init; }
+
+    /// <summary>Whether its own <c>readOnly</c> is <c>false</c>, so that its <c>readOnlyReasons</c> never apply.</summary>
+    public bool ReadOnlyNever { get; init; }
+
     /// <summary>Its <c>validate</c>, in order; none when it is not a list.</summary>
     public IReadOnlyList<DislFormValidation> Validations { get; init; } = [];
 

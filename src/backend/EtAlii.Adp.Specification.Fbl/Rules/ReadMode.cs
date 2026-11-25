@@ -19,13 +19,13 @@ internal static class ReadModes
 {
     /// <summary>
     /// The binding's <c>read</c> first; else text for an attribute the caller types as a string, or
-    /// for a reference; else typed when the caller gives a type; else <see cref="ReadMode.Legacy"/>.
+    /// for a reference (a <c>link</c>, DISL 0.12 §4.12, is a string); else typed when the caller gives a type; else <see cref="ReadMode.Legacy"/>.
     /// </summary>
     private static ReadMode Of(AttributeBinding binding, string? type) => binding.Read switch
     {
         ReadAs.Text => ReadMode.Text,
         ReadAs.Typed => ReadMode.Typed,
-        _ when type == "string" || binding.Reference is not null => ReadMode.Text,
+        _ when type is "string" or "link" || binding.Reference is not null => ReadMode.Text,
         _ when type is not null => ReadMode.Typed,
         _ => ReadMode.Legacy,
     };

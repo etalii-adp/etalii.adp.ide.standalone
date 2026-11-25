@@ -55,6 +55,9 @@ public sealed class TimelineBody
 
     private static readonly RecentBodies Recent = new();
 
+    /// <summary>The served binding the body is read and written through.</summary>
+    internal static FblBinding Binding => LoadedBinding.Value;
+
     private readonly OpenBody _body;
     private readonly FblBodyEdits _edits;
 

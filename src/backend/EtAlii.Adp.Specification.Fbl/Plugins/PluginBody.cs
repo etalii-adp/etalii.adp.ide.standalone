@@ -33,7 +33,14 @@ public sealed class PluginBody : SplicedFile
     /// <summary>The sentence a plan for an unreadable body is refused with: the tool's, or <see cref="Unreadable"/>.</summary>
     private string UnreadableSentence { get; }
 
-    public FblModel Model => new(_last.Elements, _last.Findings, _last.Unreadable);
+    /// <summary>
+    /// What the plugin read; the document id is the root's attribute <c>documentId</c>, as a plugin reports it (FBL 17.2,
+    /// for a binding with a plugin reader).
+    /// </summary>
+    public FblModel Model => new(_last.Elements, _last.Findings, _last.Unreadable)
+    {
+        DocumentId = _last.Elements.FirstOrDefault(element => element.ParentId is null && !element.IsRelation)?.Attributes.GetValueOrDefault("documentId") as string,
+    };
 
     /// <summary>
     /// What the plugin's <c>watch</c> named after the last read (FBL §11.2): the files and folders the

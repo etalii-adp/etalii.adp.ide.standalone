@@ -57,6 +57,12 @@ public sealed class FblBinding
 
     public bool ReportUnmatched { get; init; }
 
+    /// <summary>
+    /// <c>document.id</c> (FBL 17.2): the slot of the body's root that holds the document id, a root key in the <c>yaml</c> and
+    /// <c>json</c> families or an attribute of the root element in the <c>xml</c> family; null when the binding declares none.
+    /// </summary>
+    public DocumentIdSlot? Document { get; init; }
+
     internal IReadOnlyList<BlockRule> Blocks { get; init; } = [];
 
     /// <summary>The sections of a <c>bullets</c> body (FBL 0.7 §4.8), each found by its first matching heading.</summary>
@@ -170,6 +176,7 @@ public sealed class FblBinding
                 Relations = [.. Relations.Where(admitted)],
                 Registration = Registration.ForOrigin(origin),
                 Template = Template,
+                Document = Document,
                 Unfiltered = this,
             };
             _readings[origin] = reading;
@@ -771,3 +778,6 @@ internal sealed class RegistrationSettings
 }
 
 public sealed record TemplateSettings(string Text, IReadOnlyDictionary<string, string> ByOrigin);
+
+/// <summary>A binding's <c>document.id</c> (FBL 17.2): the root key (<c>yaml</c>, <c>json</c>) or the root element's attribute (<c>xml</c>) that holds the document id.</summary>
+public sealed record DocumentIdSlot(string? Key, string? Attribute);
