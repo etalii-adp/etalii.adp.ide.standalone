@@ -399,7 +399,7 @@ internal sealed class ActionRunner(DislSpecification specification, DislDiagram 
         DislElement created;
         try
         {
-            created = diagram.AddNode(type.Name, ids.Next(type.Name), attributes, parent, null);
+            created = diagram.AddNode(type.Name, ids.Next(type.Name), attributes, parent);
         }
         catch (Exception e) when (e is ArgumentException or InvalidOperationException)
         {

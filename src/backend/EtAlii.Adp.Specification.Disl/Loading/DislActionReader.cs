@@ -150,7 +150,9 @@ internal static class DislActionReader
         var placement = JsonProperties.String(body, "as") ?? "child";
         var malformed = create is null
             ? $"The lookup at {at} names no type to create (DISL §9.4)."
-            : placement is not ("child" or "at") ? $"The lookup at {at} places its element as '{placement}', which is neither 'child' nor 'at' (DISL §9.4)." : null;
+            : placement is not ("child" or "at")
+                ? $"The lookup at {at} places its element as '{placement}', which is neither 'child' nor 'at' (DISL §9.4)."
+                : null;
         return new DislAction.Lookup(at, when, create ?? "", placement, JsonProperties.Strings(body, "origins"), JsonProperties.String(action, "as"), malformed);
     }
 

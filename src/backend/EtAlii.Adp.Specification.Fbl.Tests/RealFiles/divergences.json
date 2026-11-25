@@ -11,6 +11,20 @@
     {
       "property": "cross-check",
       "binding": "mindmap",
+      "file": "src/diagrams/mindmap/backend/EtAlii.Adp.Diagram.Mindmap.Tests/Fixtures/links-example/ideas.mm",
+      "observed": "Branch: the binding lacks 4 (branch:ID_1->ID_2, branch:ID_1->ID_3, branch:ID_1->ID_4, branch:ID_1->ID_5)",
+      "reason": "mindmap.fbl's branch relation selects /map/**/node/node, the same entries the node element rule selects. FBL section 5.1 gives an entry to the first matching rule, elements before relations, so the node rule claims every node and no branch is ever read; the nesting is still there as each node's parent. Candidate follow-up for etalii.adp: express branches as the node rule's containment only, or let a relation rule read an entry an element rule also claims."
+    },
+    {
+      "property": "cross-check",
+      "binding": "timeline",
+      "file": "src/diagrams/timeline/backend/EtAlii.Adp.Diagram.Timeline.Tests/Fixtures/links-example/roadmap.tml",
+      "observed": "LinkedMoment: the binding lacks 2 (gateway, support) | LinkedPeriod: the binding lacks 2 (f-checkout, f-signin) | Moment: the binding adds 2 (gateway, support) | Period: the binding adds 2 (f-checkout, f-signin)",
+      "reason": "The vendored example binding predates links between documents (FBL 0.23), so it reads an entry with a link key as an ordinary period or moment, where the module's served binding reads it as a linked one. The ids agree. Candidate follow-up: refresh the vendored conformance copy from etalii.adp (spec 092 T005)."
+    },
+    {
+      "property": "cross-check",
+      "binding": "mindmap",
       "file": "src/diagrams/mindmap/examples/example 1/design.mm",
       "observed": "Branch: the binding lacks 35 (branch:ID_1guw8w5hp34usdnp25phle3s4->ID_2ls7h8mwx8yobgdtjlzhbsgm0, branch:ID_1guw8w5hp34usdnp25phle3s4->ID_a937863j5r3fjwlgwak0fgiqo, branch:ID_1guw8w5hp34usdnp25phle3s4->ID_bdcsfkucxiu7a7ia1rpy4ixtq, branch:ID_1guw8w5hp34usdnp25phle3s4->ID_cqa3pgradk667j4k35pr7kgts, branch:ID_1guw8w5hp34usdnp25phle3s4->ID_f08i7uiwmzgo6z1whb7ye3hrp, …)",
       "reason": "mindmap.fbl's branch relation selects /map/**/node/node, the same entries the node element rule selects. FBL section 5.1 gives an entry to the first matching rule, elements before relations, so the node rule claims every node and no branch is ever read; the nesting is still there as each node's parent. Candidate follow-up for etalii.adp: express branches as the node rule's containment only, or let a relation rule read an entry an element rule also claims."

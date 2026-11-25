@@ -41,9 +41,6 @@ public sealed class MindmapFreeplanePlugin : IPersistencePlugin
     /// <summary>The binding's type of a node with an <c>adp-link</c> (<c>mindmap.md</c> 3.8, plugin 0.2.0).</summary>
     private const string LinkedNodeType = "LinkedNode";
 
-    /// <summary>The plugin's version: 0.2.0 reads the document id and linked nodes of <c>mindmap.md</c> 3.8 (spec 092).</summary>
-    public const string Version = "0.2.0";
-
     /// <summary>The attribute holding the <c>ID</c> the file writes, which the model keeps beside the metamodel's.</summary>
     public const string StoredIdAttribute = "storedId";
 
@@ -96,7 +93,7 @@ public sealed class MindmapFreeplanePlugin : IPersistencePlugin
             if (node.Position is { } position) attributes["position"] = position;
             // Plugin 0.2.0 (mindmap.md 3.8): the central topic's adp-id is the root's documentId (FBL 17.2), and a node with
             // an adp-link is a LinkedNode whose linkedElement is the link.
-            if (node.IsRoot && node.AdpId is { } documentId) attributes["documentId"] = documentId;
+            if (node is { IsRoot: true, AdpId: { } documentId }) attributes["documentId"] = documentId;
             var linked = node.AdpLink;
             if (linked is not null) attributes["linkedElement"] = linked;
 

@@ -210,7 +210,7 @@ internal sealed partial class XmlFamily(BodyText text, FblBinding binding, FblOp
     public override SlotRead ReadRaw(Entry entry, string name) => entry is XmlElement element ? ReadAttribute(element, name) : SlotRead.Absent;
 
     public override string? DocumentId(DocumentIdSlot slot) =>
-        slot.Attribute is { } name && _document?.Attribute(name) is { } attribute && attribute.Text.Length > 0 ? attribute.Text : null;
+        slot.Attribute is { } name && _document?.Attribute(name) is { Text.Length: > 0 } attribute ? attribute.Text : null;
 
     public override bool HeaderHolds(HeaderSettings header)
     {

@@ -52,7 +52,7 @@ public static class DislIds
     /// A <c>nanoid</c> id (§11.5, DISL 0.12): <paramref name="length"/> characters drawn from a
     /// cryptographically secure source, of nanoid's 64 (<c>A-Za-z0-9_-</c>) or, for <c>base36</c>, of <c>0-9a-z</c>.
     /// </summary>
-    public static string Nanoid(string alphabet, int length) =>
+    private static string Nanoid(string alphabet, int length) =>
         RandomNumberGenerator.GetString(alphabet == "base36" ? Base36Characters : NanoidCharacters, length);
 
     private const string Base36Characters = "0123456789abcdefghijklmnopqrstuvwxyz";

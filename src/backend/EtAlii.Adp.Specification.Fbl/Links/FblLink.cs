@@ -8,6 +8,7 @@ namespace EtAlii.Adp.Specification.Fbl.Links;
 /// each part unescaped. <see cref="ElementId"/> is null for a link that names a document only; <see cref="NameProperty"/>
 /// and <see cref="Name"/> are null where the link holds none.
 /// </summary>
+// ReSharper disable once NotAccessedPositionalProperty.Global - Reason: the document id, document name, element id and name property are what resolution reads (FBL 17.3), which spec 092's pull request E builds; this one reads the name only.
 public sealed record FblLink(string DocumentId, string DocumentName, string? ElementId, string? NameProperty, string? Name)
 {
     /// <summary>
