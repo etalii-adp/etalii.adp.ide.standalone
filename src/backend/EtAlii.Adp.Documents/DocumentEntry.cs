@@ -30,6 +30,14 @@ public sealed record DocumentEntry<TBody, TModel>(TBody Document, TModel Model, 
     /// <summary>What the parser read from <see cref="Document"/>: the model, its problems, and whether it is usable.</summary>
     public ParseOutcome<TModel> Outcome => new(Model, Problems, Unreadable);
 
+    /// <summary>
+    /// The text the document's next edit starts from, where opening it found changes to make that are not yet written; null
+    /// when there are none. They are written with that edit, in its undo step: its undo restores <see cref="Document"/> as
+    /// the file holds it, so they go back with it, and a document opened and closed without an edit is never written
+    /// (etalii.adp spec 092, R6: a missing document id, link parts that differ).
+    /// </summary>
+    public string? Pending { get; init; }
+
     /// <summary>Whether this entry holds the document's content, rather than a stand-in for one that could not be read.</summary>
     public bool IsUsable => Unreadable.Length == 0;
 }

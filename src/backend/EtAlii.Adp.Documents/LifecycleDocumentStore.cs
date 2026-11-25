@@ -113,8 +113,9 @@ public abstract class LifecycleDocumentStore<TBody, TModel> : IDiagramDocumentSt
                     $"{IoPath.GetFileName(path)} could not be read, so it was not written: {current.Unreadable}");
             }
 
+            // What is pending is written with the edit (DocumentEntry.Pending); the undo restores the text the file held.
             before = TextOf(current.Document);
-            var body = Locate(path, Read(before));
+            var body = Locate(path, Read(current.Pending ?? before));
             var refusal = edit(body);
             if (refusal.Length > 0)
             {
