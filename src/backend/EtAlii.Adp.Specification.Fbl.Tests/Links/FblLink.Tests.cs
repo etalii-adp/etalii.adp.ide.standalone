@@ -44,8 +44,26 @@ public class FblLinkTests
     [InlineData("$k3f9x2ma@provinces.yaml#nh.=x")]
     [InlineData("$k3f9x2ma@provinces.yaml#nh=bad%2")]
     [InlineData("$k3f9x2ma@provinces.yaml#nh=%FF")]
+    [InlineData("$k3$f9@provinces.yaml")]
+    [InlineData("$k3f9x2ma@provinces.yaml#n\u0001h")]
     public void ATextThatDoesNotParse_IsNoLink(string text)
     {
         Assert.Null(FblLink.Parse(text));
+    }
+
+    [Theory]
+    [InlineData("$k3f9x2ma@provinces.yaml#nh.Name=Noord-Holland")]
+    [InlineData("$d7n2k4qp@services.dgr")]
+    [InlineData("$a%2Eb@my%23file.tml#e%3D1=v1.2 = final 100%25")]
+    [InlineData("$m8c1u4wa@ideas.mm#ID_2.text=Z\u00fcrich \U0001F680")]
+    public void ALink_IsWrittenAsItWasRead_EachPartEscapedOnlyWhereACharacterWouldEndIt(string text)
+    {
+        Assert.Equal(text, FblLink.Parse(text)!.Text);
+    }
+
+    [Fact]
+    public void AnEscapeWrittenInLowerCase_IsWrittenInUpperCase()
+    {
+        Assert.Equal("$a%2Eb@x.yaml", FblLink.Parse("$a%2eb@x.yaml")!.Text);
     }
 }

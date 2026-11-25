@@ -1,3 +1,4 @@
+using EtAlii.Adp.Specification.Fbl.Links;
 using EtAlii.Adp.Specification.Json;
 using Xunit;
 
@@ -185,5 +186,23 @@ public class LinksBetweenDocumentsTests
 
         Assert.Matches("^[0-9a-z]{8}$", DislIds.Of(eight).Next("Thing"));
         Assert.Matches("^[A-Za-z0-9_-]{21}$", DislIds.Of(standard).Next("Thing"));
+    }
+
+    [Fact]
+    public void ADiagramInTheIndex_HoldsItsLinkableElementsByTheirNameProperty_AndTheLinksItsElementsHold()
+    {
+        var diagram = new DislDiagram(Specification);
+        diagram.AddNode("Node", "n", new Dictionary<string, object?>(StringComparer.Ordinal) { ["title"] = "Mine", ["note"] = "A note" });
+        diagram.AddNode("LinkedNode", "l", new Dictionary<string, object?>(StringComparer.Ordinal) { ["title"] = "Launch", ["link"] = Pick.Link });
+        diagram.AddNode("Plain", "p", new Dictionary<string, object?>(StringComparer.Ordinal) { ["name"] = "Plain one" });
+
+        var indexed = DislLinks.Indexed(diagram, "/w/ideas.x", "d0c1d2e3");
+
+        Assert.Equal("d0c1d2e3", indexed.DocumentId);
+        Assert.Equal("title", indexed.NameProperty);
+        Assert.Equal(["n", "l", "p"], indexed.Elements.Select(element => element.Id));
+        Assert.Equal([new KeyValuePair<string, string>("title", "Mine"), new KeyValuePair<string, string>("note", "A note")], indexed.Elements[0].Attributes);
+        Assert.Equal("Plain one", indexed.Elements[2].ValueOf("name"));
+        Assert.Equal([new HeldLink("l", Pick.Link)], indexed.Links);
     }
 }

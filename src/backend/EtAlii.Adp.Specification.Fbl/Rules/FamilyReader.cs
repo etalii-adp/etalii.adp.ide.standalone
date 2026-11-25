@@ -263,6 +263,9 @@ internal abstract class FamilyReader(BodyText text, FblBinding binding, FblOptio
     /// <summary>The document id the body's root holds in <paramref name="slot"/> (FBL 17.2), null when it holds none or the family keeps none.</summary>
     public virtual string? DocumentId(DocumentIdSlot slot) => null;
 
+    /// <summary>Writes <paramref name="id"/> as the body's document id, in <paramref name="slot"/> (FBL 0.23 §17.2); refused by a family that keeps none.</summary>
+    public virtual void WriteDocumentId(Plan plan, DocumentIdSlot slot, string id) => Plan.Refuse($"A {FamilyName} file keeps no document id.");
+
     /// <summary>Findings about entries no rule claimed, once reading is done.</summary>
     public virtual void AfterRead(Func<Entry, string?> claimedBy)
     {

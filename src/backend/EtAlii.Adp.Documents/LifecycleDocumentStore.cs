@@ -113,8 +113,9 @@ public abstract class LifecycleDocumentStore<TBody, TModel> : IDiagramDocumentSt
                     $"{IoPath.GetFileName(path)} could not be read, so it was not written: {current.Unreadable}");
             }
 
+            // What is pending is written with the edit (DocumentEntry.Pending); the undo restores the text the file held.
             before = TextOf(current.Document);
-            var body = Locate(path, Read(before));
+            var body = Locate(path, Read(current.Pending ?? before));
             var refusal = edit(body);
             if (refusal.Length > 0)
             {
@@ -194,6 +195,14 @@ public abstract class LifecycleDocumentStore<TBody, TModel> : IDiagramDocumentSt
     protected virtual string UnreadableOf(TBody body) => "";
 
     /// <summary>
+    /// The text the next edit of the document at <paramref name="path"/>, just read as <paramref name="body"/>, starts from,
+    /// where opening it finds changes to make that are not to be written on opening (<see cref="DocumentEntry{TBody, TModel}.Pending"/>);
+    /// null when it finds none. Asked of every body read from the file, never of one an edit wrote.
+    /// </summary>
+    /// <remarks>Nothing is pending unless the module says otherwise.</remarks>
+    protected virtual string? PendingOf(string path, TBody body) => null;
+
+    /// <summary>
     /// What a module keeps beside a document, brought up to date with <paramref name="entry"/>, the
     /// entry a save of <paramref name="path"/> just wrote, before the sessions hear of it. Empty when
     /// all of it was kept, otherwise a warning the save carries to the user: the document landed and
@@ -222,7 +231,8 @@ public abstract class LifecycleDocumentStore<TBody, TModel> : IDiagramDocumentSt
     {
         var body = Locate(path, Read(text));
         var outcome = Parse(body);
-        return new DocumentEntry<TBody, TModel>(body, outcome.IsUsable ? outcome with { Unreadable = UnreadableOf(body) } : outcome);
+        var entry = new DocumentEntry<TBody, TModel>(body, outcome.IsUsable ? outcome with { Unreadable = UnreadableOf(body) } : outcome);
+        return entry.IsUsable ? entry with { Pending = PendingOf(path, body) } : entry;
     }
 
     // A missing body opens as a new, empty document, which is usable whatever its parser makes of no text.

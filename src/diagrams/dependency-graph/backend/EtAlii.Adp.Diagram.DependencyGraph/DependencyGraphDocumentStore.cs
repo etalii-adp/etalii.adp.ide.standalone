@@ -1,5 +1,6 @@
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Files;
+using EtAlii.Adp.Links;
 using EtAlii.Adp.Specification.Disl;
 
 namespace EtAlii.Adp.Diagram.DependencyGraph;
@@ -20,13 +21,19 @@ namespace EtAlii.Adp.Diagram.DependencyGraph;
 /// written to it until it reads.
 /// </para>
 /// </remarks>
-public sealed class DependencyGraphDocumentStore(IFileWriter writer) : LifecycleDocumentStore<DependencyGraphBody, DislModel>(writer), IDependencyGraphDocumentStore
+/// <param name="writer">What publishes a save.</param>
+/// <param name="links">The workspace's index of links, which opening a graph validates its links against; null where there is none.</param>
+public sealed class DependencyGraphDocumentStore(IFileWriter writer, ILinkIndex? links = null) : LifecycleDocumentStore<DependencyGraphBody, DislModel>(writer), IDependencyGraphDocumentStore
 {
     /// <inheritdoc />
     protected override DependencyGraphBody Read(string text) => DependencyGraphBody.Parse(text);
 
     /// <inheritdoc />
     protected override string TextOf(DependencyGraphBody body) => body.Text;
+
+    /// <inheritdoc />
+    /// <remarks>Load-time validation (FBL 17.4): a document id where it has none, and its links as resolution finds them.</remarks>
+    protected override string? PendingOf(string path, DependencyGraphBody body) => DependencyGraphBody.Pending(body.Text, links?.WorkspaceOf(path));
 
     /// <inheritdoc />
     protected override ParseOutcome<DislModel> Parse(DependencyGraphBody body)

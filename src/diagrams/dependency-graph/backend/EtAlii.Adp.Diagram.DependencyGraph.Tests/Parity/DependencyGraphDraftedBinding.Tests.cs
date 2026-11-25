@@ -319,7 +319,10 @@ public class DependencyGraphDraftedBindingTests
         return (document.Text, DependencyGraphParser.Outcome(LineDocument.Parse(document.Text)).IsUsable);
     }
 
-    /// <summary>The text after the module's own command ran on <paramref name="name"/>, as a file, through the module's handler.</summary>
+    /// <summary>
+    /// The text after the module's own command ran on <paramref name="name"/>, as a file, through the module's handler, without
+    /// the document id its first edit writes into a graph that has none.
+    /// </summary>
     private static async Task<string> ModuleAfter(string name, Func<string, ICommand> command)
     {
         using var scratch = TestFolder.Create("adp-dgr-drafted");
@@ -328,7 +331,7 @@ public class DependencyGraphDraftedBindingTests
         await File.WriteAllTextAsync(path, Text(name), TestContext.Current.CancellationToken);
         var result = await TestHistory.Dispatcher(s => s.AddDependencyGraph()).DispatchAsync(command(path), TestContext.Current.CancellationToken);
         Assert.True(result.IsSuccess, result.Error);
-        return await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
+        return DependencyGraphWrittenDocumentId.Without(await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     private static OpenBody Fbl(string name) => OpenBody.Open(Encoding.UTF8.GetBytes(Text(name)), DependencyGraphBody.Binding);

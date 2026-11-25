@@ -18,6 +18,11 @@ namespace EtAlii.Adp.History;
 /// all, and the result is built from the save by <see cref="CommandResult.FromSave"/>, so a warning
 /// of the save reaches the user.
 /// </para>
+/// <para>
+/// <b>The edit starts from what is pending</b> (<see cref="DocumentEntry{TBody, TModel}.Pending"/>), the changes opening the
+/// document found and did not write, so they are written with it; its undo restores the text as the file held it, which takes
+/// them back too. An edit that changes nothing writes nothing pending either.
+/// </para>
 /// </remarks>
 public static class DocumentEditRun
 {
@@ -52,7 +57,7 @@ public static class DocumentEditRun
         }
 
         var before = entry.Document.Text;
-        var copy = TBody.Parse(before);
+        var copy = TBody.Parse(entry.Pending ?? before);
         var outcome = edit(copy, parse(copy));
         if (!outcome.WasApplied)
         {

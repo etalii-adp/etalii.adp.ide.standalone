@@ -155,6 +155,7 @@ public class SparqlQueryPluginTests
         new ModelChange.Identify("var:s", "pattern-0"),
         new ModelChange.StoreId("pattern-0", "pattern-9"),
         new ModelChange.Setting("layout", "pattern-0", "1 2"),
+        new ModelChange.SetDocumentId("query-01"),
         new ModelChange.Save(),
     ];
 

@@ -6,6 +6,7 @@ using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Editor;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Links;
 using EtAlii.Adp.Problems;
 using EtAlii.Adp.Projects;
 using EtAlii.Adp.Sessions;
@@ -70,6 +71,9 @@ builder.Services.AddHistoryActions();
 // The Problems area: validation, the per-project problem cache, the broadcaster and the
 // startup pass that reconciles the cache after a restart (errors-and-warnings-panel).
 builder.Services.AddProblems(appDataRoot);
+
+// The index of links between documents (FBL 17, spec 092): every tool type that keeps a document id, per open project.
+builder.Services.AddLinks();
 
 builder.Services.AddClientAppHosting(builder.Configuration);
 

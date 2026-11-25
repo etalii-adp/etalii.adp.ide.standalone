@@ -4,7 +4,7 @@
     The bases a diagram module builds on that need more than the documents project (code-structure
     FR-054, research R9): the provider frame and its actions, the element source resolvers, the
     bundled DISL definition and toolbox, the FBL body helpers, the open folders of a diagram drawn
-    from a folder with their notifications and their plugin files' YAML, and the viewport test. The diagram
+    from a folder with their notifications and their plugin files' YAML, the reader the link index uses for a DISL diagram type, and the viewport test. The diagram
     abstractions stay in EtAlii.Adp.Diagram and the session contracts and the document session are
     EtAlii.Adp.Sessions'; every module references this.
   -->
@@ -15,6 +15,7 @@
     <ProjectReference Include="..\EtAlii.Adp.History\EtAlii.Adp.History.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Hierarchy\EtAlii.Adp.Hierarchy.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Layout\EtAlii.Adp.Layout.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Links\EtAlii.Adp.Links.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Sessions\EtAlii.Adp.Sessions.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Specification.Disl\EtAlii.Adp.Specification.Disl.csproj" />
   </ItemGroup>
