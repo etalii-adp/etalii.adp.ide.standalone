@@ -61,7 +61,7 @@ public static class DislOpening
                     if (resolution.Refreshed!.Text != text) attributes[attribute.Name] = resolution.Refreshed.Text;
                     // A linked element that keeps its label caches the target's name in it; one that keeps none is named by the link.
                     if (element.Type.LinkedAttribute == attribute.Name && element.Type.LabelAttribute is { } label && label != attribute.Name
-                        && resolution.Refreshed.Name is { } name && element.ValueOf(label) is string cached && cached.Length > 0 && cached != name)
+                        && resolution.Refreshed.Name is { } name && element.ValueOf(label) is string { Length: > 0 } cached && cached != name)
                     {
                         attributes[label] = name;
                     }

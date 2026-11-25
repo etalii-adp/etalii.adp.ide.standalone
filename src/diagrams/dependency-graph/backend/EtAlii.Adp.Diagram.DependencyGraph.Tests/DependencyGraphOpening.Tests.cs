@@ -43,13 +43,7 @@ public sealed class DependencyGraphOpeningTests : IDisposable
 /// <summary>An index that holds one workspace for every path.</summary>
 internal sealed class DependencyGraphOpeningIndex(LinkWorkspace workspace) : ILinkIndex
 {
-    public event EventHandler<LinkIndexChangedEventArgs>? Changed
-    {
-        add { }
-        remove { }
-    }
-
     public IDisposable Track(string rootPath) => throw new NotSupportedException();
 
-    public LinkWorkspace? WorkspaceOf(string path) => workspace;
+    public LinkWorkspace WorkspaceOf(string path) => workspace;
 }
