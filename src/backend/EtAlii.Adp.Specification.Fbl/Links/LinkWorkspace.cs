@@ -1,0 +1,113 @@
+namespace EtAlii.Adp.Specification.Fbl.Links;
+
+/// <summary>
+/// The documents of one workspace root (FBL 17.3), each as its tool type indexes it, kept in path order, and a link resolved
+/// against them. Resolution is a function of the index alone: two hosts with the same workspace resolve a link to the same
+/// element or report the same finding. Paths are compared as text, with forward slashes.
+/// </summary>
+public sealed class LinkWorkspace
+{
+    private readonly SortedDictionary<string, IndexedDocument> _documents = new(StringComparer.Ordinal);
+
+    /// <summary>A workspace of the root <paramref name="root"/> holding <paramref name="documents"/>.</summary>
+    public LinkWorkspace(string root, IEnumerable<IndexedDocument>? documents = null)
+    {
+        Root = root.TrimEnd('/');
+        foreach (var document in documents ?? []) Put(document);
+    }
+
+    /// <summary>The workspace's root folder, without a closing slash.</summary>
+    public string Root { get; }
+
+    /// <summary>The documents, in path order.</summary>
+    public IReadOnlyCollection<IndexedDocument> Documents => _documents.Values;
+
+    /// <summary>The document at <paramref name="path"/>, or null.</summary>
+    public IndexedDocument? Document(string path) => _documents.GetValueOrDefault(path);
+
+    /// <summary>Puts <paramref name="document"/> at its path, in place of the one there: a document read again after it changed.</summary>
+    public void Put(IndexedDocument document)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        _documents[document.Path] = document;
+    }
+
+    /// <summary>Takes the document at <paramref name="path"/> out: a file deleted, or moved out of the workspace.</summary>
+    public void Remove(string path) => _documents.Remove(path);
+
+    /// <summary>A path as a finding names it: relative to the root.</summary>
+    public string Display(string path) => path.StartsWith(Root + "/", StringComparison.Ordinal) ? path[(Root.Length + 1)..] : path;
+
+    /// <summary>
+    /// Resolves the link <paramref name="text"/> (FBL 17.3): parsed; the target document by its id, else by its file name
+    /// among the documents of that id or, when none has it, among all that have an id; then the target element by its id.
+    /// </summary>
+    public LinkResolution Resolve(string text)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        if (FblLink.Parse(text) is not { } link) return Finding(null, LinkCodes.Malformed, $"'{text}' is not a link.", []);
+
+        var withId = _documents.Values.Where(document => document.DocumentId == link.DocumentId).ToList();
+        IndexedDocument target;
+        if (withId.Count == 1)
+        {
+            target = withId[0];
+        }
+        else
+        {
+            var pool = withId.Count == 0 ? _documents.Values.Where(document => document.DocumentId is not null) : withId;
+            var named = pool.Where(document => document.FileName == link.DocumentName).ToList();
+            if (named.Count == 0) return Finding(link, LinkCodes.BrokenDocument, $"No document '{link.DocumentName}' with id '{link.DocumentId}' is in the workspace.", []);
+            if (named.Count > 1)
+            {
+                var candidates = named.Select(document => document.Path).ToList();
+                return Finding(link, LinkCodes.AmbiguousDocument, $"{candidates.Count} documents are '{link.DocumentName}' with id '{link.DocumentId}': {string.Join(", ", candidates.Select(Display))}.", candidates);
+            }
+            target = named[0];
+        }
+
+        if (link.ElementId is not { } elementId) return new LinkResolution(link, target, null, FblLink.ToDocument(target.DocumentId ?? "", target.FileName), null);
+        var holders = target.Elements.Where(element => element.Id == elementId).ToList();
+        if (holders.Count == 0) return Finding(link, LinkCodes.BrokenElement, $"'{link.Name ?? elementId}' is no longer in '{target.FileName}'.", []);
+        if (holders.Count > 1) return Finding(link, LinkCodes.AmbiguousDocument, $"'{target.FileName}' holds {holders.Count} elements with id '{elementId}'.", [target.Path]);
+
+        var (nameProperty, name) = NameOf(target, holders[0], link.NameProperty);
+        return new LinkResolution(link, target, holders[0], new FblLink(target.DocumentId ?? "", target.FileName, elementId, nameProperty, name), null);
+    }
+
+    /// <summary>
+    /// The backlinks of the element <paramref name="elementId"/> of the document at <paramref name="path"/> (FBL 17.5): every
+    /// link of the workspace that resolves to it, in path order and then in the order each document holds them.
+    /// </summary>
+    public IReadOnlyList<Backlink> Backlinks(string path, string elementId)
+    {
+        var backlinks = new List<Backlink>();
+        foreach (var document in _documents.Values)
+        {
+            foreach (var held in document.Links)
+            {
+                var resolution = Resolve(held.Text);
+                if (resolution is { Resolved: true, Link: { } link, Document: { } target } && target.Path == path && link.ElementId == elementId) backlinks.Add(new Backlink(document.Path, held.Holder, link));
+            }
+        }
+        return backlinks;
+    }
+
+    /// <summary>How many links of the workspace a delete of <paramref name="elementIds"/> of the document at <paramref name="path"/> breaks (FBL 17.5).</summary>
+    public int BrokenByDeleting(string path, IEnumerable<string> elementIds) => elementIds.Sum(id => Backlinks(path, id).Count);
+
+    private static LinkResolution Finding(FblLink? link, string code, string message, IReadOnlyList<string> candidates) =>
+        new(link, null, null, null, new LinkFinding(code, message, candidates));
+
+    /// <summary>
+    /// What names <paramref name="element"/> of <paramref name="document"/> (FBL 17.1): the value of <paramref name="nameProperty"/>
+    /// when the element has that attribute, else of the type's name property, else of its first attribute; with the name
+    /// property the link writes, null for the type's own, and in place of one that names no attribute, the one used (17.4).
+    /// </summary>
+    private static (string? NameProperty, string Name) NameOf(IndexedDocument document, IndexedElement element, string? nameProperty)
+    {
+        if (nameProperty is not null && element.ValueOf(nameProperty) is { } value) return (nameProperty, value);
+        var own = (document.NameProperty is { } declared ? element.ValueOf(declared) : element.Attributes.Count > 0 ? element.Attributes[0].Value : null) ?? "";
+        return (nameProperty is not null ? document.NameProperty : null, own);
+    }
+}
