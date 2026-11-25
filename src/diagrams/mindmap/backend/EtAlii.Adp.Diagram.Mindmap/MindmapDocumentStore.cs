@@ -1,5 +1,6 @@
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Files;
+using EtAlii.Adp.Links;
 using Serilog;
 using IoPath = System.IO.Path;
 
@@ -63,10 +64,13 @@ public sealed class MindmapDocumentStore : IMindmapDocumentStore
     // the lifecycle's own default (R2.2) and what the parse below makes of an empty text - so no
     // unavailable document is declared here.
     private readonly WritableDocumentLifecycle<MindmapDocument> _lifecycle;
+    private readonly ILinkIndex? _links;
 
     /// <param name="writer">What publishes a save, waiting for another save of the map without blocking a thread.</param>
-    public MindmapDocumentStore(IFileWriter writer)
+    /// <param name="links">The index a map's links resolve in as it opens (FBL 17.4); none leaves them as they are.</param>
+    public MindmapDocumentStore(IFileWriter writer, ILinkIndex? links = null)
     {
+        _links = links;
         _lifecycle = new WritableDocumentLifecycle<MindmapDocument>(Parse, document => document.ToText(), writer);
     }
 
@@ -142,6 +146,50 @@ public sealed class MindmapDocumentStore : IMindmapDocumentStore
     /// </summary>
     private bool IsLoaded(string bodyPath) => _lifecycle.Get(bodyPath) is not null;
 
+    /// <inheritdoc />
+    public async Task<DocumentSaveResult> RestoreAsync(string bodyPath, string text, MindmapOpened? opened, CancellationToken cancellationToken)
+    {
+        // Read without the ids a node lacks, so the text is written as it is; they are given in memory once it is.
+        var document = MindmapDocument.Parse(text, assignMissingIds: false);
+        var result = await _lifecycle.SaveAsync(bodyPath, document, cancellationToken);
+        if (result.Failed)
+        {
+            return result;
+        }
+
+        // The map held as it was before the save this restore takes back: with what opening found, the same document id included.
+        if (opened is not null)
+        {
+            document.Replace(MindmapDocument.Parse(opened.Pending));
+            document.Opened = opened;
+        }
+        else
+        {
+            document.AssignMissingIds();
+            Opened(bodyPath, text, document);
+        }
+
+        Changed?.Invoke(this, new MindmapChangedEventArgs(bodyPath, new MindmapReloaded()));
+        return result;
+    }
+
+    /// <summary>
+    /// <paramref name="document"/>, read from <paramref name="read"/>, with what opening it finds, to be written with its next save
+    /// (<see cref="MindmapOpening"/>). A body that was missing has no text to go back to, so its undo leaves what was found.
+    /// </summary>
+    private MindmapDocument Opened(string bodyPath, string read, MindmapDocument document)
+    {
+        var before = document.ToText();
+        MindmapOpening.Validate(document, _links?.WorkspaceOf(bodyPath));
+        var pending = document.ToText();
+        if (read.Length > 0 && !string.Equals(pending, before, StringComparison.Ordinal))
+        {
+            document.Opened = new MindmapOpened(read, pending);
+        }
+
+        return document;
+    }
+
     private MindmapDocument Parse(string bodyPath, string text)
     {
         if (string.IsNullOrWhiteSpace(text))
@@ -152,13 +200,13 @@ public sealed class MindmapDocumentStore : IMindmapDocumentStore
             // would otherwise throw here on every open attempt.
             _logger.Information("No readable body at {BodyPath}; opening an empty map", bodyPath);
             var baseName = IoPath.GetFileNameWithoutExtension(bodyPath);
-            return MindmapDocument.Parse(MindmapDocument.EmptyDocument(baseName));
+            return Opened(bodyPath, "", MindmapDocument.Parse(MindmapDocument.EmptyDocument(baseName)));
         }
 
         var outcome = MindmapDocument.Outcome(text);
         if (outcome.IsUsable)
         {
-            return outcome.Model;
+            return Opened(bodyPath, text, outcome.Model);
         }
 
         // Named, so the user knows which file is broken; thrown, so only this diagram fails. On a

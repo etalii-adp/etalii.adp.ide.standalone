@@ -47,6 +47,24 @@ internal abstract class MindmapCommandHandler
             : new Resolution(CommandResult.Failure("The node no longer exists."));
     }
 
+    /// <summary>
+    /// Saves <paramref name="document"/> and answers <paramref name="inverse"/> as the command's undo - unless this save is the
+    /// first to write what opening the map found (<see cref="MindmapOpening"/>), whose undo restores the text the file held
+    /// then, so that what opening found is taken back with the edit (etalii.adp spec 092, FR-010).
+    /// </summary>
+    protected async Task<CommandResult> SaveAsync(string bodyPath, MindmapDocument document, MindmapChange change, ICommand inverse, CancellationToken cancellationToken)
+    {
+        var opened = document.Opened;
+        var saved = await Documents.SaveAsync(bodyPath, document, change, cancellationToken);
+        if (opened is null || saved.Failed)
+        {
+            return CommandResult.FromSave(saved, inverse);
+        }
+
+        document.Opened = null;
+        return CommandResult.FromSave(saved, new RestoreMindmapCommand(bodyPath, opened.File, opened));
+    }
+
     /// <summary>What <see cref="ResolveAsync"/> found: the document and node, or the failure when either is gone.</summary>
     protected sealed record Resolution(CommandResult? Failure, MindmapDocument Document = null!, MindmapNode Node = null!);
 }

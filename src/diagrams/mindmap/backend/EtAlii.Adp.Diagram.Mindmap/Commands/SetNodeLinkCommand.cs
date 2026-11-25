@@ -28,9 +28,8 @@ internal sealed class SetNodeLinkCommandHandler(IMindmapDocumentStore documents)
 
         var previous = node.Link;
         document.SetLink(node, command.Link);
-        var saved = await Documents.SaveAsync(command.BodyPath, document, new MindmapNodeUpdated(command.NodeId), cancellationToken);
 
         // The inverse restores the previous link, "no link" included (Requirement 12.6).
-        return CommandResult.FromSave(saved, command with { Link = previous });
+        return await SaveAsync(command.BodyPath, document, new MindmapNodeUpdated(command.NodeId), command with { Link = previous }, cancellationToken);
     }
 }

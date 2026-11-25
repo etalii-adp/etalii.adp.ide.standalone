@@ -321,13 +321,19 @@ public sealed partial class MindmapTranscript() : TranscriptAdapter("mindmap", "
             {
                 Learn(node.Id);
             }
+
+            // The document id opening gives a map that has none (FBL 17.4) is new on every run too.
+            if (TryDocument()?.Root.AdpId is { Length: > 0 } documentId && !Original.Contains(documentId, StringComparison.Ordinal) && _masks.All(mask => mask.Id != documentId))
+            {
+                _masks.Add((documentId, "{document-id}"));
+            }
         }
 
         public void Learn(string id)
         {
             if (id.Length > 0 && !_written.Contains(id) && _masks.All(mask => mask.Id != id))
             {
-                _masks.Add((id, $"ID_new{_masks.Count + 1}"));
+                _masks.Add((id, $"ID_new{_masks.Count(mask => mask.Mask.StartsWith("ID_new", StringComparison.Ordinal)) + 1}"));
             }
         }
 
