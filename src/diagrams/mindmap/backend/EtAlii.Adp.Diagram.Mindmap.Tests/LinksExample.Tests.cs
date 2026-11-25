@@ -1,5 +1,8 @@
 using System.Text;
+using EtAlii.Adp.Links;
 using EtAlii.Adp.Specification.Fbl.Plugins;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.Mindmap.Tests;
@@ -26,5 +29,28 @@ public class LinksExampleTests
         Assert.Equal(3, diagram.NodesOfType("LinkedNode").Count);
         Assert.All(diagram.NodesOfType("LinkedNode"), node => Assert.StartsWith("$", node.ValueOf("linkedElement") as string, StringComparison.Ordinal));
         Assert.Empty(MindmapDefinition.Findings(text, "ideas.mm"));
+    }
+
+    [Fact]
+    public async Task TheIdeas_IsIndexed_ByItsDocumentIdAndTheLinksItsElementsHold()
+    {
+        // Arrange: the link index's reader the module registers (spec 092, T014).
+        var services = new ServiceCollection();
+        services.AddMindmap(new ConfigurationBuilder().Build());
+        var indexer = Assert.Single(services.BuildServiceProvider().GetServices<ILinkIndexer>());
+        var path = Path.Combine(AppContext.BaseDirectory, "Fixtures", "links-example", "ideas.mm");
+        var bytes = await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken);
+
+        // Act.
+        var indexed = indexer.Index(path, bytes);
+
+        // Assert.
+        Assert.True(indexer.Claims(path));
+        Assert.False(indexer.Claims(Path.ChangeExtension(path, ".txt")));
+        Assert.NotNull(indexed);
+        Assert.Equal("p4r8t1zc", indexed.DocumentId);
+        Assert.Equal(3, indexed.Links.Count);
+        Assert.All(indexed.Links, link => Assert.StartsWith("$", link.Text, StringComparison.Ordinal));
+        Assert.NotEmpty(indexed.Elements);
     }
 }

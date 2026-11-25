@@ -55,6 +55,8 @@
   <Project Path="EtAlii.Adp.Context/EtAlii.Adp.Context.csproj" />
   <Project Path="EtAlii.Adp.Context.Tests/EtAlii.Adp.Context.Tests.csproj" />
   <Project Path="EtAlii.Adp.Problems/EtAlii.Adp.Problems.csproj" />
+  <Project Path="EtAlii.Adp.Links/EtAlii.Adp.Links.csproj" />
+  <Project Path="EtAlii.Adp.Links.Tests/EtAlii.Adp.Links.Tests.csproj" />
   <Project Path="EtAlii.Adp.History/EtAlii.Adp.History.csproj" />
   <Project Path="EtAlii.Adp.History.Tests/EtAlii.Adp.History.Tests.csproj" />
   <Project Path="EtAlii.Adp.Tests.Support/EtAlii.Adp.Tests.Support.csproj" />

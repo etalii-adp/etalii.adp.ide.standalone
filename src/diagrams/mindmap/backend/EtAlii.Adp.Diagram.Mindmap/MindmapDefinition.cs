@@ -113,6 +113,13 @@ internal static class MindmapDefinition
         return new ContextConfirmationRequest(confirmation.Title, icon, confirmation.Message, confirmation.ConfirmLabel, Danger: confirmation.Danger);
     }
 
+    /// <summary>The diagram the map <paramref name="bytes"/> at <paramref name="file"/> hold and its document id, for the link index (FBL 17.3).</summary>
+    internal static (DislDiagram Diagram, string? DocumentId) Indexed(byte[] bytes, string file)
+    {
+        var model = PluginBody.Open(bytes, Binding, new MindmapFreeplanePlugin(), IoPath.GetFileName(file)).Model;
+        return (DislModelBuilder.From(model, Specification).Diagram, model.DocumentId);
+    }
+
     /// <summary>
     /// The definition's findings for <paramref name="text"/>, a body read through the binding as the file
     /// has it, named after <paramref name="file"/> - the file the finding is attributed to.

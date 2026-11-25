@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The workspace's index of links (FBL 0.23 section 17; etalii.adp spec 092, research R1): per project root, the documents
+    of every tool type that keeps a document id, their linkable elements by their name property and the links they hold,
+    kept current from the root's file events and from what an open document holds unsaved. A tool type takes part by
+    registering an ILinkIndexer; this project names none.
+  -->
+
+  <ItemGroup>
+    <PackageReference Include="Serilog" />
+    <ProjectReference Include="..\EtAlii.Adp.Documents\EtAlii.Adp.Documents.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Files\EtAlii.Adp.Files.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Sessions\EtAlii.Adp.Sessions.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Specification.Fbl\EtAlii.Adp.Specification.Fbl.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,7 +1,7 @@
 namespace EtAlii.Adp.Specification.Fbl.Links;
 
 /// <summary>The codes of a link's findings (FBL 17.6).</summary>
-public static class LinkCodes
+internal static class LinkCodes
 {
     public const string Malformed = "link.malformed";
     public const string BrokenDocument = "link.broken-document";

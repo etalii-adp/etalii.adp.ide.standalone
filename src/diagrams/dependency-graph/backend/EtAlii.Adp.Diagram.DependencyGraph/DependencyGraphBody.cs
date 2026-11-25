@@ -73,6 +73,16 @@ public sealed class DependencyGraphBody : ITextBody<DependencyGraphBody>
     /// <summary>Whether the body could not be read at all.</summary>
     public bool IsUnreadable => Model.Unreadable;
 
+    /// <summary>
+    /// The diagram <paramref name="bytes"/> hold and their document id, for the link index (FBL 17.3): read past the recent
+    /// bodies, so that indexing a whole workspace does not push out the ones the open documents read.
+    /// </summary>
+    internal static (DislDiagram Diagram, string? DocumentId) Indexed(byte[] bytes)
+    {
+        var model = OpenBody.Open(bytes, Binding, new FblOptions { FileName = "body.dgr" }).Model;
+        return (DislModelBuilder.From(DependencyGraphReading.Of(model).Model, DependencyGraphDefinition.Specification).Diagram, model.DocumentId);
+    }
+
     /// <summary>A body for <paramref name="text"/>. Never throws on content: an unreadable body reads as such.</summary>
     public static DependencyGraphBody Parse(string text)
     {

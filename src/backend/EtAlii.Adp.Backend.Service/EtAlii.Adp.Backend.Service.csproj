@@ -7,6 +7,7 @@
     <ProjectReference Include="..\EtAlii.Adp.Problems\EtAlii.Adp.Problems.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.History\EtAlii.Adp.History.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Hierarchy\EtAlii.Adp.Hierarchy.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Links\EtAlii.Adp.Links.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Projects\EtAlii.Adp.Projects.csproj" />
     <!-- Explicit rather than transitive through the modules: Program.cs runs discovery itself. -->
     <ProjectReference Include="..\EtAlii.Adp.Diagram\EtAlii.Adp.Diagram.csproj" />

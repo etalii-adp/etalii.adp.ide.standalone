@@ -23,21 +23,21 @@ flowchart LR
 
 ## The solution, with its counts
 
-`src/backend/EtAlii.Adp.slnx` holds **152** projects: the core projects at its root, the modules in one solution folder per kind (`/Diagrams/`, `/editors/`, `/designers/`) and the test project that spans modules in `/tests/`, so the whole thing opens and builds as one solution in Rider:
+`src/backend/EtAlii.Adp.slnx` holds **154** projects: the core projects at its root, the modules in one solution folder per kind (`/Diagrams/`, `/editors/`, `/designers/`) and the test project that spans modules in `/tests/`, so the whole thing opens and builds as one solution in Rider:
 
 | Split | Count |
 | --- | --- |
-| core | **51** |
+| core | **53** |
 | diagram | **86** |
 | editor | **10** |
 | designer | **4** |
 | spanning modules | **1** |
-| production | **103** |
-| test | **49** |
+| production | **104** |
+| test | **50** |
 
-Those are **two different splits of the same 152**, and a figure appearing in both tables is a coincidence rather than a correspondence, which is exactly what makes a wrong classification look right.
+Those are **two different splits of the same 154**, and a figure appearing in both tables is a coincidence rather than a correspondence, which is exactly what makes a wrong classification look right.
 
-There are **175** tracked `.csproj` files under `src/`, which is **23** more than the solution holds. Every one of the 23 is fixture or example data of the dotnet-dependency-graph module — a module whose subject matter *is* reading `.csproj` files, so its test fixtures and its showcase project are themselves `.csproj`, in `src/diagrams/dotnet-dependency-graph` and in the showcase copy under `src/examples/`. **A page giving the tracked count as the number of projects would be wrong in the confident direction.**
+There are **177** tracked `.csproj` files under `src/`, which is **23** more than the solution holds. Every one of the 23 is fixture or example data of the dotnet-dependency-graph module — a module whose subject matter *is* reading `.csproj` files, so its test fixtures and its showcase project are themselves `.csproj`, in `src/diagrams/dotnet-dependency-graph` and in the showcase copy under `src/examples/`. **A page giving the tracked count as the number of projects would be wrong in the confident direction.**
 
 ## The relative-path trap
 
@@ -47,7 +47,7 @@ Classifying by path segment — "count the ones containing `backend`" as the cor
 
 ## The core projects
 
-**29** production:
+**30** production:
 
 | Concern | Project |
 | --- | --- |
@@ -59,12 +59,13 @@ Classifying by path segment — "count the ones containing `backend`" as the cor
 | Selection, actions, properties, prompts | `EtAlii.Adp.Context` |
 | Commands and undo/redo | `EtAlii.Adp.History` |
 | Errors and warnings | `EtAlii.Adp.Problems` |
+| The index of links between documents (FBL 17): per open project, the documents of every tool type that keeps a document id, their linkable elements and the links they hold, kept current from the project's file events and from what an open document holds unsaved | `EtAlii.Adp.Links` |
 | Known projects and workspace roots | `EtAlii.Adp.Projects` |
 | Every kind of session: sign-in sessions (the session store, the session context and the interceptor that checks every call), the tool-session contracts of the three kinds with their factory contracts and registries, the document session and the text editor session a module builds on, the viewport registry, and the connection and project sessions that acquire and release what a connection holds; it references the diagram, designer, editor and history projects, never the reverse | `EtAlii.Adp.Sessions` |
 | Workspace tree, kept current from the project's file events, which tool opens each file, and the commands that create, rename and delete entries | `EtAlii.Adp.Hierarchy` |
 | Geometry with no dependency: the rectangle, the viewport test's operand, row packing, the row a drag snaps to, text width and graph layering | `EtAlii.Adp.Layout` |
 | Diagram-type abstractions, including the diagram definition and validation contracts; it references the documents project and the shared primitives only | `EtAlii.Adp.Diagram` |
-| The bases a module builds on: the provider frame, the element source resolvers, a bundled DISL definition as a module's palette, menus and rows, and the viewport test | `EtAlii.Adp.Diagram.Modules` |
+| The bases a module builds on: the provider frame, the element source resolvers, a bundled DISL definition as a module's palette, menus and rows, the link index's reader for a DISL diagram type, and the viewport test | `EtAlii.Adp.Diagram.Modules` |
 | The diagram, editor, designer and workspace services a connection calls, its connections and their streams, the table wire, the editor plumbing and the reload bridge | `EtAlii.Adp.Workspace` |
 | Editor-family abstractions | `EtAlii.Adp.Editor` |
 | Designer-family abstractions: the definition, its discovery and its catalog, and the models the table and hierarchy surface sessions speak | `EtAlii.Adp.Designer` |
@@ -81,7 +82,7 @@ Classifying by path segment — "count the ones containing `backend`" as the cor
 | What the DISL and FBL loaders share: the diagnostic a loader reports and its severity, JSON pointers, duplicate-key detection, scalar and property reading, and the language version | `EtAlii.Adp.Specification.Json` |
 | Loading DISL specifications (Diagram Specification Language) and the bundled definitions, building a diagram's model from a reading, and deriving its toolbox, context menus, property rows, findings and gesture refusals, resolving a toolbox drop by its drop targets, and running its operations, hooks, deletion policy and retyping, and giving the FBL library the attribute types of a binding | `EtAlii.Adp.Specification.Disl` |
 
-**22** test: `EtAlii.Adp.Tests`, `EtAlii.Adp.Authentication.Tests`, `EtAlii.Adp.Backend.Tests`, `EtAlii.Adp.Client.Tests`, `EtAlii.Adp.Context.Tests`, `EtAlii.Adp.Designer.Tests`, `EtAlii.Adp.Diagram.Tests`, `EtAlii.Adp.Diagram.Modules.Tests`, `EtAlii.Adp.Documents.Tests`, `EtAlii.Adp.Editor.Tests`, `EtAlii.Adp.Hierarchy.Tests`, `EtAlii.Adp.History.Tests`, `EtAlii.Adp.HostLogging.Tests`, `EtAlii.Adp.Layout.Tests`, `EtAlii.Adp.Problems.Tests`, `EtAlii.Adp.Projects.Tests`, `EtAlii.Adp.Repository.Tests`, `EtAlii.Adp.Sessions.Tests`, `EtAlii.Adp.Specification.Cel.Tests`, `EtAlii.Adp.Specification.Disl.Tests`, `EtAlii.Adp.Specification.Fbl.Tests`, `EtAlii.Adp.Workspace.Tests`.
+**23** test: `EtAlii.Adp.Tests`, `EtAlii.Adp.Authentication.Tests`, `EtAlii.Adp.Backend.Tests`, `EtAlii.Adp.Client.Tests`, `EtAlii.Adp.Context.Tests`, `EtAlii.Adp.Designer.Tests`, `EtAlii.Adp.Diagram.Tests`, `EtAlii.Adp.Diagram.Modules.Tests`, `EtAlii.Adp.Documents.Tests`, `EtAlii.Adp.Editor.Tests`, `EtAlii.Adp.Hierarchy.Tests`, `EtAlii.Adp.History.Tests`, `EtAlii.Adp.HostLogging.Tests`, `EtAlii.Adp.Layout.Tests`, `EtAlii.Adp.Links.Tests`, `EtAlii.Adp.Problems.Tests`, `EtAlii.Adp.Projects.Tests`, `EtAlii.Adp.Repository.Tests`, `EtAlii.Adp.Sessions.Tests`, `EtAlii.Adp.Specification.Cel.Tests`, `EtAlii.Adp.Specification.Disl.Tests`, `EtAlii.Adp.Specification.Fbl.Tests`, `EtAlii.Adp.Workspace.Tests`.
 
 Not every production project has a matching test project, and that is not a gap to close by reflex — some are covered from `EtAlii.Adp.Backend.Tests`, and `EtAlii.Adp.Files` from `EtAlii.Adp.Documents.Tests`.
 

@@ -85,6 +85,16 @@ public sealed class TimelineBody
     /// <summary>A DISL diagram of what the binding reads that is the caller's own: the working diagram an operation changes as it runs.</summary>
     public DislDiagram Working() => DislModelBuilder.From(Model, TimelineDefinition.Specification).Diagram;
 
+    /// <summary>
+    /// The diagram <paramref name="bytes"/> hold and their document id, for the link index (FBL 17.3): read past the recent
+    /// bodies, so that indexing a whole workspace does not push out the ones the open documents read.
+    /// </summary>
+    internal static (DislDiagram Diagram, string? DocumentId) Indexed(byte[] bytes)
+    {
+        var model = OpenBody.Open(bytes, LoadedBinding.Value, LoadedOptions.Value).Model;
+        return (DislModelBuilder.From(model, TimelineDefinition.Specification).Diagram, model.DocumentId);
+    }
+
     /// <summary>A body for <paramref name="text"/>. Never throws on content: a body the library cannot read reads as unreadable.</summary>
     public static TimelineBody Parse(string text)
     {

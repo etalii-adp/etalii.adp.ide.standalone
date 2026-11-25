@@ -1,6 +1,7 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Links;
 using EtAlii.Adp.Sessions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -35,6 +36,9 @@ public static class ServiceCollectionAddMindmapExtension
         services.AddSingleton<IContextActionProvider, MindmapContextActionProvider>();
         services.AddSingleton<IContextPropertyProvider, MindmapContextPropertyProvider>();
         services.AddSingleton<IDiagramToolboxProvider>(new DislToolboxProvider(Diagram.Mindmap.Origin, MindmapDefinition.Definition));
+
+        // The link index reads this type's files (FBL 17.3, spec 092): their linkable elements and the links they hold.
+        services.AddSingleton<ILinkIndexer>(new DislLinkIndexer([".mm"], MindmapDefinition.Indexed));
 
         // The module's layout numbers, with what appsettings.json's Mindmap section says
         // applied - the minimum gap between elements as a fraction of a node's width, above

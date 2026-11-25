@@ -1,6 +1,7 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Links;
 using EtAlii.Adp.Sessions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -30,6 +31,9 @@ public static class ServiceCollectionAddTimelineExtension
         // new file has no style of its own to keep.
         services.AddEmptyDocument(Diagram.Timeline.Origin, baseName => DocumentTemplate.Text(TimelineBody.Binding, TimelineDefinition.Specification, baseName + ".tml"));
         services.AddSingleton<TimelineElementMapper>();
+
+        // The link index reads this type's files (FBL 17.3, spec 092): their linkable elements and the links they hold.
+        services.AddSingleton<ILinkIndexer>(new DislLinkIndexer([".tml"], (bytes, _) => TimelineBody.Indexed(bytes)));
 
         // One document per path, shared by every connection viewing it. TryAdd rather than Add
         // so a test that registers its own store keeps it.

@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- xUnit v3 test projects are executables: the test host is the project itself. -->
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\EtAlii.Adp.Links\EtAlii.Adp.Links.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Test support of the areas these tests use; see src/Directory.Build.targets. -->
+    <ProjectReference Include="..\EtAlii.Adp.Files.Tests.Support\EtAlii.Adp.Files.Tests.Support.csproj" />
+    <Using Include="EtAlii.Adp.Files.Tests.Support" />
+  </ItemGroup>
+
+</Project>
