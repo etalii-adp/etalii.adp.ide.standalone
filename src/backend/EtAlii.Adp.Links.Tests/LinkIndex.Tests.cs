@@ -139,27 +139,7 @@ public sealed class LinkIndexTests : IDisposable
     }
 
     [Fact]
-    public async Task AnOpenDocument_IsHeldAsItIsOpen_UntilItIsReverted()
-    {
-        // Arrange.
-        Write("release.lnk.txt", "id: r1", "element: m1 Launch");
-        using var tracked = _index.Track(_folder.Path);
-        var path = Held("release.lnk.txt");
-
-        // Act: an edit not yet saved, then a write of the file by something else.
-        _index.Edited(path, "id: r1\nelement: m1 Unsaved"u8.ToArray());
-        Write("release.lnk.txt", "id: r1", "element: m1 On disk");
-        Write("marker.lnk.txt", "id: z9");
-        Assert.True(await Eventually.TrueAsync(() => _index.WorkspaceOf(path)?.Document(Held("marker.lnk.txt")) is not null, TestContext.Current.CancellationToken));
-
-        // Assert: what is open wins over the file until it is closed without a save.
-        Assert.Equal("Unsaved", NameOf(path, "m1"));
-        _index.Reverted(path);
-        Assert.Equal("On disk", NameOf(path, "m1"));
-    }
-
-    [Fact]
-    public void AWorkspaceHandedOut_IsNotChangedByALaterChange()
+    public async Task AWorkspaceHandedOut_IsNotChangedByALaterChange()
     {
         // Arrange.
         Write("release.lnk.txt", "id: r1", "element: m1 Launch");
@@ -168,11 +148,11 @@ public sealed class LinkIndexTests : IDisposable
         var before = _index.WorkspaceOf(path)!;
 
         // Act.
-        _index.Edited(path, "id: r1\nelement: m1 Changed"u8.ToArray());
+        Write("release.lnk.txt", "id: r1", "element: m1 Changed");
+        Assert.True(await Eventually.TrueAsync(() => NameOf(path, "m1") == "Changed", TestContext.Current.CancellationToken));
 
         // Assert: a resolution running on another thread reads one state whole.
         Assert.Equal("Launch", before.Document(path)?.Elements[0].ValueOf("name"));
-        Assert.Equal("Changed", NameOf(path, "m1"));
     }
 
     [Fact]

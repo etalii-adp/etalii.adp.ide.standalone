@@ -15,8 +15,8 @@ namespace EtAlii.Adp.Links;
 /// nothing until it shrinks. A document an indexer cannot read is held as nothing too, and nothing resolves to it.
 /// </para>
 /// <para>
-/// <b>An open document is held as it is open</b>: <see cref="Edited"/> holds what it holds now in place of the file, and a file
-/// event for it is ignored until <see cref="Reverted"/> or a save, whose event reads the file again.
+/// <b>A document is held as its file is.</b> Every edit of a document is saved as it is made, so an open document never holds
+/// what its file does not; what opening it finds and has not written is not the document's yet (etalii.adp spec 092, R6).
 /// </para>
 /// <para>
 /// Paths are held with forward slashes and compared as text. Every change is made under one lock, and
@@ -32,10 +32,9 @@ public sealed class LinkIndex(ProjectFileEvents events, IEnumerable<ILinkIndexer
 
     private readonly ILinkIndexer[] _indexers = [.. indexers];
     private readonly Dictionary<string, Root> _roots = new(StringComparer.Ordinal);
-    private readonly Dictionary<string, byte[]> _open = new(StringComparer.Ordinal);
     private readonly Lock _gate = new();
 
-    /// <inheritdoc />
+    /// <summary>A document of a tracked root changed in the index, by its path: added, read again or taken out.</summary>
     public event EventHandler<LinkIndexChangedEventArgs>? Changed;
 
     /// <inheritdoc />
@@ -69,35 +68,6 @@ public sealed class LinkIndex(ProjectFileEvents events, IEnumerable<ILinkIndexer
     }
 
     /// <inheritdoc />
-    public void Edited(string path, byte[] bytes)
-    {
-        ArgumentNullException.ThrowIfNull(path);
-        ArgumentNullException.ThrowIfNull(bytes);
-        var normalized = Normalized(path);
-        bool changed;
-        lock (_gate)
-        {
-            _open[normalized] = bytes;
-            changed = RootOf(normalized) is { } root && Read(root, normalized, bytes);
-        }
-        if (changed) Raise(normalized);
-    }
-
-    /// <inheritdoc />
-    public void Reverted(string path)
-    {
-        ArgumentNullException.ThrowIfNull(path);
-        var normalized = Normalized(path);
-        bool changed;
-        lock (_gate)
-        {
-            _open.Remove(normalized);
-            changed = RootOf(normalized) is { } root && ReadFile(root, normalized);
-        }
-        if (changed) Raise(normalized);
-    }
-
-    /// <inheritdoc />
     public void Dispose()
     {
         lock (_gate)
@@ -124,7 +94,7 @@ public sealed class LinkIndex(ProjectFileEvents events, IEnumerable<ILinkIndexer
         }
     }
 
-    /// <summary>Reads every document under the root, the open ones as they are open, into a new workspace.</summary>
+    /// <summary>Reads every document under the root into a new workspace.</summary>
     private void ReadAll(Root root)
     {
         var workspace = new LinkWorkspace(root.Path);
@@ -133,7 +103,7 @@ public sealed class LinkIndex(ProjectFileEvents events, IEnumerable<ILinkIndexer
             var files = Directory.EnumerateFiles(root.Path, "*", new EnumerationOptions { RecurseSubdirectories = true, IgnoreInaccessible = true, AttributesToSkip = FileAttributes.ReparsePoint }).Select(Normalized).ToList();
             foreach (var file in files)
             {
-                if ((_open.TryGetValue(file, out var bytes) ? Index(file, bytes) : Load(file)) is { } document) workspace.Put(document);
+                if (Load(file) is { } document) workspace.Put(document);
             }
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
@@ -145,9 +115,6 @@ public sealed class LinkIndex(ProjectFileEvents events, IEnumerable<ILinkIndexer
 
     /// <summary>Reads the file at <paramref name="path"/> into the root's workspace; whether the index changed.</summary>
     private bool ReadFile(Root root, string path) => IndexerOf(path) is not null && Set(root, path, Load(path));
-
-    /// <summary>Indexes <paramref name="bytes"/> as the document at <paramref name="path"/>; whether the index changed.</summary>
-    private bool Read(Root root, string path, byte[] bytes) => IndexerOf(path) is not null && Set(root, path, Index(path, bytes));
 
     /// <summary>The file at <paramref name="path"/> as its tool type indexes it; null when no indexer claims it, or it is too large, gone or unreadable.</summary>
     private IndexedDocument? Load(string path)
@@ -206,7 +173,7 @@ public sealed class LinkIndex(ProjectFileEvents events, IEnumerable<ILinkIndexer
             {
                 case FileEventKind.Created or FileEventKind.Changed:
                     if (Directory.Exists(path)) changed.AddRange(ReadFolder(root, path));
-                    else if (!_open.ContainsKey(path) && ReadFile(root, path)) changed.Add(path);
+                    else if (ReadFile(root, path)) changed.Add(path);
                     break;
                 case FileEventKind.Deleted:
                     changed.AddRange(ForgetUnder(root, path));
@@ -229,7 +196,7 @@ public sealed class LinkIndex(ProjectFileEvents events, IEnumerable<ILinkIndexer
 
     /// <summary>Reads every document under the folder at <paramref name="folder"/>: one moved or copied in whole.</summary>
     private List<string> ReadFolder(Root root, string folder) =>
-        [.. Directory.EnumerateFiles(folder, "*", SearchOption.AllDirectories).Select(Normalized).Where(file => !_open.ContainsKey(file) && ReadFile(root, file))];
+        [.. Directory.EnumerateFiles(folder, "*", SearchOption.AllDirectories).Select(Normalized).Where(file => ReadFile(root, file))];
 
     /// <summary>Takes out the document at <paramref name="path"/>, or every document under it when it was a folder.</summary>
     private static List<string> ForgetUnder(Root root, string path)

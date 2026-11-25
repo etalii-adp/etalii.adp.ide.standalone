@@ -10,13 +10,13 @@ namespace EtAlii.Adp.Links.Tests;
 /// </summary>
 internal sealed class LinkIndexTestIndexer : ILinkIndexer
 {
-    public const string Extension = ".lnk.txt";
+    private const string Extension = ".lnk.txt";
 
     public int Reads { get; private set; }
 
     public bool Claims(string path) => path.EndsWith(Extension, StringComparison.Ordinal);
 
-    public IndexedDocument? Index(string path, byte[] bytes)
+    public IndexedDocument Index(string path, byte[] bytes)
     {
         Reads++;
         var lines = Encoding.UTF8.GetString(bytes).Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
@@ -26,7 +26,7 @@ internal sealed class LinkIndexTestIndexer : ILinkIndexer
         var links = new List<HeldLink>();
         foreach (var line in lines)
         {
-            var (key, value) = (line[..line.IndexOf(':', StringComparison.Ordinal)], line[(line.IndexOf(':', StringComparison.Ordinal) + 1)..].Trim());
+            (string key, string value) = (line[..line.IndexOf(':', StringComparison.Ordinal)], line[(line.IndexOf(':', StringComparison.Ordinal) + 1)..].Trim());
             var parts = value.Split(' ', 2);
             switch (key)
             {

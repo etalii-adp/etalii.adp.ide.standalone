@@ -17,7 +17,7 @@ public sealed class LinkWorkspace
     }
 
     /// <summary>The workspace's root folder, without a closing slash.</summary>
-    public string Root { get; }
+    private string Root { get; }
 
     /// <summary>The documents, in path order.</summary>
     public IReadOnlyCollection<IndexedDocument> Documents => _documents.Values;
@@ -31,9 +31,6 @@ public sealed class LinkWorkspace
         ArgumentNullException.ThrowIfNull(document);
         _documents[document.Path] = document;
     }
-
-    /// <summary>Takes the document at <paramref name="path"/> out: a file deleted, or moved out of the workspace.</summary>
-    public void Remove(string path) => _documents.Remove(path);
 
     /// <summary>A path as a finding names it: relative to the root.</summary>
     public string Display(string path) => path.StartsWith(Root + "/", StringComparison.Ordinal) ? path[(Root.Length + 1)..] : path;
@@ -71,7 +68,7 @@ public sealed class LinkWorkspace
         if (holders.Count == 0) return Finding(link, LinkCodes.BrokenElement, $"'{link.Name ?? elementId}' is no longer in '{target.FileName}'.", []);
         if (holders.Count > 1) return Finding(link, LinkCodes.AmbiguousDocument, $"'{target.FileName}' holds {holders.Count} elements with id '{elementId}'.", [target.Path]);
 
-        var (nameProperty, name) = NameOf(target, holders[0], link.NameProperty);
+        (string? nameProperty, string name) = NameOf(target, holders[0], link.NameProperty);
         return new LinkResolution(link, target, holders[0], new FblLink(target.DocumentId ?? "", target.FileName, elementId, nameProperty, name), null);
     }
 
@@ -87,7 +84,7 @@ public sealed class LinkWorkspace
             foreach (var held in document.Links)
             {
                 var resolution = Resolve(held.Text);
-                if (resolution is { Resolved: true, Link: { } link, Document: { } target } && target.Path == path && link.ElementId == elementId) backlinks.Add(new Backlink(document.Path, held.Holder, link));
+                if (resolution is { Resolved: true, Link: { } link, Document: { } target } && target.Path == path && link.ElementId == elementId) backlinks.Add(new Backlink(document.Path, held.Holder));
             }
         }
         return backlinks;

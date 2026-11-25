@@ -12,7 +12,7 @@ public sealed record IndexedDocument(string Path, string? DocumentId, string? Na
     public string FileName => FileNameOf(Path);
 
     /// <summary>The file name of <paramref name="path"/>, with its extension and without its folder.</summary>
-    public static string FileNameOf(string path) => path[(path.LastIndexOf('/') + 1)..];
+    private static string FileNameOf(string path) => path[(path.LastIndexOf('/') + 1)..];
 }
 
 /// <summary>An element of a document that can be linked to: its id, and its attributes of a text type in declaration order.</summary>

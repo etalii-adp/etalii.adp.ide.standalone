@@ -42,7 +42,7 @@ public static class DislLinks
     }
 
     /// <summary>Whether an attribute holds a text an element can be named by (FBL 17.1): a single string or text.</summary>
-    private static bool Names(DislAttribute attribute) => !attribute.Many && attribute.Type is "string" or "text";
+    private static bool Names(DislAttribute attribute) => attribute is { Many: false, Type: "string" or "text" };
 
     /// <summary>The links a value holds: itself when it is a text, the texts of a list, none when it is empty.</summary>
     private static IEnumerable<string> Texts(object? value) => value switch

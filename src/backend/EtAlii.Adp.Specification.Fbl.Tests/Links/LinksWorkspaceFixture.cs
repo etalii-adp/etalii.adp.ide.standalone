@@ -15,7 +15,7 @@ namespace EtAlii.Adp.Specification.Fbl.Tests.Links;
 internal static class LinksWorkspaceFixture
 {
     /// <summary>The fixture's folder, which is the workspace's root.</summary>
-    public static string Root { get; } = Path.Combine(Repository.Conformance, "etalii.adp", "specifications", "fbl", "fixtures", "links-workspace").Replace('\\', '/');
+    private static string Root { get; } = Path.Combine(Repository.Conformance, "etalii.adp", "specifications", "fbl", "fixtures", "links-workspace").Replace('\\', '/');
 
     /// <summary>The fixture's <c>conformance.json</c>.</summary>
     public static string Conformance => Path.Combine(Root, "conformance.json");

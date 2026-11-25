@@ -25,5 +25,5 @@ public sealed record LinkResolution(FblLink? Link, IndexedDocument? Document, In
 /// </summary>
 public sealed record LinkFinding(string Code, string Message, IReadOnlyList<string> Candidates);
 
-/// <summary>A link, in some document of the workspace, that resolves to an element (FBL 17.5): the consuming document, the element or value that holds it, and the link.</summary>
-public sealed record Backlink(string Path, string Holder, FblLink Link);
+/// <summary>A link, in some document of the workspace, that resolves to an element (FBL 17.5): the consuming document, and the element or value that holds it.</summary>
+public sealed record Backlink(string Path, string Holder);

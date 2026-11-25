@@ -17,9 +17,9 @@ public sealed class DislLinkIndexer(IReadOnlyCollection<string> extensions, Func
     public bool Claims(string path) => extensions.Any(extension => path.EndsWith(extension, StringComparison.OrdinalIgnoreCase));
 
     /// <inheritdoc />
-    public IndexedDocument? Index(string path, byte[] bytes)
+    public IndexedDocument Index(string path, byte[] bytes)
     {
-        var (diagram, documentId) = read(bytes, path);
+        (DislDiagram diagram, string? documentId) = read(bytes, path);
         return DislLinks.Indexed(diagram, path, documentId);
     }
 }

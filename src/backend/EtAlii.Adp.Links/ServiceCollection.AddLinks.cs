@@ -14,13 +14,12 @@ public static class LinksServiceCollectionExtensions
         /// Adds the index of links (<see cref="ILinkIndex"/>), over the one source of file events the hierarchy and the problems
         /// share. A tool type takes part by registering an <see cref="ILinkIndexer"/>.
         /// </summary>
-        public IServiceCollection AddLinks()
+        public void AddLinks()
         {
             services.TryAddSingleton<ProjectFileEvents>();
             services.TryAddSingleton<LinkIndex>();
             services.TryAddSingleton<ILinkIndex>(provider => provider.GetRequiredService<LinkIndex>());
             services.TryAddEnumerable(ServiceDescriptor.Singleton<IProjectSessionPart, LinkTracking>());
-            return services;
         }
     }
 }
