@@ -220,8 +220,8 @@ const shots = [
   { name: "timeline.png", path: ["diagrams", "timeline", "example-2", "roadmap.tml", "roadmap.adp"], collapse: ["diagrams", "timeline"] },
   // The Marvel universe: its 47 key events, and all 428. Neither reads fitted
   // whole, so each is wheeled in on the start of its story.
-  { name: "timeline-marvel-universe-overview.png", path: ["diagrams", "timeline", "marvel-universe-overview", "marvel-universe-overview.tml", "marvel-universe-overview.adp"], zoomAt: { x: 0.5, y: 0.03, steps: 3 }, collapse: ["diagrams", "timeline"] },
-  { name: "timeline-marvel-universe.png", path: ["diagrams", "timeline", "marvel-universe", "marvel-universe.tml", "marvel-universe.adp"], zoomAt: { x: 0.49, y: 0.003, steps: 12 }, collapse: ["diagrams", "timeline"] },
+  { name: "timeline-marvel-universe-overview.png", path: ["diagrams", "timeline", "marvel-universe-overview", "marvel-universe-overview.tml", "marvel-universe-overview.adp"], zoomAt: { x: 0.5, y: 0.03, steps: 1 }, collapse: ["diagrams", "timeline"] },
+  { name: "timeline-marvel-universe.png", path: ["diagrams", "timeline", "marvel-universe", "marvel-universe.tml", "marvel-universe.adp"], zoomAt: { x: 0.5, y: 0.003, steps: 10 }, collapse: ["diagrams", "timeline"] },
   { name: "azure-pipeline.png", path: ["diagrams", "azure-devops-pipeline", "example 1", "multi-stage.yml", "multi-stage.adp"], collapse: ["diagrams", "azure-devops-pipeline"] },
   { name: "dependency-graph.png", path: ["diagrams", "dependency-graph", "example-1", "services.dgr", "services.adp"], collapse: ["diagrams", "dependency-graph"] },
   { name: "functional-decomposition-graph.png", path: ["diagrams", "functional-decomposition-graph", "field-service", "field-service.fdg", "field-service.adp"], collapse: ["diagrams", "functional-decomposition-graph"] },
