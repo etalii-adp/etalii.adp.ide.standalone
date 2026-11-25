@@ -30,6 +30,7 @@ public static class ServiceCollectionAddMindmapCommandsExtension
         services.AddSingleton<ICommandHandler<SetNodeTextCommand>, SetNodeTextCommandHandler>();
         services.AddSingleton<ICommandHandler<SetNodeNotesCommand>, SetNodeNotesCommandHandler>();
         services.AddSingleton<ICommandHandler<SetNodeLinkCommand>, SetNodeLinkCommandHandler>();
+        services.AddSingleton<ICommandHandler<RestoreMindmapCommand>, RestoreMindmapCommandHandler>();
 
         return services;
     }

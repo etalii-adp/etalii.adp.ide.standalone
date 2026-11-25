@@ -49,5 +49,11 @@ public interface IMindmapDocumentStore : IDiagramDocumentStore
     /// Raised after every save, with what changed, so the open connections can be told; and after a
     /// reload or a deletion installed a map, with <see cref="MindmapReloaded"/>.
     /// </summary>
+    /// <summary>
+    /// Writes <paramref name="text"/> as the map at <paramref name="bodyPath"/>, exactly: the undo of the first save that wrote what
+    /// opening found, which holds the map again as <paramref name="opened"/> says, and its redo, with none.
+    /// </summary>
+    Task<DocumentSaveResult> RestoreAsync(string bodyPath, string text, MindmapOpened? opened, CancellationToken cancellationToken);
+
     event EventHandler<MindmapChangedEventArgs>? Changed;
 }

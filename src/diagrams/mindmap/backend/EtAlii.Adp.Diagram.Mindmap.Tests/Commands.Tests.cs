@@ -63,6 +63,7 @@ public class CommandsTests : IDisposable
     {
         // Arrange.
         var before = (await DocumentAsync()).ToText();
+        var file = OnDisk; // without the document id opening found, which the first edit writes and its undo takes back
 
         var result = await Run(new AddChildNodeCommand(_bodyPath, "ID_411002937", "ID_new", "Logging"));
 
@@ -73,7 +74,7 @@ public class CommandsTests : IDisposable
 
         await Undo();
         Assert.Equal(before, (await DocumentAsync()).ToText());
-        Assert.Equal(before, OnDisk);
+        Assert.Equal(file, OnDisk);
 
         await Redo();
         Assert.Equal("ID_new", (await DocumentAsync()).Find("ID_411002937")!.Children[^1].Id);
@@ -156,6 +157,7 @@ public class CommandsTests : IDisposable
         // Arrange.
         // The deepest test of all (Requirement 7.4): ids, text, notes, links and order survive.
         var before = (await DocumentAsync()).ToText();
+        var file = OnDisk; // without the document id opening found, which the first edit writes and its undo takes back
 
         // Arrange, continued.
         await Run(new RemoveNodeCommand(_bodyPath, "ID_411002937")); // Backend, with 8 descendants, notes and links
@@ -169,7 +171,7 @@ public class CommandsTests : IDisposable
 
         // Assert.
         Assert.Equal(before, (await DocumentAsync()).ToText());
-        Assert.Equal(before, OnDisk);
+        Assert.Equal(file, OnDisk);
         Assert.Equal("../../../../backend/EtAlii.Adp.Backend/Context/ContextServiceImpl.cs", (await DocumentAsync()).Find("ID_88117420")!.Link);
     }
 

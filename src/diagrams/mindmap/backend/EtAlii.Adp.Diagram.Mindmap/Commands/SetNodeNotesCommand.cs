@@ -24,8 +24,6 @@ internal sealed class SetNodeNotesCommandHandler(IMindmapDocumentStore documents
 
         var previous = node.Notes;
         document.SetNotes(node, command.Notes);
-        var saved = await Documents.SaveAsync(command.BodyPath, document, new MindmapNodeUpdated(command.NodeId), cancellationToken);
-
-        return CommandResult.FromSave(saved, command with { Notes = previous });
+        return await SaveAsync(command.BodyPath, document, new MindmapNodeUpdated(command.NodeId), command with { Notes = previous }, cancellationToken);
     }
 }

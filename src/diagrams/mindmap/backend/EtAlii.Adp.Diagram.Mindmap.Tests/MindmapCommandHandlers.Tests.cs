@@ -101,6 +101,12 @@ public sealed class MindmapCommandHandlersTests : IDisposable
             return saved.Failed ? saved : DocumentSaveResult.WithWarning(warning);
         }
 
+        public async Task<DocumentSaveResult> RestoreAsync(string bodyPath, string text, MindmapOpened? opened, CancellationToken cancellationToken)
+        {
+            var saved = await inner.RestoreAsync(bodyPath, text, opened, cancellationToken);
+            return saved.Failed ? saved : DocumentSaveResult.WithWarning(warning);
+        }
+
         public Task ReloadAsync(string path, CancellationToken cancellationToken) => inner.ReloadAsync(path, cancellationToken);
 
         public Task BodyDeletedAsync(string path, CancellationToken cancellationToken) => inner.BodyDeletedAsync(path, cancellationToken);
