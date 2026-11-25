@@ -19,6 +19,12 @@ public sealed record TimelineElement(
     int Row,
     LineRange Range)
 {
+    /// <summary>
+    /// The link a linked period or moment stands for (FBL 17.1, spec 092), as written; null for an ordinary element.
+    /// Its <see cref="Label"/> is then the target's name the link caches.
+    /// </summary>
+    public string? Link { get; init; }
+
     /// <summary>Whether this element occupies a period rather than a single moment.</summary>
     public bool IsPeriod => End is not null;
 

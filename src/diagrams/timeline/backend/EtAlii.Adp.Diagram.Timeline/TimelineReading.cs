@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Runtime.CompilerServices;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Specification.Fbl;
+using EtAlii.Adp.Specification.Fbl.Links;
 
 namespace EtAlii.Adp.Diagram.Timeline;
 
@@ -62,6 +63,18 @@ public static class TimelineReading
                         element.Rule == "period" ? Instant(TextOf(element, "end")) : null,
                         Row(TextOf(element, "row")),
                         range));
+                    break;
+                case "linkedPeriod":
+                case "linkedMoment":
+                    // A linked element's label is its target's name, which the link caches (FBL 17.1); it is not written.
+                    var link = TextOf(element, "link");
+                    elements.Add(new TimelineElement(
+                        TextOf(element, "storedId"),
+                        FblLink.Parse(link)?.Name ?? "",
+                        Instant(TextOf(element, "begin")),
+                        element.Rule == "linkedPeriod" ? Instant(TextOf(element, "end")) : null,
+                        Row(TextOf(element, "row")),
+                        range) { Link = link });
                     break;
                 case "connection":
                     connections.Add(new TimelineConnection(

@@ -99,7 +99,8 @@ public class ServiceCollectionAddDependencyGraphTests
         var model = DependencyGraphBody.Parse(text).Disl;
         Assert.Empty(model.Elements);
         Assert.Empty(model.Relations);
-        Assert.Equal("dependencies: 1\r\nelements: []\r\n", text);
+        Assert.Matches("^dependencies: 1\r\nid: [0-9a-z]{8}\r\nelements: \\[\\]\r\n$", text);
+        Assert.Equal(text[21..29], DependencyGraphBody.Parse(text).Model.DocumentId);
     }
 
     [Fact]

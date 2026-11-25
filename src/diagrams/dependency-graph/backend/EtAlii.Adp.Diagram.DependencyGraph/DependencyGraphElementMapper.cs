@@ -1,6 +1,7 @@
 using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Layout;
 using EtAlii.Adp.Specification.Disl;
+using EtAlii.Adp.Specification.Fbl.Links;
 using Google.Protobuf;
 
 namespace EtAlii.Adp.Diagram.DependencyGraph;
@@ -131,9 +132,10 @@ public sealed class DependencyGraphElementMapper
         [
             .. diagram.NodesOfType("Node").Select(node => new Node(
                 DependencyGraphDefinition.WrittenId(node),
-                node.ValueOf("label") as string ?? "",
+                LabelOf(node),
                 node.ValueOf("x") is double x ? x : 0d,
-                node.ValueOf("row") is long row ? checked((int)row) : 0)),
+                node.ValueOf("row") is long row ? checked((int)row) : 0,
+                node.Type.LinkedAttribute is { } linked ? node.ValueOf(linked) as string ?? "" : null)),
         ];
         List<Dependency> relations =
         [
@@ -187,6 +189,8 @@ public sealed class DependencyGraphElementMapper
             X = element.X,
             Row = element.Row,
             Label = element.Label,
+            Link = element.Link ?? "",
+            Linked = FblLink.Parse(element.Link) is not null,
         };
 
         return Pack(
@@ -214,7 +218,14 @@ public sealed class DependencyGraphElementMapper
     }
 
     /// <summary>A node as it is drawn: the id it is written with, its label and its place.</summary>
-    private sealed record Node(string Id, string Label, double X, int Row);
+    /// <summary>A node's label: a linked node's is its target's name, which its link caches (FBL 17.1, spec 092), and is not written.</summary>
+    private static string LabelOf(DislElement node) =>
+        node.Type.LinkedAttribute is { } linked
+            ? FblLink.Parse(node.ValueOf(linked) as string)?.Name ?? ""
+            : node.ValueOf("label") as string ?? "";
+
+    /// <summary>A node as drawn; <paramref name="Link"/> is a linked node's link as written, null for an ordinary node.</summary>
+    private sealed record Node(string Id, string Label, double X, int Row, string? Link);
 
     /// <summary>A dependency as it is drawn: the id it is written with, its ends as written, and its label.</summary>
     private sealed record Dependency(string Id, string From, string To, string Label);

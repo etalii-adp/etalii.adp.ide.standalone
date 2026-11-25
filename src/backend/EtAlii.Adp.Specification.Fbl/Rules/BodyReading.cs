@@ -231,6 +231,7 @@ internal sealed class BodyReading
         {
             // The root also holds the marks a file is known by, and may name its schema.
             if (Binding.Header?.Key is { } header) keys.Add(header);
+            if (Binding.Document?.Key is { } documentId) keys.Add(documentId);
             if (Binding.Claims.Marker?.RootKey is { } marker) keys.Add(marker);
             keys.Add("$schema");
         }
@@ -897,6 +898,7 @@ internal sealed class BodyReading
         Views = Views.ToList(),
         SelectedView = _selectedViewName,
         Resources = Resources.ToList(),
+        DocumentId = Binding.Document is { } document && Unreadable is null ? Family.DocumentId(document) : null,
     };
 }
 

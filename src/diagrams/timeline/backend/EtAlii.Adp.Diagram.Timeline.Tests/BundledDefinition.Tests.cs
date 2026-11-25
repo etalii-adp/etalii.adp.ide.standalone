@@ -18,6 +18,9 @@ public sealed class BundledDefinitionTests : BundledDefinitionContract<BundledDe
     public static IReadOnlyList<BundledDefinitionExpectation> Definitions { get; } =
         [new("timeline", Diagram.Timeline.Origin.Key, "net.etalii.adp.generic.timeline")];
 
+    /// <summary>The definition is DISL 0.12 for links between tools (etalii.adp specs 089 and 092), of which this runtime warns; it reads what links need of 0.12, and a warning is allowed.</summary>
+    protected override bool AWarningIsAllowed => true;
+
     /// <summary>The definition as the module holds it, loaded with its plugin functions.</summary>
     protected override BundledDefinition Load(BundledDefinitionExpectation expected) =>
         BundledDefinition.Load(Module, expected.Name + ".dis", TimelineTimes.Plugins());

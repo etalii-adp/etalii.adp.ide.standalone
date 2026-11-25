@@ -19,7 +19,7 @@ public sealed record DislAttribute(string Name, string Type, bool Many, JsonElem
     /// <summary>The primitive types of DISL §4.2.</summary>
     public static IReadOnlySet<string> Primitives { get; } = new HashSet<string>(StringComparer.Ordinal)
     {
-        "string", "text", "int", "number", "bool", "date", "datetime", "yearMonth", "time", "duration", "color", "uri", "expression", "json", "binary",
+        "string", "text", "int", "number", "bool", "date", "datetime", "yearMonth", "time", "duration", "color", "uri", "expression", "json", "binary", "link",
     };
 
     /// <summary>Its <c>label</c>, read at load; null when it states none.</summary>
@@ -197,6 +197,15 @@ public sealed class DislType
     /// <summary>The attribute used as the element's name (§4.6): declared, or the default rule's choice; null when it has none.</summary>
     public string? LabelAttribute { get; internal set; }
 
+    /// <summary>The <c>link</c> attribute an element of this type holds when the type is <c>linked</c> (DISL 0.12 §4.12); null for a type that is not.</summary>
+    public string? LinkedAttribute { get; internal set; }
+
+    /// <summary>Whether elements of this type can be linked to from other documents (<c>linkable</c>, DISL 0.12 §4.12).</summary>
+    public bool Linkable { get; internal set; }
+
+    /// <summary>The attribute that names a linkable element in a link (<c>linkable.nameProperty</c>, else its label attribute); null for a type that is not linkable.</summary>
+    public string? NameProperty { get; internal set; }
+
     /// <summary>A relation type's source end; null for a node type.</summary>
     internal DislRelationEnd? Source { get; set; }
 
@@ -266,7 +275,11 @@ internal sealed record DislFunctionDeclaration(
 /// map by type): the type's own rule's, else the top level's for the type or the nearest type in its
 /// linearisation; null when none is declared.
 /// </param>
-internal sealed record DislIdRule(string Strategy, string? Expression, string? Prefix = null);
+/// <summary>
+/// An id rule (§11.5): its strategy, the CEL expression of <c>cel</c> and <c>derived</c>, its prefix, and
+/// for <c>nanoid</c> the alphabet (<c>nanoid</c>'s 64 characters or <c>base36</c>) and the length (DISL 0.12).
+/// </summary>
+internal sealed record DislIdRule(string Strategy, string? Expression, string? Prefix = null, string Alphabet = "nanoid", int Length = 21);
 
 /// <summary>A compiled expression of the specification: where it is, the context it was compiled in (§12.3; null where this runtime does not know it), and its program.</summary>
 public sealed record DislExpression(string Pointer, DislContext? Context, CelProgram Program);

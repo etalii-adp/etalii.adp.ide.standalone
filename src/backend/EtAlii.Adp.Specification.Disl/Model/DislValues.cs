@@ -31,7 +31,7 @@ internal static class DislValues
         if (attribute.Many) return new List<object?>();
         return attribute.Type switch
         {
-            "string" or "text" or "color" or "uri" or "expression" => "",
+            "string" or "text" or "color" or "uri" or "expression" or "link" => "",
             "int" or "yearMonth" => 0L,
             "number" => 0.0,
             "bool" => false,

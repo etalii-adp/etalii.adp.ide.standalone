@@ -5,7 +5,8 @@ namespace EtAlii.Adp.Specification.Disl;
 /// <param name="Position">The domain point it was invoked at, such as a context menu's on empty canvas: a map with <c>x</c> and <c>y</c>.</param>
 /// <param name="Selection">The selected elements, for an operation <c>for: "selection"</c>.</param>
 /// <param name="Parameters">The answered parameters, bound as <c>p</c>.</param>
-public sealed record DislInvocation(IReadOnlyDictionary<string, object?>? Position = null, IReadOnlyList<DislElement>? Selection = null, IReadOnlyDictionary<string, object?>? Parameters = null);
+/// <param name="Lookup">The element picked in the host's lookup, for an operation whose actions open it (DISL 0.12 §9.4); null when none is picked.</param>
+public sealed record DislInvocation(IReadOnlyDictionary<string, object?>? Position = null, IReadOnlyList<DislElement>? Selection = null, IReadOnlyDictionary<string, object?>? Parameters = null, DislLookupPick? Lookup = null);
 
 /// <summary>
 /// Runs a definition's operations (DISL §9.3) and a toolbox tool's drop (§7.1) as one transaction
@@ -49,7 +50,7 @@ public static class OperationInterpreter
 
         if (Unavailable(specification, operation, diagram, self is null ? null : self.IsA, variables) is { } reason) return DislTransaction.Refused(reason);
 
-        return Actions(specification, operation, diagram, ids, variables);
+        return Actions(specification, operation, diagram, ids, variables, invocation?.Lookup);
     }
 
     /// <summary>
@@ -94,7 +95,7 @@ public static class OperationInterpreter
     /// The operation's <c>plugin</c> handed back whole, its <c>args</c> as written (a PluginCall's
     /// arguments are values validated against the plugin's declaration, not expressions), or its actions run.
     /// </summary>
-    private static DislTransaction Actions(DislSpecification specification, DislOperation operation, DislDiagram diagram, IIdSource ids, Dictionary<string, object?> variables)
+    private static DislTransaction Actions(DislSpecification specification, DislOperation operation, DislDiagram diagram, IIdSource ids, Dictionary<string, object?> variables, DislLookupPick? lookup = null)
     {
         if (operation.Plugin is { } plugin)
         {
@@ -103,7 +104,7 @@ public static class OperationInterpreter
             return new DislTransaction([], [new HostAction.Plugin(plugin.Name, arguments)], null);
         }
 
-        var runner = new ActionRunner(specification, diagram, ids);
+        var runner = new ActionRunner(specification, diagram, ids) { LookupPick = lookup };
         runner.Run(operation.Actions, variables);
         return runner.Transaction;
     }

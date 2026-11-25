@@ -14,7 +14,10 @@ namespace EtAlii.Adp.Diagram.Timeline.Tests;
 /// </summary>
 public sealed class TimelineReadingTests
 {
-    /// <summary>Every <c>.tml</c> of the corpus, as a path relative to <c>src/</c>.</summary>
+    /// <summary>
+    /// Every <c>.tml</c> of the corpus, as a path relative to <c>src/</c>, but for the links example: the hand-written parser is
+    /// kept as it was and predates linked entries (FBL 0.23, spec 092), so <c>LinksExampleTests</c> holds what is read of it.
+    /// </summary>
     public static TheoryData<string> Corpus()
     {
         var module = RepositoryPaths.Under("src", "diagrams", "timeline");
@@ -25,6 +28,7 @@ public sealed class TimelineReadingTests
                      .Concat(Directory.GetFiles(Path.Combine(module, "examples"), "*.tml", SearchOption.AllDirectories))
                      .Concat(Directory.GetFiles(Path.Combine(source, "examples", "diagrams", "timeline"), "*.tml", SearchOption.AllDirectories))
                      .Select(path => Path.GetRelativePath(source, path).Replace('\\', '/'))
+                     .Where(path => !path.Contains("/links-example/", StringComparison.Ordinal))
                      .Order(StringComparer.Ordinal))
         {
             data.Add(path);

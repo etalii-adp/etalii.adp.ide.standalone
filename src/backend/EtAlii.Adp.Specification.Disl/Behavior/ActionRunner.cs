@@ -50,6 +50,12 @@ internal sealed class ActionRunner(DislSpecification specification, DislDiagram 
     /// </summary>
     public bool Typed { get; init; }
 
+    /// <summary>
+    /// The element the person picked in the host's lookup for this transaction (DISL 0.12 §9.4); null when the host offers no lookup or
+    /// none has been picked yet, so that a <c>lookup</c> action refuses.
+    /// </summary>
+    public DislLookupPick? LookupPick { get; init; }
+
     /// <summary>Why the transaction was refused, or null while it stands.</summary>
     private string? Refusal { get; set; }
 
@@ -127,6 +133,7 @@ internal sealed class ActionRunner(DislSpecification specification, DislDiagram 
         DislAction.Plugin plugin => Plugin(plugin, variables),
         DislAction.Abort abort => Abort(abort, variables),
         DislAction.Call call => Call(call, variables),
+        DislAction.Lookup lookup => Lookup(lookup, variables),
         DislAction.Unsupported unsupported => Refuse($"This runtime cannot run a `{unsupported.Kind}` action yet ({unsupported.At})."),
         _ => Refuse($"The action at {action.At} is none this runtime knows."),
     };
@@ -368,6 +375,38 @@ internal sealed class ActionRunner(DislSpecification specification, DislDiagram 
         }
         _changes.Add(new DislChange.Create(type, created.Id, attributes, (parent as DislElement)?.Id, point));
         if (create.As is { } bound) variables[bound] = created;
+        return true;
+    }
+
+    /// <summary>
+    /// A <c>lookup</c> (DISL 0.12 §9.4): a node of its linked type made for the element picked in the host's lookup, its link attribute the
+    /// pick's link and its label attribute the pick's name, as the last child of <c>self</c> or at the pointer; <c>as</c> names it.
+    /// </summary>
+    private bool Lookup(DislAction.Lookup lookup, Dictionary<string, object?> variables)
+    {
+        if (lookup.Malformed is { } malformed) return Refuse(malformed);
+        if (specification.Metamodel.TypeOf(lookup.LinkedType) is not { IsRelation: false, Abstract: false, LinkedAttribute: { } linkAttribute } type)
+        {
+            return Refuse($"The lookup at {lookup.At} creates '{lookup.LinkedType}', which is no linked node type (DISL §4.12).");
+        }
+        if (LookupPick is not { } pick) return Refuse(DislLookupPick.NoneOffered);
+
+        var attributes = new Dictionary<string, object?>(StringComparer.Ordinal) { [linkAttribute] = pick.Link };
+        if (type.LabelAttribute is { } label && label != linkAttribute) attributes[label] = pick.Name;
+        var parent = lookup.Placement == "child" ? variables.GetValueOrDefault("self") as DislElement : null;
+        var point = lookup.Placement == "at" ? variables.GetValueOrDefault("position") : null;
+
+        DislElement created;
+        try
+        {
+            created = diagram.AddNode(type.Name, ids.Next(type.Name), attributes, parent);
+        }
+        catch (Exception e) when (e is ArgumentException or InvalidOperationException)
+        {
+            return Refuse(e.Message);
+        }
+        _changes.Add(new DislChange.Create(type.Name, created.Id, attributes, parent?.Id, point));
+        if (lookup.As is { } bound) variables[bound] = created;
         return true;
     }
 

@@ -198,6 +198,9 @@ export function TimelineCanvas({ projectId, entryId, path }: ShellCanvasProps) {
           // A date-only element's day lattice in canvas units: one day wide, with a line where
           // a day starts. Absent for an element with a time of day, which does not snap in x.
           ...(element.dateOnly ? { dayUnits: DAY / scale.secondsPerUnit, dayOriginUnits: -scale.originSeconds / scale.secondsPerUnit } : {}),
+          // A linked element's link and, when it names its target, the target (DISL 4.12, spec 092): what the
+          // definition's link mark asks with `has(self.link)` and `has(self.linked)`.
+          ...(element.link !== undefined ? { link: element.link, ...(element.linked === true ? { linked: {} } : {}) } : {}),
         },
       };
     });

@@ -23,11 +23,12 @@ public static class ServiceCollectionAddTimelineExtension
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        // The schema marker and an empty element list, and nothing else (Requirement 1.3): an empty
-        // timeline is a valid one, and a placeholder element would be the first thing every user
-        // deletes. The base name is not written - a timeline has no title line in its schema. CRLF,
-        // the house style, since a new file has no style of its own to keep.
-        services.AddEmptyDocument(Diagram.Timeline.Origin, "timeline: 1\r\nelements: []\r\n");
+        // The binding's template: the schema marker, a new document id (FBL 17.2, spec 092) and an
+        // empty element list, and nothing else (Requirement 1.3): an empty timeline is a valid one,
+        // and a placeholder element would be the first thing every user deletes. The base name is
+        // not written - a timeline has no title line in its schema. CRLF, the house style, since a
+        // new file has no style of its own to keep.
+        services.AddEmptyDocument(Diagram.Timeline.Origin, baseName => DocumentTemplate.Text(TimelineBody.Binding, TimelineDefinition.Specification, baseName + ".tml"));
         services.AddSingleton<TimelineElementMapper>();
 
         // One document per path, shared by every connection viewing it. TryAdd rather than Add

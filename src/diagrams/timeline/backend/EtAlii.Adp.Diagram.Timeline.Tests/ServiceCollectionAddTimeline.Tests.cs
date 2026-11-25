@@ -85,7 +85,7 @@ public class ServiceCollectionAddTimelineTests
     }
 
     [Fact]
-    public void TheEmptyDocument_IsTheSchemaMarkerAndAnEmptyListAndNothingElse()
+    public void TheEmptyDocument_IsTheSchemaMarkerADocumentIdAndAnEmptyListAndNothingElse()
     {
         // Arrange.
         using var provider = Build();
@@ -97,7 +97,8 @@ public class ServiceCollectionAddTimelineTests
         var model = TimelineReading.Of(text);
         Assert.Empty(model.Elements);
         Assert.Empty(model.Connections);
-        Assert.Equal("timeline: 1\r\nelements: []\r\n", text);
+        Assert.Matches("^timeline: 1\r\nid: [0-9a-z]{8}\r\nelements: \\[\\]\r\n$", text);
+        Assert.Equal(text[17..25], TimelineBody.Parse(text).Model.DocumentId);
     }
 
     [Fact]

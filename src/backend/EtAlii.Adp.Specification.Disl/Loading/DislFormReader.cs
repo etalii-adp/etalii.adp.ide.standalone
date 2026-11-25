@@ -72,6 +72,10 @@ internal static class DislFormReader
             Marks = marks,
             MarksNotAnObject = marksNotAnObject,
             Widget = JsonProperties.String(item, "widget"),
+            ReadOnlyWhen = item.TryGetProperty("readOnly", out var readOnly) && readOnly.ValueKind is JsonValueKind.Object or JsonValueKind.String
+                ? DislFieldReader.Expression(specification, readOnly, JsonPointer.Append(pointer, "readOnly"))
+                : null,
+            ReadOnlyNever = item.TryGetProperty("readOnly", out var never) && never.ValueKind == JsonValueKind.False,
             ReadOnlyReasons = item.TryGetProperty("readOnlyReasons", out var reasons) ? DislFieldReader.Reasons(specification, reasons, JsonPointer.Append(pointer, "readOnlyReasons")) : [],
             Validations = Validations(specification, item, pointer),
             Parse = item.TryGetProperty("parse", out var parse) ? Parse(specification, parse, JsonPointer.Append(pointer, "parse")) : null,

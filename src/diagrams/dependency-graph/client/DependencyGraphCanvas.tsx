@@ -73,6 +73,9 @@ export function DependencyGraphCanvas({ projectId, entryId, path }: ToolContentP
       height: NODE_HEIGHT,
       label: node.label || node.id,
       node,
+      // A linked node's link and, when it names its target, the target (DISL 4.12, spec 092): what the
+      // definition's link mark asks with `has(self.link)` and `has(self.linked)`.
+      ...(node.link !== undefined ? { payload: { link: node.link, ...(node.linked === true ? { linked: {} } : {}) } } : {}),
     }));
     const connections = [...model.relations.values()].map((relation) => ({
       id: relation.id,

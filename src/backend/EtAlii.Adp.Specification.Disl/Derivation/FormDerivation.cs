@@ -104,14 +104,15 @@ public static class FormDerivation
 
     /// <summary>
     /// Why the row of <paramref name="item"/> cannot be edited, in the order of §4.3: the first of the item's
-    /// <c>readOnlyReasons</c> that applies; for a <c>fixed</c> attribute, then the first of the attribute's own; on a
+    /// <c>readOnlyReasons</c> that applies while its own <c>readOnly</c> holds, when it states one (DISL 0.12, as the desktop host reads it); for a <c>fixed</c> attribute, then the first of the attribute's own; on a
     /// read-only diagram, then <c>std.readOnly</c>; and for a fixed attribute that none of them names, the runtime's
     /// sentence. Null when the row can be edited.
     /// </summary>
     internal static string? ReadOnlyReason(DislSpecification specification, DislFormItem item, DislAttribute? attribute, IReadOnlyDictionary<string, object?> variables, DislEnv env)
     {
         var fixedAttribute = attribute is { IsFixed: true };
-        return DislReason.First(item.ReadOnlyReasons, specification, variables)
+        var ownReasonsApply = !item.ReadOnlyNever && (item.ReadOnlyWhen is not { } when || when.Holds(variables));
+        return (ownReasonsApply ? DislReason.First(item.ReadOnlyReasons, specification, variables) : null)
             ?? (fixedAttribute ? DislReason.First(attribute!.ReadOnlyReasons, specification, variables) : null)
             ?? (variables.GetValueOrDefault("diagram") is DislDiagram diagram ? DislBudgets.WithheldReason(diagram, viewData: false) : null)
             ?? (env.ReadOnly ? DislEvaluation.StandardMessage(specification, "std.readOnly", variables, "This diagram is read-only.") : null)

@@ -44,7 +44,7 @@ internal static partial class DislExpressionWalker
     /// <summary>The keywords and names of an action, which are never CEL (§2.5 d).</summary>
     private static readonly HashSet<string> ActionNames = new(StringComparer.Ordinal)
     {
-        "as", "algorithm", "unset", "call", "plugin", "severity", "form", "place",
+        "as", "algorithm", "unset", "call", "plugin", "severity", "form", "place", "lookup",
     };
 
     /// <summary>The coordinates a shape states as GeomExprs (§2.5 c, §6.8).</summary>

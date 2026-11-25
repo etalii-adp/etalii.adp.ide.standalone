@@ -8,7 +8,12 @@ namespace EtAlii.Adp.Specification.Disl;
 /// </summary>
 /// <param name="ReadOnly">Whether nothing may be edited: <c>env.readOnly</c>, and the reason a form row gives when no other applies.</param>
 /// <param name="Viewpoint">The active viewpoint's id, <c>env.viewpoint</c>; empty when the specification has none.</param>
-public sealed record DislEnv(bool ReadOnly = false, string Viewpoint = "", string? Now = null)
+/// <param name="Now">The moment of the gesture, <c>env.now</c>; null when the host gives none.</param>
+/// <param name="Lookup">
+/// Whether the host offers the workspace's lookup (DISL 0.12 §9.4). Where it does not, an operation whose actions open it is no entry of a
+/// menu, rather than an entry that refuses every time it is chosen.
+/// </param>
+public sealed record DislEnv(bool ReadOnly = false, string Viewpoint = "", string? Now = null, bool Lookup = false)
 {
     /// <summary>The value <c>env</c> is bound to.</summary>
     public CelMap ToCel()

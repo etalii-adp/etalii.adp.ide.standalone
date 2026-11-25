@@ -55,6 +55,9 @@ public sealed class DislSpecification
             ? declared
             : default;
         Ids = IdRuleOf(ids);
+        DocumentIdRule = persistence.ValueKind == JsonValueKind.Object && persistence.TryGetProperty("documentId", out var documentId) && documentId.ValueKind == JsonValueKind.Object
+            ? IdRuleOf(documentId)
+            : null;
         IdEncoding = ids.ValueKind == JsonValueKind.Object ? JsonProperties.String(ids, "encoding") ?? "hex" : "hex";
         IdTypeNames = [.. DislJson.Members(ids, "types").Select(type => type.Name)];
         foreach (var type in DislJson.Members(ids, "types")) IdTypes[type.Name] = IdRuleOf(type.Value);
@@ -134,6 +137,12 @@ public sealed class DislSpecification
 
     /// <summary>The type names of the per-type id rules (§11.5.2), in declaration order.</summary>
     internal IReadOnlyList<string> IdTypeNames { get; }
+
+    /// <summary>The id rule of the diagram's document id (<c>persistence.documentId</c>, DISL 0.12, FBL 17.2), null when the specification declares none.</summary>
+    internal DislIdRule? DocumentIdRule { get; }
+
+    /// <summary>Whether the diagram keeps a document id (<c>persistence.documentId</c>, DISL 0.12), so that its documents hold links or are linked to (§4.12).</summary>
+    public bool HasDocumentId => DocumentIdRule is not null;
 
     /// <summary>The top-level id strategy (§11.5.1), <c>uuid-v7</c> when none is declared.</summary>
     internal string IdStrategy => Ids.Strategy;
@@ -258,7 +267,12 @@ public sealed class DislSpecification
 
     /// <summary>A rule as declared; its prefix only when it is one string, which a map (top level only) is not.</summary>
     private static DislIdRule IdRuleOf(JsonElement json) =>
-        new(JsonProperties.String(json, "strategy") ?? "uuid-v7", JsonProperties.String(json, "expression"), JsonProperties.String(json, "prefix"));
+        new(
+            JsonProperties.String(json, "strategy") ?? "uuid-v7",
+            JsonProperties.String(json, "expression"),
+            JsonProperties.String(json, "prefix"),
+            JsonProperties.String(json, "alphabet") ?? "nanoid",
+            json.ValueKind == JsonValueKind.Object && json.TryGetProperty("length", out var length) && length.TryGetInt32(out var count) ? count : 21);
 }
 
 /// <summary>The metamodel of a specification (DISL §4), inheritance flattened.</summary>

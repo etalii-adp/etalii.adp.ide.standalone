@@ -26,6 +26,14 @@ message DependencyGraphElementPayload {
   // What the node is called. On the payload rather than the core Element because the core record
   // carries no label of its own.
   string label = 3;
+
+  // The link a linked node stands for (FBL 17.1, spec 092), as written; empty for an ordinary node.
+  // Its label is then the target's name the link caches.
+  string link = 4;
+
+  // Whether the link names its target well enough to draw the link mark rather than the broken
+  // mark. Until the workspace's index resolves links (spec 092, pull request E), a link that parses.
+  bool linked = 5;
 }
 
 // A directed depends-on edge: `from` depends on `to`. The direction is in the document rather

@@ -31,6 +31,21 @@ public class DependencyGraphElementMapperTests
         """;
 
     [Fact]
+    public void ALinkedNode_IsNamedByItsLink_WithTheLinkOnThePayload()
+    {
+        // Act: spec 089's linked node of a dependency graph (spec 092, FR-001, FR-005).
+        var elements = _mapper.Elements(Parse("dependencies: 1\r\nid: d7n2k4qp\r\nelements:\r\n  - id: a\r\n    label: API\r\n  - id: b\r\n    link: $k3f9x2ma@provinces.yaml#nh.Name=Noord-Holland\r\n    x: 200\r\n    row: 1\r\n  - id: c\r\n    link: not a link\r\n"));
+
+        // Assert.
+        var ordinary = DependencyGraphElementPayload.Parser.ParseFrom(elements.Single(element => element.Id == "a").Payload.Span);
+        var linked = DependencyGraphElementPayload.Parser.ParseFrom(elements.Single(element => element.Id == "b").Payload.Span);
+        var broken = DependencyGraphElementPayload.Parser.ParseFrom(elements.Single(element => element.Id == "c").Payload.Span);
+        Assert.Equal(("API", "", false), (ordinary.Label, ordinary.Link, ordinary.Linked));
+        Assert.Equal(("Noord-Holland", "$k3f9x2ma@provinces.yaml#nh.Name=Noord-Holland", true, 200d, 1), (linked.Label, linked.Link, linked.Linked, linked.X, linked.Row));
+        Assert.Equal(("not a link", false), (broken.Link, broken.Linked));
+    }
+
+    [Fact]
     public void ANodesPositionIsItsAuthoredXAndItsRow()
     {
         // Act.

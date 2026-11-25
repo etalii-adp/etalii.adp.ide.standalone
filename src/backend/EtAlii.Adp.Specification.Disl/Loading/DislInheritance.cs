@@ -170,7 +170,42 @@ internal static class DislInheritance
             ?? merged.Values.FirstOrDefault(attribute => attribute.Key)?.Name
             ?? merged.Values.FirstOrDefault(attribute => attribute.Type == "string" && JsonProperties.Bool(attribute.Json, "required"))?.Name
             ?? merged.Values.FirstOrDefault(attribute => attribute.Type == "string")?.Name;
+
+        Links(type, all, merged, pointer, diagnostics);
     }
+
+    /// <summary>
+    /// A type's <c>linked</c> and <c>linkable</c> (DISL 0.12 §4.12), nearest declaration in its linearisation: the <c>link</c> attribute that
+    /// a linked element holds, and the attribute that names a linkable element in a link, its <c>nameProperty</c> or else its label attribute.
+    /// </summary>
+    private static void Links(DislType type, Dictionary<string, DislType> all, OrderedDictionary<string, DislAttribute> merged, string pointer, List<LoadDiagnostic> diagnostics)
+    {
+        var linked = Nearest(type, all, "linked");
+        if (linked is { } declaration)
+        {
+            type.LinkedAttribute = JsonProperties.String(declaration, "attribute");
+            if (type.LinkedAttribute is null || !merged.TryGetValue(type.LinkedAttribute, out var attribute) || attribute.Type != "link" || attribute.Many)
+            {
+                diagnostics.Add(DislLoader.Error(JsonPointer.Append(pointer, "linked"), $"'{type.Name}' is linked by '{type.LinkedAttribute}', which is not an attribute of type link (DISL §4.12)."));
+            }
+        }
+
+        if (Nearest(type, all, "linkable") is not { } linkable) return;
+        type.Linkable = true;
+        type.NameProperty = JsonProperties.String(linkable, "nameProperty") ?? type.LabelAttribute;
+        if (type.NameProperty is { } name && !merged.ContainsKey(name))
+        {
+            diagnostics.Add(DislLoader.Error(JsonPointer.Append(JsonPointer.Append(pointer, "linkable"), "nameProperty"), $"'{type.Name}' has no attribute '{name}' to name it in a link (DISL §4.12)."));
+        }
+    }
+
+    /// <summary>The object member <paramref name="name"/> of the nearest type in <paramref name="type"/>'s linearisation that declares it; null when none does.</summary>
+    private static JsonElement? Nearest(DislType type, Dictionary<string, DislType> all, string name) =>
+        type.Linearisation
+            .Select(ancestor => all[ancestor].Json)
+            .Where(json => json.ValueKind == JsonValueKind.Object && json.TryGetProperty(name, out var member) && member.ValueKind == JsonValueKind.Object)
+            .Select(json => (JsonElement?)json.GetProperty(name))
+            .FirstOrDefault();
 
     private static double? NumberBound(JsonElement json, string name) =>
         json.ValueKind == JsonValueKind.Object && json.TryGetProperty(name, out var bound) && bound.ValueKind == JsonValueKind.Number ? bound.GetDouble() : null;

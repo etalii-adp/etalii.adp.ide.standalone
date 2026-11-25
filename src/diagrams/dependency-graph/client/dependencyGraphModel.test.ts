@@ -71,6 +71,21 @@ describe("dependencyGraphModel", () => {
     expect(model.relations.get("ccc")!.toElementId).toBe("dependency");
   });
 
+  it("carries a linked node's link, and whether it names its target, and nothing of either for an ordinary one", () => {
+    // Arrange: a linked node, one whose link does not parse, and an ordinary node (spec 092).
+    const payload = (link: string, linked: boolean) =>
+      toBinary(DependencyGraphElementPayloadSchema, create(DependencyGraphElementPayloadSchema, { x: 0, row: 0, label: "Noord-Holland", link, linked }));
+    const delta = addDelta(element("b", NODE, payload("$k3f9x2ma@provinces.yaml#nh.Name=Noord-Holland", true)), element("c", NODE, payload("not a link", false)), element("a", NODE, payload("", false)));
+
+    // Act.
+    const model = applyDelta(emptyModel, delta);
+
+    // Assert.
+    expect(model.elements.get("b")).toMatchObject({ label: "Noord-Holland", link: "$k3f9x2ma@provinces.yaml#nh.Name=Noord-Holland", linked: true });
+    expect(model.elements.get("c")).toMatchObject({ link: "not a link", linked: false });
+    expect(model.elements.get("a")).not.toHaveProperty("link");
+  });
+
   it("skips a foreign element without decoding it", () => {
     // Arrange.
     // Several modules share one delta stream, and this payload is NOT one of ours: bytes that

@@ -64,6 +64,22 @@ public sealed class MindmapNode
     /// <summary>Freeplane's <c>POSITION</c> on a first-level node: <c>left</c>/<c>right</c> (1.11) or <c>top_or_left</c>/<c>bottom_or_right</c> (1.12), or null when unspecified.</summary>
     public string? Position => Element.Attribute(PositionAttribute)?.Value;
 
+    /// <summary>
+    /// The link a linked node stands for (<c>mindmap.md</c> 3.8, FBL 17.1): the <c>VALUE</c> of its first
+    /// <c>&lt;attribute NAME="adp-link"&gt;</c>; null for an ordinary node.
+    /// </summary>
+    public string? AdpLink => FreeplaneAttribute("adp-link");
+
+    /// <summary>
+    /// The map's document id (<c>mindmap.md</c> 3.8, FBL 17.2) when this is the central topic: the <c>VALUE</c> of its
+    /// first <c>&lt;attribute NAME="adp-id"&gt;</c>; null when it has none.
+    /// </summary>
+    public string? AdpId => FreeplaneAttribute("adp-id");
+
+    /// <summary>The <c>VALUE</c> of the node's first Freeplane <c>&lt;attribute&gt;</c> child named <paramref name="name"/>, null without one.</summary>
+    private string? FreeplaneAttribute(string name) =>
+        Element.Elements("attribute").FirstOrDefault(attribute => attribute.Attribute("NAME")?.Value == name)?.Attribute("VALUE")?.Value;
+
     public MindmapNode? Parent
     {
         get
