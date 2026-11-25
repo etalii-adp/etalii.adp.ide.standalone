@@ -17,6 +17,13 @@ public interface ILinkIndex
 
     /// <summary>The workspace of the tracked root that holds <paramref name="path"/>, the innermost when roots nest; null when none does.</summary>
     LinkWorkspace? WorkspaceOf(string path);
+
+    /// <summary>
+    /// Gives each document at <paramref name="paths"/> a new document id and writes it, as the fix of <c>link.ambiguous-document</c>
+    /// does to every candidate but the chosen one (FBL 17.6). A document that is open hears it as any change made outside it.
+    /// Returns why one could not be given one, or null when every one was.
+    /// </summary>
+    Task<string?> RenewAsync(IReadOnlyList<string> paths, CancellationToken cancellationToken);
 }
 
 /// <summary>The path of a document that changed in the index.</summary>

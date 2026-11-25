@@ -96,6 +96,9 @@ public sealed class TimelineBody
         return (DislModelBuilder.From(model, TimelineDefinition.Specification).Diagram, model.DocumentId);
     }
 
+    /// <summary>The <paramref name="bytes"/> with a new document id, for the fix of <c>link.ambiguous-document</c> (FBL 17.6, <see cref="DislOpening.Renewed"/>).</summary>
+    internal static byte[]? Renewed(byte[] bytes) => DislOpening.Renewed(OpenBody.Open(bytes, LoadedBinding.Value, LoadedOptions.Value), TimelineDefinition.Specification);
+
     /// <summary>
     /// What opening <paramref name="text"/> finds to write with its first edit (FBL 17.4, <see cref="DislOpening"/>): a document id
     /// where it has none, and its links as resolution in <paramref name="workspace"/> finds them; null when it finds nothing.

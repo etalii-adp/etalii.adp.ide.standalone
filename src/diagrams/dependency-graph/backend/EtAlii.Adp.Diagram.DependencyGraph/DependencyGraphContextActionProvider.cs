@@ -2,6 +2,7 @@ using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Links;
 using EtAlii.Adp.Specification.Disl;
 
 namespace EtAlii.Adp.Diagram.DependencyGraph;
@@ -43,8 +44,8 @@ namespace EtAlii.Adp.Diagram.DependencyGraph;
 /// offers and what each does.
 /// </para>
 /// </remarks>
-public sealed class DependencyGraphContextActionProvider(IHistoryStackStore historyStacks, IDependencyGraphDocumentStore documents)
-    : DiagramActionProvider<DependencyGraphBody, DislModel>(historyStacks, documents)
+public sealed class DependencyGraphContextActionProvider(IHistoryStackStore historyStacks, IDependencyGraphDocumentStore documents, ILinkIndex? links = null)
+    : DiagramActionProvider<DependencyGraphBody, DislModel>(historyStacks, documents, links)
 {
     /// <summary>Rename, asking for the new label first.</summary>
     public const string RenameActionId = "dependencies.rename";
@@ -94,6 +95,13 @@ public sealed class DependencyGraphContextActionProvider(IHistoryStackStore hist
     /// </remarks>
     protected override IReadOnlyList<ContextActionGroupDefinition> Discover(DocumentEntry<DependencyGraphBody, DislModel> entry, string elementId) =>
         DependencyGraphDefinition.Menus(entry.Document, elementId);
+
+    /// <inheritdoc />
+    protected override DislDiagram LinkedDiagramOf(DocumentEntry<DependencyGraphBody, DislModel> entry) => entry.Document.Disl.Diagram;
+
+    /// <inheritdoc />
+    protected override ICommand Relink(ContextTarget target, LinkFix fix, string? link) =>
+        new SetDependencyGraphLinkCommand(target.ResolvedFullPath, target.ElementId, link, fix.CachedName);
 
     /// <inheritdoc />
     protected override async ValueTask<ContextExecutionResult> RunAsync(

@@ -11,7 +11,11 @@ namespace EtAlii.Adp.Diagram.Modules;
 /// </summary>
 /// <param name="extensions">The extensions of the type's files, with their dot (<c>.tml</c>), compared without regard to case.</param>
 /// <param name="read">The diagram the bytes of a file at a path hold, built under the type's specification, and the file's document id.</param>
-public sealed class DislLinkIndexer(IReadOnlyCollection<string> extensions, Func<byte[], string, (DislDiagram Diagram, string? DocumentId)> read) : ILinkIndexer
+/// <param name="renew">The bytes of a file at a path with a new document id (<see cref="DislOpening.Renewed"/>); without it, no document of the type is given one.</param>
+public sealed class DislLinkIndexer(
+    IReadOnlyCollection<string> extensions,
+    Func<byte[], string, (DislDiagram Diagram, string? DocumentId)> read,
+    Func<byte[], string, byte[]?>? renew = null) : ILinkIndexer
 {
     /// <inheritdoc />
     public bool Claims(string path) => extensions.Any(extension => path.EndsWith(extension, StringComparison.OrdinalIgnoreCase));
@@ -22,4 +26,7 @@ public sealed class DislLinkIndexer(IReadOnlyCollection<string> extensions, Func
         (DislDiagram diagram, string? documentId) = read(bytes, path);
         return DislLinks.Indexed(diagram, path, documentId);
     }
+
+    /// <inheritdoc />
+    public byte[]? Renewed(string path, byte[] bytes) => renew?.Invoke(bytes, path);
 }

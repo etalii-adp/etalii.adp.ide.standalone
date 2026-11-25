@@ -43,4 +43,12 @@ internal sealed class LinkIndexTestIndexer : ILinkIndexer
         }
         return new IndexedDocument(path, documentId, "name", elements, links);
     }
+
+    public byte[]? Renewed(string path, byte[] bytes)
+    {
+        var lines = Encoding.UTF8.GetString(bytes).Split('\n');
+        return lines.Any(line => line.StartsWith("fixed", StringComparison.Ordinal))
+            ? null
+            : Encoding.UTF8.GetBytes(string.Join('\n', lines.Select(line => line.StartsWith("id:", StringComparison.Ordinal) ? "id: renewed" : line)));
+    }
 }

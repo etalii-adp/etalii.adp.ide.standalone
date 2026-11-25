@@ -2,6 +2,8 @@ using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Links;
+using EtAlii.Adp.Specification.Disl;
 
 namespace EtAlii.Adp.Diagram.Timeline;
 
@@ -35,8 +37,8 @@ namespace EtAlii.Adp.Diagram.Timeline;
 /// offers and what each does.
 /// </para>
 /// </remarks>
-public sealed class TimelineContextActionProvider(IHistoryStackStore historyStacks, ITimelineDocumentStore documents)
-    : DiagramActionProvider<LineDocument, TimelineModel>(historyStacks, documents)
+public sealed class TimelineContextActionProvider(IHistoryStackStore historyStacks, ITimelineDocumentStore documents, ILinkIndex? links = null)
+    : DiagramActionProvider<LineDocument, TimelineModel>(historyStacks, documents, links)
 {
     /// <summary>Rename, asking for the new label first.</summary>
     public const string RenameActionId = "timeline.rename";
@@ -89,6 +91,13 @@ public sealed class TimelineContextActionProvider(IHistoryStackStore historyStac
     /// </remarks>
     protected override IReadOnlyList<ContextActionGroupDefinition> Discover(DocumentEntry<LineDocument, TimelineModel> entry, string elementId) =>
         TimelineDefinition.Menus(entry.Model, elementId);
+
+    /// <inheritdoc />
+    protected override DislDiagram LinkedDiagramOf(DocumentEntry<LineDocument, TimelineModel> entry) => TimelineDefinition.DiagramOf(entry.Model);
+
+    /// <inheritdoc />
+    protected override ICommand Relink(ContextTarget target, LinkFix fix, string? link) =>
+        new SetTimelineLinkCommand(target.ResolvedFullPath, target.ElementId, link, fix.CachedName);
 
     /// <inheritdoc />
     protected override async ValueTask<ContextExecutionResult> RunAsync(

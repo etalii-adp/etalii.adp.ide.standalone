@@ -23,7 +23,7 @@ namespace EtAlii.Adp.Links;
 /// <see cref="Changed"/> is raised after it, outside the lock.
 /// </para>
 /// </remarks>
-public sealed class LinkIndex(ProjectFileEvents events, IEnumerable<ILinkIndexer> indexers) : ILinkIndex, IDisposable
+public sealed class LinkIndex(ProjectFileEvents events, IEnumerable<ILinkIndexer> indexers, IFileWriter? writer = null) : ILinkIndex, IDisposable
 {
     /// <summary>The size above which a file is not read, in bytes: 5 MB.</summary>
     public const long SizeLimit = 5L * 1024 * 1024;
@@ -68,6 +68,34 @@ public sealed class LinkIndex(ProjectFileEvents events, IEnumerable<ILinkIndexer
     }
 
     /// <inheritdoc />
+    /// <inheritdoc />
+    /// <remarks>
+    /// Written through the one file writer, so the write is heard as a change: the index reads the new id from it, and a module
+    /// that has the document open reads it again as it reads any change made outside it.
+    /// </remarks>
+    public async Task<string?> RenewAsync(IReadOnlyList<string> paths, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(paths);
+        if (writer is null) return "Documents cannot be written here.";
+        foreach (var path in paths)
+        {
+            var name = Path.GetFileName(path);
+            if (IndexerOf(Normalized(path)) is not { } indexer) return $"{name} is no document that keeps an id.";
+            byte[] bytes;
+            try
+            {
+                bytes = await File.ReadAllBytesAsync(path, cancellationToken);
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+            {
+                return $"{name} could not be read: {exception.Message}";
+            }
+            if (Renewed(indexer, path, bytes) is not { } renewed) return $"{name} could not be given a new document id.";
+            await writer.SaveAsync(path, renewed, cancellationToken);
+        }
+        return null;
+    }
+
     public void Dispose()
     {
         lock (_gate)
@@ -78,6 +106,19 @@ public sealed class LinkIndex(ProjectFileEvents events, IEnumerable<ILinkIndexer
     }
 
     /// <summary>A path with forward slashes, as the index holds it.</summary>
+    private static byte[]? Renewed(ILinkIndexer indexer, string path, byte[] bytes)
+    {
+        try
+        {
+            return indexer.Renewed(path, bytes);
+        }
+        catch (Exception exception)
+        {
+            _logger.Warning(exception, "{Path} could not be given a new document id", path);
+            return null;
+        }
+    }
+
     private static string Normalized(string path) => path.Replace('\\', '/');
 
     /// <summary>The innermost tracked root that holds <paramref name="path"/>; null when none does.</summary>
