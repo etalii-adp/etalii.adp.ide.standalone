@@ -1,3 +1,5 @@
+using EtAlii.Adp.Diagram.Modules;
+using EtAlii.Adp.Links;
 using Serilog;
 
 namespace EtAlii.Adp.Diagram.Timeline;
@@ -21,6 +23,14 @@ public sealed class TimelineValidator : IDiagramValidator
     /// <summary>The rule reported when the file is not YAML this can read.</summary>
     public const string UnparseableRuleId = "timeline.unparseable";
 
+    private readonly ILinkIndex? _links;
+
+    /// <param name="links">The index the diagram's links resolve in (FBL 17.6); none reports only the links that do not parse.</param>
+    public TimelineValidator(ILinkIndex? links = null)
+    {
+        _links = links;
+    }
+
     /// <inheritdoc />
     public ToolOrigin Origin => Diagram.Timeline.Origin;
 
@@ -37,6 +47,8 @@ public sealed class TimelineValidator : IDiagramValidator
             return ValueTask.FromResult(TimelineDefinition.Unparseable(refusal.Message, refusal.Line));
         }
 
-        return ValueTask.FromResult(TimelineDefinition.Problems(TimelineBody.Parse(request.Document)));
+        var body = TimelineBody.Parse(request.Document);
+        IReadOnlyList<DiagramProblem> problems = [.. TimelineDefinition.Problems(body), .. DislLinkFindings.Of(body.Disl.Diagram, _links?.WorkspaceOf(request.BodyPath))];
+        return ValueTask.FromResult(problems);
     }
 }

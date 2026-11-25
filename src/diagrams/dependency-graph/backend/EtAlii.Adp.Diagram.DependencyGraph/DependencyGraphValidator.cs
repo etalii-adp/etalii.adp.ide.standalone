@@ -1,3 +1,5 @@
+using EtAlii.Adp.Diagram.Modules;
+using EtAlii.Adp.Links;
 namespace EtAlii.Adp.Diagram.DependencyGraph;
 
 /// <summary>
@@ -16,6 +18,14 @@ public sealed class DependencyGraphValidator : IDiagramValidator
     /// <summary>The rule reported when the file is not YAML this can read.</summary>
     public const string UnparseableRuleId = "dependencies.unparseable";
 
+    private readonly ILinkIndex? _links;
+
+    /// <param name="links">The index the diagram's links resolve in (FBL 17.6); none reports only the links that do not parse.</param>
+    public DependencyGraphValidator(ILinkIndex? links = null)
+    {
+        _links = links;
+    }
+
     /// <inheritdoc />
     public ToolOrigin Origin => Diagram.DependencyGraph.Origin;
 
@@ -26,6 +36,8 @@ public sealed class DependencyGraphValidator : IDiagramValidator
         ArgumentNullException.ThrowIfNull(request);
         cancellationToken.ThrowIfCancellationRequested();
 
-        return ValueTask.FromResult(DependencyGraphFindings.Judge(DependencyGraphBody.Parse(request.Document)));
+        var body = DependencyGraphBody.Parse(request.Document);
+        IReadOnlyList<DiagramProblem> problems = [.. DependencyGraphFindings.Judge(body), .. DislLinkFindings.Of(body.Disl.Diagram, _links?.WorkspaceOf(request.BodyPath))];
+        return ValueTask.FromResult(problems);
     }
 }

@@ -1,4 +1,5 @@
 using EtAlii.Adp.Diagram.Modules;
+using EtAlii.Adp.Links;
 using EtAlii.Adp.Specification.Disl;
 using IoPath = System.IO.Path;
 
@@ -33,6 +34,14 @@ namespace EtAlii.Adp.Diagram.Mindmap;
 /// </remarks>
 public sealed class MindmapValidator : IDiagramValidator
 {
+    private readonly ILinkIndex? _links;
+
+    /// <param name="links">The index the diagram's links resolve in (FBL 17.6); none reports only the links that do not parse.</param>
+    public MindmapValidator(ILinkIndex? links = null)
+    {
+        _links = links;
+    }
+
     public ToolOrigin Origin => Diagram.Mindmap.Origin;
 
     public ValueTask<IReadOnlyList<DiagramProblem>> ValidateAsync(
@@ -49,6 +58,7 @@ public sealed class MindmapValidator : IDiagramValidator
                 finding.Message,
                 finding.Code,
                 LocationOf(finding))),
+            .. MindmapDefinition.LinkFindings(request.Document, file, _links?.WorkspaceOf(request.BodyPath)),
         ];
 
         return ValueTask.FromResult(problems);
