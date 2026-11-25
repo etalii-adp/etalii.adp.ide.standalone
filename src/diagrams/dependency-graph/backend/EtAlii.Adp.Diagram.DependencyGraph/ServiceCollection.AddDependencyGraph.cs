@@ -31,7 +31,7 @@ public static class ServiceCollectionAddDependencyGraphExtension
         services.AddSingleton<DependencyGraphElementMapper>();
 
         // The link index reads this type's files (FBL 17.3, spec 092): their linkable elements and the links they hold.
-        services.AddSingleton<ILinkIndexer>(new DislLinkIndexer([".dgr"], (bytes, _) => DependencyGraphBody.Indexed(bytes)));
+        services.AddSingleton<ILinkIndexer>(new DislLinkIndexer([".dgr"], (bytes, _) => DependencyGraphBody.Indexed(bytes), (bytes, _) => DependencyGraphBody.Renewed(bytes)));
 
         // One document per path, shared by every connection viewing it. TryAdd rather than Add
         // so a test that registers its own store keeps it.
@@ -58,6 +58,7 @@ public static class ServiceCollectionAddDependencyGraphExtension
         services.AddSingleton<ICommandHandler<RemoveDependencyGraphElementCommand>, RemoveDependencyGraphElementCommandHandler>();
         services.AddSingleton<ICommandHandler<RestoreDocumentCommand<IDependencyGraphDocumentStore>>, RestoreDocumentCommandHandler<IDependencyGraphDocumentStore>>();
         services.AddSingleton<ICommandHandler<RenameDependencyGraphElementCommand>, RenameDependencyGraphElementCommandHandler>();
+        services.AddSingleton<ICommandHandler<SetDependencyGraphLinkCommand>, SetDependencyGraphLinkCommandHandler>();
         services.AddSingleton<ICommandHandler<ConnectDependencyGraphElementsCommand>, ConnectDependencyGraphElementsCommandHandler>();
         services.AddSingleton<ICommandHandler<DisconnectDependencyGraphRelationCommand>, DisconnectDependencyGraphRelationCommandHandler>();
         services.AddSingleton<ICommandHandler<RelabelDependencyGraphRelationCommand>, RelabelDependencyGraphRelationCommandHandler>();

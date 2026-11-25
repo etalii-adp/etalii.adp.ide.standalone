@@ -1,3 +1,4 @@
+using System.Text;
 using EtAlii.Adp.Specification.Disl;
 using EtAlii.Adp.Specification.Fbl.Links;
 
@@ -20,6 +21,22 @@ public sealed record MindmapOpened(string File, string Pending);
 
 internal static class MindmapOpening
 {
+    private static readonly byte[] _byteOrderMark = [0xEF, 0xBB, 0xBF];
+
+    /// <summary>
+    /// The map <paramref name="bytes"/> with a new <c>adp-id</c> on its central topic, as the fix of <c>link.ambiguous-document</c>
+    /// gives every candidate but the chosen one (FBL 17.6); nothing else of it changes.
+    /// </summary>
+    public static byte[]? Renewed(byte[] bytes)
+    {
+        ArgumentNullException.ThrowIfNull(bytes);
+        if (DislIds.NewDocumentId(MindmapDefinition.Definition.Specification) is not { } id) return null;
+        var marked = bytes.AsSpan().StartsWith(_byteOrderMark);
+        var document = MindmapDocument.Parse(Encoding.UTF8.GetString(marked ? bytes[_byteOrderMark.Length..] : bytes), assignMissingIds: false);
+        document.Root.SetFreeplaneAttribute(MindmapNode.AdpIdAttribute, id);
+        return [.. marked ? _byteOrderMark : [], .. Encoding.UTF8.GetBytes(document.ToText())];
+    }
+
     /// <summary>Changes <paramref name="document"/> as opening finds it should be; <paramref name="workspace"/> null leaves its links as they are.</summary>
     public static void Validate(MindmapDocument document, LinkWorkspace? workspace)
     {

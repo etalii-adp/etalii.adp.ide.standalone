@@ -39,7 +39,7 @@ public static class DislLinkFindings
         return problems;
     }
 
-    private static LinkFinding? FindingOf(string text, LinkWorkspace? workspace) =>
+    internal static LinkFinding? FindingOf(string text, LinkWorkspace? workspace) =>
         workspace is not null ? workspace.Resolve(text).Finding
         : FblLink.Parse(text) is null ? new LinkWorkspace("", []).Resolve(text).Finding
         : null;

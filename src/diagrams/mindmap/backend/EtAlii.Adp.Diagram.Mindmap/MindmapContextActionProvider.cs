@@ -1,6 +1,8 @@
 using EtAlii.Adp.Context;
+using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Links;
 using EtAlii.Adp.Specification.Disl;
 using Serilog;
 using IoPath = System.IO.Path;
@@ -55,8 +57,9 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
     private readonly IHistoryStackStore _historyStacks;
     private readonly IMindmapDocumentStore _documents;
     private readonly MindmapViewState _views;
+    private readonly LinkFixActions _linkFixes;
 
-    public MindmapContextActionProvider(IHistoryStackStore historyStacks, IMindmapDocumentStore documents, MindmapViewState views)
+    public MindmapContextActionProvider(IHistoryStackStore historyStacks, IMindmapDocumentStore documents, MindmapViewState views, ILinkIndex? links = null)
     {
         ArgumentNullException.ThrowIfNull(historyStacks);
         ArgumentNullException.ThrowIfNull(documents);
@@ -64,6 +67,7 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
         _historyStacks = historyStacks;
         _documents = documents;
         _views = views;
+        _linkFixes = new LinkFixActions(historyStacks, links);
     }
 
     public ContextScope Scope => ContextScope.DiagramElement;
@@ -73,7 +77,9 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
         // Not offered rather than greyed (Requirement 8.6): a sibling of the root and an unlink of
         // an unlinked node are not "unavailable right now", they do not apply - the definition's
         // entries say so with `visible`.
-        return await ResolveAsync(target, cancellationToken) is { } resolved ? MindmapDefinition.Menus(resolved.Element) : [];
+        return await ResolveAsync(target, cancellationToken) is { } resolved
+            ? [.. MindmapDefinition.Menus(resolved.Element), .. _linkFixes.Menu(resolved.Diagram, target)]
+            : [];
     }
 
     public async ValueTask<ContextExecutionResult> ExecuteAsync(ContextTarget target, string actionId, CancellationToken cancellationToken)
@@ -85,6 +91,12 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
 
         var node = resolved.Node;
         var element = resolved.Element;
+        if (DislLinkFixes.IsFix(actionId))
+        {
+            // The fixes of a linked node's finding (FBL 17.6): the link removed, leaving the text it cached, or its document chosen.
+            return await _linkFixes.ExecuteAsync(resolved.Diagram, target, actionId, (_, link) => new SetNodeAdpLinkCommand(target.ResolvedFullPath, node.Id, link), cancellationToken);
+        }
+
         if (!MindmapDefinition.Offers(element, actionId))
         {
             return new ContextExecutionFailed($"Unknown action '{actionId}'.");
@@ -166,6 +178,11 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
 
         var node = resolved.Node;
         var bodyPath = target.ResolvedFullPath;
+        if (actionId == DislLinkFixes.ChooseActionId)
+        {
+            return await _linkFixes.ChooseAsync(resolved.Diagram, target, value, (_, link) => new SetNodeAdpLinkCommand(bodyPath, node.Id, link), cancellationToken);
+        }
+
         ICommand? command = !MindmapDefinition.Offers(resolved.Element, actionId)
             ? null
             : actionId switch
@@ -268,10 +285,10 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
         }
 
         var model = MindmapDefinition.ModelOf(document, _views.For(target.WatchId, target.ResolvedFullPath, document));
-        return MindmapDefinition.ElementOf(model, node.Id) is { } element ? new ResolvedNode(document, node, element) : null;
+        return MindmapDefinition.ElementOf(model, node.Id) is { } element ? new ResolvedNode(document, node, element, model) : null;
     }
 
-    private sealed record ResolvedNode(MindmapDocument Document, MindmapNode Node, DislElement Element);
+    private sealed record ResolvedNode(MindmapDocument Document, MindmapNode Node, DislElement Element, DislDiagram Diagram);
 
     /// <summary>
     /// The project's files as a choice tree, folders unselectable and files selectable, each

@@ -2,6 +2,8 @@ using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Links;
+using EtAlii.Adp.Specification.Disl;
 
 namespace EtAlii.Adp.Diagram.Modules;
 
@@ -28,9 +30,10 @@ public abstract class DiagramActionProvider<TBody, TModel> : IContextActionProvi
 {
     private readonly IHistoryStackStore _historyStacks;
     private readonly Func<ContextTarget, CancellationToken, ValueTask<DocumentEntry<TBody, TModel>>> _load;
+    private readonly LinkFixActions _linkFixes;
 
-    protected DiagramActionProvider(IHistoryStackStore historyStacks, IDiagramDocumentStore<TBody, TModel> documents)
-        : this(historyStacks, DiagramPropertyProvider<TBody, TModel>.LoadFrom(documents))
+    protected DiagramActionProvider(IHistoryStackStore historyStacks, IDiagramDocumentStore<TBody, TModel> documents, ILinkIndex? links = null)
+        : this(historyStacks, DiagramPropertyProvider<TBody, TModel>.LoadFrom(documents), links)
     {
     }
 
@@ -38,12 +41,13 @@ public abstract class DiagramActionProvider<TBody, TModel> : IContextActionProvi
     /// A provider whose documents are loaded by <paramref name="load"/>, for a module whose store
     /// needs more of a target than the path of its body to read it.
     /// </summary>
-    protected DiagramActionProvider(IHistoryStackStore historyStacks, Func<ContextTarget, CancellationToken, ValueTask<DocumentEntry<TBody, TModel>>> load)
+    protected DiagramActionProvider(IHistoryStackStore historyStacks, Func<ContextTarget, CancellationToken, ValueTask<DocumentEntry<TBody, TModel>>> load, ILinkIndex? links = null)
     {
         ArgumentNullException.ThrowIfNull(historyStacks);
         ArgumentNullException.ThrowIfNull(load);
         _historyStacks = historyStacks;
         _load = load;
+        _linkFixes = new LinkFixActions(historyStacks, links);
     }
 
     /// <inheritdoc />
@@ -55,9 +59,12 @@ public abstract class DiagramActionProvider<TBody, TModel> : IContextActionProvi
         ArgumentNullException.ThrowIfNull(target);
         cancellationToken.ThrowIfCancellationRequested();
 
-        return Serves(target)
-            ? Discover(target, await LoadAsync(target, cancellationToken))
-            : [];
+        if (!Serves(target)) return [];
+        var entry = await LoadAsync(target, cancellationToken);
+        var discovered = Discover(target, entry);
+        return entry.IsUsable && LinkedDiagramOf(entry) is { } diagram && _linkFixes.Menu(diagram, target) is { Count: > 0 } fixes
+            ? [.. discovered, .. fixes]
+            : discovered;
     }
 
     /// <inheritdoc />
@@ -67,9 +74,10 @@ public abstract class DiagramActionProvider<TBody, TModel> : IContextActionProvi
         cancellationToken.ThrowIfCancellationRequested();
 
         var entry = await LoadAsync(target, cancellationToken);
-        return entry.IsUsable
-            ? await RunAsync(target, entry, actionId, cancellationToken)
-            : new ContextExecutionFailed(Unreadable(target));
+        if (!entry.IsUsable) return new ContextExecutionFailed(Unreadable(target));
+        return DislLinkFixes.IsFix(actionId) && LinkedDiagramOf(entry) is { } diagram
+            ? await _linkFixes.ExecuteAsync(diagram, target, actionId, (fix, link) => Relink(target, entry, fix, link), cancellationToken)
+            : await RunAsync(target, entry, actionId, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -96,6 +104,11 @@ public abstract class DiagramActionProvider<TBody, TModel> : IContextActionProvi
         if (!entry.IsUsable)
         {
             return ContextCommitResult.Failed(Unreadable(target));
+        }
+
+        if (actionId == DislLinkFixes.ChooseActionId && LinkedDiagramOf(entry) is { } diagram)
+        {
+            return await _linkFixes.ChooseAsync(diagram, target, value, (fix, link) => Relink(target, entry, fix, link), cancellationToken);
         }
 
         var change = Commit(target, entry, actionId, value);
@@ -135,6 +148,18 @@ public abstract class DiagramActionProvider<TBody, TModel> : IContextActionProvi
     /// discovers. None by default, for a module that overrides the overload given the target instead.
     /// </summary>
     protected virtual IReadOnlyList<ContextActionGroupDefinition> Discover(DocumentEntry<TBody, TModel> entry, string elementId) => [];
+
+    /// <summary>
+    /// The diagram of a usable <paramref name="entry"/>, whose linked elements' findings are fixed from their menus
+    /// (<see cref="DislLinkFixes"/>); null, the default, for a module whose elements hold no links.
+    /// </summary>
+    protected virtual DislDiagram? LinkedDiagramOf(DocumentEntry<TBody, TModel> entry) => null;
+
+    /// <summary>
+    /// The command that sets the link of the element <paramref name="fix"/> names to <paramref name="link"/>, or, when it is
+    /// null, removes the link and names the element by <see cref="LinkFix.CachedName"/>; null when the module cannot.
+    /// </summary>
+    protected virtual ICommand? Relink(ContextTarget target, DocumentEntry<TBody, TModel> entry, LinkFix fix, string? link) => null;
 
     /// <summary>
     /// The actions <paramref name="target"/> offers in <paramref name="entry"/>: those its element

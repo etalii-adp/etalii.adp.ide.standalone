@@ -268,7 +268,7 @@ internal static class TimelineDefinition
     }
 
     /// <summary>The DISL diagram of the body <paramref name="model"/> was read from; read it, never change it. Empty for a model no body was read into.</summary>
-    private static DislDiagram DiagramOf(TimelineModel model) =>
+    internal static DislDiagram DiagramOf(TimelineModel model) =>
         TimelineReading.BodyOf(model)?.Disl.Diagram ?? Unread(model);
 
     /// <summary>A DISL diagram of the body <paramref name="model"/> was read from of its own, for an operation to change as it runs.</summary>

@@ -172,6 +172,18 @@ public sealed class MindmapNode
     }
 
     /// <summary>
+    /// Removes the first Freeplane attribute <paramref name="name"/>, with the newline that followed it, so a node whose only
+    /// content it was is self-closing again; nothing when it has none.
+    /// </summary>
+    internal void RemoveFreeplaneAttribute(string name)
+    {
+        if (Element.Elements("attribute").FirstOrDefault(attribute => attribute.Attribute("NAME")?.Value == name) is not { } existing) return;
+        if (existing.NextNode is XText { Value: var trailing } text && trailing.All(char.IsWhiteSpace)) text.Remove();
+        existing.Remove();
+        if (Element.Nodes().All(node => node is XText whitespace && whitespace.Value.All(char.IsWhiteSpace))) Element.RemoveNodes();
+    }
+
+    /// <summary>
     /// Adds <paramref name="content"/> before the first child node, which is where Freeplane puts a node's own content, and on its
     /// own line, which is how Freeplane lays it out.
     /// </summary>

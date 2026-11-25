@@ -40,10 +40,19 @@ public sealed class DependencyGraphOpeningTests : IDisposable
     }
 }
 
-/// <summary>An index that holds one workspace for every path.</summary>
+/// <summary>An index that holds one workspace for every path, and records the documents it is asked to give new ids.</summary>
 internal sealed class DependencyGraphOpeningIndex(LinkWorkspace workspace) : ILinkIndex
 {
     public IDisposable Track(string rootPath) => throw new NotSupportedException();
 
     public LinkWorkspace WorkspaceOf(string path) => workspace;
+
+    /// <summary>The paths given new document ids, in order.</summary>
+    public List<string> Renewed { get; } = [];
+
+    public Task<string?> RenewAsync(IReadOnlyList<string> paths, CancellationToken cancellationToken)
+    {
+        Renewed.AddRange(paths);
+        return Task.FromResult<string?>(null);
+    }
 }
