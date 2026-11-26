@@ -92,7 +92,7 @@ export function RelationEditor({ column, position, ask, onClose }: RelationEdito
         <span>Limit</span>
         <select aria-label="Limit" value={column.settings[LIMIT] === "one" ? "one" : "none"} onChange={(event) => make({ kind: "setRelationLimit", columnId: column.id, settings: { limit: event.target.value } })}>
           <option value="none">No limit</option>
-          <option value="one">1 row</option>
+          <option value="one">{column.settings[CREATE_KINDS] !== undefined ? "1 element" : "1 row"}</option>
         </select>
       </label>
       {oneWayOnly ? (

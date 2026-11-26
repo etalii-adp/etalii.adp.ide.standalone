@@ -21,6 +21,10 @@ namespace EtAlii.Adp.Context;
 /// <param name="EmptyMessage">Shown in the tree's place when no file qualifies and nothing is pinned.</param>
 /// <param name="Pinned">Entries shown before the tree, in this order.</param>
 /// <param name="NameField">A text field shown beside the choice, whose value comes back as the submission's text; none when null.</param>
+/// <param name="Rank">
+/// Where the file at this full path stands among the files of its folder: lower first, and files of one rank by name. All rank
+/// alike when null. A knowledge relation offers the tables before the diagrams it can relate to (etalii.adp spec 092, FR-025).
+/// </param>
 public sealed record ContextFileRequest(
     string Title,
     string Icon,
@@ -28,7 +32,8 @@ public sealed record ContextFileRequest(
     Func<string, bool> Accepts,
     string EmptyMessage,
     IReadOnlyList<ContextPinnedFile>? Pinned = null,
-    ContextTextFieldRequest? NameField = null)
+    ContextTextFieldRequest? NameField = null,
+    Func<string, int>? Rank = null)
 {
     public IReadOnlyList<ContextPinnedFile> Pinned { get; } = Pinned ?? [];
 }

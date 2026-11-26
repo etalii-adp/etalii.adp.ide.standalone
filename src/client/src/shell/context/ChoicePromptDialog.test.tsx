@@ -658,6 +658,20 @@ describe("ChoicePromptDialog search", () => {
     expect(screen.getByText('Nothing matches "nothing like it".')).toBeTruthy();
   });
 
+  it("selects what a search leaves when it leaves one type, and nothing when it leaves several (spec 092, T035)", () => {
+    renderDialog(twoVendorPrompt());
+    const search = screen.getByRole("searchbox", { name: "Search Add diagram" });
+
+    // Act: two types match, then one.
+    fireEvent.change(search, { target: { value: "c4" } });
+    const several = screen.getAllByRole("treeitem").filter((item) => item.getAttribute("aria-selected") === "true");
+    fireEvent.change(search, { target: { value: "context" } });
+
+    // Assert: nothing chosen for the user among several; the one that is left, chosen.
+    expect(several).toEqual([]);
+    expect(row("System Context").closest("[role=treeitem]")?.getAttribute("aria-selected")).toBe("true");
+  });
+
   it("offers no search when there is only one group", () => {
     renderDialog(oneVendorPrompt());
     expect(screen.queryByRole("searchbox")).toBeNull();

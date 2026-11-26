@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
 import { usePointerGesture } from "../../canvas/gesture/usePointerGesture";
 import { ContextMenu } from "../../shell/context/ContextMenu";
 import { CONFIRM_PREFIX, type TableEvents, type TableGesture } from "./api/tableEvents";
@@ -166,10 +166,19 @@ export function TableSurface({ model, definition, pendingEdits = 0, selectedRow,
     }
   }, [model.columns]);
 
+  // The rows there were when one was asked for, until it arrives: the row that was not among them
+  // is the new one, and its title is edited at once, so typing names it (etalii.adp spec 092, T035).
+  const rowsRef = useRef(model.rows);
+  rowsRef.current = model.rows;
+  const rowsBeforeAdd = useRef<ReadonlySet<string> | null>(null);
+
   /** Raises a gesture made outside an editor, and shows a refusal on the table's own line. */
   const raise = useCallback(
     (gesture: TableGesture) => {
       setRefusal("");
+      if (gesture.kind === "addRow") {
+        rowsBeforeAdd.current = new Set([...rowsRef.current.values()].map((row) => row.id));
+      }
       // A property made without a name has its type's: its own is asked for in its header once it is there.
       if (gesture.kind === "addColumn" && (gesture.values?.[0] ?? "") === "") {
         columnsBeforeAdd.current = new Set(columnsRef.current.map((column) => column.id));
@@ -178,6 +187,9 @@ export function TableSurface({ model, definition, pendingEdits = 0, selectedRow,
         if (answer !== "" && gesture.kind === "addColumn") {
           // Refused: no column is coming.
           columnsBeforeAdd.current = null;
+        }
+        if (answer !== "" && gesture.kind === "addRow") {
+          rowsBeforeAdd.current = null;
         }
         setRefusal(answer);
       });
@@ -245,6 +257,19 @@ export function TableSurface({ model, definition, pendingEdits = 0, selectedRow,
     setActive(at);
     setEditing({ replace });
   };
+
+  useEffect(() => {
+    const before = rowsBeforeAdd.current;
+    if (before === null) {
+      return;
+    }
+    const added = [...model.rows.entries()].find(([, row]) => !row.isGroup && !row.isNewRow && row.id !== "" && !before.has(row.id));
+    if (added !== undefined) {
+      rowsBeforeAdd.current = null;
+      startEdit({ row: added[0], column: Math.max(0, columns.findIndex((column) => column.isTitle)) });
+    }
+    // startEdit is this render's; what decides is the rows that arrived.
+  }, [model.rows]);
 
   const closeEdit = (then: AfterEdit) => {
     setEditing(null);
@@ -374,6 +399,9 @@ export function TableSurface({ model, definition, pendingEdits = 0, selectedRow,
   // The columns the view freezes: up to and including the one it names, each kept where it stands
   // while the table scrolls sideways. The first column stays in sight whatever the view says.
   const frozenUpTo = columns.findIndex((column) => column.id === model.settings.settings.freeze);
+  // Where the columns that stay in sight end - the first, and those the view freezes - which the content of a cell sliding under
+  // them stops at, so a column half under them still shows what it holds (etalii.adp spec 092, T035).
+  const stickyEdge = widths.slice(0, Math.max(1, frozenUpTo + 1)).reduce((sum, width) => sum + width, 0);
   const frozenAt = (index: number) => (index > 0 && index <= frozenUpTo ? widths.slice(0, index).reduce((sum, width) => sum + width, 0) : undefined);
   const calculates = showsCalculations(columns, editable);
   const template = widths.map((width) => `${width}px`).join(" ");
@@ -449,6 +477,7 @@ export function TableSurface({ model, definition, pendingEdits = 0, selectedRow,
       aria-rowcount={model.rowCount + (calculates ? 2 : 1)}
       aria-colcount={columns.length}
       aria-readonly={model.readOnlyReason !== "" ? true : undefined}
+      style={{ "--table-sticky-edge": `${stickyEdge}px` } as CSSProperties}
       onScroll={measure}
       onKeyDown={onKeyDown}
     >

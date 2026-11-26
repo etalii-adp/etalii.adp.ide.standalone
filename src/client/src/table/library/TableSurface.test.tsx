@@ -446,6 +446,25 @@ describe("TableSurface", () => {
     expect(screen.queryByRole("note")).toBeNull();
   });
 
+  it("puts the cursor in the title of the row + New added, once the row is there (spec 092, T035)", async () => {
+    // Arrange: one city and the line that adds a row.
+    const newLine = row("", {}, { isNewRow: true });
+    const editing: TableDefinition = { kinds: { ...definition.kinds, text: { ...definition.kinds.text!, editor: "text" } } };
+    const onGesture = vi.fn(async (_gesture: TableGesture) => "");
+    const { rerender } = render(<TableSurface model={tableOf(2, 0, [row("r1", { p1: "Amsterdam" }), newLine])} definition={editing} onGesture={onGesture} />);
+
+    // Act: + New, and the row the backend added arrives.
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "New" }));
+    });
+    rerender(<TableSurface model={tableOf(3, 0, [row("r1", { p1: "Amsterdam" }), row("r2", {}), newLine])} definition={editing} onGesture={onGesture} />);
+
+    // Assert: asked for, and the new row's title is being edited, so typing names it.
+    expect(onGesture.mock.calls[0]![0].kind).toBe("addRow");
+    const editor = within(bodyRows()[1]!).getByLabelText("Name");
+    expect(document.activeElement).toBe(editor);
+  });
+
   it("says why a table cannot be changed, before anything else", () => {
     // Act.
     render(<TableSurface model={{ ...tableOf(0, 0, []), readOnlyReason: "This table was written by a newer version." }} definition={definition} pendingEdits={2} />);

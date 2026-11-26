@@ -6,6 +6,7 @@
 
 .table-surface {
   --table-cell-padding: 8px; /* TableSurface.tsx adds a nested row's indent to this same number */
+  --table-sticky-edge: 0px; /* where the columns that stay in sight end; TableSurface.tsx sets it from their widths */
 
   position: relative;
   height: 100%;
@@ -367,6 +368,26 @@
   left: 0;
   z-index: 1;
   background: var(--color-surface);
+}
+
+/* A column sliding under those that stay shows what it holds until it is gone: its content stops at their edge, which
+   TableSurface.tsx gives as --table-sticky-edge, until its own cell pushes it on. The cell clips rather than hides: a cell that
+   hid would be a scroll container of its own, and the content would stick inside it. An open editor is left where it is
+   (etalii.adp spec 092, T035). */
+.table-row > .table-cell:not(.table-cell-first):not(.table-cell-frozen):not(.table-cell-editing),
+.table-header-row > .table-header-cell:not(.table-cell-first):not(.table-cell-frozen),
+.table-header-row > .table-header-cell:not(.table-cell-first):not(.table-cell-frozen) .table-header-button {
+  overflow: clip;
+}
+
+.table-row > .table-cell:not(.table-cell-first):not(.table-cell-frozen):not(.table-cell-editing) > * {
+  position: sticky;
+  left: calc(var(--table-sticky-edge) + var(--table-cell-padding));
+}
+
+.table-header-row > .table-header-cell:not(.table-cell-first):not(.table-cell-frozen) .table-header-name {
+  position: sticky;
+  left: calc(var(--table-sticky-edge) + var(--table-cell-padding));
 }
 
 /* The columns a view freezes stay too, each where it stands: TableSurface.tsx gives each its own `left`. */
@@ -779,6 +800,10 @@
 }
 
 .table-new-row-cell {
+  /* + New stays at the left while the table is scrolled sideways, as the first column does. */
+  position: sticky;
+  left: 0;
+  width: max-content;
   display: flex;
   align-items: center;
   height: 100%;

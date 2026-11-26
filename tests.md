@@ -4456,3 +4456,14 @@ lays out no text, so a fill, a centred Comment and a drag that writes a size are
   #844's fixes, as a new user meets them: the Mac folder placeholder, the ribbon's *New…*, the Add dialog's search, a new timeline opening around today and a new diagram opening in its tab after *Add* all hold. The Add dialog's overlapping label reproduced with the dependency graph's two-line description and is fixed above.
 
   Still met by a new user, and left to the owner's choice: the hierarchy's *Add relation…* lists knowledge files only, so a relation to a diagram is made from a column header's *+* alone; a knowledge file copied in without a registration opens as text; in a short window the Add dialog's fixed half height leaves its type tree two rows high; a search that leaves one type does not select it; *+ New* adds a row without putting the cursor in its title; the ribbon keeps the last diagram's actions while a table's tab is in front; scrolled sideways with a cell's picker open, the table drew the column left of the picker blank; a relation to a diagram still says *1 row* for its limit.
+
+  The hurdles the third run left, fixed afterwards in the owner's choice to fix them in the same thread, each with a guard seen to fail first:
+  - The hierarchy's *Add relation…* offers the diagrams the workspace's index holds, after the knowledge files; a diagram chosen asks only how many elements a cell holds, and makes the relation one-way. Guards: `KnowledgeContextActions.Tests.cs` (`ADiagramOfTheWorkspace_IsOfferedToRelateTo_AndTheRelationToIt_IsOneWay_WithItsLimitInElements`), `ContextFileTree.Tests.cs`.
+  - In a short window the Add dialog's type tree keeps four rows and the dialog's body scrolls instead. Guard: `choiceDescriptionKeepsItsHeight.test.ts`.
+  - A search of the Add dialog that leaves one type selects it. Guard: `ChoicePromptDialog.test.tsx`.
+  - *+ New* puts the cursor in the new row's title once the row is there. Guard: `TableSurface.test.tsx`.
+  - A tab brought to the front makes its document the selection, so the ribbon shows a table's actions in front of a table, not those of the diagram element left behind. Guard: `ToolTabsPanel.test.tsx`.
+  - Scrolled sideways, a column half under the first shows the start of its header and its values beside it rather than an empty sliver, and *+ New* stays at the left. Guard: `slidingCellsShowTheirText.test.tsx`.
+  - A relation to a diagram offers its limit as *1 element*, and *One element* or *Any number of elements* in the hierarchy's flow: `knowledge.md` words the limit for rows only ("one row or no limit"), so the panels word it for elements without changing the definition. Guard: `ColumnHeader.test.tsx`.
+
+  Still open: a knowledge file copied in without a registration opens as text; it needs a feature of its own.

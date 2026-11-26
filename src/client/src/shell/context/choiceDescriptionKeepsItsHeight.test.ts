@@ -40,3 +40,22 @@ describe("the Add dialog's description", () => {
     expect(block).toMatch(/flex-shrink:\s*0|flex:\s*none|flex:\s*0\s+0/);
   });
 });
+
+/**
+ * The type tree keeps room for a few rows however short the window (etalii.adp spec 092, T035, third run).
+ *
+ * The dialog is half the window high, and the tree is what absorbs what its other parts leave, down to nothing: in a window
+ * 600px high it was two rows, the selected one cut off. With a floor of its own the body scrolls instead.
+ */
+describe("the Add dialog's type tree", () => {
+  const css = readFileSync(join(__dirname, "..", "..", "index.css"), "utf8");
+
+  it("does not shrink below a few rows", () => {
+    const block = new RegExp(`(?:^|\\})\\s*\\.choice-tree\\s*\\{([^}]*)\\}`, "m").exec(css)?.[1] ?? "";
+    const floor = /min-height:\s*([\d.]+)rem/.exec(block);
+    expect(floor).not.toBeNull();
+    // Four rows of 0.8125rem text with their padding are a little over six rem.
+    expect(Number(floor![1])).toBeGreaterThanOrEqual(6);
+  });
+});
+
