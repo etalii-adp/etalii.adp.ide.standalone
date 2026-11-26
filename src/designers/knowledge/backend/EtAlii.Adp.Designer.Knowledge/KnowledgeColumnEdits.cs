@@ -95,13 +95,15 @@ internal static partial class KnowledgeColumnEdits
         }
 
         // The copy is a property like the first: its type and its options, each with an id of its
-        // own. It is never the title, and never the other side of the first one's relation.
+        // own, and a relation's target, limit and backlink name, as knowledge.des duplicates them.
+        // It is never the title, and never the counterpart of a relation of a file made before links.
         var id = newId();
         var attributes = Attributes(("name", UniqueName(table.Properties.Select(other => other.Name), property.Name)), ("valueType", property.ValueType));
         if (property is { Type: KnowledgeRelationType, IsComputed: false })
         {
             attributes["targetFile"] = property.TargetFile;
             attributes["limit"] = property.Limit is "one" ? "one" : null;
+            attributes["backlinkName"] = property.BacklinkName.Length > 0 ? property.BacklinkName : null;
         }
 
         var changes = Place(table, view, id, attributes, property.Id, left: false);
@@ -141,7 +143,7 @@ internal static partial class KnowledgeColumnEdits
         changes.Add(new ModelChange.Remove(property.Id));
 
         // One side of a two-way relation: what becomes of the other side is its author's choice, never a guess.
-        var self = property.TargetFile is KnowledgeRelations.Self or "";
+        var self = property.TargetsItsOwnTable;
         var target = self ? null : files?.TargetOf(property);
         var related = self ? table : target?.Table;
         if (property is not { Type: KnowledgeRelationType, Counterpart.Length: > 0 } || related?.Properties.FirstOrDefault(candidate => candidate.Id == property.Counterpart) is not { } other)

@@ -1,3 +1,5 @@
+using EtAlii.Adp.Specification.Fbl.Links;
+
 namespace EtAlii.Adp.Designer.Knowledge;
 
 /// <summary>What a relation property points at: the table of its target file, or why there is none to show.</summary>
@@ -5,6 +7,11 @@ namespace EtAlii.Adp.Designer.Knowledge;
 /// <param name="Table">The target's table, or null when the file is missing, cannot be read or is not a knowledge file.</param>
 /// <param name="Problem">Why there is no table, as a sentence; empty when there is one.</param>
 internal sealed record KnowledgeTarget(string Path, KnowledgeTable? Table, string Problem = "");
+
+/// <summary>A relation that shows its backlinks in this table: the file it is in, and the relation, which names this table and has a backlink name.</summary>
+/// <param name="Path">The full path of the file the relation is in; this file's own for a relation of the table to itself.</param>
+/// <param name="Relation">The relation.</param>
+internal sealed record KnowledgeBacklinkSource(string Path, KnowledgeProperty Relation);
 
 /// <summary>
 /// Relations between knowledge files (knowledge-designer Requirement 5): where a relation points,
@@ -27,9 +34,21 @@ internal static class KnowledgeRelations
     /// <summary>What a relation to the file itself names as its target.</summary>
     public const string Self = ".";
 
-    /// <summary>The full path a relation's target names, from the file the relation is in.</summary>
-    public static string TargetPath(string bodyPath, string targetFile) =>
-        targetFile is Self or "" ? Path.GetFullPath(bodyPath) : Path.GetFullPath(Path.Combine(Path.GetDirectoryName(Path.GetFullPath(bodyPath)) ?? "", targetFile));
+    /// <summary>
+    /// The full path a relation's target names, from the file the relation is in: a path relative to it, or, for a link, the
+    /// file of the link's name beside it. A workspace resolves a link by its document id first (<see cref="KnowledgeSession"/>);
+    /// this is where it is looked for without one.
+    /// </summary>
+    public static string TargetPath(string bodyPath, string targetFile)
+    {
+        if (targetFile is Self or "")
+        {
+            return Path.GetFullPath(bodyPath);
+        }
+
+        var named = KnowledgeLinks.IsLink(targetFile) && FblLink.Parse(targetFile) is { } link ? link.DocumentName : targetFile;
+        return Path.GetFullPath(Path.Combine(Path.GetDirectoryName(Path.GetFullPath(bodyPath)) ?? "", named));
+    }
 
     /// <summary>How a file names another as a relation's target: its path from the file's own folder, with forward slashes; <see cref="Self"/> for itself.</summary>
     public static string TargetName(string bodyPath, string targetPath)
@@ -63,7 +82,7 @@ internal static class KnowledgeRelations
     /// and is not the parent relation, which has a direction by what it is.
     /// </summary>
     public static bool IsMutual(KnowledgeProperty property) =>
-        property is { Type: KnowledgeRelationType, TargetFile: Self, Counterpart: "", IsParent: false, IsComputed: false };
+        property is { Type: KnowledgeRelationType, TargetsItsOwnTable: true, TargetFile.Length: > 0, Counterpart: "", BacklinkName: "", IsParent: false, IsComputed: false };
 
     /// <summary>The table with each mutual relation shown from both ends: a row also shows the rows that name it.</summary>
     private static KnowledgeTable WithMutual(KnowledgeTable table)
@@ -119,6 +138,33 @@ internal static class KnowledgeRelations
         return table with { Rows = rows };
     }
 
+    /// <summary>
+    /// The table with a backlink column for each relation that names it and has a backlink name (knowledge.md, section 9): read
+    /// only, computed as a two-way relation's other side was, and stored in neither file. A relation still shown by the
+    /// counterpart property of a file made before links gets no second column.
+    /// </summary>
+    public static KnowledgeTable WithBacklinks(KnowledgeTable table, string bodyPath, IReadOnlyList<KnowledgeBacklinkSource> sources)
+    {
+        var shown = table.Properties.Where(property => property.IsComputed).Select(property => property.Counterpart).ToHashSet(StringComparer.Ordinal);
+        List<KnowledgeProperty> columns = [];
+        foreach (var source in sources.Where(source => !shown.Contains(source.Relation.Id)))
+        {
+            var from = TargetName(bodyPath, source.Path);
+            columns.Add(new KnowledgeProperty(BacklinkId(from, source.Relation.Id), source.Relation.BacklinkName, KnowledgeValueTypes.Relation.Name, false, [], from, "none", source.Relation.Id, IsComputed: true, IsParent: false) { IsBacklink = true });
+        }
+
+        return columns.Count == 0 ? table : table with { Properties = [.. table.Properties, .. columns] };
+    }
+
+    /// <summary>The id of the backlink column a relation of the file named <paramref name="from"/> shows here: no property of a file has its shape.</summary>
+    public static string BacklinkId(string from, string relationId) => $"backlink:{from}:{relationId}";
+
+    /// <summary>Whether a relation of the file at <paramref name="path"/> names the knowledge file at <paramref name="targetPath"/>, whose document id is <paramref name="targetId"/>: by that id, or by its path in a file made before links.</summary>
+    public static bool Names(string path, KnowledgeProperty relation, string targetPath, string targetId) =>
+        KnowledgeLinks.IsLink(relation.TargetFile)
+            ? targetId.Length > 0 && KnowledgeLinks.DocumentIdOf(relation.TargetFile) == targetId
+            : string.Equals(TargetPath(path, relation.TargetFile), Path.GetFullPath(targetPath), StringComparison.OrdinalIgnoreCase);
+
     public static KnowledgeTable WithComputed(KnowledgeTable table, Func<KnowledgeProperty, KnowledgeTarget?> targetOf)
     {
         table = WithMutual(table);
@@ -133,7 +179,7 @@ internal static class KnowledgeRelations
         foreach (var property in computed)
         {
             // A relation to the file itself is read from the table as it is shown, edits not yet written included.
-            var other = property.TargetFile is Self or "" ? table : targetOf(property)?.Table;
+            var other = property.TargetsItsOwnTable ? table : targetOf(property)?.Table;
             var byRow = new Dictionary<string, List<string>>(StringComparer.Ordinal);
             foreach (var row in other?.Rows ?? [])
             {

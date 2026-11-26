@@ -8,7 +8,7 @@ namespace EtAlii.Adp.Designer.Knowledge;
 internal static class KnowledgeCellEdits
 {
     private const string RowGone = "That row is no longer in this table.";
-    private const string Computed = "This side of the relation is filled in from the other table.";
+    internal const string Computed = "This side of the relation is filled in from the other table.";
     public const string OptionFirst = "Make the option in one row first; it can then be given to several.";
     public const string ParentCycle = "A row cannot be its own ancestor.";
     public const string SortedRowsStay = "Rows are in the order of this view's sort, so they cannot be moved here.";
@@ -134,7 +134,7 @@ internal static class KnowledgeCellEdits
 
         if (KnowledgeRelations.IsMutual(property))
         {
-            return SetMutual(table, row, property, values, changes);
+            return SetMutual(table, row, property, values, changes, files);
         }
 
         var cellId = CellId(row.Id, property.Id);
@@ -151,7 +151,9 @@ internal static class KnowledgeCellEdits
         }
 
         changes.AddRange(held.Where(value => !values.Contains(value)).Select(value => (ModelChange)new ModelChange.Remove($"{cellId}/{value}")));
-        changes.AddRange(values.Where(value => !held.Contains(value)).Select(value => (ModelChange)new ModelChange.Add("CellItem", null, Attributes((key, value)), cellId)));
+        // A related row is written as a link to it where the relation names its target by one (knowledge.md, section 9).
+        var target = property.Type is KnowledgeRelationType ? files?.TargetOf(property) : null;
+        changes.AddRange(values.Where(value => !held.Contains(value)).Select(value => (ModelChange)new ModelChange.Add("CellItem", null, Attributes((key, target is null ? value : KnowledgeLinks.WrittenRow(property, target, value))), cellId)));
         return new KnowledgeEdit(changes);
     }
 
@@ -214,7 +216,7 @@ internal static class KnowledgeCellEdits
     /// A pair of rows is related when either names the other, so relating two rows writes one of
     /// them - the one being edited - and unrelating them takes the pair out of whichever holds it.
     /// </summary>
-    private static KnowledgeEdit SetMutual(KnowledgeTable table, KnowledgeRow row, KnowledgeProperty property, List<string> values, List<ModelChange> changes)
+    private static KnowledgeEdit SetMutual(KnowledgeTable table, KnowledgeRow row, KnowledgeProperty property, List<string> values, List<ModelChange> changes, KnowledgeSurroundings? files)
     {
         var own = Held(row);
         List<string> stays = [.. own.Where(values.Contains)];
@@ -253,7 +255,8 @@ internal static class KnowledgeCellEdits
         }
 
         changes.AddRange(own.Where(value => !values.Contains(value)).Select(value => (ModelChange)new ModelChange.Remove($"{cellId}/{value}")));
-        changes.AddRange(added.Select(value => (ModelChange)new ModelChange.Add("CellItem", null, Attributes(("row", value)), cellId)));
+        var target = files?.TargetOf(property);
+        changes.AddRange(added.Select(value => (ModelChange)new ModelChange.Add("CellItem", null, Attributes(("row", KnowledgeLinks.WrittenRow(property, target, value))), cellId)));
         return new KnowledgeEdit(changes);
 
         IReadOnlyList<string> Held(KnowledgeRow of) => of.Cells.FirstOrDefault(candidate => candidate.PropertyId == property.Id && candidate.Key == KnowledgeValueTypes.Relation.CellKey)?.Values ?? [];

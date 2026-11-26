@@ -170,7 +170,8 @@ internal static class KnowledgeTableMapper
 
         if (property.TargetFile.Length > 0)
         {
-            settings["targetFile"] = property.TargetFile;
+            // A link to the file's own id is this table, as `.` is.
+            settings["targetFile"] = property.TargetsItsOwnTable ? KnowledgeRelations.Self : property.TargetFile;
         }
 
         IReadOnlyList<TableOption> options = [.. property.Options.Select(option => new TableOption(option.Id, option.Name, option.Colour))];
@@ -197,16 +198,22 @@ internal static class KnowledgeTableMapper
             }
 
             // A relation to the table itself that holds one row can be the one its rows are nested by.
-            if (property is { TargetFile: KnowledgeRelations.Self or "", Limit: "one", IsComputed: false })
+            if (property is { TargetsItsOwnTable: true, Limit: "one", IsComputed: false })
             {
                 settings["nestable"] = "true";
             }
 
             // The other side of a two-way relation, by its name: deleting this side asks what becomes of it.
-            var related = property.TargetFile is KnowledgeRelations.Self or "" ? table : targetOf?.Invoke(property)?.Table;
+            var related = property.TargetsItsOwnTable ? table : targetOf?.Invoke(property)?.Table;
             if (property.Counterpart.Length > 0 && related?.Properties.FirstOrDefault(candidate => candidate.Id == property.Counterpart) is { } other)
             {
                 settings["otherSide"] = other.Name;
+            }
+
+            // The column the target shows this relation's backlinks in, which is in no file: deleting this side takes it along.
+            if (property.BacklinkName.Length > 0)
+            {
+                settings["backlinkName"] = property.BacklinkName;
             }
 
             // What a relation offers to choose from is the rows of its target, by their titles.

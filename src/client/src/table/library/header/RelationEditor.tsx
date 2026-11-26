@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { TableGesture } from "../api/tableEvents";
 import type { TableColumn } from "../api/tableModel";
-import { OTHER_SIDE } from "./columnActions";
+import { BACKLINK_NAME, OTHER_SIDE } from "./columnActions";
 
 /** How near the window's left edge the panel may stand, in pixels. */
 const PANEL_MARGIN = 8;
@@ -14,9 +14,13 @@ const PANEL_WIDTH = 260;
 const TARGET = "targetFile";
 const LIMIT = "limit";
 
-/** What a relation's table is called where only its file is known: this table, or the file as the relation names it. */
+/** What a relation's table is called where only its file is known: this table, or the file as the relation names it, by its name where that is a link (`$<id>@<file>`). */
 export function targetLabel(target: string): string {
-  return target === "" || target === "." ? "This table" : target;
+  if (target === "" || target === ".") {
+    return "This table";
+  }
+  const at = target.startsWith("$") ? target.indexOf("@") : -1;
+  return at >= 0 ? target.slice(at + 1) : target;
 }
 
 export interface RelationEditorProps {
@@ -39,7 +43,8 @@ export function RelationEditor({ column, position, ask, onClose }: RelationEdito
   const panelRef = useRef<HTMLDivElement>(null);
   const [refusal, setRefusal] = useState("");
   const [otherName, setOtherName] = useState("");
-  const otherSide = column.settings[OTHER_SIDE] ?? "";
+  // The other table shows the relation as its backlink column, or, in a file made before links, as a counterpart property.
+  const otherSide = column.settings[BACKLINK_NAME] ?? column.settings[OTHER_SIDE] ?? "";
   const twoWay = otherSide !== "";
 
   // Leaving the panel - a press anywhere else, or Escape - closes it.

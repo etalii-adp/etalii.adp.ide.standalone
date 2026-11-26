@@ -88,7 +88,8 @@ internal static class KnowledgeValidator
         }
 
         var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var property in table.Properties)
+        // A backlink column is named in the file whose relation it shows, not in this one.
+        foreach (var property in table.Properties.Where(property => !property.IsBacklink))
         {
             if (!names.Add(property.Name))
             {
