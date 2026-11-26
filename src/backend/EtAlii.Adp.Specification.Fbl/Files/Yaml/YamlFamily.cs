@@ -219,7 +219,8 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
     /// <summary>
     /// FBL 0.23 §17.2: the document id written into the root mapping, which no rule need bind: its value replaced where the key
     /// is present, else a new line after the root's first key when that holds a scalar, as a schema marker such as
-    /// <c>timeline: 1</c> does, and before the first key otherwise.
+    /// <c>timeline: 1</c> does, and after the scalar keys of the envelope that follow it (<see cref="FamilyReader.EnvelopeNames"/>),
+    /// as DED's <c>designer</c> does; before the first key otherwise.
     /// </summary>
     public override void WriteDocumentId(Plan plan, DocumentIdSlot slot, string id)
     {
@@ -235,8 +236,21 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
             return;
         }
         var first = mapping.Entries[0];
-        var offset = first.Value.Kind == ValueKind.Scalar ? LineEndAfter(first) : first.LineSpan?.Start ?? first.Own.Start;
+        var offset = first.Value.Kind == ValueKind.Scalar ? LineEndAfter(LastOfEnvelope(mapping)) : first.LineSpan?.Start ?? first.Own.Start;
         plan.Add(SpliceOperation.InsertKey, offset, offset, NewLine(offset, [Indentation(first.Indent) + key + ": " + Scalar(id, null, null, first.Indent)]));
+    }
+
+    /// <summary>The last of the root's leading scalar keys that are its envelope, counting its first key as one whatever its name.</summary>
+    private TreeEntry LastOfEnvelope(TreeValue mapping)
+    {
+        var envelope = EnvelopeNames();
+        var last = mapping.Entries[0];
+        foreach (var entry in mapping.Entries.Skip(1))
+        {
+            if (entry.Value.Kind != ValueKind.Scalar || entry.Name is not { } name || !envelope.Contains(name)) break;
+            last = entry;
+        }
+        return last;
     }
 
     /// <summary>A key the entry lacks goes at its place in the rule's key order: after the nearest present key before it, else before the nearest after it.</summary>

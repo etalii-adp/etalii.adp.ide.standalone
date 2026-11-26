@@ -144,6 +144,35 @@ internal sealed class JsonFamily(BodyText text, FblBinding binding, FblOptions o
     }
 
     /// <summary>
+    /// FBL 0.24 §17.2: the document id written into the root object: its value replaced where the key is present, else a new
+    /// member after the leading members that are the envelope (<see cref="FamilyReader.EnvelopeNames"/>), as DED's
+    /// <c>designer</c> is, and before the first member when none leads; on a line of its own where the members are.
+    /// </summary>
+    public override void WriteDocumentId(Plan plan, DocumentIdSlot slot, string id)
+    {
+        if (slot.Key is not { } key || Root?.Value is not { Kind: ValueKind.Mapping, Entries.Count: > 0 } mapping)
+        {
+            Plan.Refuse($"The {Binding.Name} file has no object to write \"{slot.Key}\" in.");
+            return;
+        }
+        var added = $"{Quote(key)}: {Quote(id)}";
+        if (mapping.Member(key) is { } member)
+        {
+            if (Quote(id) != Text.Text(member.Value.Span)) plan.Add(SpliceOperation.ReplaceValue, member.Value.Span, Quote(id));
+            return;
+        }
+        var envelope = EnvelopeNames();
+        var before = mapping.Entries.TakeWhile(entry => entry.Name is { } name && envelope.Contains(name)).LastOrDefault();
+        if (before is not null)
+        {
+            plan.Add(SpliceOperation.InsertKey, before.Own.End, before.Own.End, (before.LineSpan is not null ? "," + NewlineAt(before.Own.End) + Indentation(before.Indent) : ", ") + added);
+            return;
+        }
+        var first = mapping.Entries[0];
+        plan.Add(SpliceOperation.InsertKey, first.Own.Start, first.Own.Start, added + (first.LineSpan is not null ? "," + NewlineAt(first.Own.Start) + Indentation(first.Indent) : ", "));
+    }
+
+    /// <summary>
     /// The member a new <paramref name="key"/> is written right after: the nearest one before it in
     /// the rule's key order (FBL §6.1, "at the position <c>insert.keys</c> gives"). Null when the
     /// order does not place the key, or places it after every member, and it goes last.

@@ -212,6 +212,30 @@ internal sealed partial class XmlFamily(BodyText text, FblBinding binding, FblOp
     public override string? DocumentId(DocumentIdSlot slot) =>
         slot.Attribute is { } name && _document?.Attribute(name) is { Text.Length: > 0 } attribute ? attribute.Text : null;
 
+    /// <summary>
+    /// FBL 0.24 §17.2: the document id written as an attribute of the root element: its value replaced where the attribute is
+    /// there, else a new attribute after the leading attributes that are the envelope (<see cref="FamilyReader.EnvelopeNames"/>),
+    /// as DED's <c>designer</c> is, and right after the element's name when none leads.
+    /// </summary>
+    public override void WriteDocumentId(Plan plan, DocumentIdSlot slot, string id)
+    {
+        if (slot.Attribute is not { } name || _document is null)
+        {
+            Plan.Refuse($"The {Binding.Name} file has no root element to write \"{slot.Attribute}\" in.");
+            return;
+        }
+        var written = EscapeAttribute(id);
+        if (_document.Attribute(name) is { } present)
+        {
+            if (written != Text.Text(present.Value)) plan.Add(SpliceOperation.ReplaceValue, present.Value, written);
+            return;
+        }
+        var envelope = EnvelopeNames();
+        var before = _document.Attributes.TakeWhile(attribute => envelope.Contains(attribute.Name)).LastOrDefault();
+        var offset = before?.Own.End ?? _document.NameEnd;
+        plan.Add(SpliceOperation.InsertKey, offset, offset, $" {name}=\"{written}\"");
+    }
+
     public override bool HeaderHolds(HeaderSettings header)
     {
         if (header.Line is null) return true;
