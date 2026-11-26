@@ -110,7 +110,7 @@ public sealed class TimelineBody
         (bytes, kind, id, name) => WithElement(bytes, kind, id, name, DateTimeOffset.UtcNow));
 
     /// <summary>The <paramref name="bytes"/> with a new <paramref name="kind"/> named <paramref name="name"/>, beginning on the day of <paramref name="now"/>; null when it cannot be added.</summary>
-    internal static byte[]? WithElement(byte[] bytes, string kind, string id, string name, DateTimeOffset now)
+    private static byte[]? WithElement(byte[] bytes, string kind, string id, string name, DateTimeOffset now)
     {
         var body = Parse(Encoding.UTF8.GetString(bytes));
         if (body.Model.Unreadable) return null;

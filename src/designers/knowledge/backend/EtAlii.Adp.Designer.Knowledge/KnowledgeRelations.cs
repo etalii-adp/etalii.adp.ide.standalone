@@ -44,7 +44,7 @@ internal static class KnowledgeRelations
     public const string Self = ".";
 
     /// <summary>The id of the one property of a diagram's table: its elements' name.</summary>
-    internal const string DiagramNameProperty = "name";
+    private const string DiagramNameProperty = "name";
 
     /// <summary>
     /// A diagram as a relation's target sees it (spec 092, FR-025): a table of its linkable elements, one row each by the element's

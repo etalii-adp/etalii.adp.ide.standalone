@@ -92,7 +92,7 @@ public sealed class DependencyGraphBody : ITextBody<DependencyGraphBody>
     internal static DislElementCreation Creation { get; } = new([new LinkElementKind("Node", "node")], DependencyGraphDefinition.NewId, WithElement);
 
     /// <summary>The <paramref name="bytes"/> with a new node named <paramref name="name"/> at the start of the row after the last; null when it cannot be added.</summary>
-    internal static byte[]? WithElement(byte[] bytes, string kind, string id, string name)
+    private static byte[]? WithElement(byte[] bytes, string kind, string id, string name)
     {
         var body = Parse(Encoding.UTF8.GetString(bytes));
         var rows = Indexed(bytes).Diagram.Elements.Select(element => element.ValueOf("row") is long row ? (int)row : -1).DefaultIfEmpty(-1).Max();

@@ -46,7 +46,7 @@ public sealed class TimelineElementCreationTests
         var today = TimelineScale.ToText(DateTimeOffset.UtcNow, TimelinePrecision.Date);
 
         // Act.
-        var grown = indexer.WithElement("plan.tml", Encoding.UTF8.GetBytes(Plain), kind, "n3w0e1em", "Retro");
+        var grown = indexer.WithElement(Encoding.UTF8.GetBytes(Plain), kind, "n3w0e1em", "Retro");
 
         // Assert.
         Assert.NotNull(grown);
@@ -63,7 +63,7 @@ public sealed class TimelineElementCreationTests
     public void AKindTheTimelineDoesNotOffer_AddsNothing()
     {
         // Act.
-        var grown = Indexer().WithElement("plan.tml", Encoding.UTF8.GetBytes(Plain), "Node", "n3w0e1em", "Retro");
+        var grown = Indexer().WithElement(Encoding.UTF8.GetBytes(Plain), "Node", "n3w0e1em", "Retro");
 
         // Assert.
         Assert.Null(grown);

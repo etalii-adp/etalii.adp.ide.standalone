@@ -44,7 +44,7 @@ public sealed class DislLinkIndexer(
     public string? NewElementId() => creation?.NewId();
 
     /// <inheritdoc />
-    public byte[]? WithElement(string path, byte[] bytes, string kind, string id, string name) =>
+    public byte[]? WithElement(byte[] bytes, string kind, string id, string name) =>
         creation is not null && creation.Kinds.Any(offered => offered.Id == kind) ? creation.Create(bytes, kind, id, name) : null;
 }
 

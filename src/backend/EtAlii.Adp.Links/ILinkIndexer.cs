@@ -36,11 +36,11 @@ public interface ILinkIndexer
     string? NewElementId() => null;
 
     /// <summary>
-    /// The body <paramref name="bytes"/> of the document at <paramref name="path"/> with a new element of <paramref name="kind"/>,
+    /// The body <paramref name="bytes"/> of a document of this reader's type with a new element of <paramref name="kind"/>,
     /// whose id is <paramref name="id"/> and whose name is <paramref name="name"/>, placed where the tool type places an element
     /// added without a position (spec 092, FR-025); null when it cannot be given one.
     /// </summary>
-    byte[]? WithElement(string path, byte[] bytes, string kind, string id, string name) => null;
+    byte[]? WithElement(byte[] bytes, string kind, string id, string name) => null;
 }
 
 /// <summary>A kind of element another tool can create in a document: its element type, and what a person reads it as.</summary>

@@ -471,12 +471,11 @@ internal sealed class KnowledgeSession : ITableDesignerSession
         if (!_targets.TryGetValue(path, out var target))
         {
             var read = _read(path);
-            target = DiagramAt(path, read) is { } diagram ? diagram
-                : read.Body is null
+            target = DiagramAt(path, read) ?? (read.Body is null
                 ? new KnowledgeTarget(path, null, $"'{targetFile}' is not there.")
                 : read.Body.Unreadable.Length > 0
                     ? new KnowledgeTarget(path, null, $"'{targetFile}' cannot be read as a knowledge file.")
-                    : new KnowledgeTarget(path, read.Body.Table);
+                    : new KnowledgeTarget(path, read.Body.Table));
             _targets[path] = target;
         }
 

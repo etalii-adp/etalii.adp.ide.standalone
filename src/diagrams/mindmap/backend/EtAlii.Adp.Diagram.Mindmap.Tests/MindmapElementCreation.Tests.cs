@@ -43,7 +43,7 @@ public sealed class MindmapElementCreationTests
         var indexer = Indexer();
 
         // Act.
-        var grown = indexer.WithElement("relaunch.mm", Encoding.UTF8.GetBytes(Plain), "Node", "n3w0e1em", "Payments");
+        var grown = indexer.WithElement(Encoding.UTF8.GetBytes(Plain), "Node", "n3w0e1em", "Payments");
 
         // Assert.
         Assert.NotNull(grown);
@@ -57,7 +57,7 @@ public sealed class MindmapElementCreationTests
     public void AnIdTheMapHoldsAlready_AddsNothing()
     {
         // Act.
-        var grown = Indexer().WithElement("relaunch.mm", Encoding.UTF8.GetBytes(Plain), "Node", "ID_1", "Payments");
+        var grown = Indexer().WithElement(Encoding.UTF8.GetBytes(Plain), "Node", "ID_1", "Payments");
 
         // Assert.
         Assert.Null(grown);

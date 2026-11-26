@@ -210,7 +210,7 @@ public sealed class LinkIndex(ProjectFileEvents events, IEnumerable<ILinkIndexer
     public string? NewElementIdOf(string path) => IndexerOf(path)?.NewElementId();
 
     /// <inheritdoc />
-    public byte[]? WithElement(string path, byte[] bytes, string kind, string id, string name) => IndexerOf(path)?.WithElement(path, bytes, kind, id, name);
+    public byte[]? WithElement(string path, byte[] bytes, string kind, string id, string name) => IndexerOf(path)?.WithElement(bytes, kind, id, name);
 
     private void Heard(Root root, FileEvent heard)
     {

@@ -43,7 +43,7 @@ internal static class MindmapOpening
     public static DislElementCreation Creation { get; } = new([new LinkElementKind("Node", "node")], MindmapDocument.NewId, WithElement);
 
     /// <summary>The map <paramref name="bytes"/> with a new last child of its central topic, named <paramref name="name"/>; nothing else of it changes.</summary>
-    public static byte[]? WithElement(byte[] bytes, string kind, string id, string name)
+    private static byte[]? WithElement(byte[] bytes, string kind, string id, string name)
     {
         ArgumentNullException.ThrowIfNull(bytes);
         var marked = bytes.AsSpan().StartsWith(_byteOrderMark);

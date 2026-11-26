@@ -44,12 +44,12 @@ public sealed class DependencyGraphElementCreationTests
         var indexer = Indexer();
 
         // Act.
-        var grown = indexer.WithElement("shop.dgr", Encoding.UTF8.GetBytes(Plain), "Node", "n3w0e1em", "Payments");
+        var grown = indexer.WithElement(Encoding.UTF8.GetBytes(Plain), "Node", "n3w0e1em", "Payments");
 
         // Assert.
         Assert.NotNull(grown);
         var element = Assert.Single(indexer.Index("shop.dgr", grown)?.Elements ?? [], candidate => candidate.Id == "n3w0e1em");
-        Assert.Contains(element.Attributes, attribute => attribute.Key == "label" && attribute.Value == "Payments");
+        Assert.Contains(element.Attributes, attribute => attribute is { Key: "label", Value: "Payments" });
         Assert.Matches("^" + Regex.Escape(Plain) + "  - id: n3w0e1em\\n    label: Payments\\n    x: \"?0\"?\\n    row: \"?1\"?\\n$", Encoding.UTF8.GetString(grown));
     }
 
@@ -57,7 +57,7 @@ public sealed class DependencyGraphElementCreationTests
     public void AKindTheGraphDoesNotOffer_AddsNothing()
     {
         // Act.
-        var grown = Indexer().WithElement("shop.dgr", Encoding.UTF8.GetBytes(Plain), "Period", "n3w0e1em", "Payments");
+        var grown = Indexer().WithElement(Encoding.UTF8.GetBytes(Plain), "Period", "n3w0e1em", "Payments");
 
         // Assert.
         Assert.Null(grown);
