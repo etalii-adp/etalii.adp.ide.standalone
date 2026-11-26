@@ -41,7 +41,10 @@ namespace EtAlii.Adp.Diagram.DependencyGraph;
 /// </remarks>
 internal static class DependencyGraphDefinition
 {
-    private static readonly DislEnv Env = new();
+    private static readonly DislEnv Env = new(Lookup: true);
+
+    /// <summary>The operation that adds a linked node where the canvas was clicked, through the host's lookup (DISL 9.4, spec 092).</summary>
+    public const string AddLinkedOperation = "addLinkedHere";
 
     /// <summary>The bundled definition, with the palette, the menus and the rows every module derives the same way.</summary>
     public static DislDiagramDefinition Definition { get; } = new(typeof(DependencyGraphDefinition).Assembly, "dependency-graph.dis", "x-dependencies", DependencyGraphFindings.Plugins);
@@ -90,6 +93,23 @@ internal static class DependencyGraphDefinition
             null,
             DislIds.Fixed(ShortGuid.NewShortGuid().ToString()),
             new DislInvocation(Position: new Dictionary<string, object?>(StringComparer.Ordinal) { ["x"] = x, ["y"] = (double)row }),
+            Env);
+    }
+
+    /// <summary>
+    /// What the definition's <c>addLinkedHere</c> does at a placement's point - <paramref name="x"/> and
+    /// <paramref name="row"/> - for <paramref name="pick"/>, under a new ShortGuid: the transaction, or why not.
+    /// </summary>
+    public static DislTransaction LinkedHere(DependencyGraphBody body, double x, int row, DislLookupPick pick)
+    {
+        ArgumentNullException.ThrowIfNull(body);
+        return OperationInterpreter.Run(
+            Specification,
+            AddLinkedOperation,
+            body.Working(),
+            null,
+            DislIds.Fixed(ShortGuid.NewShortGuid().ToString()),
+            new DislInvocation(Position: new Dictionary<string, object?>(StringComparer.Ordinal) { ["x"] = x, ["y"] = (double)row }, Lookup: pick),
             Env);
     }
 

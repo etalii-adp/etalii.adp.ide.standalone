@@ -32,4 +32,7 @@ public sealed class ContextInteraction
     /// provider's commit runs.
     /// </summary>
     public IReadOnlySet<string>? Offered { get; init; }
+
+    /// <summary>The lookup the prompt opened, which <c>SearchLookup</c> searches; null for every other prompt.</summary>
+    public ContextLookupRequest? Lookup { get; init; }
 }

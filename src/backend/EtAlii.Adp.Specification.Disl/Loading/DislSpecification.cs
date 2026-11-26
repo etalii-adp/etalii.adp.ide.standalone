@@ -171,6 +171,13 @@ public sealed class DislSpecification
     /// <summary>The operations (§9.3) and the edit gate (§9.1), typed at load.</summary>
     internal DislOperations Operations { get; }
 
+    /// <summary>
+    /// The tool types the <c>lookup</c> of the operation <paramref name="operationId"/> narrows the host's lookup to (DISL 0.12 §9.4),
+    /// empty for every tool type; null when the operation holds no lookup among its top-level actions.
+    /// </summary>
+    public IReadOnlyList<string>? LookupOriginsOf(string operationId) =>
+        Operations.Find(operationId)?.Actions.Actions.OfType<DislAction.Lookup>().FirstOrDefault()?.Origins;
+
     /// <summary>The toolbox (§7.1 to §7.3): the palette, the library and the context menus, typed at load.</summary>
     internal DislToolbox Toolbox { get; }
 

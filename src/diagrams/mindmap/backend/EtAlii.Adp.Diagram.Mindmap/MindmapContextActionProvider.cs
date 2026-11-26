@@ -47,6 +47,10 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
     public const string EditNotesActionId = "mindmap.edit-notes";
     public const string LinkActionId = "mindmap.link";
     public const string UnlinkActionId = "mindmap.unlink";
+    public const string AddLinkedActionId = "mindmap.add-linked";
+
+    /// <summary>The definition's operation behind <see cref="AddLinkedActionId"/>, whose <c>lookup</c> says what the lookup offers.</summary>
+    private const string AddLinkedOperation = "addLinked";
 
     private const string NodeGone = "The node no longer exists.";
 
@@ -58,6 +62,7 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
     private readonly IMindmapDocumentStore _documents;
     private readonly MindmapViewState _views;
     private readonly LinkFixActions _linkFixes;
+    private readonly ILinkIndex? _links;
 
     public MindmapContextActionProvider(IHistoryStackStore historyStacks, IMindmapDocumentStore documents, MindmapViewState views, ILinkIndex? links = null)
     {
@@ -68,6 +73,7 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
         _documents = documents;
         _views = views;
         _linkFixes = new LinkFixActions(historyStacks, links);
+        _links = links;
     }
 
     public ContextScope Scope => ContextScope.DiagramElement;
@@ -159,6 +165,10 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
             case UnlinkActionId:
                 return await DispatchAsync(target, new SetNodeLinkCommand(target.ResolvedFullPath, node.Id, null), cancellationToken);
 
+            case AddLinkedActionId:
+                // The host's lookup over the workspace (DISL 9.4): the picked element comes back to the commit below.
+                return LinkLookups.Open(_links, MindmapDefinition.Specification, AddLinkedOperation, target.ResolvedFullPath);
+
             default:
                 return new ContextExecutionFailed($"Unknown action '{actionId}'.");
         }
@@ -193,6 +203,7 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
                 DeleteActionId => new RemoveNodeCommand(bodyPath, node.Id),
                 EditNotesActionId => new SetNodeNotesCommand(bodyPath, node.Id, value),
                 LinkActionId => LinkCommand(target, node, value),
+                AddLinkedActionId => LinkedChildCommand(bodyPath, node, value),
                 _ => null,
             };
 
@@ -204,6 +215,15 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
         var result = await _historyStacks.Get(target.Root).ExecuteAsync(command, cancellationToken);
         return result.IsSuccess ? ContextCommitResult.Succeeded : ContextCommitResult.Failed(result.Error);
     }
+
+    /// <summary>
+    /// A linked node for the element picked in the lookup, as the last child of <paramref name="node"/>: its <c>adp-link</c> the
+    /// picked element's link and its text the name that link caches (mindmap.md 3.8); null when the pick no longer resolves.
+    /// </summary>
+    private AddChildNodeCommand? LinkedChildCommand(string bodyPath, MindmapNode node, string value) =>
+        LinkLookups.Picked(_links, bodyPath, value) is { } pick
+            ? new AddChildNodeCommand(bodyPath, node.Id, MindmapDocument.NewId(), pick.Name) { AdpLink = pick.Link }
+            : null;
 
     private static SetNodeLinkCommand LinkCommand(ContextTarget target, MindmapNode node, string projectRelative)
     {

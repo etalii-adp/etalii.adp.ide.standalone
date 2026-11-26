@@ -263,6 +263,24 @@ public sealed partial class ContextService
         return response;
     }
 
+    /// <summary>
+    /// What a lookup offers for the text typed so far (DISL 0.12 §9.4). Answered on this call's own response, as a proposal's
+    /// verdict is, so the list follows the typing without a pushed prompt per keystroke.
+    /// </summary>
+    public override Task<SearchLookupResponse> SearchLookup(SearchLookupRequest request, ServerCallContext context)
+    {
+        if (_contextInteractionStore.Get(request.InteractionId)?.Lookup is not { } lookup)
+        {
+            _logger.Debug("Ignoring a lookup search for interaction {InteractionId}, which is no lookup in flight", request.InteractionId);
+            return Task.FromResult(new SearchLookupResponse { Error = "This lookup is no longer active." });
+        }
+
+        var response = new SearchLookupResponse();
+        response.Candidates.AddRange(lookup.Search(request.Query).Select(ContextWire.ToProto));
+        _logger.Verbose("The lookup of interaction {InteractionId} offers {Count} for '{Query}'", request.InteractionId, response.Candidates.Count, request.Query);
+        return Task.FromResult(response);
+    }
+
     public override Task<CancelInteractionResponse> CancelInteraction(CancelInteractionRequest request, ServerCallContext context)
     {
         _contextInteractionStore.Complete(request.InteractionId);
@@ -294,6 +312,7 @@ public sealed partial class ContextService
             Provider = provider,
             RootPath = rootPath,
             Offered = fileDialog?.Pinned.Concat(fileDialog.Files).SelectMany(ContextWire.Selectable).ToHashSet(StringComparer.Ordinal),
+            Lookup = (execution as ContextExecutionRequiresLookup)?.Request,
         });
         return ContextWire.PromptOf(interactionId, execution, fileDialog);
     }

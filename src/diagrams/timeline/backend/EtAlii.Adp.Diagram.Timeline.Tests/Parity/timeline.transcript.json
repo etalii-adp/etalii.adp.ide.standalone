@@ -36,6 +36,7 @@
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
+          "g1 timeline.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
         [
@@ -452,6 +453,7 @@
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
+          "g1 timeline.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
         [
@@ -840,6 +842,7 @@
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
+          "g1 timeline.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
         [
@@ -1140,6 +1143,7 @@
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
+          "g1 timeline.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
         [
@@ -1528,6 +1532,7 @@
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
+          "g1 timeline.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
         [
@@ -1793,6 +1798,7 @@
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
+          "g1 timeline.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
         [
@@ -2204,6 +2210,7 @@
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
+          "g1 timeline.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
         [
@@ -2504,6 +2511,7 @@
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
+          "g1 timeline.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
         [
@@ -2891,6 +2899,7 @@
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
+          "g1 timeline.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
         [
@@ -3247,6 +3256,7 @@
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
+          "g1 timeline.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
         [
@@ -3547,6 +3557,7 @@
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
+          "g1 timeline.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
         [
@@ -3916,6 +3927,7 @@
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
+          "g1 timeline.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
         [
@@ -4335,6 +4347,7 @@
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
+          "g1 timeline.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
         [
@@ -4744,6 +4757,7 @@
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
+          "g1 timeline.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
         [
@@ -5135,6 +5149,7 @@
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
+          "g1 timeline.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
         [
@@ -5480,6 +5495,7 @@
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
+          "g1 timeline.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
         [
@@ -5901,6 +5917,7 @@
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
+          "g1 timeline.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
         [
@@ -6322,6 +6339,7 @@
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
+          "g1 timeline.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
         [
@@ -6746,6 +6764,7 @@
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
+          "g1 timeline.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
         [
@@ -7204,6 +7223,7 @@
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
+          "g1 timeline.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
         [
@@ -7599,6 +7619,7 @@
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
+          "g1 timeline.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
         [
@@ -7980,6 +8001,7 @@
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
+          "g1 timeline.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | off (There is nothing to arrange until this timeline has an element.)"
         ],
         [
@@ -8070,6 +8092,7 @@
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
+          "g1 timeline.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | off (There is nothing to arrange until this timeline has an element.)"
         ],
         [
@@ -8199,6 +8222,7 @@
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
+          "g1 timeline.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
         [
@@ -8584,6 +8608,7 @@
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
+          "g1 timeline.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | off (There is nothing to arrange until this timeline has an element.)"
         ],
         [
@@ -8717,6 +8742,7 @@
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
+          "g1 timeline.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
         [
@@ -9159,6 +9185,7 @@
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
+          "g1 timeline.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
         [
@@ -9451,6 +9478,7 @@
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
+          "g1 timeline.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
         [
@@ -9870,6 +9898,7 @@
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
+          "g1 timeline.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
         [
@@ -10381,6 +10410,7 @@
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
+          "g1 timeline.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | off (There is nothing to arrange until this timeline has an element.)"
         ],
         [
@@ -10492,6 +10522,7 @@
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
+          "g1 timeline.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
         [
@@ -11120,6 +11151,7 @@
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
+          "g1 timeline.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
         [
@@ -12212,6 +12244,7 @@
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
+          "g1 timeline.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
         [
@@ -13631,6 +13664,7 @@
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
+          "g1 timeline.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
         [
@@ -23555,6 +23589,7 @@
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
+          "g1 timeline.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
         [

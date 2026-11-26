@@ -35,6 +35,8 @@ service ContextService {
   rpc ProposeInput(ProposeInputRequest) returns (ProposeInputResponse);
   rpc SubmitInteraction(SubmitInteractionRequest) returns (SubmitInteractionResponse);
   rpc CancelInteraction(CancelInteractionRequest) returns (CancelInteractionResponse);
+  // The lookup's search (DISL 0.12 9.4, spec 092): what a lookup interaction offers for the text typed so far.
+  rpc SearchLookup(SearchLookupRequest) returns (SearchLookupResponse);
 
   // Properties of whatever is selected, and changing one. Described as data so the property
   // grid renders rows it does not understand, exactly as the context menu renders actions.
@@ -245,7 +247,35 @@ message ContextPrompt {
     ContextInteractionClosed closed = 4; // backend-initiated dismissal
     ChoiceDialogPrompt choice_dialog = 5;
     FileDialogPrompt file_dialog = 6;
+    LookupDialogPrompt lookup_dialog = 7;
   }
+}
+
+// A dialog that searches the workspace's linkable elements by name as the user types (DISL 0.12 9.4, spec 092).
+// The candidates come from SearchLookup; the picked candidate's value is what SubmitInteraction sends back.
+message LookupDialogPrompt {
+  string title = 1;
+  string icon = 2;
+  string placeholder = 3;    // the search field's hint
+  string empty_message = 4;  // shown when nothing matches what is typed
+}
+
+message SearchLookupRequest {
+  ShortGuid interaction_id = 1;
+  string query = 2;
+}
+
+message SearchLookupResponse {
+  repeated LookupCandidate candidates = 1;
+  string error = 2;  // set when the interaction is no longer active
+}
+
+// One element the lookup offers: its name, and the name and folder of its document, which tell two of one name apart.
+message LookupCandidate {
+  string value = 1;          // what SubmitInteraction sends when it is picked
+  string name = 2;
+  string document_name = 3;
+  string folder = 4;         // relative to the workspace's root; empty for the root itself
 }
 
 message DiscoverActionsRequest {

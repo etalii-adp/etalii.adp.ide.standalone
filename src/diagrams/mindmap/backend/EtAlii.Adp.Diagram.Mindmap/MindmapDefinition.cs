@@ -43,7 +43,7 @@ internal static class MindmapDefinition
     public static DislDiagramDefinition Definition { get; } = new(typeof(MindmapDefinition).Assembly, "mindmap.dis", "x-mindmap");
 
     /// <summary>The definition.</summary>
-    private static DislSpecification Specification => Definition.Specification;
+    internal static DislSpecification Specification => Definition.Specification;
 
     /// <summary>The wire ids of <c>x-mindmap</c>.</summary>
     private static WireIdMap Ids => Definition.Ids;
@@ -51,8 +51,8 @@ internal static class MindmapDefinition
     /// <summary>The binding every mind map body is read with.</summary>
     public static FblBinding Binding => LoadedBinding.Value;
 
-    /// <summary>What <c>env</c> reads: editable, always, as the module's menus and rows have always been.</summary>
-    private static DislEnv Env { get; } = new();
+    /// <summary>What <c>env</c> reads: editable, always, as the module's menus and rows have always been, with the host's lookup (DISL 9.4, spec 092).</summary>
+    private static DislEnv Env { get; } = new(Lookup: true);
 
     /// <summary>
     /// The DISL model of <paramref name="document"/> as the store holds it, each node's

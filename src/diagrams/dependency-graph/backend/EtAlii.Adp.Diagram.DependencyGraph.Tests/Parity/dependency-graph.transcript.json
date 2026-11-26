@@ -23,7 +23,8 @@
         ],
         [],
         [
-          "g1 dependencies.add-element | Add node here | mdi-plus | - | on"
+          "g1 dependencies.add-element | Add node here | mdi-plus | - | on",
+          "g1 dependencies.add-linked | Add from another document… | mdi-link-plus | - | on"
         ],
         [
           "g1 dependencies.connect | Depends on | mdi-ray-start-arrow | - | on"
@@ -349,7 +350,8 @@
         ],
         [],
         [
-          "g1 dependencies.add-element | Add node here | mdi-plus | - | on"
+          "g1 dependencies.add-element | Add node here | mdi-plus | - | on",
+          "g1 dependencies.add-linked | Add from another document… | mdi-link-plus | - | on"
         ],
         [
           "g1 dependencies.connect | Depends on | mdi-ray-start-arrow | - | on"
@@ -641,7 +643,8 @@
         ],
         [],
         [
-          "g1 dependencies.add-element | Add node here | mdi-plus | - | on"
+          "g1 dependencies.add-element | Add node here | mdi-plus | - | on",
+          "g1 dependencies.add-linked | Add from another document… | mdi-link-plus | - | on"
         ],
         [
           "g1 dependencies.connect | Depends on | mdi-ray-start-arrow | - | on"
@@ -874,7 +877,8 @@
         ],
         [],
         [
-          "g1 dependencies.add-element | Add node here | mdi-plus | - | on"
+          "g1 dependencies.add-element | Add node here | mdi-plus | - | on",
+          "g1 dependencies.add-linked | Add from another document… | mdi-link-plus | - | on"
         ],
         [
           "g1 dependencies.connect | Depends on | mdi-ray-start-arrow | - | on"
@@ -1200,7 +1204,8 @@
         ],
         [],
         [
-          "g1 dependencies.add-element | Add node here | mdi-plus | - | on"
+          "g1 dependencies.add-element | Add node here | mdi-plus | - | on",
+          "g1 dependencies.add-linked | Add from another document… | mdi-link-plus | - | on"
         ],
         [
           "g1 dependencies.connect | Depends on | mdi-ray-start-arrow | - | on"
@@ -1429,7 +1434,8 @@
         ],
         [],
         [
-          "g1 dependencies.add-element | Add node here | mdi-plus | - | on"
+          "g1 dependencies.add-element | Add node here | mdi-plus | - | on",
+          "g1 dependencies.add-linked | Add from another document… | mdi-link-plus | - | on"
         ],
         [
           "g1 dependencies.connect | Depends on | mdi-ray-start-arrow | - | on"
@@ -1662,7 +1668,8 @@
         ],
         [],
         [
-          "g1 dependencies.add-element | Add node here | mdi-plus | - | on"
+          "g1 dependencies.add-element | Add node here | mdi-plus | - | on",
+          "g1 dependencies.add-linked | Add from another document… | mdi-link-plus | - | on"
         ],
         [
           "g1 dependencies.connect | Depends on | mdi-ray-start-arrow | - | on"
@@ -2011,7 +2018,8 @@
         ],
         [],
         [
-          "g1 dependencies.add-element | Add node here | mdi-plus | - | on"
+          "g1 dependencies.add-element | Add node here | mdi-plus | - | on",
+          "g1 dependencies.add-linked | Add from another document… | mdi-link-plus | - | on"
         ],
         [
           "g1 dependencies.connect | Depends on | mdi-ray-start-arrow | - | on"
@@ -2314,7 +2322,8 @@
         ],
         [],
         [
-          "g1 dependencies.add-element | Add node here | mdi-plus | - | on"
+          "g1 dependencies.add-element | Add node here | mdi-plus | - | on",
+          "g1 dependencies.add-linked | Add from another document… | mdi-link-plus | - | on"
         ],
         [
           "g1 dependencies.connect | Depends on | mdi-ray-start-arrow | - | on"
@@ -2610,7 +2619,8 @@
         ],
         [],
         [
-          "g1 dependencies.add-element | Add node here | mdi-plus | - | on"
+          "g1 dependencies.add-element | Add node here | mdi-plus | - | on",
+          "g1 dependencies.add-linked | Add from another document… | mdi-link-plus | - | on"
         ],
         [
           "g1 dependencies.connect | Depends on | mdi-ray-start-arrow | - | on"
@@ -2940,7 +2950,8 @@
         ],
         [],
         [
-          "g1 dependencies.add-element | Add node here | mdi-plus | - | on"
+          "g1 dependencies.add-element | Add node here | mdi-plus | - | on",
+          "g1 dependencies.add-linked | Add from another document… | mdi-link-plus | - | on"
         ],
         [
           "g1 dependencies.connect | Depends on | mdi-ray-start-arrow | - | on"
@@ -3270,7 +3281,8 @@
         ],
         [],
         [
-          "g1 dependencies.add-element | Add node here | mdi-plus | - | on"
+          "g1 dependencies.add-element | Add node here | mdi-plus | - | on",
+          "g1 dependencies.add-linked | Add from another document… | mdi-link-plus | - | on"
         ],
         [
           "g1 dependencies.connect | Depends on | mdi-ray-start-arrow | - | on"
@@ -3794,7 +3806,8 @@
       "menus": [
         [],
         [
-          "g1 dependencies.add-element | Add node here | mdi-plus | - | on"
+          "g1 dependencies.add-element | Add node here | mdi-plus | - | on",
+          "g1 dependencies.add-linked | Add from another document… | mdi-link-plus | - | on"
         ],
         [
           "g1 dependencies.connect | Depends on | mdi-ray-start-arrow | - | on"
@@ -3874,7 +3887,8 @@
       "menus": [
         [],
         [
-          "g1 dependencies.add-element | Add node here | mdi-plus | - | on"
+          "g1 dependencies.add-element | Add node here | mdi-plus | - | on",
+          "g1 dependencies.add-linked | Add from another document… | mdi-link-plus | - | on"
         ],
         [
           "g1 dependencies.connect | Depends on | mdi-ray-start-arrow | - | on"
@@ -3948,7 +3962,8 @@
       "menus": [
         [],
         [
-          "g1 dependencies.add-element | Add node here | mdi-plus | - | on"
+          "g1 dependencies.add-element | Add node here | mdi-plus | - | on",
+          "g1 dependencies.add-linked | Add from another document… | mdi-link-plus | - | on"
         ],
         [
           "g1 dependencies.connect | Depends on | mdi-ray-start-arrow | - | on"
@@ -4024,7 +4039,8 @@
       "menus": [
         [],
         [
-          "g1 dependencies.add-element | Add node here | mdi-plus | - | on"
+          "g1 dependencies.add-element | Add node here | mdi-plus | - | on",
+          "g1 dependencies.add-linked | Add from another document… | mdi-link-plus | - | on"
         ],
         [
           "g1 dependencies.connect | Depends on | mdi-ray-start-arrow | - | on"
@@ -4098,7 +4114,8 @@
       "menus": [
         [],
         [
-          "g1 dependencies.add-element | Add node here | mdi-plus | - | on"
+          "g1 dependencies.add-element | Add node here | mdi-plus | - | on",
+          "g1 dependencies.add-linked | Add from another document… | mdi-link-plus | - | on"
         ],
         [
           "g1 dependencies.connect | Depends on | mdi-ray-start-arrow | - | on"
@@ -4184,7 +4201,8 @@
           "g2 dependencies.add-below | Add node below | mdi-arrow-expand-down | Enter | on"
         ],
         [
-          "g1 dependencies.add-element | Add node here | mdi-plus | - | on"
+          "g1 dependencies.add-element | Add node here | mdi-plus | - | on",
+          "g1 dependencies.add-linked | Add from another document… | mdi-link-plus | - | on"
         ],
         [
           "g1 dependencies.connect | Depends on | mdi-ray-start-arrow | - | on"
@@ -4441,7 +4459,8 @@
         ],
         [],
         [
-          "g1 dependencies.add-element | Add node here | mdi-plus | - | on"
+          "g1 dependencies.add-element | Add node here | mdi-plus | - | on",
+          "g1 dependencies.add-linked | Add from another document… | mdi-link-plus | - | on"
         ],
         [
           "g1 dependencies.connect | Depends on | mdi-ray-start-arrow | - | on"
@@ -4784,7 +4803,8 @@
         ],
         [],
         [
-          "g1 dependencies.add-element | Add node here | mdi-plus | - | on"
+          "g1 dependencies.add-element | Add node here | mdi-plus | - | on",
+          "g1 dependencies.add-linked | Add from another document… | mdi-link-plus | - | on"
         ],
         [
           "g1 dependencies.connect | Depends on | mdi-ray-start-arrow | - | on"
@@ -5123,7 +5143,8 @@
         ],
         [],
         [
-          "g1 dependencies.add-element | Add node here | mdi-plus | - | on"
+          "g1 dependencies.add-element | Add node here | mdi-plus | - | on",
+          "g1 dependencies.add-linked | Add from another document… | mdi-link-plus | - | on"
         ],
         [
           "g1 dependencies.connect | Depends on | mdi-ray-start-arrow | - | on"
@@ -5413,7 +5434,8 @@
           "g1 dependencies.disconnect | Remove dependency | mdi-vector-polyline-remove | Delete | on"
         ],
         [
-          "g1 dependencies.add-element | Add node here | mdi-plus | - | on"
+          "g1 dependencies.add-element | Add node here | mdi-plus | - | on",
+          "g1 dependencies.add-linked | Add from another document… | mdi-link-plus | - | on"
         ],
         [
           "g1 dependencies.connect | Depends on | mdi-ray-start-arrow | - | on"
@@ -5788,7 +5810,8 @@
         ],
         [],
         [
-          "g1 dependencies.add-element | Add node here | mdi-plus | - | on"
+          "g1 dependencies.add-element | Add node here | mdi-plus | - | on",
+          "g1 dependencies.add-linked | Add from another document… | mdi-link-plus | - | on"
         ],
         [
           "g1 dependencies.connect | Depends on | mdi-ray-start-arrow | - | on"
@@ -6124,7 +6147,8 @@
         ],
         [],
         [
-          "g1 dependencies.add-element | Add node here | mdi-plus | - | on"
+          "g1 dependencies.add-element | Add node here | mdi-plus | - | on",
+          "g1 dependencies.add-linked | Add from another document… | mdi-link-plus | - | on"
         ],
         [
           "g1 dependencies.connect | Depends on | mdi-ray-start-arrow | - | on"
@@ -6465,7 +6489,8 @@
         ],
         [],
         [
-          "g1 dependencies.add-element | Add node here | mdi-plus | - | on"
+          "g1 dependencies.add-element | Add node here | mdi-plus | - | on",
+          "g1 dependencies.add-linked | Add from another document… | mdi-link-plus | - | on"
         ],
         [
           "g1 dependencies.connect | Depends on | mdi-ray-start-arrow | - | on"
@@ -6817,7 +6842,8 @@
         ],
         [],
         [
-          "g1 dependencies.add-element | Add node here | mdi-plus | - | on"
+          "g1 dependencies.add-element | Add node here | mdi-plus | - | on",
+          "g1 dependencies.add-linked | Add from another document… | mdi-link-plus | - | on"
         ],
         [
           "g1 dependencies.connect | Depends on | mdi-ray-start-arrow | - | on"
@@ -7150,7 +7176,8 @@
         ],
         [],
         [
-          "g1 dependencies.add-element | Add node here | mdi-plus | - | on"
+          "g1 dependencies.add-element | Add node here | mdi-plus | - | on",
+          "g1 dependencies.add-linked | Add from another document… | mdi-link-plus | - | on"
         ],
         [
           "g1 dependencies.connect | Depends on | mdi-ray-start-arrow | - | on"
@@ -7505,7 +7532,8 @@
         ],
         [],
         [
-          "g1 dependencies.add-element | Add node here | mdi-plus | - | on"
+          "g1 dependencies.add-element | Add node here | mdi-plus | - | on",
+          "g1 dependencies.add-linked | Add from another document… | mdi-link-plus | - | on"
         ],
         [
           "g1 dependencies.connect | Depends on | mdi-ray-start-arrow | - | on"
@@ -7847,7 +7875,8 @@
       "menus": [
         [],
         [
-          "g1 dependencies.add-element | Add node here | mdi-plus | - | on"
+          "g1 dependencies.add-element | Add node here | mdi-plus | - | on",
+          "g1 dependencies.add-linked | Add from another document… | mdi-link-plus | - | on"
         ],
         [
           "g1 dependencies.connect | Depends on | mdi-ray-start-arrow | - | on"
@@ -7927,7 +7956,8 @@
       "menus": [
         [],
         [
-          "g1 dependencies.add-element | Add node here | mdi-plus | - | on"
+          "g1 dependencies.add-element | Add node here | mdi-plus | - | on",
+          "g1 dependencies.add-linked | Add from another document… | mdi-link-plus | - | on"
         ],
         [
           "g1 dependencies.connect | Depends on | mdi-ray-start-arrow | - | on"
@@ -8017,7 +8047,8 @@
         ],
         [],
         [
-          "g1 dependencies.add-element | Add node here | mdi-plus | - | on"
+          "g1 dependencies.add-element | Add node here | mdi-plus | - | on",
+          "g1 dependencies.add-linked | Add from another document… | mdi-link-plus | - | on"
         ],
         [
           "g1 dependencies.connect | Depends on | mdi-ray-start-arrow | - | on"
@@ -8360,7 +8391,8 @@
         ],
         [],
         [
-          "g1 dependencies.add-element | Add node here | mdi-plus | - | on"
+          "g1 dependencies.add-element | Add node here | mdi-plus | - | on",
+          "g1 dependencies.add-linked | Add from another document… | mdi-link-plus | - | on"
         ],
         [
           "g1 dependencies.connect | Depends on | mdi-ray-start-arrow | - | on"
@@ -8690,7 +8722,8 @@
         ],
         [],
         [
-          "g1 dependencies.add-element | Add node here | mdi-plus | - | on"
+          "g1 dependencies.add-element | Add node here | mdi-plus | - | on",
+          "g1 dependencies.add-linked | Add from another document… | mdi-link-plus | - | on"
         ],
         [
           "g1 dependencies.connect | Depends on | mdi-ray-start-arrow | - | on"
@@ -9019,7 +9052,8 @@
           "g1 dependencies.disconnect | Remove dependency | mdi-vector-polyline-remove | Delete | on"
         ],
         [
-          "g1 dependencies.add-element | Add node here | mdi-plus | - | on"
+          "g1 dependencies.add-element | Add node here | mdi-plus | - | on",
+          "g1 dependencies.add-linked | Add from another document… | mdi-link-plus | - | on"
         ],
         [
           "g1 dependencies.connect | Depends on | mdi-ray-start-arrow | - | on"
@@ -9387,7 +9421,8 @@
         ],
         [],
         [
-          "g1 dependencies.add-element | Add node here | mdi-plus | - | on"
+          "g1 dependencies.add-element | Add node here | mdi-plus | - | on",
+          "g1 dependencies.add-linked | Add from another document… | mdi-link-plus | - | on"
         ],
         [
           "g1 dependencies.connect | Depends on | mdi-ray-start-arrow | - | on"
@@ -9713,7 +9748,8 @@
         ],
         [],
         [
-          "g1 dependencies.add-element | Add node here | mdi-plus | - | on"
+          "g1 dependencies.add-element | Add node here | mdi-plus | - | on",
+          "g1 dependencies.add-linked | Add from another document… | mdi-link-plus | - | on"
         ],
         [
           "g1 dependencies.connect | Depends on | mdi-ray-start-arrow | - | on"
@@ -10007,7 +10043,8 @@
         ],
         [],
         [
-          "g1 dependencies.add-element | Add node here | mdi-plus | - | on"
+          "g1 dependencies.add-element | Add node here | mdi-plus | - | on",
+          "g1 dependencies.add-linked | Add from another document… | mdi-link-plus | - | on"
         ],
         [
           "g1 dependencies.connect | Depends on | mdi-ray-start-arrow | - | on"
@@ -10353,7 +10390,8 @@
         ],
         [],
         [
-          "g1 dependencies.add-element | Add node here | mdi-plus | - | on"
+          "g1 dependencies.add-element | Add node here | mdi-plus | - | on",
+          "g1 dependencies.add-linked | Add from another document… | mdi-link-plus | - | on"
         ],
         [
           "g1 dependencies.connect | Depends on | mdi-ray-start-arrow | - | on"

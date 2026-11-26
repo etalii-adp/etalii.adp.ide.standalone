@@ -25,7 +25,7 @@ import { WorkspaceService } from "../../generated/workspace_pb";
 import type { ContextActionGroup, ContextLevelDetail, ContextShortcut, ContextSource } from "../../generated/context-contract_pb";
 import type { ContextPrompt, ContextSelection, ContextSelectionChanged, ContextProperty } from "../../generated/context_pb";
 import type { ProjectProblems } from "../../generated/problems_pb";
-import type { ContextPromptSubmission, ContextPromptVerdict } from "./ContextPromptHost";
+import type { ContextLookupResult, ContextPromptSubmission, ContextPromptVerdict } from "./ContextPromptHost";
 import { useCoalescedSelect } from "./useCoalescedSelect";
 import { requestTextTab } from "../panels/textTabRequests";
 import { onLocalNotice } from "./localNotices";
@@ -194,6 +194,8 @@ export interface WorkspaceStreamsValue {
 export interface ContextPromptValue {
   prompt: ContextPrompt | null;
   onPropose: (revision: number, value: string) => Promise<ContextPromptVerdict>;
+  /** The open lookup's search (spec 092); finds nothing while no lookup is open. */
+  onSearch: (query: string) => Promise<ContextLookupResult>;
   onSubmit: (value: string) => Promise<ContextPromptSubmission>;
   onCancel: () => void;
 }
@@ -630,6 +632,24 @@ export function ContextConnectionProvider({ projectId, children }: ContextConnec
     [client, promptInteractionId],
   );
 
+  const onSearch = useCallback(
+    async (query: string): Promise<ContextLookupResult> => {
+      try {
+        const response = await client.searchLookup({
+          interactionId: promptInteractionId ? { value: promptInteractionId } : undefined,
+          query,
+        });
+        return {
+          candidates: response.candidates.map(({ value, name, documentName, folder }) => ({ value, name, documentName, folder })),
+          error: response.error,
+        };
+      } catch (caught) {
+        return { candidates: [], error: faultMessage(caught) };
+      }
+    },
+    [client, promptInteractionId],
+  );
+
   const onSubmit = useCallback(
     async (value: string, text?: string) => {
       // As in `execute`: the call is guarded, and what it sets in motion afterwards is not.
@@ -694,8 +714,8 @@ export function ContextConnectionProvider({ projectId, children }: ContextConnec
   const noticesValue = useMemo<NoticeState>(() => ({ notices, dismiss: dismissNotice }), [notices, dismissNotice]);
 
   const promptValue = useMemo<ContextPromptValue>(
-    () => ({ prompt, onPropose, onSubmit, onCancel }),
-    [prompt, onPropose, onSubmit, onCancel],
+    () => ({ prompt, onPropose, onSearch, onSubmit, onCancel }),
+    [prompt, onPropose, onSearch, onSubmit, onCancel],
   );
 
   return (

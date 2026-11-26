@@ -1282,6 +1282,14 @@ button {
    chevron width, row padding, the focused-row treatment - through its own selectors, so
    the two can diverge later without either dragging the other along. */
 
+/* Where a lookup's candidate lives, after its name (spec 092). */
+.lookup-candidate-where {
+  margin-left: auto;
+  padding-left: 12px;
+  color: var(--color-text-muted);
+  font-size: 0.8em;
+}
+
 .choice-tree,
 .choice-tree ul {
   list-style: none;

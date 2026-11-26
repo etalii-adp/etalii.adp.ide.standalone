@@ -71,6 +71,9 @@ public sealed class DependencyGraphContextActionProvider(IHistoryStackStore hist
     /// <summary>Add a node below the selected one, at the same coordinate, depending on it. Enter.</summary>
     public const string AddBelowActionId = "dependencies.add-below";
 
+    /// <summary>Add from another document, where the canvas was clicked: the host's lookup, then a linked node for the pick (spec 092).</summary>
+    public const string AddLinkedActionId = "dependencies.add-linked";
+
     /// <summary>
     /// How far to the right "after" is, in canvas units.
     /// </summary>
@@ -118,6 +121,9 @@ public sealed class DependencyGraphContextActionProvider(IHistoryStackStore hist
         {
             case AddElementActionId when placed:
                 return await AddAtPlacementAsync(target, entry, placedX, placedRow, cancellationToken);
+
+            case AddLinkedActionId when placed:
+                return LinkLookups.Open(Links, DependencyGraphDefinition.Specification, DependencyGraphDefinition.AddLinkedOperation, target.ResolvedFullPath);
 
             case AddAfterActionId when element is not null:
             case AddBelowActionId when element is not null:
@@ -289,6 +295,25 @@ public sealed class DependencyGraphContextActionProvider(IHistoryStackStore hist
     /// would apply again, but every value this type asks for is a label, and a label has no wrong
     /// answer.
     /// </remarks>
+    protected override ICommand? CommitCommand(ContextTarget target, DocumentEntry<DependencyGraphBody, DislModel> entry, string actionId, string value)
+    {
+        ArgumentNullException.ThrowIfNull(entry);
+        return actionId == AddLinkedActionId ? LinkedAt(target, entry.Document, value) : base.CommitCommand(target, entry, actionId, value);
+    }
+
+    /// <summary>
+    /// The linked node for the element <paramref name="value"/> names, picked in the lookup opened at the placement
+    /// <paramref name="target"/> names; null when the pick or the placement is gone, or the definition refuses it.
+    /// </summary>
+    private RunDependencyGraphOperationCommand? LinkedAt(ContextTarget target, DependencyGraphBody body, string value)
+    {
+        if (!GestureIds.TryParseRowPlacement(target.ElementId, out var x, out var row) || LinkLookups.Picked(Links, target.ResolvedFullPath, value) is not { } pick) return null;
+
+        var transaction = DependencyGraphDefinition.LinkedHere(body, x, row, pick);
+        return transaction.WasApplied ? new RunDependencyGraphOperationCommand(target.ResolvedFullPath, transaction) : null;
+    }
+
+    /// <inheritdoc />
     protected override ICommand? CommitCommand(ContextTarget target, DislModel model, string actionId, string value)
     {
         var body = target.ResolvedFullPath;

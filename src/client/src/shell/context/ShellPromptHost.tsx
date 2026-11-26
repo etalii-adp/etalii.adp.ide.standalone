@@ -22,7 +22,7 @@ const VANISHED = "That element is no longer there, so the edit was abandoned. No
  * every one of those renders exactly the dialog it rendered before this feature existed.
  */
 export function ShellPromptHost() {
-  const { prompt, onPropose, onSubmit, onCancel } = useContextPrompt();
+  const { prompt, onPropose, onSearch, onSubmit, onCancel } = useContextPrompt();
   const { placementFor, anyCanvasRegistered } = useInlineLabelPlacement();
   const [notice, setNotice] = useState("");
   // The interaction is over as far as this client is concerned, but the backend's own
@@ -87,6 +87,7 @@ export function ShellPromptHost() {
     <ContextPromptHost
       prompt={placedInline || abandoned || awaitingCanvas ? null : prompt}
       onPropose={onPropose}
+      onSearch={onSearch}
       onSubmit={onSubmit}
       onCancel={onCancel}
       notice={notice}

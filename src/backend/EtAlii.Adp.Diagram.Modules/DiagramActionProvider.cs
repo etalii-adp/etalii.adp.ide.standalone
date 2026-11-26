@@ -48,7 +48,11 @@ public abstract class DiagramActionProvider<TBody, TModel> : IContextActionProvi
         _historyStacks = historyStacks;
         _load = load;
         _linkFixes = new LinkFixActions(historyStacks, links);
+        Links = links;
     }
+
+    /// <summary>The index of the workspaces the diagrams are in, which a lookup searches; null where the host keeps none.</summary>
+    protected ILinkIndex? Links { get; }
 
     /// <inheritdoc />
     public ContextScope Scope => ContextScope.DiagramElement;

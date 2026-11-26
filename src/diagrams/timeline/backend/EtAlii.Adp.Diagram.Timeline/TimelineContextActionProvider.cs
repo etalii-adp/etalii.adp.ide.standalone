@@ -76,6 +76,12 @@ public sealed class TimelineContextActionProvider(IHistoryStackStore historyStac
     /// <summary>Put every element on the row that keeps the diagram least cluttered (<see cref="TimelineArrangement"/>).</summary>
     public const string ArrangeActionId = "timeline.arrange";
 
+    /// <summary>Add from another document, where the menu was opened: the host's lookup, then a linked moment for the pick (spec 092).</summary>
+    public const string AddLinkedActionId = "timeline.add-linked";
+
+    /// <summary>The definition's operation behind <see cref="AddLinkedActionId"/>.</summary>
+    private const string AddLinkedOperation = "addLinkedHere";
+
     private const string Gone = "That is no longer in this timeline.";
 
     /// <inheritdoc />
@@ -115,6 +121,9 @@ public sealed class TimelineContextActionProvider(IHistoryStackStore historyStac
             case AddElementActionId when placed:
             case AddMomentActionId when placed:
                 return await AddAtPlacementAsync(target, model, actionId, placedSeconds, placedRow, cancellationToken);
+
+            case AddLinkedActionId when placed:
+                return LinkLookups.Open(Links, TimelineDefinition.Specification, AddLinkedOperation, target.ResolvedFullPath);
 
             case AddAfterActionId when element is not null:
             case AddBelowActionId when element is not null:
@@ -360,8 +369,21 @@ public sealed class TimelineContextActionProvider(IHistoryStackStore historyStac
             // here - they complete in ExecuteAsync.
             AddElementActionId => AddAt(model, body, id, value, period: true),
             AddMomentActionId => AddAt(model, body, id, value, period: false),
+            AddLinkedActionId => LinkedAt(model, body, id, value),
             _ => null,
         };
+    }
+
+    /// <summary>
+    /// The linked moment for the element <paramref name="value"/> names, picked in the lookup opened at the placement
+    /// <paramref name="placement"/>: at the start of that day, on that row; null when the pick or the placement is gone.
+    /// </summary>
+    private AddTimelineElementCommand? LinkedAt(TimelineModel model, string body, string placement, string value)
+    {
+        if (!GestureIds.TryParseRowPlacement(placement, out var seconds, out var row) || LinkLookups.Picked(Links, body, value) is not { } pick) return null;
+
+        var begin = TimelineScale.ToText(TimelineScale.ToTime(seconds, TimelinePrecision.Date), TimelinePrecision.Date);
+        return TimelineDefinition.LinkedAddition(model, body, ShortGuid.NewShortGuid().ToString(), begin, row, pick);
     }
 
     private static AddTimelineElementCommand? AddAt(TimelineModel model, string body, string anchorElementId, string value, bool period)
