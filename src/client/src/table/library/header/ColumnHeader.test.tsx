@@ -474,6 +474,52 @@ describe("adding a column", () => {
     expect((within(panel).getByRole("checkbox", { name: "Two-way relation" }) as HTMLInputElement).checked).toBe(true);
   });
 
+  it("does not offer a relation to a diagram as two-way, neither when it is made nor afterwards", async () => {
+    // Arrange: the backend lists a timeline among the targets, marked one-way (spec 092, FR-025), and a table holds a relation to one.
+    const relating: TableDefinition = {
+      ...definition,
+      kinds: { ...definition.kinds, relation: { icon: "mdi-arrow-top-right", label: "Relation", editor: "rows", needsTarget: true } },
+      columnActions: [...ALL_ACTIONS, "relation"],
+    };
+    const structure = {
+      title: "People",
+      columns: [
+        column("p1", "Name", "text", { isTitle: true }),
+        column("p5", "Milestone", "relation", { settings: { targetFile: "$lmy6158h@roadmap.tml", targetPath: "roadmap.tml", limit: "none", createKinds: '[{"id":"Moment","label":"moment"}]' } }),
+      ],
+      views: [],
+      settings: EMPTY_TABLE.settings,
+      rowCount: 0,
+      readOnlyReason: "",
+    };
+    const answers = ['choose:[{"id":"provinces.yaml","label":"Provinces"},{"id":"roadmap.tml","label":"roadmap.tml","oneWay":true}]', ""];
+    const onGesture = vi.fn(async (_gesture: TableGesture) => answers.shift() ?? "");
+    render(<TableSurface model={applyTableEvent(EMPTY_TABLE, { kind: "baseline", structure, findings: [] })} definition={relating} onGesture={onGesture} />);
+
+    // Act: a new relation to the timeline.
+    fireEvent.click(screen.getByRole("button", { name: "Add a property" }));
+    const panel = screen.getByRole("dialog", { name: "New property" });
+    await choose("Relation");
+    await choose("roadmap.tml");
+
+    // Assert: no two-way box, and the panel says where the rows that link show instead.
+    expect(within(panel).queryByRole("checkbox", { name: "Two-way relation" })).toBeNull();
+    expect(within(panel).getByRole("group", { name: "Relation" }).textContent).toContain("Linked from");
+    await act(async () => {
+      fireEvent.click(within(panel).getByRole("button", { name: "Add relation" }));
+    });
+    expect(onGesture).toHaveBeenLastCalledWith({ kind: "addRelation", settings: { target: "roadmap.tml", limit: "none", twoWay: "false" } });
+
+    // Act: the relation to a diagram the table already holds is edited.
+    openMenu("Milestone");
+    await choose("Edit relation");
+
+    // Assert: there too.
+    const editor = screen.getByRole("dialog", { name: "Relation Milestone" });
+    expect(within(editor).queryByRole("checkbox", { name: "Two-way relation" })).toBeNull();
+    expect(editor.textContent).toContain("Linked from");
+  });
+
   it("asks for the name of the column that was added, as soon as it is there", async () => {
     // Arrange.
     const onGesture = vi.fn(async (_gesture: TableGesture) => "");

@@ -2007,8 +2007,11 @@ button {
 }
 
 /* What the selected diagram type is for, under the Add dialog's type tree. Reserves its own
-   height whether or not something is selected, so choosing a type never shifts the tree. */
+   height whether or not something is selected, so choosing a type never shifts the tree. It
+   never shrinks below its text: the dialog body is a flex column that may squeeze its children,
+   and a two-line description was painted over the Name label below it. */
 .choice-description {
+  flex-shrink: 0;
   margin: 0.5rem 0 0;
   min-height: 2.4em;
   padding: 0.5rem 0.6rem;

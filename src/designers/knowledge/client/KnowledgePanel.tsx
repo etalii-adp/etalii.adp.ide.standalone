@@ -3,7 +3,7 @@ import { elementSelectionOf } from "@client/canvas/selection";
 import { useTableStream } from "@client/designers/useTableStream";
 import { useContextConnection } from "@client/shell/context/ContextConnectionProvider";
 import { classifyLink, openLink } from "@client/shell/links/openLink";
-import { onElementRevealRequested, takeElementReveal } from "@client/shell/panels/revealRequests";
+import { leaveElementReveal, onElementRevealRequested, takeElementReveal } from "@client/shell/panels/revealRequests";
 import type { TableColumn } from "@client/table/library/api/tableModel";
 import type { ToolContentProps } from "@client/shell/panels/toolPanelRegistration";
 import type { TableGesture } from "@client/table/library/api/tableEvents";
@@ -52,10 +52,15 @@ export function KnowledgePanel({ path, entryId }: ToolContentProps) {
       if (target === "" || target === ".") {
         select(elementSelectionOf(entryId, path, rowId));
       } else {
-        // The row waits for its table: one that is open takes it at once, one that opens now when it has loaded.
+        // The row waits for its table: one that is open takes it at once, one that opens now when it has loaded. An element
+        // of a diagram (a relation whose target is one has the kinds Create adds there) waits for the diagram's canvas instead.
         const file = classifyLink(target, path);
-        rowToOpen = file.kind === "project" ? { file: fileOf(file.segments), rowId } : null;
+        const toDiagram = column.settings.createKinds !== undefined;
+        rowToOpen = file.kind === "project" && !toDiagram ? { file: fileOf(file.segments), rowId } : null;
         openLink(target, path, { revealPath });
+        if (file.kind === "project" && toDiagram) {
+          leaveElementReveal(file.segments, rowId);
+        }
         rowWaiting.dispatchEvent(new Event("row"));
       }
     },

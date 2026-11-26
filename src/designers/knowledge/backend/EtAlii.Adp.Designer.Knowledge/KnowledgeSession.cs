@@ -285,7 +285,7 @@ internal sealed class KnowledgeSession : ITableDesignerSession
         // A relation asked for without the table it relates to is answered with the tables there are to choose from.
         if (gesture.Kind == "addRelation" && string.IsNullOrWhiteSpace(gesture.Settings.GetValueOrDefault("target")))
         {
-            return KnowledgeColumnEdits.ChooseTarget([.. KnowledgeProject.Targets(_root, _bodyPath), .. DiagramTargets()]);
+            return KnowledgeColumnEdits.ChooseTarget(KnowledgeProject.Targets(_root, _bodyPath), DiagramTargets());
         }
 
         return null;

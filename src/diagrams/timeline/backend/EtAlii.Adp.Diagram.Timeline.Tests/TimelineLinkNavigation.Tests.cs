@@ -89,6 +89,26 @@ public sealed class TimelineLinkNavigationTests : IDisposable
     }
 
     [Fact]
+    public async Task AKnowledgeCellThatLinksHere_IsListedByItsRowsName_AndPickingItPointsAtTheRow()
+    {
+        // Arrange: Bob's Milestone cell in a knowledge file links to the launch; the cell is a value of the row, which is the element.
+        var path = Write();
+        var actions = Actions(new IndexedDocument(Held("people.yaml"), "p6v4q8sa", "Name", [new IndexedElement("bob", [new KeyValuePair<string, string>("Name", "Bob")])], [
+            new HeldLink("bob/p5", "$r6d3w8ne@roadmap.tml#launch.label=Launch") { Element = "bob" },
+        ]));
+
+        // Act.
+        var listed = await actions.ExecuteAsync(Target(path, "launch"), LinkNavigation.LinkedFromActionId, TestContext.Current.CancellationToken);
+        var choice = Assert.IsType<ContextExecutionRequiresChoice>(listed).Request;
+        var picked = await actions.CommitAsync(Target(path, "launch"), LinkNavigation.LinkedFromActionId, choice.Options[0].Id, "", TestContext.Current.CancellationToken);
+
+        // Assert: named by the row, not by the launch the link names, and opened at the row, which the table can select.
+        Assert.Equal(["Bob (people.yaml)"], choice.Options.Select(option => option.Label));
+        var reveal = Assert.IsType<ContextExecutionReveals>(picked.Next);
+        Assert.Equal((IoPath.Combine(_folder.Path, "people.yaml"), "bob"), (reveal.FullPath, reveal.ElementId));
+    }
+
+    [Fact]
     public async Task DeletingAnElementLinksPointAt_IsConfirmed_SayingHowManyBreak()
     {
         // Arrange: the launch has no relations, so the definition alone would delete it without asking.

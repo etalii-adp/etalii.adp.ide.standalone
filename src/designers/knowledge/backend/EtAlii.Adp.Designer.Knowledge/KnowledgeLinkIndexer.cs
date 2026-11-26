@@ -7,7 +7,7 @@ namespace EtAlii.Adp.Designer.Knowledge;
 /// <summary>
 /// The link index's reader for knowledge files (FBL 17.3; knowledge.md, section 9): a file of one of its formats read as the
 /// designer reads it, held by its rows, each named by the file's title property, and by the links its relations hold, their
-/// targets and their cells. A file that is not a knowledge file, or cannot be read, is held by nothing.
+/// targets and their cells, a cell's link shown and opened at its row. A file that is not a knowledge file, or cannot be read, is held by nothing.
 /// </summary>
 internal sealed class KnowledgeLinkIndexer : ILinkIndexer
 {
@@ -40,7 +40,7 @@ internal sealed class KnowledgeLinkIndexer : ILinkIndexer
         {
             foreach (var cell in row.Cells.Where(cell => cell.Key == "rows"))
             {
-                links.AddRange(cell.Written.Where(KnowledgeLinks.IsLink).Select(text => new HeldLink(KnowledgeEdits.CellId(row.Id, cell.PropertyId), text)));
+                links.AddRange(cell.Written.Where(KnowledgeLinks.IsLink).Select(text => new HeldLink(KnowledgeEdits.CellId(row.Id, cell.PropertyId), text) { Element = row.Id }));
             }
         }
 

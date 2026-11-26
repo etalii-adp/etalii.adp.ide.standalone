@@ -85,7 +85,7 @@ public sealed class LinkWorkspace
             foreach (var held in document.Links)
             {
                 var resolution = Resolve(held.Text);
-                if (resolution is { Resolved: true, Link: { } link, Document: { } target } && target.Path == path && link.ElementId == elementId) backlinks.Add(new Backlink(document.Path, held.Holder) { TargetName = name });
+                if (resolution is { Resolved: true, Link: { } link, Document: { } target } && target.Path == path && link.ElementId == elementId) backlinks.Add(new Backlink(document.Path, held.Holder) { TargetName = name, Element = held.Element });
             }
         }
         return backlinks;

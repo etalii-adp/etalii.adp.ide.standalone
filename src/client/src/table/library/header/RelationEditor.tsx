@@ -14,6 +14,15 @@ const PANEL_WIDTH = 260;
 const TARGET = "targetFile";
 const LIMIT = "limit";
 
+/**
+ * Why a relation to a diagram offers no two-way box (spec 092, FR-025): a diagram has no column to
+ * show the rows that link to it in, and lists them on each element instead.
+ */
+export const ONE_WAY_ONLY = "Shown in this table only: a diagram has no column to show it in. Its elements list the rows that link to them under Linked from.";
+
+/** The setting a relation's column has only when its target is a diagram: the kinds of element Create can add there. */
+const CREATE_KINDS = "createKinds";
+
 /** What a relation's table is called where only its file is known: this table, or the file as the relation names it, by its name where that is a link (`$<id>@<file>`). */
 export function targetLabel(target: string): string {
   if (target === "" || target === ".") {
@@ -46,6 +55,8 @@ export function RelationEditor({ column, position, ask, onClose }: RelationEdito
   // The other table shows the relation as its backlink column, or, in a file made before links, as a counterpart property.
   const otherSide = column.settings[BACKLINK_NAME] ?? column.settings[OTHER_SIDE] ?? "";
   const twoWay = otherSide !== "";
+  // A relation to a diagram is not made two-way; one that is already, from a file written by hand, can still be made one-way.
+  const oneWayOnly = column.settings[CREATE_KINDS] !== undefined && !twoWay;
 
   // Leaving the panel - a press anywhere else, or Escape - closes it.
   useEffect(() => {
@@ -84,21 +95,27 @@ export function RelationEditor({ column, position, ask, onClose }: RelationEdito
           <option value="one">1 row</option>
         </select>
       </label>
-      <label>
-        <input
-          type="checkbox"
-          aria-label="Two-way relation"
-          checked={twoWay}
-          onChange={(event) => make({ kind: "setRelationOtherSide", columnId: column.id, settings: event.target.checked ? { twoWay: "true", counterpart: otherName.trim() } : { twoWay: "false" } })}
-        />
-        <span>Two-way relation</span>
-      </label>
-      {twoWay ? (
-        <p className="table-relation-other">
-          Shown in the other table as <strong>{otherSide}</strong>.
-        </p>
+      {oneWayOnly ? (
+        <p className="table-relation-one-way">{ONE_WAY_ONLY}</p>
       ) : (
-        <input type="text" aria-label="Name in the other table" placeholder="Name in the other table" value={otherName} onChange={(event) => setOtherName(event.target.value)} onKeyDown={(event) => event.stopPropagation()} />
+        <>
+          <label>
+            <input
+              type="checkbox"
+              aria-label="Two-way relation"
+              checked={twoWay}
+              onChange={(event) => make({ kind: "setRelationOtherSide", columnId: column.id, settings: event.target.checked ? { twoWay: "true", counterpart: otherName.trim() } : { twoWay: "false" } })}
+            />
+            <span>Two-way relation</span>
+          </label>
+          {twoWay ? (
+            <p className="table-relation-other">
+              Shown in the other table as <strong>{otherSide}</strong>.
+            </p>
+          ) : (
+            <input type="text" aria-label="Name in the other table" placeholder="Name in the other table" value={otherName} onChange={(event) => setOtherName(event.target.value)} onKeyDown={(event) => event.stopPropagation()} />
+          )}
+        </>
       )}
       {refusal !== "" && (
         <p className="table-relation-refusal" role="alert">

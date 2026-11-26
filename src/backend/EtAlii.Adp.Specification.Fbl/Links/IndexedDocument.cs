@@ -33,4 +33,11 @@ public sealed record IndexedElement(string Id, IReadOnlyList<KeyValuePair<string
 }
 
 /// <summary>A link a document holds, and the element or value of it that holds it, as its tool type names that.</summary>
-public sealed record HeldLink(string Holder, string Text);
+public sealed record HeldLink(string Holder, string Text)
+{
+    /// <summary>
+    /// The element <see cref="Holder"/> is a value of, where it is not an element itself: the row of a knowledge cell. Null where
+    /// the holder is the element. "Linked from (N)" names the link by this element and opens it.
+    /// </summary>
+    public string? Element { get; init; }
+}

@@ -34,4 +34,7 @@ public sealed record Backlink(string Path, string Holder)
 {
     /// <summary>The name of the element linked to, as the workspace now holds it: what a linked element that holds the link shows, having no name of its own.</summary>
     public string? TargetName { get; init; }
+
+    /// <summary>The element of the consuming document the link is shown and opened at: the one <see cref="Holder"/> is a value of (<see cref="HeldLink.Element"/>), or else the holder itself.</summary>
+    public string? Element { get; init; }
 }
