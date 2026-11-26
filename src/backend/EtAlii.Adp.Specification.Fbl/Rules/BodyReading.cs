@@ -129,7 +129,7 @@ internal sealed class BodyReading
         }
         if (binding.Header is { } header && !family.HeaderHolds(header))
         {
-            var mark = header.Key is not null ? $"'{header.Key}: {(header.Value is { } v ? BindingReader.ScalarText(v) : "")}'" : "its first line";
+            var mark = header.Key is not null ? $"'{header.Key}: {(header.Value is { } v ? string.Join(" or ", BindingReader.HeaderValues(v)) : "")}'" : "its first line";
             if (header.Required) return reading.MakeUnreadable(0, $"The body does not start with the mark the binding requires ({mark}).");
             family.Report(FindingCodes.HeaderMismatch, FindingSeverity.Warning, $"The body does not carry the binding's header mark ({mark}); it is read anyway.", new Span(text.BomLength, text.Lines[0].ContentEnd));
         }

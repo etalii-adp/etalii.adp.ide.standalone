@@ -202,7 +202,7 @@ internal abstract class TreeFamily(BodyText text, FblBinding binding, FblOptions
         if (header.Key is null) return true;
         if (Root?.Value.Member(header.Key) is not { } member) return false;
         if (header.Value is not { } expected) return true;
-        return BindingReader.ScalarText(expected) == member.Value.Text;
+        return BindingReader.HeaderValues(expected).Contains(member.Value.Text, StringComparer.Ordinal);
     }
 
     /// <summary>The mapping a slot is read in: the entry's own, or the one <c>child</c> reaches from it.</summary>

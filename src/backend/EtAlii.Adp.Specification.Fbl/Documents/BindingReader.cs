@@ -667,6 +667,10 @@ internal static partial class BindingReader
         return blocks;
     }
 
+    /// <summary>The values a header accepts: its <c>value</c>, or each of a list of them (FBL 0.23 section 5.6).</summary>
+    internal static IReadOnlyList<string> HeaderValues(JsonElement value) =>
+        value.ValueKind == JsonValueKind.Array ? [.. value.EnumerateArray().Select(ScalarText)] : [ScalarText(value)];
+
     internal static string ScalarText(JsonElement value) => value.ValueKind switch
     {
         JsonValueKind.String => value.GetString()!,
