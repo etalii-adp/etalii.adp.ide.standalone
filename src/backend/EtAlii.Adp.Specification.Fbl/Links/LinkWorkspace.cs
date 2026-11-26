@@ -79,12 +79,13 @@ public sealed class LinkWorkspace
     public IReadOnlyList<Backlink> Backlinks(string path, string elementId)
     {
         var backlinks = new List<Backlink>();
+        var name = NameOf(path, elementId);
         foreach (var document in _documents.Values)
         {
             foreach (var held in document.Links)
             {
                 var resolution = Resolve(held.Text);
-                if (resolution is { Resolved: true, Link: { } link, Document: { } target } && target.Path == path && link.ElementId == elementId) backlinks.Add(new Backlink(document.Path, held.Holder));
+                if (resolution is { Resolved: true, Link: { } link, Document: { } target } && target.Path == path && link.ElementId == elementId) backlinks.Add(new Backlink(document.Path, held.Holder) { TargetName = name });
             }
         }
         return backlinks;
