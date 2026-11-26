@@ -1,4 +1,6 @@
+using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Links;
 using EtAlii.Adp.Sessions;
 
 namespace EtAlii.Adp.Diagram.Mindmap;
@@ -23,6 +25,7 @@ internal sealed class MindmapSession : IDiagramSession
     private readonly MindmapViewState _views;
     private readonly MindmapElementMapper _mapper;
     private readonly IHistoryStack _history;
+    private readonly LinkFollowing _links;
     private DiagramViewport _viewport = DiagramViewport.Unbounded;
 
     public MindmapSession(
@@ -31,7 +34,8 @@ internal sealed class MindmapSession : IDiagramSession
         IMindmapDocumentStore documents,
         MindmapViewState views,
         MindmapElementMapper mapper,
-        IHistoryStack history)
+        IHistoryStack history,
+        ILinkIndex? links = null)
     {
         _watchId = watchId;
         _bodyPath = bodyPath;
@@ -40,6 +44,8 @@ internal sealed class MindmapSession : IDiagramSession
         _mapper = mapper;
         _history = history;
         _documents.Changed += OnDocumentChanged;
+        // A linked node shows its target as the index now holds it, so a change to another document can rename it (DISL 4.12).
+        _links = new LinkFollowing(links, bodyPath, OnLinksChanged);
         // The fold action executes in the context provider, far from this stream; the view
         // state's event is what carries it here so the group/ungroup delta gets pushed.
         _views.FoldToggled += OnFoldToggled;
@@ -51,7 +57,7 @@ internal sealed class MindmapSession : IDiagramSession
     {
         var document = await _documents.GetOrLoadAsync(_bodyPath, cancellationToken);
         var view = _views.For(_watchId, _bodyPath, document);
-        var elements = _mapper.Visible(document, view, _viewport);
+        var elements = _mapper.Visible(document, view, _viewport, _links.Workspace);
         return elements.Count == 0 ? [] : [new DiagramAddDelta(elements)];
     }
 
@@ -65,9 +71,9 @@ internal sealed class MindmapSession : IDiagramSession
         }
 
         var view = _views.For(_watchId, _bodyPath, document);
-        var before = _mapper.Visible(document, view, _viewport).Select(element => element.Id).ToHashSet(StringComparer.Ordinal);
+        var before = _mapper.Visible(document, view, _viewport, _links.Workspace).Select(element => element.Id).ToHashSet(StringComparer.Ordinal);
         _viewport = viewport;
-        var after = _mapper.Visible(document, view, _viewport);
+        var after = _mapper.Visible(document, view, _viewport, _links.Workspace);
 
         // What fell out is removed; what newly falls in view is added (Requirement 11.5). Removals
         // first, the one order every module sends (backend-centralization R4.5): an add is an
@@ -124,13 +130,13 @@ internal sealed class MindmapSession : IDiagramSession
         var view = _views.For(_watchId, _bodyPath, document);
         var descendantIds = node.Children.SelectMany(Descendants).Select(child => child.Id).ToArray();
 
-        var layout = _mapper.Layout(document, view);
-        var groupElement = _mapper.ToElement(node, layout[args.NodeId]);
+        var layout = _mapper.Layout(document, view, _links.Workspace);
+        var groupElement = _mapper.ToElement(node, layout[args.NodeId], _links.Workspace);
         // Collapsing or expanding a branch moves everything that stays visible - the freed or
         // reclaimed room shifts the surviving subtrees - so the group/ungroup travels with an
         // upsert of the whole visible set, which is what puts every survivor where the new
         // layout wants it. Without it the hidden branch goes but nothing else budges.
-        var repositioned = new DiagramAddDelta(_mapper.Visible(document, view, _viewport));
+        var repositioned = new DiagramAddDelta(_mapper.Visible(document, view, _viewport, _links.Workspace));
         if (args.Folded)
         {
             Changed.Invoke(this, new DiagramDeltasEventArgs([new DiagramGroupDelta(descendantIds, groupElement), repositioned]));
@@ -139,7 +145,7 @@ internal sealed class MindmapSession : IDiagramSession
 
         var reappeared = descendantIds
             .Where(layout.ContainsKey)
-            .Select(id => _mapper.ToElement(document.Find(id)!, layout[id]))
+            .Select(id => _mapper.ToElement(document.Find(id)!, layout[id], _links.Workspace))
             .ToArray();
         Changed.Invoke(this, new DiagramDeltasEventArgs([new DiagramUngroupDelta(args.NodeId, reappeared), repositioned]));
     }
@@ -148,8 +154,24 @@ internal sealed class MindmapSession : IDiagramSession
     {
         _views.FoldToggled -= OnFoldToggled;
         _documents.Changed -= OnDocumentChanged;
+        _links.Dispose();
         _views.Forget(_watchId, _bodyPath);
         return ValueTask.CompletedTask;
+    }
+
+    /// <summary>Lays a map holding linked nodes out again once another document changed, as their targets' names may have.</summary>
+    private void OnLinksChanged()
+    {
+        if (Changed is null || _documents.Get(_bodyPath) is not { } document || !document.Nodes.Any(node => node.AdpLink is { Length: > 0 }))
+        {
+            return;
+        }
+
+        var deltas = Relayout(document, _views.For(_watchId, _bodyPath, document), []);
+        if (deltas.Count > 0)
+        {
+            Changed.Invoke(this, new DiagramDeltasEventArgs(deltas));
+        }
     }
 
     private void OnDocumentChanged(object? sender, MindmapChangedEventArgs args)
@@ -168,8 +190,8 @@ internal sealed class MindmapSession : IDiagramSession
         var view = _views.For(_watchId, _bodyPath, document);
         var deltas = args.Change switch
         {
-            MindmapNodeUpdated updated when document.Find(updated.NodeId) is { } node && _mapper.Layout(document, view).TryGetValue(node.Id, out var box) =>
-                (IReadOnlyList<DiagramDelta>)[new DiagramAddDelta([_mapper.ToElement(node, box)])],
+            MindmapNodeUpdated updated when document.Find(updated.NodeId) is { } node && _mapper.Layout(document, view, _links.Workspace).TryGetValue(node.Id, out var box) =>
+                (IReadOnlyList<DiagramDelta>)[new DiagramAddDelta([_mapper.ToElement(node, box, _links.Workspace)])],
 
             // A structure change relays out what is now visible, plus removes for what went -
             // simplest correct answer, and a mindmap edit is not a hot path (Requirement 11.3).
@@ -187,7 +209,7 @@ internal sealed class MindmapSession : IDiagramSession
     private IReadOnlyList<DiagramDelta> Relayout(MindmapDocument document, MindmapConnectionView view, IReadOnlyList<string> removedIds)
     {
         // Removals first, then what is visible now (backend-centralization R4.5).
-        var visible = _mapper.Visible(document, view, _viewport);
+        var visible = _mapper.Visible(document, view, _viewport, _links.Workspace);
         var deltas = new List<DiagramDelta>();
         if (removedIds.Count > 0)
         {

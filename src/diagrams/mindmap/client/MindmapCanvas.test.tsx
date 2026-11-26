@@ -112,6 +112,30 @@ describe("MindmapCanvas", () => {
     expect(container.textContent).toContain("Alpha");
   });
 
+  it("marks a linked node, and one whose link does not resolve as broken", () => {
+    // Arrange: spec 092, DISL 4.12 - the definition's corner glyphs for a linked node.
+    const linked = (id: string, text: string, resolves: boolean) =>
+      create(ElementSchema, {
+        id: { value: id },
+        position: { x: 120, y: 0 },
+        type: "freeplane/mindmap+node",
+        payload: {
+          typeUrl: "type.googleapis.com/etalii.adp.mindmap.MindmapNodePayload",
+          value: toBinary(MindmapNodePayloadSchema, create(MindmapNodePayloadSchema, { text, parentId: "root", adpLink: "$k7q2m9xa@features.yaml#checkout.Name=Checkout", linked: resolves })),
+        },
+      });
+    currentModel = seed(node("root", "Root", 0, 0), linked("pay", "Pay", true), linked("gone", "Checkout", false));
+
+    // Act.
+    const { container } = render(<MindmapCanvas {...props} />);
+
+    // Assert.
+    const glyphs = [...container.querySelectorAll(".mindmap-node-indicators")].map((label) => label.textContent);
+    expect(glyphs).toContain("↪");
+    expect(glyphs).toContain("↪⚠");
+    expect(glyphs).toHaveLength(2);
+  });
+
   it("renders both shared scrollbars over the map", () => {
     // Act.
     const { container } = render(<MindmapCanvas {...props} />);

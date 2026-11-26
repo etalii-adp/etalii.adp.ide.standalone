@@ -46,7 +46,7 @@ public sealed class DependencyGraphElementMapper
     /// Every node and relation of <paramref name="model"/>, positioned in the module's own
     /// coordinate space - the baseline a connection opens with.
     /// </summary>
-    public IReadOnlyList<DiagramElement> Elements(DislModel model)
+    public IReadOnlyList<DiagramElement> Elements(DislModel model, LinkWorkspace? workspace = null)
     {
         ArgumentNullException.ThrowIfNull(model);
         (List<Node> nodes, List<Dependency> relations) = Read(model.Diagram);
@@ -54,7 +54,7 @@ public sealed class DependencyGraphElementMapper
         var elements = new List<DiagramElement>();
         foreach (var element in nodes)
         {
-            elements.Add(Element(element));
+            elements.Add(Element(element, workspace));
         }
 
         foreach (var relation in relations)
@@ -88,7 +88,7 @@ public sealed class DependencyGraphElementMapper
     /// because the units are this module's business (Requirement 3.4).
     /// </para>
     /// </remarks>
-    public IReadOnlyList<DiagramElement> Visible(DislModel model, DiagramViewport viewport)
+    public IReadOnlyList<DiagramElement> Visible(DislModel model, DiagramViewport viewport, LinkWorkspace? workspace = null)
     {
         ArgumentNullException.ThrowIfNull(model);
         (List<Node> nodes, List<Dependency> relations) = Read(model.Diagram);
@@ -117,7 +117,7 @@ public sealed class DependencyGraphElementMapper
         // Document order is preserved on both passes, so one viewport always yields one sequence.
         return
         [
-            .. nodes.Where(element => shownIds.Contains(element.Id)).Select(Element),
+            .. nodes.Where(element => shownIds.Contains(element.Id)).Select(element => Element(element, workspace)),
             .. drawnRelations.Select(Relation),
         ];
     }
@@ -182,15 +182,17 @@ public sealed class DependencyGraphElementMapper
         return viewport.Intersects(new Rect(left, top, Math.Abs(from.X - to.X) + NodeWidth, Math.Abs(fromTop - toTop) + NodeHeight));
     }
 
-    private static DiagramElement Element(Node element)
+    private static DiagramElement Element(Node element, LinkWorkspace? workspace)
     {
+        // A linked node shows its target as the workspace now holds it, and its cached name, marked, when it does not resolve.
+        (string label, bool linked) = LinkShown.Of(element.Link, element.Label, workspace);
         var payload = new DependencyGraphElementPayload
         {
             X = element.X,
             Row = element.Row,
-            Label = element.Label,
+            Label = label,
             Link = element.Link ?? "",
-            Linked = FblLink.Parse(element.Link) is not null,
+            Linked = linked,
         };
 
         return Pack(

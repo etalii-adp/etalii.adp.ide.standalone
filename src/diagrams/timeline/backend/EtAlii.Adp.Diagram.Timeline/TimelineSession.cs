@@ -1,5 +1,7 @@
+using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Links;
 using EtAlii.Adp.Sessions;
 
 namespace EtAlii.Adp.Diagram.Timeline;
@@ -29,18 +31,22 @@ namespace EtAlii.Adp.Diagram.Timeline;
 public sealed class TimelineSession : DocumentDiagramSession<LineDocument, TimelineModel>
 {
     private readonly TimelineElementMapper _mapper;
+    private readonly LinkFollowing _links;
 
     /// <summary>Creates the session and subscribes to the store's changes.</summary>
     /// <param name="history">The project's history, so a drag is one undo away. Null makes the timeline read-only.</param>
+    /// <param name="links">The workspace's index of links, which a linked element shows its target through; null where there is none.</param>
     public TimelineSession(
         string bodyPath,
         ITimelineDocumentStore documents,
         TimelineElementMapper mapper,
-        IHistoryStack? history = null)
+        IHistoryStack? history = null,
+        ILinkIndex? links = null)
         : base(bodyPath, documents, history)
     {
         ArgumentNullException.ThrowIfNull(mapper);
         _mapper = mapper;
+        _links = new LinkFollowing(links, bodyPath, Rerender);
     }
 
     /// <summary>A timeline element has no parent a drag could change: its place is a time and a row.</summary>
@@ -51,7 +57,10 @@ public sealed class TimelineSession : DocumentDiagramSession<LineDocument, Timel
 
     /// <inheritdoc />
     protected override IReadOnlyList<DiagramElement> Render(TimelineModel model, DiagramViewport viewport) =>
-        _mapper.Visible(model, viewport);
+        _mapper.Visible(model, viewport, _links.Workspace);
+
+    /// <inheritdoc />
+    protected override void OnDisposing() => _links.Dispose();
 
     /// <summary>
     /// Moves an element to a position (Requirement 6.7). The point arrives in the module's own

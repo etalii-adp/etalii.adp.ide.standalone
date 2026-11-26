@@ -109,4 +109,9 @@ internal sealed class TimelineOpeningIndex(LinkWorkspace workspace) : ILinkIndex
         Renewed.AddRange(paths);
         return Task.FromResult<string?>(null);
     }
+
+    public event EventHandler<LinkIndexChangedEventArgs>? Changed;
+
+    /// <summary>Raises <see cref="Changed"/> for the document at <paramref name="path"/>, as the index does once it read it again.</summary>
+    public void Raise(string path) => Changed?.Invoke(this, new LinkIndexChangedEventArgs(path));
 }

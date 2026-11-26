@@ -1,5 +1,6 @@
 using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Layout;
+using EtAlii.Adp.Specification.Fbl.Links;
 using Google.Protobuf;
 
 namespace EtAlii.Adp.Diagram.Mindmap;
@@ -39,9 +40,9 @@ public sealed class MindmapElementMapper
     /// the whole tree and deliver the entire map, which is what the viewport exists to avoid.
     /// </para>
     /// </summary>
-    public IReadOnlyList<DiagramElement> Visible(MindmapDocument document, MindmapConnectionView view, DiagramViewport viewport)
+    public IReadOnlyList<DiagramElement> Visible(MindmapDocument document, MindmapConnectionView view, DiagramViewport viewport, LinkWorkspace? workspace = null)
     {
-        var layout = MindmapLayout.Compute(document.Root, _metrics, view.IsFolded);
+        var layout = Layout(document, view, workspace);
         // Only nodes the layout placed exist at all: a folded branch's descendants have no box,
         // and must not reappear through the partner rule below.
         var placed = document.Nodes.Where(node => layout.ContainsKey(node.Id)).ToArray();
@@ -66,20 +67,30 @@ public sealed class MindmapElementMapper
         // the document has - so the same viewport always yields the same sequence.
         return placed
             .Where(node => delivered.Contains(node.Id))
-            .Select(node => ToElement(node, layout[node.Id]))
+            .Select(node => ToElement(node, layout[node.Id], workspace))
             .ToArray();
     }
 
-    /// <summary>The layout for a document and a view - shared with the session, which needs positions for a group's parent.</summary>
-    public IReadOnlyDictionary<string, Rect> Layout(MindmapDocument document, MindmapConnectionView view) =>
-        MindmapLayout.Compute(document.Root, _metrics, view.IsFolded);
+    /// <summary>
+    /// The layout for a document and a view - shared with the session, which needs positions for a group's parent. A linked
+    /// node is measured by the text it shows, its target's name as <paramref name="workspace"/> holds it.
+    /// </summary>
+    public IReadOnlyDictionary<string, Rect> Layout(MindmapDocument document, MindmapConnectionView view, LinkWorkspace? workspace = null) =>
+        MindmapLayout.Compute(document.Root, _metrics, view.IsFolded, node => Shown(node, workspace).Text);
 
     /// <summary>One node as an element at a known box.</summary>
-    public DiagramElement ToElement(MindmapNode node, Rect box)
+    public DiagramElement ToElement(MindmapNode node, Rect box, LinkWorkspace? workspace = null)
     {
+        ArgumentNullException.ThrowIfNull(node);
+
+        // A linked node is named by its target as the workspace now holds it, and by the name it cached, marked, when the
+        // link does not resolve (DISL 4.12).
+        (string text, bool linked) = Shown(node, workspace);
         var payload = new MindmapNodePayload
         {
-            Text = node.Text,
+            Text = text,
+            AdpLink = node.AdpLink ?? "",
+            Linked = linked,
             Notes = node.Notes,
             HasChildren = node.HasChildren,
             Folded = false, // fold is the receiver's own view state; the element just carries content
@@ -100,4 +111,8 @@ public sealed class MindmapElementMapper
             $"type.googleapis.com/{MindmapNodePayload.Descriptor.FullName}",
             payload.ToByteArray());
     }
+
+    /// <summary>The text a node shows and whether its link resolves: for a linked node, as <see cref="LinkShown"/> says.</summary>
+    private static (string Text, bool Linked) Shown(MindmapNode node, LinkWorkspace? workspace) =>
+        node.AdpLink is { Length: > 0 } link ? LinkShown.Of(link, node.Text, workspace) : (node.Text, false);
 }

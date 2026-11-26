@@ -23,16 +23,18 @@ public static class MindmapLayout
 {
     /// <summary>
     /// Boxes for every visible node, keyed by node id. <paramref name="isFolded"/> says which
-    /// nodes hide their children on the connection being laid out.
+    /// nodes hide their children on the connection being laid out. <paramref name="textOf"/> is the text a node shows, which a
+    /// linked node takes from its target (DISL 4.12); its own text when null.
     /// </summary>
-    public static IReadOnlyDictionary<string, Rect> Compute(MindmapNode root, MindmapMetrics metrics, Func<MindmapNode, bool> isFolded)
+    public static IReadOnlyDictionary<string, Rect> Compute(MindmapNode root, MindmapMetrics metrics, Func<MindmapNode, bool> isFolded, Func<MindmapNode, string>? textOf = null)
     {
         ArgumentNullException.ThrowIfNull(root);
         ArgumentNullException.ThrowIfNull(metrics);
         ArgumentNullException.ThrowIfNull(isFolded);
+        textOf ??= OwnText;
 
         var boxes = new Dictionary<string, Rect>(StringComparer.Ordinal);
-        var rootSize = metrics.Measure(root.Text);
+        var rootSize = metrics.Measure(textOf(root));
         var rootBox = new Rect(-rootSize.Width / 2, -rootSize.Height / 2, rootSize.Width, rootSize.Height);
         boxes[root.Id] = rootBox;
 
@@ -57,8 +59,8 @@ public static class MindmapLayout
             (goesLeft ? left : right).Add(child);
         }
 
-        PlaceColumn(right, rootBox.Right + metrics.GapBeside(rootBox.Width), rootBox.CenterY, towardsRight: true, metrics, isFolded, boxes);
-        PlaceColumn(left, rootBox.X - metrics.GapBeside(rootBox.Width), rootBox.CenterY, towardsRight: false, metrics, isFolded, boxes);
+        PlaceColumn(right, rootBox.Right + metrics.GapBeside(rootBox.Width), rootBox.CenterY, towardsRight: true, metrics, isFolded, textOf, boxes);
+        PlaceColumn(left, rootBox.X - metrics.GapBeside(rootBox.Width), rootBox.CenterY, towardsRight: false, metrics, isFolded, textOf, boxes);
 
         return boxes;
     }
@@ -71,6 +73,7 @@ public static class MindmapLayout
         bool towardsRight,
         MindmapMetrics metrics,
         Func<MindmapNode, bool> isFolded,
+        Func<MindmapNode, string> textOf,
         Dictionary<string, Rect> boxes)
     {
         if (siblings.Count == 0)
@@ -78,8 +81,8 @@ public static class MindmapLayout
             return;
         }
 
-        var heights = siblings.Select(sibling => SubtreeHeight(sibling, metrics, isFolded)).ToArray();
-        var widths = siblings.Select(sibling => metrics.Measure(sibling.Text).Width).ToArray();
+        var heights = siblings.Select(sibling => SubtreeHeight(sibling, metrics, isFolded, textOf)).ToArray();
+        var widths = siblings.Select(sibling => metrics.Measure(textOf(sibling)).Width).ToArray();
         var total = heights.Sum();
         for (var i = 0; i < siblings.Count - 1; i++)
         {
@@ -91,7 +94,7 @@ public static class MindmapLayout
         for (var i = 0; i < siblings.Count; i++)
         {
             var slotCenterY = y + heights[i] / 2;
-            PlaceSubtree(siblings[i], edgeX, slotCenterY, towardsRight, metrics, isFolded, boxes);
+            PlaceSubtree(siblings[i], edgeX, slotCenterY, towardsRight, metrics, isFolded, textOf, boxes);
             y += heights[i];
             if (i < siblings.Count - 1)
             {
@@ -108,9 +111,10 @@ public static class MindmapLayout
         bool towardsRight,
         MindmapMetrics metrics,
         Func<MindmapNode, bool> isFolded,
+        Func<MindmapNode, string> textOf,
         Dictionary<string, Rect> boxes)
     {
-        var size = metrics.Measure(node.Text);
+        var size = metrics.Measure(textOf(node));
         var x = towardsRight ? edgeX : edgeX - size.Width;
         var box = new Rect(Math.Round(x, 2), Math.Round(centerY - size.Height / 2, 2), size.Width, size.Height);
         boxes[node.Id] = box;
@@ -121,25 +125,27 @@ public static class MindmapLayout
         }
 
         var childEdge = towardsRight ? box.Right + metrics.GapBeside(box.Width) : box.X - metrics.GapBeside(box.Width);
-        PlaceColumn(node.Children, childEdge, centerY, towardsRight, metrics, isFolded, boxes);
+        PlaceColumn(node.Children, childEdge, centerY, towardsRight, metrics, isFolded, textOf, boxes);
     }
 
     /// <summary>The vertical room a subtree needs: its visible children stacked, or its own height when it has none to show.</summary>
-    private static double SubtreeHeight(MindmapNode node, MindmapMetrics metrics, Func<MindmapNode, bool> isFolded)
+    private static double SubtreeHeight(MindmapNode node, MindmapMetrics metrics, Func<MindmapNode, bool> isFolded, Func<MindmapNode, string> textOf)
     {
-        var own = metrics.Measure(node.Text).Height;
+        var own = metrics.Measure(textOf(node)).Height;
         if (isFolded(node) || !node.HasChildren)
         {
             return own;
         }
 
         var children = node.Children;
-        var stacked = children.Sum(child => SubtreeHeight(child, metrics, isFolded));
+        var stacked = children.Sum(child => SubtreeHeight(child, metrics, isFolded, textOf));
         for (var i = 0; i < children.Count - 1; i++)
         {
-            stacked += metrics.GapBetween(metrics.Measure(children[i].Text).Width, metrics.Measure(children[i + 1].Text).Width);
+            stacked += metrics.GapBetween(metrics.Measure(textOf(children[i])).Width, metrics.Measure(textOf(children[i + 1])).Width);
         }
 
         return Math.Max(own, stacked);
     }
+
+    private static string OwnText(MindmapNode node) => node.Text;
 }
