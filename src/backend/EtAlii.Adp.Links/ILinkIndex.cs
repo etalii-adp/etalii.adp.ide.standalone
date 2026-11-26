@@ -30,6 +30,18 @@ public interface ILinkIndex
     /// elements show their targets as they now are (DISL 4.12).
     /// </summary>
     event EventHandler<LinkIndexChangedEventArgs>? Changed;
+
+    /// <summary>The kinds of element the document at <paramref name="path"/> can be given from another tool (spec 092, FR-025); none when its tool type offers none.</summary>
+    IReadOnlyList<LinkElementKind> CreatableKindsOf(string path) => [];
+
+    /// <summary>A new element id for the document at <paramref name="path"/>, as its tool type makes one (<see cref="ILinkIndexer.NewElementId"/>); null when it creates none.</summary>
+    string? NewElementIdOf(string path) => null;
+
+    /// <summary>
+    /// The body <paramref name="bytes"/> of the document at <paramref name="path"/> with a new element, as its tool type adds one
+    /// (<see cref="ILinkIndexer.WithElement"/>); null when its tool type gives it none.
+    /// </summary>
+    byte[]? WithElement(string path, byte[] bytes, string kind, string id, string name) => null;
 }
 
 /// <summary>The path of a document that changed in the index.</summary>

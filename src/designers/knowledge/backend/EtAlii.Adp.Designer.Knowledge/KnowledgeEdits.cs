@@ -26,7 +26,8 @@ internal sealed record KnowledgeEdit(IReadOnlyList<ModelChange> Changes, string 
 /// <param name="BodyPath">The file being edited.</param>
 /// <param name="TargetOf">What a relation property of the file points at.</param>
 /// <param name="TargetAt">What a target named from the file - a relative path, or <c>.</c> for the file itself - is.</param>
-internal sealed record KnowledgeSurroundings(string BodyPath, Func<KnowledgeProperty, KnowledgeTarget?> TargetOf, Func<string, KnowledgeTarget> TargetAt);
+/// <param name="NewElementId">A new element id for the diagram at a path, as its tool type makes one (spec 092, FR-025); null where none can be made.</param>
+internal sealed record KnowledgeSurroundings(string BodyPath, Func<KnowledgeProperty, KnowledgeTarget?> TargetOf, Func<string, KnowledgeTarget> TargetAt, Func<string, string?>? NewElementId = null);
 
 /// <summary>
 /// The table's gestures as changes of the file: one place that knows what each gesture means for

@@ -20,13 +20,18 @@ export interface SearchListProps {
    * The typed text matches no item and the user asked for it to exist. Left out, the list only
    * picks: nothing offers to create.
    */
-  onCreate?: (text: string) => void;
+  onCreate?: (text: string, kind?: string) => void;
+  /**
+   * The kinds of item `onCreate` can make, each offered as its own "Create" row and passed back as `kind`: a diagram's element
+   * kinds, for a relation to one (spec 092, FR-025). Left out, one "Create" row makes the one kind there is.
+   */
+  createKinds?: readonly SearchListItem[];
   /** Escape was pressed in the list. */
   onClose?: () => void;
 }
 
 /** What a row of the list is: an item to pick, or the offer to create what was typed. */
-type Row = { kind: "item"; item: SearchListItem } | { kind: "create"; text: string };
+type Row = { kind: "item"; item: SearchListItem } | { kind: "create"; text: string; made?: SearchListItem };
 
 /** The items whose label holds the typed text, case ignored; all of them for no text. */
 export function matching(items: readonly SearchListItem[], text: string): SearchListItem[] {
@@ -42,7 +47,7 @@ export function matching(items: readonly SearchListItem[], text: string): Search
  * event, so the same list serves one value and several. It is a combobox over a listbox to
  * assistive technology, with the row the arrow keys are on announced as the active one.
  */
-export function SearchList({ label, items, selected, placeholder = "", onPick, onCreate, onClose }: SearchListProps) {
+export function SearchList({ label, items, selected, placeholder = "", onPick, onCreate, createKinds, onClose }: SearchListProps) {
   const [text, setText] = useState("");
   const [active, setActive] = useState(0);
   const listId = useId();
@@ -53,10 +58,14 @@ export function SearchList({ label, items, selected, placeholder = "", onPick, o
     // Offered only for text that names no item exactly: creating a second "Capital" beside the
     // first is never what was meant.
     if (onCreate !== undefined && typed !== "" && !items.some((item) => item.label.toLowerCase() === typed.toLowerCase())) {
-      found.push({ kind: "create", text: typed });
+      if (createKinds === undefined) {
+        found.push({ kind: "create", text: typed });
+      } else {
+        found.push(...createKinds.map((made): Row => ({ kind: "create", text: typed, made })));
+      }
     }
     return found;
-  }, [items, text, onCreate]);
+  }, [items, text, onCreate, createKinds]);
 
   const current = Math.min(active, Math.max(0, rows.length - 1));
 
@@ -67,7 +76,11 @@ export function SearchList({ label, items, selected, placeholder = "", onPick, o
     if (row.kind === "item") {
       onPick(row.item.id);
     } else {
-      onCreate?.(row.text);
+      if (row.made === undefined) {
+        onCreate?.(row.text);
+      } else {
+        onCreate?.(row.text, row.made.id);
+      }
       setText("");
     }
   };
@@ -115,9 +128,9 @@ export function SearchList({ label, items, selected, placeholder = "", onPick, o
           const isActive = index === current;
           if (row.kind === "create") {
             return (
-              <li key="create" id={id} className={`search-list-row search-list-create${isActive ? " search-list-row-active" : ""}`} role="option" aria-selected="false" onMouseDown={(event) => event.preventDefault()} onClick={() => choose(row)}>
+              <li key={`create:${row.made?.id ?? ""}`} id={id} className={`search-list-row search-list-create${isActive ? " search-list-row-active" : ""}`} role="option" aria-selected="false" onMouseDown={(event) => event.preventDefault()} onClick={() => choose(row)}>
                 <span className="mdi mdi-plus" aria-hidden="true" />
-                <span>Create “{row.text}”</span>
+                <span>{row.made === undefined ? `Create “${row.text}”` : `Create ${row.made.label} “${row.text}”`}</span>
               </li>
             );
           }

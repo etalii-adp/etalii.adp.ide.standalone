@@ -135,4 +135,19 @@ describe("SearchList", () => {
     // Assert.
     expect(field().getAttribute("aria-activedescendant")).toBe(screen.getAllByRole("option")[1]!.id);
   });
+
+  it("offers a Create for each kind it is given, and says which was chosen", () => {
+    // Arrange.
+    const { onCreate } = renderList({ createKinds: [{ id: "Moment", label: "moment" }, { id: "Period", label: "period" }] });
+
+    // Act.
+    fireEvent.change(field(), { target: { value: "Retro" } });
+    const offered = options();
+    fireEvent.keyDown(field(), { key: "ArrowDown" });
+    fireEvent.keyDown(field(), { key: "Enter" });
+
+    // Assert.
+    expect(offered).toEqual(["Create moment “Retro”", "Create period “Retro”"]);
+    expect(onCreate).toHaveBeenCalledWith("Retro", "Period");
+  });
 });

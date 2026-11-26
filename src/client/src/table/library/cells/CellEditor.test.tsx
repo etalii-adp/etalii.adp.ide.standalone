@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import type { TableCell, TableColumn } from "../api/tableModel";
 import type { TableEditorKind } from "../definition/tableDefinition";
-import { CellEditor } from "./CellEditor";
+import { CellEditor, kindsOf } from "./CellEditor";
 
 function column(kind: string, options: { id: string; name: string }[] = []): TableColumn {
   return { id: "p1", name: "Value", kind, options: options.map((option) => ({ ...option, color: "" })), width: 0, visible: true, isTitle: false, wraps: false, settings: {} };
@@ -354,5 +354,51 @@ describe("the editors on a searchable list", () => {
     expect(onClose).toHaveBeenCalledWith("leave");
     expect(commit).not.toHaveBeenCalled();
     outside.remove();
+  });
+});
+
+describe("a relation to a diagram (spec 092, FR-025)", () => {
+  const field = () => screen.getByRole("combobox", { name: "Value" });
+  const diagram = (createKinds: string) => ({ ...column("relation", [{ id: "launch", name: "Launch" }]), settings: { limit: "none", createKinds } });
+
+  it("offers a Create for each kind of element the diagram has, and sends the one chosen", async () => {
+    // Arrange.
+    const { commit } = open("rows", { column: diagram('[{"id":"Moment","label":"moment"},{"id":"Period","label":"period"}]') });
+
+    // Act.
+    fireEvent.change(field(), { target: { value: "Retro" } });
+    const offered = screen.getAllByRole("option").map((option) => option.textContent);
+    await act(async () => {
+      fireEvent.click(screen.getByText("Create period “Retro”"));
+    });
+
+    // Assert.
+    expect(offered).toEqual(["Create moment “Retro”", "Create period “Retro”"]);
+    expect(commit).toHaveBeenCalledWith([], { newRow: "Retro", newKind: "Period" });
+  });
+
+  it("offers one Create for a diagram of one kind, and none for a diagram that has no element to create", () => {
+    // Arrange.
+    open("rows", { column: diagram('[{"id":"Node","label":"node"}]') });
+
+    // Act.
+    fireEvent.change(field(), { target: { value: "Retro" } });
+    const one = screen.getAllByRole("option").map((option) => option.textContent);
+    cleanup();
+    open("rows", { column: diagram("[]") });
+    fireEvent.change(field(), { target: { value: "Retro" } });
+
+    // Assert.
+    expect(one).toEqual(["Create “Retro”"]);
+    expect(screen.queryAllByRole("option")).toEqual([]);
+  });
+});
+
+describe("kindsOf", () => {
+  it("reads the kinds a diagram offers, and nothing for a target that is not one or a list it cannot read", () => {
+    // Act and assert.
+    expect(kindsOf('[{"id":"Node","label":"node"},{"id":3}]')).toEqual([{ id: "Node", label: "node" }]);
+    expect(kindsOf(undefined)).toBeUndefined();
+    expect(kindsOf("not json")).toBeUndefined();
   });
 });

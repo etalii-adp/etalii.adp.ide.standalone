@@ -31,7 +31,7 @@ public static class ServiceCollectionAddDependencyGraphExtension
         services.AddSingleton<DependencyGraphElementMapper>();
 
         // The link index reads this type's files (FBL 17.3, spec 092): their linkable elements and the links they hold.
-        services.AddSingleton<ILinkIndexer>(new DislLinkIndexer([".dgr"], (bytes, _) => DependencyGraphBody.Indexed(bytes), (bytes, _) => DependencyGraphBody.Renewed(bytes), Diagram.DependencyGraph.Origin.Key));
+        services.AddSingleton<ILinkIndexer>(new DislLinkIndexer([".dgr"], (bytes, _) => DependencyGraphBody.Indexed(bytes), (bytes, _) => DependencyGraphBody.Renewed(bytes), Diagram.DependencyGraph.Origin.Key, DependencyGraphBody.Creation));
 
         // One document per path, shared by every connection viewing it. TryAdd rather than Add
         // so a test that registers its own store keeps it.

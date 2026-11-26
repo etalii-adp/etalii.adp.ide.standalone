@@ -2,6 +2,7 @@ using System.Text;
 using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Links;
 using EtAlii.Adp.Specification.Disl;
 using EtAlii.Adp.Specification.Fbl;
 using EtAlii.Adp.Specification.Fbl.Documents;
@@ -86,6 +87,18 @@ public sealed class DependencyGraphBody : ITextBody<DependencyGraphBody>
 
     /// <summary>The <paramref name="bytes"/> with a new document id, for the fix of <c>link.ambiguous-document</c> (FBL 17.6, <see cref="DislOpening.Renewed"/>).</summary>
     internal static byte[]? Renewed(byte[] bytes) => DislOpening.Renewed(OpenBody.Open(bytes, Binding, new FblOptions { FileName = "body.dgr" }), DependencyGraphDefinition.Specification);
+
+    /// <summary>What a knowledge relation's "Create" can add to a dependency graph (spec 092, FR-025): a node, on a row of its own below the others.</summary>
+    internal static DislElementCreation Creation { get; } = new([new LinkElementKind("Node", "node")], DependencyGraphDefinition.NewId, WithElement);
+
+    /// <summary>The <paramref name="bytes"/> with a new node named <paramref name="name"/> at the start of the row after the last; null when it cannot be added.</summary>
+    private static byte[]? WithElement(byte[] bytes, string kind, string id, string name)
+    {
+        var body = Parse(Encoding.UTF8.GetString(bytes));
+        var rows = Indexed(bytes).Diagram.Elements.Select(element => element.ValueOf("row") is long row ? (int)row : -1).DefaultIfEmpty(-1).Max();
+        var outcome = DependencyGraphDefinition.Apply(body, DependencyGraphEdits.Transaction(DependencyGraphEdits.Create(id, name, 0, rows + 1)));
+        return outcome.Refusal is null ? Encoding.UTF8.GetBytes(body.Text) : null;
+    }
 
     /// <summary>
     /// What opening <paramref name="text"/> finds to write with its first edit (FBL 17.4, <see cref="DislOpening"/>): a document id

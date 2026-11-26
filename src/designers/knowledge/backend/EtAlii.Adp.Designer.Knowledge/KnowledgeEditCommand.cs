@@ -2,14 +2,19 @@ using System.Text;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Links;
 using EtAlii.Adp.Specification.Fbl.Planning;
 
 namespace EtAlii.Adp.Designer.Knowledge;
 
-/// <summary>The changes one edit makes to one other knowledge file: the other side of a two-way relation.</summary>
+/// <summary>The changes one edit makes to one other file: the other side of a two-way relation, or a row or an element "Create" adds.</summary>
 /// <param name="BodyPath">The other file.</param>
-/// <param name="Changes">What to change in it, in order.</param>
-internal sealed record KnowledgeOtherFile(string BodyPath, IReadOnlyList<ModelChange> Changes);
+/// <param name="Changes">What to change in it, in order, when it is a knowledge file.</param>
+/// <param name="Element">The element to add to it, when it is a diagram (spec 092, FR-025); its tool type adds it.</param>
+internal sealed record KnowledgeOtherFile(string BodyPath, IReadOnlyList<ModelChange> Changes, KnowledgeNewElement? Element = null);
+
+/// <summary>An element "Create" adds to a diagram a relation points at: its kind, its id and its name (spec 092, FR-025).</summary>
+internal sealed record KnowledgeNewElement(string Kind, string Id, string Name);
 
 /// <summary>
 /// One edit of a knowledge file: the changes a gesture came to, made to the file as one step.
@@ -76,7 +81,7 @@ internal sealed class KnowledgeDocuments : IKnowledgeDocumentStore
 /// fails after another has landed, what landed is put back.
 /// </para>
 /// </remarks>
-internal sealed class KnowledgeEditCommandHandler(IKnowledgeDocumentStore documents, IFileWriter writer) : ICommandHandler<KnowledgeEditCommand>
+internal sealed class KnowledgeEditCommandHandler(IKnowledgeDocumentStore documents, IFileWriter writer, ILinkIndex? links = null) : ICommandHandler<KnowledgeEditCommand>
 {
     public async Task<CommandResult> ExecuteAsync(KnowledgeEditCommand command, CancellationToken cancellationToken = default)
     {
@@ -88,6 +93,28 @@ internal sealed class KnowledgeEditCommandHandler(IKnowledgeDocumentStore docume
         foreach (var file in command.Others.Prepend(new KnowledgeOtherFile(command.BodyPath, command.Changes)))
         {
             var name = Path.GetFileName(file.BodyPath);
+            if (file.Element is { } element)
+            {
+                // A diagram: its tool type adds the element, through its own binding.
+                byte[] before;
+                try
+                {
+                    before = await File.ReadAllBytesAsync(file.BodyPath, cancellationToken);
+                }
+                catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+                {
+                    return CommandResult.Failure($"{name} could not be changed: {exception.Message}");
+                }
+
+                if (links?.WithElement(file.BodyPath, before, element.Kind, element.Id, element.Name) is not { } grown)
+                {
+                    return CommandResult.Failure($"{name} could not be given a {element.Kind.ToLowerInvariant()} named '{element.Name}'.");
+                }
+
+                planned.Add(new PlannedFile(file.BodyPath, before, grown));
+                continue;
+            }
+
             var read = KnowledgeDocumentStore.Read(file.BodyPath);
             if (read.Body is not { } body)
             {

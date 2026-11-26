@@ -34,7 +34,7 @@ internal sealed class EditingTable : IAsyncDisposable
         documents ??= new KnowledgeDocuments();
         var services = new Handlers
         {
-            [typeof(ICommandHandler<KnowledgeEditCommand>)] = new KnowledgeEditCommandHandler(documents, new FileWriter()),
+            [typeof(ICommandHandler<KnowledgeEditCommand>)] = new KnowledgeEditCommandHandler(documents, new FileWriter(), links),
             [typeof(ICommandHandler<RestoreKnowledgeFilesCommand>)] = new RestoreKnowledgeFilesCommandHandler(documents, new FileWriter()),
             [typeof(ICommandHandler<RestoreDocumentCommand<IKnowledgeDocumentStore>>)] = new RestoreDocumentCommandHandler<IKnowledgeDocumentStore>(documents, new FileWriter()),
         };

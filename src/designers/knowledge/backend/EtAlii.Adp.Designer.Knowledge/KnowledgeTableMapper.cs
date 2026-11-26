@@ -178,6 +178,12 @@ internal static class KnowledgeTableMapper
             if (!property.TargetsItsOwnTable && KnowledgeLinks.IsLink(property.TargetFile) && bodyPath.Length > 0 && targetOf?.Invoke(property) is { Table: not null } found)
             {
                 settings["targetPath"] = KnowledgeRelations.TargetName(bodyPath, found.Path);
+
+                // A diagram's elements are created by kind (spec 092, FR-025): the picker offers "Create" once per kind, or not at all.
+                if (found.Kinds is { } kinds)
+                {
+                    settings["createKinds"] = System.Text.Json.JsonSerializer.Serialize(kinds.Select(kind => new { id = kind.Id, label = kind.Label }));
+                }
             }
         }
 

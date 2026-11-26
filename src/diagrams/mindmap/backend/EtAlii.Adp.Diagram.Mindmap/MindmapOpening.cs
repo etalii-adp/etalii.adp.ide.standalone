@@ -1,4 +1,6 @@
 using System.Text;
+using EtAlii.Adp.Diagram.Modules;
+using EtAlii.Adp.Links;
 using EtAlii.Adp.Specification.Disl;
 using EtAlii.Adp.Specification.Fbl.Links;
 
@@ -34,6 +36,20 @@ internal static class MindmapOpening
         var marked = bytes.AsSpan().StartsWith(_byteOrderMark);
         var document = MindmapDocument.Parse(Encoding.UTF8.GetString(marked ? bytes[_byteOrderMark.Length..] : bytes), assignMissingIds: false);
         document.Root.SetFreeplaneAttribute(MindmapNode.AdpIdAttribute, id);
+        return [.. marked ? _byteOrderMark : [], .. Encoding.UTF8.GetBytes(document.ToText())];
+    }
+
+    /// <summary>What a knowledge relation's "Create" can add to a mind map (spec 092, FR-025): a node, as the last child of the central topic.</summary>
+    public static DislElementCreation Creation { get; } = new([new LinkElementKind("Node", "node")], MindmapDocument.NewId, WithElement);
+
+    /// <summary>The map <paramref name="bytes"/> with a new last child of its central topic, named <paramref name="name"/>; nothing else of it changes.</summary>
+    private static byte[]? WithElement(byte[] bytes, string kind, string id, string name)
+    {
+        ArgumentNullException.ThrowIfNull(bytes);
+        var marked = bytes.AsSpan().StartsWith(_byteOrderMark);
+        var document = MindmapDocument.Parse(Encoding.UTF8.GetString(marked ? bytes[_byteOrderMark.Length..] : bytes), assignMissingIds: false);
+        if (document.Find(id) is not null) return null;
+        document.AddChild(document.Root, name).SetId(id);
         return [.. marked ? _byteOrderMark : [], .. Encoding.UTF8.GetBytes(document.ToText())];
     }
 

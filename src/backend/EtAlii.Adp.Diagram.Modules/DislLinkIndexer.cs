@@ -13,11 +13,13 @@ namespace EtAlii.Adp.Diagram.Modules;
 /// <param name="read">The diagram the bytes of a file at a path hold, built under the type's specification, and the file's document id.</param>
 /// <param name="renew">The bytes of a file at a path with a new document id (<see cref="DislOpening.Renewed"/>); without it, no document of the type is given one.</param>
 /// <param name="origin">The type's origin (<c>generic/timeline</c>), which a lookup's <c>origins</c> narrow to.</param>
+/// <param name="creation">The kinds of element another tool can create in a file of the type, and the bytes of a file with one more (spec 092, FR-025); without it, none.</param>
 public sealed class DislLinkIndexer(
     IReadOnlyCollection<string> extensions,
     Func<byte[], string, (DislDiagram Diagram, string? DocumentId)> read,
     Func<byte[], string, byte[]?>? renew = null,
-    string? origin = null) : ILinkIndexer
+    string? origin = null,
+    DislElementCreation? creation = null) : ILinkIndexer
 {
     /// <inheritdoc />
     public string? Origin => origin;
@@ -34,4 +36,20 @@ public sealed class DislLinkIndexer(
 
     /// <inheritdoc />
     public byte[]? Renewed(string path, byte[] bytes) => renew?.Invoke(bytes, path);
+
+    /// <inheritdoc />
+    public IReadOnlyList<LinkElementKind> CreatableKinds => creation?.Kinds ?? [];
+
+    /// <inheritdoc />
+    public string? NewElementId() => creation?.NewId();
+
+    /// <inheritdoc />
+    public byte[]? WithElement(byte[] bytes, string kind, string id, string name) =>
+        creation is not null && creation.Kinds.Any(offered => offered.Id == kind) ? creation.Create(bytes, kind, id, name) : null;
 }
+
+/// <summary>What a diagram type lets another tool create in one of its files (spec 092, FR-025): the kinds, and how one is added.</summary>
+/// <param name="Kinds">The kinds of element, in the order a menu offers them.</param>
+/// <param name="NewId">A new element id, as the type's definition makes one.</param>
+/// <param name="Create">The bytes of a file with one more element of a kind, its id and its name given; null when it cannot be added.</param>
+public sealed record DislElementCreation(IReadOnlyList<LinkElementKind> Kinds, Func<string> NewId, Func<byte[], string, string, string, byte[]?> Create);
