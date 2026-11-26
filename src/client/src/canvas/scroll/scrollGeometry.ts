@@ -80,3 +80,26 @@ export function scrollExtentOf(min: number, max: number, options: ScrollExtentOp
   const margin = Math.max(span * factor, minimum);
   return { extentStart: min - margin, extentEnd: max + margin };
 }
+
+/** A view's rectangle, in canvas units. */
+export interface ViewRect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+/**
+ * The view that shows an element: null when the element, centred at `centre` with `size`, is
+ * already wholly in `view`, else `view` at the same zoom moved so the element is at its centre.
+ * What a reveal needs (spec 092, FR-014): an element selected for the reader out of sight is
+ * brought to them, and one in sight leaves the view where the reader put it.
+ */
+export function viewShowing(view: ViewRect, centre: { x: number; y: number }, size: { width: number; height: number }): ViewRect | null {
+  const inside =
+    centre.x - size.width / 2 >= view.x &&
+    centre.x + size.width / 2 <= view.x + view.w &&
+    centre.y - size.height / 2 >= view.y &&
+    centre.y + size.height / 2 <= view.y + view.h;
+  return inside ? null : { ...view, x: centre.x - view.w / 2, y: centre.y - view.h / 2 };
+}

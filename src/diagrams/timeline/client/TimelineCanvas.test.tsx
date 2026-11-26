@@ -156,6 +156,14 @@ const anchorOn = (container: HTMLElement, id: string, name: string) =>
   container.querySelector(`[data-element-id="${id}"] [data-anchor="${name}"]`)!;
 const surfaceOf = (container: HTMLElement) => container.querySelector("svg.library-canvas-surface")!;
 
+describe("the scale of a new, empty timeline", () => {
+  it("opens on the days around today, a week before it first, not at the epoch", () => {
+    const now = Date.UTC(2026, 10, 26, 13, 30) / 1000;
+    const scale = timelineScaleOf({ elements: new Map(), connections: new Map() }, now);
+    expect(scale.originSeconds).toBe(Date.UTC(2026, 10, 19) / 1000);
+  });
+});
+
 describe("the timeline canvas, on the library", () => {
   it("wears the shared canvas classes, so the central stylesheet is what dresses it", () => {
     const { container } = renderCanvas();

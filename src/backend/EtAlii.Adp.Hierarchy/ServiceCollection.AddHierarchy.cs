@@ -67,7 +67,7 @@ public static class ServiceCollectionAddHierarchyExtension
         // Built by hand: the provider's other constructor takes the diagram definitions a
         // test hands it, and letting the container choose between the two would leave which
         // one it picks to depend on what else happens to be registered.
-        services.AddSingleton<IContextActionProvider>(provider =>
+        services.AddSingleton(provider =>
             new AddDiagramContextActionProvider(
                 provider.GetRequiredService<IHistoryStackStore>(),
                 provider.GetRequiredService<DiagramDocumentFactories>(),
@@ -75,6 +75,10 @@ public static class ServiceCollectionAddHierarchyExtension
                 provider.GetRequiredService<DiagramFileRouter>(),
                 provider.GetRequiredService<DesignerAddOptions>())
         );
+        services.AddSingleton<IContextActionProvider>(provider => provider.GetRequiredService<AddDiagramContextActionProvider>());
+
+        // New… on the project, the ribbon's way to the same dialog on the project root (spec 092, host test T035).
+        services.AddSingleton<IContextActionProvider, NewToolContextActionProvider>();
 
         // The editor family's contributions to the hierarchy scope: "Open as text"/"Open
         // with…" on diagram- and designer-claimed files, and the read-only file facts of any text file.

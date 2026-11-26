@@ -100,7 +100,9 @@ export const TIMELINE_BINDINGS: NotationBindings = {
   wireIds: "x-timeline",
   celPaths: { "shownLabel(self)": "element.label" },
   classNames: (type) => ELEMENT_CLASSES[type] ?? [],
-  labelClassName: () => "timeline-label canvas-node-label",
+  // A moment's label stands beside its diamond, outside any shape, so it takes the press itself: a new user clicked
+  // the label and nothing was selected (etalii.adp spec 092, host test T035).
+  labelClassName: (type) => (/Moment$/.test(type) ? "timeline-label timeline-moment-label canvas-node-label" : "timeline-label canvas-node-label"),
   relationClassName: () => "timeline-connection",
   relationLineClassName: () => "timeline-connection-line",
   relationHitClassName: () => "timeline-connection-hit",

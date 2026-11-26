@@ -94,3 +94,18 @@ describe("RibbonBar view group", () => {
     expect((screen.getByRole("button", { name: "Zoom In" }) as HTMLButtonElement).disabled).toBe(true);
   });
 });
+
+describe("RibbonBar file buttons", () => {
+  it("offers no button that does nothing: Save and New are gone, and New… comes with the project's actions", () => {
+    // Arrange.
+    render(
+      <DiagramViewProvider>
+        <RibbonBar />
+      </DiagramViewProvider>,
+    );
+
+    // Assert.
+    expect(screen.queryByRole("button", { name: "Save" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "New" })).toBeNull();
+  });
+});

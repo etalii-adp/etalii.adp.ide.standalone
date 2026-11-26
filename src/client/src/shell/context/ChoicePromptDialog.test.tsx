@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { create } from "@bufbuild/protobuf";
 import { ChoiceDialogPromptSchema, type ChoiceDialogPrompt, type ContextOption } from "../../generated/context_pb";
-import { ChoicePromptDialog, visibleRows } from "./ChoicePromptDialog";
+import { ChoicePromptDialog, matchingOptions, visibleRows } from "./ChoicePromptDialog";
 
 function option(id: string, label: string, selectable: boolean, children: Partial<ContextOption>[] = []): Partial<ContextOption> {
   return { id, label, selectable, children: children as ContextOption[] };
@@ -638,5 +638,28 @@ describe("ChoicePromptDialog, a type whose diagram is the folder", () => {
       fireEvent.doubleClick(row("Ansible structure"));
     });
     expect(onSubmit).not.toHaveBeenCalled();
+  });
+});
+
+describe("ChoicePromptDialog search", () => {
+  it("keeps what matches with the groups that lead to it, and all of a group whose own name matches", () => {
+    const options = twoVendorPrompt().options;
+    expect(matchingOptions(options, "class").map((group) => [group.id, group.children.map((child) => child.id)])).toEqual([["uml", ["uml/class"]]]);
+    expect(matchingOptions(options, "C4").map((group) => group.children.length)).toEqual([2]);
+    expect(matchingOptions(options, "  ")).toBe(options);
+  });
+
+  it("narrows the tree of several groups as the user types, with the groups open, and says when nothing matches", () => {
+    renderDialog(twoVendorPrompt());
+    const search = screen.getByRole("searchbox", { name: "Search Add diagram" });
+    fireEvent.change(search, { target: { value: "context" } });
+    expect(screen.getAllByRole("treeitem").map((row) => row.textContent)).toEqual(["c4", "System Context"]);
+    fireEvent.change(search, { target: { value: "nothing like it" } });
+    expect(screen.getByText('Nothing matches "nothing like it".')).toBeTruthy();
+  });
+
+  it("offers no search when there is only one group", () => {
+    renderDialog(oneVendorPrompt());
+    expect(screen.queryByRole("searchbox")).toBeNull();
   });
 });

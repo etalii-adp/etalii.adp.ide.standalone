@@ -433,6 +433,13 @@ export function resolveRevealPath(
   for (let index = 0; index < segments.length; index++) {
     const key = keys.find((candidate) => state.nodesByKey[candidate]?.name === segments[index]);
     if (key === undefined) {
+      // A registration nests under the file it registers, though both live in this folder: a new
+      // mind map's `.adp` is a child of its `.mm`, so the reveal never found it and the new map
+      // never opened (etalii.adp spec 092, host test T035).
+      const nested = index === segments.length - 1 ? nestedRegistration(state, keys, segments[index]) : undefined;
+      if (nested !== undefined) {
+        return { leafKey: nested };
+      }
       // Not there yet: either its create is still on its way, or this folder was never listed.
       return { expandKey: parentKey };
     }
@@ -450,6 +457,28 @@ export function resolveRevealPath(
   }
 
   return {};
+}
+
+/**
+ * The registration `name` where it nests under a file among `keys`: the nested entry itself where
+ * that file's children are listed, or otherwise the file it registers, whose activation opens its
+ * unqualified registration - `plans.adp` under `plans.mm`.
+ */
+function nestedRegistration(state: TreeState, keys: string[], name: string): string | undefined {
+  for (const candidate of keys) {
+    const child = state.nodesByKey[candidate]?.childKeys?.find((childKey) => state.nodesByKey[childKey]?.name === name);
+    if (child !== undefined) {
+      return child;
+    }
+  }
+  if (!name.toLowerCase().endsWith(".adp")) {
+    return undefined;
+  }
+  const base = name.slice(0, -".adp".length);
+  return keys.find((candidate) => {
+    const node = state.nodesByKey[candidate];
+    return node?.kind === EntryKind.FILE && node.childKeys === undefined && node.hasChildren && node.name.slice(0, node.name.lastIndexOf(".")) === base && node.name.lastIndexOf(".") > 0;
+  });
 }
 
 /** The entry's project-relative path, read off the tree the ids came from. */

@@ -12,6 +12,15 @@
   stroke: none;
 }
 
+/*
+ * A moment's label stands beside its diamond rather than in a shape that takes the press, so the
+ * label takes it over the box it fills; the shared label rule switches presses off for every other.
+ */
+.canvas-node-label.timeline-moment-label {
+  pointer-events: bounding-box;
+  cursor: default;
+}
+
 /* ---- The ruler --------------------------------------------------------------------- */
 
 /*

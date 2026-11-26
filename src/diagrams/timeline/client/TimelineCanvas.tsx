@@ -86,11 +86,16 @@ export interface TimelineScale {
   originY: number;
 }
 
-/** The scale the first fit would choose for this model - exported so tests can compute positions. */
-export function timelineScaleOf(model: TimelineModel): TimelineScale {
+/**
+ * The scale the first fit would choose for this model - exported so tests can compute positions.
+ * An empty timeline opens on the days around today, a week before it first: one that opened at
+ * the epoch put a new user's first moment in 1969 (etalii.adp spec 092, host test T035).
+ */
+export function timelineScaleOf(model: TimelineModel, nowSeconds: number = Date.now() / 1000): TimelineScale {
   const elements = [...model.elements.values()];
   if (elements.length === 0) {
-    return { originSeconds: 0, secondsPerUnit: DAY / 20, originY: -ROW_HEIGHT };
+    const today = Math.floor(nowSeconds / DAY) * DAY;
+    return { originSeconds: today - 7 * DAY, secondsPerUnit: DAY / 20, originY: -ROW_HEIGHT };
   }
 
   const begins = elements.map((element) => element.x);

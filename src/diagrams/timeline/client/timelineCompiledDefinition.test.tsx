@@ -136,7 +136,7 @@ const HAND_WRITTEN: DiagramDefinition = assertValidDiagramDefinition({
           text: { template: "{element.label}" },
           placement: "beside",
           editable: true,
-          className: "timeline-label canvas-node-label",
+          className: "timeline-label timeline-moment-label canvas-node-label",
         },
         DRAG_HINT,
       ],

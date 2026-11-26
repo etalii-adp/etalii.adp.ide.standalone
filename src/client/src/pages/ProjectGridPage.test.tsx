@@ -146,7 +146,7 @@ describe("ProjectGridPage add dialog", () => {
 
     return {
       name: screen.getByPlaceholderText("My project"),
-      path: screen.getByPlaceholderText("C:\\path\\to\\project"),
+      path: screen.getByRole("textbox", { name: "Folder path" }),
       // The tile and the dialog's confirm button share the "Add project" name, so
       // pick the one in the footer rather than the tile that opened the dialog.
       submit: screen
