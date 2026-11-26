@@ -13,7 +13,7 @@ internal static class KnowledgeCellEdits
     public const string ParentCycle = "A row cannot be its own ancestor.";
     public const string SortedRowsStay = "Rows are in the order of this view's sort, so they cannot be moved here.";
     public const string RelationsCreateRows = "Only a relation makes a row to hold.";
-    public const string NoTitleToCreate = "The table this relates to has no title to name a new row by.";
+    private const string NoTitleToCreate = "The table this relates to has no title to name a new row by.";
 
     /// <summary>What an answer starts with when it is a question to confirm and not a refusal: the gesture is made again, confirmed.</summary>
     private const string ConfirmPrefix = "confirm:";
@@ -156,7 +156,7 @@ internal static class KnowledgeCellEdits
         var id = newId();
         List<ModelChange> made =
         [
-            new ModelChange.Add("Row", id, Attributes(), null),
+            new ModelChange.Add("Row", id, Attributes()),
             new ModelChange.Add("Cell", null, Attributes(("property", named.Id), (named.Type.StoredKey, written)), id),
         ];
 
