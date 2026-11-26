@@ -64,11 +64,19 @@ internal sealed class KnowledgeSession : ITableDesignerSession
     private FblModel _shownModel = new([], [], Unreadable: false);
     private KnowledgeTable _shown = KnowledgeTable.Empty;
 
+    /// <summary>What converting the file as it was last read finds (<see cref="KnowledgeLinkConversion"/>), and the edit that carries it to the file.</summary>
+    private List<ModelChange> _conversion = [];
+    private ShortGuid? _converting;
+    private readonly Func<string> _newDocumentId;
+
     /// <summary>What is shown with the computed sides of its relations filled in: what the view is made of.</summary>
     private KnowledgeTable _view = KnowledgeTable.Empty;
 
     /// <summary>The tables this file's relations point at, by their paths, as they were last read. A target that was written through ADP is read again.</summary>
     private readonly Dictionary<string, KnowledgeTarget> _targets = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>The file each link of this file's relations names, where no link index knows it (<see cref="PathOfLink"/>).</summary>
+    private readonly Dictionary<string, string> _linkPaths = new(StringComparer.Ordinal);
 
     /// <summary>What this connection looks at: its view, the rows it keeps in sight, its search and its window.</summary>
     private readonly KnowledgeViewState _viewState;
@@ -97,8 +105,9 @@ internal sealed class KnowledgeSession : ITableDesignerSession
     /// <param name="root">The project the file is in: how far is looked for rows that relate to a row of this file. The default, nowhere.</param>
     /// <param name="time">The clock a refused read waits on before it is tried again; the system's when null.</param>
     /// <param name="links">The workspace's index of documents, which resolves a relation's link by its document id; null to look beside the file.</param>
-    internal KnowledgeSession(string bodyPath, Func<string, KnowledgeRead> read, Func<KnowledgeEditCommand, Task<CommandResult>>? write = null, IKnowledgeDocumentStore? documents = null, ProjectRoot root = default, TimeProvider? time = null, ProjectFileEvents? events = null, ILinkIndex? links = null)
+    internal KnowledgeSession(string bodyPath, Func<string, KnowledgeRead> read, Func<KnowledgeEditCommand, Task<CommandResult>>? write = null, IKnowledgeDocumentStore? documents = null, ProjectRoot root = default, TimeProvider? time = null, ProjectFileEvents? events = null, ILinkIndex? links = null, Func<string>? newDocumentId = null)
     {
+        _newDocumentId = newDocumentId ?? KnowledgeLinkConversion.NewDocumentId;
         _root = root;
         _links = links;
         ArgumentNullException.ThrowIfNull(bodyPath);
@@ -321,11 +330,19 @@ internal sealed class KnowledgeSession : ITableDesignerSession
     /// <summary>Takes an edit as made: shown from now on, and queued to be written. Called with the lock held.</summary>
     private void Accept(ShortGuid editId, IReadOnlyList<ModelChange> edit, (string RowId, string ColumnId)? cell, IReadOnlyList<KnowledgeOtherFile>? others = null)
     {
-        var generation = _edits.Add(editId, edit, cell);
+        // The conversion of a file made before links is shown from the moment it is opened, and written with its first edit.
+        IReadOnlyList<ModelChange> written = edit;
+        if (_conversion.Count > 0 && !Converting())
+        {
+            written = [.. _conversion, .. edit];
+            _converting = editId;
+        }
+
+        var generation = _edits.Add(editId, written, cell);
         Project(edit);
 
         // Its write is queued behind those already waiting.
-        var command = new KnowledgeEditCommand(_bodyPath, edit, others ?? []);
+        var command = new KnowledgeEditCommand(_bodyPath, written, others ?? []);
         _edits.Enqueue(() => WriteAsync(editId, generation, command));
     }
 
@@ -403,6 +420,7 @@ internal sealed class KnowledgeSession : ITableDesignerSession
         lock (_gate)
         {
             var target = _targets.Remove(Path.GetFullPath(path));
+            _linkPaths.Clear();
             var moved = !SameBacklinks(backlinks, _backlinks);
             _backlinks = backlinks;
             if (!(target || moved) || _body is null)
@@ -429,9 +447,7 @@ internal sealed class KnowledgeSession : ITableDesignerSession
     /// </summary>
     private KnowledgeTarget TargetOf(string targetFile)
     {
-        var path = KnowledgeLinks.IsLink(targetFile) && _links?.WorkspaceOf(_bodyPath) is { } workspace && workspace.Resolve(targetFile) is { Document: { } document }
-            ? Path.GetFullPath(document.Path)
-            : KnowledgeRelations.TargetPath(_bodyPath, targetFile);
+        var path = KnowledgeLinks.IsLink(targetFile) ? PathOfLink(targetFile) : KnowledgeRelations.TargetPath(_bodyPath, targetFile);
         if (string.Equals(path, Path.GetFullPath(_bodyPath), StringComparison.OrdinalIgnoreCase))
         {
             return new KnowledgeTarget(path, _shown);
@@ -450,6 +466,36 @@ internal sealed class KnowledgeSession : ITableDesignerSession
 
         return target;
     }
+
+    /// <summary>
+    /// The file a link to a document names: resolved through the workspace's link index, and where there is none, or it knows
+    /// the document by no file, the file of that name beside this one, or else the project's knowledge file that holds that
+    /// document id. Kept until a file of the project is written again. Called with the lock held.
+    /// </summary>
+    private string PathOfLink(string link)
+    {
+        if (_links?.WorkspaceOf(_bodyPath) is { } workspace && workspace.Resolve(link) is { Document: { } document })
+        {
+            return Path.GetFullPath(document.Path);
+        }
+
+        if (_linkPaths.TryGetValue(link, out var known))
+        {
+            return known;
+        }
+
+        var beside = KnowledgeRelations.TargetPath(_bodyPath, link);
+        var id = KnowledgeLinks.DocumentIdOf(link);
+        var path = id.Length == 0 || _root.FullPath.Length == 0 || HoldsDocument(beside, id)
+            ? beside
+            : KnowledgeProject.Files(_root.FullPath).Select(Path.GetFullPath).FirstOrDefault(candidate => HoldsDocument(candidate, id)) ?? beside;
+        _linkPaths[link] = path;
+        return path;
+    }
+
+    /// <summary>Whether the knowledge file at <paramref name="path"/> holds the document id <paramref name="id"/>; this file's own as it is shown.</summary>
+    private bool HoldsDocument(string path, string id) =>
+        string.Equals(path, Path.GetFullPath(_bodyPath), StringComparison.OrdinalIgnoreCase) ? _shown.DocumentId == id : _read(path).Body?.Table.DocumentId == id;
 
     /// <summary>What a related row is called, for the cells and the groups of a relation.</summary>
     private string LabelOf(string propertyId, string rowId) =>
@@ -557,6 +603,14 @@ internal sealed class KnowledgeSession : ITableDesignerSession
         _body = body;
         _shownModel = body?.Model ?? new FblModel([], [], Unreadable: false);
         _shown = body?.Table ?? KnowledgeTable.Empty;
+
+        // What converting the file finds, shown unless an edit on its way to the file carries it already.
+        _conversion = Conversion(body);
+        if (_conversion.Count > 0 && !Converting())
+        {
+            Project(_conversion);
+        }
+
         foreach (var pending in _edits.Pending)
         {
             Project(pending.Changes);
@@ -564,6 +618,15 @@ internal sealed class KnowledgeSession : ITableDesignerSession
 
         Relate();
     }
+
+    /// <summary>The changes that convert the file as <paramref name="body"/> holds it, when it was made before links and can be written; empty otherwise. Called with the lock held, or before anything else can call.</summary>
+    private List<ModelChange> Conversion(KnowledgeBody? body) =>
+        body is { ReadOnlyReason.Length: 0, Unreadable.Length: 0 } && _write is not null
+            ? KnowledgeLinkConversion.Of(body.Table, _bodyPath, TargetOf, _newDocumentId)
+            : [];
+
+    /// <summary>Whether an edit still on its way to the file carries the conversion.</summary>
+    private bool Converting() => _converting is { } editId && _edits.Pending.Any(pending => pending.EditId == editId);
 
     private void Project(IReadOnlyList<ModelChange> changes)
     {
@@ -605,7 +668,8 @@ internal sealed class KnowledgeSession : ITableDesignerSession
         Lines().Count,
         TargetOf,
         _viewState.InSight(_view, LabelOf),
-        _viewState.Search);
+        _viewState.Search,
+        _bodyPath);
 
     /// <summary>
     /// The lines of the view this connection shows, in order: its rows filtered, sorted and grouped

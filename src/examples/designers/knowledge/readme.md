@@ -10,8 +10,9 @@ the three `cities.adp` files; each opens the data file beside it as a table.
 | `xml/` | `cities.xml` | `cities.adp` |
 
 Beside each is `provinces.yaml` with its own `provinces.adp`: the table the cities' relation
-*Province* points at, in YAML in all three folders, because a relation names its target by file
-name and all three cities files name this one.
+*Province* points at, in YAML in all three folders. A relation names its target by a link to its
+document id and file name (`$p7v3k9qd@provinces.yaml`), and each related row by a link with the
+row's name (`$p7v3k9qd@provinces.yaml#nh.Name=Noord-Holland`), so all three cities files name this one.
 
 A knowledge file is two files. The data file holds everything: the properties, the rows, the
 views with their columns, sorts, filter and grouping. The `.adp` file beside it holds two lines
@@ -38,7 +39,8 @@ registration. Between them they show what the cities do not:
 
 - **A two-way relation.** A region's *Country* names a row of `countries.yaml`, and *Regions* in
   the countries' table shows, for each country, the regions that name it. The values are in
-  `regions.yaml` only; the countries' side holds none of its own.
+  `regions.yaml` only, whose relation names that column by its `backlinkName`; the countries' table
+  holds nothing of it.
 - **A one-way relation.** A region's *Borders on* names countries too, and no country shows it.
 - **A parent relation.** A country's *Part of* names another country of the same table, and the
   view *Nested*, which is grouped by that relation, shows the Netherlands and Belgium under Benelux.

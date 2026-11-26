@@ -26,8 +26,9 @@ public sealed class KnowledgeFindingsTests : IDisposable
 
     /// <summary>A small table with nothing wrong in it: a title, a number, a selection, one view, two rows.</summary>
     private static readonly string Sound = """
-        ded: "0.1"
+        ded: "0.3"
         designer: etalii/knowledge
+        id: s7d2k9qa
         name: Cities
         properties:
           - id: p1
@@ -108,7 +109,7 @@ public sealed class KnowledgeFindingsTests : IDisposable
         { KnowledgeValidator.ViewNamesMissingProperty, "Warning", "", "", "    name: All\n", "    name: All\n    groupBy: p9\n" },
         { KnowledgeValidator.ViewNamesMissingProperty, "Warning", "", "", "    name: All\n", "    name: All\n    sorts:\n      - property: p9\n" },
         { KnowledgeValidator.UnknownType, "Warning", "", "p2", "    name: People\n    type: number\n", "    name: People\n    type: person\n" },
-        { KnowledgeValidator.MissingId, "Info", "row@30", "", "  - id: r2\n    cells:\n", "  - cells:\n" },
+        { KnowledgeValidator.MissingId, "Info", "row@31", "", "  - id: r2\n    cells:\n", "  - cells:\n" },
     };
 
     [Theory]
@@ -204,7 +205,7 @@ public sealed class KnowledgeFindingsTests : IDisposable
     public async Task AFileOfAnotherVersion_IsToldSoInOneFinding_AndIsNotChanged()
     {
         // Arrange.
-        var path = Write(Changed("ded: \"0.1\"", "ded: \"9.0\""));
+        var path = Write(Changed("ded: \"0.3\"", "ded: \"9.0\""));
         var before = await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken);
 
         // Act.

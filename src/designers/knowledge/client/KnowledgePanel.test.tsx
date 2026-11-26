@@ -132,17 +132,19 @@ describe("KnowledgePanel", () => {
     stream.current = streamOf(cities("v1"));
     connection.select.mockClear();
     render(<KnowledgePanel projectId={ID} entryId={ID} path={["tables", "cities.adp"]} />);
-    const relation = (targetFile: string): TableColumn => ({ id: "p5", name: "Province", kind: "relation", options: [], width: 0, visible: true, isTitle: false, wraps: false, settings: { targetFile } });
+    const relation = (targetFile: string, targetPath?: string): TableColumn => ({ id: "p5", name: "Province", kind: "relation", options: [], width: 0, visible: true, isTitle: false, wraps: false, settings: targetPath === undefined ? { targetFile } : { targetFile, targetPath } });
 
     // Act.
     surface.onOpenValue!(relation("provinces.yaml"), "nh");
     surface.onOpenValue!(relation("../shared/regions.yaml"), "x");
+    surface.onOpenValue!(relation("$p7v3k9qd@provinces.yaml", "../reference/provinces.yaml"), "ut");
     surface.onOpenValue!(relation("."), "r2");
 
-    // Assert: the files, from the table's own folder; and the row of this table as the selection.
+    // Assert: the files, from the table's own folder, a linked one where the designer found it; and the row of this table as the selection.
     expect(connection.revealPath.mock.calls.map((call) => call[0])).toEqual([
       ["tables", "provinces.yaml"],
       ["shared", "regions.yaml"],
+      ["reference", "provinces.yaml"],
     ]);
     expect(connection.select).toHaveBeenCalledTimes(1);
     expect(connection.select.mock.calls[0]![0].detail.value.id.source.value.value).toBe("r2");

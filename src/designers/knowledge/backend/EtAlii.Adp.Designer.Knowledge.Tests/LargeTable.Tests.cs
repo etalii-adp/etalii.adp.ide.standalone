@@ -40,7 +40,7 @@ public sealed class LargeTableTests : IDisposable
     private static string Table(int rows)
     {
         var text = new StringBuilder();
-        text.Append("ded: \"0.1\"\r\ndesigner: etalii/knowledge\r\nname: Places\r\nproperties:\r\n");
+        text.Append("ded: \"0.3\"\r\ndesigner: etalii/knowledge\r\nid: l4r9g2tb\r\nname: Places\r\nproperties:\r\n");
         text.Append("  - id: p1\r\n    name: Name\r\n    type: text\r\n    title: true\r\n");
         text.Append("  - id: p2\r\n    name: People\r\n    type: number\r\n");
         text.Append("  - id: p3\r\n    name: Size\r\n    type: selection\r\n    options:\r\n      - id: o1\r\n        name: Small\r\n      - id: o2\r\n        name: Medium\r\n      - id: o3\r\n        name: Large\r\n");

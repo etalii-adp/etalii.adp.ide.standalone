@@ -168,9 +168,9 @@ public sealed class KnowledgeDesignerTests(HostFixture host) : IClassFixture<Hos
     }
 
     [Fact]
-    public async Task RenamingATableInTheExplorer_TakesTheRelationsThatNameItAlong_InOneStepThatOneUndoTakesBack()
+    public async Task RenamingATableInTheExplorer_LeavesTheRelationsThatLinkToIt_AsTheyAre_InOneStepThatOneUndoTakesBack()
     {
-        // Arrange: the example relates to provinces.yaml.
+        // Arrange: the example links to provinces.yaml by its document id.
         Seed(".yaml");
         var cities = IoPath.Combine(_projectFolder, "cities.yaml");
         var provinces = IoPath.Combine(_projectFolder, "provinces.yaml");
@@ -180,12 +180,10 @@ public sealed class KnowledgeDesignerTests(HostFixture host) : IClassFixture<Hos
         // Act: the rename the explorer makes.
         var renamed = await history.ExecuteAsync(new RenameEntryCommand(provinces, "regions.yaml", ProjectRoot.From(_projectFolder)), TestContext.Current.CancellationToken);
 
-        // Assert: the file has its new name, and the relation names it by that.
+        // Assert: the file has its new name, and the relation still links to it by its id; nothing is written to name it anew (knowledge.md, section 9).
         Assert.True(renamed.IsSuccess, renamed.Error);
         Assert.True(File.Exists(IoPath.Combine(_projectFolder, "regions.yaml")));
-        var text = await File.ReadAllTextAsync(cities, TestContext.Current.CancellationToken);
-        Assert.Contains("target: regions.yaml", text, StringComparison.Ordinal);
-        Assert.DoesNotContain("provinces.yaml", text, StringComparison.Ordinal);
+        Assert.Equal(before, await File.ReadAllBytesAsync(cities, TestContext.Current.CancellationToken));
 
         // Act: one undo.
         var undone = await history.UndoAsync(TestContext.Current.CancellationToken);

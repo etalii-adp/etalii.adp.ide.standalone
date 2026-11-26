@@ -46,7 +46,7 @@ public sealed class KnowledgeRelationsTests : IDisposable
     /// </summary>
     private EditingTable OpenMadeBeforeLinks(KnowledgeDocuments? documents = null)
     {
-        var path = KnowledgeFiles.CopyPlain("cities.yaml", _root);
+        var path = KnowledgeFiles.CopyPlainMadeBeforeLinks("cities.yaml", _root);
         File.WriteAllText(path, File.ReadAllText(path).Replace("  - id: p6\r\n", "  - id: nr\r\n    name: Near\r\n    type: relation\r\n    target: provinces.yaml\r\n    counterpart: cn\r\n  - id: p6\r\n", StringComparison.Ordinal));
         File.WriteAllText(Provinces, File.ReadAllText(Provinces).Replace("views:\r\n", "  - id: cn\r\n    name: Cities nearby\r\n    type: relation\r\n    target: cities.yaml\r\n    counterpart: nr\r\n    computed: true\r\nviews:\r\n", StringComparison.Ordinal));
         return new EditingTable(path, documents: documents);
@@ -102,7 +102,7 @@ public sealed class KnowledgeRelationsTests : IDisposable
         // Arrange: the first city names a province nobody has.
         var path = KnowledgeFiles.CopyPlain("cities.yaml", _root);
         var text = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
-        await File.WriteAllTextAsync(path, text.Replace("- row: nh", "- row: atlantis", StringComparison.Ordinal), TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(path, text.Replace("- row: $p7v3k9qd@provinces.yaml#nh.Name=Noord-Holland", "- row: $p7v3k9qd@provinces.yaml#atlantis", StringComparison.Ordinal), TestContext.Current.CancellationToken);
         await using var table = new EditingTable(path);
 
         // Act.
@@ -169,7 +169,7 @@ public sealed class KnowledgeRelationsTests : IDisposable
 
         // Assert: the target by its path from this file, any number of rows, and no other side.
         var relation = Property(table, "Twinned with");
-        Assert.Equal(("relation", KnowledgeFiles.Related, "none", "", false), (relation.ValueType, relation.TargetFile, relation.Limit, relation.Counterpart, relation.IsComputed));
+        Assert.Equal(("relation", KnowledgeFiles.RelatedLink, "none", "", false), (relation.ValueType, relation.TargetFile, relation.Limit, relation.Counterpart, relation.IsComputed));
         Assert.Equal(target, await File.ReadAllBytesAsync(Provinces, TestContext.Current.CancellationToken));
         Assert.Empty(table.Session.Baseline().Findings);
     }
@@ -374,33 +374,31 @@ public sealed class KnowledgeRelationsTests : IDisposable
     }
 
     [Fact]
-    public async Task DeletingOneSideOfARelationToTheTableItselfMadeBeforeLinks_KeepsTheOtherInTheSameFile()
+    public async Task ATwoWayRelationToTheTableItselfMadeBeforeLinks_IsConvertedIntoOneRelationAndItsBacklinkColumn()
     {
         // Arrange: Amsterdam is the rival of Antwerp, through the two sides a file made before links holds.
-        var path = KnowledgeFiles.CopyPlain("cities.yaml", _root);
+        var path = KnowledgeFiles.CopyPlainMadeBeforeLinks("cities.yaml", _root);
         var text = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
         await File.WriteAllTextAsync(path, text.Replace("  - id: p6\r\n", "  - id: rv\r\n    name: Rival of\r\n    type: relation\r\n    target: .\r\n    counterpart: rb\r\n  - id: rb\r\n    name: Rivalled by\r\n    type: relation\r\n    target: .\r\n    counterpart: rv\r\n    computed: true\r\n  - id: p6\r\n", StringComparison.Ordinal), TestContext.Current.CancellationToken);
-        await using var table = new EditingTable(path);
-        await table.Edit(new TableGesture("setCell", RowId: "r1", ColumnId: "rv", Values: ["r2"]));
+        await using var table = new EditingTable(path, newDocumentId: () => "c4t7y2ma");
 
         // Act.
-        await table.Edit(new TableGesture("deleteColumn", ColumnId: "rv", Settings: Settings(("otherSide", "keep"))));
+        await table.Edit(new TableGesture("setCell", RowId: "r1", ColumnId: "rv", Values: ["r2"]));
 
-        // Assert: what the other side showed is now what it holds, and the table shows it as before.
-        var kept = table.OnDisk();
-        Assert.DoesNotContain(kept.Properties, property => property.Id == "rv");
-        Assert.Equal(("", false), (kept.Properties.Single(property => property.Id == "rb").Counterpart, kept.Properties.Single(property => property.Id == "rb").IsComputed));
-        Assert.Equal(["r1"], kept.Rows.Single(row => row.Id == "r2").Cells.Single(cell => cell.PropertyId == "rb").Values);
-        Assert.Equal(["Amsterdam"], Cell(table.Lines(), "r2", "rb")?.Labels);
-        Assert.DoesNotContain("otherSide", table.Session.Baseline().Columns.Single(column => column.Id == "rb").Settings.Keys);
+        // Assert: one relation to the file's own id, which holds the value under the counterpart's name as its backlink name; the counterpart is gone, and its column is the backlink column now.
+        var converted = table.OnDisk();
+        Assert.Equal(("$c4t7y2ma@cities.yaml", "", "Rivalled by"), (converted.Properties.Single(property => property.Id == "rv").TargetFile, converted.Properties.Single(property => property.Id == "rv").Counterpart, converted.Properties.Single(property => property.Id == "rv").BacklinkName));
+        Assert.DoesNotContain(converted.Properties, property => property.Id == "rb");
+        var rivalled = table.Session.Baseline().Columns.Single(column => column.Name == "Rivalled by");
+        Assert.Equal(["Amsterdam"], Cell(table.Lines(), "r2", rivalled.Id)?.Labels);
     }
 
     [Theory]
     [MemberData(nameof(KnowledgeFiles.Extensions), MemberType = typeof(KnowledgeFiles))]
     public async Task WhenTheTargetIsRenamed_TheRelationNamesItByItsNewName_AndByItsOldOneWhenThatIsUndone(string extension)
     {
-        // Arrange: the example relates to provinces.yaml beside it; a table elsewhere in the project relates to nothing.
-        var cities = KnowledgeFiles.CopyPlain("cities" + extension, _root);
+        // Arrange: the example as it was made before links relates to provinces.yaml beside it by its path.
+        var cities = KnowledgeFiles.CopyPlainMadeBeforeLinks("cities" + extension, _root);
         var before = await File.ReadAllBytesAsync(cities, TestContext.Current.CancellationToken);
         var regions = IoPath.Combine(_root, "regions.yaml");
         var follower = new KnowledgeTargetRename(new KnowledgeDocuments(), new FileWriter());
@@ -415,7 +413,7 @@ public sealed class KnowledgeRelationsTests : IDisposable
         await using (var open = new EditingTable(cities))
         {
             Assert.Equal(["Noord-Holland"], Cell(open.Lines(), "r1", "p5")?.Labels);
-            Assert.Empty(open.Session.Baseline().Findings);
+            Assert.All(open.Session.Baseline().Findings, finding => Assert.Equal(KnowledgeValidator.UnresolvedTarget, finding.Code));
         }
 
         // Act: the rename is undone, which is a rename back.
@@ -427,10 +425,30 @@ public sealed class KnowledgeRelationsTests : IDisposable
     }
 
     [Fact]
+    public async Task WhenALinkedTargetIsRenamedOrMoved_NothingIsWritten_AndTheRelationStillFindsIt()
+    {
+        // Arrange: the example links to its provinces by their document id.
+        var cities = KnowledgeFiles.CopyPlain("cities.yaml", _root);
+        var before = await File.ReadAllBytesAsync(cities, TestContext.Current.CancellationToken);
+        var moved = IoPath.Combine(_root, "reference", "regions.yaml");
+        Directory.CreateDirectory(IoPath.GetDirectoryName(moved)!);
+
+        // Act: renamed and moved, as the explorer does it.
+        File.Move(Provinces, moved);
+        await new KnowledgeTargetRename(new KnowledgeDocuments(), new FileWriter()).RenamedAsync(ProjectRoot.From(_root), Provinces, moved, TestContext.Current.CancellationToken);
+
+        // Assert: the file is as it was, and its relation finds the provinces by their id.
+        Assert.Equal(before, await File.ReadAllBytesAsync(cities, TestContext.Current.CancellationToken));
+        await using var open = new EditingTable(cities, rootPath: _root);
+        Assert.Equal(["Noord-Holland"], Cell(open.Lines(), "r1", "p5")?.Labels);
+        Assert.Empty(open.Session.Baseline().Findings);
+    }
+
+    [Fact]
     public async Task WhenAFolderIsRenamed_RelationsIntoItFollow_AndRelationsInsideItStay()
     {
-        // Arrange: cities relates to a table in a folder; a table in that folder relates to its neighbour there.
-        var cities = KnowledgeFiles.CopyPlain("cities.yaml", _root);
+        // Arrange: cities, made before links, relates to a table in a folder; a table in that folder relates to its neighbour there.
+        var cities = KnowledgeFiles.CopyPlainMadeBeforeLinks("cities.yaml", _root);
         (string old, string renamed) = (IoPath.Combine(_root, "data"), IoPath.Combine(_root, "reference"));
         Directory.CreateDirectory(old);
         File.Move(Provinces, IoPath.Combine(old, KnowledgeFiles.Related));
@@ -522,7 +540,7 @@ public sealed class KnowledgeRelationsTests : IDisposable
         // Assert: the property is there under its name, where it was put; its backlink is called after this table, and the provinces are not written.
         var properties = table.OnDisk().Properties;
         var region = properties.Single(property => property.Name == "Region");
-        Assert.Equal(("relation", "provinces.yaml", "one", false, "Cities"), (region.ValueType, region.TargetFile, region.Limit, region.IsComputed, region.BacklinkName));
+        Assert.Equal(("relation", KnowledgeFiles.RelatedLink, "one", false, "Cities"), (region.ValueType, region.TargetFile, region.Limit, region.IsComputed, region.BacklinkName));
         Assert.Equal("p3", properties[properties.ToList().IndexOf(region) + 1].Id);
         Assert.Equal(theirs, await File.ReadAllBytesAsync(Provinces, TestContext.Current.CancellationToken));
     }
@@ -610,7 +628,7 @@ public sealed class KnowledgeRelationsTests : IDisposable
         await table.Edit(new TableGesture("setCell", RowId: "r1", ColumnId: rival.Id, Values: ["r2"]));
 
         // Assert: one property, which holds the value; the backlink column shows it from the other end, and is in no file.
-        Assert.Equal((KnowledgeRelations.Self, "", "Rivalled by"), (rival.TargetFile, rival.Counterpart, rival.BacklinkName));
+        Assert.Equal((KnowledgeFiles.SelfLink(".yaml"), "", "Rivalled by"), (rival.TargetFile, rival.Counterpart, rival.BacklinkName));
         Assert.DoesNotContain(table.OnDisk().Properties, property => property.Name == "Rivalled by");
         var rivalled = table.Session.Baseline().Columns.Single(column => column.Name == "Rivalled by");
         var lines = table.Lines();

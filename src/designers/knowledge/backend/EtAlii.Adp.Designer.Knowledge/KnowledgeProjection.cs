@@ -38,10 +38,14 @@ internal static class KnowledgeProjection
         }
 
         var elements = model.Elements.ToList();
+        var documentId = model.DocumentId;
         foreach (var change in changes)
         {
             switch (change)
             {
+                case ModelChange.SetDocumentId given:
+                    documentId = given.Id;
+                    break;
                 case ModelChange.Add add:
                     Add(elements, add, besideItsRule);
                     break;
@@ -59,7 +63,7 @@ internal static class KnowledgeProjection
             Readdress(elements);
         }
 
-        return model with { Elements = elements };
+        return model with { Elements = elements, DocumentId = documentId };
     }
 
     /// <summary>The rule an added element is read by and the slot of its parent it is in, as the bindings have them.</summary>

@@ -157,7 +157,7 @@ public sealed class KnowledgeContextActionsTests : IDisposable
         // Assert: a relation to the other table under its name, holding what was answered.
         Assert.True(committed.Completed, committed.Error);
         var relation = KnowledgeDocumentStore.Read(Cities).Body!.Table.Properties.Single(property => property.Name == "Provinces");
-        Assert.Equal(("relation", KnowledgeFiles.Related, limit), (relation.ValueType, relation.TargetFile, relation.Limit));
+        Assert.Equal(("relation", KnowledgeFiles.RelatedLink, limit), (relation.ValueType, relation.TargetFile, relation.Limit));
 
         // Two-way, the other table shows its backlinks under this table's name; either way, the other table is as it was.
         Assert.Equal((twoWay ? "Cities" : "", ""), (relation.BacklinkName, relation.Counterpart));
@@ -211,7 +211,7 @@ public sealed class KnowledgeContextActionsTests : IDisposable
         // Assert: made, with nothing more to ask: one row per cell here, shown in the other table under that name, which is not written there.
         Assert.True(last.Completed, last.Error);
         Assert.Null(last.Next);
-        Assert.Contains(KnowledgeDocumentStore.Read(Cities).Body!.Table.Properties, property => property is { ValueType: "relation", Limit: "one", TargetFile: KnowledgeFiles.Related, BacklinkName: "Seats", Counterpart: "" });
+        Assert.Contains(KnowledgeDocumentStore.Read(Cities).Body!.Table.Properties, property => property is { ValueType: "relation", Limit: "one", TargetFile: KnowledgeFiles.RelatedLink, BacklinkName: "Seats", Counterpart: "" });
         Assert.Equal(theirs, await File.ReadAllBytesAsync(Provinces, TestContext.Current.CancellationToken));
 
         // An answer that is none of a step's is refused.
@@ -231,7 +231,7 @@ public sealed class KnowledgeContextActionsTests : IDisposable
         // Assert.
         Assert.True(committed.Completed, committed.Error);
         var relation = KnowledgeDocumentStore.Read(Cities).Body!.Table.Properties.Single(property => property.Name == "Relation");
-        Assert.Equal((KnowledgeRelations.Self, "one"), (relation.TargetFile, relation.Limit));
+        Assert.Equal((KnowledgeFiles.SelfLink(".yaml"), "one"), (relation.TargetFile, relation.Limit));
     }
 
     /// <summary>
@@ -251,10 +251,10 @@ public sealed class KnowledgeContextActionsTests : IDisposable
         // Act: chosen as the dialog hands it over.
         var committed = await Related(Target(table), "there/regions.yaml", KnowledgeContextActionProvider.Many, twoWay: false);
 
-        // Assert: related, and named in the file by its path from the file itself.
+        // Assert: related, and named in the file by a link to the chosen file's document under its file name.
         Assert.True(committed.Completed, committed.Error);
         var relation = KnowledgeDocumentStore.Read(table).Body!.Table.Properties.Single(property => property.Name == "Provinces 2" || property.Name == "Provinces");
-        Assert.Equal("../there/regions.yaml", relation.TargetFile);
+        Assert.Equal("$p7v3k9qd@regions.yaml", relation.TargetFile);
     }
 
     [Fact]

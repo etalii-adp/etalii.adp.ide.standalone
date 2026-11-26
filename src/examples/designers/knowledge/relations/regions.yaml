@@ -1,5 +1,6 @@
-ded: "0.1"
+ded: "0.3"
 designer: etalii/knowledge
+id: r4g7m1zx
 # Regions, written for ADP: the side of a two-way relation that holds the values, and a view grouped by it.
 name: Regions
 activeView: g-by-country
@@ -11,13 +12,13 @@ properties:
   - id: g-country
     name: Country
     type: relation
-    target: countries.yaml
+    target: $c8r2n5vw@countries.yaml
     limit: one
-    counterpart: c-regions
+    backlinkName: Regions
   - id: g-neighbour
     name: Borders on
     type: relation
-    target: countries.yaml
+    target: $c8r2n5vw@countries.yaml
 views:
   - id: g-by-country
     name: By country
@@ -31,31 +32,31 @@ rows:
         text: Friesland
       - property: g-country
         rows:
-          - row: nl
+          - row: $c8r2n5vw@countries.yaml#nl.Name=Netherlands
   - id: limburg-nl
     cells:
       - property: g-name
         text: Limburg
       - property: g-country
         rows:
-          - row: nl
+          - row: $c8r2n5vw@countries.yaml#nl.Name=Netherlands
       - property: g-neighbour
         rows:
-          - row: be
+          - row: $c8r2n5vw@countries.yaml#be.Name=Belgium
   - id: flanders
     cells:
       - property: g-name
         text: Flanders
       - property: g-country
         rows:
-          - row: be
+          - row: $c8r2n5vw@countries.yaml#be.Name=Belgium
       - property: g-neighbour
         rows:
-          - row: nl
+          - row: $c8r2n5vw@countries.yaml#nl.Name=Netherlands
   - id: kansai
     cells:
       - property: g-name
         text: Kansai
       - property: g-country
         rows:
-          - row: jp
+          - row: $c8r2n5vw@countries.yaml#jp.Name=Japan
