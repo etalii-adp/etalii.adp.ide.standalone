@@ -4412,3 +4412,20 @@ lays out no text, so a fill, a centred Comment and a drag that writes a size are
 - **Observations, not failures of this task:**
   - A double-click on a flow never renamed it, before this task or after. The hand-written definition declared an `activate` gesture for the flow's rename, but the library raises `activate` on an element alone. The compiled definition does not declare it, and its test names the difference. F2 and *Rename product…* rename the product.
   - Selecting a frame selects its members as well, and each selected member draws its steppers.
+
+## Links between documents in the standalone host (etalii.adp spec 092, T035 and T036)
+
+**Why this is a browser pass and not only tests:** the modules' tests resolve, follow and write links through the real pipeline, but only the running app shows a linked element's label and broken mark, what *Open linked element* and *Linked from (N)* open, the lookup dialog searching the workspace as it is typed into, and the knowledge relation picker's chips and *Create* row. Only Freeplane says whether a mind map that carries links still opens there.
+
+- **Preconditions**: a developer build from `develop` with spec 092's pull requests merged, and a scratch folder added as a project holding a copy of the knowledge designer's `cities.yaml` and `provinces.yaml`, a new timeline, a new dependency graph and a new mind map. For the lookup, the same folder with 200 documents of those types, made by copying.
+- **Steps**:
+  1. In the timeline, use the lookup to link an element to a row of `cities.yaml`, then to a node of the mind map; do the same from the dependency graph and the mind map, so that each of the four tool types links to and is linked from the others (16 pairs).
+  2. On each linked element, choose *Open linked element*; on each target, choose *Linked from (N)* and open the entry it lists.
+  3. Rename a linked row in `cities.yaml` and look at the elements that link to it. Then delete it, and choose the fix its finding offers.
+  4. Copy the mind map in the explorer, open a link to it, and choose a target in the ambiguity's fix.
+  5. In `cities.yaml`, open a city's *Province* cell: type part of a province's title, pick another, type a title nothing matches and choose *Create*; press Undo once.
+  6. Open the linked mind map in Freeplane, change a node's text, save, and open it again in ADP.
+  7. In the 200-document folder, open the lookup and type a name.
+  8. As a new user, with no setting changed and nothing explained, make a first link from a timeline to a knowledge row, and record every hesitation, message or hurdle met on the way.
+- **Expected**: step 1 writes each link as `$<document id>@<file>#<element>` with the target's name, and labels each element by its target's name. Step 2 opens the target's document with the target selected, and the list names every element that links to it. Step 3 relabels the linking elements without writing their files; after the delete they are marked broken with `link.broken-element`, and the fix removes the link and leaves a plain element under the cached name. Step 4 reports `link.ambiguous-document`, and the fix gives the copy a new id. Step 5 narrows the list to the matching titles, shows the cell's rows as chips that each remove their own, replaces the one row the relation holds, and creates the province in `provinces.yaml` related from the city; the one Undo leaves both files as they were. Step 6 keeps every `adp-id` and `adp-link` through Freeplane's save. Step 7 answers within a second of typing. Step 8 meets no hurdle.
+- **Result**: pending. This pass is T035, run on the Mac mini once the pull requests it needs have merged; the outcome is recorded here when it has run.
