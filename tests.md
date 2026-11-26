@@ -4439,3 +4439,9 @@ lays out no text, so a fill, a centred Comment and a drag that writes a size are
   - A knowledge row cannot link to a diagram element: *Relate to* lists knowledge files only, as `knowledge.md` defines a relation, so 13 of the 16 pairs of step 1 can be made. Raised with the specification's owner, not settled here.
 
   The failed steps and step 6 are to be run again once these fixes have merged.
+
+  Second run on 2026-11-26, on the Mac mini, from `develop` at `382b27c10` (#842 merged): the lookup, the 8-character ids, the new mind map's `adp-id`, the 13 pairs of step 1, step 2, the live findings of step 3 and step 4 passed, with the copy made on disk since the explorer has no *Copy*. Failed, and fixed in the next pull request:
+  - Deleting a linked knowledge row put its question under the table's sticky line of calculations, so *Delete row* seemed to do nothing. Guard: `tableStacking.test.ts`.
+  - A diagram's delete warning said "from other documents" when one of the links it counted was the diagram's own. Guard: `TimelineLinkNavigation.Tests.cs`.
+
+  Still met by a new user in step 8, outside what links change, and left to the owner's choice: the Mac folder placeholder `C:\path\to\project`; the ribbon's *New* doing nothing; the Add diagram dialog's 33 groups without a search; its prefilled name and overlapping label; a new timeline opening at 1970, so a moment added where the menu was opened lands in 1969; a moment's label not selecting it; a new mind map not opening in a tab after *Add*; the ribbon's canvas actions greyed in a freshly opened diagram until the canvas is right-clicked; the timeline not scrolling a revealed element into view; and a knowledge file without a registration opening as text, so a link to one of its rows lands on line 1. Step 6 waits for Freeplane.

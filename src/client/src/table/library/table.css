@@ -997,10 +997,12 @@
   font-size: 0.8125rem;
 }
 
+/* Above the line of calculations, which is sticky at the foot too: a question nobody can see or press is no question. */
 .table-ask {
   position: sticky;
   bottom: 0;
   left: 0;
+  z-index: 3;
   display: flex;
   align-items: center;
   gap: 6px;
