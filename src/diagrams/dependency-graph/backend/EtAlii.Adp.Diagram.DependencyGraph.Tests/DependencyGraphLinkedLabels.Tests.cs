@@ -22,7 +22,7 @@ public sealed class DependencyGraphLinkedLabelsTests : IDisposable
     public async Task ATargetRenamedWhileOpen_RelabelsTheNode()
     {
         // Arrange.
-        var (session, workspace, index) = await OpenAsync();
+        (DependencyGraphSession session, LinkWorkspace workspace, DependencyGraphOpeningIndex index) = await OpenAsync();
         await using var _ = session;
         IReadOnlyList<DiagramDelta>? received = null;
         session.Changed += (_, args) => received = args.Deltas;
@@ -42,7 +42,7 @@ public sealed class DependencyGraphLinkedLabelsTests : IDisposable
     public async Task ATargetDeletedWhileOpen_MarksTheNodeBroken_UnderItsCachedName()
     {
         // Arrange.
-        var (session, workspace, index) = await OpenAsync("Check-out");
+        (DependencyGraphSession session, LinkWorkspace workspace, DependencyGraphOpeningIndex index) = await OpenAsync("Check-out");
         await using var _ = session;
         IReadOnlyList<DiagramDelta>? received = null;
         session.Changed += (_, args) => received = args.Deltas;

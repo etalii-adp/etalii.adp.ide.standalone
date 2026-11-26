@@ -34,8 +34,7 @@ public sealed class MindmapLinkedLabelsTests : IDisposable
     public async Task ALinkedNode_IsNamedAndMeasuredByItsTargetsCurrentName()
     {
         // Arrange: the target was renamed, to a longer name, since the node cached its text.
-        var (session, _, _) = Open("Checkout and payment");
-        await using var _ = session;
+        await using var session = Open("Checkout and payment").Session;
 
         // Act.
         var baseline = await session.BaselineAsync(TestContext.Current.CancellationToken);
@@ -53,7 +52,7 @@ public sealed class MindmapLinkedLabelsTests : IDisposable
     public async Task ATargetRenamedWhileOpen_RenamesTheNode()
     {
         // Arrange.
-        var (session, workspace, index) = Open("Checkout");
+        (MindmapSession session, LinkWorkspace workspace, MindmapOpeningIndex index) = Open("Checkout");
         await using var _ = session;
         await session.BaselineAsync(TestContext.Current.CancellationToken);
         IReadOnlyList<DiagramDelta>? received = null;
@@ -74,7 +73,7 @@ public sealed class MindmapLinkedLabelsTests : IDisposable
     public async Task ATargetDeletedWhileOpen_MarksTheNodeBroken_UnderItsCachedText()
     {
         // Arrange.
-        var (session, workspace, index) = Open("Pay");
+        (MindmapSession session, LinkWorkspace workspace, MindmapOpeningIndex index) = Open("Pay");
         await using var _ = session;
         await session.BaselineAsync(TestContext.Current.CancellationToken);
         IReadOnlyList<DiagramDelta>? received = null;
@@ -95,8 +94,7 @@ public sealed class MindmapLinkedLabelsTests : IDisposable
     public async Task AnOrdinaryNode_CarriesNoLink()
     {
         // Arrange.
-        var (session, _, _) = Open("Checkout");
-        await using var _ = session;
+        await using var session = Open("Checkout").Session;
 
         // Act.
         var baseline = await session.BaselineAsync(TestContext.Current.CancellationToken);
