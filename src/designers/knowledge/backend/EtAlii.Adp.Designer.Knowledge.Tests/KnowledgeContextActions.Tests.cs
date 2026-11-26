@@ -170,6 +170,23 @@ public sealed class KnowledgeContextActionsTests : IDisposable
         Assert.Equal(("one", ""), (relation.Limit, relation.BacklinkName));
     }
 
+    [Fact]
+    public async Task WhereTheIndexTracksNoWorkspace_TheDialogOffersTheTablesAlone_AndFailsOnNothing()
+    {
+        // Arrange: an index that holds no workspace for this table's folder, as before the folder is tracked.
+        var registration = Registered();
+        var plan = IoPath.Combine(_root, "plan.tml");
+        await File.WriteAllTextAsync(plan, "timeline: 1\nid: t7m2k9qa\nelements: []\n", TestContext.Current.CancellationToken);
+        var provider = new KnowledgeContextActionProvider(_histories, new FixedLinkIndex(null!));
+
+        // Act.
+        var asked = Assert.IsType<ContextExecutionRequiresFile>(await provider.ExecuteAsync(Target(registration), KnowledgeContextActionProvider.Relate, TestContext.Current.CancellationToken)).Request;
+
+        // Assert: the tables, and no diagram, since none is known.
+        Assert.True(asked.Accepts(Provinces));
+        Assert.False(asked.Accepts(plan));
+    }
+
     [Theory]
     [InlineData(KnowledgeContextActionProvider.Many, "none", false)]
     [InlineData(KnowledgeContextActionProvider.One, "one", false)]

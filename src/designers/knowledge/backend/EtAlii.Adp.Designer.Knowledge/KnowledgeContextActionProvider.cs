@@ -237,7 +237,7 @@ internal sealed class KnowledgeContextActionProvider(IHistoryStackStore historie
     {
         if (links is null || IsKnowledgeFile(path)) return null;
         var full = Path.GetFullPath(path);
-        var document = links.WorkspaceOf(bodyPath).Document(full.Replace('\\', '/'));
+        var document = links.WorkspaceOf(bodyPath)?.Document(full.Replace('\\', '/'));
         return document is { Origin: { } origin, DocumentId.Length: > 0 } && origin != Designer.Origin
             ? new KnowledgeTarget(full, KnowledgeRelations.FromDiagram(document), Kinds: links.CreatableKindsOf(full))
             : null;
