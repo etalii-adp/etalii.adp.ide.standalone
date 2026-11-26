@@ -69,6 +69,7 @@ const VALUE_RETURNING = [
   "describeProperties",
   "setProperty",
   "onPropose",
+  "onSearch",
   "onSubmit",
 ];
 
@@ -92,6 +93,7 @@ function invokers(): Record<string, () => Promise<unknown>> {
     describeProperties: () => channel.describeProperties(),
     setProperty: () => channel.setProperty("mindmap.text", "Milestones"),
     onPropose: () => prompt.onPropose(1, "a.txt"),
+    onSearch: () => prompt.onSearch("check"),
     onSubmit: () => prompt.onSubmit("a.txt"),
   };
 }
