@@ -268,13 +268,16 @@ internal sealed class KnowledgeSession : ITableDesignerSession
             return NoWriter;
         }
 
-        // Rows of other tables may relate to a row that is about to go: its author is told how many first.
-        if (gesture.Kind == "deleteRows" && _root.FullPath.Length > 0 && gesture.Settings.GetValueOrDefault("confirmed") != "true")
+        // Rows of other tables may relate to a row that is about to go, and links of other documents name it: its author is
+        // told how many first.
+        if (gesture.Kind == "deleteRows" && gesture.Settings.GetValueOrDefault("confirmed") != "true")
         {
             IReadOnlyList<string> ids = gesture.Values.Count > 0 ? gesture.Values : [gesture.RowId];
-            if (KnowledgeProject.RowsRelatingTo(_root, _bodyPath, ids, _shown.DocumentId) is > 0 and var relating)
+            var relating = _root.FullPath.Length > 0 ? KnowledgeProject.RowsRelatingTo(_root, _bodyPath, ids, _shown.DocumentId) : 0;
+            var linking = LinksNaming(ids);
+            if (relating > 0 || linking > 0)
             {
-                return KnowledgeCellEdits.AskFirst(relating, ids.Count);
+                return KnowledgeCellEdits.AskFirst(relating, ids.Count, linking);
             }
         }
 
@@ -285,6 +288,17 @@ internal sealed class KnowledgeSession : ITableDesignerSession
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// How many links of documents of other tool types name the rows <paramref name="ids"/> (FBL 17.5); a relation of another
+    /// table is counted as a relation, not again as a link.
+    /// </summary>
+    private int LinksNaming(IReadOnlyList<string> ids)
+    {
+        if (_links?.WorkspaceOf(_bodyPath) is not { } workspace) return 0;
+        var path = Path.GetFullPath(_bodyPath).Replace('\\', '/');
+        return ids.Sum(id => workspace.Backlinks(path, id).Count(backlink => workspace.Document(backlink.Path)?.Origin != Designer.Origin));
     }
 
     /// <summary>Plans a gesture and takes what it changes as made, adding what the connection is to be sent to <paramref name="changes"/>. Called with the lock held.</summary>

@@ -49,7 +49,7 @@ public sealed class DependencyGraphLookupTests : IDisposable
         Assert.Contains(DependencyGraphContextActionProvider.AddLinkedActionId, offered);
         Assert.Equal(("Checkout", "features.yaml", "specs"), (candidate.Name, candidate.DocumentName, candidate.Folder));
         Assert.True(committed.Completed, committed.Error);
-        Assert.Matches("^" + Regex.Escape(Plain) + "  - id: [^\\n]+\\n    link: \"?\\$k7q2m9xa@features\\.yaml#checkout=Checkout\"?\\n    x: \"?240\"?\\n    row: \"?3\"?\\n$", await ReadAsync(path));
+        Assert.Matches("^" + Regex.Escape(Plain) + "  - id: [0-9a-z]{8}\\n    link: \"?\\$k7q2m9xa@features\\.yaml#checkout=Checkout\"?\\n    x: \"?240\"?\\n    row: \"?3\"?\\n$", await ReadAsync(path));
     }
 
     [Fact]

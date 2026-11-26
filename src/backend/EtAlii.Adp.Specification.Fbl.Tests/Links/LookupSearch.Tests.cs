@@ -55,6 +55,23 @@ public class LookupSearchTests
     }
 
     [Fact]
+    public void ASearch_SkipsElementsThatAreLinksThemselves()
+    {
+        // Arrange: the mind map's second node links to the roadmap's launch, and is named as its target is.
+        var map = Document("/w/ideas.mm", "m3m3m3m3", "freeplane/mindmap", ("root", "Ideas"), ("n1", "Launch")) with
+        {
+            Links = [new HeldLink("n1", "$r1r1r1r1@roadmap.tml#launch=Launch")],
+        };
+        var workspace = new LinkWorkspace(Root, [Document("/w/roadmap.tml", "r1r1r1r1", "generic/timeline", ("launch", "Launch")), map]);
+
+        // Act.
+        var found = workspace.Search("launch");
+
+        // Assert: the launch itself, and not the node that links to it, which a link to it would make a link to a link.
+        Assert.Equal(["roadmap.tml"], found.Select(candidate => candidate.DocumentName));
+    }
+
+    [Fact]
     public void AnEmptySearch_OffersEveryElement_UpToTheLimit()
     {
         // Arrange.

@@ -23,7 +23,7 @@ public static class DislIds
     /// <summary>
     /// The specification's own strategy (§11.5.1), for the strategies a runtime can mint without the
     /// model: <c>uuid-v4</c> and <c>uuid-v7</c>, in <c>hex</c>, <c>base64url</c> or <c>base36</c>, and
-    /// <c>nanoid</c> with its <c>alphabet</c> and <c>length</c> (DISL 0.12).
+    /// <c>nanoid</c> with its <c>prefix</c>, <c>alphabet</c> and <c>length</c> (DISL 0.12).
     /// </summary>
     public static IIdSource Of(DislSpecification specification)
     {
@@ -33,7 +33,7 @@ public static class DislIds
         {
             "uuid-v4" => new Uuids(Guid.NewGuid, encoding),
             "uuid-v7" => new Uuids(Guid.CreateVersion7, encoding),
-            "nanoid" => new Nanoids(specification.IdRuleOf("").Alphabet, specification.IdRuleOf("").Length),
+            "nanoid" => new Nanoids(specification),
             var strategy => throw new NotSupportedException($"This runtime cannot mint ids of strategy '{strategy}' without the model; give the interpreter an id source."),
         };
     }
@@ -59,9 +59,14 @@ public static class DislIds
 
     private const string NanoidCharacters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-";
 
-    private sealed class Nanoids(string alphabet, int length) : IIdSource
+    /// <summary>Ids of the rule that applies to each type (§11.5.2), its prefix first (§11.5).</summary>
+    private sealed class Nanoids(DislSpecification specification) : IIdSource
     {
-        public string Next(string type) => Nanoid(alphabet, length);
+        public string Next(string type)
+        {
+            var rule = specification.IdRuleOf(type);
+            return (rule.Prefix ?? "") + Nanoid(rule.Alphabet, rule.Length);
+        }
     }
 
     private sealed class FixedIds(IReadOnlyList<string> ids) : IIdSource

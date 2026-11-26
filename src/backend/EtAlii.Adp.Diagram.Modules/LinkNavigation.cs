@@ -101,11 +101,12 @@ public static class LinkNavigation
     private static IReadOnlyList<Backlink> BacklinksOf(DislElement element, ContextTarget target, LinkWorkspace workspace) =>
         element.Type.Linkable ? workspace.Backlinks(Path.GetFullPath(target.ResolvedFullPath).Replace('\\', '/'), DislLinkFixes.WrittenIdOf(element)) : [];
 
-    /// <summary>How a backlink is listed: the name of the element that holds it, where the index knows one, and its document.</summary>
+    /// <summary>
+    /// How a backlink is listed: the name of the element that holds it, where the index knows one, else the name it shows, which is its
+    /// target's, as a linked element has none of its own; its id only when neither is known; and its document.
+    /// </summary>
     private static string LabelOf(Backlink backlink, LinkWorkspace workspace) =>
-        workspace.NameOf(backlink.Path, backlink.Holder) is { Length: > 0 } name
-            ? $"{name} ({workspace.Display(backlink.Path)})"
-            : $"{backlink.Holder} ({workspace.Display(backlink.Path)})";
+        $"{(workspace.NameOf(backlink.Path, backlink.Holder) is { Length: > 0 } name ? name : backlink.TargetName is { Length: > 0 } shown ? shown : backlink.Holder)} ({workspace.Display(backlink.Path)})";
 
     /// <summary>The element <paramref name="elementId"/> names, by its wire id or the id its file writes; null for none.</summary>
     private static DislElement? ElementOf(DislDiagram diagram, string elementId)

@@ -1,5 +1,6 @@
 using EtAlii.Adp.Designer.TableModel;
 using EtAlii.Adp.Files;
+using EtAlii.Adp.Specification.Fbl.Links;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -574,6 +575,28 @@ public sealed class KnowledgeRelationsTests : IDisposable
 
         // Assert.
         Assert.Equal(["zh", "9wvrdvjn4ob2f2nw421bouq7y", "cdns3i0ehcr45q7zh0z15iqzt"], provinces.OnDisk().Rows.Select(row => row.Id));
+    }
+
+    [Fact]
+    public async Task DeletingARowThatADiagramLinksTo_TellsHowManyLinksItBreaksFirst()
+    {
+        // Arrange: a timeline's moment links to the province nh; nothing else relates to it.
+        KnowledgeFiles.CopyExample(KnowledgeFiles.Related, _root);
+        var path = Provinces.Replace('\\', '/');
+        var id = KnowledgeDocumentStore.Read(Provinces).Body!.Table.DocumentId is { Length: > 0 } written ? written : "pppppppp";
+        var workspace = new LinkWorkspace(_root.Replace('\\', '/'), [
+            new IndexedDocument(path, id, "Name", [new IndexedElement("nh", [new KeyValuePair<string, string>("Name", "Noord-Holland")])], []) { Origin = Designer.Origin },
+            new IndexedDocument($"{_root.Replace('\\', '/')}/plan.tml", "p1p1p1p1", "title", [], [new HeldLink("m1", $"${id}@{IoPath.GetFileName(Provinces)}#nh=Noord-Holland")]) { Origin = "generic/timeline" },
+        ]);
+        await using var provinces = new EditingTable(Provinces, links: new FixedLinkIndex(workspace));
+        var before = provinces.Bytes();
+
+        // Act.
+        (_, string asked) = provinces.Begin(new TableGesture("deleteRows", RowId: "nh"));
+
+        // Assert: a question that says how many links break, and nothing deleted.
+        Assert.Equal("confirm:This breaks 1 link from another document.", asked);
+        Assert.Equal(before, provinces.Bytes());
     }
 
     [Fact]

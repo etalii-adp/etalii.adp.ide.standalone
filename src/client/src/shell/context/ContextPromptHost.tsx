@@ -25,6 +25,8 @@ export interface ContextPromptSubmission {
 export interface ContextLookupResult {
   candidates: ContextLookupCandidate[];
   error: string;
+  /** More elements match than are given, so what is typed narrows them. */
+  more?: boolean;
 }
 
 /** A search for a host without a lookup: it finds nothing. */

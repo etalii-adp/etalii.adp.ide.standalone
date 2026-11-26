@@ -655,6 +655,7 @@ export function ContextConnectionProvider({ projectId, children }: ContextConnec
         return {
           candidates: response.candidates.map(({ value, name, documentName, folder }) => ({ value, name, documentName, folder })),
           error: response.error,
+          more: response.more,
         };
       } catch (caught) {
         return { candidates: [], error: faultMessage(caught) };

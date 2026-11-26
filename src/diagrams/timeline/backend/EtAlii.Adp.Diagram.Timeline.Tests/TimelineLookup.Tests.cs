@@ -50,7 +50,7 @@ public sealed class TimelineLookupTests : IDisposable
         Assert.Contains(TimelineContextActionProvider.AddLinkedActionId, offered);
         Assert.Equal(("Checkout", "features.yaml", "specs"), (candidate.Name, candidate.DocumentName, candidate.Folder));
         Assert.True(committed.Completed, committed.Error);
-        Assert.Matches("^" + Regex.Escape(Plain) + "  - id: [^\\n]+\\n    link: \"?\\$k7q2m9xa@features\\.yaml#checkout=Checkout\"?\\n    begin: \"?2027-02-01\"?\\n    row: \"?3\"?\\n$", await ReadAsync(path));
+        Assert.Matches("^" + Regex.Escape(Plain) + "  - id: [0-9a-z]{8}\\n    link: \"?\\$k7q2m9xa@features\\.yaml#checkout=Checkout\"?\\n    begin: \"?2027-02-01\"?\\n    row: \"?3\"?\\n$", await ReadAsync(path));
     }
 
     [Fact]

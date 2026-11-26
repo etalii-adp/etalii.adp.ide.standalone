@@ -67,7 +67,7 @@ public sealed class TimelineLinkNavigationTests : IDisposable
     [Fact]
     public async Task AnElementLinksPointAt_OffersLinkedFrom_ListingThem_AndPickingOnePointsAtItsHolder()
     {
-        // Arrange: a dependency graph links to the launch, twice, from two nodes.
+        // Arrange: a dependency graph links to the launch, twice, from two nodes; the second has no name of its own, as a linked node, which shows its target's.
         var path = Write();
         var actions = Actions(new IndexedDocument(Held("services.dgr"), "s2v5b9hu", "label", [new IndexedElement("pay", [new KeyValuePair<string, string>("label", "Payments")])], [
             new HeldLink("pay", "$r6d3w8ne@roadmap.tml#launch=Launch"),
@@ -82,7 +82,7 @@ public sealed class TimelineLinkNavigationTests : IDisposable
 
         // Assert.
         Assert.Equal("Linked from (2)…", offered.Actions.Single(action => action.Id == LinkNavigation.LinkedFromActionId).Label);
-        Assert.Equal(["Payments (services.dgr)", "ship (services.dgr)"], choice.Options.Select(option => option.Label));
+        Assert.Equal(["Payments (services.dgr)", "Launch (services.dgr)"], choice.Options.Select(option => option.Label));
         Assert.True(picked.Completed, picked.Error);
         var reveal = Assert.IsType<ContextExecutionReveals>(picked.Next);
         Assert.Equal((IoPath.Combine(_folder.Path, "services.dgr"), "ship"), (reveal.FullPath, reveal.ElementId));

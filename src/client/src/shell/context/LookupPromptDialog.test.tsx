@@ -76,6 +76,35 @@ describe("LookupPromptDialog", () => {
     expect(options()).toEqual(["Launchroadmap.tml"]);
   });
 
+  it("picks from what was typed, not from the list of the text before it, when Enter comes before the answer", async () => {
+    // Arrange: the list answers the empty query, Checkout first.
+    const { onSubmit } = renderDialog();
+    await settle();
+
+    // Act: "lau" typed and Enter pressed at once, before the debounce has run out.
+    fireEvent.change(field(), { target: { value: "lau" } });
+    await act(async () => {
+      fireEvent.keyDown(field(), { key: "Enter" });
+    });
+    await settle();
+
+    // Assert: Launch, the one "lau" names, and never Checkout.
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+    expect(onSubmit).toHaveBeenCalledWith(launch.value);
+  });
+
+  it("says when more match than are shown, so that typing more narrows them", async () => {
+    // Arrange: a search that finds more than it gives.
+    const search = vi.fn(async (_query: string): Promise<ContextLookupResult> => ({ candidates: [checkout], error: "", more: true }));
+
+    // Act.
+    renderDialog(search);
+    await settle();
+
+    // Assert.
+    expect(screen.getByText("More match. Type more of a name to narrow them.")).toBeTruthy();
+  });
+
   it("says so when nothing has a name like that", async () => {
     // Arrange.
     renderDialog();

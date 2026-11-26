@@ -290,8 +290,9 @@ public sealed partial class ContextService
             return Task.FromResult(new SearchLookupResponse { Error = "This lookup is no longer active." });
         }
 
-        var response = new SearchLookupResponse();
-        response.Candidates.AddRange(lookup.Search(request.Query).Select(ContextWire.ToProto));
+        var found = lookup.Search(request.Query);
+        var response = new SearchLookupResponse { More = found.Count > ContextLookupRequest.Shown };
+        response.Candidates.AddRange(found.Take(ContextLookupRequest.Shown).Select(ContextWire.ToProto));
         _logger.Verbose("The lookup of interaction {InteractionId} offers {Count} for '{Query}'", request.InteractionId, response.Candidates.Count, request.Query);
         return Task.FromResult(response);
     }

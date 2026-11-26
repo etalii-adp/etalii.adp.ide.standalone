@@ -189,6 +189,17 @@ public class LinksBetweenDocumentsTests
     }
 
     [Fact]
+    public void ANanoidStrategyWithAPrefix_MintsThePrefixBeforeItsCharacters()
+    {
+        var prefixed = Specifications.Loaded(Specifications.With("""
+            "disl": "0.12",
+            "persistence": { "format": "fbl", "binding": "x.fbl", "ids": { "strategy": "nanoid", "prefix": "ID_", "alphabet": "base36", "length": 8 } }
+            """));
+
+        Assert.Matches("^ID_[0-9a-z]{8}$", DislIds.Of(prefixed).Next("Thing"));
+    }
+
+    [Fact]
     public void ADiagramInTheIndex_HoldsItsLinkableElementsByTheirNameProperty_AndTheLinksItsElementsHold()
     {
         var diagram = new DislDiagram(Specification);

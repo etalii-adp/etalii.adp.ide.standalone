@@ -252,7 +252,10 @@ internal static class TimelineDefinition
     }
 
     /// <summary>Two ids for an element and its relation, minted in that order as the hand-written commands did.</summary>
-    private static IIdSource NewIds() => DislIds.Fixed(ShortGuid.NewShortGuid().ToString(), ShortGuid.NewShortGuid().ToString());
+    private static IIdSource NewIds() => DislIds.Fixed(NewId(), NewId());
+
+    /// <summary>A new id by the definition's <c>persistence.ids</c> rule (DISL §11.5.1): 8 characters of <c>0-9a-z</c>.</summary>
+    public static string NewId() => DislIds.Of(Specification).Next("");
 
     /// <summary>A transaction that creates one element and relates it to <paramref name="existingId"/>, as the command that writes both.</summary>
     private static (AddConnectedTimelineElementCommand? Command, string Refusal) Related(DislTransaction transaction, string body, string elementId, string what, bool newElementIsSource, string existingId)

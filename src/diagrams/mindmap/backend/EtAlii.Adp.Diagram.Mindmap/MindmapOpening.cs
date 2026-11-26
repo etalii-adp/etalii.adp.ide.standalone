@@ -37,6 +37,17 @@ internal static class MindmapOpening
         return [.. marked ? _byteOrderMark : [], .. Encoding.UTF8.GetBytes(document.ToText())];
     }
 
+    /// <summary>
+    /// A new map named <paramref name="baseName"/> (<see cref="MindmapDocument.EmptyDocument"/>) with its central topic's
+    /// <c>adp-id</c>, so that it can be linked to from its first save (FBL 17.2), as a new timeline is by its template.
+    /// </summary>
+    public static string NewDocument(string baseName)
+    {
+        var document = MindmapDocument.Parse(MindmapDocument.EmptyDocument(baseName), assignMissingIds: false);
+        Validate(document, null);
+        return document.ToText();
+    }
+
     /// <summary>Changes <paramref name="document"/> as opening finds it should be; <paramref name="workspace"/> null leaves its links as they are.</summary>
     public static void Validate(MindmapDocument document, LinkWorkspace? workspace)
     {

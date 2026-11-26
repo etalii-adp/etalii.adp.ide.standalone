@@ -279,6 +279,7 @@ message SearchLookupRequest {
 message SearchLookupResponse {
   repeated LookupCandidate candidates = 1;
   string error = 2;  // set when the interaction is no longer active
+  bool more = 3;     // more elements match than are given: what is typed narrows them
 }
 
 // One element the lookup offers: its name, and the name and folder of its document, which tell two of one name apart.

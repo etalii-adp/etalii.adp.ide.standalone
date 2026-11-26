@@ -228,7 +228,7 @@ public sealed class TimelineContextActionProvider(IHistoryStackStore historyStac
         }
 
         return await DispatchAsync(target, new ConnectTimelineElementsCommand(
-            target.ResolvedFullPath, ShortGuid.NewShortGuid().ToString(), from, to, ""), cancellationToken);
+            target.ResolvedFullPath, TimelineDefinition.NewId(), from, to, ""), cancellationToken);
     }
 
     /// <summary>An add from a menu, with no placement to land on: the begin is asked first.</summary>
@@ -336,7 +336,7 @@ public sealed class TimelineContextActionProvider(IHistoryStackStore historyStac
             model,
             body,
             period ? "addElementHere" : "addMomentHere",
-            ShortGuid.NewShortGuid().ToString(),
+            TimelineDefinition.NewId(),
             TimelineScale.ToText(begin, TimelinePrecision.Date),
             row);
 
@@ -381,7 +381,7 @@ public sealed class TimelineContextActionProvider(IHistoryStackStore historyStac
         if (!GestureIds.TryParseRowPlacement(placement, out var seconds, out var row) || LinkLookups.Picked(Links, body, value) is not { } pick) return null;
 
         var begin = TimelineScale.ToText(TimelineScale.ToTime(seconds, TimelinePrecision.Date), TimelinePrecision.Date);
-        return TimelineDefinition.LinkedAddition(model, body, ShortGuid.NewShortGuid().ToString(), begin, row, pick);
+        return TimelineDefinition.LinkedAddition(model, body, TimelineDefinition.NewId(), begin, row, pick);
     }
 
     private static AddTimelineElementCommand? AddAt(TimelineModel model, string body, string anchorElementId, string value, bool period)

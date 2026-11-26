@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.Hierarchy;
+using EtAlii.Adp.Links;
 using Serilog;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
@@ -9,7 +10,9 @@ namespace EtAlii.Adp.Problems;
 /// <summary>
 /// Keeps the store current while a project is open without anyone asking (Requirement 5):
 /// a changed diagram is re-validated alone, a removed one loses its entries, a renamed one
-/// keeps them at its new path, and rapid changes coalesce into one look.
+/// keeps them at its new path, and rapid changes coalesce into one look. A document that holds a link
+/// to a changed, removed or renamed one is judged again with it, since the change can break or mend
+/// that link (etalii.adp spec 092).
 /// </summary>
 /// <remarks>
 /// Watches the filesystem itself rather than a <see cref="HierarchyModel"/>: hierarchy
@@ -28,6 +31,7 @@ public sealed class ProblemMaintenance : IDisposable, IAsyncDisposable
     private readonly IProblemStore _store;
     private readonly ProjectValidator _validator;
     private readonly DiagramFileRouter _router;
+    private readonly ILinkIndex? _links;
     private readonly ConcurrentDictionary<ProjectRoot, TrackedProblemRoot> _tracked = new();
 
     /// <summary>Rapid changes coalesce per root: the window starts over until the burst settles.</summary>
@@ -39,7 +43,7 @@ public sealed class ProblemMaintenance : IDisposable, IAsyncDisposable
     /// <summary>Where a tracked root hears its changes: the one watcher of each project root.</summary>
     internal ProjectFileEvents Events { get; }
 
-    public ProblemMaintenance(IProblemStore store, ProjectValidator validator, DiagramFileRouter router, ProjectFileEvents events, TimeProvider time, TimeSpan? settleDelay = null)
+    public ProblemMaintenance(IProblemStore store, ProjectValidator validator, DiagramFileRouter router, ProjectFileEvents events, TimeProvider time, TimeSpan? settleDelay = null, ILinkIndex? links = null)
     {
         ArgumentNullException.ThrowIfNull(store);
         ArgumentNullException.ThrowIfNull(validator);
@@ -49,6 +53,7 @@ public sealed class ProblemMaintenance : IDisposable, IAsyncDisposable
         _store = store;
         _validator = validator;
         _router = router;
+        _links = links;
         Events = events;
         Settling = new Debouncer<TrackedProblemRoot>(settleDelay ?? DefaultSettleDelay, root => root.Settle(), time);
     }
@@ -100,6 +105,7 @@ public sealed class ProblemMaintenance : IDisposable, IAsyncDisposable
             return; // Folders get interesting through the files inside them.
         }
         root.Enqueue(path);
+        EnqueueDependents(root, path);
     }
 
     internal void OnDeleted(TrackedProblemRoot root, string path)
@@ -111,6 +117,7 @@ public sealed class ProblemMaintenance : IDisposable, IAsyncDisposable
         // The file - or the folder and everything beneath it - is gone; so are its problems
         // (Requirement 5.2). Cheap enough to do at once, no validation involved.
         _store.Remove(root.Path, IoPath.GetRelativePath(root.Path, path));
+        EnqueueDependents(root, path);
 
         // A deleted body leaves its registration promising a document that is not there -
         // the one sibling whose own change event will never come.
@@ -137,6 +144,22 @@ public sealed class ProblemMaintenance : IDisposable, IAsyncDisposable
         // Renamed, not changed: the problems follow the file rather than being re-reported
         // as unchecked (Requirement 5.3).
         _store.Move(root.Path, IoPath.GetRelativePath(root.Path, oldPath), IoPath.GetRelativePath(root.Path, newPath));
+        EnqueueDependents(root, oldPath);
+        EnqueueDependents(root, newPath);
+    }
+
+    /// <summary>Queues the documents whose links name the one at <paramref name="path"/>, as the index of links knows them.</summary>
+    private void EnqueueDependents(TrackedProblemRoot root, string path)
+    {
+        var linked = path.Replace('\\', '/');
+        if (_links?.WorkspaceOf(linked) is not { } workspace)
+        {
+            return;
+        }
+        foreach (var dependent in workspace.Dependents(linked))
+        {
+            root.Enqueue(IoPath.GetFullPath(dependent));
+        }
     }
 
     internal async Task RevalidateAsync(TrackedProblemRoot root, IReadOnlyList<string> paths, CancellationToken cancellationToken)

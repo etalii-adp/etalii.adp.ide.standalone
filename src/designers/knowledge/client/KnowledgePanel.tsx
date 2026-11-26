@@ -3,6 +3,7 @@ import { elementSelectionOf } from "@client/canvas/selection";
 import { useTableStream } from "@client/designers/useTableStream";
 import { useContextConnection } from "@client/shell/context/ContextConnectionProvider";
 import { classifyLink, openLink } from "@client/shell/links/openLink";
+import { onElementRevealRequested, takeElementReveal } from "@client/shell/panels/revealRequests";
 import type { TableColumn } from "@client/table/library/api/tableModel";
 import type { ToolContentProps } from "@client/shell/panels/toolPanelRegistration";
 import type { TableGesture } from "@client/table/library/api/tableEvents";
@@ -77,6 +78,21 @@ export function KnowledgePanel({ path, entryId }: ToolContentProps) {
     take();
     rowWaiting.addEventListener("row", take);
     return () => rowWaiting.removeEventListener("row", take);
+  }, [loaded, path, entryId, select]);
+
+  // A row a link opened (spec 092, FR-014) is taken the same way, once this table is there; the link names the row in its
+  // data file, and this panel may show that file at its registration, which a reveal takes for the same document.
+  useEffect(() => {
+    const take = () => {
+      // A row is data of the table, not only of the rows its window holds, so any row the link names is taken.
+      const rowId = loaded ? takeElementReveal(path, () => true) : null;
+      if (rowId !== null) {
+        setOpened(rowId);
+        select(elementSelectionOf(entryId, path, rowId));
+      }
+    };
+    take();
+    return onElementRevealRequested(take);
   }, [loaded, path, entryId, select]);
 
   return (

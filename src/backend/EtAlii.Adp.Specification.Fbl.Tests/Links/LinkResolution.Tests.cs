@@ -82,6 +82,21 @@ public class LinkResolutionTests
         Assert.Equal(3, Workspace.BrokenByDeleting(LinksWorkspaceFixture.PathOf("plan/release.tml"), ["launch", "discovery"]));
     }
 
+    [Fact]
+    public void ADocumentsDependents_AreTheOthersThatHoldALinkNamingIt_ByItsIdOrItsFileName()
+    {
+        var release = LinksWorkspaceFixture.PathOf("plan/release.tml");
+
+        var dependents = Workspace.Dependents(release);
+        var gone = new LinkWorkspace(LinksWorkspaceFixture.PathOf(""), Workspace.Documents.Where(document => document.Path != release)).Dependents(release);
+
+        Assert.Contains("ideas/ideas.mm", dependents.Select(Workspace.Display));
+        Assert.Contains("teams/services.dgr", dependents.Select(Workspace.Display));
+        Assert.DoesNotContain(release, dependents);
+        // Once it is gone its id is not known, and its file name still names it.
+        Assert.Equal(dependents, gone);
+    }
+
     private static List<JsonElement> Entries() =>
         [.. JsonDocument.Parse(File.ReadAllText(LinksWorkspaceFixture.Conformance)).RootElement.GetProperty("links").EnumerateArray()];
 }

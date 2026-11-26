@@ -67,7 +67,7 @@ public class ServiceCollectionAddMindmapTests
     }
 
     [Fact]
-    public void TheEmptyDocument_IsOneRootNamedAfterTheFile()
+    public void TheEmptyDocument_IsOneRootNamedAfterTheFile_WithADocumentIdALinkCanName()
     {
         // Arrange.
         using var provider = Build();
@@ -79,5 +79,7 @@ public class ServiceCollectionAddMindmapTests
         // Assert.
         Assert.Equal("design", map.Root.Text);
         Assert.Empty(map.Root.Children);
+        // Written with the file, so the new map can be linked to before its first edit (FBL 17.2).
+        Assert.Matches("^[0-9a-z]{8}$", map.Root.AdpId);
     }
 }

@@ -79,12 +79,13 @@ public sealed class LinkWorkspace
     public IReadOnlyList<Backlink> Backlinks(string path, string elementId)
     {
         var backlinks = new List<Backlink>();
+        var name = NameOf(path, elementId);
         foreach (var document in _documents.Values)
         {
             foreach (var held in document.Links)
             {
                 var resolution = Resolve(held.Text);
-                if (resolution is { Resolved: true, Link: { } link, Document: { } target } && target.Path == path && link.ElementId == elementId) backlinks.Add(new Backlink(document.Path, held.Holder));
+                if (resolution is { Resolved: true, Link: { } link, Document: { } target } && target.Path == path && link.ElementId == elementId) backlinks.Add(new Backlink(document.Path, held.Holder) { TargetName = name });
             }
         }
         return backlinks;
@@ -98,6 +99,21 @@ public sealed class LinkWorkspace
         return name;
     }
 
+    /// <summary>
+    /// The documents whose findings depend on the document at <paramref name="path"/> (FBL 17.5): every other one that holds a
+    /// link naming it, by its document id while the workspace holds it, or by its file name, which still names it once it is
+    /// gone; in path order. A change of the document can break or mend their links, so they are judged again with it.
+    /// </summary>
+    public IReadOnlyList<string> Dependents(string path)
+    {
+        ArgumentNullException.ThrowIfNull(path);
+        var id = Document(path)?.DocumentId;
+        var name = path[(path.LastIndexOf('/') + 1)..];
+        return [.. _documents.Values
+            .Where(document => document.Path != path && document.Links.Any(held => FblLink.Parse(held.Text) is { } link && (link.DocumentName == name || (id is not null && link.DocumentId == id))))
+            .Select(document => document.Path)];
+    }
+
     /// <summary>How many links of the workspace a delete of <paramref name="elementIds"/> of the document at <paramref name="path"/> breaks (FBL 17.5).</summary>
     public int BrokenByDeleting(string path, IEnumerable<string> elementIds) => elementIds.Sum(id => Backlinks(path, id).Count);
 
@@ -105,7 +121,7 @@ public sealed class LinkWorkspace
     /// The lookup's search (DISL 0.12 §9.4, FBL 17.3): the linkable elements of the workspace's documents whose name holds
     /// <paramref name="query"/>, compared without regard to case, those it begins first, then by name and by path; only of the
     /// tool types <paramref name="origins"/> lists when it lists any, and only of documents with an id, which a link needs.
-    /// At most <paramref name="limit"/> are given, each with the link that names it.
+    /// An element that holds a link is not offered: it stands for its target, and a link to it would be a link to a link. At most <paramref name="limit"/> are given, each with the link that names it.
     /// </summary>
     public IReadOnlyList<LookupCandidate> Search(string query, IReadOnlyCollection<string>? origins = null, int limit = 50)
     {
@@ -115,7 +131,8 @@ public sealed class LinkWorkspace
         foreach (var document in _documents.Values)
         {
             if (document.DocumentId is not { } documentId || (origins is { Count: > 0 } && (document.Origin is null || !origins.Contains(document.Origin)))) continue;
-            foreach (var element in document.Elements)
+            var holders = document.Links.Select(link => link.Holder).ToHashSet(StringComparer.Ordinal);
+            foreach (var element in document.Elements.Where(element => !holders.Contains(element.Id)))
             {
                 (string? _, string name) = NameOf(document, element, null);
                 if (name.Length == 0 || !name.Contains(typed, StringComparison.OrdinalIgnoreCase)) continue;
