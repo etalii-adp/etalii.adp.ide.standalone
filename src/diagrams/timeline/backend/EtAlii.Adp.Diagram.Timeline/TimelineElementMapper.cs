@@ -64,7 +64,7 @@ public sealed class TimelineElementMapper
     /// hidden, so the same reasoning survives virtualization.
     /// </para>
     /// </remarks>
-    public IReadOnlyList<DiagramElement> Visible(TimelineModel model, DiagramViewport viewport)
+    public IReadOnlyList<DiagramElement> Visible(TimelineModel model, DiagramViewport viewport, LinkWorkspace? workspace = null)
     {
         ArgumentNullException.ThrowIfNull(model);
 
@@ -78,7 +78,7 @@ public sealed class TimelineElementMapper
                 continue;
             }
 
-            visible.Add(Element(element));
+            visible.Add(Element(element, workspace));
             shown.Add(element.Id);
         }
 
@@ -109,14 +109,14 @@ public sealed class TimelineElementMapper
     /// Every element and connection of <paramref name="model"/>, positioned in the module's own
     /// coordinate space - the baseline a connection opens with.
     /// </summary>
-    public IReadOnlyList<DiagramElement> Elements(TimelineModel model)
+    public IReadOnlyList<DiagramElement> Elements(TimelineModel model, LinkWorkspace? workspace = null)
     {
         ArgumentNullException.ThrowIfNull(model);
 
         var elements = new List<DiagramElement>();
         foreach (var element in model.Elements)
         {
-            elements.Add(Element(element));
+            elements.Add(Element(element, workspace));
         }
 
         foreach (var connection in model.Connections)
@@ -160,17 +160,19 @@ public sealed class TimelineElementMapper
         return (TimelineScale.ToText(begin, precision), end, TimelineRows.ToNearestRow(y));
     }
 
-    private static DiagramElement Element(TimelineElement element)
+    private static DiagramElement Element(TimelineElement element, LinkWorkspace? workspace)
     {
+        // A linked element shows its target as the workspace now holds it, and its cached name, marked, when it does not resolve.
+        (string label, bool linked) = LinkShown.Of(element.Link, element.Label, workspace);
         var payload = new TimelineElementPayload
         {
             Begin = element.Begin.Text,
             End = element.End?.Text ?? "",
             Row = element.Row,
             DateOnly = element.Begin.Precision == TimelinePrecision.Date,
-            Label = element.Label,
+            Label = label,
             Link = element.Link ?? "",
-            Linked = FblLink.Parse(element.Link) is not null,
+            Linked = linked,
         };
 
         // x is the begin when it is readable; an unreadable one lands at the epoch rather than

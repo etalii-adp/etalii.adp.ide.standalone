@@ -22,6 +22,10 @@ message MindmapNodePayload {
   // computed rather than re-measuring).
   double width = 7;
   double height = 8;
+  // A linked node's link to an element of another document (DISL 4.12, spec 092); empty for an ordinary node.
+  string adp_link = 9;
+  // Whether that link resolves now: false draws the broken mark, and the text is then the name the link cached.
+  bool linked = 10;
 }
 
 // A node's link as the client needs it: the map-relative form the file stores (raw), the

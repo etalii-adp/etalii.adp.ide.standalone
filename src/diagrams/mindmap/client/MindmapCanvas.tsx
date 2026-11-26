@@ -116,7 +116,13 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
         payload: {
           text: element.payload.text,
           parentId: element.payload.parentId,
-          indicators: [element.payload.notes ? "•" : "", element.payload.link ? "↗" : "", folded && element.payload.hasChildren ? "⊕" : ""]
+          // ↪ a linked node, ↪⚠ one whose link does not resolve (DISL 4.12, spec 092), in the definition's order.
+          indicators: [
+            element.payload.notes ? "•" : "",
+            element.payload.link ? "↗" : "",
+            element.payload.adpLink ? (element.payload.linked ? "↪" : "↪⚠") : "",
+            folded && element.payload.hasChildren ? "⊕" : "",
+          ]
             .join(" ")
             .trim(),
         },

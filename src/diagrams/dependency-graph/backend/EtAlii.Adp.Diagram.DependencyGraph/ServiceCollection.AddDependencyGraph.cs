@@ -44,7 +44,8 @@ public static class ServiceCollectionAddDependencyGraphExtension
             opening.BodyPath,
             provider.GetRequiredService<IDependencyGraphDocumentStore>(),
             provider.GetRequiredService<DependencyGraphElementMapper>(),
-            provider.GetRequiredService<IHistoryStackStore>().Get(opening.Root)));
+            provider.GetRequiredService<IHistoryStackStore>().Get(opening.Root),
+            provider.GetService<ILinkIndex>()));
 
         // The reload seam: an external write to a graph reaches the store, and through it every
         // open session - and a deleted body reaches it as a deletion, not as a reload.

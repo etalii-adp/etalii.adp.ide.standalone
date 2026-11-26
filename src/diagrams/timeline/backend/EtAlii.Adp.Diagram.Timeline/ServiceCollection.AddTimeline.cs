@@ -46,7 +46,8 @@ public static class ServiceCollectionAddTimelineExtension
             opening.BodyPath,
             provider.GetRequiredService<ITimelineDocumentStore>(),
             provider.GetRequiredService<TimelineElementMapper>(),
-            provider.GetRequiredService<IHistoryStackStore>().Get(opening.Root)));
+            provider.GetRequiredService<IHistoryStackStore>().Get(opening.Root),
+            provider.GetService<ILinkIndex>()));
 
         // The reload seam: an external write to a timeline reaches the store, and through it
         // every open session (modular-text-editors Requirement 5.3) - and a deleted body reaches

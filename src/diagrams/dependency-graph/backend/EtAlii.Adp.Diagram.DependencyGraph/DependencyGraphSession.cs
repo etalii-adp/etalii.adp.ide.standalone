@@ -1,4 +1,6 @@
+using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Links;
 using EtAlii.Adp.Sessions;
 using EtAlii.Adp.Specification.Disl;
 
@@ -20,18 +22,22 @@ namespace EtAlii.Adp.Diagram.DependencyGraph;
 public sealed class DependencyGraphSession : DocumentDiagramSession<DependencyGraphBody, DislModel>
 {
     private readonly DependencyGraphElementMapper _mapper;
+    private readonly LinkFollowing _links;
 
     /// <summary>Creates the session and subscribes to the store's changes.</summary>
     /// <param name="history">The project's history, so a drag is one undo away. Null makes the graph read-only.</param>
+    /// <param name="links">The workspace's index of links, which a linked node shows its target through; null where there is none.</param>
     public DependencyGraphSession(
         string bodyPath,
         IDependencyGraphDocumentStore documents,
         DependencyGraphElementMapper mapper,
-        IHistoryStack? history = null)
+        IHistoryStack? history = null,
+        ILinkIndex? links = null)
         : base(bodyPath, documents, history)
     {
         ArgumentNullException.ThrowIfNull(mapper);
         _mapper = mapper;
+        _links = new LinkFollowing(links, bodyPath, Rerender);
     }
 
     /// <summary>A node has no parent a drag could change: its place is a coordinate and a row.</summary>
@@ -42,7 +48,10 @@ public sealed class DependencyGraphSession : DocumentDiagramSession<DependencyGr
 
     /// <inheritdoc />
     protected override IReadOnlyList<DiagramElement> Render(DislModel model, DiagramViewport viewport) =>
-        _mapper.Visible(model, viewport);
+        _mapper.Visible(model, viewport, _links.Workspace);
+
+    /// <inheritdoc />
+    protected override void OnDisposing() => _links.Dispose();
 
     /// <summary>
     /// Moves a node to a position. The point arrives in the module's own coordinate space - canvas

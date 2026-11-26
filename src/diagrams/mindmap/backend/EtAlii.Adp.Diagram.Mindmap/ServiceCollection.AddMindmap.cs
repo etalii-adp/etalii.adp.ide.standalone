@@ -53,7 +53,8 @@ public static class ServiceCollectionAddMindmapExtension
             provider.GetRequiredService<IMindmapDocumentStore>(),
             provider.GetRequiredService<MindmapViewState>(),
             provider.GetRequiredService<MindmapElementMapper>(),
-            provider.GetRequiredService<IHistoryStackStore>().Get(opening.Root)));
+            provider.GetRequiredService<IHistoryStackStore>().Get(opening.Root),
+            provider.GetService<ILinkIndex>()));
 
         // The reload seam: an external write to a map reaches the store, and through it every
         // open session (modular-text-editors Requirement 5.3) - and a deleted body reaches it as a

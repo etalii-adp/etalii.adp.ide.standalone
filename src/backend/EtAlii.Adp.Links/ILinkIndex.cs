@@ -24,6 +24,12 @@ public interface ILinkIndex
     /// Returns why one could not be given one, or null when every one was.
     /// </summary>
     Task<string?> RenewAsync(IReadOnlyList<string> paths, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Raised after a document was read again or taken out, outside any lock: what an open diagram follows so that its linked
+    /// elements show their targets as they now are (DISL 4.12).
+    /// </summary>
+    event EventHandler<LinkIndexChangedEventArgs>? Changed;
 }
 
 /// <summary>The path of a document that changed in the index.</summary>
