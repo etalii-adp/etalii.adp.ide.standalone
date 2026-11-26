@@ -40,11 +40,24 @@ public sealed class LookupPromptFlowTests : IClassFixture<LookupPromptFlowTests.
         // Assert.
         Assert.Equal(ContextPrompt.PromptOneofCase.LookupDialog, asked.Prompt.PromptCase);
         Assert.Equal(("Add from another document", "mdi-link-plus", "Search by name", "Nothing like that."), (dialog.Title, dialog.Icon, dialog.Placeholder, dialog.EmptyMessage));
-        Assert.Equal("", found.Error);
+        Assert.Equal(("", false), (found.Error, found.More));
         var candidate = Assert.Single(found.Candidates);
         Assert.Equal(("$k7q2m9xa@features.yaml#checkout=Checkout", "Checkout", "features.yaml", "specs"), (candidate.Value, candidate.Name, candidate.DocumentName, candidate.Folder));
         Assert.True(submitted.Completed, submitted.Error);
         Assert.Equal(["$k7q2m9xa@features.yaml#checkout=Checkout"], _host.Provider.Committed);
+    }
+
+    [Fact]
+    public async Task ASearchThatMatchesMoreThanAreShown_GivesTheFirstAndSaysThereAreMore()
+    {
+        // Arrange.
+        var asked = await AskAsync();
+
+        // Act: a query the provider answers with more candidates than a lookup shows.
+        var found = await asked.Context.SearchLookupAsync(new SearchLookupRequest { InteractionId = asked.InteractionId, Query = "many" }, asked.Headers, cancellationToken: TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.Equal((ContextLookupRequest.Shown, true), (found.Candidates.Count, found.More));
     }
 
     [Fact]
@@ -123,6 +136,9 @@ public sealed class LookupPromptFlowTests : IClassFixture<LookupPromptFlowTests.
         }
 
         private static IReadOnlyList<ContextLookupCandidate> Search(string query) =>
-            Checkout.Name.Contains(query, StringComparison.OrdinalIgnoreCase) ? [Checkout] : [];
+            query == "many" ? [.. Enumerable.Range(0, ContextLookupRequest.Shown + 10).Select(Many)]
+            : Checkout.Name.Contains(query, StringComparison.OrdinalIgnoreCase) ? [Checkout] : [];
+
+        private static ContextLookupCandidate Many(int index) => new($"$m1m1m1m1@many.tml#e{index}=Many {index}", $"Many {index}", "many.tml", "");
     }
 }

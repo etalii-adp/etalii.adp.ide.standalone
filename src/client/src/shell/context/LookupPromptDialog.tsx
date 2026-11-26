@@ -79,6 +79,19 @@ export function LookupPromptDialog({ prompt, onSearch, onSubmit, onCancel }: Loo
     }
   };
 
+  // Enter or Add pressed before the answer for the text in the field has come picks from that answer, asked for at once: the
+  // list on screen still answers the text before it, and picking from it adds what was not typed.
+  const pickActive = async () => {
+    if (answer !== null && answer.query === query) {
+      await pick(candidates[current]);
+      return;
+    }
+    const fresh = await onSearch(query);
+    setAnswer({ query, result: fresh });
+    setActive(0);
+    await pick(fresh.candidates[0]);
+  };
+
   const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "ArrowDown") {
       event.preventDefault();
@@ -88,7 +101,7 @@ export function LookupPromptDialog({ prompt, onSearch, onSubmit, onCancel }: Loo
       setActive(Math.max(current - 1, 0));
     } else if (event.key === "Enter") {
       event.preventDefault();
-      void pick(candidates[current]);
+      void pickActive();
     }
   };
 
@@ -100,7 +113,7 @@ export function LookupPromptDialog({ prompt, onSearch, onSubmit, onCancel }: Loo
       onClose={onCancel}
       buttons={[
         { key: "cancel", label: "Cancel", color: "neutral", onClick: onCancel },
-        { key: "confirm", label: "Add", color: "primary", disabled: candidates.length === 0 || submitting, onClick: () => void pick(candidates[current]) },
+        { key: "confirm", label: "Add", color: "primary", disabled: candidates.length === 0 || submitting, onClick: () => void pickActive() },
       ]}
     >
       <div className="search-list">
@@ -135,6 +148,11 @@ export function LookupPromptDialog({ prompt, onSearch, onSubmit, onCancel }: Loo
               <span className="lookup-candidate-where">{candidate.folder === "" ? candidate.documentName : `${candidate.folder}/${candidate.documentName}`}</span>
             </li>
           ))}
+          {answer?.result.more === true && (
+            <li className="search-list-empty" role="presentation">
+              More match. Type more of a name to narrow them.
+            </li>
+          )}
           {answer !== null && candidates.length === 0 && searchError === "" && (
             <li className="search-list-empty" role="presentation">
               {prompt.emptyMessage}

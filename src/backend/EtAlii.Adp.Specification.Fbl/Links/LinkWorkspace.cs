@@ -105,7 +105,7 @@ public sealed class LinkWorkspace
     /// The lookup's search (DISL 0.12 §9.4, FBL 17.3): the linkable elements of the workspace's documents whose name holds
     /// <paramref name="query"/>, compared without regard to case, those it begins first, then by name and by path; only of the
     /// tool types <paramref name="origins"/> lists when it lists any, and only of documents with an id, which a link needs.
-    /// At most <paramref name="limit"/> are given, each with the link that names it.
+    /// An element that holds a link is not offered: it stands for its target, and a link to it would be a link to a link. At most <paramref name="limit"/> are given, each with the link that names it.
     /// </summary>
     public IReadOnlyList<LookupCandidate> Search(string query, IReadOnlyCollection<string>? origins = null, int limit = 50)
     {
@@ -115,7 +115,8 @@ public sealed class LinkWorkspace
         foreach (var document in _documents.Values)
         {
             if (document.DocumentId is not { } documentId || (origins is { Count: > 0 } && (document.Origin is null || !origins.Contains(document.Origin)))) continue;
-            foreach (var element in document.Elements)
+            var holders = document.Links.Select(link => link.Holder).ToHashSet(StringComparer.Ordinal);
+            foreach (var element in document.Elements.Where(element => !holders.Contains(element.Id)))
             {
                 (string? _, string name) = NameOf(document, element, null);
                 if (name.Length == 0 || !name.Contains(typed, StringComparison.OrdinalIgnoreCase)) continue;

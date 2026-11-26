@@ -43,6 +43,6 @@ public static class LinkLookups
 
     private static IReadOnlyList<ContextLookupCandidate> Search(ILinkIndex links, string bodyPath, string query, IReadOnlyList<string> origins) =>
         links.WorkspaceOf(bodyPath) is { } workspace
-            ? [.. workspace.Search(query, origins).Select(candidate => new ContextLookupCandidate(candidate.Link, candidate.Name, candidate.DocumentName, candidate.Folder))]
+            ? [.. workspace.Search(query, origins, ContextLookupRequest.Shown + 1).Select(candidate => new ContextLookupCandidate(candidate.Link, candidate.Name, candidate.DocumentName, candidate.Folder))]
             : [];
 }
