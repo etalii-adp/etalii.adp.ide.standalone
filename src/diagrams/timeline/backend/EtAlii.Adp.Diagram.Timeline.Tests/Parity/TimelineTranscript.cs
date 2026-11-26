@@ -491,8 +491,12 @@ public sealed class TimelineTranscript() : TranscriptAdapter("timeline", "EtAlii
 
         private async Task<string> ReadAsync() => TranscriptText.Decode(await File.ReadAllBytesAsync(session.Body, cancellationToken));
 
+        // A minted id that YAML would read as a number, such as one of digits only, is written quoted (FBL 6.3); its quotes are
+        // masked with it, or a random id fails the comparison about once in a few thousand runs.
         private string Mask(string text) =>
-            _minted.Aggregate(text, (masked, entry) => masked.Replace(entry.Key, entry.Value, StringComparison.Ordinal));
+            _minted.Aggregate(text, (masked, entry) => masked
+                .Replace($"\"{entry.Key}\"", entry.Value, StringComparison.Ordinal)
+                .Replace(entry.Key, entry.Value, StringComparison.Ordinal));
 
         private static HashSet<string> Ids(TimelineModel model) =>
         [
