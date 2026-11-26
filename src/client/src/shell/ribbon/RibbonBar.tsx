@@ -1,74 +1,19 @@
-import { Fragment, useState } from "react";
 import { RibbonContextualGroups } from "./RibbonContextualGroups";
 import { RibbonHistoryGroup } from "./RibbonHistoryGroup";
 import { useProjectShortcuts } from "../context/useProjectShortcuts";
 import { useDiagramViewControls } from "../panels/DiagramViewContext";
 
-interface RibbonButtonDef {
-  icon: string;
-  label: string;
-}
-
-interface RibbonGroupDef {
-  group: string;
-  buttons: RibbonButtonDef[];
-}
-
-// File keeps its mock buttons, belonging to other specs; Edit's Undo/Redo are real through
-// RibbonHistoryGroup (diagram-undo-redo Requirement 6.4), and View's zoom and fit now drive
-// whichever diagram canvas is open, through DiagramViewContext.
-const RIBBON_GROUPS: RibbonGroupDef[] = [
-  {
-    group: "File",
-    buttons: [
-      { icon: "mdi-content-save-outline", label: "Save" },
-      { icon: "mdi-file-plus-outline", label: "New" },
-    ],
-  },
-];
-
+// The project's own actions come first - New… (the Add dialog on the project root), Undo and Redo,
+// as the backend pushes them - then View's zoom and fit for whichever diagram canvas is open, then
+// what applies to the selection. The File group's Save and New were mock buttons that did nothing,
+// which a new user pressed and waited on (etalii.adp spec 092, host test T035).
 export function RibbonBar() {
-  const [pressedIds, setPressedIds] = useState<Set<string>>(new Set());
   // The global Undo/Redo shortcuts (Ctrl+Z, Ctrl+Y), mounted once with the shell.
   useProjectShortcuts();
 
-  const toggle = (id: string) => {
-    // TODO(diagram-ide-mockup): wire real command handler
-    setPressedIds((previous) => {
-      const next = new Set(previous);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
-  };
-
   return (
     <div className="ribbon">
-      {RIBBON_GROUPS.map((group) => (
-        <Fragment key={group.group}>
-          <div className="ribbon-group">
-            {group.buttons.map((button) => {
-              const id = `${group.group}-${button.label}`;
-              return (
-                <button
-                  key={id}
-                  type="button"
-                  className={`ribbon-button${pressedIds.has(id) ? " ribbon-button-pressed" : ""}`}
-                  onClick={() => toggle(id)}
-                >
-                  <span className={`mdi ${button.icon}`} aria-hidden="true" />
-                  <span className="ribbon-button-label">{button.label}</span>
-                </button>
-              );
-            })}
-          </div>
-          {/* Undo/Redo take Edit's old slot, right after File. */}
-          {group.group === "File" && <RibbonHistoryGroup />}
-        </Fragment>
-      ))}
+      <RibbonHistoryGroup />
       <RibbonViewGroup />
       {/* The selection-driven part: whatever the backend says applies to the current selection. */}
       <RibbonContextualGroups />

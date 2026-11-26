@@ -986,6 +986,16 @@ describe("resolveRevealPath", () => {
     expect(resolveRevealPath(unlisted, ["sub", "later.adp"])).toEqual({ expandKey: key(2) });
   });
 
+  it("finds a registration nested under the file it registers, listed or not", () => {
+    // Arrange: plans.adp nests under plans.mm, its children not yet listed; then listed.
+    const unlisted = applyEntries(EMPTY_TREE_STATE, undefined, [makeEntry(4, "plans.mm", EntryKind.FILE, undefined, true)]);
+    const listed = applyEntries(unlisted, key(4), [makeEntry(5, "plans.adp", EntryKind.FILE, 4)]);
+
+    // Act and assert.
+    expect(resolveRevealPath(unlisted, ["plans.adp"])).toEqual({ leafKey: key(4) });
+    expect(resolveRevealPath(listed, ["plans.adp"])).toEqual({ leafKey: key(5) });
+  });
+
   it("asks for nothing when a root-level entry has simply not arrived yet", () => {
     // Arrange, act and assert.
     expect(resolveRevealPath(tree(), ["not-there-yet.adp"])).toEqual({ expandKey: undefined });

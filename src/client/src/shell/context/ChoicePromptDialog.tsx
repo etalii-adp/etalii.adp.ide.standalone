@@ -135,6 +135,41 @@ export function visibleRows(options: ContextOption[], expanded: Set<string>): Vi
 }
 
 /**
+ * The options whose label holds the search, case-insensitively, with the groups that lead to
+ * them; a group whose own label matches keeps all it holds. An empty search keeps everything.
+ * A new user met 33 closed groups in Add diagram and nothing to search them by (etalii.adp spec
+ * 092, host test T035). Exported for unit testing.
+ */
+export function matchingOptions(options: ContextOption[], search: string): ContextOption[] {
+  const wanted = search.trim().toLowerCase();
+  if (wanted === "") {
+    return options;
+  }
+  return options.flatMap((option) => {
+    if (option.label.toLowerCase().includes(wanted)) {
+      return [option];
+    }
+    const children = matchingOptions(option.children, wanted);
+    return children.length > 0 ? [{ ...option, children }] : [];
+  });
+}
+
+/** Every group of a tree, so that what a search found is on screen at once. */
+function allGroups(options: ContextOption[]): Set<string> {
+  const groups = new Set<string>();
+  const walk = (nodes: ContextOption[]) => {
+    for (const node of nodes) {
+      if (node.children.length > 0) {
+        groups.add(node.id);
+        walk(node.children);
+      }
+    }
+  };
+  walk(options);
+  return groups;
+}
+
+/**
  * A dialog for picking one option out of a tree. It renders whatever tree the prompt
  * carries and knows nothing about what the options represent - today diagram types,
  * later anything else that is a grouped list of labelled choices.
@@ -186,7 +221,15 @@ export function ChoicePromptDialog({ prompt, onPropose, onSubmit, onCancel }: Ch
         : verdictIsCurrent && verdict.valid;
   const nameError = !nameIsSuppressed && nameRevision > 0 && verdictIsCurrent && !verdict.valid ? verdict.reason : "";
 
-  const rows = useMemo(() => visibleRows(prompt.options, expanded), [prompt.options, expanded]);
+  // A tree of several groups can be searched; what matches is shown with its groups open.
+  const searchable = prompt.options.length > 1;
+  const [search, setSearch] = useState("");
+  const shownOptions = useMemo(() => matchingOptions(prompt.options, search), [prompt.options, search]);
+  const searching = search.trim() !== "";
+  const rows = useMemo(
+    () => visibleRows(shownOptions, searching ? allGroups(shownOptions) : expanded),
+    [shownOptions, searching, expanded],
+  );
   const isEmpty = prompt.options.length === 0;
   // One Tab stop: the focused row, or failing that the first one.
   const tabbableId = focusedId ?? rows[0]?.option.id ?? null;
@@ -356,6 +399,25 @@ export function ChoicePromptDialog({ prompt, onPropose, onSubmit, onCancel }: Ch
         { key: "confirm", label: prompt.confirmLabel, color: "primary", disabled: !canSubmit, onClick: () => void handleSubmit() },
       ]}
     >
+      {searchable && (
+        <input
+          type="search"
+          className="choice-tree-search"
+          aria-label={`Search ${prompt.title}`}
+          placeholder="Search"
+          value={search}
+          data-dialog-autofocus
+          onChange={(event) => setSearch(event.target.value)}
+          onKeyDown={(event) => {
+            // Down moves from the search into what it found.
+            if (event.key === "ArrowDown") {
+              event.preventDefault();
+              focusRow(rows[0]?.option.id);
+            }
+          }}
+        />
+      )}
+      {searchable && searching && rows.length === 0 && <p className="choice-tree-empty">Nothing matches "{search.trim()}".</p>}
       {isEmpty ? (
         <p className="choice-tree-empty">{prompt.emptyMessage}</p>
       ) : (

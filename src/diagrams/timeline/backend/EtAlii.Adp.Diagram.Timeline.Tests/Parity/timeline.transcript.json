@@ -32,7 +32,6 @@
           "g1 timeline.disconnect | Remove relation | mdi-vector-polyline-remove | Delete | on",
           "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
-        [],
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
@@ -41,7 +40,8 @@
         ],
         [
           "g1 timeline.connect | Relate | mdi-ray-start-arrow | - | on"
-        ]
+        ],
+        []
       ],
       "choices": [],
       "targets": [
@@ -49,9 +49,9 @@
         "\"cmt00002\" => menu #1",
         "\"cmt0conn\" => menu #2",
         "\"\" => menu #3",
-        "\"new:1767225600,2\" => menu #4",
-        "\"rel:cmt00001->cmt00002\" => menu #5",
-        "\"parity:unknown\" => menu #3"
+        "\"new:1767225600,2\" => menu #3",
+        "\"rel:cmt00001->cmt00002\" => menu #4",
+        "\"parity:unknown\" => menu #5"
       ],
       "rows": [
         {
@@ -449,7 +449,6 @@
           "g1 timeline.disconnect | Remove relation | mdi-vector-polyline-remove | Delete | on",
           "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
-        [],
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
@@ -458,7 +457,8 @@
         ],
         [
           "g1 timeline.connect | Relate | mdi-ray-start-arrow | - | on"
-        ]
+        ],
+        []
       ],
       "choices": [],
       "targets": [
@@ -468,9 +468,9 @@
         "\"conn0002\" => menu #1",
         "\"conn0003\" => menu #1",
         "\"\" => menu #2",
-        "\"new:1767225600,2\" => menu #3",
-        "\"rel:src00001->dst00001\" => menu #4",
-        "\"parity:unknown\" => menu #2"
+        "\"new:1767225600,2\" => menu #2",
+        "\"rel:src00001->dst00001\" => menu #3",
+        "\"parity:unknown\" => menu #4"
       ],
       "rows": [
         {
@@ -838,7 +838,6 @@
           "g2 timeline.add-below | Add element below | mdi-arrow-expand-down | Enter | on",
           "g3 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
-        [],
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
@@ -847,15 +846,16 @@
         ],
         [
           "g1 timeline.connect | Relate | mdi-ray-start-arrow | - | on"
-        ]
+        ],
+        []
       ],
       "choices": [],
       "targets": [
         "\"crlfline\" => menu #0",
         "\"\" => menu #1",
-        "\"new:1767225600,2\" => menu #2",
-        "\"rel:a->b\" => menu #3",
-        "\"parity:unknown\" => menu #1"
+        "\"new:1767225600,2\" => menu #1",
+        "\"rel:a->b\" => menu #2",
+        "\"parity:unknown\" => menu #3"
       ],
       "rows": [
         {
@@ -1139,7 +1139,6 @@
           "g2 timeline.add-below | Add element below | mdi-arrow-expand-down | Enter | on",
           "g3 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
-        [],
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
@@ -1148,16 +1147,17 @@
         ],
         [
           "g1 timeline.connect | Relate | mdi-ray-start-arrow | - | on"
-        ]
+        ],
+        []
       ],
       "choices": [],
       "targets": [
         "\"moveslashes\" => menu #0",
         "\"movewords\" => menu #1",
         "\"\" => menu #2",
-        "\"new:1767225600,2\" => menu #3",
-        "\"rel:moveslashes->movewords\" => menu #4",
-        "\"parity:unknown\" => menu #2"
+        "\"new:1767225600,2\" => menu #2",
+        "\"rel:moveslashes->movewords\" => menu #3",
+        "\"parity:unknown\" => menu #4"
       ],
       "rows": [
         {
@@ -1528,7 +1528,6 @@
           "g2 timeline.add-below | Add element below | mdi-arrow-expand-down | Enter | on",
           "g3 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
-        [],
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
@@ -1537,15 +1536,16 @@
         ],
         [
           "g1 timeline.connect | Relate | mdi-ray-start-arrow | - | on"
-        ]
+        ],
+        []
       ],
       "choices": [],
       "targets": [
         "\"gemoment\" => menu #0",
         "\"\" => menu #1",
-        "\"new:1767225600,2\" => menu #2",
-        "\"rel:a->b\" => menu #3",
-        "\"parity:unknown\" => menu #1"
+        "\"new:1767225600,2\" => menu #1",
+        "\"rel:a->b\" => menu #2",
+        "\"parity:unknown\" => menu #3"
       ],
       "rows": [
         {
@@ -1794,7 +1794,6 @@
           "g1 timeline.disconnect | Remove relation | mdi-vector-polyline-remove | Delete | on",
           "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
-        [],
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
@@ -1803,7 +1802,8 @@
         ],
         [
           "g1 timeline.connect | Relate | mdi-ray-start-arrow | - | on"
-        ]
+        ],
+        []
       ],
       "choices": [],
       "targets": [
@@ -1811,9 +1811,9 @@
         "\"indent02\" => menu #1",
         "\"indentcn\" => menu #2",
         "\"\" => menu #3",
-        "\"new:1767225600,2\" => menu #4",
-        "\"rel:indent01->indent02\" => menu #5",
-        "\"parity:unknown\" => menu #3"
+        "\"new:1767225600,2\" => menu #3",
+        "\"rel:indent01->indent02\" => menu #4",
+        "\"parity:unknown\" => menu #5"
       ],
       "rows": [
         {
@@ -2206,7 +2206,6 @@
           "g2 timeline.add-below | Add element below | mdi-arrow-expand-down | Enter | on",
           "g3 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
-        [],
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
@@ -2215,15 +2214,16 @@
         ],
         [
           "g1 timeline.connect | Relate | mdi-ray-start-arrow | - | on"
-        ]
+        ],
+        []
       ],
       "choices": [],
       "targets": [
         "\"lfline01\" => menu #0",
         "\"\" => menu #1",
-        "\"new:1767225600,2\" => menu #2",
-        "\"rel:a->b\" => menu #3",
-        "\"parity:unknown\" => menu #1"
+        "\"new:1767225600,2\" => menu #1",
+        "\"rel:a->b\" => menu #2",
+        "\"parity:unknown\" => menu #3"
       ],
       "rows": [
         {
@@ -2507,7 +2507,6 @@
           "g2 timeline.add-below | Add element below | mdi-arrow-expand-down | Enter | on",
           "g3 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
-        [],
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
@@ -2516,7 +2515,8 @@
         ],
         [
           "g1 timeline.connect | Relate | mdi-ray-start-arrow | - | on"
-        ]
+        ],
+        []
       ],
       "choices": [],
       "targets": [
@@ -2525,9 +2525,9 @@
         "\"moment01\" => menu #1",
         "\"moment02\" => menu #1",
         "\"\" => menu #2",
-        "\"new:1767225600,2\" => menu #3",
-        "\"rel:dateonly1->datetime1\" => menu #4",
-        "\"parity:unknown\" => menu #2"
+        "\"new:1767225600,2\" => menu #2",
+        "\"rel:dateonly1->datetime1\" => menu #3",
+        "\"parity:unknown\" => menu #4"
       ],
       "rows": [
         {
@@ -2895,7 +2895,6 @@
           "g2 timeline.add-below | Add element below | mdi-arrow-expand-down | Enter | on",
           "g3 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
-        [],
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
@@ -2904,16 +2903,17 @@
         ],
         [
           "g1 timeline.connect | Relate | mdi-ray-start-arrow | - | on"
-        ]
+        ],
+        []
       ],
       "choices": [],
       "targets": [
         "\"nhperiod\" => menu #0",
         "\"nhmoment\" => menu #1",
         "\"\" => menu #2",
-        "\"new:1767225600,2\" => menu #3",
-        "\"rel:nhperiod->nhmoment\" => menu #4",
-        "\"parity:unknown\" => menu #2"
+        "\"new:1767225600,2\" => menu #2",
+        "\"rel:nhperiod->nhmoment\" => menu #3",
+        "\"parity:unknown\" => menu #4"
       ],
       "rows": [
         {
@@ -3252,7 +3252,6 @@
           "g2 timeline.add-below | Add element below | mdi-arrow-expand-down | Enter | on",
           "g3 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
-        [],
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
@@ -3261,15 +3260,16 @@
         ],
         [
           "g1 timeline.connect | Relate | mdi-ray-start-arrow | - | on"
-        ]
+        ],
+        []
       ],
       "choices": [],
       "targets": [
         "\"notrail1\" => menu #0",
         "\"\" => menu #1",
-        "\"new:1767225600,2\" => menu #2",
-        "\"rel:a->b\" => menu #3",
-        "\"parity:unknown\" => menu #1"
+        "\"new:1767225600,2\" => menu #1",
+        "\"rel:a->b\" => menu #2",
+        "\"parity:unknown\" => menu #3"
       ],
       "rows": [
         {
@@ -3553,7 +3553,6 @@
           "g2 timeline.add-below | Add element below | mdi-arrow-expand-down | Enter | on",
           "g3 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
-        [],
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
@@ -3562,16 +3561,17 @@
         ],
         [
           "g1 timeline.connect | Relate | mdi-ray-start-arrow | - | on"
-        ]
+        ],
+        []
       ],
       "choices": [],
       "targets": [
         "\"ovperiod\" => menu #0",
         "\"ovmoment\" => menu #1",
         "\"\" => menu #2",
-        "\"new:1767225600,2\" => menu #3",
-        "\"rel:ovperiod->ovmoment\" => menu #4",
-        "\"parity:unknown\" => menu #2"
+        "\"new:1767225600,2\" => menu #2",
+        "\"rel:ovperiod->ovmoment\" => menu #3",
+        "\"parity:unknown\" => menu #4"
       ],
       "rows": [
         {
@@ -3923,7 +3923,6 @@
           "g1 timeline.disconnect | Remove relation | mdi-vector-polyline-remove | Delete | on",
           "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
-        [],
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
@@ -3932,7 +3931,8 @@
         ],
         [
           "g1 timeline.connect | Relate | mdi-ray-start-arrow | - | on"
-        ]
+        ],
+        []
       ],
       "choices": [],
       "targets": [
@@ -3940,9 +3940,9 @@
         "\"qvmoment\" => menu #1",
         "\"qvconn01\" => menu #2",
         "\"\" => menu #3",
-        "\"new:1767225600,2\" => menu #4",
-        "\"rel:qvperiod->qvmoment\" => menu #5",
-        "\"parity:unknown\" => menu #3"
+        "\"new:1767225600,2\" => menu #3",
+        "\"rel:qvperiod->qvmoment\" => menu #4",
+        "\"parity:unknown\" => menu #5"
       ],
       "rows": [
         {
@@ -4343,7 +4343,6 @@
           "g2 timeline.add-below | Add element below | mdi-arrow-expand-down | Enter | on",
           "g3 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
-        [],
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
@@ -4352,7 +4351,8 @@
         ],
         [
           "g1 timeline.connect | Relate | mdi-ray-start-arrow | - | on"
-        ]
+        ],
+        []
       ],
       "choices": [],
       "targets": [
@@ -4363,9 +4363,9 @@
         "\"rowsigned\" => menu #1",
         "\"rowexponent\" => menu #1",
         "\"\" => menu #2",
-        "\"new:1767225600,2\" => menu #3",
-        "\"rel:rowfloat->rowhex\" => menu #4",
-        "\"parity:unknown\" => menu #2"
+        "\"new:1767225600,2\" => menu #2",
+        "\"rel:rowfloat->rowhex\" => menu #3",
+        "\"parity:unknown\" => menu #4"
       ],
       "rows": [
         {
@@ -4753,7 +4753,6 @@
           "g2 timeline.add-below | Add element below | mdi-arrow-expand-down | Enter | on",
           "g3 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
-        [],
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
@@ -4762,7 +4761,8 @@
         ],
         [
           "g1 timeline.connect | Relate | mdi-ray-start-arrow | - | on"
-        ]
+        ],
+        []
       ],
       "choices": [],
       "targets": [
@@ -4772,9 +4772,9 @@
         "\"scalar04\" => menu #1",
         "\"scalar05\" => menu #1",
         "\"\" => menu #2",
-        "\"new:1767225600,2\" => menu #3",
-        "\"rel:scalar01->scalar02\" => menu #4",
-        "\"parity:unknown\" => menu #2"
+        "\"new:1767225600,2\" => menu #2",
+        "\"rel:scalar01->scalar02\" => menu #3",
+        "\"parity:unknown\" => menu #4"
       ],
       "rows": [
         {
@@ -5145,7 +5145,6 @@
           "g2 timeline.add-below | Add element below | mdi-arrow-expand-down | Enter | on",
           "g3 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
-        [],
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
@@ -5154,7 +5153,8 @@
         ],
         [
           "g1 timeline.connect | Relate | mdi-ray-start-arrow | - | on"
-        ]
+        ],
+        []
       ],
       "choices": [],
       "targets": [
@@ -5163,9 +5163,9 @@
         "\"ccc33333\" => menu #0",
         "\"ddd44444\" => menu #0",
         "\"\" => menu #1",
-        "\"new:1767225600,2\" => menu #2",
-        "\"rel:aaa11111->bbb22222\" => menu #3",
-        "\"parity:unknown\" => menu #1"
+        "\"new:1767225600,2\" => menu #1",
+        "\"rel:aaa11111->bbb22222\" => menu #2",
+        "\"parity:unknown\" => menu #3"
       ],
       "rows": [
         {
@@ -5491,7 +5491,6 @@
           "g1 timeline.disconnect | Remove relation | mdi-vector-polyline-remove | Delete | on",
           "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
-        [],
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
@@ -5500,7 +5499,8 @@
         ],
         [
           "g1 timeline.connect | Relate | mdi-ray-start-arrow | - | on"
-        ]
+        ],
+        []
       ],
       "choices": [],
       "targets": [
@@ -5508,9 +5508,9 @@
         "\"b3Rt9wYz\" => menu #1",
         "\"c1Ld4pQn\" => menu #2",
         "\"\" => menu #3",
-        "\"new:1767225600,2\" => menu #4",
-        "\"rel:k7Qv2mXa->b3Rt9wYz\" => menu #5",
-        "\"parity:unknown\" => menu #3"
+        "\"new:1767225600,2\" => menu #3",
+        "\"rel:k7Qv2mXa->b3Rt9wYz\" => menu #4",
+        "\"parity:unknown\" => menu #5"
       ],
       "rows": [
         {
@@ -5913,7 +5913,6 @@
           "g1 timeline.disconnect | Remove relation | mdi-vector-polyline-remove | Delete | on",
           "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
-        [],
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
@@ -5922,7 +5921,8 @@
         ],
         [
           "g1 timeline.connect | Relate | mdi-ray-start-arrow | - | on"
-        ]
+        ],
+        []
       ],
       "choices": [],
       "targets": [
@@ -5930,9 +5930,9 @@
         "\"tcmoment\" => menu #1",
         "\"tcconn01\" => menu #2",
         "\"\" => menu #3",
-        "\"new:1767225600,2\" => menu #4",
-        "\"rel:tcperiod->tcmoment\" => menu #5",
-        "\"parity:unknown\" => menu #3"
+        "\"new:1767225600,2\" => menu #3",
+        "\"rel:tcperiod->tcmoment\" => menu #4",
+        "\"parity:unknown\" => menu #5"
       ],
       "rows": [
         {
@@ -6335,7 +6335,6 @@
           "g1 timeline.disconnect | Remove relation | mdi-vector-polyline-remove | Delete | on",
           "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
-        [],
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
@@ -6344,7 +6343,8 @@
         ],
         [
           "g1 timeline.connect | Relate | mdi-ray-start-arrow | - | on"
-        ]
+        ],
+        []
       ],
       "choices": [],
       "targets": [
@@ -6352,9 +6352,9 @@
         "\"extra002\" => menu #1",
         "\"extracn1\" => menu #2",
         "\"\" => menu #3",
-        "\"new:1767225600,2\" => menu #4",
-        "\"rel:extra001->extra002\" => menu #5",
-        "\"parity:unknown\" => menu #3"
+        "\"new:1767225600,2\" => menu #3",
+        "\"rel:extra001->extra002\" => menu #4",
+        "\"parity:unknown\" => menu #5"
       ],
       "rows": [
         {
@@ -6760,7 +6760,6 @@
           "g1 timeline.disconnect | Remove relation | mdi-vector-polyline-remove | Delete | on",
           "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
-        [],
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
@@ -6769,7 +6768,8 @@
         ],
         [
           "g1 timeline.connect | Relate | mdi-ray-start-arrow | - | on"
-        ]
+        ],
+        []
       ],
       "choices": [],
       "targets": [
@@ -6780,9 +6780,9 @@
         "\"c1\" => menu #2",
         "\"c2\" => menu #2",
         "\"\" => menu #3",
-        "\"new:1767225600,2\" => menu #4",
-        "\"rel:007->alpha\" => menu #5",
-        "\"parity:unknown\" => menu #3"
+        "\"new:1767225600,2\" => menu #3",
+        "\"rel:007->alpha\" => menu #4",
+        "\"parity:unknown\" => menu #5"
       ],
       "rows": [
         {
@@ -7615,7 +7615,6 @@
           "g1 timeline.disconnect | Remove relation | mdi-vector-polyline-remove | Delete | on",
           "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
-        [],
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
@@ -7624,7 +7623,8 @@
         ],
         [
           "g1 timeline.connect | Relate | mdi-ray-start-arrow | - | on"
-        ]
+        ],
+        []
       ],
       "choices": [],
       "targets": [
@@ -7635,9 +7635,9 @@
         "\"noends\" => menu #1",
         "\"itself\" => menu #1",
         "\"\" => menu #2",
-        "\"new:1767225600,2\" => menu #3",
-        "\"rel:a->b\" => menu #4",
-        "\"parity:unknown\" => menu #2"
+        "\"new:1767225600,2\" => menu #2",
+        "\"rel:a->b\" => menu #3",
+        "\"parity:unknown\" => menu #4"
       ],
       "rows": [
         {
@@ -7997,7 +7997,6 @@
       "document": "diagrams/timeline/backend/EtAlii.Adp.Diagram.Timeline.Tests/Fixtures/findings/duplicate-key.tml",
       "sha256": "6804b497ef4cb976ae97aeb2e979fc8c63552a94c24669bc1f6b4974f260e4f2",
       "menus": [
-        [],
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
@@ -8006,14 +8005,15 @@
         ],
         [
           "g1 timeline.connect | Relate | mdi-ray-start-arrow | - | on"
-        ]
+        ],
+        []
       ],
       "choices": [],
       "targets": [
         "\"\" => menu #0",
-        "\"new:1767225600,2\" => menu #1",
-        "\"rel:a->b\" => menu #2",
-        "\"parity:unknown\" => menu #0"
+        "\"new:1767225600,2\" => menu #0",
+        "\"rel:a->b\" => menu #1",
+        "\"parity:unknown\" => menu #2"
       ],
       "rows": [],
       "findings": [
@@ -8088,7 +8088,6 @@
       "document": "diagrams/timeline/backend/EtAlii.Adp.Diagram.Timeline.Tests/Fixtures/findings/empty.tml",
       "sha256": "10b1465a0933cb1720c9b86cd32efee1118bf3b1b1ecce611fa683ec462dbac7",
       "menus": [
-        [],
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
@@ -8097,14 +8096,15 @@
         ],
         [
           "g1 timeline.connect | Relate | mdi-ray-start-arrow | - | on"
-        ]
+        ],
+        []
       ],
       "choices": [],
       "targets": [
         "\"\" => menu #0",
-        "\"new:1767225600,2\" => menu #1",
-        "\"rel:a->b\" => menu #2",
-        "\"parity:unknown\" => menu #0"
+        "\"new:1767225600,2\" => menu #0",
+        "\"rel:a->b\" => menu #1",
+        "\"parity:unknown\" => menu #2"
       ],
       "rows": [],
       "findings": [],
@@ -8218,7 +8218,6 @@
           "g2 timeline.add-below | Add element below | mdi-arrow-expand-down | Enter | on",
           "g3 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
-        [],
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
@@ -8227,7 +8226,8 @@
         ],
         [
           "g1 timeline.connect | Relate | mdi-ray-start-arrow | - | on"
-        ]
+        ],
+        []
       ],
       "choices": [],
       "targets": [
@@ -8237,9 +8237,9 @@
         "\"esquoted\" => menu #0",
         "\"esnull\" => menu #0",
         "\"\" => menu #2",
-        "\"new:1767225600,2\" => menu #3",
-        "\"rel:esempty->esmapping\" => menu #4",
-        "\"parity:unknown\" => menu #2"
+        "\"new:1767225600,2\" => menu #2",
+        "\"rel:esempty->esmapping\" => menu #3",
+        "\"parity:unknown\" => menu #4"
       ],
       "rows": [
         {
@@ -8604,7 +8604,6 @@
       "document": "diagrams/timeline/backend/EtAlii.Adp.Diagram.Timeline.Tests/Fixtures/findings/first-element.tml",
       "sha256": "a6e6b785b22f86baf0a8261f280414031969c58e160790182a5d6a897db4a9f8",
       "menus": [
-        [],
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
@@ -8613,14 +8612,15 @@
         ],
         [
           "g1 timeline.connect | Relate | mdi-ray-start-arrow | - | on"
-        ]
+        ],
+        []
       ],
       "choices": [],
       "targets": [
         "\"\" => menu #0",
-        "\"new:1767225600,2\" => menu #1",
-        "\"rel:a->b\" => menu #2",
-        "\"parity:unknown\" => menu #0"
+        "\"new:1767225600,2\" => menu #0",
+        "\"rel:a->b\" => menu #1",
+        "\"parity:unknown\" => menu #2"
       ],
       "rows": [],
       "findings": [],
@@ -9181,7 +9181,6 @@
           "g2 timeline.add-below | Add element below | mdi-arrow-expand-down | Enter | on",
           "g3 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
-        [],
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
@@ -9190,16 +9189,17 @@
         ],
         [
           "g1 timeline.connect | Relate | mdi-ray-start-arrow | - | on"
-        ]
+        ],
+        []
       ],
       "choices": [],
       "targets": [
         "\"nbperiod\" => menu #0",
         "\"nbmoment\" => menu #1",
         "\"\" => menu #2",
-        "\"new:1767225600,2\" => menu #3",
-        "\"rel:nbperiod->nbmoment\" => menu #4",
-        "\"parity:unknown\" => menu #2"
+        "\"new:1767225600,2\" => menu #2",
+        "\"rel:nbperiod->nbmoment\" => menu #3",
+        "\"parity:unknown\" => menu #4"
       ],
       "rows": [
         {
@@ -9474,7 +9474,6 @@
           "g1 timeline.disconnect | Remove relation | mdi-vector-polyline-remove | Delete | on",
           "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
-        [],
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
@@ -9483,7 +9482,8 @@
         ],
         [
           "g1 timeline.connect | Relate | mdi-ray-start-arrow | - | on"
-        ]
+        ],
+        []
       ],
       "choices": [],
       "targets": [
@@ -9491,9 +9491,9 @@
         "\"scsecond\" => menu #1",
         "\"scconn01\" => menu #2",
         "\"\" => menu #3",
-        "\"new:1767225600,2\" => menu #4",
-        "\"rel:scfirst->scsecond\" => menu #5",
-        "\"parity:unknown\" => menu #3"
+        "\"new:1767225600,2\" => menu #3",
+        "\"rel:scfirst->scsecond\" => menu #4",
+        "\"parity:unknown\" => menu #5"
       ],
       "rows": [
         {
@@ -9894,7 +9894,6 @@
           "g2 timeline.add-below | Add element below | mdi-arrow-expand-down | Enter | on",
           "g3 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
-        [],
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
@@ -9903,7 +9902,8 @@
         ],
         [
           "g1 timeline.connect | Relate | mdi-ray-start-arrow | - | on"
-        ]
+        ],
+        []
       ],
       "choices": [],
       "targets": [
@@ -9922,9 +9922,9 @@
         "\"quoted\" => menu #0",
         "\"unlabelled\" => menu #0",
         "\"\" => menu #2",
-        "\"new:1767225600,2\" => menu #3",
-        "\"rel:badbegin->badend\" => menu #4",
-        "\"parity:unknown\" => menu #2"
+        "\"new:1767225600,2\" => menu #2",
+        "\"rel:badbegin->badend\" => menu #3",
+        "\"parity:unknown\" => menu #4"
       ],
       "rows": [
         {
@@ -10406,7 +10406,6 @@
       "document": "diagrams/timeline/backend/EtAlii.Adp.Diagram.Timeline.Tests/Fixtures/findings/unparseable.tml",
       "sha256": "7646c3430c7c1ad43383963ea140cb032ee325b30fe837b224818e4d6143ad16",
       "menus": [
-        [],
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
@@ -10415,14 +10414,15 @@
         ],
         [
           "g1 timeline.connect | Relate | mdi-ray-start-arrow | - | on"
-        ]
+        ],
+        []
       ],
       "choices": [],
       "targets": [
         "\"\" => menu #0",
-        "\"new:1767225600,2\" => menu #1",
-        "\"rel:a->b\" => menu #2",
-        "\"parity:unknown\" => menu #0"
+        "\"new:1767225600,2\" => menu #0",
+        "\"rel:a->b\" => menu #1",
+        "\"parity:unknown\" => menu #2"
       ],
       "rows": [],
       "findings": [
@@ -10518,7 +10518,6 @@
           "g1 timeline.disconnect | Remove relation | mdi-vector-polyline-remove | Delete | on",
           "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
-        [],
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
@@ -10527,7 +10526,8 @@
         ],
         [
           "g1 timeline.connect | Relate | mdi-ray-start-arrow | - | on"
-        ]
+        ],
+        []
       ],
       "choices": [],
       "targets": [
@@ -10553,9 +10553,9 @@
         "\"9m2wsmbu0ippwexowlu712zap\" => menu #2",
         "\"av1cr8v0qi9qh2z7bpulyn7a7\" => menu #2",
         "\"\" => menu #3",
-        "\"new:1767225600,2\" => menu #4",
-        "\"rel:discovery->build\" => menu #5",
-        "\"parity:unknown\" => menu #3"
+        "\"new:1767225600,2\" => menu #3",
+        "\"rel:discovery->build\" => menu #4",
+        "\"parity:unknown\" => menu #5"
       ],
       "rows": [
         {
@@ -11147,7 +11147,6 @@
           "g1 timeline.disconnect | Remove relation | mdi-vector-polyline-remove | Delete | on",
           "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
-        [],
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
@@ -11156,7 +11155,8 @@
         ],
         [
           "g1 timeline.connect | Relate | mdi-ray-start-arrow | - | on"
-        ]
+        ],
+        []
       ],
       "choices": [],
       "targets": [
@@ -11226,9 +11226,9 @@
         "\"b3ffrjeo21k9gq1l0ni577exf\" => menu #2",
         "\"bcb46r10af71c76sk1l1fxf7x\" => menu #2",
         "\"\" => menu #3",
-        "\"new:1767225600,2\" => menu #4",
-        "\"rel:discovery->build\" => menu #5",
-        "\"parity:unknown\" => menu #3"
+        "\"new:1767225600,2\" => menu #3",
+        "\"rel:discovery->build\" => menu #4",
+        "\"parity:unknown\" => menu #5"
       ],
       "rows": [
         {
@@ -12240,7 +12240,6 @@
           "g1 timeline.disconnect | Remove relation | mdi-vector-polyline-remove | Delete | on",
           "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
-        [],
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
@@ -12249,7 +12248,8 @@
         ],
         [
           "g1 timeline.connect | Relate | mdi-ray-start-arrow | - | on"
-        ]
+        ],
+        []
       ],
       "choices": [],
       "targets": [
@@ -12353,9 +12353,9 @@
         "\"link-51\" => menu #1",
         "\"link-52\" => menu #1",
         "\"\" => menu #2",
-        "\"new:1767225600,2\" => menu #3",
-        "\"rel:e22->e26\" => menu #4",
-        "\"parity:unknown\" => menu #2"
+        "\"new:1767225600,2\" => menu #2",
+        "\"rel:e22->e26\" => menu #3",
+        "\"parity:unknown\" => menu #4"
       ],
       "rows": [
         {
@@ -13660,7 +13660,6 @@
           "g1 timeline.disconnect | Remove relation | mdi-vector-polyline-remove | Delete | on",
           "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
-        [],
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
@@ -13669,7 +13668,8 @@
         ],
         [
           "g1 timeline.connect | Relate | mdi-ray-start-arrow | - | on"
-        ]
+        ],
+        []
       ],
       "choices": [],
       "targets": [
@@ -14589,9 +14589,9 @@
         "\"link-486\" => menu #1",
         "\"link-487\" => menu #1",
         "\"\" => menu #2",
-        "\"new:1767225600,2\" => menu #3",
-        "\"rel:e2->e3\" => menu #4",
-        "\"parity:unknown\" => menu #2"
+        "\"new:1767225600,2\" => menu #2",
+        "\"rel:e2->e3\" => menu #3",
+        "\"parity:unknown\" => menu #4"
       ],
       "rows": [
         {
@@ -23585,7 +23585,6 @@
           "g1 timeline.disconnect | Remove relation | mdi-vector-polyline-remove | Delete | on",
           "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
         ],
-        [],
         [
           "g1 timeline.add-element | Add element here | mdi-plus | - | on",
           "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
@@ -23594,7 +23593,8 @@
         ],
         [
           "g1 timeline.connect | Relate | mdi-ray-start-arrow | - | on"
-        ]
+        ],
+        []
       ],
       "choices": [],
       "targets": [
@@ -23664,9 +23664,9 @@
         "\"b3ffrjeo21k9gq1l0ni577exf\" => menu #2",
         "\"bcb46r10af71c76sk1l1fxf7x\" => menu #2",
         "\"\" => menu #3",
-        "\"new:1767225600,2\" => menu #4",
-        "\"rel:discovery->build\" => menu #5",
-        "\"parity:unknown\" => menu #3"
+        "\"new:1767225600,2\" => menu #3",
+        "\"rel:discovery->build\" => menu #4",
+        "\"parity:unknown\" => menu #5"
       ],
       "rows": [
         {

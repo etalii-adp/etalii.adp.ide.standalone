@@ -6,6 +6,7 @@ import { Dialog } from "../components/Dialog";
 import { useAuth } from "../auth/AuthContext";
 import { ProjectService } from "../generated/projects_pb";
 import type { Project } from "../generated/projects_pb";
+import { browserPlatform, folderPlaceholder } from "./folderPlaceholder";
 
 /** Splits a plain-text OS folder path into Path.segments (Requirement 5.2's first-iteration entry). */
 function toPathSegments(rawPath: string): string[] {
@@ -188,7 +189,7 @@ export function ProjectGridPage({ onProjectSelected }: ProjectGridPageProps) {
             <input
               value={newPath}
               onChange={(event) => setNewPath(event.target.value)}
-              placeholder="C:\path\to\project"
+              placeholder={folderPlaceholder(browserPlatform())}
             />
           </label>
           {addError && <p className="error-text" role="alert">{addError}</p>}

@@ -1,4 +1,4 @@
-using EtAlii.Adp.Context;
+﻿using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
@@ -122,7 +122,7 @@ public sealed class TimelineContextActionProvider(IHistoryStackStore historyStac
             case AddMomentActionId when placed:
                 return await AddAtPlacementAsync(target, model, actionId, placedSeconds, placedRow, cancellationToken);
 
-            case AddLinkedActionId when placed:
+            case AddLinkedActionId when placed || target.ElementId.Length == 0:
                 return LinkLookups.Open(Links, TimelineDefinition.Specification, AddLinkedOperation, target.ResolvedFullPath);
 
             case AddAfterActionId when element is not null:
@@ -378,7 +378,11 @@ public sealed class TimelineContextActionProvider(IHistoryStackStore historyStac
     /// </summary>
     private AddTimelineElementCommand? LinkedAt(TimelineModel model, string body, string placement, string value)
     {
-        if (!GestureIds.TryParseRowPlacement(placement, out var seconds, out var row) || LinkLookups.Picked(Links, body, value) is not { } pick) return null;
+        // From the ribbon, with the document selected, there is no placement: today, on the first row.
+        var seconds = TimelineScale.ToSeconds(DateTimeOffset.UtcNow);
+        var row = 0;
+        if (placement.Length > 0 && !GestureIds.TryParseRowPlacement(placement, out seconds, out row)) return null;
+        if (LinkLookups.Picked(Links, body, value) is not { } pick) return null;
 
         var begin = TimelineScale.ToText(TimelineScale.ToTime(seconds, TimelinePrecision.Date), TimelinePrecision.Date);
         return TimelineDefinition.LinkedAddition(model, body, TimelineDefinition.NewId(), begin, row, pick);

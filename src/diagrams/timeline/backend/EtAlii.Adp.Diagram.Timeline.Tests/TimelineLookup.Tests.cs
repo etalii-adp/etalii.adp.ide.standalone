@@ -1,4 +1,4 @@
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Files;
@@ -51,6 +51,27 @@ public sealed class TimelineLookupTests : IDisposable
         Assert.Equal(("Checkout", "features.yaml", "specs"), (candidate.Name, candidate.DocumentName, candidate.Folder));
         Assert.True(committed.Completed, committed.Error);
         Assert.Matches("^" + Regex.Escape(Plain) + "  - id: [0-9a-z]{8}\\n    link: \"?\\$k7q2m9xa@features\\.yaml#checkout=Checkout\"?\\n    begin: \"?2027-02-01\"?\\n    row: \"?3\"?\\n$", await ReadAsync(path));
+    }
+
+    [Fact]
+    public async Task FromTheRibbon_WithTheDocumentSelected_TheLookupIsOffered_AndThePickLandsTodayOnTheFirstRow()
+    {
+        // Arrange: a freshly opened timeline selects the document itself, which has no element id.
+        var path = Write();
+        var actions = Actions();
+        var today = TimelineScale.ToText(DateTimeOffset.UtcNow, TimelinePrecision.Date);
+        var offered = (await actions.DiscoverAsync(Target(path, ""), TestContext.Current.CancellationToken)).ActionIds();
+
+        // Act.
+        var opened = await actions.ExecuteAsync(Target(path, ""), TimelineContextActionProvider.AddLinkedActionId, TestContext.Current.CancellationToken);
+        var committed = await actions.CommitAsync(Target(path, ""), TimelineContextActionProvider.AddLinkedActionId, "$k7q2m9xa@features.yaml#checkout=Checkout", "", TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.Contains(TimelineContextActionProvider.AddMomentActionId, offered);
+        Assert.Contains(TimelineContextActionProvider.AddLinkedActionId, offered);
+        Assert.IsType<ContextExecutionRequiresLookup>(opened);
+        Assert.True(committed.Completed, committed.Error);
+        Assert.Matches("^" + Regex.Escape(Plain) + "  - id: [0-9a-z]{8}\\n    link: \"?\\$k7q2m9xa@features\\.yaml#checkout=Checkout\"?\\n    begin: \"?" + Regex.Escape(today) + "\"?\\n    row: \"?0\"?\\n$", await ReadAsync(path));
     }
 
     [Fact]

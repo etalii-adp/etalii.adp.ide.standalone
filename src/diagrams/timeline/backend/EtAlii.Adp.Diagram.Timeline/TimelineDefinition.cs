@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Documents;
@@ -72,13 +72,15 @@ internal static class TimelineDefinition
     /// <summary>What <c>env</c> reads: editable, in the one viewpoint a timeline has, with the host's lookup (DISL 9.4, spec 092).</summary>
     private static DislEnv Env { get; } = new(Lookup: true);
 
-    /// <summary>The context menu of <paramref name="elementId"/> in <paramref name="model"/>: an element, a relation, a placement, a relation gesture; none for anything else.</summary>
+    /// <summary>The context menu of <paramref name="elementId"/> in <paramref name="model"/>: an element, a relation, a placement or the document itself, a relation gesture; none for anything else.</summary>
     public static IReadOnlyList<ContextActionGroupDefinition> Menus(TimelineModel model, string elementId)
     {
         var diagram = DiagramOf(model);
+        // No element id is the document itself, as a freshly opened timeline selects it: its menu
+        // is the background's, so the ribbon offers the adds before anything is clicked.
         DislMenuTarget? target = ElementOf(diagram, elementId) is { } element
             ? DislMenuTarget.Element(element)
-            : GestureIds.TryParseRowPlacement(elementId, out _, out _)
+            : elementId.Length == 0 || GestureIds.TryParseRowPlacement(elementId, out _, out _)
                 ? DislMenuTarget.Canvas(diagram)
                 : GestureIds.TryParseRelation(elementId, out var from, out var to)
                     ? DislMenuTarget.Connection(diagram, ElementOf(diagram, from), ElementOf(diagram, to), "Connection")

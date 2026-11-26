@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { scrollExtentOf, thumbOf, type ScrollAxis } from "./scrollGeometry";
+import { scrollExtentOf, thumbOf, type ScrollAxis, viewShowing } from "./scrollGeometry";
 
 /** An axis by its four numbers, in whatever units a test wants to think in. */
 function axis(viewStart: number, viewSpan: number, extentStart: number, extentEnd: number): ScrollAxis {
@@ -153,5 +153,21 @@ describe("scrollExtentOf", () => {
     // Assert.
     expect(extent.extentStart).toBe(minY - 2 * ROW_HEIGHT);
     expect(extent.extentEnd).toBe(maxY + 2 * ROW_HEIGHT);
+  });
+});
+
+describe("viewShowing", () => {
+  const view = { x: 0, y: 0, w: 100, h: 50 };
+
+  it("leaves a view alone that already shows the whole element", () => {
+    expect(viewShowing(view, { x: 50, y: 25 }, { width: 20, height: 10 })).toBeNull();
+  });
+
+  it("centres the element, at the same zoom, when it is out of sight", () => {
+    expect(viewShowing(view, { x: 400, y: 300 }, { width: 20, height: 10 })).toEqual({ x: 350, y: 275, w: 100, h: 50 });
+  });
+
+  it("centres an element that is only partly in sight", () => {
+    expect(viewShowing(view, { x: 95, y: 25 }, { width: 20, height: 10 })).toEqual({ x: 45, y: 0, w: 100, h: 50 });
   });
 });

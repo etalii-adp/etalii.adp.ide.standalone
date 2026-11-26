@@ -914,11 +914,6 @@ button {
   background: var(--color-bg);
 }
 
-.ribbon-button-pressed {
-  background: color-mix(in srgb, var(--color-primary) 15%, transparent);
-  border-color: var(--color-primary);
-}
-
 /* Contextual ribbon buttons (context-service): the same button, plus a disabled state
    and a drop-down chevron; the muted treatment matches a disabled menu item. */
 .ribbon-button:disabled,
@@ -1308,6 +1303,19 @@ button {
   padding: 0.25rem;
   /* A double click selects; without this it also selects the label text. */
   user-select: none;
+}
+
+/* The search over a tree of several groups, above the tree. */
+.choice-tree-search {
+  flex: 0 0 auto;
+  margin-bottom: 0.5rem;
+  font: inherit;
+  font-size: 0.875rem;
+  color: var(--color-text);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 0.4rem 0.6rem;
 }
 
 .choice-tree-row {

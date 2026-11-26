@@ -61,7 +61,7 @@ import { CanvasScrollbars } from "../scroll/CanvasScrollbars";
 import { RulerStrip } from "./surface/RulerStrip";
 import { useCanvasRefusalReporter } from "./surface/canvasRefusals";
 import { TagInput } from "@client/components/TagInput";
-import { scrollExtentOf, thumbOf } from "../scroll/scrollGeometry";
+import { scrollExtentOf, thumbOf, viewShowing } from "../scroll/scrollGeometry";
 import { useElementContextMenu } from "../useElementContextMenu";
 import { useLibrarySelection, type CanvasSource, type LibraryContextIntegration } from "./librarySelection";
 import { highlighted, highlightedText } from "./highlight";
@@ -703,6 +703,23 @@ export function DiagramCanvasCore({
   const effectiveView = useMemo(() => shapedToPane(view ?? fitBox, paneSize), [view, fitBox, paneSize]);
   const viewRef = useRef(effectiveView);
   viewRef.current = effectiveView;
+
+  // An element selected out of sight - revealed from another document, or reached by a key - is
+  // brought into view; one in sight leaves the view where the reader put it (spec 092, FR-014).
+  // On a change of selection only, so a drag or a delta never moves the view.
+  const selectedElementId = selection.length === 1 && selection[0]!.kind === "element" ? selection[0]!.id : null;
+  const elementsByIdRef = useRef(elementsById);
+  elementsByIdRef.current = elementsById;
+  useEffect(() => {
+    const element = selectedElementId === null ? undefined : elementsByIdRef.current.get(selectedElementId);
+    if (element === undefined || paneSize === null) {
+      return;
+    }
+    const next = viewShowing(viewRef.current, element, { width: element.width ?? 0, height: element.height ?? 0 });
+    if (next !== null) {
+      setView(next);
+    }
+  }, [selectedElementId, paneSize === null]);
 
   const raise = useCallback((event: DiagramEvent): unknown => dispatchDiagramEvent(events, event), [events]);
 
