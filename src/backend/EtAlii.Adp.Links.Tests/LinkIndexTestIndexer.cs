@@ -14,6 +14,8 @@ internal sealed class LinkIndexTestIndexer : ILinkIndexer
 
     public int Reads { get; private set; }
 
+    public string? Origin => "test/links";
+
     public bool Claims(string path) => path.EndsWith(Extension, StringComparison.Ordinal);
 
     public IndexedDocument Index(string path, byte[] bytes)

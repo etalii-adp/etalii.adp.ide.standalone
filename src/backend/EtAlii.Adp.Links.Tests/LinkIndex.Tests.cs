@@ -43,6 +43,7 @@ public sealed class LinkIndexTests : IDisposable
         Assert.True(resolution.Resolved);
         Assert.Equal("m1", resolution.Element?.Id);
         Assert.Single(workspace.Backlinks(Held("release.lnk.txt"), "m1"));
+        Assert.All(workspace.Documents, document => Assert.Equal("test/links", document.Origin));
     }
 
     [Fact]

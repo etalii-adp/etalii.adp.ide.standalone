@@ -93,6 +93,43 @@ public sealed class LinkWorkspace
     /// <summary>How many links of the workspace a delete of <paramref name="elementIds"/> of the document at <paramref name="path"/> breaks (FBL 17.5).</summary>
     public int BrokenByDeleting(string path, IEnumerable<string> elementIds) => elementIds.Sum(id => Backlinks(path, id).Count);
 
+    /// <summary>
+    /// The lookup's search (DISL 0.12 §9.4, FBL 17.3): the linkable elements of the workspace's documents whose name holds
+    /// <paramref name="query"/>, compared without regard to case, those it begins first, then by name and by path; only of the
+    /// tool types <paramref name="origins"/> lists when it lists any, and only of documents with an id, which a link needs.
+    /// At most <paramref name="limit"/> are given, each with the link that names it.
+    /// </summary>
+    public IReadOnlyList<LookupCandidate> Search(string query, IReadOnlyCollection<string>? origins = null, int limit = 50)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        var typed = query.Trim();
+        var found = new List<LookupCandidate>();
+        foreach (var document in _documents.Values)
+        {
+            if (document.DocumentId is not { } documentId || (origins is { Count: > 0 } && (document.Origin is null || !origins.Contains(document.Origin)))) continue;
+            foreach (var element in document.Elements)
+            {
+                (string? _, string name) = NameOf(document, element, null);
+                if (name.Length == 0 || !name.Contains(typed, StringComparison.OrdinalIgnoreCase)) continue;
+                found.Add(new LookupCandidate(document.Path, FolderOf(document.Path), document.FileName, element.Id, name, new FblLink(documentId, document.FileName, element.Id, null, name).Text));
+            }
+        }
+
+        return [.. found
+            .OrderBy(candidate => candidate.Name.StartsWith(typed, StringComparison.OrdinalIgnoreCase) ? 0 : 1)
+            .ThenBy(candidate => candidate.Name, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(candidate => candidate.Path, StringComparer.Ordinal)
+            .Take(limit)];
+    }
+
+    /// <summary>The folder of <paramref name="path"/> as a finding names it, relative to the root; empty for the root itself.</summary>
+    private string FolderOf(string path)
+    {
+        var relative = Display(path);
+        var slash = relative.LastIndexOf('/');
+        return slash < 0 ? "" : relative[..slash];
+    }
+
     private static LinkResolution Finding(FblLink? link, string code, string message, IReadOnlyList<string> candidates) =>
         new(link, null, null, null, new LinkFinding(code, message, candidates));
 

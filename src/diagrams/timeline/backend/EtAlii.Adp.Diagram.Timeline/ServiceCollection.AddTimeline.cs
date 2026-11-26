@@ -33,7 +33,7 @@ public static class ServiceCollectionAddTimelineExtension
         services.AddSingleton<TimelineElementMapper>();
 
         // The link index reads this type's files (FBL 17.3, spec 092): their linkable elements and the links they hold.
-        services.AddSingleton<ILinkIndexer>(new DislLinkIndexer([".tml"], (bytes, _) => TimelineBody.Indexed(bytes), (bytes, _) => TimelineBody.Renewed(bytes)));
+        services.AddSingleton<ILinkIndexer>(new DislLinkIndexer([".tml"], (bytes, _) => TimelineBody.Indexed(bytes), (bytes, _) => TimelineBody.Renewed(bytes), Diagram.Timeline.Origin.Key));
 
         // One document per path, shared by every connection viewing it. TryAdd rather than Add
         // so a test that registers its own store keeps it.
