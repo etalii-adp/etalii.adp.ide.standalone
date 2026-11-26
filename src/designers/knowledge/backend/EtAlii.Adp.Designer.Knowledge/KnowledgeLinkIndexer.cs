@@ -14,7 +14,7 @@ internal sealed class KnowledgeLinkIndexer : ILinkIndexer
     private static readonly string[] _extensions = [".yaml", ".yml", ".json", ".xml"];
 
     /// <inheritdoc />
-    public string? Origin => Designer.Origin;
+    public string Origin => Designer.Origin;
 
     /// <inheritdoc />
     public bool Claims(string path) => _extensions.Any(extension => path.EndsWith(extension, StringComparison.OrdinalIgnoreCase));

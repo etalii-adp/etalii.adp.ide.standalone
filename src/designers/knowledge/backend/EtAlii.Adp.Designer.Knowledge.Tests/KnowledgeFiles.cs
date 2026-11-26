@@ -30,7 +30,7 @@ internal static class KnowledgeFiles
     public static string CopyPlainMadeBeforeLinks(string name, string folder) => CopyInView(name, folder, "v2", MadeBeforeLinksFolder);
 
     /// <summary>The shipped examples as they were made before links: what converting them is held to.</summary>
-    public static string MadeBeforeLinksFolder => RepositoryPaths.Under("src", "designers", "knowledge", "backend", "EtAlii.Adp.Designer.Knowledge.Tests", "Fixtures", "made-before-links");
+    private static string MadeBeforeLinksFolder => RepositoryPaths.Under("src", "designers", "knowledge", "backend", "EtAlii.Adp.Designer.Knowledge.Tests", "Fixtures", "made-before-links");
 
     /// <summary>A copy of a shipped example, or of one in <paramref name="from"/>, left in <paramref name="view"/> whichever view its file names.</summary>
     private static string CopyInView(string name, string folder, string view, string? from = null)

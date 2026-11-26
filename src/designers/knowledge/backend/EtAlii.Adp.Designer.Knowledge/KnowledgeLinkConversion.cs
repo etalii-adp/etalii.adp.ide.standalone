@@ -17,7 +17,7 @@ namespace EtAlii.Adp.Designer.Knowledge;
 internal static class KnowledgeLinkConversion
 {
     /// <summary>The version a file is converted to.</summary>
-    public const string Version = "0.3";
+    private const string Version = "0.3";
 
     private const string Base36 = "0123456789abcdefghijklmnopqrstuvwxyz";
 
@@ -98,7 +98,7 @@ internal static class KnowledgeLinkConversion
     {
         foreach (var row in table.Rows)
         {
-            if (row.Cells.FirstOrDefault(cell => cell.PropertyId == relation.Id && cell.Key == "rows") is not { } cell)
+            if (row.Cells.FirstOrDefault(candidate => candidate.PropertyId == relation.Id && candidate.Key == "rows") is not { } cell)
             {
                 continue;
             }
