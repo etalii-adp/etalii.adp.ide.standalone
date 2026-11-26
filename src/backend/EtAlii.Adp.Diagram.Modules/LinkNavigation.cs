@@ -66,6 +66,30 @@ public static class LinkNavigation
             : new ContextCommitResult(true, Next: new ContextExecutionReveals(FullPathOf(value[..at]), value[(at + 1)..]));
     }
 
+    /// <summary>
+    /// The confirmation deleting the element of <paramref name="target"/> asks for, once the links of the workspace that the delete
+    /// breaks are counted (FR-016): <paramref name="confirmation"/> as it is when none break; with the count added to its message
+    /// when some do; and, where nothing was to be asked, a confirmation of its own saying how many, since a delete that breaks links
+    /// is not done without saying so. The element's nodes beneath it count too, because they go with it.
+    /// </summary>
+    public static ContextConfirmationRequest? WarnOfBrokenLinks(ContextConfirmationRequest? confirmation, DislDiagram diagram, ContextTarget target, LinkWorkspace? workspace)
+    {
+        ArgumentNullException.ThrowIfNull(target);
+        if (workspace is null || ElementOf(diagram, target.ElementId) is not { } element) return confirmation;
+
+        var removed = Removed(element).Where(candidate => candidate.Type.Linkable).Select(DislLinkFixes.WrittenIdOf).Where(id => id.Length > 0);
+        var broken = workspace.BrokenByDeleting(Path.GetFullPath(target.ResolvedFullPath).Replace('\\', '/'), removed);
+        if (broken == 0) return confirmation;
+
+        var warning = broken == 1 ? "This breaks 1 link from another document." : $"This breaks {broken} links from other documents.";
+        return confirmation is null
+            ? new ContextConfirmationRequest("Delete", "mdi-delete-outline", warning, "Delete", Danger: true)
+            : confirmation with { Message = confirmation.Message.Length == 0 ? warning : $"{confirmation.Message} {warning}" };
+    }
+
+    /// <summary>An element and every node beneath it.</summary>
+    private static IEnumerable<DislElement> Removed(DislElement element) => [element, .. element.Children.SelectMany(Removed)];
+
     /// <summary>Where a linked element's link leads, when it resolves to an element; null otherwise.</summary>
     private static ContextExecutionReveals? Target(DislElement element, LinkWorkspace workspace) =>
         element.Type.LinkedAttribute is { } attribute && element.ValueOf(attribute) is string { Length: > 0 } text &&

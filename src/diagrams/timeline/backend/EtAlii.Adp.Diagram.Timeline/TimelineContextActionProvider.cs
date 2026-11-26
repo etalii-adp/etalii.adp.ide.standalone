@@ -262,19 +262,17 @@ public sealed class TimelineContextActionProvider(IHistoryStackStore historyStac
         // an action that answers Completed without dispatching has done nothing at all.
         // That trap has now been walked into three times in this module; every action
         // that needs no input dispatches in RunAsync or a method it calls.
-        // Whether it asks, and what, is the definition's deletion policy.
-        if (TimelineDefinition.RemoveConfirmation(model, target.ElementId) is not { } confirmation)
+        // Whether it asks, and what, is the definition's deletion policy, and it always asks when links of other documents break.
+        var asked = TimelineDefinition.RemoveConfirmation(model, target.ElementId) is { } policy
+            ? new ContextConfirmationRequest(policy.Title, "mdi-delete-outline", policy.Message, policy.ConfirmLabel, Danger: policy.Danger)
+            : null;
+        if (WarnOfBrokenLinks(target, TimelineDefinition.DiagramOf(model), asked) is not { } confirmation)
         {
             return await DispatchAsync(target,
                 new RemoveTimelineElementCommand(target.ResolvedFullPath, element.Id), cancellationToken);
         }
 
-        return new ContextExecutionRequiresConfirmation(new ContextConfirmationRequest(
-            confirmation.Title,
-            "mdi-delete-outline",
-            confirmation.Message,
-            confirmation.ConfirmLabel,
-            Danger: confirmation.Danger));
+        return new ContextExecutionRequiresConfirmation(confirmation);
     }
 
     /// <summary>Remove the selected element's end, making it a moment.</summary>

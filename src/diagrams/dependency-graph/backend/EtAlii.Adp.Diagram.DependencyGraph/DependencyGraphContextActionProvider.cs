@@ -251,19 +251,17 @@ public sealed class DependencyGraphContextActionProvider(IHistoryStackStore hist
         // answers Completed without dispatching has done nothing at all. That trap was
         // walked into three times in the module this was forked from; every action that
         // needs no input dispatches in RunAsync or a method it calls.
-        // What is asked, and when, is the definition's deletion confirmation.
-        if (DeletionPolicy.Confirmation(DependencyGraphDefinition.Specification, element) is not { } confirmation)
+        // What is asked, and when, is the definition's deletion confirmation, and it always asks when links of other documents break.
+        var asked = DeletionPolicy.Confirmation(DependencyGraphDefinition.Specification, element) is { } policy
+            ? new ContextConfirmationRequest(policy.Title, "mdi-delete-outline", policy.Message, policy.ConfirmLabel, Danger: policy.Danger)
+            : null;
+        if (WarnOfBrokenLinks(target, element.Diagram, asked) is not { } confirmation)
         {
             return await DispatchAsync(target,
                 new RemoveDependencyGraphElementCommand(target.ResolvedFullPath, target.ElementId), cancellationToken);
         }
 
-        return new ContextExecutionRequiresConfirmation(new ContextConfirmationRequest(
-            confirmation.Title,
-            "mdi-delete-outline",
-            confirmation.Message,
-            confirmation.ConfirmLabel,
-            Danger: confirmation.Danger));
+        return new ContextExecutionRequiresConfirmation(confirmation);
     }
 
     /// <summary>What a node created by a gesture is called until somebody renames it.</summary>

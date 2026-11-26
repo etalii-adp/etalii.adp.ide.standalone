@@ -2,6 +2,7 @@ using System.Reflection;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Specification.Disl;
+using EtAlii.Adp.Specification.Fbl.Links;
 using EtAlii.Adp.Specification.Json;
 
 namespace EtAlii.Adp.Diagram.Modules;
@@ -114,7 +115,8 @@ public sealed class DislDiagramDefinition
     /// <summary>
     /// A row as the grid draws it: a retype row and a <c>select</c> are a Choice among their
     /// candidates, a <c>textarea</c> the Text editor, <c>tags</c>, <c>slider</c> and <c>switch</c>
-    /// their own, anything else a line. Only a Choice, the tags and the slider carry candidates.
+    /// their own, a <c>lookup</c> a link that shows its target's name and opens it, anything else a line. Only a Choice,
+    /// the tags and the slider carry candidates.
     /// </summary>
     public static ContextPropertyDefinition Row(DerivedRow row)
     {
@@ -128,11 +130,16 @@ public sealed class DislDiagramDefinition
                 "tags" => ContextPropertyEditor.Tags,
                 "slider" => ContextPropertyEditor.Slider,
                 "switch" => ContextPropertyEditor.Toggle,
+                "lookup" => ContextPropertyEditor.Link,
                 _ => ContextPropertyEditor.Line,
             };
+        var value = editor is ContextPropertyEditor.Link ? NameOfLink(row.Value) : row.Value;
         var candidates = editor is ContextPropertyEditor.Choice or ContextPropertyEditor.Tags or ContextPropertyEditor.Slider ? row.Candidates ?? [] : null;
-        return new ContextPropertyDefinition(row.Id, row.Label, row.Value, editor, row.ReadOnlyReason, row.Group, candidates);
+        return new ContextPropertyDefinition(row.Id, row.Label, value, editor, row.ReadOnlyReason, row.Group, candidates);
     }
+
+    /// <summary>A link as its row shows it: the name it holds, else its element's id, else its document's name (FBL 17.1); as written when it does not parse.</summary>
+    private static string NameOfLink(string text) => FblLink.Parse(text) is { } link ? link.Name ?? link.ElementId ?? link.DocumentName : text;
 
     /// <summary>
     /// A finding's severity as the panel counts it: <c>error</c> an error, <c>info</c> and

@@ -74,6 +74,20 @@ public class DislDiagramDefinitionTests
     }
 
     [Theory]
+    [InlineData("$k7q2m9xa@features.yaml#signin=Sign-in", "Sign-in")]
+    [InlineData("$k7q2m9xa@features.yaml#signin", "signin")]
+    [InlineData("$k7q2m9xa@features.yaml", "features.yaml")]
+    [InlineData("not a link", "not a link")]
+    public void ALookupRow_IsALink_ShowingTheNameItsLinkHolds(string link, string shown)
+    {
+        // Act.
+        var row = DislDiagramDefinition.Row(new DerivedRow("p", "Linked element", link, "lookup", "", "Identity", null));
+
+        // Assert.
+        Assert.Equal((ContextPropertyEditor.Link, shown), (row.Editor, row.Value));
+    }
+
+    [Theory]
     [InlineData("select", true)]
     [InlineData("tags", true)]
     [InlineData("slider", true)]

@@ -143,8 +143,9 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
             case DeleteActionId:
                 // A leaf goes without asking; a branch is confirmed, since it takes its
                 // subtree with it (Requirement 7.4). Both are undoable, and the message says so.
-                // Which, and the texts, are the definition's `deletion.confirm`.
-                return MindmapDefinition.Confirmation(element) is { } confirmation
+                // Which, and the texts, are the definition's `deletion.confirm`; and a delete that breaks links of other
+                // documents is always confirmed, saying how many (etalii.adp spec 092, FR-016).
+                return LinkNavigation.WarnOfBrokenLinks(MindmapDefinition.Confirmation(element), resolved.Diagram, target, _links?.WorkspaceOf(target.ResolvedFullPath)) is { } confirmation
                     ? new ContextExecutionRequiresConfirmation(confirmation)
                     : await DispatchAsync(target, new RemoveNodeCommand(target.ResolvedFullPath, node.Id), cancellationToken);
 

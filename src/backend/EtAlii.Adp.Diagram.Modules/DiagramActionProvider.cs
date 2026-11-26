@@ -236,6 +236,17 @@ public abstract class DiagramActionProvider<TBody, TModel> : IContextActionProvi
             ? DiagramPropertyChange.By(command)
             : DiagramPropertyChange.Refused($"'{actionId}' does not apply to this selection.");
 
+    /// <summary>
+    /// <paramref name="confirmation"/>, what deleting the element of <paramref name="target"/> in <paramref name="diagram"/> asks
+    /// for, with the links of the workspace the delete breaks counted (etalii.adp spec 092, FR-016); see
+    /// <see cref="LinkNavigation.WarnOfBrokenLinks"/>.
+    /// </summary>
+    protected ContextConfirmationRequest? WarnOfBrokenLinks(ContextTarget target, DislDiagram diagram, ContextConfirmationRequest? confirmation)
+    {
+        ArgumentNullException.ThrowIfNull(target);
+        return LinkNavigation.WarnOfBrokenLinks(confirmation, diagram, target, Links?.WorkspaceOf(target.ResolvedFullPath));
+    }
+
     /// <summary>Runs <paramref name="command"/> on the project's history.</summary>
     protected async ValueTask<ContextExecutionResult> DispatchAsync(ContextTarget target, ICommand command, CancellationToken cancellationToken)
     {

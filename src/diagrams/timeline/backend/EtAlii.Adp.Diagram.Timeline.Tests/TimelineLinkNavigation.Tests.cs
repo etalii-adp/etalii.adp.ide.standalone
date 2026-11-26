@@ -88,6 +88,27 @@ public sealed class TimelineLinkNavigationTests : IDisposable
         Assert.Equal((IoPath.Combine(_folder.Path, "services.dgr"), "ship"), (reveal.FullPath, reveal.ElementId));
     }
 
+    [Fact]
+    public async Task DeletingAnElementLinksPointAt_IsConfirmed_SayingHowManyBreak()
+    {
+        // Arrange: the launch has no relations, so the definition alone would delete it without asking.
+        var path = Write();
+        var actions = Actions(new IndexedDocument(Held("services.dgr"), "s2v5b9hu", "label", [], [
+            new HeldLink("pay", "$r6d3w8ne@roadmap.tml#launch=Launch"),
+            new HeldLink("ship", "$r6d3w8ne@roadmap.tml#launch=Launch"),
+        ]));
+
+        // Act.
+        var linked = await actions.ExecuteAsync(Target(path, "launch"), TimelineContextActionProvider.RemoveActionId, TestContext.Current.CancellationToken);
+        var unlinked = await actions.ExecuteAsync(Target(path, "f-gone"), TimelineContextActionProvider.RemoveActionId, TestContext.Current.CancellationToken);
+
+        // Assert.
+        var asked = Assert.IsType<ContextExecutionRequiresConfirmation>(linked).Request;
+        Assert.Equal(("This breaks 2 links from other documents.", "Delete", true), (asked.Message, asked.ConfirmLabel, asked.Danger));
+        Assert.IsType<ContextExecutionCompleted>(unlinked);
+        Assert.Contains("id: launch", await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken), StringComparison.Ordinal);
+    }
+
     private TimelineContextActionProvider Actions(params IndexedDocument[] more) => new(_historyStacks, _store, new TimelineOpeningIndex(new LinkWorkspace(Held(""), [
         new IndexedDocument(Held("specs/features.yaml"), "k7q2m9xa", "Name", [new IndexedElement("signin", [new KeyValuePair<string, string>("Name", "Sign-in")])], []),
         new IndexedDocument(Held("roadmap.tml"), "r6d3w8ne", "label", [new IndexedElement("launch", [new KeyValuePair<string, string>("label", "Launch")])], []),

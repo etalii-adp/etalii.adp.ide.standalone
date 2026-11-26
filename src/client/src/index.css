@@ -1776,6 +1776,25 @@ button {
   color: var(--color-text-muted);
 }
 
+/* A link to an element of another document: its name, which opens it (etalii.adp spec 092). */
+.property-grid-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.property-grid-link:hover,
+.property-grid-link:focus-visible {
+  text-decoration: underline;
+}
+
 /* One line of a read-only value that is a list, such as a trend phase's influences. */
 .property-grid-value-line {
   display: block;

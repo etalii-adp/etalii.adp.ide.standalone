@@ -7,6 +7,11 @@ export interface PropertyRowProps {
   property: ContextProperty;
   /** Resolves to an error to show, or an empty string when the value was taken. */
   onCommit: (value: string) => Promise<string>;
+  /**
+   * Opens what a LINK row points at; resolves to an error to show, or an empty string when it opened. A row without it shows
+   * a link as plain text.
+   */
+  onOpen?: () => Promise<string>;
 }
 
 /** The editors this client can draw. Anything else is shown, never edited - see below. */
@@ -40,7 +45,7 @@ const tagsOf = (value: string) =>
  * the backend last said. That is what makes a rejected value visibly snap back rather than sit
  * there looking accepted.
  */
-export function PropertyRow({ property, onCommit }: PropertyRowProps) {
+export function PropertyRow({ property, onCommit, onOpen }: PropertyRowProps) {
   const [draft, setDraft] = useState(property.value);
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState("");
@@ -154,6 +159,28 @@ export function PropertyRow({ property, onCommit }: PropertyRowProps) {
     setDraft(property.value);
     setEditing(false);
     setError("");
+  }
+
+  // A link to an element of another document (etalii.adp spec 092, FR-014): its target's name, which opens the target. It is
+  // made by the lookup that added the element and never typed here, so it has no field whether or not it is read-only.
+  if (property.editor === ContextPropertyEditor.LINK && onOpen !== undefined) {
+    return (
+      <div className="property-grid-row">
+        <dt>{property.label}</dt>
+        <dd>
+          <button
+            type="button"
+            className="property-grid-link"
+            title="Open linked element"
+            onClick={() => void onOpen().then(setError)}
+          >
+            <span className="mdi mdi-open-in-new" aria-hidden="true" />
+            {property.value}
+          </button>
+          {error.length > 0 && <span className="property-grid-error">{error}</span>}
+        </dd>
+      </div>
+    );
   }
 
   if (!editable) {

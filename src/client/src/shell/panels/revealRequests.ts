@@ -63,3 +63,6 @@ export function takeElementReveal(path: readonly string[], has: (elementId: stri
   pendingElements.delete(key);
   return waiting;
 }
+
+/** The backend's "Open linked element" (`link.open`), which a link row of the property grid runs on its selection. */
+export const OPEN_LINKED_ELEMENT_ACTION = "link.open";

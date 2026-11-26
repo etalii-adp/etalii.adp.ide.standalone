@@ -260,3 +260,44 @@ describe("PropertyRow", () => {
     container.remove();
   });
 });
+
+describe("PropertyRow as a link", () => {
+  const linked = () =>
+    property({
+      id: "timeline.link",
+      label: "Linked element",
+      value: "Sign-in",
+      editor: ContextPropertyEditor.LINK,
+      readOnlyReason: "A linked element shows its target's name; rename the target in its own document.",
+    });
+
+  it("shows the target's name, which opens it when clicked, and offers no field", async () => {
+    // Arrange.
+    const onOpen = vi.fn(async () => "");
+    const onCommit = vi.fn(async () => "");
+    render(<PropertyRow property={linked()} onCommit={onCommit} onOpen={onOpen} />);
+
+    // Act.
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Sign-in" }));
+    });
+
+    // Assert.
+    expect(onOpen).toHaveBeenCalledOnce();
+    expect(onCommit).not.toHaveBeenCalled();
+    expect(screen.queryByRole("textbox")).toBeNull();
+  });
+
+  it("says why when the target cannot be opened", async () => {
+    // Arrange.
+    render(<PropertyRow property={linked()} onCommit={vi.fn(async () => "")} onOpen={vi.fn(async () => "The linked element is not in the workspace any more.")} />);
+
+    // Act.
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Sign-in" }));
+    });
+
+    // Assert.
+    expect(screen.getByText("The linked element is not in the workspace any more.")).toBeTruthy();
+  });
+});
