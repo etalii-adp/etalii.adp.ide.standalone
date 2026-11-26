@@ -104,7 +104,7 @@ public sealed class TimelineLinkNavigationTests : IDisposable
 
         // Assert.
         var asked = Assert.IsType<ContextExecutionRequiresConfirmation>(linked).Request;
-        Assert.Equal(("This breaks 2 links from other documents.", "Delete", true), (asked.Message, asked.ConfirmLabel, asked.Danger));
+        Assert.Equal(("This breaks 2 links to what is deleted.", "Delete", true), (asked.Message, asked.ConfirmLabel, asked.Danger));
         Assert.IsType<ContextExecutionCompleted>(unlinked);
         Assert.Contains("id: launch", await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken), StringComparison.Ordinal);
     }

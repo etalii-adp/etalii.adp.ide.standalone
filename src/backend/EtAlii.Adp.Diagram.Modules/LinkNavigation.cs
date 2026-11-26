@@ -81,7 +81,8 @@ public static class LinkNavigation
         var broken = workspace.BrokenByDeleting(Path.GetFullPath(target.ResolvedFullPath).Replace('\\', '/'), removed);
         if (broken == 0) return confirmation;
 
-        var warning = broken == 1 ? "This breaks 1 link from another document." : $"This breaks {broken} links from other documents.";
+        // The links counted may be this document's own as well as other documents', so the warning names neither.
+        var warning = broken == 1 ? "This breaks 1 link to what is deleted." : $"This breaks {broken} links to what is deleted.";
         return confirmation is null
             ? new ContextConfirmationRequest("Delete", "mdi-delete-outline", warning, "Delete", Danger: true)
             : confirmation with { Message = confirmation.Message.Length == 0 ? warning : $"{confirmation.Message} {warning}" };
