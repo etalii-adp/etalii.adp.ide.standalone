@@ -189,6 +189,22 @@ describe("ToolTabsPanel", () => {
     expect(screen.getByRole("tab", { name: /^a$/ }).getAttribute("aria-selected")).toBe("true");
   });
 
+  it("brings the tab of a document open at its registration to the front when a link points at its body", () => {
+    // Arrange: the map is open at its registration, a.adp.
+    const { rerender } = renderPanel();
+    push(entryA, ["a.adp"], "freeplane/mindmap");
+    rerender(<ToolTabsPanel projectId={projectId} />);
+    push(entryB, ["b.adp"], "freeplane/mindmap");
+    rerender(<ToolTabsPanel projectId={projectId} />);
+
+    // Act: a link points at its body, a.mm, an entry of its own.
+    act(() => requestReveal({ entryId: new Uint8Array([9]), path: ["a.mm"], mimeType: "freeplane/mindmap", elementId: "launch" }));
+
+    // Assert: no second tab of the same map.
+    expect(screen.getAllByRole("tab")).toHaveLength(2);
+    expect(screen.getByRole("tab", { name: /^a$/ }).getAttribute("aria-selected")).toBe("true");
+  });
+
   it("remounts the content when activating a second file of the same editor", () => {
     // Arrange: two markdown files, one after the other - the double-click flow.
     const { rerender } = renderPanel();

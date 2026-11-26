@@ -20,10 +20,16 @@ type Listener = (request: RevealRequest) => void;
 const listeners = new Set<Listener>();
 const elementListeners = new Set<() => void>();
 
-/** The element waiting to be selected, per document path, until the canvas drawing that document takes it. */
+/** The element waiting to be selected, per document, until the canvas drawing that document takes it. */
 const pendingElements = new Map<string, string>();
 
-const keyOf = (path: readonly string[]) => path.join("/");
+/**
+ * A document as a reveal names it: its path without its extension, so that a tool open at a document's registration
+ * (`roadmap.adp`) and a link that names its body (`roadmap.tml`) mean the same document.
+ */
+export const documentKeyOf = (path: readonly string[]) => path.join("/").replace(/\.[^./]+$/, "");
+
+const keyOf = documentKeyOf;
 
 /** The tab strip subscribes; the unsubscribe is the return value, effect-style. */
 export function onRevealRequested(listener: Listener): () => void {

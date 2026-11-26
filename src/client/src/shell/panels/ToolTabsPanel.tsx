@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { isTabDirty } from "./dirtyTabs";
 import { onTextTabRequested } from "./textTabRequests";
-import { onRevealRequested } from "./revealRequests";
+import { documentKeyOf, onRevealRequested } from "./revealRequests";
 import { base64Encode } from "@bufbuild/protobuf/wire";
 import { ContextSelectionAction } from "../../generated/context_pb";
 import type { ContextLevelDetail } from "../../generated/context-contract_pb";
@@ -54,6 +54,9 @@ export function ToolTabsPanel({ projectId }: ToolTabsPanelProps) {
   // The push, not the render, is the trigger: transient previews and unrelated re-renders
   // re-observe the same selection object, and must not re-run the rule (Requirement 2.3).
   const lastHandledRef = useRef<ContextSelection | null>(null);
+  // The tabs as they were last drawn, for a reveal to find the one its document is open in.
+  const tabsRef = useRef(tabs);
+  tabsRef.current = tabs;
 
   useEffect(() => {
     if (selection === null || selection === lastHandledRef.current) {
@@ -88,14 +91,18 @@ export function ToolTabsPanel({ projectId }: ToolTabsPanelProps) {
   }, [selection, levels, projectId]);
 
   // A document an action pointed at (spec 092): opened under the key an activation of its entry opens it with, so a tab it
-  // already has comes to the front rather than a second one opening. Its canvas selects the element.
+  // already has comes to the front rather than a second one opening - also one open at its registration, which the link,
+  // naming the body, reaches as another entry. Its canvas selects the element.
   useEffect(
     () =>
       onRevealRequested((request) => {
         if (request.mimeType === "" || request.entryId.length === 0) {
           return;
         }
-        const key = `${base64Encode(request.entryId)}|${request.path.join("/")}`;
+        const own = `${base64Encode(request.entryId)}|${request.path.join("/")}`;
+        const document = documentKeyOf(request.path);
+        const open = tabsRef.current.find((tab) => tab.key === own) ?? tabsRef.current.find((tab) => tab.tool.mimeType === request.mimeType && documentKeyOf(tab.tool.path) === document);
+        const key = open?.key ?? own;
         setTabs((current) =>
           current.some((tab) => tab.key === key)
             ? current

@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, render, screen } from "@testing-library/react";
 import { applyTableEvent, EMPTY_TABLE, type TableColumn, type TableModel } from "@client/table/library/api/tableModel";
 import type { TableGesture } from "@client/table/library/api/tableEvents";
+import { requestReveal } from "@client/shell/panels/revealRequests";
 import { KnowledgePanel } from "./KnowledgePanel";
 
 /**
@@ -168,6 +169,22 @@ describe("KnowledgePanel", () => {
     expect(selection.path.segments).toEqual(["tables", "provinces.adp"]);
     expect(selection.detail.value.id.source.value.value).toBe("nh");
     unmount();
+  });
+
+  it("selects the row a link opened, in the table of its file, whichever of its two files the panel shows", () => {
+    // Arrange: the provinces' table, open at its registration; a link names the row in its data file.
+    stream.current = streamOf(cities("v1"));
+    connection.select.mockClear();
+    render(<KnowledgePanel projectId={ID} entryId={ID} path={["tables", "provinces.adp"]} />);
+
+    // Act.
+    act(() => requestReveal({ entryId: ID, path: ["tables", "provinces.yaml"], mimeType: "", elementId: "nh" }));
+
+    // Assert: the row is the selection, under the panel's own file, and it is taken once.
+    expect(connection.select).toHaveBeenCalledTimes(1);
+    const selection = connection.select.mock.calls[0]![0];
+    expect(selection.path.segments).toEqual(["tables", "provinces.adp"]);
+    expect(selection.detail.value.id.source.value.value).toBe("nh");
   });
 
   it("leaves a view an edit names itself alone", async () => {
