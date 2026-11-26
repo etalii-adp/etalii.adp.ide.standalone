@@ -14,6 +14,8 @@ internal static class KnowledgeCellEdits
     public const string SortedRowsStay = "Rows are in the order of this view's sort, so they cannot be moved here.";
     public const string RelationsCreateRows = "Only a relation makes a row to hold.";
     private const string NoTitleToCreate = "The table this relates to has no title to name a new row by.";
+    internal const string CannotCreateInDiagram = "This diagram cannot be given an element from here.";
+    internal const string ChooseAKind = "Choose which kind of element to create in this diagram.";
 
     /// <summary>What an answer starts with when it is a question to confirm and not a refusal: the gesture is made again, confirmed.</summary>
     private const string ConfirmPrefix = "confirm:";
@@ -92,7 +94,7 @@ internal static class KnowledgeCellEdits
         var cell = row.Cells.FirstOrDefault(candidate => candidate.PropertyId == property.Id);
         if (gesture.Settings.TryGetValue("newRow", out var title) && title.Trim().Length > 0)
         {
-            return CreateRelated(table, row, property, cell, values, title.Trim(), newId, files);
+            return CreateRelated(table, row, property, cell, values, title.Trim(), newId, files, gesture.Settings.GetValueOrDefault("newKind") ?? "");
         }
 
         List<ModelChange> changes = [];
@@ -150,7 +152,7 @@ internal static class KnowledgeCellEdits
     /// Notion's relation picker does with "create" (spec 092, FR-020). The new row joins the rows the cell holds, or takes
     /// the place of the one it holds where the relation holds one; both files are written, or neither, and one undo takes both back.
     /// </summary>
-    private static KnowledgeEdit CreateRelated(KnowledgeTable table, KnowledgeRow row, KnowledgeProperty property, KnowledgeCell? cell, List<string> values, string title, Func<string> newId, KnowledgeSurroundings? files)
+    private static KnowledgeEdit CreateRelated(KnowledgeTable table, KnowledgeRow row, KnowledgeProperty property, KnowledgeCell? cell, List<string> values, string title, Func<string> newId, KnowledgeSurroundings? files, string kind)
     {
         if (property.Type is not KnowledgeRelationType || files is null)
         {
@@ -165,6 +167,11 @@ internal static class KnowledgeCellEdits
         if (related.Properties.FirstOrDefault(candidate => candidate.IsTitle) is not { } named || named.Type.Write(title, out var written).Length > 0 || written is null)
         {
             return Refused(NoTitleToCreate);
+        }
+
+        if (target.IsDiagram)
+        {
+            return CreateElement(table, row, property, cell, values, title, files, kind, target, related, named);
         }
 
         var id = newId();
@@ -186,6 +193,35 @@ internal static class KnowledgeCellEdits
         }
 
         return self ? new KnowledgeEdit([.. made, .. relating.Changes]) : new KnowledgeEdit(relating.Changes, Others: [new KnowledgeOtherFile(target.Path, made)]);
+    }
+
+    /// <summary>
+    /// An element made in the diagram a relation points at, named as typed, and related from the cell in the same step (spec 092,
+    /// FR-025): its tool type adds it where it adds one without a position, both files are written or neither, and one undo takes
+    /// both back. Where the diagram offers several kinds of element, <paramref name="kind"/> says which; with one, it may be empty.
+    /// </summary>
+    private static KnowledgeEdit CreateElement(KnowledgeTable table, KnowledgeRow row, KnowledgeProperty property, KnowledgeCell? cell, List<string> values, string title, KnowledgeSurroundings files, string kind, KnowledgeTarget target, KnowledgeTable related, KnowledgeProperty named)
+    {
+        var kinds = target.Kinds ?? [];
+        var chosen = kind.Length > 0 ? kinds.FirstOrDefault(candidate => candidate.Id == kind) : kinds.Count == 1 ? kinds[0] : null;
+        if (chosen is null)
+        {
+            return Refused(kinds.Count == 0 ? CannotCreateInDiagram : ChooseAKind);
+        }
+
+        if (files.NewElementId?.Invoke(target.Path) is not { Length: > 0 } id)
+        {
+            return Refused(CannotCreateInDiagram);
+        }
+
+        // As in CreateRelated: the cell is set as though the element were there already.
+        var grown = target with { Table = related with { Rows = [.. related.Rows, new KnowledgeRow(id, [new KnowledgeCell(named.Id, [title], named.Type.CellKey)])] } };
+        var around = files with { TargetOf = candidate => candidate.Id == property.Id ? grown : files.TargetOf(candidate) };
+        List<string> holding = property.Limit == "one" ? [id] : [.. values.Where(value => value != id), id];
+        var relating = SetSeveral(table, row, property, cell, holding, [], around);
+        return relating.IsRefused
+            ? relating
+            : new KnowledgeEdit(relating.Changes, Others: [new KnowledgeOtherFile(target.Path, [], new KnowledgeNewElement(chosen.Id, id, title))]);
     }
 
     /// <summary>A cell of a type that holds several values: options or related rows, an item each.</summary>

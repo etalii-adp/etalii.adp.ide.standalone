@@ -203,6 +203,15 @@ public sealed class LinkIndex(ProjectFileEvents events, IEnumerable<ILinkIndexer
 
     private ILinkIndexer? IndexerOf(string path) => _indexers.FirstOrDefault(indexer => indexer.Claims(path));
 
+    /// <inheritdoc />
+    public IReadOnlyList<LinkElementKind> CreatableKindsOf(string path) => IndexerOf(path)?.CreatableKinds ?? [];
+
+    /// <inheritdoc />
+    public string? NewElementIdOf(string path) => IndexerOf(path)?.NewElementId();
+
+    /// <inheritdoc />
+    public byte[]? WithElement(string path, byte[] bytes, string kind, string id, string name) => IndexerOf(path)?.WithElement(path, bytes, kind, id, name);
+
     private void Heard(Root root, FileEvent heard)
     {
         var changed = new List<string>();

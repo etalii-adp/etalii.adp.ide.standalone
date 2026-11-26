@@ -40,7 +40,8 @@ internal static partial class KnowledgeColumnEdits
         var self = string.Equals(target.Path, Path.GetFullPath(files.BodyPath), StringComparison.OrdinalIgnoreCase);
         var asked = (gesture.Values.FirstOrDefault() ?? "").Trim();
         var name = UniqueName(table.Properties.Select(property => property.Name), asked.Length > 0 ? asked : related.Name.Length > 0 && !self ? related.Name : "Relation");
-        var otherName = AskedOtherSide(table, gesture);
+        // A diagram has no column to show a relation's backlinks in, so a relation to one is one-way (spec 092, FR-025).
+        var otherName = target.IsDiagram ? "" : AskedOtherSide(table, gesture);
         var taken = self ? table.Properties.Select(property => property.Name).Append(name) : related.Properties.Select(property => property.Name);
         var attributes = Attributes(
             ("name", name),

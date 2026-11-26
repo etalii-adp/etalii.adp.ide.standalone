@@ -25,4 +25,25 @@ public interface ILinkIndexer
     /// <c>link.ambiguous-document</c> gives every candidate but the chosen one (FBL 17.6); null when it cannot be given one.
     /// </summary>
     byte[]? Renewed(string path, byte[] bytes);
+
+    /// <summary>
+    /// The kinds of element a document of this tool type can be given from another tool, by name alone and without a position:
+    /// what a knowledge relation's "Create" offers when its target is such a document (spec 092, FR-025). None by default.
+    /// </summary>
+    IReadOnlyList<LinkElementKind> CreatableKinds => [];
+
+    /// <summary>A new element id, made as the tool type's definition makes one, for an element another tool creates; null when it creates none.</summary>
+    string? NewElementId() => null;
+
+    /// <summary>
+    /// The body <paramref name="bytes"/> of the document at <paramref name="path"/> with a new element of <paramref name="kind"/>,
+    /// whose id is <paramref name="id"/> and whose name is <paramref name="name"/>, placed where the tool type places an element
+    /// added without a position (spec 092, FR-025); null when it cannot be given one.
+    /// </summary>
+    byte[]? WithElement(string path, byte[] bytes, string kind, string id, string name) => null;
 }
+
+/// <summary>A kind of element another tool can create in a document: its element type, and what a person reads it as.</summary>
+/// <param name="Id">The element type, as the tool type's definition names it (<c>Moment</c>).</param>
+/// <param name="Label">What a menu says of it (<c>moment</c>).</param>
+public sealed record LinkElementKind(string Id, string Label);

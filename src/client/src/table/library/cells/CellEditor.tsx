@@ -175,6 +175,8 @@ function ListCellEditor({ editor, column, cell, commit, onClose }: CellEditorPro
   // The list of a relation is what the backend offers as the column's options: the rows that can
   // be related. A value the list does not hold keeps the label the cell gave it.
   const items = column.options.map((option) => ({ id: option.id, label: option.name }));
+  // A relation to a diagram creates an element of a kind it offers (spec 092, FR-025): none, one, or a "Create" per kind.
+  const createKinds = editor === "rows" ? kindsOf(column.settings.createKinds) : undefined;
   for (const [index, value] of chosen.entries()) {
     if (!items.some((item) => item.id === value)) {
       items.push({ id: value, label: cell?.labels[index] || value });
@@ -237,7 +239,8 @@ function ListCellEditor({ editor, column, cell, commit, onClose }: CellEditorPro
         selected={chosen}
         onPick={pick}
         // A title nothing matches makes an option here, or a row in the related table, related at once in the same step.
-        onCreate={(text) => void send(several ? chosen : [], { [editor === "rows" ? "newRow" : "newOption"]: text }, !several)}
+        onCreate={editor === "rows" && createKinds?.length === 0 ? undefined : (text, kind) => void send(several ? chosen : [], { [editor === "rows" ? "newRow" : "newOption"]: text, ...(kind === undefined ? {} : { newKind: kind }) }, !several)}
+        createKinds={editor === "rows" && createKinds !== undefined && createKinds.length > 1 ? createKinds : undefined}
         onClose={() => onClose("stay")}
       />
       {reason !== "" && (
@@ -247,4 +250,17 @@ function ListCellEditor({ editor, column, cell, commit, onClose }: CellEditorPro
       )}
     </div>
   );
+}
+
+/** The kinds a relation's target can create, as the backend lists them; undefined for a target that is not a diagram. */
+export function kindsOf(listed: string | undefined): { id: string; label: string }[] | undefined {
+  if (listed === undefined || listed === "") {
+    return undefined;
+  }
+  try {
+    const parsed: unknown = JSON.parse(listed);
+    return Array.isArray(parsed) ? parsed.filter((kind): kind is { id: string; label: string } => typeof kind?.id === "string" && typeof kind?.label === "string") : undefined;
+  } catch {
+    return undefined;
+  }
 }

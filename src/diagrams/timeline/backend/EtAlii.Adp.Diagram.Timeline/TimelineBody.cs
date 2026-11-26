@@ -2,6 +2,7 @@ using System.Text;
 using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Links;
 using EtAlii.Adp.Specification.Disl;
 using EtAlii.Adp.Specification.Fbl;
 using EtAlii.Adp.Specification.Fbl.Documents;
@@ -98,6 +99,25 @@ public sealed class TimelineBody
 
     /// <summary>The <paramref name="bytes"/> with a new document id, for the fix of <c>link.ambiguous-document</c> (FBL 17.6, <see cref="DislOpening.Renewed"/>).</summary>
     internal static byte[]? Renewed(byte[] bytes) => DislOpening.Renewed(OpenBody.Open(bytes, LoadedBinding.Value, LoadedOptions.Value), TimelineDefinition.Specification);
+
+    /// <summary>
+    /// What a knowledge relation's "Create" can add to a timeline (spec 092, FR-025): a moment or a period, beginning today on
+    /// the first row as an add from a menu without a placement does, a period a week long.
+    /// </summary>
+    internal static DislElementCreation Creation { get; } = new(
+        [new LinkElementKind("Moment", "moment"), new LinkElementKind("Period", "period")],
+        TimelineDefinition.NewId,
+        (bytes, kind, id, name) => WithElement(bytes, kind, id, name, DateTimeOffset.UtcNow));
+
+    /// <summary>The <paramref name="bytes"/> with a new <paramref name="kind"/> named <paramref name="name"/>, beginning on the day of <paramref name="now"/>; null when it cannot be added.</summary>
+    internal static byte[]? WithElement(byte[] bytes, string kind, string id, string name, DateTimeOffset now)
+    {
+        var body = Parse(Encoding.UTF8.GetString(bytes));
+        if (body.Model.Unreadable) return null;
+        var begin = TimelineScale.ToText(now, TimelinePrecision.Date);
+        var end = kind == "Period" ? TimelineScale.ToText(now.AddDays(7), TimelinePrecision.Date) : null;
+        return TimelineEdits.AddElement(body, id, name, begin, end, 0).Refusal is null ? Encoding.UTF8.GetBytes(body.Text) : null;
+    }
 
     /// <summary>
     /// What opening <paramref name="text"/> finds to write with its first edit (FBL 17.4, <see cref="DislOpening"/>): a document id

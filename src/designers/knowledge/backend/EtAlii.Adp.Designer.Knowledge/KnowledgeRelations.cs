@@ -1,3 +1,4 @@
+using EtAlii.Adp.Links;
 using EtAlii.Adp.Specification.Fbl.Links;
 
 namespace EtAlii.Adp.Designer.Knowledge;
@@ -6,7 +7,15 @@ namespace EtAlii.Adp.Designer.Knowledge;
 /// <param name="Path">The target file's full path.</param>
 /// <param name="Table">The target's table, or null when the file is missing, cannot be read or is not a knowledge file.</param>
 /// <param name="Problem">Why there is no table, as a sentence; empty when there is one.</param>
-internal sealed record KnowledgeTarget(string Path, KnowledgeTable? Table, string Problem = "");
+/// <param name="Kinds">
+/// For a target that is a diagram rather than a knowledge file (spec 092, FR-025), the kinds of element "Create" can add to it,
+/// none when it can add none; null for a knowledge file. A diagram's <see cref="Table"/> is its linkable elements, one row each.
+/// </param>
+internal sealed record KnowledgeTarget(string Path, KnowledgeTable? Table, string Problem = "", IReadOnlyList<LinkElementKind>? Kinds = null)
+{
+    /// <summary>Whether the target is a document of a diagram type, whose elements a relation links to.</summary>
+    public bool IsDiagram => Kinds is not null;
+}
 
 /// <summary>A relation that shows its backlinks in this table: the file it is in, and the relation, which names this table and has a backlink name.</summary>
 /// <param name="Path">The full path of the file the relation is in; this file's own for a relation of the table to itself.</param>
@@ -33,6 +42,26 @@ internal static class KnowledgeRelations
 {
     /// <summary>What a relation to the file itself names as its target.</summary>
     public const string Self = ".";
+
+    /// <summary>The id of the one property of a diagram's table: its elements' name.</summary>
+    internal const string DiagramNameProperty = "name";
+
+    /// <summary>
+    /// A diagram as a relation's target sees it (spec 092, FR-025): a table of its linkable elements, one row each by the element's
+    /// id, titled by the name its tool type names an element by, and with the document's id, so a cell links to an element as it
+    /// links to a row. An element that is a link itself is left out, as the lookup leaves it out.
+    /// </summary>
+    public static KnowledgeTable FromDiagram(IndexedDocument document)
+    {
+        var holders = document.Links.Select(link => link.Holder).ToHashSet(StringComparer.Ordinal);
+        var nameProperty = document.NameProperty ?? document.Elements.SelectMany(element => element.Attributes).Select(attribute => attribute.Key).FirstOrDefault() ?? "label";
+        var rows = document.Elements
+            .Where(element => !holders.Contains(element.Id))
+            .Select(element => new KnowledgeRow(element.Id, [new KnowledgeCell(DiagramNameProperty, [element.ValueOf(nameProperty) ?? element.Id], KnowledgeValueTypes.Text.CellKey)]))
+            .ToList();
+        var name = new KnowledgeProperty(DiagramNameProperty, nameProperty, KnowledgeValueTypes.Text.Name, true, [], "", "none", "", IsComputed: false, IsParent: false);
+        return new KnowledgeTable(Path.GetFileNameWithoutExtension(document.FileName), "", [name], [], rows) { DocumentId = document.DocumentId ?? "" };
+    }
 
     /// <summary>
     /// The full path a relation's target names, from the file the relation is in: a path relative to it, or, for a link, the

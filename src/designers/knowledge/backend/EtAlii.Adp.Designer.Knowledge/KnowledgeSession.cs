@@ -134,6 +134,7 @@ internal sealed class KnowledgeSession : ITableDesignerSession
 
         // After the watched file exists: a reload goes through it.
         _documents?.Reloaded += OnReloaded;
+        _links?.Changed += OnLinksChanged;
     }
 
     /// <summary>Why the file could not be read from disk the last time it was tried, or empty.</summary>
@@ -284,7 +285,7 @@ internal sealed class KnowledgeSession : ITableDesignerSession
         // A relation asked for without the table it relates to is answered with the tables there are to choose from.
         if (gesture.Kind == "addRelation" && string.IsNullOrWhiteSpace(gesture.Settings.GetValueOrDefault("target")))
         {
-            return KnowledgeColumnEdits.ChooseTarget(KnowledgeProject.Targets(_root, _bodyPath));
+            return KnowledgeColumnEdits.ChooseTarget([.. KnowledgeProject.Targets(_root, _bodyPath), .. DiagramTargets()]);
         }
 
         return null;
@@ -311,7 +312,7 @@ internal sealed class KnowledgeSession : ITableDesignerSession
             return KnowledgeCellEdits.Computed;
         }
 
-        var files = new KnowledgeSurroundings(_bodyPath, TargetOf, TargetOf);
+        var files = new KnowledgeSurroundings(_bodyPath, TargetOf, TargetOf, path => _links?.NewElementIdOf(path));
         var edit = KnowledgeEdits.Plan(_shown, _viewState.ViewId, gesture, () => ShortGuid.NewShortGuid().ToString(), _besideItsRule, files);
         if (edit.IsRefused)
         {
@@ -470,7 +471,8 @@ internal sealed class KnowledgeSession : ITableDesignerSession
         if (!_targets.TryGetValue(path, out var target))
         {
             var read = _read(path);
-            target = read.Body is null
+            target = DiagramAt(path, read) is { } diagram ? diagram
+                : read.Body is null
                 ? new KnowledgeTarget(path, null, $"'{targetFile}' is not there.")
                 : read.Body.Unreadable.Length > 0
                     ? new KnowledgeTarget(path, null, $"'{targetFile}' cannot be read as a knowledge file.")
@@ -479,6 +481,42 @@ internal sealed class KnowledgeSession : ITableDesignerSession
         }
 
         return target;
+    }
+
+    /// <summary>
+    /// A target that is a document of a diagram type, as the workspace's index holds it (spec 092, FR-025): a file the index
+    /// knows that is not a knowledge file; null for anything else. Called with the lock held.
+    /// </summary>
+    private KnowledgeTarget? DiagramAt(string path, KnowledgeRead read)
+    {
+        if (read.Body is { Unreadable.Length: 0 } || _links?.WorkspaceOf(_bodyPath) is not { } workspace) return null;
+        var document = workspace.Document(path.Replace('\\', '/'));
+        return document is null || document.Origin == Designer.Origin
+            ? null
+            : new KnowledgeTarget(path, KnowledgeRelations.FromDiagram(document), Kinds: _links.CreatableKindsOf(path));
+    }
+
+    /// <summary>The diagrams of the workspace that a relation of this file can relate to, each as this file names it and by its file name.</summary>
+    private IEnumerable<(string Target, string Name)> DiagramTargets()
+    {
+        if (_links?.WorkspaceOf(_bodyPath) is not { } workspace) return [];
+        var own = Path.GetFullPath(_bodyPath);
+        return workspace.Documents
+            .Where(document => document.Origin is { } origin && origin != Designer.Origin && document.DocumentId is { Length: > 0 })
+            .OrderBy(document => document.Path, StringComparer.OrdinalIgnoreCase)
+            .Select(document => (KnowledgeRelations.TargetName(own, document.Path), document.FileName));
+    }
+
+    /// <summary>A document of the workspace changed: when it is a diagram one of this file's relations points at, it is read again.</summary>
+    private void OnLinksChanged(object? sender, LinkIndexChangedEventArgs changed)
+    {
+        bool held;
+        lock (_gate)
+        {
+            held = _targets.TryGetValue(Path.GetFullPath(changed.Path), out var target) && target.IsDiagram;
+        }
+
+        if (held) OnReloaded(changed.Path);
     }
 
     /// <summary>
@@ -607,6 +645,7 @@ internal sealed class KnowledgeSession : ITableDesignerSession
         await writes.ConfigureAwait(false);
 
         _documents?.Reloaded -= OnReloaded;
+        _links?.Changed -= OnLinksChanged;
 
         Watched.Dispose();
     }
