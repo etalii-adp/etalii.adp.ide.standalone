@@ -37,6 +37,18 @@ internal static class KnowledgeLinks
     }
 
     /// <summary>
+    /// The id the item of <paramref name="cell"/> that holds the row <paramref name="rowId"/> is read under: the text it holds,
+    /// which is a link to the row where the relation links to its target, and the row's id in a file made before links.
+    /// </summary>
+    public static string ItemId(string cellId, KnowledgeCell? cell, string rowId)
+    {
+        var written = cell is { } held && held.Written.Count == held.Values.Count
+            ? held.Values.Zip(held.Written).FirstOrDefault(pair => pair.First == rowId).Second
+            : null;
+        return $"{cellId}/{written ?? rowId}";
+    }
+
+    /// <summary>
     /// How a cell of a relation whose target is <paramref name="target"/> writes the row <paramref name="rowId"/>: as a link when
     /// the relation names its target by one, which needs the target's document id; as the bare id in a relation made before links.
     /// </summary>

@@ -192,6 +192,8 @@ function ListCellEditor({ editor, column, cell, commit, onClose }: CellEditorPro
     }
   };
 
+  const remove = (id: string) => void send(chosen.filter((value) => value !== id), undefined, false);
+
   const pick = (id: string) => {
     const has = chosen.includes(id);
     if (several) {
@@ -215,13 +217,27 @@ function ListCellEditor({ editor, column, cell, commit, onClose }: CellEditorPro
         }
       }}
     >
+      {editor === "rows" && chosen.length > 0 && (
+        // The related rows, as Notion's relation picker shows them: each a chip that is taken away on its own.
+        <ul className="table-cell-chips" aria-label={`${column.name}: related`}>
+          {chosen.map((value) => {
+            const label = items.find((item) => item.id === value)?.label ?? value;
+            return (
+              <li key={value} className="table-cell-chip">
+                <span>{label}</span>
+                <button type="button" className="table-cell-chip-remove mdi mdi-close" aria-label={`Remove ${label}`} onMouseDown={(event) => event.preventDefault()} onClick={() => remove(value)} />
+              </li>
+            );
+          })}
+        </ul>
+      )}
       <SearchList
         label={column.name}
         items={items}
         selected={chosen}
         onPick={pick}
-        // A related row is made in its own table, never from here.
-        onCreate={editor === "rows" ? undefined : (text) => void send(several ? chosen : [], { newOption: text }, !several)}
+        // A title nothing matches makes an option here, or a row in the related table, related at once in the same step.
+        onCreate={(text) => void send(several ? chosen : [], { [editor === "rows" ? "newRow" : "newOption"]: text }, !several)}
         onClose={() => onClose("stay")}
       />
       {reason !== "" && (

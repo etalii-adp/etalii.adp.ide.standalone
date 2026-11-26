@@ -154,6 +154,88 @@ public sealed class KnowledgeRelationsTests : IDisposable
         Assert.Equal(["nh"], cities.OnDisk().Rows.Single(row => row.Id == "r1").Cells.Single(cell => cell.PropertyId == "p5").Values);
     }
 
+    [Theory]
+    [MemberData(nameof(KnowledgeFiles.Extensions), MemberType = typeof(KnowledgeFiles))]
+    public async Task ARelatedRowHeldAsALink_IsReplacedAndTakenAway(string extension)
+    {
+        // Arrange: the first city's province is held as a link.
+        await using var table = Open(extension);
+
+        // Act: another province in its place.
+        await table.Edit(new TableGesture("setCell", RowId: "r1", ColumnId: "p5", Values: ["an"]));
+
+        // Assert.
+        Assert.Equal(["an"], table.OnDisk().Rows.Single(row => row.Id == "r1").Cells.Single(cell => cell.PropertyId == "p5").Values);
+        Assert.DoesNotContain("#nh.", System.Text.Encoding.UTF8.GetString(table.Bytes()), StringComparison.Ordinal);
+    }
+
+    // ---- creating a related row ------------------------------------------------------------------------------
+
+    [Theory]
+    [MemberData(nameof(KnowledgeFiles.Extensions), MemberType = typeof(KnowledgeFiles))]
+    public async Task ARowCreatedFromARelationCell_IsMadeInTheTarget_AndRelated_InOneStepOverBothFiles(string extension)
+    {
+        // Arrange.
+        await using var table = Open(extension);
+        var cities = table.Bytes();
+        var provinces = await File.ReadAllBytesAsync(Provinces, TestContext.Current.CancellationToken);
+
+        // Act: "Zeeland" is typed in the first city's province, which holds one row, and created.
+        await table.Edit(new TableGesture("setCell", RowId: "r1", ColumnId: "p5", Values: [], Settings: Settings(("newRow", "Zeeland"))));
+
+        // Assert: the province is a row of the provinces, titled as typed, and the city holds a link to it in place of the one it had.
+        var made = Assert.Single(KnowledgeDocumentStore.Read(Provinces).Body!.Table.Rows, row => row.Cells.Any(cell => cell.PropertyId == "n1" && cell.Values.SequenceEqual(["Zeeland"])));
+        Assert.Equal([made.Id], table.OnDisk().Rows.Single(row => row.Id == "r1").Cells.Single(cell => cell.PropertyId == "p5").Values);
+        Assert.Contains($"$p7v3k9qd@provinces.yaml#{made.Id}.Name=Zeeland", System.Text.Encoding.UTF8.GetString(table.Bytes()), StringComparison.Ordinal);
+        Assert.Equal(["Zeeland"], Cell(table.Lines(), "r1", "p5")?.Labels);
+
+        // Act: one undo.
+        await table.History.UndoAsync(TestContext.Current.CancellationToken);
+
+        // Assert: both files are as they were.
+        Assert.Equal(cities, table.Bytes());
+        Assert.Equal(provinces, await File.ReadAllBytesAsync(Provinces, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task ARowCreatedFromARelationToItsOwnTable_IsMadeHere_BesideTheOthersItHolds()
+    {
+        // Arrange: a relation of the cities to themselves, holding any number, with one city in it.
+        await using var table = Open();
+        await table.Edit(new TableGesture("addRelation", Values: ["Near"], Settings: Settings(("target", KnowledgeRelations.Self), ("limit", "none"))));
+        var near = Property(table, "Near").Id;
+        await table.Edit(new TableGesture("setCell", RowId: "r1", ColumnId: near, Values: ["r2"]));
+        var before = table.Bytes();
+
+        // Act.
+        await table.Edit(new TableGesture("setCell", RowId: "r1", ColumnId: near, Values: ["r2"], Settings: Settings(("newRow", "Atlantis"))));
+
+        // Assert: a new city titled as typed, related beside the one that was.
+        var made = Assert.Single(table.OnDisk().Rows, row => row.Cells.Any(cell => cell.PropertyId == "p1" && cell.Values.SequenceEqual(["Atlantis"])));
+        Assert.Equal(["r2", made.Id], table.OnDisk().Rows.Single(row => row.Id == "r1").Cells.Single(cell => cell.PropertyId == near).Values);
+
+        // Act: one undo takes both away.
+        await table.History.UndoAsync(TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.Equal(before, table.Bytes());
+    }
+
+    [Fact]
+    public async Task ARowIsCreatedFromARelationCellOnly()
+    {
+        // Arrange.
+        await using var table = Open();
+        var before = table.Bytes();
+
+        // Act: a name typed into a text cell, asked to be created.
+        (_, string answer) = table.Begin(new TableGesture("setCell", RowId: "r1", ColumnId: "p1", Values: [], Settings: Settings(("newRow", "Zeeland"))));
+
+        // Assert.
+        Assert.Equal(KnowledgeCellEdits.RelationsCreateRows, answer);
+        Assert.Equal(before, table.Bytes());
+    }
+
     // ---- making a relation ----------------------------------------------------------------------------------
 
     [Theory]

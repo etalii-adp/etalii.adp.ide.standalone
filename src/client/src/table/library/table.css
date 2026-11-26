@@ -293,6 +293,48 @@
   inset: 0 auto auto 0;
 }
 
+/* The rows a relation cell holds, above its search: each a chip with its own button to take it away. */
+.table-cell-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0;
+  padding: 4px var(--table-cell-padding);
+  background: var(--color-surface);
+  list-style: none;
+}
+
+.table-cell-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  max-width: 100%;
+  padding: 1px 4px 1px 8px;
+  border-radius: 999px;
+  background: var(--color-table-option-default);
+  color: var(--color-text);
+}
+
+.table-cell-chip > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.table-cell-chip-remove {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  opacity: 0.6;
+}
+
+.table-cell-chip-remove:hover,
+.table-cell-chip-remove:focus-visible {
+  opacity: 1;
+}
+
 /* A list that would run past the table's foot opens upwards, ending where its cell ends. */
 .table-cell-list-editor-up {
   inset: auto auto 0 0;
