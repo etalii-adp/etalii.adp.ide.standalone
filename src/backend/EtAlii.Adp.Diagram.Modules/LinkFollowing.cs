@@ -22,7 +22,7 @@ public sealed class LinkFollowing : IDisposable
         _links = links;
         _path = Path.GetFullPath(bodyPath).Replace('\\', '/');
         _changed = changed;
-        if (_links is not null) _links.Changed += OnChanged;
+        _links?.Changed += OnChanged;
     }
 
     /// <summary>The workspace the diagram's links resolve against now; null where there is no index or none holds it.</summary>
@@ -31,7 +31,7 @@ public sealed class LinkFollowing : IDisposable
     /// <summary>Stops following the index.</summary>
     public void Dispose()
     {
-        if (_links is not null) _links.Changed -= OnChanged;
+        _links?.Changed -= OnChanged;
     }
 
     private void OnChanged(object? sender, LinkIndexChangedEventArgs args)
