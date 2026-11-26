@@ -2,6 +2,7 @@ using System.Text;
 using System.Xml;
 using System.Xml.Linq;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Specification.Disl;
 
 namespace EtAlii.Adp.Diagram.Mindmap;
 
@@ -270,8 +271,8 @@ public sealed class MindmapDocument
         }
     }
 
-    /// <summary>Freeplane's own ids are <c>ID_</c> plus digits; ours keep the prefix and use a ShortGuid, per tech.md's identity rule.</summary>
-    internal static string NewId() => "ID_" + ShortGuid.NewShortGuid();
+    /// <summary>Freeplane's own ids are <c>ID_</c> plus digits; ours keep the prefix, by the definition's id rule: <c>ID_</c> and 8 of <c>0-9a-z</c>.</summary>
+    internal static string NewId() => DislIds.Of(MindmapDefinition.Specification).Next("");
 
     private static XElement NewNodeElement(string text)
     {

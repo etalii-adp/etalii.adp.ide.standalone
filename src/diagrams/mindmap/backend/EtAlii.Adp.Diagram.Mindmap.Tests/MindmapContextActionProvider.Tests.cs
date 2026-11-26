@@ -292,7 +292,9 @@ public class MindmapContextActionProviderTests : IDisposable
 
         // Assert.
         Assert.True(result.Completed, result.Error);
-        Assert.Equal("a child", (await _project.DocumentAsync()).Find("ID_88117422")!.Children.Single().Text);
+        var child = (await _project.DocumentAsync()).Find("ID_88117422")!.Children.Single();
+        Assert.Equal("a child", child.Text);
+        Assert.Matches("^ID_[0-9a-z]{8}$", child.Id); // the definition's id rule: ID_ and 8 of 0-9a-z
         Assert.True(_project.History.CanUndo);
     }
 

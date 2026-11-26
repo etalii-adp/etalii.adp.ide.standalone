@@ -81,7 +81,7 @@ internal static class DependencyGraphDefinition
 
     /// <summary>
     /// What the definition's <c>addNodeHere</c> does at a placement's point - <paramref name="x"/> and
-    /// <paramref name="row"/> - under a new ShortGuid: the transaction, or why not.
+    /// <paramref name="row"/> - under a new id: the transaction, or why not.
     /// </summary>
     public static DislTransaction NodeHere(DependencyGraphBody body, double x, int row)
     {
@@ -91,14 +91,14 @@ internal static class DependencyGraphDefinition
             "addNodeHere",
             body.Working(),
             null,
-            DislIds.Fixed(ShortGuid.NewShortGuid().ToString()),
+            DislIds.Fixed(NewId()),
             new DislInvocation(Position: new Dictionary<string, object?>(StringComparer.Ordinal) { ["x"] = x, ["y"] = (double)row }),
             Env);
     }
 
     /// <summary>
     /// What the definition's <c>addLinkedHere</c> does at a placement's point - <paramref name="x"/> and
-    /// <paramref name="row"/> - for <paramref name="pick"/>, under a new ShortGuid: the transaction, or why not.
+    /// <paramref name="row"/> - for <paramref name="pick"/>, under a new id: the transaction, or why not.
     /// </summary>
     public static DislTransaction LinkedHere(DependencyGraphBody body, double x, int row, DislLookupPick pick)
     {
@@ -108,7 +108,7 @@ internal static class DependencyGraphDefinition
             AddLinkedOperation,
             body.Working(),
             null,
-            DislIds.Fixed(ShortGuid.NewShortGuid().ToString()),
+            DislIds.Fixed(NewId()),
             new DislInvocation(Position: new Dictionary<string, object?>(StringComparer.Ordinal) { ["x"] = x, ["y"] = (double)row }, Lookup: pick),
             Env);
     }
@@ -150,7 +150,10 @@ internal static class DependencyGraphDefinition
     }
 
     /// <summary>Two ids for a node and its dependency, minted in that order as the hand-written commands did.</summary>
-    private static IIdSource NewIds() => DislIds.Fixed(ShortGuid.NewShortGuid().ToString(), ShortGuid.NewShortGuid().ToString());
+    private static IIdSource NewIds() => DislIds.Fixed(NewId(), NewId());
+
+    /// <summary>A new id by the definition's <c>persistence.ids</c> rule (DISL §11.5.1): 8 characters of <c>0-9a-z</c>.</summary>
+    public static string NewId() => DislIds.Of(Specification).Next("");
 
     /// <summary>
     /// Writes the changes of <paramref name="transaction"/> into <paramref name="body"/>, in order, each as the binding

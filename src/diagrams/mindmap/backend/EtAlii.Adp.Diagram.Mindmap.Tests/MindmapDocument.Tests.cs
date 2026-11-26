@@ -104,7 +104,7 @@ public class MindmapDocumentTests
         // Assert.
         Assert.All(document.Nodes, node => Assert.NotEqual("", node.Id));
         var assigned = document.Nodes.Single(node => node.Text == "no id yet");
-        Assert.StartsWith("ID_", assigned.Id, StringComparison.Ordinal);
+        Assert.Matches("^ID_[0-9a-z]{8}$", assigned.Id);
         Assert.Equal("ID_1", assigned.Parent!.Id); // an id the file already had is untouched
         // The assignment is persisted on the next save, not only held in memory.
         Assert.Contains($"ID=\"{assigned.Id}\"", document.ToText(), StringComparison.Ordinal);
@@ -237,7 +237,7 @@ public class MindmapDocumentTests
 
         // Assert.
         Assert.Equal("Logging", backend.Children[^1].Text);
-        Assert.StartsWith("ID_", added.Id, StringComparison.Ordinal);
+        Assert.Matches("^ID_[0-9a-z]{8}$", added.Id);
         // The corpus is a genuine Windows Freeplane save, so a synthesized structural newline
         // matches its CRLF - an inserted line must not be the one LF line in the file.
         Assert.Contains("<node TEXT=\"Logging\" ID=\"" + added.Id + "\"/>\r\n</node>", document.ToText(), StringComparison.Ordinal);

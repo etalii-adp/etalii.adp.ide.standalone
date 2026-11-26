@@ -216,7 +216,7 @@ public sealed class DependencyGraphContextActionProvider(IHistoryStackStore hist
         }
 
         return await DispatchAsync(target, new ConnectDependencyGraphElementsCommand(
-            target.ResolvedFullPath, ShortGuid.NewShortGuid().ToString(), from, to, ""), cancellationToken);
+            target.ResolvedFullPath, DependencyGraphDefinition.NewId(), from, to, ""), cancellationToken);
     }
 
     /// <summary>An add from a menu, with no placement to land on: the label is asked first.</summary>
@@ -282,7 +282,7 @@ public sealed class DependencyGraphContextActionProvider(IHistoryStackStore hist
     private static AddDependencyGraphElementCommand NewElementAt(string body, double x, int row, string? label = null) =>
         new(
             body,
-            ShortGuid.NewShortGuid().ToString(),
+            DependencyGraphDefinition.NewId(),
             string.IsNullOrWhiteSpace(label) ? NewElementLabel : label,
             x,
             row);
