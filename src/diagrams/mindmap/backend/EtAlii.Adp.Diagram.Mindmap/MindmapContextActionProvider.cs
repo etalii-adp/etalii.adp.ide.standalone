@@ -84,7 +84,7 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
         // an unlinked node are not "unavailable right now", they do not apply - the definition's
         // entries say so with `visible`.
         return await ResolveAsync(target, cancellationToken) is { } resolved
-            ? [.. MindmapDefinition.Menus(resolved.Element), .. _linkFixes.Menu(resolved.Diagram, target)]
+            ? [.. MindmapDefinition.Menus(resolved.Element), .. LinkNavigation.Menu(resolved.Diagram, target, _links?.WorkspaceOf(target.ResolvedFullPath)), .. _linkFixes.Menu(resolved.Diagram, target)]
             : [];
     }
 
@@ -97,6 +97,12 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
 
         var node = resolved.Node;
         var element = resolved.Element;
+        if (LinkNavigation.Handles(actionId))
+        {
+            // Where a link leads (FBL 17.5): the linked node's target, or the links that point at this node.
+            return LinkNavigation.Execute(resolved.Diagram, target, actionId, _links?.WorkspaceOf(target.ResolvedFullPath));
+        }
+
         if (DislLinkFixes.IsFix(actionId))
         {
             // The fixes of a linked node's finding (FBL 17.6): the link removed, leaving the text it cached, or its document chosen.
@@ -188,6 +194,11 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
 
         var node = resolved.Node;
         var bodyPath = target.ResolvedFullPath;
+        if (actionId == LinkNavigation.LinkedFromActionId)
+        {
+            return LinkNavigation.Picked(value);
+        }
+
         if (actionId == DislLinkFixes.ChooseActionId)
         {
             return await _linkFixes.ChooseAsync(resolved.Diagram, target, value, (_, link) => new SetNodeAdpLinkCommand(bodyPath, node.Id, link), cancellationToken);

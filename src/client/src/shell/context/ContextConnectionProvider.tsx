@@ -28,6 +28,7 @@ import type { ProjectProblems } from "../../generated/problems_pb";
 import type { ContextLookupResult, ContextPromptSubmission, ContextPromptVerdict } from "./ContextPromptHost";
 import { useCoalescedSelect } from "./useCoalescedSelect";
 import { requestTextTab } from "../panels/textTabRequests";
+import { requestReveal } from "../panels/revealRequests";
 import { onLocalNotice } from "./localNotices";
 import { WorkspaceStreams, type HierarchySurfaceStreamEvent, type TableStreamEvent } from "./workspaceStreams";
 
@@ -416,6 +417,18 @@ export function ContextConnectionProvider({ projectId, children }: ContextConnec
               // two drags that both failed to record - and both are worth showing.
               const text = message.message.value.message;
               setNotices((previous) => [...previous, { id: nextNoticeId(), text }]);
+              continue;
+            }
+            if (message.message.case === "reveal") {
+              // An action pointed somewhere - a linked element's target, a link that points here (spec 092): its document is
+              // opened in its tool, and the element selected once that tool draws it.
+              const reveal = message.message.value;
+              requestReveal({
+                entryId: reveal.entryId?.value ?? new Uint8Array(0),
+                path: [...(reveal.path?.segments ?? [])],
+                mimeType: reveal.mimeType,
+                elementId: reveal.elementId,
+              });
               continue;
             }
             if (message.message.case === "problems") {

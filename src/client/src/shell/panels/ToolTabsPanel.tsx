@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { isTabDirty } from "./dirtyTabs";
 import { onTextTabRequested } from "./textTabRequests";
+import { onRevealRequested } from "./revealRequests";
 import { base64Encode } from "@bufbuild/protobuf/wire";
 import { ContextSelectionAction } from "../../generated/context_pb";
 import type { ContextLevelDetail } from "../../generated/context-contract_pb";
@@ -85,6 +86,25 @@ export function ToolTabsPanel({ projectId }: ToolTabsPanelProps) {
     );
     setActiveKey(key);
   }, [selection, levels, projectId]);
+
+  // A document an action pointed at (spec 092): opened under the key an activation of its entry opens it with, so a tab it
+  // already has comes to the front rather than a second one opening. Its canvas selects the element.
+  useEffect(
+    () =>
+      onRevealRequested((request) => {
+        if (request.mimeType === "" || request.entryId.length === 0) {
+          return;
+        }
+        const key = `${base64Encode(request.entryId)}|${request.path.join("/")}`;
+        setTabs((current) =>
+          current.some((tab) => tab.key === key)
+            ? current
+            : [...current, { key, tool: { projectId, entryId: request.entryId, path: [...request.path], mimeType: request.mimeType } }],
+        );
+        setActiveKey(key);
+      }),
+    [projectId],
+  );
 
   // A text tab asked for from elsewhere - "Open as text", "Open with…", or a problem's
   // go-to-line. Requested rather than pushed, because tabs are client state and the context

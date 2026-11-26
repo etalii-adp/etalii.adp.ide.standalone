@@ -29,6 +29,7 @@ public sealed partial class ContextService : Wire.ContextService.ContextServiceB
     private readonly IContextInteractionStore _contextInteractionStore;
     private readonly ConnectionSessions _sessions;
     private readonly ContextWatch _watch;
+    private readonly IReadOnlyList<IContextEntryLocator> _entries;
 
     public ContextService(
         IProjectStore projectStore,
@@ -38,7 +39,8 @@ public sealed partial class ContextService : Wire.ContextService.ContextServiceB
         IContextPropertyResolver contextPropertyResolver,
         IContextInteractionStore contextInteractionStore,
         ConnectionSessions sessions,
-        ContextWatch watch)
+        ContextWatch watch,
+        IEnumerable<IContextEntryLocator> entries)
     {
         _projectStore = projectStore;
         _selectionStore = selectionStore;
@@ -48,6 +50,7 @@ public sealed partial class ContextService : Wire.ContextService.ContextServiceB
         _contextInteractionStore = contextInteractionStore;
         _sessions = sessions;
         _watch = watch;
+        _entries = [.. entries];
     }
 
     public override async Task<SelectResponse> Select(SelectRequest request, ServerCallContext context)

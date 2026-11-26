@@ -72,7 +72,8 @@ public sealed class ContextServiceWatchReleaseTests : IDisposable
             new NoProperties(),
             interactions,
             new ConnectionSessions([new HistoryRetention(history)]),
-            new ContextWatch(selections, actions, interactions, new NoProblems()));
+            new ContextWatch(selections, actions, interactions, new NoProblems()),
+            []);
     }
 
     private static Task WatchAsync(ContextService service, CancellationToken cancellationToken) =>

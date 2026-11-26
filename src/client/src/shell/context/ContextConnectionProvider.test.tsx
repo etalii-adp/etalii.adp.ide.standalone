@@ -5,6 +5,7 @@ import { ContextSelectionSource } from "../../generated/context-contract_pb";
 import { ContextMessageSchema, ContextPromptSchema, ContextSelectionAction, type ContextMessage } from "../../generated/context_pb";
 import { ProblemSetState, ProblemSeverity } from "../../generated/problems_pb";
 import { WorkspaceMessageSchema, type WorkspaceMessage } from "../../generated/workspace_pb";
+import { onRevealRequested, type RevealRequest } from "../panels/revealRequests";
 import {
   ContextConnectionProvider,
   NONE_DETAIL,
@@ -242,6 +243,29 @@ describe("ContextConnectionProvider", () => {
     expect(found).toEqual({ candidates: [{ value: "$k7q2m9xa@features.yaml#checkout=Checkout", name: "Checkout", documentName: "features.yaml", folder: "specs" }], error: "" });
     expect(failed.candidates).toEqual([]);
     expect(failed.error).not.toBe("");
+  });
+
+  it("hands a pushed reveal to the workspace, as the document, its entry, its tool and the element", async () => {
+    // Arrange.
+    const heard: RevealRequest[] = [];
+    const stop = onRevealRequested((request) => heard.push(request));
+    renderProvider();
+    await flush();
+
+    // Act.
+    streams[0]!.push(
+      create(ContextMessageSchema, {
+        message: {
+          case: "reveal",
+          value: { path: { segments: ["specs", "features.yaml"] }, entryId: { value: new Uint8Array(16).fill(5) }, mimeType: "generic/knowledge", elementId: "checkout" },
+        },
+      }),
+    );
+    await waitFor(() => expect(heard).toHaveLength(1));
+    stop();
+
+    // Assert.
+    expect(heard[0]).toEqual({ entryId: new Uint8Array(16).fill(5), path: ["specs", "features.yaml"], mimeType: "generic/knowledge", elementId: "checkout" });
   });
 
   it("puts the dialog an answer brings with it in the place of the one just answered", async () => {

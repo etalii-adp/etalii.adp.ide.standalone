@@ -66,9 +66,10 @@ public abstract class DiagramActionProvider<TBody, TModel> : IContextActionProvi
         if (!Serves(target)) return [];
         var entry = await LoadAsync(target, cancellationToken);
         var discovered = Discover(target, entry);
-        return entry.IsUsable && LinkedDiagramOf(entry) is { } diagram && _linkFixes.Menu(diagram, target) is { Count: > 0 } fixes
-            ? [.. discovered, .. fixes]
-            : discovered;
+        if (!entry.IsUsable || LinkedDiagramOf(entry) is not { } diagram) return discovered;
+
+        // Where a link leads, and the fixes of one that leads nowhere, after the module's own (spec 092).
+        return [.. discovered, .. LinkNavigation.Menu(diagram, target, Links?.WorkspaceOf(target.ResolvedFullPath)), .. _linkFixes.Menu(diagram, target)];
     }
 
     /// <inheritdoc />
@@ -79,6 +80,11 @@ public abstract class DiagramActionProvider<TBody, TModel> : IContextActionProvi
 
         var entry = await LoadAsync(target, cancellationToken);
         if (!entry.IsUsable) return new ContextExecutionFailed(Unreadable(target));
+        if (LinkNavigation.Handles(actionId) && LinkedDiagramOf(entry) is { } linked)
+        {
+            return LinkNavigation.Execute(linked, target, actionId, Links?.WorkspaceOf(target.ResolvedFullPath));
+        }
+
         return DislLinkFixes.IsFix(actionId) && LinkedDiagramOf(entry) is { } diagram
             ? await _linkFixes.ExecuteAsync(diagram, target, actionId, (fix, link) => Relink(target, fix, link), cancellationToken)
             : await RunAsync(target, entry, actionId, cancellationToken);
@@ -108,6 +114,11 @@ public abstract class DiagramActionProvider<TBody, TModel> : IContextActionProvi
         if (!entry.IsUsable)
         {
             return ContextCommitResult.Failed(Unreadable(target));
+        }
+
+        if (actionId == LinkNavigation.LinkedFromActionId)
+        {
+            return LinkNavigation.Picked(value);
         }
 
         if (actionId == DislLinkFixes.ChooseActionId && LinkedDiagramOf(entry) is { } diagram)

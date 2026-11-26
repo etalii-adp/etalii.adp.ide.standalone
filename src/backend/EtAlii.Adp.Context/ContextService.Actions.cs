@@ -98,6 +98,13 @@ public sealed partial class ContextService
             return Rejected(failed.Message);
         }
 
+        if (execution is ContextExecutionReveals reveals)
+        {
+            return Reveal(request.WatchId, root.Value, owner.Action.Id, reveals) is { } refusal
+                ? Rejected(refusal)
+                : new ExecuteActionResponse { Accepted = true };
+        }
+
         if (execution is ContextExecutionCompleted)
         {
             _logger.Information("Action {ActionId} completed on {TargetPath}", owner.Action.Id, target.ResolvedFullPath);
@@ -245,7 +252,15 @@ public sealed partial class ContextService
         // the response does carry is where the new thing lives, so the client that asked for it
         // can recognise its own EntryCreated among the ones flowing down that feed.
         var response = new SubmitInteractionResponse { Completed = true };
-        if (commit.Next is { } next and not (ContextExecutionCompleted or ContextExecutionFailed))
+        if (commit.Next is ContextExecutionReveals reveals)
+        {
+            // The answer pointed somewhere - a document the user picked from a list of them - and the workspace goes there.
+            if (Reveal(interaction.WatchId, interaction.Target.Root, interaction.ActionId, reveals) is { } refusal)
+            {
+                response = new SubmitInteractionResponse { Completed = true, Error = refusal };
+            }
+        }
+        else if (commit.Next is { } next and not (ContextExecutionCompleted or ContextExecutionFailed))
         {
             // A further question of the same action: an interaction of its own, for the same
             // target and provider, answered under the action id the provider gave it. It rides
@@ -279,6 +294,29 @@ public sealed partial class ContextService
         response.Candidates.AddRange(lookup.Search(request.Query).Select(ContextWire.ToProto));
         _logger.Verbose("The lookup of interaction {InteractionId} offers {Count} for '{Query}'", request.InteractionId, response.Candidates.Count, request.Query);
         return Task.FromResult(response);
+    }
+
+    /// <summary>
+    /// Pushes where <paramref name="actionId"/> pointed to the connection <paramref name="watchId"/>, as the entry it knows the
+    /// document by; the sentence to refuse with when it knows none, because the document has gone or is outside its project.
+    /// </summary>
+    private string? Reveal(ShortGuid watchId, ProjectRoot root, string actionId, ContextExecutionReveals reveals)
+    {
+        if (_entries.Select(locator => locator.Locate(watchId, root, reveals.FullPath)).FirstOrDefault(found => found is not null) is not { } location)
+        {
+            _logger.Warning("{ActionId} pointed at {Path}, which connection {WatchId} holds no entry for", actionId, reveals.FullPath, watchId);
+            return "That document is not in this project any more.";
+        }
+
+        _selectionStore.PushReveal(watchId, new ContextReveal
+        {
+            Path = ContextWire.ToRelativePath(root.FullPath, reveals.FullPath),
+            EntryId = location.EntryId,
+            MimeType = location.MimeType,
+            ElementId = reveals.ElementId,
+        });
+        _logger.Information("{ActionId} reveals {ElementId} of {Path} on watch {WatchId}", actionId, reveals.ElementId, reveals.FullPath, watchId);
+        return null;
     }
 
     public override Task<CancelInteractionResponse> CancelInteraction(CancelInteractionRequest request, ServerCallContext context)

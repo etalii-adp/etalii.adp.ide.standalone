@@ -81,7 +81,7 @@ public static class DislLinkFixes
         return new LinkChoice(text, [.. fix.Finding.Candidates.Where(candidate => candidate != path)]);
     }
 
-    private static string WrittenIdOf(DislElement element) =>
+    internal static string WrittenIdOf(DislElement element) =>
         element.HostAttributes.TryGetValue(StoredId, out var id) && id is string { Length: > 0 } written ? written : element.Id;
 }
 

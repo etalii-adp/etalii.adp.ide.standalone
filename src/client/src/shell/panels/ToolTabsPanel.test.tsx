@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { act, render, screen, fireEvent } from "@testing-library/react";
 import { markTabDirty } from "./dirtyTabs";
 import { requestTextTab } from "./textTabRequests";
+import { requestReveal } from "./revealRequests";
 import { create } from "@bufbuild/protobuf";
 import { ContextLevelDetailSchema, ContextSelectionSource } from "../../generated/context-contract_pb";
 import { type ContextLevelDetail } from "../../generated/context-contract_pb";
@@ -167,6 +168,23 @@ describe("ToolTabsPanel", () => {
     rerender(<ToolTabsPanel projectId={projectId} />);
 
     // Assert.
+    expect(screen.getAllByRole("tab")).toHaveLength(2);
+    expect(screen.getByRole("tab", { name: /^a$/ }).getAttribute("aria-selected")).toBe("true");
+  });
+
+  it("opens the document an action pointed at, and brings its tab to the front when it is open already", () => {
+    // Arrange.
+    const { rerender } = renderPanel();
+    push(entryA, ["a.adp"], "freeplane/mindmap");
+    rerender(<ToolTabsPanel projectId={projectId} />);
+
+    // Act: a link in a points at b, and then one in b points back at a.
+    act(() => requestReveal({ entryId: entryB, path: ["specs", "b.mm"], mimeType: "freeplane/mindmap", elementId: "checkout" }));
+    const opened = screen.getByRole("tab", { name: /^b\.mm$/ }).getAttribute("aria-selected");
+    act(() => requestReveal({ entryId: entryA, path: ["a.adp"], mimeType: "freeplane/mindmap", elementId: "launch" }));
+
+    // Assert.
+    expect(opened).toBe("true");
     expect(screen.getAllByRole("tab")).toHaveLength(2);
     expect(screen.getByRole("tab", { name: /^a$/ }).getAttribute("aria-selected")).toBe("true");
   });

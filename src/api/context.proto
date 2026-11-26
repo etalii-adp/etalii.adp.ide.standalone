@@ -112,7 +112,18 @@ message ContextMessage {
     ContextProjectActions project_actions = 3;
     ProjectProblems problems = 4;
     ContextNotice notice = 5;
+    ContextReveal reveal = 6;
   }
+}
+
+// Where an action pointed (spec 092, FR-014): a document of the project, which the workspace opens in its tool or brings to
+// the front, and the element of it to select once it is drawn. Pushed on the stream because the backend decides it while
+// running the action. entry_id and mime_type are what the workspace opens a tab with, as an activation's selection carries them.
+message ContextReveal {
+  Path path = 1;            // project-relative
+  ShortGuid entry_id = 2;   // the document's entry on this connection
+  string mime_type = 3;     // which tool opens it, as EntryDetail.diagram_mime_type says
+  string element_id = 4;    // empty: the document alone
 }
 
 // Something that happened alongside a command that SUCCEEDED, and that the user would
