@@ -93,7 +93,7 @@ public sealed class LinkWorkspace
     /// <summary>The name of the element <paramref name="elementId"/> of the document at <paramref name="path"/>, as a link names it (FBL 17.1); null where the index holds no such element.</summary>
     public string? NameOf(string path, string elementId)
     {
-        if (Document(path) is not { } document || document.Elements.FirstOrDefault(element => element.Id == elementId) is not { } element) return null;
+        if (Document(path) is not { } document || document.Elements.FirstOrDefault(candidate => candidate.Id == elementId) is not { } element) return null;
         (string? _, string name) = NameOf(document, element, null);
         return name;
     }

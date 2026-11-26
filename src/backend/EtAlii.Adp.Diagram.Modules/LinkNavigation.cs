@@ -43,7 +43,7 @@ public static class LinkNavigation
 
         if (actionId == OpenActionId)
         {
-            return Target(element, workspace) is { } reveal ? reveal : new ContextExecutionFailed("The linked element is not in the workspace any more.");
+            return (ContextExecutionResult?)Target(element, workspace) ?? new ContextExecutionFailed("The linked element is not in the workspace any more.");
         }
 
         var backlinks = BacklinksOf(element, target, workspace);

@@ -12,7 +12,7 @@ namespace EtAlii.Adp.Diagram.Modules;
 public static class LinkLookups
 {
     /// <summary>Why the lookup cannot open: the diagram is in no workspace the index follows.</summary>
-    public const string NoWorkspace = "Adding an element of another document needs the workspace's index, which does not hold this diagram.";
+    private const string NoWorkspace = "Adding an element of another document needs the workspace's index, which does not hold this diagram.";
 
     /// <summary>
     /// The lookup the operation <paramref name="operationId"/> of <paramref name="specification"/> opens for the diagram at

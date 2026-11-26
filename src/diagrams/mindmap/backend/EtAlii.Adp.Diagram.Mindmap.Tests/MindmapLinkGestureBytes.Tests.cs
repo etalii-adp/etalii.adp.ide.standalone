@@ -42,7 +42,7 @@ public sealed partial class MindmapLinkGestureBytesTests : IDisposable
         var added = await actions.CommitAsync(Target(path, "ID_1"), MindmapContextActionProvider.AddLinkedActionId, "$r6d3w8ne@roadmap.tml#launch=Launch", "", TestContext.Current.CancellationToken);
         var written = await ReadAsync(path);
         var node = NodeId().Match(written).Groups[1].Value;
-        using var fresh = new ServiceCollection().AddCommands().AddMindmapCommands().BuildServiceProvider();
+        await using var fresh = new ServiceCollection().AddCommands().AddMindmapCommands().BuildServiceProvider();
         var reopened = new MindmapContextActionProvider(fresh.GetRequiredService<IHistoryStackStore>(), fresh.GetRequiredService<IMindmapDocumentStore>(), new MindmapViewState(), new MindmapOpeningIndex(Workspace()));
         var opened = await reopened.ExecuteAsync(Target(path, node), LinkNavigation.OpenActionId, TestContext.Current.CancellationToken);
 
