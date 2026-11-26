@@ -130,6 +130,23 @@ public class ReadingTests
         Assert.Single(model.Elements);
     }
 
+    [Theory]
+    [InlineData("ded: \"0.1\"\nitems:\n  - id: a\n", false)]
+    [InlineData("ded: \"0.3\"\nitems:\n  - id: a\n", false)]
+    [InlineData("ded: \"0.2\"\nitems:\n  - id: a\n", true)]
+    public void AHeaderWhoseValueIsAList_AcceptsAnyOfItsValues_AndRefusesAnother(string body, bool refused)
+    {
+        // Arrange: FBL 0.23 section 5.6, a binding that reads two versions of its format.
+        var binding = Inline("""[{ "name": "item", "type": "Item", "at": "/items/*", "id": { "from": { "key": "id" } } }]""", """, "header": { "key": "ded", "value": ["0.1", "0.3"], "required": true }""");
+
+        // Act.
+        var model = Read(body, binding);
+
+        // Assert.
+        Assert.Equal(refused, model.Unreadable);
+        Assert.Equal(refused ? 0 : 1, model.Elements.Count);
+    }
+
     [Fact]
     public void ARequiredHeaderThatIsMissingMakesTheBodyUnreadableWithOneFinding()
     {
