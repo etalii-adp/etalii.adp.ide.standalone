@@ -96,6 +96,21 @@ function firstSelectable(options: ContextOption[]): ContextOption | undefined {
   return undefined;
 }
 
+/** The one option of a tree that can be chosen, when it has exactly one; undefined for none or several. */
+function soleChoosable(options: ContextOption[]): ContextOption | undefined {
+  const found: ContextOption[] = [];
+  const collect = (level: ContextOption[]) => {
+    for (const option of level) {
+      if (option.selectable && unavailableReasonFor(options, option.id) === "") {
+        found.push(option);
+      }
+      collect(option.children);
+    }
+  };
+  collect(options);
+  return found.length === 1 ? found[0] : undefined;
+}
+
 /** One rendered row of the tree: which option, how deep, and whether it is open. */
 interface VisibleRow {
   option: ContextOption;
@@ -407,7 +422,14 @@ export function ChoicePromptDialog({ prompt, onPropose, onSubmit, onCancel }: Ch
           placeholder="Search"
           value={search}
           data-dialog-autofocus
-          onChange={(event) => setSearch(event.target.value)}
+          onChange={(event) => {
+            setSearch(event.target.value);
+            // A search that leaves one type has chosen it: Add is then one press away (etalii.adp spec 092, T035).
+            const only = event.target.value.trim() === "" ? undefined : soleChoosable(matchingOptions(prompt.options, event.target.value));
+            if (only !== undefined) {
+              choose(only.id);
+            }
+          }}
           onKeyDown={(event) => {
             // Down moves from the search into what it found.
             if (event.key === "ArrowDown") {

@@ -69,12 +69,14 @@ vi.mock("@client/editors/ResolvedTextEditorPanel", () => ({
 }));
 
 const contextState: { selection: ContextSelection | null; levels: ContextLevelDetail[] } = { selection: null, levels: [] };
+const connection = vi.hoisted(() => ({ select: vi.fn() }));
 
 vi.mock("../context/ContextConnectionProvider", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../context/ContextConnectionProvider")>();
   return {
     ...actual,
     useContextSelection: () => ({ ...contextState, actions: [], preview: null, pendingReveal: null, connected: true }),
+    useContextConnection: () => connection,
   };
 });
 
@@ -152,6 +154,26 @@ describe("ToolTabsPanel", () => {
 
     // Assert.
     expect(screen.queryByRole("tab")).toBeNull();
+  });
+
+  it("makes the document of a tab brought to the front the selection, so the ribbon is that document's (spec 092, T035)", () => {
+    // Arrange: two diagrams open, the second in front.
+    connection.select.mockClear();
+    const { rerender } = renderPanel();
+    push(entryA, ["a.adp"], "freeplane/mindmap");
+    rerender(<ToolTabsPanel projectId={projectId} />);
+    push(entryB, ["b.adp"], "freeplane/mindmap");
+    rerender(<ToolTabsPanel projectId={projectId} />);
+
+    // Act: the first brought to the front.
+    fireEvent.click(screen.getByRole("tab", { name: /^a$/ }));
+
+    // Assert: its entry, plainly selected - not activated, which would open it again.
+    expect(connection.select).toHaveBeenCalledTimes(1);
+    const selected = connection.select.mock.calls[0]![0] as ContextSelection;
+    expect(selected.id?.source.case === "entryId" ? [...selected.id.source.value.value] : []).toEqual([...entryA]);
+    expect(selected.path?.segments).toEqual(["a.adp"]);
+    expect(selected.detail.case).toBe("none");
   });
 
   it("focuses the existing tab on re-activation instead of opening a duplicate", () => {

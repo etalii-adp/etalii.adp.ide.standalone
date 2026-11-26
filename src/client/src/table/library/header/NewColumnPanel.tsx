@@ -148,7 +148,7 @@ export function NewColumnPanel({ definition, position, beside, raise, ask, onClo
             <span>Limit</span>
             <select aria-label="Limit" value={relation.limit} onChange={(event) => setRelation({ ...relation, limit: event.target.value })}>
               <option value="none">No limit</option>
-              <option value="one">1 row</option>
+              <option value="one">{relation.target.oneWay === true ? "1 element" : "1 row"}</option>
             </select>
           </label>
           {relation.target.oneWay === true ? (

@@ -1293,9 +1293,11 @@ button {
 }
 
 .choice-tree {
-  /* Fills whatever the fixed dialog leaves, rather than measuring the viewport itself. */
+  /* Fills whatever the fixed dialog leaves, rather than measuring the viewport itself, but keeps
+     room for four rows: in a short window the dialog's body scrolls rather than the tree shrinking
+     to a row or two with the selected one cut off. */
   flex: 1 1 auto;
-  min-height: 0;
+  min-height: 6.5rem;
   overflow-y: auto;
   border: 1px solid var(--color-border);
   border-radius: 8px;

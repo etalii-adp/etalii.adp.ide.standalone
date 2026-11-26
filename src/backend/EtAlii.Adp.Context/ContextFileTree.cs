@@ -23,11 +23,12 @@ public static class ContextFileTree
 
     /// <param name="rootPath">The project's root folder.</param>
     /// <param name="accepts">Whether the file at this full path may be chosen.</param>
-    public static IReadOnlyList<ContextOptionNode> Build(string rootPath, Func<string, bool> accepts)
+    /// <param name="rank">Where a file stands among the files of its folder, lower first; all alike when null.</param>
+    public static IReadOnlyList<ContextOptionNode> Build(string rootPath, Func<string, bool> accepts, Func<string, int>? rank = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);
         ArgumentNullException.ThrowIfNull(accepts);
-        return Directory.Exists(rootPath) ? Children(rootPath, "", accepts) : [];
+        return Directory.Exists(rootPath) ? Children(rootPath, "", accepts, rank ?? (_ => 0)) : [];
     }
 
     /// <summary>The project-relative path of <paramref name="fullPath"/> as an option id, or null when it is not inside the root.</summary>
@@ -39,7 +40,7 @@ public static class ContextFileTree
             : relative.Replace(Path.DirectorySeparatorChar, '/');
     }
 
-    private static List<ContextOptionNode> Children(string folder, string prefix, Func<string, bool> accepts)
+    private static List<ContextOptionNode> Children(string folder, string prefix, Func<string, bool> accepts, Func<string, int> rank)
     {
         var nodes = new List<ContextOptionNode>();
         try
@@ -53,14 +54,15 @@ public static class ContextFileTree
                     continue;
                 }
 
-                var children = Children(directory, prefix + name + "/", accepts);
+                var children = Children(directory, prefix + name + "/", accepts, rank);
                 if (children.Count > 0)
                 {
                     nodes.Add(new ContextOptionNode(prefix + name, name, Selectable: false, Children: children, Icon: "mdi-folder-outline"));
                 }
             }
 
-            foreach (var file in Directory.EnumerateFiles(folder).Order(StringComparer.OrdinalIgnoreCase))
+            // Files by the rank their asker gives them, and by name within a rank.
+            foreach (var file in Directory.EnumerateFiles(folder).OrderBy(rank).ThenBy(file => file, StringComparer.OrdinalIgnoreCase))
             {
                 var name = Path.GetFileName(file);
                 if (!name.StartsWith('.') && accepts(file))

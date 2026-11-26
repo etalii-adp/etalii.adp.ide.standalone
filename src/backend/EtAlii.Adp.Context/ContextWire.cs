@@ -123,7 +123,7 @@ internal static class ContextWire
             }
         }
 
-        prompt.Files.AddRange(ContextFileTree.Build(rootPath, request.Accepts).Select(ToProto));
+        prompt.Files.AddRange(ContextFileTree.Build(rootPath, request.Accepts, request.Rank).Select(ToProto));
         return prompt;
     }
 

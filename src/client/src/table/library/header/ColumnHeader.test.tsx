@@ -502,8 +502,9 @@ describe("adding a column", () => {
     await choose("Relation");
     await choose("roadmap.tml");
 
-    // Assert: no two-way box, and the panel says where the rows that link show instead.
+    // Assert: no two-way box, and the panel says where the rows that link show instead; its limit is in elements, not rows.
     expect(within(panel).queryByRole("checkbox", { name: "Two-way relation" })).toBeNull();
+    expect(Array.from((within(panel).getByRole("combobox", { name: "Limit" }) as HTMLSelectElement).options).map((option) => option.text)).toEqual(["No limit", "1 element"]);
     expect(within(panel).getByRole("group", { name: "Relation" }).textContent).toContain("Linked from");
     await act(async () => {
       fireEvent.click(within(panel).getByRole("button", { name: "Add relation" }));
@@ -518,6 +519,7 @@ describe("adding a column", () => {
     const editor = screen.getByRole("dialog", { name: "Relation Milestone" });
     expect(within(editor).queryByRole("checkbox", { name: "Two-way relation" })).toBeNull();
     expect(editor.textContent).toContain("Linked from");
+    expect(Array.from((within(editor).getByRole("combobox", { name: "Limit" }) as HTMLSelectElement).options).map((option) => option.text)).toEqual(["No limit", "1 element"]);
   });
 
   it("asks for the name of the column that was added, as soon as it is there", async () => {

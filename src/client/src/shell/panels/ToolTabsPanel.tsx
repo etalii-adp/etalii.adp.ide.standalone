@@ -4,9 +4,9 @@ import { onTextTabRequested } from "./textTabRequests";
 import { documentKeyOf, onRevealRequested } from "./revealRequests";
 import { base64Encode } from "@bufbuild/protobuf/wire";
 import { ContextSelectionAction } from "../../generated/context_pb";
-import type { ContextLevelDetail } from "../../generated/context-contract_pb";
+import { ContextSelectionSource, type ContextLevelDetail } from "../../generated/context-contract_pb";
 import type { ContextSelection } from "../../generated/context_pb";
-import { innermostAction, useContextSelection } from "../context/ContextConnectionProvider";
+import { innermostAction, NONE_DETAIL, selectionFor, useContextConnection, useContextSelection } from "../context/ContextConnectionProvider";
 import { TabbedPane, type TabDef } from "../panes/TabbedPane";
 import { ToolPanel, type OpenTool } from "./ToolPanel";
 import { PanelEmptyState } from "./PanelEmptyState";
@@ -49,6 +49,7 @@ export interface ToolTabsPanelProps {
  */
 export function ToolTabsPanel({ projectId }: ToolTabsPanelProps) {
   const { selection, levels } = useContextSelection();
+  const { select } = useContextConnection();
   const [tabs, setTabs] = useState<ToolTab[]>([]);
   const [activeKey, setActiveKey] = useState<string | undefined>(undefined);
   // The push, not the render, is the trigger: transient previews and unrelated re-renders
@@ -169,6 +170,17 @@ export function ToolTabsPanel({ projectId }: ToolTabsPanelProps) {
     }
   };
 
+  // A tab brought to the front makes its document the selection, plainly - an activation would open it again - so the
+  // ribbon and the property grid speak of what is in front, not of an element of the tab left behind (etalii.adp spec 092,
+  // T035). A text tab names its file by path alone and has no entry to select.
+  const bringToFront = (key: string) => {
+    const tab = tabs.find((candidate) => candidate.key === key);
+    if (key !== activeKey && tab !== undefined && tab.tool.entryId.length > 0) {
+      select(selectionFor(ContextSelectionSource.EXPLORER, tab.tool.entryId, [...tab.tool.path], NONE_DETAIL));
+    }
+    setActiveKey(key);
+  };
+
   const tabDefs: TabDef[] = tabs.map((tab) => ({
     id: tab.key,
     label: labelFor(tab.tool.path),
@@ -200,7 +212,7 @@ export function ToolTabsPanel({ projectId }: ToolTabsPanelProps) {
     <TabbedPane
       tabs={tabDefs}
       activeTabId={activeKey}
-      onSelectTab={setActiveKey}
+      onSelectTab={bringToFront}
       onCloseTab={close}
       emptyState={
         <PanelEmptyState description="Double-click a diagram in the explorer to open it here." />

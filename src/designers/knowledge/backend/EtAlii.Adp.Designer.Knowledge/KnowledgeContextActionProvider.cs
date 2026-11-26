@@ -2,14 +2,16 @@ using EtAlii.Adp.Context;
 using EtAlii.Adp.Designer.TableModel;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Links;
 using ContextScope = EtAlii.Adp.Documents.Wire.ContextScope;
 
 namespace EtAlii.Adp.Designer.Knowledge;
 
 /// <summary>
-/// What a knowledge file offers in the explorer: adding a relation to another table, or to itself.
-/// The table it relates to is chosen in the file dialog, which offers the knowledge files of the
-/// project and nothing else, with this table first.
+/// What a knowledge file offers in the explorer: adding a relation to another table, or to itself,
+/// or to a diagram. What it relates to is chosen in the file dialog, which offers the knowledge
+/// files of the project with this table first, and after them the diagrams the workspace's index
+/// holds (etalii.adp spec 092, FR-025).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -25,7 +27,7 @@ namespace EtAlii.Adp.Designer.Knowledge;
 /// undoable step, over both files when it is two-way, and an open table shows it at once.
 /// </para>
 /// </remarks>
-internal sealed class KnowledgeContextActionProvider(IHistoryStackStore histories) : IContextActionProvider
+internal sealed class KnowledgeContextActionProvider(IHistoryStackStore histories, ILinkIndex? links = null) : IContextActionProvider
 {
     /// <summary>The entry, and the id its first answer - the table - is committed under.</summary>
     public const string Relate = "knowledge.relate";
@@ -87,9 +89,10 @@ internal sealed class KnowledgeContextActionProvider(IHistoryStackStore historie
             "Relate to",
             Icon,
             "Next",
-            IsKnowledgeFile,
+            path => IsKnowledgeFile(path) || DiagramAt(body, path) is not null,
             "There is no other table in this project.",
-            [new ContextPinnedFile("This table", body)])));
+            [new ContextPinnedFile("This table", body)],
+            Rank: path => IsKnowledgeFile(path) ? 0 : 1)));
     }
 
     public ValueTask<ContextValidationResult> ValidateAsync(ContextTarget target, string actionId, string value, CancellationToken cancellationToken)
@@ -102,7 +105,7 @@ internal sealed class KnowledgeContextActionProvider(IHistoryStackStore historie
             ? ValueTask.FromResult(value.Trim().Length > 0
                 ? ContextValidationResult.Accepted
                 : ContextValidationResult.Rejected(OtherSideNeedsName))
-            : ValueTask.FromResult(actionId != Relate || IsKnowledgeFile(Chosen(target, value))
+            : ValueTask.FromResult(actionId != Relate || IsTarget(target, Chosen(target, value))
                 ? ContextValidationResult.Accepted
                 : ContextValidationResult.Rejected("That file is not a table."));
     }
@@ -128,6 +131,20 @@ internal sealed class KnowledgeContextActionProvider(IHistoryStackStore historie
         var parts = actionId.Split(Part);
         return parts[0] switch
         {
+            // A diagram is chosen (spec 092, FR-025): how many of its elements may a cell hold? That is all there is to ask, a
+            // relation to a diagram being shown in this table only, so the answer makes it.
+            Relate when DiagramAt(bodyPath, Chosen(target, value)) is not null => ContextCommitResult.Asks(
+                    new ContextExecutionRequiresChoice(new ContextChoiceRequest(
+                        "A cell holds",
+                        Icon,
+                        "Add relation",
+                        [new ContextOptionNode(Many, "Any number of elements", Selectable: true), new ContextOptionNode(One, "One element", Selectable: true)],
+                        "")),
+                    string.Join(Part, LimitStep, value)),
+
+            LimitStep when parts.Length == 2 && value is One or Many && DiagramAt(bodyPath, Chosen(target, parts[1])) is not null =>
+                await MakeAsync(target, bodyPath, body, Chosen(target, parts[1]), value == One, false, "", cancellationToken).ConfigureAwait(false),
+
             // The table is chosen: how many rows may a cell hold?
             Relate => IsKnowledgeFile(Chosen(target, value))
                     ? ContextCommitResult.Asks(
@@ -172,7 +189,10 @@ internal sealed class KnowledgeContextActionProvider(IHistoryStackStore historie
             ["counterpart"] = !twoWay ? "" : name.Trim().Length > 0 ? name.Trim() : OtherSideName(bodyPath),
         };
 
-        var surroundings = new KnowledgeSurroundings(bodyPath, property => TargetAt(bodyPath, body.Table, property.TargetFile), targetName => TargetAt(bodyPath, body.Table, targetName));
+        var surroundings = new KnowledgeSurroundings(
+            bodyPath,
+            property => TargetAt(bodyPath, body.Table, property.TargetFile),
+            targetName => DiagramAt(bodyPath, KnowledgeRelations.TargetPath(bodyPath, targetName)) ?? TargetAt(bodyPath, body.Table, targetName));
         var edit = KnowledgeEdits.Plan(
             body.Table,
             "",
@@ -203,6 +223,24 @@ internal sealed class KnowledgeContextActionProvider(IHistoryStackStore historie
             : read.Body.Unreadable.Length > 0
                 ? new KnowledgeTarget(path, null, $"'{targetFile}' cannot be read as a knowledge file.")
                 : new KnowledgeTarget(path, read.Body.Table);
+    }
+
+    /// <summary>Whether a chosen file can be related to from the file the target stands for: a knowledge file, or a diagram the workspace's index holds.</summary>
+    private bool IsTarget(ContextTarget target, string chosen) =>
+        IsKnowledgeFile(chosen) || (BodyOf(target.ResolvedFullPath) is { } bodyPath && DiagramAt(bodyPath, chosen) is not null);
+
+    /// <summary>
+    /// The file at <paramref name="path"/> as a relation's target when it is a diagram the workspace's index holds (spec 092, FR-025):
+    /// a document of another tool type than this designer's, with a document id, which a relation names by a link; null for anything else.
+    /// </summary>
+    private KnowledgeTarget? DiagramAt(string bodyPath, string path)
+    {
+        if (links is null || IsKnowledgeFile(path)) return null;
+        var full = Path.GetFullPath(path);
+        var document = links.WorkspaceOf(bodyPath).Document(full.Replace('\\', '/'));
+        return document is { Origin: { } origin, DocumentId.Length: > 0 } && origin != Designer.Origin
+            ? new KnowledgeTarget(full, KnowledgeRelations.FromDiagram(document), Kinds: links.CreatableKindsOf(full))
+            : null;
     }
 
     /// <summary>Whether a file is a knowledge file's data file: one of the three formats, and readable as a table.</summary>

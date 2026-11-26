@@ -1,6 +1,7 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Specification.Fbl.Links;
 using Xunit;
 using ContextScope = EtAlii.Adp.Documents.Wire.ContextScope;
 using IoPath = System.IO.Path;
@@ -138,6 +139,35 @@ public sealed class KnowledgeContextActionsTests : IDisposable
         // And what is chosen is judged by the same rule - named as the dialog names it, by its path from the project's root.
         Assert.True((await _provider.ValidateAsync(Target(registration), KnowledgeContextActionProvider.Relate, KnowledgeFiles.Related, TestContext.Current.CancellationToken)).Valid);
         Assert.False((await _provider.ValidateAsync(Target(registration), KnowledgeContextActionProvider.Relate, "notes.yaml", TestContext.Current.CancellationToken)).Valid);
+    }
+
+    [Fact]
+    public async Task ADiagramOfTheWorkspace_IsOfferedToRelateTo_AndTheRelationToIt_IsOneWay_WithItsLimitInElements()
+    {
+        // Arrange: a timeline the workspace's index holds, beside the tables (etalii.adp spec 092, FR-025, T035).
+        var registration = Registered();
+        var plan = IoPath.Combine(_root, "plan.tml");
+        await File.WriteAllTextAsync(plan, "timeline: 1\nid: t7m2k9qa\nelements:\n  - id: launch\n    label: Launch\n", TestContext.Current.CancellationToken);
+        var workspace = new LinkWorkspace(_root.Replace('\\', '/'), [
+            new IndexedDocument(plan.Replace('\\', '/'), "t7m2k9qa", "label", [new IndexedElement("launch", [new KeyValuePair<string, string>("label", "Launch")])], []) { Origin = "generic/timeline" },
+        ]);
+        var provider = new KnowledgeContextActionProvider(_histories, new FixedLinkIndex(workspace));
+
+        // Act: the dialog, the timeline chosen, and one element a cell.
+        var asked = Assert.IsType<ContextExecutionRequiresFile>(await provider.ExecuteAsync(Target(registration), KnowledgeContextActionProvider.Relate, TestContext.Current.CancellationToken)).Request;
+        var chosen = await provider.CommitAsync(Target(registration), KnowledgeContextActionProvider.Relate, "plan.tml", "", TestContext.Current.CancellationToken);
+        var limit = Assert.IsType<ContextExecutionRequiresChoice>(chosen.Next).Request;
+        var made = await provider.CommitAsync(Target(registration), chosen.NextActionId, KnowledgeContextActionProvider.One, "", TestContext.Current.CancellationToken);
+
+        // Assert: offered after the tables; the limit in elements, and the relation made at once - there is no other side to ask about.
+        Assert.True(asked.Accepts(plan));
+        Assert.True(asked.Rank!(plan) > asked.Rank!(Provinces));
+        Assert.Equal(["Any number of elements", "One element"], limit.Options.Select(option => option.Label));
+        Assert.Equal("Add relation", limit.ConfirmLabel);
+        Assert.True(made.Completed, made.Error);
+        Assert.Null(made.Next);
+        var relation = KnowledgeDocumentStore.Read(Cities).Body!.Table.Properties.Single(property => property.TargetFile == "$t7m2k9qa@plan.tml");
+        Assert.Equal(("one", ""), (relation.Limit, relation.BacklinkName));
     }
 
     [Theory]
