@@ -18,10 +18,24 @@ internal static class KnowledgeCellEdits
     /// <summary>What an answer starts with when it is a question to confirm and not a refusal: the gesture is made again, confirmed.</summary>
     private const string ConfirmPrefix = "confirm:";
 
-    /// <summary>The question put before rows are deleted that rows of other tables relate to.</summary>
-    public static string AskFirst(int relating, int deleted) =>
-        $"{ConfirmPrefix}{(relating == 1 ? "1 row in another table relates" : $"{relating} rows in other tables relate")} to {(deleted == 1 ? "this row" : "these rows")}. "
-        + $"Deleting {(deleted == 1 ? "it" : "them")} leaves {(relating == 1 ? "that relation" : "those relations")} pointing at nothing.";
+    /// <summary>
+    /// The question put before rows are deleted that rows of other tables relate to, or that links of other documents name
+    /// (etalii.adp spec 092, FR-016): how many of each.
+    /// </summary>
+    public static string AskFirst(int relating, int deleted, int linking = 0)
+    {
+        var relations = relating == 0
+            ? ""
+            : $"{(relating == 1 ? "1 row in another table relates" : $"{relating} rows in other tables relate")} to {(deleted == 1 ? "this row" : "these rows")}. "
+              + $"Deleting {(deleted == 1 ? "it" : "them")} leaves {(relating == 1 ? "that relation" : "those relations")} pointing at nothing.";
+        var links = linking switch
+        {
+            0 => "",
+            1 => "This breaks 1 link from another document.",
+            _ => $"This breaks {linking} links from other documents.",
+        };
+        return ConfirmPrefix + string.Join(" ", new[] { relations, links }.Where(part => part.Length > 0));
+    }
 
     /// <summary>
     /// One property set to the same value in several rows, as one step: what Notion does when the
