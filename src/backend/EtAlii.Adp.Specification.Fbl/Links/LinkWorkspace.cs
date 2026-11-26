@@ -99,6 +99,21 @@ public sealed class LinkWorkspace
         return name;
     }
 
+    /// <summary>
+    /// The documents whose findings depend on the document at <paramref name="path"/> (FBL 17.5): every other one that holds a
+    /// link naming it, by its document id while the workspace holds it, or by its file name, which still names it once it is
+    /// gone; in path order. A change of the document can break or mend their links, so they are judged again with it.
+    /// </summary>
+    public IReadOnlyList<string> Dependents(string path)
+    {
+        ArgumentNullException.ThrowIfNull(path);
+        var id = Document(path)?.DocumentId;
+        var name = path[(path.LastIndexOf('/') + 1)..];
+        return [.. _documents.Values
+            .Where(document => document.Path != path && document.Links.Any(held => FblLink.Parse(held.Text) is { } link && (link.DocumentName == name || (id is not null && link.DocumentId == id))))
+            .Select(document => document.Path)];
+    }
+
     /// <summary>How many links of the workspace a delete of <paramref name="elementIds"/> of the document at <paramref name="path"/> breaks (FBL 17.5).</summary>
     public int BrokenByDeleting(string path, IEnumerable<string> elementIds) => elementIds.Sum(id => Backlinks(path, id).Count);
 

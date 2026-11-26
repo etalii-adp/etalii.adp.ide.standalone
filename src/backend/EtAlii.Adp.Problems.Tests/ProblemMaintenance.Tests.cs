@@ -2,6 +2,7 @@ using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.Hierarchy;
+using EtAlii.Adp.Specification.Fbl.Links;
 using Microsoft.Extensions.Time.Testing;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -83,6 +84,42 @@ public class ProblemMaintenanceTests : IDisposable
         var covered = Assert.IsType<IReadOnlyList<string>>(payload, exactMatch: false);
         Assert.Contains("a.adp", covered);
         Assert.DoesNotContain(covered, path => path.StartsWith('b'));
+    }
+
+    [Fact]
+    public async Task AChangedDocument_IsJudgedAgainWithTheDocumentsThatLinkToIt()
+    {
+        // Arrange: a's map links to b's; c's links to nothing.
+        CreatePair("a");
+        CreatePair("b");
+        CreatePair("c");
+        var root = _root.Replace('\\', '/');
+        var workspace = new LinkWorkspace(root, [
+            new IndexedDocument($"{root}/a.mm", "aaaaaaaa", null, [], [new HeldLink("n1", "$bbbbbbbb@b.mm#n2=Two")]),
+            new IndexedDocument($"{root}/b.mm", "bbbbbbbb", null, [], []),
+            new IndexedDocument($"{root}/c.mm", "cccccccc", null, [], []),
+        ]);
+        var router = new DiagramFileRouter(new TestDiagramDefinitionCatalog(MindmapDefinition, FolderDefinition));
+        await using var maintenance = new ProblemMaintenance(
+            _store, new ProjectValidator(router, new DiagramValidators([_validator])), router, _events, _clock, SettleDelay, new ProblemMaintenanceLinkIndex(workspace));
+        maintenance.Track(_root);
+
+        // Act: b changes, and the target a links to may be gone with it.
+        await File.AppendAllTextAsync(IoPath.Combine(_root, "b.mm"), " and less", TestContext.Current.CancellationToken);
+
+        // Assert: b and a are judged, and c is not.
+        Assert.True(
+            await Eventually.TrueAsync(
+                () =>
+                {
+                    _clock.Advance(SettleDelay);
+                    return Covered().Contains("a.adp") && Covered().Contains("b.adp");
+                },
+                TestContext.Current.CancellationToken,
+                WaitLimit,
+                TimeSpan.FromMilliseconds(50)),
+            "a was not judged again with b.");
+        Assert.DoesNotContain("c.adp", Covered());
     }
 
     [Fact]
@@ -287,6 +324,10 @@ public class ProblemMaintenanceTests : IDisposable
         Assert.Equal(0, _validator.Calls);
         Assert.DoesNotContain(_store.Mutations, mutation => mutation.Kind == "ReplaceFor");
     }
+
+    /// <summary>Every path the store's replacements spoke for so far.</summary>
+    private List<string> Covered() =>
+        [.. _store.Mutations.Where(mutation => mutation.Kind == "ReplaceFor").SelectMany(mutation => (IReadOnlyList<string>)mutation.Payload)];
 
     private void CreatePair(string baseName)
     {
