@@ -52,7 +52,7 @@ public static class LinkNavigation
             $"Linked from ({backlinks.Count})",
             "mdi-link-variant",
             "Open",
-            [.. backlinks.Select(backlink => new ContextOptionNode(backlink.Path + Separator + backlink.Holder, LabelOf(backlink, workspace), Selectable: true, Icon: "mdi-link-variant"))],
+            [.. backlinks.Select(backlink => new ContextOptionNode(backlink.Path + Separator + (backlink.Element ?? backlink.Holder), LabelOf(backlink, workspace), Selectable: true, Icon: "mdi-link-variant"))],
             "No link of the workspace points at this element any more."));
     }
 
@@ -107,7 +107,7 @@ public static class LinkNavigation
     /// target's, as a linked element has none of its own; its id only when neither is known; and its document.
     /// </summary>
     private static string LabelOf(Backlink backlink, LinkWorkspace workspace) =>
-        $"{(workspace.NameOf(backlink.Path, backlink.Holder) is { Length: > 0 } name ? name : backlink.TargetName is { Length: > 0 } shown ? shown : backlink.Holder)} ({workspace.Display(backlink.Path)})";
+        $"{(workspace.NameOf(backlink.Path, backlink.Element ?? backlink.Holder) is { Length: > 0 } name ? name : backlink.TargetName is { Length: > 0 } shown ? shown : backlink.Holder)} ({workspace.Display(backlink.Path)})";
 
     /// <summary>The element <paramref name="elementId"/> names, by its wire id or the id its file writes; null for none.</summary>
     private static DislElement? ElementOf(DislDiagram diagram, string elementId)

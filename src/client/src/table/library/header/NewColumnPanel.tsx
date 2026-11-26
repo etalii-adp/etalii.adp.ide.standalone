@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { choicesOf, type TableGesture } from "../api/tableEvents";
+import { choicesOf, type Choice, type TableGesture } from "../api/tableEvents";
 import { kindOf, type TableDefinition } from "../definition/tableDefinition";
 import { addableKinds } from "./columnActions";
+import { ONE_WAY_ONLY } from "./RelationEditor";
 
 /** How near the window's left edge the panel may stand, in pixels. */
 const PANEL_MARGIN = 8;
@@ -24,8 +25,8 @@ export interface NewColumnPanelProps {
 
 /** A relation that is being asked for: the tables there are, the one chosen, and what was said of the relation so far. */
 interface RelationAsked {
-  targets: { id: string; label: string }[];
-  target: { id: string; label: string } | null;
+  targets: Choice[];
+  target: Choice | null;
   limit: string;
   twoWay: boolean;
   otherName: string;
@@ -131,7 +132,7 @@ export function NewColumnPanel({ definition, position, beside, raise, ask, onClo
           {relation.targets.map((target) => (
             <li key={target.id} role="none">
               <button type="button" role="menuitem" className="table-new-column-kind" onClick={() => setRelation({ ...relation, target })}>
-                <span className="mdi mdi-table" aria-hidden="true" />
+                <span className={`mdi ${target.oneWay === true ? "mdi-vector-polyline" : "mdi-table"}`} aria-hidden="true" />
                 <span>{target.label}</span>
               </button>
             </li>
@@ -150,10 +151,14 @@ export function NewColumnPanel({ definition, position, beside, raise, ask, onClo
               <option value="one">1 row</option>
             </select>
           </label>
-          <label>
-            <input type="checkbox" aria-label="Two-way relation" checked={relation.twoWay} onChange={(event) => setRelation({ ...relation, twoWay: event.target.checked })} />
-            <span>Two-way relation</span>
-          </label>
+          {relation.target.oneWay === true ? (
+            <p className="table-relation-one-way">{ONE_WAY_ONLY}</p>
+          ) : (
+            <label>
+              <input type="checkbox" aria-label="Two-way relation" checked={relation.twoWay} onChange={(event) => setRelation({ ...relation, twoWay: event.target.checked })} />
+              <span>Two-way relation</span>
+            </label>
+          )}
           {relation.twoWay && (
             <input
               type="text"

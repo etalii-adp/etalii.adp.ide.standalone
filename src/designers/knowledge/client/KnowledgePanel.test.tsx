@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, render, screen } from "@testing-library/react";
 import { applyTableEvent, EMPTY_TABLE, type TableColumn, type TableModel } from "@client/table/library/api/tableModel";
 import type { TableGesture } from "@client/table/library/api/tableEvents";
-import { requestReveal } from "@client/shell/panels/revealRequests";
+import { requestReveal, takeElementReveal } from "@client/shell/panels/revealRequests";
 import { KnowledgePanel } from "./KnowledgePanel";
 
 /**
@@ -169,6 +169,22 @@ describe("KnowledgePanel", () => {
     expect(selection.path.segments).toEqual(["tables", "provinces.adp"]);
     expect(selection.detail.value.id.source.value.value).toBe("nh");
     unmount();
+  });
+
+  it("leaves an element of a diagram a cell links to for the diagram's canvas to select (spec 092, FR-025)", () => {
+    // Arrange: a relation to a timeline, which the designer marks by the kinds of element Create adds there.
+    stream.current = streamOf(cities("v1"));
+    connection.revealPath.mockClear();
+    render(<KnowledgePanel projectId={ID} entryId={ID} path={["tables", "people.adp"]} />);
+    const relation: TableColumn = { id: "p5", name: "Milestone", kind: "relation", options: [], width: 0, visible: true, isTitle: false, wraps: false, settings: { targetFile: "$lmy6158h@roadmap.tml", targetPath: "roadmap.tml", createKinds: "[]" } };
+
+    // Act.
+    act(() => surface.onOpenValue!(relation, "launch"));
+
+    // Assert: the timeline is opened, and the moment waits there for its canvas, which takes it once.
+    expect(connection.revealPath.mock.calls.map((call) => call[0])).toEqual([["tables", "roadmap.tml"]]);
+    expect(takeElementReveal(["tables", "roadmap.tml"], () => true)).toBe("launch");
+    expect(takeElementReveal(["tables", "roadmap.tml"], () => true)).toBeNull();
   });
 
   it("selects the row a link opened, in the table of its file, whichever of its two files the panel shows", () => {

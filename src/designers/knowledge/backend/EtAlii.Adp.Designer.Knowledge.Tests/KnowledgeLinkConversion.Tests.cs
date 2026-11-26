@@ -143,13 +143,13 @@ public sealed class KnowledgeLinkConversionTests : IDisposable
         var document = indexer.Index(converted, File.ReadAllBytes(converted));
         var notKnowledge = indexer.Index(IoPath.Combine(_folder, "notes.yaml"), "title: notes\n"u8.ToArray());
 
-        // Assert: the id, the rows by their names, and each link with what holds it: a relation's target, a cell's row.
+        // Assert: the id, the rows by their names, and each link with what holds it: a relation's target, a cell, which is a value of its row.
         Assert.NotNull(document);
         Assert.Equal((GivenId, "Name", Designer.Origin), (document.DocumentId, document.NameProperty, document.Origin));
         Assert.Equal("Utrecht", document.Elements.Single(element => element.Id == "utr").ValueOf("Name"));
         Assert.Contains(new Specification.Fbl.Links.HeldLink("p2", "$k3f9x2ma@provinces.yaml"), document.Links);
-        Assert.Contains(new Specification.Fbl.Links.HeldLink("ams/p2", "$k3f9x2ma@provinces.yaml#nh.Name=Noord-Holland"), document.Links);
-        Assert.Contains(new Specification.Fbl.Links.HeldLink("haa/p3", "$c1t9e5sx@cities.yaml#gone"), document.Links);
+        Assert.Contains(new Specification.Fbl.Links.HeldLink("ams/p2", "$k3f9x2ma@provinces.yaml#nh.Name=Noord-Holland") { Element = "ams" }, document.Links);
+        Assert.Contains(new Specification.Fbl.Links.HeldLink("haa/p3", "$c1t9e5sx@cities.yaml#gone") { Element = "haa" }, document.Links);
         Assert.DoesNotContain(document.Links, link => link.Text.Contains("nowhere", StringComparison.Ordinal));
         Assert.Null(notKnowledge);
         Assert.True(indexer.Claims("a/b.YAML") && indexer.Claims("c.xml") && !indexer.Claims("d.tml"));

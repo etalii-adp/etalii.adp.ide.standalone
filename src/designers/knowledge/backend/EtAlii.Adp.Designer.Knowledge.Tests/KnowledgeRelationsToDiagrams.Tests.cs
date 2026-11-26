@@ -66,6 +66,37 @@ public sealed class KnowledgeRelationsToDiagramsTests : IDisposable
     }
 
     [Fact]
+    public async Task ADiagram_IsOfferedAsATargetThatIsOneWay_AndAKnowledgeFileIsNot()
+    {
+        // Arrange.
+        await using var table = new EditingTable(KnowledgeFiles.CopyPlain("cities.yaml", _root), rootPath: _root, links: Links());
+
+        // Act: a relation asked for without a target.
+        (_, string asked) = table.Begin(new TableGesture("addRelation", Values: ["Milestones"]));
+
+        // Assert: the new property's panel is told not to offer a two-way relation to the timeline, and still offers it to the table itself.
+        Assert.Contains("\"id\":\"plan.tml\",\"label\":\"plan.tml\",\"oneWay\":true", asked, StringComparison.Ordinal);
+        Assert.DoesNotContain("\"id\":\".\",\"label\":\"This table\",\"oneWay\":true", asked, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ARelationToADiagram_IsNotMadeTwoWayAfterwards()
+    {
+        // Arrange.
+        (EditingTable table, string relation) = await RelatedToPlanAsync(Links());
+        await using var owned = table;
+        var cities = table.Bytes();
+
+        // Act: the relation's own editor asks for it to be shown in the diagram too.
+        (var _, string answer) = table.Begin(new TableGesture("setRelationOtherSide", ColumnId: relation, Settings: Settings(("twoWay", "true"), ("counterpart", "Cities"))));
+
+        // Assert: refused, saying why, and nothing is written.
+        Assert.Equal(KnowledgeColumnEdits.OneWayOnly, answer);
+        Assert.Equal(cities, table.Bytes());
+        Assert.Equal("", table.OnDisk().Properties.Single(candidate => candidate.Id == relation).BacklinkName);
+    }
+
+    [Fact]
     public async Task ARelationToADiagram_NamesItByALink_IsOneWay_AndLinksACellToAnElementByItsName()
     {
         // Arrange.

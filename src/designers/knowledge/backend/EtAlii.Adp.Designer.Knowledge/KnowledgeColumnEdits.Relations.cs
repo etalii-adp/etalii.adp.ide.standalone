@@ -10,12 +10,20 @@ internal static partial class KnowledgeColumnEdits
     public const string NotARelation = "That property is not a relation of this table's own.";
     public const string ParentHoldsOne = "The parent relation holds one row.";
 
+    /// <summary>Why a relation to a diagram is not made two-way (spec 092, FR-025): a diagram has no column to show it in.</summary>
+    public const string OneWayOnly = "A relation to a diagram is shown in this table only: a diagram has no column to show it in. Its elements list the rows that link to them under Linked from.";
+
     /// <summary>What an answer starts with when it is a choice to make and not a refusal: the things to choose from follow, as a list of ids and names.</summary>
     private const string ChoosePrefix = "choose:";
 
-    /// <summary>The tables a new relation can relate to, as the answer to a relation asked for without one.</summary>
-    public static string ChooseTarget(IEnumerable<(string Target, string Name)> tables) =>
-        ChoosePrefix + System.Text.Json.JsonSerializer.Serialize(tables.Select(table => new { id = table.Target, label = table.Name }));
+    /// <summary>
+    /// The tables a new relation can relate to, as the answer to a relation asked for without one, and then the diagrams, each
+    /// marked one-way: a relation to a diagram is not offered as two-way (spec 092, FR-025).
+    /// </summary>
+    public static string ChooseTarget(IEnumerable<(string Target, string Name)> tables, IEnumerable<(string Target, string Name)> diagrams) =>
+        ChoosePrefix + System.Text.Json.JsonSerializer.Serialize(
+            tables.Select(table => (object)new { id = table.Target, label = table.Name })
+                .Concat(diagrams.Select(diagram => new { id = diagram.Target, label = diagram.Name, oneWay = true })));
 
     /// <summary>
     /// A relation to another knowledge file, or to this one: a property of this file, naming its target by a link to the
@@ -130,6 +138,10 @@ internal static partial class KnowledgeColumnEdits
         var related = self ? table : target!.Table!;
         var other = related.Properties.FirstOrDefault(candidate => candidate.Id == property.Counterpart && property.Counterpart.Length > 0);
         var twoWay = Flag(gesture, "twoWay");
+        if (twoWay && target is { IsDiagram: true } && property.BacklinkName.Length == 0)
+        {
+            return Refused(OneWayOnly);
+        }
         if (twoWay == (other is not null || property.BacklinkName.Length > 0))
         {
             return KnowledgeEdit.Nothing;

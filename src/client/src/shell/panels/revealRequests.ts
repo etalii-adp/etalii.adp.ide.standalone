@@ -57,6 +57,17 @@ export function requestReveal(request: RevealRequest): void {
 }
 
 /**
+ * Leaves `elementId` for the canvas that draws the document at `path` to select, once it draws it, for a document that is
+ * opened some other way than by a reveal: a diagram a knowledge cell links to (spec 092, FR-025), opened by its path.
+ */
+export function leaveElementReveal(path: readonly string[], elementId: string): void {
+  pendingElements.set(keyOf(path), elementId);
+  for (const listener of elementListeners) {
+    listener();
+  }
+}
+
+/**
  * The element waiting to be selected in the document at `path`, when `has` says the canvas draws it; taken, so it is selected
  * once. An element the canvas does not draw yet stays waiting, for the model that brings it.
  */

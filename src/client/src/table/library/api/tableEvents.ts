@@ -23,15 +23,22 @@ export function isQuestion(answer: string): boolean {
   return answer.startsWith(CONFIRM_PREFIX) || answer.startsWith(CHOOSE_PREFIX);
 }
 
+/** A thing an answer offers to choose from; `oneWay` marks a relation's target that is a diagram, which is not related two-way. */
+export interface Choice {
+  id: string;
+  label: string;
+  oneWay?: boolean;
+}
+
 /** The things an answer offers to choose from; none when it is not such an answer, or does not read as one. */
-export function choicesOf(answer: string): { id: string; label: string }[] {
+export function choicesOf(answer: string): Choice[] {
   if (!answer.startsWith(CHOOSE_PREFIX)) {
     return [];
   }
   try {
     const parsed: unknown = JSON.parse(answer.slice(CHOOSE_PREFIX.length));
     return Array.isArray(parsed)
-      ? parsed.filter((choice): choice is { id: string; label: string } => typeof choice === "object" && choice !== null && typeof (choice as { id: unknown }).id === "string" && typeof (choice as { label: unknown }).label === "string")
+      ? parsed.filter((choice): choice is Choice => typeof choice === "object" && choice !== null && typeof (choice as { id: unknown }).id === "string" && typeof (choice as { label: unknown }).label === "string")
       : [];
   } catch {
     return [];
