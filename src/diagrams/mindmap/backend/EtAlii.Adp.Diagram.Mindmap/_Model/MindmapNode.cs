@@ -68,13 +68,19 @@ public sealed class MindmapNode
     /// The link a linked node stands for (<c>mindmap.md</c> 3.8, FBL 17.1): the <c>VALUE</c> of its first
     /// <c>&lt;attribute NAME="adp-link"&gt;</c>; null for an ordinary node.
     /// </summary>
-    public string? AdpLink => FreeplaneAttribute("adp-link");
+    public string? AdpLink => FreeplaneAttribute(AdpLinkAttribute);
 
     /// <summary>
     /// The map's document id (<c>mindmap.md</c> 3.8, FBL 17.2) when this is the central topic: the <c>VALUE</c> of its
     /// first <c>&lt;attribute NAME="adp-id"&gt;</c>; null when it has none.
     /// </summary>
-    public string? AdpId => FreeplaneAttribute("adp-id");
+    public string? AdpId => FreeplaneAttribute(AdpIdAttribute);
+
+    /// <summary>The Freeplane attribute that holds a linked node's link.</summary>
+    internal const string AdpLinkAttribute = "adp-link";
+
+    /// <summary>The Freeplane attribute of the central topic that holds the map's document id.</summary>
+    internal const string AdpIdAttribute = "adp-id";
 
     /// <summary>The <c>VALUE</c> of the node's first Freeplane <c>&lt;attribute&gt;</c> child named <paramref name="name"/>, null without one.</summary>
     private string? FreeplaneAttribute(string name) =>
@@ -141,27 +147,61 @@ public sealed class MindmapNode
         var html = new XElement("html", new XElement("head"), body);
         if (existing is null)
         {
-            // Before the first child node, which is where Freeplane puts it - and on its own
-            // line, which is how Freeplane lays a node's content out.
-            var firstChild = Element.Elements(ElementName).FirstOrDefault();
-            var content = new XElement(RichContentElement, new XAttribute(RichContentTypeAttribute, NoteType), html);
-            var newline = FreeplaneNewline.Of(Element);
-            if (firstChild is not null)
-            {
-                firstChild.AddBeforeSelf(content, new XText(newline));
-            }
-            else if (Element.LastNode is XText { Value: var trailing } && trailing.All(char.IsWhiteSpace) && trailing.Contains('\n'))
-            {
-                Element.Add(content, new XText(newline));
-            }
-            else
-            {
-                Element.Add(new XText(newline), content, new XText(newline));
-            }
+            AddContent(new XElement(RichContentElement, new XAttribute(RichContentTypeAttribute, NoteType), html));
         }
         else
         {
             existing.ReplaceNodes(html);
+        }
+    }
+
+    /// <summary>
+    /// Sets the <c>VALUE</c> of the node's first Freeplane <c>&lt;attribute&gt;</c> named <paramref name="name"/>, adding one
+    /// where it has none (<c>mindmap.md</c> 3.8: <c>adp-id</c>, <c>adp-link</c>).
+    /// </summary>
+    internal void SetFreeplaneAttribute(string name, string value)
+    {
+        var existing = Element.Elements("attribute").FirstOrDefault(attribute => attribute.Attribute("NAME")?.Value == name);
+        if (existing is not null)
+        {
+            existing.SetAttributeValue("VALUE", value);
+            return;
+        }
+
+        AddContent(new XElement("attribute", new XAttribute("NAME", name), new XAttribute("VALUE", value)));
+    }
+
+    /// <summary>
+    /// Removes the first Freeplane attribute <paramref name="name"/>, with the newline that followed it, so a node whose only
+    /// content it was is self-closing again; nothing when it has none.
+    /// </summary>
+    internal void RemoveFreeplaneAttribute(string name)
+    {
+        if (Element.Elements("attribute").FirstOrDefault(attribute => attribute.Attribute("NAME")?.Value == name) is not { } existing) return;
+        if (existing.NextNode is XText { Value: var trailing } text && trailing.All(char.IsWhiteSpace)) text.Remove();
+        existing.Remove();
+        if (Element.Nodes().All(node => node is XText whitespace && whitespace.Value.All(char.IsWhiteSpace))) Element.RemoveNodes();
+    }
+
+    /// <summary>
+    /// Adds <paramref name="content"/> before the first child node, which is where Freeplane puts a node's own content, and on its
+    /// own line, which is how Freeplane lays it out.
+    /// </summary>
+    private void AddContent(XElement content)
+    {
+        var firstChild = Element.Elements(ElementName).FirstOrDefault();
+        var newline = FreeplaneNewline.Of(Element);
+        if (firstChild is not null)
+        {
+            firstChild.AddBeforeSelf(content, new XText(newline));
+        }
+        else if (Element.LastNode is XText { Value: var trailing } && trailing.All(char.IsWhiteSpace) && trailing.Contains('\n'))
+        {
+            Element.Add(content, new XText(newline));
+        }
+        else
+        {
+            Element.Add(new XText(newline), content, new XText(newline));
         }
     }
 

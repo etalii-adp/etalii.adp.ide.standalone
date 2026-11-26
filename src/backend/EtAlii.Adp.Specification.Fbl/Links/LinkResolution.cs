@@ -1,11 +1,15 @@
 namespace EtAlii.Adp.Specification.Fbl.Links;
 
 /// <summary>The codes of a link's findings (FBL 17.6).</summary>
-internal static class LinkCodes
+public static class LinkCodes
 {
+    /// <summary>A value that is not a link.</summary>
     public const string Malformed = "link.malformed";
+    /// <summary>A link whose document is not in the workspace.</summary>
     public const string BrokenDocument = "link.broken-document";
+    /// <summary>A link whose element is no longer in its document.</summary>
     public const string BrokenElement = "link.broken-element";
+    /// <summary>A link that more than one document, or more than one element, answers.</summary>
     public const string AmbiguousDocument = "link.ambiguous-document";
 }
 

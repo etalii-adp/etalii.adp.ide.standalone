@@ -5,6 +5,7 @@ using EtAlii.Adp.Specification.Cel;
 using EtAlii.Adp.Specification.Disl;
 using EtAlii.Adp.Specification.Fbl;
 using EtAlii.Adp.Specification.Fbl.Documents;
+using EtAlii.Adp.Specification.Fbl.Links;
 using EtAlii.Adp.Specification.Fbl.Plugins;
 using IoPath = System.IO.Path;
 
@@ -118,6 +119,13 @@ internal static class MindmapDefinition
     {
         var model = PluginBody.Open(bytes, Binding, new MindmapFreeplanePlugin(), IoPath.GetFileName(file)).Model;
         return (DislModelBuilder.From(model, Specification).Diagram, model.DocumentId);
+    }
+
+    /// <summary>The findings of the links the map <paramref name="text"/> at <paramref name="file"/> holds, resolved in <paramref name="workspace"/> (FBL 17.6).</summary>
+    internal static IReadOnlyList<DiagramProblem> LinkFindings(string text, string file, LinkWorkspace? workspace)
+    {
+        var body = PluginBody.Open(Encoding.UTF8.GetBytes(text), Binding, new MindmapFreeplanePlugin(), IoPath.GetFileName(file));
+        return body.Model.Unreadable ? [] : DislLinkFindings.Of(DislModelBuilder.From(body.Model, Specification).Diagram, workspace);
     }
 
     /// <summary>

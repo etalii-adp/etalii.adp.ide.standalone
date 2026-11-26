@@ -16,4 +16,10 @@ public interface ILinkIndexer
     /// cannot be read, which the index then holds nothing of.
     /// </summary>
     IndexedDocument? Index(string path, byte[] bytes);
+
+    /// <summary>
+    /// The body <paramref name="bytes"/> of the document at <paramref name="path"/> with a new document id, as the fix of
+    /// <c>link.ambiguous-document</c> gives every candidate but the chosen one (FBL 17.6); null when it cannot be given one.
+    /// </summary>
+    byte[]? Renewed(string path, byte[] bytes);
 }

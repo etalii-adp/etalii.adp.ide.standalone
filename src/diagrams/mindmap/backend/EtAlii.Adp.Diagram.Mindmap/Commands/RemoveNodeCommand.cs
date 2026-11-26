@@ -42,10 +42,7 @@ internal sealed class RemoveNodeCommandHandler(IMindmapDocumentStore documents)
             .ToArray();
 
         var subtree = document.Remove(node);
-        var saved = await Documents.SaveAsync(command.BodyPath, document, new MindmapStructureChanged(removedIds), cancellationToken);
-
-        return CommandResult.FromSave(
-            saved, new RestoreSubtreeCommand(command.BodyPath, parent.Id, index, FreeplaneXmlWriter.ToText(subtree)));
+        return await SaveAsync(command.BodyPath, document, new MindmapStructureChanged(removedIds), new RestoreSubtreeCommand(command.BodyPath, parent.Id, index, FreeplaneXmlWriter.ToText(subtree)), cancellationToken);
     }
 }
 
@@ -76,8 +73,6 @@ internal sealed class RestoreSubtreeCommandHandler(IMindmapDocumentStore documen
         }
 
         document.Restore(subtree, parent, command.Index);
-        var saved = await Documents.SaveAsync(command.BodyPath, document, MindmapStructureChanged.Nothing, cancellationToken);
-
-        return CommandResult.FromSave(saved, new RemoveNodeCommand(command.BodyPath, restoredId));
+        return await SaveAsync(command.BodyPath, document, MindmapStructureChanged.Nothing, new RemoveNodeCommand(command.BodyPath, restoredId), cancellationToken);
     }
 }

@@ -106,6 +106,20 @@ public sealed class MindmapDocument
         return document;
     }
 
+    /// <summary>
+    /// What opening the map found to change in it (<see cref="MindmapOpening"/>) while no save has written it yet; null otherwise.
+    /// The undo of the save that writes it restores both texts it holds.
+    /// </summary>
+    internal MindmapOpened? Opened { get; set; }
+
+    /// <summary>Takes the map of <paramref name="other"/>, a document read from this one's text, as this one's own.</summary>
+    internal void Replace(MindmapDocument other)
+    {
+        var map = other._xml.Root!;
+        map.Remove();
+        _xml.Root!.ReplaceWith(map);
+    }
+
     /// <summary>The single root node.</summary>
     public MindmapNode Root => new(_xml.Root!.Element(MindmapNode.ElementName)!);
 
@@ -245,7 +259,7 @@ public sealed class MindmapDocument
 
     // ---- helpers -----------------------------------------------------------------------------
 
-    private void AssignMissingIds()
+    internal void AssignMissingIds()
     {
         foreach (var node in Nodes)
         {

@@ -47,8 +47,6 @@ internal sealed class MoveNodeCommandHandler(IMindmapDocumentStore documents)
         var previousIndex = node.IndexInParent;
 
         document.Move(node, newParent, command.Index);
-        var saved = await Documents.SaveAsync(command.BodyPath, document, MindmapStructureChanged.Nothing, cancellationToken);
-
-        return CommandResult.FromSave(saved, command with { NewParentId = previousParent.Id, Index = previousIndex });
+        return await SaveAsync(command.BodyPath, document, MindmapStructureChanged.Nothing, command with { NewParentId = previousParent.Id, Index = previousIndex }, cancellationToken);
     }
 }

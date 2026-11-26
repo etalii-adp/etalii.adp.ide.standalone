@@ -47,6 +47,18 @@ public static class DislOpening
     }
 
     /// <summary>The sets that write each link of <paramref name="diagram"/> as resolution in <paramref name="workspace"/> finds it, with a linked element's cached name.</summary>
+    /// <summary>
+    /// <paramref name="body"/> with a new document id, as the fix of <c>link.ambiguous-document</c> gives every candidate but the
+    /// chosen one (FBL 17.6); null when its tool type keeps no document id, or the body is read-only, cannot be read or refuses it.
+    /// </summary>
+    public static byte[]? Renewed(OpenBody body, DislSpecification specification)
+    {
+        ArgumentNullException.ThrowIfNull(body);
+        ArgumentNullException.ThrowIfNull(specification);
+        if (!specification.HasDocumentId || body.IsReadOnly || body.Model.Unreadable || DislIds.NewDocumentId(specification) is not { } id) return null;
+        return body.Change(new ModelChange.SetDocumentId(id)) is PlanResult.Refused ? null : body.Bytes;
+    }
+
     private static IEnumerable<DislChange.Set> Refreshes(DislDiagram diagram, LinkWorkspace workspace)
     {
         foreach (var element in diagram.Elements)
