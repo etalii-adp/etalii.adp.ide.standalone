@@ -87,7 +87,7 @@ internal sealed class KnowledgeSession : ITableDesignerSession
     private readonly ILinkIndex? _links;
 
     /// <summary>The relations of the project's other knowledge files that show their backlinks in this one, as they were last read.</summary>
-    private List<KnowledgeBacklinkSource> _backlinks = [];
+    private List<KnowledgeBacklinkSource> _backlinks;
 
     public KnowledgeSession(string bodyPath)
         : this(bodyPath, KnowledgeDocumentStore.Read)

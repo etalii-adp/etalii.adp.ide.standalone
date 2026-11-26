@@ -279,8 +279,8 @@ internal abstract class FamilyReader(BodyText text, FblBinding binding, FblOptio
         {
             foreach ((string _, AttributeBinding binding) in rule.Attributes)
             {
-                if (binding is { ReadOnly: not null, Child: null } && binding.Kind is SlotKind.Key(var key)) names.Add(key);
-                else if (binding is { ReadOnly: not null } && binding.Kind is SlotKind.XmlAttribute(var attribute)) names.Add(attribute);
+                if (binding is { ReadOnly: not null, Child: null, Kind: SlotKind.Key(var key) }) names.Add(key);
+                else if (binding is { ReadOnly: not null, Kind: SlotKind.XmlAttribute(var attribute) }) names.Add(attribute);
             }
         }
         return names;

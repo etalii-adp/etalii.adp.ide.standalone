@@ -157,7 +157,7 @@ internal static class KnowledgeRelations
     }
 
     /// <summary>The id of the backlink column a relation of the file named <paramref name="from"/> shows here: no property of a file has its shape.</summary>
-    public static string BacklinkId(string from, string relationId) => $"backlink:{from}:{relationId}";
+    private static string BacklinkId(string from, string relationId) => $"backlink:{from}:{relationId}";
 
     /// <summary>Whether a relation of the file at <paramref name="path"/> names the knowledge file at <paramref name="targetPath"/>, whose document id is <paramref name="targetId"/>: by that id, or by its path in a file made before links.</summary>
     public static bool Names(string path, KnowledgeProperty relation, string targetPath, string targetId) =>
