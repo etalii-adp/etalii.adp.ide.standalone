@@ -14,7 +14,7 @@ internal sealed class FixedLinkIndex(LinkWorkspace workspace) : ILinkIndex
 
     public IDisposable Track(string rootPath) => throw new NotSupportedException();
 
-    public LinkWorkspace? WorkspaceOf(string path) => workspace;
+    public LinkWorkspace WorkspaceOf(string path) => workspace;
 
     public Task<string?> RenewAsync(IReadOnlyList<string> paths, CancellationToken cancellationToken) => throw new NotSupportedException();
 }
