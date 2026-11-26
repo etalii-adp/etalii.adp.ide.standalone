@@ -23,4 +23,8 @@ public sealed record AddTimelineElementCommand(
     string Label,
     string Begin,
     string? End,
-    int Row) : IDocumentEditCommand;
+    int Row) : IDocumentEditCommand
+{
+    /// <summary>The element a linked one stands for, as FBL 17.1 writes it (spec 092); null for an element of its own, which writes its label.</summary>
+    public string? Link { get; init; }
+}

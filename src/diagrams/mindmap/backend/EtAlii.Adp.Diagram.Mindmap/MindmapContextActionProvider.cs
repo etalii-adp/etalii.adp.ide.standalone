@@ -47,6 +47,10 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
     public const string EditNotesActionId = "mindmap.edit-notes";
     public const string LinkActionId = "mindmap.link";
     public const string UnlinkActionId = "mindmap.unlink";
+    public const string AddLinkedActionId = "mindmap.add-linked";
+
+    /// <summary>The definition's operation behind <see cref="AddLinkedActionId"/>, whose <c>lookup</c> says what the lookup offers.</summary>
+    private const string AddLinkedOperation = "addLinked";
 
     private const string NodeGone = "The node no longer exists.";
 
@@ -58,6 +62,7 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
     private readonly IMindmapDocumentStore _documents;
     private readonly MindmapViewState _views;
     private readonly LinkFixActions _linkFixes;
+    private readonly ILinkIndex? _links;
 
     public MindmapContextActionProvider(IHistoryStackStore historyStacks, IMindmapDocumentStore documents, MindmapViewState views, ILinkIndex? links = null)
     {
@@ -68,6 +73,7 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
         _documents = documents;
         _views = views;
         _linkFixes = new LinkFixActions(historyStacks, links);
+        _links = links;
     }
 
     public ContextScope Scope => ContextScope.DiagramElement;
@@ -78,7 +84,7 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
         // an unlinked node are not "unavailable right now", they do not apply - the definition's
         // entries say so with `visible`.
         return await ResolveAsync(target, cancellationToken) is { } resolved
-            ? [.. MindmapDefinition.Menus(resolved.Element), .. _linkFixes.Menu(resolved.Diagram, target)]
+            ? [.. MindmapDefinition.Menus(resolved.Element), .. LinkNavigation.Menu(resolved.Diagram, target, _links?.WorkspaceOf(target.ResolvedFullPath)), .. _linkFixes.Menu(resolved.Diagram, target)]
             : [];
     }
 
@@ -91,6 +97,12 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
 
         var node = resolved.Node;
         var element = resolved.Element;
+        if (LinkNavigation.Handles(actionId))
+        {
+            // Where a link leads (FBL 17.5): the linked node's target, or the links that point at this node.
+            return LinkNavigation.Execute(resolved.Diagram, target, actionId, _links?.WorkspaceOf(target.ResolvedFullPath));
+        }
+
         if (DislLinkFixes.IsFix(actionId))
         {
             // The fixes of a linked node's finding (FBL 17.6): the link removed, leaving the text it cached, or its document chosen.
@@ -131,8 +143,9 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
             case DeleteActionId:
                 // A leaf goes without asking; a branch is confirmed, since it takes its
                 // subtree with it (Requirement 7.4). Both are undoable, and the message says so.
-                // Which, and the texts, are the definition's `deletion.confirm`.
-                return MindmapDefinition.Confirmation(element) is { } confirmation
+                // Which, and the texts, are the definition's `deletion.confirm`; and a delete that breaks links of other
+                // documents is always confirmed, saying how many (etalii.adp spec 092, FR-016).
+                return LinkNavigation.WarnOfBrokenLinks(MindmapDefinition.Confirmation(element), resolved.Diagram, target, _links?.WorkspaceOf(target.ResolvedFullPath)) is { } confirmation
                     ? new ContextExecutionRequiresConfirmation(confirmation)
                     : await DispatchAsync(target, new RemoveNodeCommand(target.ResolvedFullPath, node.Id), cancellationToken);
 
@@ -159,6 +172,10 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
             case UnlinkActionId:
                 return await DispatchAsync(target, new SetNodeLinkCommand(target.ResolvedFullPath, node.Id, null), cancellationToken);
 
+            case AddLinkedActionId:
+                // The host's lookup over the workspace (DISL 9.4): the picked element comes back to the commit below.
+                return LinkLookups.Open(_links, MindmapDefinition.Specification, AddLinkedOperation, target.ResolvedFullPath);
+
             default:
                 return new ContextExecutionFailed($"Unknown action '{actionId}'.");
         }
@@ -178,6 +195,11 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
 
         var node = resolved.Node;
         var bodyPath = target.ResolvedFullPath;
+        if (actionId == LinkNavigation.LinkedFromActionId)
+        {
+            return LinkNavigation.Picked(value);
+        }
+
         if (actionId == DislLinkFixes.ChooseActionId)
         {
             return await _linkFixes.ChooseAsync(resolved.Diagram, target, value, (_, link) => new SetNodeAdpLinkCommand(bodyPath, node.Id, link), cancellationToken);
@@ -193,6 +215,7 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
                 DeleteActionId => new RemoveNodeCommand(bodyPath, node.Id),
                 EditNotesActionId => new SetNodeNotesCommand(bodyPath, node.Id, value),
                 LinkActionId => LinkCommand(target, node, value),
+                AddLinkedActionId => LinkedChildCommand(bodyPath, node, value),
                 _ => null,
             };
 
@@ -204,6 +227,15 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
         var result = await _historyStacks.Get(target.Root).ExecuteAsync(command, cancellationToken);
         return result.IsSuccess ? ContextCommitResult.Succeeded : ContextCommitResult.Failed(result.Error);
     }
+
+    /// <summary>
+    /// A linked node for the element picked in the lookup, as the last child of <paramref name="node"/>: its <c>adp-link</c> the
+    /// picked element's link and its text the name that link caches (mindmap.md 3.8); null when the pick no longer resolves.
+    /// </summary>
+    private AddChildNodeCommand? LinkedChildCommand(string bodyPath, MindmapNode node, string value) =>
+        LinkLookups.Picked(_links, bodyPath, value) is { } pick
+            ? new AddChildNodeCommand(bodyPath, node.Id, MindmapDocument.NewId(), pick.Name) { AdpLink = pick.Link }
+            : null;
 
     private static SetNodeLinkCommand LinkCommand(ContextTarget target, MindmapNode node, string projectRelative)
     {

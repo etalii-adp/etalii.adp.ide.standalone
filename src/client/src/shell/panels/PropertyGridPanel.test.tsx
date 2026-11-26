@@ -24,7 +24,8 @@ const backend: {
   reject: string;
   lastSource?: unknown;
   describeError: string;
-} = { properties: [], writes: [], reject: "", describeError: "" };
+  executed: string[];
+} = { properties: [], writes: [], reject: "", describeError: "", executed: [] };
 
 vi.mock("../context/ContextConnectionProvider", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../context/ContextConnectionProvider")>();
@@ -34,7 +35,10 @@ vi.mock("../context/ContextConnectionProvider", async (importOriginal) => {
     useContextConnection: () => ({
       watchId: new Uint8Array(16),
       select: () => {},
-      executeAction: async () => ({ accepted: true, error: "" }),
+      executeAction: async (actionId: string) => {
+        backend.executed.push(actionId);
+        return { accepted: true, error: "" };
+      },
       executeShortcut: async () => ({ accepted: true, error: "" }),
       clearReveal: () => {},
       revealPath: () => {},
@@ -86,6 +90,7 @@ describe("PropertyGridPanel", () => {
     backend.writes = [];
     backend.reject = "";
     backend.describeError = "";
+    backend.executed = [];
     contextState.selection = null;
     contextState.levels = [];
   });
@@ -288,6 +293,23 @@ describe("PropertyGridPanel", () => {
     });
     contextState.levels = [elementDetail("Web Application")];
   }
+
+  it("opens a linked element's target through the backend's Open linked element when its name is clicked", async () => {
+    // Arrange.
+    selectElement();
+    backend.properties = [property({ id: "timeline.link", label: "Linked element", value: "Sign-in", editor: ContextPropertyEditor.LINK })];
+    render(<PropertyGridPanel />);
+
+    // Act.
+    const link = await screen.findByRole("button", { name: "Sign-in" });
+    await act(async () => {
+      fireEvent.click(link);
+    });
+
+    // Assert.
+    expect(backend.executed).toEqual(["link.open"]);
+    expect(backend.writes).toEqual([]);
+  });
 
   it("renders a described property as an editable field holding its value", async () => {
     // Arrange.

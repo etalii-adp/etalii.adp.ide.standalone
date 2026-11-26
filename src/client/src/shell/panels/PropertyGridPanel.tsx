@@ -12,6 +12,7 @@ import { useFocusedDiagram } from "../../canvas/focusedDiagram";
 import { create } from "@bufbuild/protobuf";
 import { ContextSourceSchema, type ContextSource } from "../../generated/context-contract_pb";
 import { PanelEmptyState } from "./PanelEmptyState";
+import { OPEN_LINKED_ELEMENT_ACTION } from "./revealRequests";
 
 const SOURCE_LABELS: Record<number, string> = {
   [ContextSelectionSource.EXPLORER]: "Explorer",
@@ -109,7 +110,7 @@ export function groupsOf(properties: ContextProperty[]): Array<{ name: string; p
  */
 export function PropertyGridPanel() {
   const { selection, levels } = useContextSelection();
-  const { describeProperties, setProperty } = useContextConnection();
+  const { describeProperties, setProperty, executeAction } = useContextConnection();
   const [properties, setProperties] = useState<ContextProperty[]>([]);
   // Kept apart from an empty `properties`, which is the ordinary "nothing to edit here" state.
   const [describeError, setDescribeError] = useState("");
@@ -174,11 +175,20 @@ export function PropertyGridPanel() {
     [],
   );
 
+  const executeRef = useRef(executeAction);
+  executeRef.current = executeAction;
+
+  // A link row opens its target through the backend's "Open linked element", on the same selection the row describes.
+  const open = useCallback(async (): Promise<string> => {
+    const outcome = await executeRef.current(OPEN_LINKED_ELEMENT_ACTION, focusedSource.current);
+    return outcome.accepted ? "" : outcome.error.length > 0 ? outcome.error : "The linked element could not be opened.";
+  }, []);
+
   const renderDiagramGroup = (group: { name: string; properties: ContextProperty[] }) => (
     <div className="property-grid-group" key={group.name}>
       {group.name.length > 0 && <h4 className="property-grid-group-title">{group.name}</h4>}
       {group.properties.map((property) => (
-        <PropertyRow key={property.id} property={property} onCommit={(value) => commit(property.id, value)} />
+        <PropertyRow key={property.id} property={property} onCommit={(value) => commit(property.id, value)} onOpen={open} />
       ))}
     </div>
   );
@@ -216,6 +226,7 @@ export function PropertyGridPanel() {
           key={property.id}
           property={previewed?.[property.id] !== undefined ? { ...property, value: previewed[property.id]! } : property}
           onCommit={(value) => commit(property.id, value)}
+          onOpen={open}
         />
       ))}
     </div>

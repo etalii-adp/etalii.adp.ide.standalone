@@ -35,6 +35,8 @@ internal sealed class HistoryActionsBroadcasterRecordingSelectionStore : IContex
 
     public void PushNotice(ProjectRoot root, string message) => throw new NotSupportedException();
 
+    public void PushReveal(ShortGuid watchId, ContextReveal reveal) => throw new NotSupportedException();
+
     public ContextSelectionRecord Get(ShortGuid watchId) => throw new NotSupportedException();
 
     public void Set(ShortGuid watchId, ProjectRoot root, ContextSelectionRecord record, ContextRediscovery rediscover) => throw new NotSupportedException();

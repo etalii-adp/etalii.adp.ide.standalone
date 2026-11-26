@@ -61,6 +61,9 @@ public static class ServiceCollectionAddHierarchyExtension
         services.AddSingleton<IContextActionProvider, HierarchyContextActionProvider>();
         services.AddSingleton<IContextSourceResolver, HierarchyContextSourceResolver>();
 
+        // The entry a reveal opens a document's tab with, found in the connection's own model (spec 092, FR-014).
+        services.AddSingleton<IContextEntryLocator, HierarchyEntryLocator>();
+
         // Built by hand: the provider's other constructor takes the diagram definitions a
         // test hands it, and letting the container choose between the two would leave which
         // one it picks to depend on what else happens to be registered.

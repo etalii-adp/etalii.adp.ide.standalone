@@ -107,15 +107,14 @@ public class DependencyGraphContextActionProviderTests : IDisposable
     }
 
     [Fact]
-    public async Task EmptyCanvas_OffersOneAdd_AndNoMoment()
+    public async Task EmptyCanvas_OffersTheAdds_AndNoMoment()
     {
         // Arrange & act.
         var path = Write();
         var ids = await ActionIdsFor(path, GestureIds.RowPlacement(700, 3));
 
         // Assert.
-        var only = Assert.Single(ids);
-        Assert.Equal(DependencyGraphContextActionProvider.AddElementActionId, only);
+        Assert.Equal([DependencyGraphContextActionProvider.AddElementActionId, DependencyGraphContextActionProvider.AddLinkedActionId], ids);
     }
 
     [Fact]

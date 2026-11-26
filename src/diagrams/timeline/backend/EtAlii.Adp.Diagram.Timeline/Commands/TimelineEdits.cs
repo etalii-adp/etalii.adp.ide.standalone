@@ -140,11 +140,20 @@ internal static class TimelineEdits
 
     /// <summary>
     /// Adds an element where the binding puts a new one: a period when it has an end, else a moment. The
-    /// first element of a new timeline opens its <c>elements: []</c> into a block sequence.
+    /// first element of a new timeline opens its <c>elements: []</c> into a block sequence. With a
+    /// <paramref name="link"/> it is a linked period or moment, which writes its link instead of its label (spec 092).
     /// </summary>
-    public static EditOutcome AddElement(TimelineBody body, string id, string label, string begin, string? end, int row)
+    public static EditOutcome AddElement(TimelineBody body, string id, string label, string begin, string? end, int row, string? link = null)
     {
         ArgumentNullException.ThrowIfNull(body);
+        if (link is not null)
+        {
+            var linked = end is null
+                ? Values(("link", link), ("begin", begin), ("row", row))
+                : Values(("link", link), ("begin", begin), ("end", end), ("row", row));
+            return body.Change(new ModelChange.Add(end is null ? "LinkedMoment" : "LinkedPeriod", id, linked));
+        }
+
         var values = end is null
             ? Values(("label", label), ("begin", begin), ("row", row))
             : Values(("label", label), ("begin", begin), ("end", end), ("row", row));

@@ -31,8 +31,9 @@ public class MindmapContextActionProviderTests : IDisposable
         // Assert.
         Assert.Equal(
             [MindmapContextActionProvider.AddChildActionId, MindmapContextActionProvider.AddSiblingActionId,
-             MindmapContextActionProvider.RenameActionId, MindmapContextActionProvider.DeleteActionId,
-             MindmapContextActionProvider.EditNotesActionId, MindmapContextActionProvider.LinkActionId],
+             MindmapContextActionProvider.AddLinkedActionId, MindmapContextActionProvider.RenameActionId,
+             MindmapContextActionProvider.DeleteActionId, MindmapContextActionProvider.EditNotesActionId,
+             MindmapContextActionProvider.LinkActionId],
             ids);
     }
 

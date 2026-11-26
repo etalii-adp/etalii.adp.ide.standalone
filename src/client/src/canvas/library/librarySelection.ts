@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { elementIdOfKey, elementSelectionOf, elementSourceOf } from "@client/canvas/selection";
 import { contextShortcutOf } from "@client/canvas/interaction";
 import { innermostKey, useContextConnection, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
@@ -8,6 +8,7 @@ import { actionForMenuEntry, backendKeyOf, type ActionLookup } from "./definitio
 import type { DiagramModel } from "./api/diagramModel";
 import { hasRow } from "./definition/compartments";
 import { openLink } from "@client/shell/links/openLink";
+import { onElementRevealRequested, takeElementReveal } from "@client/shell/panels/revealRequests";
 import { clearFocusedDiagram, showFocusedDiagram } from "@client/canvas/focusedDiagram";
 import {
   dispatchDiagramEvent,
@@ -179,6 +180,20 @@ export function useLibrarySelection(
 
   const push = (id: string | null, gesture?: ContextSelectionAction) =>
     select(id === null ? null : elementSelectionOf(source.entryId, source.path, id, gesture));
+
+  // An element an action pointed at in the document this canvas draws (spec 092, FR-014): selected once the model holds it,
+  // whether the canvas was opened for it or was already open.
+  const modelRef = useRef(model);
+  modelRef.current = model;
+  const [revealTick, setRevealTick] = useState(0);
+  useEffect(() => onElementRevealRequested(() => setRevealTick((tick) => tick + 1)), []);
+  useEffect(() => {
+    const drawn = (id: string) => modelRef.current.elements.some((element) => element.id === id);
+    const revealed = takeElementReveal(source.path, drawn);
+    if (revealed !== null) {
+      selectRef.current(elementSelectionOf(source.entryId, source.path, revealed));
+    }
+  }, [model, revealTick, source.entryId, source.path]);
 
   /**
    * A declared action, raised to the module - and, where it declares a `backendKey`, sent to the

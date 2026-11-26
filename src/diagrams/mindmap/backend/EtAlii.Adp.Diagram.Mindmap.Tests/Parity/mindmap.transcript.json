@@ -12,6 +12,7 @@
       "menus": [
         [
           "g1 mindmap.add-child | Add child | mdi-subdirectory-arrow-right | Insert | on",
+          "g1 mindmap.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g1 mindmap.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g2 mindmap.edit-notes | Edit notes… | mdi-note-text-outline | - | on",
           "g2 mindmap.link | Link to… | mdi-link-variant | - | on",
@@ -19,6 +20,7 @@
         ],
         [
           "g1 mindmap.add-child | Add child | mdi-subdirectory-arrow-right | Insert | on",
+          "g1 mindmap.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g1 mindmap.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g2 mindmap.edit-notes | Edit notes… | mdi-note-text-outline | - | on",
           "g2 mindmap.link | Link to… | mdi-link-variant | - | on",
@@ -27,6 +29,7 @@
         [
           "g1 mindmap.add-child | Add child | mdi-subdirectory-arrow-right | Insert | on",
           "g1 mindmap.add-sibling | Add sibling | mdi-plus | Enter | on",
+          "g1 mindmap.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g1 mindmap.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 mindmap.delete | Delete | mdi-trash-can-outline | Delete | on",
           "g2 mindmap.edit-notes | Add notes… | mdi-note-text-outline | - | on",
@@ -36,6 +39,7 @@
         [
           "g1 mindmap.add-child | Add child | mdi-subdirectory-arrow-right | Insert | on",
           "g1 mindmap.add-sibling | Add sibling | mdi-plus | Enter | on",
+          "g1 mindmap.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g1 mindmap.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 mindmap.delete | Delete | mdi-trash-can-outline | Delete | on",
           "g2 mindmap.edit-notes | Add notes… | mdi-note-text-outline | - | on",
@@ -45,6 +49,7 @@
         [
           "g1 mindmap.add-child | Add child | mdi-subdirectory-arrow-right | Insert | on",
           "g1 mindmap.add-sibling | Add sibling | mdi-plus | Enter | on",
+          "g1 mindmap.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g1 mindmap.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 mindmap.delete | Delete | mdi-trash-can-outline | Delete | on",
           "g2 mindmap.edit-notes | Edit notes… | mdi-note-text-outline | - | on",
@@ -54,6 +59,7 @@
         [
           "g1 mindmap.add-child | Add child | mdi-subdirectory-arrow-right | Insert | on",
           "g1 mindmap.add-sibling | Add sibling | mdi-plus | Enter | on",
+          "g1 mindmap.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g1 mindmap.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 mindmap.delete | Delete | mdi-trash-can-outline | Delete | on",
           "g2 mindmap.edit-notes | Add notes… | mdi-note-text-outline | - | on",
@@ -64,6 +70,7 @@
         [
           "g1 mindmap.add-child | Add child | mdi-subdirectory-arrow-right | Insert | on",
           "g1 mindmap.add-sibling | Add sibling | mdi-plus | Enter | on",
+          "g1 mindmap.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g1 mindmap.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 mindmap.delete | Delete | mdi-trash-can-outline | Delete | on",
           "g2 mindmap.edit-notes | Add notes… | mdi-note-text-outline | - | on",
@@ -74,6 +81,7 @@
         [
           "g1 mindmap.add-child | Add child | mdi-subdirectory-arrow-right | Insert | on",
           "g1 mindmap.add-sibling | Add sibling | mdi-plus | Enter | on",
+          "g1 mindmap.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g1 mindmap.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 mindmap.delete | Delete | mdi-trash-can-outline | Delete | on",
           "g2 mindmap.edit-notes | Add notes… | mdi-note-text-outline | - | on",
@@ -82,6 +90,7 @@
         [
           "g1 mindmap.add-child | Add child | mdi-subdirectory-arrow-right | Insert | on",
           "g1 mindmap.add-sibling | Add sibling | mdi-plus | Enter | on",
+          "g1 mindmap.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g1 mindmap.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 mindmap.delete | Delete | mdi-trash-can-outline | Delete | on",
           "g2 mindmap.edit-notes | Add notes… | mdi-note-text-outline | - | on",
@@ -657,6 +666,7 @@
       "menus": [
         [
           "g1 mindmap.add-child | Add child | mdi-subdirectory-arrow-right | Insert | on",
+          "g1 mindmap.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g1 mindmap.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g2 mindmap.edit-notes | Add notes… | mdi-note-text-outline | - | on",
           "g2 mindmap.link | Change link… | mdi-link-variant | - | on",
@@ -665,6 +675,7 @@
         ],
         [
           "g1 mindmap.add-child | Add child | mdi-subdirectory-arrow-right | Insert | on",
+          "g1 mindmap.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g1 mindmap.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g2 mindmap.edit-notes | Add notes… | mdi-note-text-outline | - | on",
           "g2 mindmap.link | Change link… | mdi-link-variant | - | on",
@@ -674,6 +685,7 @@
         [
           "g1 mindmap.add-child | Add child | mdi-subdirectory-arrow-right | Insert | on",
           "g1 mindmap.add-sibling | Add sibling | mdi-plus | Enter | on",
+          "g1 mindmap.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g1 mindmap.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 mindmap.delete | Delete | mdi-trash-can-outline | Delete | on",
           "g2 mindmap.edit-notes | Add notes… | mdi-note-text-outline | - | on",
@@ -683,6 +695,7 @@
         [
           "g1 mindmap.add-child | Add child | mdi-subdirectory-arrow-right | Insert | on",
           "g1 mindmap.add-sibling | Add sibling | mdi-plus | Enter | on",
+          "g1 mindmap.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g1 mindmap.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 mindmap.delete | Delete | mdi-trash-can-outline | Delete | on",
           "g2 mindmap.edit-notes | Add notes… | mdi-note-text-outline | - | on",
@@ -692,6 +705,7 @@
         [
           "g1 mindmap.add-child | Add child | mdi-subdirectory-arrow-right | Insert | on",
           "g1 mindmap.add-sibling | Add sibling | mdi-plus | Enter | on",
+          "g1 mindmap.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g1 mindmap.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 mindmap.delete | Delete | mdi-trash-can-outline | Delete | on",
           "g2 mindmap.edit-notes | Add notes… | mdi-note-text-outline | - | on",
@@ -1387,6 +1401,7 @@
       "menus": [
         [
           "g1 mindmap.add-child | Add child | mdi-subdirectory-arrow-right | Insert | on",
+          "g1 mindmap.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g1 mindmap.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g2 mindmap.edit-notes | Add notes… | mdi-note-text-outline | - | on",
           "g2 mindmap.link | Change link… | mdi-link-variant | - | on",
@@ -1395,6 +1410,7 @@
         ],
         [
           "g1 mindmap.add-child | Add child | mdi-subdirectory-arrow-right | Insert | on",
+          "g1 mindmap.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g1 mindmap.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g2 mindmap.edit-notes | Add notes… | mdi-note-text-outline | - | on",
           "g2 mindmap.link | Change link… | mdi-link-variant | - | on",
@@ -1404,6 +1420,7 @@
         [
           "g1 mindmap.add-child | Add child | mdi-subdirectory-arrow-right | Insert | on",
           "g1 mindmap.add-sibling | Add sibling | mdi-plus | Enter | on",
+          "g1 mindmap.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g1 mindmap.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 mindmap.delete | Delete | mdi-trash-can-outline | Delete | on",
           "g2 mindmap.edit-notes | Add notes… | mdi-note-text-outline | - | on",
@@ -1413,6 +1430,7 @@
         [
           "g1 mindmap.add-child | Add child | mdi-subdirectory-arrow-right | Insert | on",
           "g1 mindmap.add-sibling | Add sibling | mdi-plus | Enter | on",
+          "g1 mindmap.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g1 mindmap.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 mindmap.delete | Delete | mdi-trash-can-outline | Delete | on",
           "g2 mindmap.edit-notes | Add notes… | mdi-note-text-outline | - | on",
@@ -1422,6 +1440,7 @@
         [
           "g1 mindmap.add-child | Add child | mdi-subdirectory-arrow-right | Insert | on",
           "g1 mindmap.add-sibling | Add sibling | mdi-plus | Enter | on",
+          "g1 mindmap.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g1 mindmap.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 mindmap.delete | Delete | mdi-trash-can-outline | Delete | on",
           "g2 mindmap.edit-notes | Add notes… | mdi-note-text-outline | - | on",
@@ -2134,6 +2153,7 @@
       "menus": [
         [
           "g1 mindmap.add-child | Add child | mdi-subdirectory-arrow-right | Insert | on",
+          "g1 mindmap.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g1 mindmap.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g2 mindmap.edit-notes | Add notes… | mdi-note-text-outline | - | on",
           "g2 mindmap.link | Change link… | mdi-link-variant | - | on",
@@ -2142,6 +2162,7 @@
         ],
         [
           "g1 mindmap.add-child | Add child | mdi-subdirectory-arrow-right | Insert | on",
+          "g1 mindmap.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g1 mindmap.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g2 mindmap.edit-notes | Add notes… | mdi-note-text-outline | - | on",
           "g2 mindmap.link | Change link… | mdi-link-variant | - | on",
@@ -2151,6 +2172,7 @@
         [
           "g1 mindmap.add-child | Add child | mdi-subdirectory-arrow-right | Insert | on",
           "g1 mindmap.add-sibling | Add sibling | mdi-plus | Enter | on",
+          "g1 mindmap.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g1 mindmap.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 mindmap.delete | Delete | mdi-trash-can-outline | Delete | on",
           "g2 mindmap.edit-notes | Add notes… | mdi-note-text-outline | - | on",
@@ -2160,6 +2182,7 @@
         [
           "g1 mindmap.add-child | Add child | mdi-subdirectory-arrow-right | Insert | on",
           "g1 mindmap.add-sibling | Add sibling | mdi-plus | Enter | on",
+          "g1 mindmap.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g1 mindmap.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 mindmap.delete | Delete | mdi-trash-can-outline | Delete | on",
           "g2 mindmap.edit-notes | Add notes… | mdi-note-text-outline | - | on",
@@ -2169,6 +2192,7 @@
         [
           "g1 mindmap.add-child | Add child | mdi-subdirectory-arrow-right | Insert | on",
           "g1 mindmap.add-sibling | Add sibling | mdi-plus | Enter | on",
+          "g1 mindmap.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g1 mindmap.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 mindmap.delete | Delete | mdi-trash-can-outline | Delete | on",
           "g2 mindmap.edit-notes | Add notes… | mdi-note-text-outline | - | on",
@@ -2978,6 +3002,7 @@
       "menus": [
         [
           "g1 mindmap.add-child | Add child | mdi-subdirectory-arrow-right | Insert | on",
+          "g1 mindmap.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g1 mindmap.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g2 mindmap.edit-notes | Add notes… | mdi-note-text-outline | - | on",
           "g2 mindmap.link | Link to… | mdi-link-variant | - | on",
@@ -2985,6 +3010,7 @@
         ],
         [
           "g1 mindmap.add-child | Add child | mdi-subdirectory-arrow-right | Insert | on",
+          "g1 mindmap.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g1 mindmap.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g2 mindmap.edit-notes | Add notes… | mdi-note-text-outline | - | on",
           "g2 mindmap.link | Link to… | mdi-link-variant | - | on",
@@ -2993,6 +3019,7 @@
         [
           "g1 mindmap.add-child | Add child | mdi-subdirectory-arrow-right | Insert | on",
           "g1 mindmap.add-sibling | Add sibling | mdi-plus | Enter | on",
+          "g1 mindmap.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g1 mindmap.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 mindmap.delete | Delete | mdi-trash-can-outline | Delete | on",
           "g2 mindmap.edit-notes | Add notes… | mdi-note-text-outline | - | on",
@@ -3306,6 +3333,7 @@
       "menus": [
         [
           "g1 mindmap.add-child | Add child | mdi-subdirectory-arrow-right | Insert | on",
+          "g1 mindmap.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g1 mindmap.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g2 mindmap.edit-notes | Add notes… | mdi-note-text-outline | - | on",
           "g2 mindmap.link | Link to… | mdi-link-variant | - | on",
@@ -3313,6 +3341,7 @@
         ],
         [
           "g1 mindmap.add-child | Add child | mdi-subdirectory-arrow-right | Insert | on",
+          "g1 mindmap.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g1 mindmap.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g2 mindmap.edit-notes | Add notes… | mdi-note-text-outline | - | on",
           "g2 mindmap.link | Link to… | mdi-link-variant | - | on",
@@ -3321,6 +3350,7 @@
         [
           "g1 mindmap.add-child | Add child | mdi-subdirectory-arrow-right | Insert | on",
           "g1 mindmap.add-sibling | Add sibling | mdi-plus | Enter | on",
+          "g1 mindmap.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g1 mindmap.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 mindmap.delete | Delete | mdi-trash-can-outline | Delete | on",
           "g2 mindmap.edit-notes | Add notes… | mdi-note-text-outline | - | on",
@@ -3634,6 +3664,7 @@
       "menus": [
         [
           "g1 mindmap.add-child | Add child | mdi-subdirectory-arrow-right | Insert | on",
+          "g1 mindmap.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g1 mindmap.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g2 mindmap.edit-notes | Add notes… | mdi-note-text-outline | - | on",
           "g2 mindmap.link | Link to… | mdi-link-variant | - | on",
@@ -3641,6 +3672,7 @@
         ],
         [
           "g1 mindmap.add-child | Add child | mdi-subdirectory-arrow-right | Insert | on",
+          "g1 mindmap.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g1 mindmap.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g2 mindmap.edit-notes | Add notes… | mdi-note-text-outline | - | on",
           "g2 mindmap.link | Link to… | mdi-link-variant | - | on",
@@ -3649,6 +3681,7 @@
         [
           "g1 mindmap.add-child | Add child | mdi-subdirectory-arrow-right | Insert | on",
           "g1 mindmap.add-sibling | Add sibling | mdi-plus | Enter | on",
+          "g1 mindmap.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g1 mindmap.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 mindmap.delete | Delete | mdi-trash-can-outline | Delete | on",
           "g2 mindmap.edit-notes | Add notes… | mdi-note-text-outline | - | on",
@@ -3960,6 +3993,7 @@
       "menus": [
         [
           "g1 mindmap.add-child | Add child | mdi-subdirectory-arrow-right | Insert | on",
+          "g1 mindmap.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g1 mindmap.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g2 mindmap.edit-notes | Add notes… | mdi-note-text-outline | - | on",
           "g2 mindmap.link | Link to… | mdi-link-variant | - | on",
@@ -3967,6 +4001,7 @@
         ],
         [
           "g1 mindmap.add-child | Add child | mdi-subdirectory-arrow-right | Insert | on",
+          "g1 mindmap.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g1 mindmap.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g2 mindmap.edit-notes | Add notes… | mdi-note-text-outline | - | on",
           "g2 mindmap.link | Link to… | mdi-link-variant | - | on",
@@ -3975,6 +4010,7 @@
         [
           "g1 mindmap.add-child | Add child | mdi-subdirectory-arrow-right | Insert | on",
           "g1 mindmap.add-sibling | Add sibling | mdi-plus | Enter | on",
+          "g1 mindmap.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g1 mindmap.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 mindmap.delete | Delete | mdi-trash-can-outline | Delete | on",
           "g2 mindmap.edit-notes | Add notes… | mdi-note-text-outline | - | on",
@@ -4299,6 +4335,7 @@
       "menus": [
         [
           "g1 mindmap.add-child | Add child | mdi-subdirectory-arrow-right | Insert | on",
+          "g1 mindmap.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g1 mindmap.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g2 mindmap.edit-notes | Add notes… | mdi-note-text-outline | - | on",
           "g2 mindmap.link | Link to… | mdi-link-variant | - | on",
@@ -4306,6 +4343,7 @@
         ],
         [
           "g1 mindmap.add-child | Add child | mdi-subdirectory-arrow-right | Insert | on",
+          "g1 mindmap.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g1 mindmap.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g2 mindmap.edit-notes | Add notes… | mdi-note-text-outline | - | on",
           "g2 mindmap.link | Link to… | mdi-link-variant | - | on",
@@ -4314,6 +4352,7 @@
         [
           "g1 mindmap.add-child | Add child | mdi-subdirectory-arrow-right | Insert | on",
           "g1 mindmap.add-sibling | Add sibling | mdi-plus | Enter | on",
+          "g1 mindmap.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g1 mindmap.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 mindmap.delete | Delete | mdi-trash-can-outline | Delete | on",
           "g2 mindmap.edit-notes | Add notes… | mdi-note-text-outline | - | on",
@@ -4639,6 +4678,7 @@
       "menus": [
         [
           "g1 mindmap.add-child | Add child | mdi-subdirectory-arrow-right | Insert | on",
+          "g1 mindmap.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g1 mindmap.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g2 mindmap.edit-notes | Add notes… | mdi-note-text-outline | - | on",
           "g2 mindmap.link | Link to… | mdi-link-variant | - | on",
@@ -4646,6 +4686,7 @@
         ],
         [
           "g1 mindmap.add-child | Add child | mdi-subdirectory-arrow-right | Insert | on",
+          "g1 mindmap.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g1 mindmap.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g2 mindmap.edit-notes | Add notes… | mdi-note-text-outline | - | on",
           "g2 mindmap.link | Link to… | mdi-link-variant | - | on",
@@ -4654,6 +4695,7 @@
         [
           "g1 mindmap.add-child | Add child | mdi-subdirectory-arrow-right | Insert | on",
           "g1 mindmap.add-sibling | Add sibling | mdi-plus | Enter | on",
+          "g1 mindmap.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g1 mindmap.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 mindmap.delete | Delete | mdi-trash-can-outline | Delete | on",
           "g2 mindmap.edit-notes | Add notes… | mdi-note-text-outline | - | on",
@@ -4662,6 +4704,7 @@
         [
           "g1 mindmap.add-child | Add child | mdi-subdirectory-arrow-right | Insert | on",
           "g1 mindmap.add-sibling | Add sibling | mdi-plus | Enter | on",
+          "g1 mindmap.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g1 mindmap.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 mindmap.delete | Delete | mdi-trash-can-outline | Delete | on",
           "g2 mindmap.edit-notes | Add notes… | mdi-note-text-outline | - | on",
@@ -4671,6 +4714,7 @@
         [
           "g1 mindmap.add-child | Add child | mdi-subdirectory-arrow-right | Insert | on",
           "g1 mindmap.add-sibling | Add sibling | mdi-plus | Enter | on",
+          "g1 mindmap.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g1 mindmap.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 mindmap.delete | Delete | mdi-trash-can-outline | Delete | on",
           "g2 mindmap.edit-notes | Add notes… | mdi-note-text-outline | - | on",
@@ -5051,6 +5095,7 @@
       "menus": [
         [
           "g1 mindmap.add-child | Add child | mdi-subdirectory-arrow-right | Insert | on",
+          "g1 mindmap.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g1 mindmap.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g2 mindmap.edit-notes | Add notes… | mdi-note-text-outline | - | on",
           "g2 mindmap.link | Link to… | mdi-link-variant | - | on",
@@ -5058,6 +5103,7 @@
         ],
         [
           "g1 mindmap.add-child | Add child | mdi-subdirectory-arrow-right | Insert | on",
+          "g1 mindmap.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g1 mindmap.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g2 mindmap.edit-notes | Add notes… | mdi-note-text-outline | - | on",
           "g2 mindmap.link | Link to… | mdi-link-variant | - | on",
@@ -5066,6 +5112,7 @@
         [
           "g1 mindmap.add-child | Add child | mdi-subdirectory-arrow-right | Insert | on",
           "g1 mindmap.add-sibling | Add sibling | mdi-plus | Enter | on",
+          "g1 mindmap.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g1 mindmap.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 mindmap.delete | Delete | mdi-trash-can-outline | Delete | on",
           "g2 mindmap.edit-notes | Add notes… | mdi-note-text-outline | - | on",
@@ -5075,6 +5122,7 @@
         [
           "g1 mindmap.add-child | Add child | mdi-subdirectory-arrow-right | Insert | on",
           "g1 mindmap.add-sibling | Add sibling | mdi-plus | Enter | on",
+          "g1 mindmap.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g1 mindmap.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 mindmap.delete | Delete | mdi-trash-can-outline | Delete | on",
           "g2 mindmap.edit-notes | Add notes… | mdi-note-text-outline | - | on",
@@ -5084,6 +5132,7 @@
         [
           "g1 mindmap.add-child | Add child | mdi-subdirectory-arrow-right | Insert | on",
           "g1 mindmap.add-sibling | Add sibling | mdi-plus | Enter | on",
+          "g1 mindmap.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g1 mindmap.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 mindmap.delete | Delete | mdi-trash-can-outline | Delete | on",
           "g2 mindmap.edit-notes | Add notes… | mdi-note-text-outline | - | on",
@@ -5431,6 +5480,7 @@
       "menus": [
         [
           "g1 mindmap.add-child | Add child | mdi-subdirectory-arrow-right | Insert | on",
+          "g1 mindmap.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g1 mindmap.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g2 mindmap.edit-notes | Add notes… | mdi-note-text-outline | - | on",
           "g2 mindmap.link | Change link… | mdi-link-variant | - | on",
@@ -5439,6 +5489,7 @@
         ],
         [
           "g1 mindmap.add-child | Add child | mdi-subdirectory-arrow-right | Insert | on",
+          "g1 mindmap.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g1 mindmap.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g2 mindmap.edit-notes | Add notes… | mdi-note-text-outline | - | on",
           "g2 mindmap.link | Change link… | mdi-link-variant | - | on",
@@ -5448,6 +5499,7 @@
         [
           "g1 mindmap.add-child | Add child | mdi-subdirectory-arrow-right | Insert | on",
           "g1 mindmap.add-sibling | Add sibling | mdi-plus | Enter | on",
+          "g1 mindmap.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g1 mindmap.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 mindmap.delete | Delete | mdi-trash-can-outline | Delete | on",
           "g2 mindmap.edit-notes | Edit notes… | mdi-note-text-outline | - | on",
@@ -5456,6 +5508,7 @@
         [
           "g1 mindmap.add-child | Add child | mdi-subdirectory-arrow-right | Insert | on",
           "g1 mindmap.add-sibling | Add sibling | mdi-plus | Enter | on",
+          "g1 mindmap.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g1 mindmap.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 mindmap.delete | Delete | mdi-trash-can-outline | Delete | on",
           "g2 mindmap.edit-notes | Add notes… | mdi-note-text-outline | - | on",
@@ -5464,6 +5517,7 @@
         [
           "g1 mindmap.add-child | Add child | mdi-subdirectory-arrow-right | Insert | on",
           "g1 mindmap.add-sibling | Add sibling | mdi-plus | Enter | on",
+          "g1 mindmap.add-linked | Add from another document… | mdi-link-plus | - | on",
           "g1 mindmap.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 mindmap.delete | Delete | mdi-trash-can-outline | Delete | on",
           "g2 mindmap.edit-notes | Add notes… | mdi-note-text-outline | - | on",

@@ -179,7 +179,7 @@ public sealed class LinkIndex(ProjectFileEvents events, IEnumerable<ILinkIndexer
         if (IndexerOf(path) is not { } indexer || bytes.LongLength > SizeLimit) return null;
         try
         {
-            return indexer.Index(path, bytes) is { } document ? document with { Path = path } : null;
+            return indexer.Index(path, bytes) is { } document ? document with { Path = path, Origin = indexer.Origin } : null;
         }
         catch (Exception exception)
         {

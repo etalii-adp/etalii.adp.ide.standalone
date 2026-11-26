@@ -133,6 +133,11 @@ enum ContextPropertyEditor {
   // `candidates` - the tags already used elsewhere - and adds a new tag when none matches. `value`
   // and what is committed are the tags in order, separated by ", ", so a tag holds no comma.
   CONTEXT_PROPERTY_EDITOR_TAGS = 5;
+  // A link to an element of another document (DISL 4.12, a form item's `lookup` widget): `value` is the target's name
+  // as the link holds it, shown as a link rather than a field, and a click runs `link.open` on the selection, which
+  // opens the target's tool with the target selected (etalii.adp spec 092, FR-014). Never edited here: a link is
+  // made by the lookup that adds a linked element.
+  CONTEXT_PROPERTY_EDITOR_LINK = 6;
 }
 
 message EntryDetail {

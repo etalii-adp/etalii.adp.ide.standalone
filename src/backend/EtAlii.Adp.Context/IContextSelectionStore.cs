@@ -75,6 +75,12 @@ public interface IContextSelectionStore
     /// </remarks>
     void PushNotice(ProjectRoot root, string message);
 
+    /// <summary>
+    /// Tells the one connection <paramref name="watchId"/> where an action it ran pointed (etalii.adp spec 092, FR-014): the
+    /// workspace of that connection opens it. Not broadcast, because only the user who asked is taken there.
+    /// </summary>
+    void PushReveal(ShortGuid watchId, ContextReveal reveal);
+
     /// <summary>The connection's current selection, for providers and actions without an explicit target.</summary>
     ContextSelectionRecord? Get(ShortGuid watchId);
 

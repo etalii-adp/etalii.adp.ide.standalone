@@ -13,6 +13,7 @@ import type { DiagramEventHandlers } from "./api/diagramEvents";
 import { DiagramViewProvider } from "@client/shell/panels/DiagramViewContext";
 import { DiagramToolboxProvider } from "@client/shell/panels/DiagramToolboxContext";
 import { fakeContextConnection, pointer } from "@client/canvas/library/testing/canvasHarness";
+import { requestReveal } from "@client/shell/panels/revealRequests";
 
 /**
  * The selection a canvas owns once it passes `source` (centralized-selection tasks 2 and 3).
@@ -586,5 +587,33 @@ describe("inline rename, which the library owns once it owns the canvas", () => 
     const editor = container.querySelector("foreignObject") as SVGForeignObjectElement;
     expect(Number(editor.getAttribute("x"))).toBe(-57);
     expect(Number(editor.getAttribute("y")) + Number(editor.getAttribute("height")) / 2).toBe(0);
+  });
+});
+
+describe("an element an action pointed at", () => {
+  it("is selected by the canvas drawing its document, once its model holds it", () => {
+    // Arrange: the pointer arrives before the model has the element, as it does while the tab opens.
+    requestReveal({ entryId: ENTRY, path: PATH, mimeType: "test/diagram", elementId: "b" });
+    const { redraw } = mount({}, definitionOf(), modelOf(true));
+    const before = channel.pushes.map(asked);
+
+    // Act.
+    redraw(modelOf());
+    redraw(modelOf());
+
+    // Assert: nothing was selected while b was not drawn, and b once, when it was.
+    expect(before).toEqual([]);
+    expect(channel.pushes.map(asked)).toEqual([{ id: "b", menu: false }]);
+  });
+
+  it("in another document is left for that document's canvas", () => {
+    // Arrange.
+    requestReveal({ entryId: ENTRY, path: ["elsewhere.adp"], mimeType: "test/diagram", elementId: "a" });
+
+    // Act.
+    mount();
+
+    // Assert.
+    expect(channel.pushes).toEqual([]);
   });
 });

@@ -179,6 +179,20 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable,
         _rediscoveries.Start(cancellationToken => RediscoverAndPushAsync(entry, record, rediscover, cancellationToken));
     }
 
+    public void PushReveal(ShortGuid watchId, ContextReveal reveal)
+    {
+        ArgumentNullException.ThrowIfNull(reveal);
+        if (!_entries.TryGet(watchId, out var entry))
+        {
+            return;
+        }
+
+        lock (entry.Gate)
+        {
+            entry.Writer?.TryWrite(new ContextMessage { Reveal = reveal });
+        }
+    }
+
     public void PushTransient(ShortGuid watchId, ContextSelectionRecord record)
     {
         if (!_entries.TryGet(watchId, out var entry))

@@ -11,6 +11,9 @@ public sealed record IndexedDocument(string Path, string? DocumentId, string? Na
     /// <summary>The file name of <see cref="Path"/>, with its extension and without its folder: the document name of a link.</summary>
     public string FileName => FileNameOf(Path);
 
+    /// <summary>The tool type the document is of, as its origin (<c>generic/timeline</c>), which a lookup's <c>origins</c> narrow to; null when unknown.</summary>
+    public string? Origin { get; init; }
+
     /// <summary>The file name of <paramref name="path"/>, with its extension and without its folder.</summary>
     private static string FileNameOf(string path) => path[(path.LastIndexOf('/') + 1)..];
 }

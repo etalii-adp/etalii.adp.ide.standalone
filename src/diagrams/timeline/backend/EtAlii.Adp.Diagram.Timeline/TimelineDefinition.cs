@@ -69,8 +69,8 @@ internal static class TimelineDefinition
     /// <summary>What the runtime had to say about the definition as it loaded it.</summary>
     public static IReadOnlyList<LoadDiagnostic> Diagnostics => Definition.Diagnostics;
 
-    /// <summary>What <c>env</c> reads: editable, in the one viewpoint a timeline has.</summary>
-    private static DislEnv Env { get; } = new();
+    /// <summary>What <c>env</c> reads: editable, in the one viewpoint a timeline has, with the host's lookup (DISL 9.4, spec 092).</summary>
+    private static DislEnv Env { get; } = new(Lookup: true);
 
     /// <summary>The context menu of <paramref name="elementId"/> in <paramref name="model"/>: an element, a relation, a placement, a relation gesture; none for anything else.</summary>
     public static IReadOnlyList<ContextActionGroupDefinition> Menus(TimelineModel model, string elementId)
@@ -157,6 +157,37 @@ internal static class TimelineDefinition
             Text(created.Attributes, "begin") ?? "",
             created.Type == "Period" ? Text(created.Attributes, "end") ?? "" : null,
             created.Attributes.TryGetValue("row", out var written) && written is long value ? (int)value : 0);
+    }
+
+    /// <summary>
+    /// The linked moment the definition's <c>addLinkedHere</c> adds for <paramref name="pick"/> at <paramref name="begin"/>
+    /// and <paramref name="row"/>, under <paramref name="id"/> (DISL 9.4, spec 092); null when the definition refuses it.
+    /// </summary>
+    public static AddTimelineElementCommand? LinkedAddition(TimelineModel model, string body, string id, string begin, int row, DislLookupPick pick)
+    {
+        var transaction = OperationInterpreter.Run(
+            Specification,
+            "addLinkedHere",
+            WorkingOf(model),
+            null,
+            DislIds.Fixed(id),
+            new DislInvocation(new Dictionary<string, object?>(StringComparer.Ordinal) { ["x"] = begin, ["y"] = (long)row }, Lookup: pick),
+            Env);
+        if (!transaction.WasApplied || transaction.Changes.OfType<DislChange.Create>().SingleOrDefault() is not { } created) return null;
+
+        var attributes = new Dictionary<string, object?>(created.Attributes, StringComparer.Ordinal);
+        foreach (var set in transaction.Changes.OfType<DislChange.Set>().Where(set => set.ElementId == created.Id))
+        {
+            foreach ((string name, object? setTo) in set.Attributes) attributes[name] = setTo;
+        }
+
+        return new AddTimelineElementCommand(
+            body,
+            created.Id,
+            pick.Name,
+            Text(attributes, "begin") ?? begin,
+            null,
+            attributes.TryGetValue("row", out var written) && written is long value ? (int)value : row) { Link = Text(attributes, "link") };
     }
 
     /// <summary>

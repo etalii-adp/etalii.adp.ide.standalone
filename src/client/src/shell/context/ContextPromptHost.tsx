@@ -3,6 +3,7 @@ import { Dialog } from "../../components/Dialog";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { ChoicePromptDialog } from "./ChoicePromptDialog";
 import { FilePromptDialog } from "./FilePromptDialog";
+import { LookupPromptDialog, type ContextLookupCandidate } from "./LookupPromptDialog";
 import { useContextPromptEntry } from "./useContextPromptEntry";
 import type { ContextPrompt } from "../../generated/context_pb";
 
@@ -20,9 +21,20 @@ export interface ContextPromptSubmission {
   createdPath?: string[];
 }
 
+/** What a lookup's search found for a query: the candidates, or why it could not search. */
+export interface ContextLookupResult {
+  candidates: ContextLookupCandidate[];
+  error: string;
+}
+
+/** A search for a host without a lookup: it finds nothing. */
+const searchNothing = (): Promise<ContextLookupResult> => Promise.resolve({ candidates: [], error: "" });
+
 export interface ContextPromptHostProps {
   prompt: ContextPrompt | null;
   onPropose: (revision: number, value: string) => Promise<ContextPromptVerdict>;
+  /** The lookup's search (spec 092): the elements of the workspace whose name holds the query. */
+  onSearch?: (query: string) => Promise<ContextLookupResult>;
   onSubmit: (value: string, text?: string) => Promise<ContextPromptSubmission>;
   onCancel: () => void;
   /**
@@ -35,7 +47,7 @@ export interface ContextPromptHostProps {
 }
 
 /** The prompt kinds this host knows how to put on screen. */
-const RENDERABLE_PROMPTS = new Set(["inputDialog", "confirmDialog", "choiceDialog", "fileDialog", "closed"]);
+const RENDERABLE_PROMPTS = new Set(["inputDialog", "confirmDialog", "choiceDialog", "fileDialog", "lookupDialog", "closed"]);
 
 /**
  * Renders whichever dialog the backend's current prompt asks for. It is driven purely by
@@ -48,7 +60,7 @@ const RENDERABLE_PROMPTS = new Set(["inputDialog", "confirmDialog", "choiceDialo
  * the backend holding an interaction that is never answered; instead the interaction is
  * cancelled and the user is told, so the action visibly ends rather than vanishing.
  */
-export function ContextPromptHost({ prompt, onPropose, onSubmit, onCancel, notice = "", onDismissNotice = () => {} }: ContextPromptHostProps) {
+export function ContextPromptHost({ prompt, onPropose, onSearch = searchNothing, onSubmit, onCancel, notice = "", onDismissNotice = () => {} }: ContextPromptHostProps) {
   const promptCase = prompt?.prompt.case;
   const unsupported = prompt !== null && !RENDERABLE_PROMPTS.has(promptCase ?? "");
   const [unsupportedNotice, setUnsupportedNotice] = useState(false);
@@ -155,6 +167,18 @@ export function ContextPromptHost({ prompt, onPropose, onSubmit, onCancel, notic
           key={keyOf(prompt)}
           prompt={prompt.prompt.value}
           onPropose={onPropose}
+          onSubmit={onSubmit}
+          onCancel={onCancel}
+        />
+      );
+
+    case "lookupDialog":
+      return (
+        <LookupPromptDialog
+          // Remounted per interaction: the query, the candidates and any refusal belong to one interaction only.
+          key={keyOf(prompt)}
+          prompt={prompt.prompt.value}
+          onSearch={onSearch}
           onSubmit={onSubmit}
           onCancel={onCancel}
         />

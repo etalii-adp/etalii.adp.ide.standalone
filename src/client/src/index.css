@@ -1282,6 +1282,14 @@ button {
    chevron width, row padding, the focused-row treatment - through its own selectors, so
    the two can diverge later without either dragging the other along. */
 
+/* Where a lookup's candidate lives, after its name (spec 092). */
+.lookup-candidate-where {
+  margin-left: auto;
+  padding-left: 12px;
+  color: var(--color-text-muted);
+  font-size: 0.8em;
+}
+
 .choice-tree,
 .choice-tree ul {
   list-style: none;
@@ -1766,6 +1774,25 @@ button {
 
 .property-grid-row-readonly dd .property-grid-value {
   color: var(--color-text-muted);
+}
+
+/* A link to an element of another document: its name, which opens it (etalii.adp spec 092). */
+.property-grid-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.property-grid-link:hover,
+.property-grid-link:focus-visible {
+  text-decoration: underline;
 }
 
 /* One line of a read-only value that is a list, such as a trend phase's influences. */

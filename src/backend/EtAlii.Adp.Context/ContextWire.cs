@@ -30,6 +30,15 @@ internal static class ContextWire
             case ContextExecutionRequiresFile:
                 prompt.FileDialog = fileDialog;
                 break;
+            case ContextExecutionRequiresLookup requiresLookup:
+                prompt.LookupDialog = new LookupDialogPrompt
+                {
+                    Title = requiresLookup.Request.Title,
+                    Icon = requiresLookup.Request.Icon,
+                    Placeholder = requiresLookup.Request.Placeholder,
+                    EmptyMessage = requiresLookup.Request.EmptyMessage,
+                };
+                break;
         }
 
         return prompt;
@@ -41,6 +50,15 @@ internal static class ContextWire
     /// </summary>
     public static Path ToRelativePath(string rootPath, string fullPath) =>
         Path.OfLocation(IoPath.GetRelativePath(rootPath, fullPath));
+
+    /// <summary>One candidate of a lookup, as the contract carries it.</summary>
+    public static LookupCandidate ToProto(ContextLookupCandidate candidate) => new()
+    {
+        Value = candidate.Value,
+        Name = candidate.Name,
+        DocumentName = candidate.DocumentName,
+        Folder = candidate.Folder,
+    };
 
     public static ContextShortcutDefinition FromProto(ContextShortcut shortcut) =>
         new(shortcut.Key, shortcut.Ctrl, shortcut.Shift, shortcut.Alt, shortcut.Meta);
