@@ -31,7 +31,7 @@ public static class ServiceCollectionAddMindmapExtension
         services.AddSingleton<MindmapViewState>();
 
         // Written from the file's name, which names the new map's root.
-        services.AddEmptyDocument(Diagram.Mindmap.Origin, MindmapDocument.EmptyDocument);
+        services.AddEmptyDocument(Diagram.Mindmap.Origin, MindmapOpening.NewDocument);
         services.AddSingleton<IContextSourceResolver, MindmapContextSourceResolver>();
         services.AddSingleton<IContextActionProvider, MindmapContextActionProvider>();
         services.AddSingleton<IContextPropertyProvider, MindmapContextPropertyProvider>();
