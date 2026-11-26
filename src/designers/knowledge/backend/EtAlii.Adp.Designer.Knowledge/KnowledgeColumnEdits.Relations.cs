@@ -18,9 +18,10 @@ internal static partial class KnowledgeColumnEdits
         ChoosePrefix + System.Text.Json.JsonSerializer.Serialize(tables.Select(table => new { id = table.Target, label = table.Name }));
 
     /// <summary>
-    /// A relation to another knowledge file, or to this one. One-way, it is a property of this file.
-    /// Two-way, the target gets the other side in the same step: a property of its own, computed and
-    /// without cells, each naming the other. Neither file is written when either refuses.
+    /// A relation to another knowledge file, or to this one: a property of this file, naming its target by a link to the
+    /// target's document id, or by its path while the target has none (knowledge.md, section 9). Two-way, it has a backlink
+    /// name: the target shows its backlinks in a column of that name, computed there and stored in neither file, so only
+    /// this file is written.
     /// </summary>
     internal static KnowledgeEdit AddRelation(KnowledgeTable table, KnowledgeView? view, TableGesture gesture, Func<string> newId, KnowledgeSurroundings? files)
     {
@@ -39,34 +40,24 @@ internal static partial class KnowledgeColumnEdits
         var self = string.Equals(target.Path, Path.GetFullPath(files.BodyPath), StringComparison.OrdinalIgnoreCase);
         var asked = (gesture.Values.FirstOrDefault() ?? "").Trim();
         var name = UniqueName(table.Properties.Select(property => property.Name), asked.Length > 0 ? asked : related.Name.Length > 0 && !self ? related.Name : "Relation");
-        var id = newId();
+        var otherName = AskedOtherSide(table, gesture);
+        var taken = self ? table.Properties.Select(property => property.Name).Append(name) : related.Properties.Select(property => property.Name);
         var attributes = Attributes(
             ("name", name),
             ("valueType", KnowledgeValueTypes.Relation.Name),
-            ("targetFile", self ? KnowledgeRelations.Self : KnowledgeRelations.TargetName(files.BodyPath, target.Path)),
-            ("limit", gesture.Settings.GetValueOrDefault("limit") == "one" ? "one" : null));
+            ("targetFile", TargetNameOf(files.BodyPath, self ? table : related, target.Path)),
+            ("limit", gesture.Settings.GetValueOrDefault("limit") == "one" ? "one" : null),
+            ("backlinkName", otherName.Length > 0 ? UniqueName(taken, otherName) : null));
 
-        var left = gesture.Settings.GetValueOrDefault("side") == "left";
-        var otherName = AskedOtherSide(table, gesture);
-        if (otherName.Length == 0)
-        {
-            return new KnowledgeEdit(Place(table, view, id, attributes, gesture.TargetId, left));
-        }
-
-        // The other side: in the target, computed, naming this one - and this one naming it.
-        var otherId = newId();
-        attributes["counterpart"] = otherId;
-        var taken = self ? table.Properties.Select(property => property.Name).Append(name) : related.Properties.Select(property => property.Name);
-        var other = OtherSide(otherId, UniqueName(taken, otherName), self ? KnowledgeRelations.Self : KnowledgeRelations.TargetName(target.Path, files.BodyPath), id);
-        var changes = Place(table, view, id, attributes, gesture.TargetId, left);
-        if (self)
-        {
-            changes.Add(other);
-            return new KnowledgeEdit(changes);
-        }
-
-        return new KnowledgeEdit(changes, Others: [new KnowledgeOtherFile(target.Path, [other])]);
+        return new KnowledgeEdit(Place(table, view, newId(), attributes, gesture.TargetId, gesture.Settings.GetValueOrDefault("side") == "left"));
     }
+
+    /// <summary>
+    /// How a relation of the file at <paramref name="bodyPath"/> names the knowledge file at <paramref name="targetPath"/>, whose
+    /// table is <paramref name="target"/>: a link to its document id, or, while it has none, its path from here, <c>.</c> for itself.
+    /// </summary>
+    private static string TargetNameOf(string bodyPath, KnowledgeTable target, string targetPath) =>
+        target.DocumentId.Length > 0 ? KnowledgeLinks.ToDocument(target, targetPath) : KnowledgeRelations.TargetName(bodyPath, targetPath);
 
     /// <summary>
     /// What the other side of a relation is to be called: the name asked for, or - for a relation
@@ -77,18 +68,6 @@ internal static partial class KnowledgeColumnEdits
         var otherName = (gesture.Settings.GetValueOrDefault("counterpart") ?? "").Trim();
         return otherName.Length == 0 && Flag(gesture, "twoWay") ? OtherSideName(table) : otherName;
     }
-
-    /// <summary>The other side of a two-way relation: a property of the related table, computed, naming the side that holds the values.</summary>
-    private static ModelChange.Add OtherSide(string id, string name, string targetFile, string counterpart) =>
-        new(
-            "Property",
-            id,
-            Attributes(
-                ("name", name),
-                ("valueType", KnowledgeValueTypes.Relation.Name),
-                ("targetFile", targetFile),
-                ("computed", true),
-                ("counterpart", counterpart)));
 
     /// <summary>What the other side of a two-way relation is called until its author says otherwise: this table's name.</summary>
     private static string OtherSideName(KnowledgeTable table) => table.Name.Length > 0 ? table.Name : "Relation";
@@ -123,11 +102,12 @@ internal static partial class KnowledgeColumnEdits
     }
 
     /// <summary>
-    /// Whether a relation is shown in the table it relates to as well: made two-way, its other side is
-    /// added there under the name given, or under this table's; made one-way, that side is removed.
+    /// Whether a relation is shown in the table it relates to as well: made two-way, it is given a backlink name, the name
+    /// given or this table's, under which the target shows its backlinks; made one-way, it loses it. Only this file is
+    /// written. A relation of a file made before links whose other side is a counterpart property there loses that property.
     /// The values are this side's own either way, so no row changes.
     /// </summary>
-    internal static KnowledgeEdit SetOtherSide(KnowledgeTable table, TableGesture gesture, Func<string> newId, KnowledgeSurroundings? files)
+    internal static KnowledgeEdit SetOtherSide(KnowledgeTable table, TableGesture gesture, KnowledgeSurroundings? files)
     {
         if (table.Properties.All(candidate => candidate.Id != gesture.ColumnId))
         {
@@ -139,7 +119,7 @@ internal static partial class KnowledgeColumnEdits
             return Refused(NotARelation);
         }
 
-        var self = property.TargetFile is KnowledgeRelations.Self or "";
+        var self = property.TargetsItsOwnTable;
         var target = self ? null : files?.TargetOf(property);
         if (!self && target?.Table is null)
         {
@@ -149,31 +129,26 @@ internal static partial class KnowledgeColumnEdits
         var related = self ? table : target!.Table!;
         var other = related.Properties.FirstOrDefault(candidate => candidate.Id == property.Counterpart && property.Counterpart.Length > 0);
         var twoWay = Flag(gesture, "twoWay");
-        if (twoWay == (other is not null))
+        if (twoWay == (other is not null || property.BacklinkName.Length > 0))
         {
             return KnowledgeEdit.Nothing;
         }
 
-        ModelChange mine;
-        ModelChange theirs;
-        if (other is not null)
+        if (!twoWay && other is not null)
         {
-            mine = Set(property.Id, ("counterpart", null));
-            theirs = new ModelChange.Remove(other.Id);
-        }
-        else
-        {
-            var otherId = newId();
-            var asked = (gesture.Settings.GetValueOrDefault("counterpart") ?? "").Trim();
-            mine = Set(property.Id, ("counterpart", otherId));
-            theirs = OtherSide(
-                otherId,
-                UniqueName(related.Properties.Select(candidate => candidate.Name), asked.Length > 0 ? asked : OtherSideName(table)),
-                self ? KnowledgeRelations.Self : KnowledgeRelations.TargetName(target!.Path, files!.BodyPath),
-                property.Id);
+            // A counterpart property of a file made before links goes with the side that named it.
+            ModelChange mine = Set(property.Id, ("counterpart", null));
+            ModelChange theirs = new ModelChange.Remove(other.Id);
+            return self ? new KnowledgeEdit([mine, theirs]) : new KnowledgeEdit([mine], Others: [new KnowledgeOtherFile(target!.Path, [theirs])]);
         }
 
-        return self ? new KnowledgeEdit([mine, theirs]) : new KnowledgeEdit([mine], Others: [new KnowledgeOtherFile(target!.Path, [theirs])]);
+        if (!twoWay)
+        {
+            return KnowledgeEdit.Of(Set(property.Id, ("backlinkName", null)));
+        }
+
+        var asked = (gesture.Settings.GetValueOrDefault("counterpart") ?? "").Trim();
+        return KnowledgeEdit.Of(Set(property.Id, ("backlinkName", UniqueName(related.Properties.Select(candidate => candidate.Name), asked.Length > 0 ? asked : OtherSideName(table)))));
     }
 
     /// <summary>
@@ -198,7 +173,7 @@ internal static partial class KnowledgeColumnEdits
             return KnowledgeEdit.Of(Set(property.Id, ("isParent", null)));
         }
 
-        if (property is not { Type: KnowledgeRelationType, TargetFile: KnowledgeRelations.Self or "", Limit: "one", IsComputed: false })
+        if (property is not { Type: KnowledgeRelationType, TargetsItsOwnTable: true, Limit: "one", IsComputed: false })
         {
             return Refused("Only a relation to this table that holds one row can be the parent relation.");
         }

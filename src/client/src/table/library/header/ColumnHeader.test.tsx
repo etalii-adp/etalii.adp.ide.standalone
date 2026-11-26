@@ -441,6 +441,39 @@ describe("adding a column", () => {
     expect(onGesture).toHaveBeenLastCalledWith({ kind: "setRelationOtherSide", columnId: "p6", settings: { twoWay: "false" } });
   });
 
+  it("names a relation's table by its file where the relation links to it, and its backlink column as its other side", async () => {
+    // Arrange: a relation that links to its table by the table's document id, and whose backlinks that table shows as Cities nearby.
+    const relating: TableDefinition = {
+      ...definition,
+      kinds: { ...definition.kinds, relation: { icon: "mdi-arrow-top-right", label: "Relation", editor: "rows", needsTarget: true } },
+      columnActions: [...ALL_ACTIONS, "relation"],
+    };
+    const structure = {
+      title: "Cities",
+      columns: [
+        column("p1", "Name", "text", { isTitle: true }),
+        column("p5", "Near", "relation", { settings: { targetFile: "$k3f9x2ma@provinces.yaml", limit: "none", backlinkName: "Cities nearby" } }),
+      ],
+      views: [],
+      settings: EMPTY_TABLE.settings,
+      rowCount: 0,
+      readOnlyReason: "",
+    };
+    const onGesture = vi.fn(async (_gesture: TableGesture) => "");
+    render(<TableSurface model={applyTableEvent(EMPTY_TABLE, { kind: "baseline", structure, findings: [] })} definition={relating} onGesture={onGesture} />);
+
+    // Act.
+    openMenu("Near");
+    await choose("Edit relation");
+
+    // Assert: the file, not the link, and the backlink column's name; the box makes it one-way.
+    const panel = screen.getByRole("dialog", { name: "Relation Near" });
+    expect(panel.textContent).toContain("Related toprovinces.yaml");
+    expect(panel.textContent).not.toContain("k3f9x2ma");
+    expect(panel.textContent).toContain("Shown in the other table as Cities nearby.");
+    expect((within(panel).getByRole("checkbox", { name: "Two-way relation" }) as HTMLInputElement).checked).toBe(true);
+  });
+
   it("asks for the name of the column that was added, as soon as it is there", async () => {
     // Arrange.
     const onGesture = vi.fn(async (_gesture: TableGesture) => "");

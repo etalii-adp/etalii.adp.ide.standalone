@@ -1,5 +1,6 @@
 using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Links;
 using EtAlii.Adp.Sessions;
 using EtAlii.Adp.Specification.Fbl.Routing;
 
@@ -10,12 +11,12 @@ namespace EtAlii.Adp.Designer.Knowledge;
 /// An edit is written through the project's history, which is what makes it one undoable step
 /// among the project's others: undo and redo are the application's, not the table's.
 /// </remarks>
-internal sealed class KnowledgeSessionFactory(IHistoryStackStore histories, IKnowledgeDocumentStore documents, ProjectFileEvents? events = null) : IDesignerSessionFactory
+internal sealed class KnowledgeSessionFactory(IHistoryStackStore histories, IKnowledgeDocumentStore documents, ProjectFileEvents? events = null, ILinkIndex? links = null) : IDesignerSessionFactory
 {
     public string Origin => Designer.Origin;
 
     public IDesignerSession Open(ShortGuid watchId, ProjectRoot root, string? registrationPath, string bodyPath) =>
-        new KnowledgeSession(bodyPath, KnowledgeDocumentStore.Read, command => histories.Get(root).ExecuteAsync(command), documents, root, events: events);
+        new KnowledgeSession(bodyPath, KnowledgeDocumentStore.Read, command => histories.Get(root).ExecuteAsync(command), documents, root, events: events, links: links);
 }
 
 /// <summary>

@@ -43,10 +43,11 @@ export function KnowledgePanel({ path, entryId }: ToolContentProps) {
   const onSelectRows = useCallback((rowIds: readonly string[]) => select(rowIds.length === 1 ? elementSelectionOf(entryId, path, rowIds[0]!) : null), [select, entryId, path]);
 
   // A related row is opened where it lives: a row of this table becomes the selection, and a row of
-  // another table opens that table's file, found from this one as the relation names it.
+  // another table opens that table's file, found from this one as the relation names it, or, for a relation
+  // that links to its table by the table's document id, by the path the designer found that file at.
   const onOpenValue = useCallback(
     (column: TableColumn, rowId: string) => {
-      const target = column.settings.targetFile ?? "";
+      const target = column.settings.targetPath ?? column.settings.targetFile ?? "";
       if (target === "" || target === ".") {
         select(elementSelectionOf(entryId, path, rowId));
       } else {

@@ -8,10 +8,12 @@ namespace EtAlii.Adp.Designer.Knowledge;
 internal static class KnowledgeCellEdits
 {
     private const string RowGone = "That row is no longer in this table.";
-    private const string Computed = "This side of the relation is filled in from the other table.";
+    internal const string Computed = "This side of the relation is filled in from the other table.";
     public const string OptionFirst = "Make the option in one row first; it can then be given to several.";
     public const string ParentCycle = "A row cannot be its own ancestor.";
     public const string SortedRowsStay = "Rows are in the order of this view's sort, so they cannot be moved here.";
+    public const string RelationsCreateRows = "Only a relation makes a row to hold.";
+    private const string NoTitleToCreate = "The table this relates to has no title to name a new row by.";
 
     /// <summary>What an answer starts with when it is a question to confirm and not a refusal: the gesture is made again, confirmed.</summary>
     private const string ConfirmPrefix = "confirm:";
@@ -27,7 +29,7 @@ internal static class KnowledgeCellEdits
     /// </summary>
     internal static KnowledgeEdit SetCells(KnowledgeTable table, TableGesture gesture, Func<string> newId, KnowledgeSurroundings? files)
     {
-        if (gesture.Settings.ContainsKey("newOption"))
+        if (gesture.Settings.ContainsKey("newOption") || gesture.Settings.ContainsKey("newRow"))
         {
             return Refused(OptionFirst);
         }
@@ -72,14 +74,19 @@ internal static class KnowledgeCellEdits
             return Refused(Computed);
         }
 
-        List<ModelChange> changes = [];
         var values = gesture.Values.Where(value => value.Length > 0).ToList();
+        var cell = row.Cells.FirstOrDefault(candidate => candidate.PropertyId == property.Id);
+        if (gesture.Settings.TryGetValue("newRow", out var title) && title.Trim().Length > 0)
+        {
+            return CreateRelated(table, row, property, cell, values, title.Trim(), newId, files);
+        }
+
+        List<ModelChange> changes = [];
         if (ChooseOptions(property, gesture, newId, values, changes) is { Length: > 0 } refusal)
         {
             return Refused(refusal);
         }
 
-        var cell = row.Cells.FirstOrDefault(candidate => candidate.PropertyId == property.Id);
         return property.Type.HoldsSeveral
             ? SetSeveral(table, row, property, cell, values, changes, files)
             : SetOne(row, property, cell, values, changes);
@@ -124,6 +131,49 @@ internal static class KnowledgeCellEdits
         return "";
     }
 
+    /// <summary>
+    /// A row made in the table a relation points at, titled as typed, and related from the cell in the same step: what
+    /// Notion's relation picker does with "create" (spec 092, FR-020). The new row joins the rows the cell holds, or takes
+    /// the place of the one it holds where the relation holds one; both files are written, or neither, and one undo takes both back.
+    /// </summary>
+    private static KnowledgeEdit CreateRelated(KnowledgeTable table, KnowledgeRow row, KnowledgeProperty property, KnowledgeCell? cell, List<string> values, string title, Func<string> newId, KnowledgeSurroundings? files)
+    {
+        if (property.Type is not KnowledgeRelationType || files is null)
+        {
+            return Refused(RelationsCreateRows);
+        }
+
+        if (files.TargetOf(property) is not { Table: { } related } target)
+        {
+            return Refused("The table this relates to cannot be read.");
+        }
+
+        if (related.Properties.FirstOrDefault(candidate => candidate.IsTitle) is not { } named || named.Type.Write(title, out var written).Length > 0 || written is null)
+        {
+            return Refused(NoTitleToCreate);
+        }
+
+        var id = newId();
+        List<ModelChange> made =
+        [
+            new ModelChange.Add("Row", id, Attributes()),
+            new ModelChange.Add("Cell", null, Attributes(("property", named.Id), (named.Type.StoredKey, written)), id),
+        ];
+
+        // The cell is set as though the row were there already, so it is checked and linked to as any other row of the target is.
+        var grown = new KnowledgeTarget(target.Path, related with { Rows = [.. related.Rows, new KnowledgeRow(id, [new KnowledgeCell(named.Id, [title], named.Type.CellKey)])] });
+        var around = files with { TargetOf = candidate => candidate.Id == property.Id ? grown : files.TargetOf(candidate) };
+        List<string> chosen = property.Limit == "one" ? [id] : [.. values.Where(value => value != id), id];
+        var self = property.TargetsItsOwnTable;
+        var relating = SetSeveral(self ? grown.Table! : table, row, property, cell, chosen, [], around);
+        if (relating.IsRefused)
+        {
+            return relating;
+        }
+
+        return self ? new KnowledgeEdit([.. made, .. relating.Changes]) : new KnowledgeEdit(relating.Changes, Others: [new KnowledgeOtherFile(target.Path, made)]);
+    }
+
     /// <summary>A cell of a type that holds several values: options or related rows, an item each.</summary>
     private static KnowledgeEdit SetSeveral(KnowledgeTable table, KnowledgeRow row, KnowledgeProperty property, KnowledgeCell? cell, List<string> values, List<ModelChange> changes, KnowledgeSurroundings? files)
     {
@@ -134,7 +184,7 @@ internal static class KnowledgeCellEdits
 
         if (KnowledgeRelations.IsMutual(property))
         {
-            return SetMutual(table, row, property, values, changes);
+            return SetMutual(table, row, property, values, changes, files);
         }
 
         var cellId = CellId(row.Id, property.Id);
@@ -150,8 +200,10 @@ internal static class KnowledgeCellEdits
             changes.Add(new ModelChange.Add("Cell", null, Attributes(("property", property.Id)), row.Id));
         }
 
-        changes.AddRange(held.Where(value => !values.Contains(value)).Select(value => (ModelChange)new ModelChange.Remove($"{cellId}/{value}")));
-        changes.AddRange(values.Where(value => !held.Contains(value)).Select(value => (ModelChange)new ModelChange.Add("CellItem", null, Attributes((key, value)), cellId)));
+        changes.AddRange(held.Where(value => !values.Contains(value)).Select(value => (ModelChange)new ModelChange.Remove(KnowledgeLinks.ItemId(cellId, cell, value))));
+        // A related row is written as a link to it where the relation names its target by one (knowledge.md, section 9).
+        var target = property.Type is KnowledgeRelationType ? files?.TargetOf(property) : null;
+        changes.AddRange(values.Where(value => !held.Contains(value)).Select(value => (ModelChange)new ModelChange.Add("CellItem", null, Attributes((key, target is null ? value : KnowledgeLinks.WrittenRow(property, target, value))), cellId)));
         return new KnowledgeEdit(changes);
     }
 
@@ -214,7 +266,7 @@ internal static class KnowledgeCellEdits
     /// A pair of rows is related when either names the other, so relating two rows writes one of
     /// them - the one being edited - and unrelating them takes the pair out of whichever holds it.
     /// </summary>
-    private static KnowledgeEdit SetMutual(KnowledgeTable table, KnowledgeRow row, KnowledgeProperty property, List<string> values, List<ModelChange> changes)
+    private static KnowledgeEdit SetMutual(KnowledgeTable table, KnowledgeRow row, KnowledgeProperty property, List<string> values, List<ModelChange> changes, KnowledgeSurroundings? files)
     {
         var own = Held(row);
         List<string> stays = [.. own.Where(values.Contains)];
@@ -253,7 +305,8 @@ internal static class KnowledgeCellEdits
         }
 
         changes.AddRange(own.Where(value => !values.Contains(value)).Select(value => (ModelChange)new ModelChange.Remove($"{cellId}/{value}")));
-        changes.AddRange(added.Select(value => (ModelChange)new ModelChange.Add("CellItem", null, Attributes(("row", value)), cellId)));
+        var target = files?.TargetOf(property);
+        changes.AddRange(added.Select(value => (ModelChange)new ModelChange.Add("CellItem", null, Attributes(("row", KnowledgeLinks.WrittenRow(property, target, value))), cellId)));
         return new KnowledgeEdit(changes);
 
         IReadOnlyList<string> Held(KnowledgeRow of) => of.Cells.FirstOrDefault(candidate => candidate.PropertyId == property.Id && candidate.Key == KnowledgeValueTypes.Relation.CellKey)?.Values ?? [];

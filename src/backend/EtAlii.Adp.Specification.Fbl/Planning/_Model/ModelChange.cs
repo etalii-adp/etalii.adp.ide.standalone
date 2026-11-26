@@ -42,7 +42,14 @@ public abstract record ModelChange
     public sealed record Retype(string Id, string Type, IReadOnlyDictionary<string, object?> Attributes) : ModelChange;
 
     /// <summary>Sets attributes of one element or relation; an empty string, an empty list or null empties an attribute.</summary>
-    public sealed record Set(string Id, IReadOnlyDictionary<string, object?> Attributes) : ModelChange;
+    public sealed record Set(string Id, IReadOnlyDictionary<string, object?> Attributes) : ModelChange
+    {
+        /// <summary>
+        /// Part of a load-time conversion from an older form that the tool type's definition names (FBL 0.24 §17.4, step 2):
+        /// it may write a slot its binding keeps read-only, as the version a format's envelope names, which nothing else changes.
+        /// </summary>
+        public bool Converting { get; init; }
+    }
 
     public sealed record Remove(string Id) : ModelChange;
 

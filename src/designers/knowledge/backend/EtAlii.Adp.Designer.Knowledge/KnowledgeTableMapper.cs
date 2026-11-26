@@ -18,12 +18,13 @@ internal static class KnowledgeTableMapper
     /// <param name="targetOf">What a relation property points at, or null where relations are not resolved.</param>
     /// <param name="inSight">The rows the view has in sight, which the line under a column calculates over; null for every row of the table.</param>
     /// <param name="search">What the connection searches the rows for, or empty.</param>
-    public static TableStructureChanged Structure(KnowledgeTable table, string readOnlyReason, string viewId, int rowCount, Func<KnowledgeProperty, KnowledgeTarget?>? targetOf = null, IReadOnlyList<KnowledgeRow>? inSight = null, string search = "")
+    /// <param name="bodyPath">The file's path, from which a relation that links to its table names that table's file for the client to open.</param>
+    public static TableStructureChanged Structure(KnowledgeTable table, string readOnlyReason, string viewId, int rowCount, Func<KnowledgeProperty, KnowledgeTarget?>? targetOf = null, IReadOnlyList<KnowledgeRow>? inSight = null, string search = "", string bodyPath = "")
     {
         var view = table.ViewOrDefault(viewId);
         return new TableStructureChanged(
             table.Name,
-            Columns(table, view, targetOf, Uses(table), inSight ?? table.Rows),
+            Columns(table, view, targetOf, Uses(table), inSight ?? table.Rows, bodyPath),
             [.. table.Views.Select(candidate => new TableView(candidate.Id, candidate.Name))],
             Settings(table, view, targetOf, search),
             rowCount,
@@ -52,7 +53,7 @@ internal static class KnowledgeTableMapper
         return uses;
     }
 
-    private static IReadOnlyList<TableColumn> Columns(KnowledgeTable table, KnowledgeView? view, Func<KnowledgeProperty, KnowledgeTarget?>? targetOf, Dictionary<(string PropertyId, string OptionId), int> uses, IReadOnlyList<KnowledgeRow> inSight)
+    private static IReadOnlyList<TableColumn> Columns(KnowledgeTable table, KnowledgeView? view, Func<KnowledgeProperty, KnowledgeTarget?>? targetOf, Dictionary<(string PropertyId, string OptionId), int> uses, IReadOnlyList<KnowledgeRow> inSight, string bodyPath)
     {
         var listed = view?.Columns ?? [];
         var byId = table.Properties.ToDictionary(property => property.Id);
@@ -62,11 +63,11 @@ internal static class KnowledgeTableMapper
             // A view naming a property that is gone still opens, without that setting.
             if (byId.Remove(column.PropertyId, out var property))
             {
-                columns.Add(Column(table, property, column, targetOf, uses, inSight));
+                columns.Add(Column(table, property, column, targetOf, uses, inSight, bodyPath));
             }
         }
 
-        columns.AddRange(table.Properties.Where(property => byId.ContainsKey(property.Id)).Select(property => Column(table, property, null, targetOf, uses, inSight)));
+        columns.AddRange(table.Properties.Where(property => byId.ContainsKey(property.Id)).Select(property => Column(table, property, null, targetOf, uses, inSight, bodyPath)));
         return columns;
     }
 
@@ -155,7 +156,7 @@ internal static class KnowledgeTableMapper
             finding.Location is { } at ? $"{finding.Message} (line {at.Line})" : finding.Message)),
     ];
 
-    private static TableColumn Column(KnowledgeTable table, KnowledgeProperty property, KnowledgeColumn? column, Func<KnowledgeProperty, KnowledgeTarget?>? targetOf, Dictionary<(string PropertyId, string OptionId), int> uses, IReadOnlyList<KnowledgeRow> inSight)
+    private static TableColumn Column(KnowledgeTable table, KnowledgeProperty property, KnowledgeColumn? column, Func<KnowledgeProperty, KnowledgeTarget?>? targetOf, Dictionary<(string PropertyId, string OptionId), int> uses, IReadOnlyList<KnowledgeRow> inSight, string bodyPath)
     {
         // The calculations a column of this type can be given, what this one is given, and what it comes to.
         var settings = new Dictionary<string, string>(StringComparer.Ordinal)
@@ -170,7 +171,14 @@ internal static class KnowledgeTableMapper
 
         if (property.TargetFile.Length > 0)
         {
-            settings["targetFile"] = property.TargetFile;
+            // A link to the file's own id is this table, as `.` is.
+            settings["targetFile"] = property.TargetsItsOwnTable ? KnowledgeRelations.Self : property.TargetFile;
+
+            // A link names its file by the file's name alone: the file it was found to be is opened from here by its path.
+            if (!property.TargetsItsOwnTable && KnowledgeLinks.IsLink(property.TargetFile) && bodyPath.Length > 0 && targetOf?.Invoke(property) is { Table: not null } found)
+            {
+                settings["targetPath"] = KnowledgeRelations.TargetName(bodyPath, found.Path);
+            }
         }
 
         IReadOnlyList<TableOption> options = [.. property.Options.Select(option => new TableOption(option.Id, option.Name, option.Colour))];
@@ -197,16 +205,22 @@ internal static class KnowledgeTableMapper
             }
 
             // A relation to the table itself that holds one row can be the one its rows are nested by.
-            if (property is { TargetFile: KnowledgeRelations.Self or "", Limit: "one", IsComputed: false })
+            if (property is { TargetsItsOwnTable: true, Limit: "one", IsComputed: false })
             {
                 settings["nestable"] = "true";
             }
 
             // The other side of a two-way relation, by its name: deleting this side asks what becomes of it.
-            var related = property.TargetFile is KnowledgeRelations.Self or "" ? table : targetOf?.Invoke(property)?.Table;
+            var related = property.TargetsItsOwnTable ? table : targetOf?.Invoke(property)?.Table;
             if (property.Counterpart.Length > 0 && related?.Properties.FirstOrDefault(candidate => candidate.Id == property.Counterpart) is { } other)
             {
                 settings["otherSide"] = other.Name;
+            }
+
+            // The column the target shows this relation's backlinks in, which is in no file: deleting this side takes it along.
+            if (property.BacklinkName.Length > 0)
+            {
+                settings["backlinkName"] = property.BacklinkName;
             }
 
             // What a relation offers to choose from is the rows of its target, by their titles.

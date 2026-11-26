@@ -88,7 +88,8 @@ internal static class KnowledgeValidator
         }
 
         var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var property in table.Properties)
+        // A backlink column is named in the file whose relation it shows, not in this one.
+        foreach (var property in table.Properties.Where(property => !property.IsBacklink))
         {
             if (!names.Add(property.Name))
             {
@@ -165,6 +166,12 @@ internal static class KnowledgeValidator
             if (relation.IsComputed)
             {
                 continue;
+            }
+
+            // A relation made before links whose table has no document id yet cannot be linked: it is, once that table has one (knowledge.md, section 9).
+            if (!KnowledgeLinks.IsLink(relation.TargetFile) && !relation.TargetsItsOwnTable && related.DocumentId.Length == 0)
+            {
+                Warn(findings, UnresolvedTarget, $"'{relation.Name}' names its table by its path, and that table has no document id yet. It is linked by the first edit made here once the table has been edited in ADP.", columnId: relation.Id);
             }
 
             var there = related.Rows.Select(row => row.Id).ToHashSet(StringComparer.Ordinal);

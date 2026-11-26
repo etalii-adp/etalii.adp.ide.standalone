@@ -28,7 +28,8 @@ internal sealed class KnowledgeTargetRename(IKnowledgeDocumentStore documents, I
             }
 
             List<ModelChange> changes = [];
-            foreach (var property in body.Table.Properties.Where(property => property is { Type: KnowledgeRelationType, TargetFile: { Length: > 0 } and not KnowledgeRelations.Self }))
+            // A relation that names its target by a link follows it by its document id, and its name is written again when it is next loaded.
+            foreach (var property in body.Table.Properties.Where(property => property is { Type: KnowledgeRelationType, TargetFile: { Length: > 0 } and not KnowledgeRelations.Self } && !KnowledgeLinks.IsLink(property.TargetFile)))
             {
                 if (Now(KnowledgeRelations.TargetPath(path, property.TargetFile), fromPath, toPath) is { } target)
                 {

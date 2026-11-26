@@ -21,6 +21,9 @@ internal sealed record KnowledgeTable(
 {
     public static KnowledgeTable Empty { get; } = new("", "", [], [], []);
 
+    /// <summary>The file's document id (DED 0.3, FBL section 17.2), by which links in other documents find it; empty in a file made before links.</summary>
+    public string DocumentId { get; init; } = "";
+
     /// <summary>The view a connection shows when it names none: the one the file was left in, else the first.</summary>
     public KnowledgeView? ViewOrDefault(string viewId) =>
         Views.FirstOrDefault(view => view.Id == viewId)
@@ -43,6 +46,24 @@ internal sealed record KnowledgeProperty(
 {
     /// <summary>What its type means: the strategy of <see cref="ValueType"/>, which is a type of its own when the module does not know the name.</summary>
     internal KnowledgeValueType Type => KnowledgeValueTypes.Of(ValueType);
+
+    /// <summary>
+    /// The name of the column that shows this relation's backlinks in its target, computed there and stored in neither file
+    /// (knowledge.md, section 9); empty for a relation shown in this table only. It replaces the counterpart of a two-way relation.
+    /// </summary>
+    public string BacklinkName { get; init; } = "";
+
+    /// <summary>
+    /// Whether the property is a backlink column: shown in this table for a relation of another file, or of this one, that
+    /// names this table and has a <see cref="BacklinkName"/>; in no file, and made by <see cref="KnowledgeRelations.WithBacklinks"/>.
+    /// </summary>
+    internal bool IsBacklink { get; init; }
+
+    /// <summary>Whether <see cref="TargetFile"/> is a link to this file's own document id, which names the file itself as <c>.</c> does.</summary>
+    internal bool LinksToItsOwnFile { get; init; }
+
+    /// <summary>Whether the relation relates the table to itself: its target is <c>.</c>, empty, or a link to the file's own id.</summary>
+    internal bool TargetsItsOwnTable => TargetFile is KnowledgeRelations.Self or "" || LinksToItsOwnFile;
 }
 
 /// <summary>One option of a selection.</summary>
@@ -88,7 +109,14 @@ internal sealed record KnowledgeRow(string Id, IReadOnlyList<KnowledgeCell> Cell
 /// several, and empty for a cell without a value. It is the key of the type the value was written
 /// as, which after a change of type need not be the property's.
 /// </param>
-internal sealed record KnowledgeCell(string PropertyId, IReadOnlyList<string> Values, string Key = "");
+internal sealed record KnowledgeCell(string PropertyId, IReadOnlyList<string> Values, string Key = "")
+{
+    /// <summary>
+    /// The related rows of a relation's cell as the file writes them, in the order of <see cref="Values"/>: a link to each row
+    /// (FBL section 17.1), or its bare id in a file made before links. <see cref="Values"/> holds the rows' ids either way.
+    /// </summary>
+    public IReadOnlyList<string> Written { get; init; } = [];
+}
 
 /// <summary>Reads a <see cref="KnowledgeTable"/> out of a body's FBL model.</summary>
 internal static class KnowledgeModelReader
@@ -105,6 +133,7 @@ internal static class KnowledgeModelReader
             .ToDictionary(group => group.Key, group => (IReadOnlyList<FblElement>)group.ToList());
 
         var table = model.Elements.FirstOrDefault(element => element.Type == "Table");
+        var documentId = model.DocumentId ?? "";
         var properties = model.Elements.Where(element => element.Type == "Property").Select(property => new KnowledgeProperty(
             property.Id,
             Text(property, "name"),
@@ -117,7 +146,11 @@ internal static class KnowledgeModelReader
             Text(property, "limit") is { Length: > 0 } limit ? limit : "none",
             Text(property, "counterpart"),
             KnowledgeValues.IsTrue(property.Attributes.GetValueOrDefault("computed")),
-            KnowledgeValues.IsTrue(property.Attributes.GetValueOrDefault("isParent")))).ToList();
+            KnowledgeValues.IsTrue(property.Attributes.GetValueOrDefault("isParent")))
+        {
+            BacklinkName = Text(property, "backlinkName"),
+            LinksToItsOwnFile = documentId.Length > 0 && KnowledgeLinks.DocumentIdOf(Text(property, "targetFile")) == documentId,
+        }).ToList();
 
         var views = model.Elements.Where(element => element.Type == "View").Select(view => new KnowledgeView(
             view.Id,
@@ -145,16 +178,22 @@ internal static class KnowledgeModelReader
                 var items = ChildrenOf(cell, "items");
                 // Several values are several items: an option each, or a related row each.
                 var several = items.Select(item => item.Attributes.ContainsKey("option") ? Text(item, "option") : Text(item, "row")).Where(value => value.Length > 0).ToList();
+                if (items.Count > 0 && items[0].Attributes.ContainsKey("option"))
+                {
+                    return new KnowledgeCell(Text(cell, "property"), several, "options");
+                }
+
                 if (items.Count > 0)
                 {
-                    return new KnowledgeCell(Text(cell, "property"), several, items[0].Attributes.ContainsKey("option") ? "options" : "rows");
+                    // A related row is a link to it, or its bare id in a file made before links: the row's id is what the table works with.
+                    return new KnowledgeCell(Text(cell, "property"), [.. several.Select(KnowledgeLinks.RowIdOf)], "rows") { Written = several };
                 }
 
                 var one = ValueOf(cell, out var key);
                 return one.Length > 0 ? new KnowledgeCell(Text(cell, "property"), [one], key) : new KnowledgeCell(Text(cell, "property"), []);
             })])).ToList();
 
-        return new KnowledgeTable(table is null ? "" : Text(table, "name"), table is null ? "" : Text(table, "activeView"), properties, views, rows);
+        return new KnowledgeTable(table is null ? "" : Text(table, "name"), table is null ? "" : Text(table, "activeView"), properties, views, rows) { DocumentId = documentId };
 
         KnowledgeFilterItem FilterItemOf(FblElement element) => element.Type == "FilterGroup"
             ? new KnowledgeFilterGroup(Text(element, "match") == "any", [.. ChildrenOf(element, "conditions").Select(FilterItemOf)])

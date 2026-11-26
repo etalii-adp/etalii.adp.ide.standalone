@@ -40,6 +40,18 @@ public sealed class KnowledgeRelationsTests : IDisposable
 
     private static KnowledgeProperty Property(EditingTable table, string name) => table.OnDisk().Properties.Single(property => property.Name == name);
 
+    /// <summary>
+    /// The cities related to the provinces by a two-way relation as a file made before links holds it: <c>Near</c> (<c>nr</c>)
+    /// here, naming its counterpart <c>Cities nearby</c> (<c>cn</c>) there, which is computed and names it back.
+    /// </summary>
+    private EditingTable OpenMadeBeforeLinks(KnowledgeDocuments? documents = null)
+    {
+        var path = KnowledgeFiles.CopyPlainMadeBeforeLinks("cities.yaml", _root);
+        File.WriteAllText(path, File.ReadAllText(path).Replace("  - id: p6\r\n", "  - id: nr\r\n    name: Near\r\n    type: relation\r\n    target: provinces.yaml\r\n    counterpart: cn\r\n  - id: p6\r\n", StringComparison.Ordinal));
+        File.WriteAllText(Provinces, File.ReadAllText(Provinces).Replace("views:\r\n", "  - id: cn\r\n    name: Cities nearby\r\n    type: relation\r\n    target: cities.yaml\r\n    counterpart: nr\r\n    computed: true\r\nviews:\r\n", StringComparison.Ordinal));
+        return new EditingTable(path, documents: documents);
+    }
+
     // ---- what a relation shows ----------------------------------------------------------------------------
 
     [Theory]
@@ -90,7 +102,7 @@ public sealed class KnowledgeRelationsTests : IDisposable
         // Arrange: the first city names a province nobody has.
         var path = KnowledgeFiles.CopyPlain("cities.yaml", _root);
         var text = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
-        await File.WriteAllTextAsync(path, text.Replace("- row: nh", "- row: atlantis", StringComparison.Ordinal), TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(path, text.Replace("- row: $p7v3k9qd@provinces.yaml#nh.Name=Noord-Holland", "- row: $p7v3k9qd@provinces.yaml#atlantis", StringComparison.Ordinal), TestContext.Current.CancellationToken);
         await using var table = new EditingTable(path);
 
         // Act.
@@ -142,6 +154,88 @@ public sealed class KnowledgeRelationsTests : IDisposable
         Assert.Equal(["nh"], cities.OnDisk().Rows.Single(row => row.Id == "r1").Cells.Single(cell => cell.PropertyId == "p5").Values);
     }
 
+    [Theory]
+    [MemberData(nameof(KnowledgeFiles.Extensions), MemberType = typeof(KnowledgeFiles))]
+    public async Task ARelatedRowHeldAsALink_IsReplacedAndTakenAway(string extension)
+    {
+        // Arrange: the first city's province is held as a link.
+        await using var table = Open(extension);
+
+        // Act: another province in its place.
+        await table.Edit(new TableGesture("setCell", RowId: "r1", ColumnId: "p5", Values: ["an"]));
+
+        // Assert.
+        Assert.Equal(["an"], table.OnDisk().Rows.Single(row => row.Id == "r1").Cells.Single(cell => cell.PropertyId == "p5").Values);
+        Assert.DoesNotContain("#nh.", System.Text.Encoding.UTF8.GetString(table.Bytes()), StringComparison.Ordinal);
+    }
+
+    // ---- creating a related row ------------------------------------------------------------------------------
+
+    [Theory]
+    [MemberData(nameof(KnowledgeFiles.Extensions), MemberType = typeof(KnowledgeFiles))]
+    public async Task ARowCreatedFromARelationCell_IsMadeInTheTarget_AndRelated_InOneStepOverBothFiles(string extension)
+    {
+        // Arrange.
+        await using var table = Open(extension);
+        var cities = table.Bytes();
+        var provinces = await File.ReadAllBytesAsync(Provinces, TestContext.Current.CancellationToken);
+
+        // Act: "Zeeland" is typed in the first city's province, which holds one row, and created.
+        await table.Edit(new TableGesture("setCell", RowId: "r1", ColumnId: "p5", Values: [], Settings: Settings(("newRow", "Zeeland"))));
+
+        // Assert: the province is a row of the provinces, titled as typed, and the city holds a link to it in place of the one it had.
+        var made = Assert.Single(KnowledgeDocumentStore.Read(Provinces).Body!.Table.Rows, row => row.Cells.Any(cell => cell.PropertyId == "n1" && cell.Values.SequenceEqual(["Zeeland"])));
+        Assert.Equal([made.Id], table.OnDisk().Rows.Single(row => row.Id == "r1").Cells.Single(cell => cell.PropertyId == "p5").Values);
+        Assert.Contains($"$p7v3k9qd@provinces.yaml#{made.Id}.Name=Zeeland", System.Text.Encoding.UTF8.GetString(table.Bytes()), StringComparison.Ordinal);
+        Assert.Equal(["Zeeland"], Cell(table.Lines(), "r1", "p5")?.Labels);
+
+        // Act: one undo.
+        await table.History.UndoAsync(TestContext.Current.CancellationToken);
+
+        // Assert: both files are as they were.
+        Assert.Equal(cities, table.Bytes());
+        Assert.Equal(provinces, await File.ReadAllBytesAsync(Provinces, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task ARowCreatedFromARelationToItsOwnTable_IsMadeHere_BesideTheOthersItHolds()
+    {
+        // Arrange: a relation of the cities to themselves, holding any number, with one city in it.
+        await using var table = Open();
+        await table.Edit(new TableGesture("addRelation", Values: ["Near"], Settings: Settings(("target", KnowledgeRelations.Self), ("limit", "none"))));
+        var near = Property(table, "Near").Id;
+        await table.Edit(new TableGesture("setCell", RowId: "r1", ColumnId: near, Values: ["r2"]));
+        var before = table.Bytes();
+
+        // Act.
+        await table.Edit(new TableGesture("setCell", RowId: "r1", ColumnId: near, Values: ["r2"], Settings: Settings(("newRow", "Atlantis"))));
+
+        // Assert: a new city titled as typed, related beside the one that was.
+        var made = Assert.Single(table.OnDisk().Rows, row => row.Cells.Any(cell => cell.PropertyId == "p1" && cell.Values.SequenceEqual(["Atlantis"])));
+        Assert.Equal(["r2", made.Id], table.OnDisk().Rows.Single(row => row.Id == "r1").Cells.Single(cell => cell.PropertyId == near).Values);
+
+        // Act: one undo takes both away.
+        await table.History.UndoAsync(TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.Equal(before, table.Bytes());
+    }
+
+    [Fact]
+    public async Task ARowIsCreatedFromARelationCellOnly()
+    {
+        // Arrange.
+        await using var table = Open();
+        var before = table.Bytes();
+
+        // Act: a name typed into a text cell, asked to be created.
+        (_, string answer) = table.Begin(new TableGesture("setCell", RowId: "r1", ColumnId: "p1", Values: [], Settings: Settings(("newRow", "Zeeland"))));
+
+        // Assert.
+        Assert.Equal(KnowledgeCellEdits.RelationsCreateRows, answer);
+        Assert.Equal(before, table.Bytes());
+    }
+
     // ---- making a relation ----------------------------------------------------------------------------------
 
     [Theory]
@@ -157,14 +251,36 @@ public sealed class KnowledgeRelationsTests : IDisposable
 
         // Assert: the target by its path from this file, any number of rows, and no other side.
         var relation = Property(table, "Twinned with");
-        Assert.Equal(("relation", KnowledgeFiles.Related, "none", "", false), (relation.ValueType, relation.TargetFile, relation.Limit, relation.Counterpart, relation.IsComputed));
+        Assert.Equal(("relation", KnowledgeFiles.RelatedLink, "none", "", false), (relation.ValueType, relation.TargetFile, relation.Limit, relation.Counterpart, relation.IsComputed));
+        Assert.Equal(target, await File.ReadAllBytesAsync(Provinces, TestContext.Current.CancellationToken));
+        Assert.Empty(table.Session.Baseline().Findings);
+    }
+
+    [Fact]
+    public async Task ARelationToATableWithADocumentId_NamesItByALink_AndItsRowsByLinksTitledFromThere()
+    {
+        // Arrange: the provinces hold a document id.
+        await using var table = Open();
+        await File.WriteAllTextAsync(Provinces, (await File.ReadAllTextAsync(Provinces, TestContext.Current.CancellationToken)).Replace("designer: etalii/knowledge\r\n", "designer: etalii/knowledge\r\nid: k3f9x2ma\r\n", StringComparison.Ordinal), TestContext.Current.CancellationToken);
+        var target = await File.ReadAllBytesAsync(Provinces, TestContext.Current.CancellationToken);
+
+        // Act: a relation to them, and a row of theirs in a cell.
+        await table.Edit(new TableGesture("addRelation", Values: ["Near"], Settings: Settings(("target", KnowledgeFiles.Related), ("limit", "none"))));
+        var near = Property(table, "Near");
+        await table.Edit(new TableGesture("setCell", RowId: "r1", ColumnId: near.Id, Values: ["nh"]));
+
+        // Assert: the target by a link to its document, the row by a link named by the title property and the row's title, shown by that title.
+        Assert.Equal("$k3f9x2ma@provinces.yaml", near.TargetFile);
+        Assert.Contains("$k3f9x2ma@provinces.yaml#nh.Name=Noord-Holland", System.Text.Encoding.UTF8.GetString(table.Bytes()), StringComparison.Ordinal);
+        Assert.Equal(["nh"], table.OnDisk().Rows.Single(row => row.Id == "r1").Cells.Single(cell => cell.PropertyId == near.Id).Values);
+        Assert.Equal(["Noord-Holland"], Cell(table.Lines(), "r1", near.Id)?.Labels);
         Assert.Equal(target, await File.ReadAllBytesAsync(Provinces, TestContext.Current.CancellationToken));
         Assert.Empty(table.Session.Baseline().Findings);
     }
 
     [Theory]
     [MemberData(nameof(KnowledgeFiles.Extensions), MemberType = typeof(KnowledgeFiles))]
-    public async Task ATwoWayRelation_IsMadeInBothFilesInOneStep_AndUndoneInOne(string extension)
+    public async Task ATwoWayRelation_IsMadeInThisFileAlone_UnderItsBacklinkName_AndUndoneInOne(string extension)
     {
         // Arrange.
         await using var table = Open(extension);
@@ -173,99 +289,121 @@ public sealed class KnowledgeRelationsTests : IDisposable
         // Act.
         await table.Edit(new TableGesture("addRelation", Values: ["Seat of"], Settings: Settings(("target", KnowledgeFiles.Related), ("counterpart", "Seats"))));
 
-        // Assert: each side names the other; the other side is computed, has no cells, and points back at this file.
+        // Assert: the relation names the column its target shows its backlinks in; the target is not written (knowledge.md, section 9).
         var here = Property(table, "Seat of");
-        var there = KnowledgeDocumentStore.Read(Provinces).Body!.Table.Properties.Single(property => property.Name == "Seats");
-        Assert.Equal((there.Id, false), (here.Counterpart, here.IsComputed));
-        Assert.Equal((here.Id, true, "relation", "cities" + extension), (there.Counterpart, there.IsComputed, there.ValueType, there.TargetFile));
-        Assert.All(KnowledgeDocumentStore.Read(Provinces).Body!.Table.Rows, row => Assert.DoesNotContain(row.Cells, cell => cell.PropertyId == there.Id));
+        Assert.Equal(("Seats", "", false), (here.BacklinkName, here.Counterpart, here.IsComputed));
+        Assert.Equal("Seats", table.ColumnSettings(here.Id)["backlinkName"]);
+        Assert.Equal(theirs, await File.ReadAllBytesAsync(Provinces, TestContext.Current.CancellationToken));
 
         // Act: one undo.
         var undone = await table.History.UndoAsync(TestContext.Current.CancellationToken);
 
-        // Assert: both files as they were.
+        // Assert: as it was.
         Assert.True(undone.IsSuccess);
         Assert.Equal(ours, table.Bytes());
-        Assert.Equal(theirs, await File.ReadAllBytesAsync(Provinces, TestContext.Current.CancellationToken));
 
         // Act: and one redo.
         var redone = await table.History.RedoAsync(TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.True(redone.IsSuccess);
-        Assert.Contains(KnowledgeDocumentStore.Read(Provinces).Body!.Table.Properties, property => property.Name == "Seats");
-        Assert.Contains(table.OnDisk().Properties, property => property.Name == "Seat of");
+        Assert.Equal("Seats", Property(table, "Seat of").BacklinkName);
+        Assert.Equal(theirs, await File.ReadAllBytesAsync(Provinces, TestContext.Current.CancellationToken));
     }
 
     [Fact]
-    public async Task TheOtherSide_ShowsTheRowsThatNameIt_AndIsNotFilledInFromThere()
+    public async Task TheBacklinkColumn_ShowsTheRowsThatLinkHere_AndIsInNoFile_AndIsNotFilledInFromThere()
     {
-        // Arrange: a two-way relation, and both tables open.
+        // Arrange: a two-way relation, and both tables open; the provinces know the project the cities are in.
         var documents = new KnowledgeDocuments();
         await using var cities = Open(documents: documents);
         await cities.Edit(new TableGesture("addRelation", Values: ["Near"], Settings: Settings(("target", KnowledgeFiles.Related), ("counterpart", "Cities nearby"))));
         var near = Property(cities, "Near").Id;
-        await using var provinces = new EditingTable(Provinces, documents: documents);
+        await using var provinces = new EditingTable(Provinces, documents: documents, rootPath: _root);
+        var theirs = provinces.Bytes();
         var nearby = provinces.Session.Baseline().Columns.Single(column => column.Name == "Cities nearby");
 
         // Act: values are given on the side that holds them.
         await cities.Edit(new TableGesture("setCell", RowId: "r1", ColumnId: near, Values: ["nh", "zh"]));
         await cities.Edit(new TableGesture("setCell", RowId: "r2", ColumnId: near, Values: ["zh"]));
 
-        // Assert: the other side shows them at once, by title, and has nothing of its own in its file.
+        // Assert: the backlink column shows them at once, by title, and is in neither file.
         var lines = provinces.Lines();
         Assert.Equal(["r1"], Cell(lines, "nh", nearby.Id)?.Values);
         Assert.Equal(["r1", "r2"], Cell(lines, "zh", nearby.Id)?.Values);
         Assert.Equal(["Amsterdam", "Antwerp"], Cell(lines, "zh", nearby.Id)?.Labels);
         Assert.Null(Cell(lines, "an", nearby.Id));
         Assert.Equal("true", nearby.Settings["computed"]);
-        Assert.All(provinces.OnDisk().Rows, row => Assert.DoesNotContain(row.Cells, cell => cell.PropertyId == nearby.Id));
+        Assert.Equal(theirs, provinces.Bytes());
+        Assert.DoesNotContain(cities.OnDisk().Properties, property => property.Name == "Cities nearby");
 
         // Act: it is not filled in from here.
         (_, string answer) = provinces.Begin(new TableGesture("setCell", RowId: "an", ColumnId: nearby.Id, Values: ["r2"]));
 
         // Assert.
         Assert.Equal("This side of the relation is filled in from the other table.", answer);
+        Assert.Equal(theirs, provinces.Bytes());
     }
 
     [Fact]
-    public async Task DeletingOneSideOfATwoWayRelation_AsksWhatBecomesOfTheOtherSide()
+    public async Task DeletingATwoWayRelation_TakesItsBacklinkColumnAlong_AndWritesNoOtherFile()
     {
-        // Arrange: a two-way relation between the two files.
-        await using var table = Open();
-        await table.Edit(new TableGesture("addRelation", Values: ["Near"], Settings: Settings(("target", KnowledgeFiles.Related), ("counterpart", "Cities nearby"))));
-        var near = Property(table, "Near").Id;
+        // Arrange: a two-way relation, shown in the open provinces as its backlink column.
+        var documents = new KnowledgeDocuments();
+        await using var cities = Open(documents: documents);
+        await cities.Edit(new TableGesture("addRelation", Values: ["Near"], Settings: Settings(("target", KnowledgeFiles.Related), ("counterpart", "Cities nearby"))));
+        var near = Property(cities, "Near").Id;
+        await using var provinces = new EditingTable(Provinces, documents: documents, rootPath: _root);
+        var theirs = provinces.Bytes();
+        Assert.Contains(provinces.Session.Baseline().Columns, column => column.Name == "Cities nearby");
+
+        // Act: deleted, with no question to answer first.
+        await cities.Edit(new TableGesture("deleteColumn", ColumnId: near));
+
+        // Assert: the column went with it; the provinces' file was never written.
+        Assert.DoesNotContain(cities.OnDisk().Properties, property => property.Id == near);
+        Assert.DoesNotContain(provinces.Session.Baseline().Columns, column => column.Name == "Cities nearby");
+        Assert.Equal(theirs, provinces.Bytes());
+
+        // Act: one undo.
+        Assert.True((await cities.History.UndoAsync(TestContext.Current.CancellationToken)).IsSuccess);
+
+        // Assert: and it is back.
+        Assert.Contains(provinces.Session.Baseline().Columns, column => column.Name == "Cities nearby");
+    }
+
+    [Fact]
+    public async Task DeletingOneSideOfATwoWayRelationMadeBeforeLinks_AsksWhatBecomesOfTheOtherSide()
+    {
+        // Arrange: a two-way relation between the two files, as a file made before links holds it.
+        await using var table = OpenMadeBeforeLinks();
         (byte[] ours, byte[] theirs) = (table.Bytes(), await File.ReadAllBytesAsync(Provinces, TestContext.Current.CancellationToken));
 
         // Act: deleted without saying.
-        (_, string answer) = table.Begin(new TableGesture("deleteColumn", ColumnId: near));
+        (_, string answer) = table.Begin(new TableGesture("deleteColumn", ColumnId: "nr"));
 
         // Assert: asked, nothing written, and the column names its other side so that the question can be put.
         Assert.Equal(KnowledgeColumnEdits.OtherSideChoice, answer);
         Assert.Equal(ours, table.Bytes());
         Assert.Equal(theirs, await File.ReadAllBytesAsync(Provinces, TestContext.Current.CancellationToken));
-        Assert.Equal("Cities nearby", table.Session.Baseline().Columns.Single(column => column.Id == near).Settings["otherSide"]);
+        Assert.Equal("Cities nearby", table.Session.Baseline().Columns.Single(column => column.Id == "nr").Settings["otherSide"]);
         Assert.DoesNotContain("otherSide", table.Session.Baseline().Columns.Single(column => column.Id == "p5").Settings.Keys);
     }
 
-    [Theory]
-    [MemberData(nameof(KnowledgeFiles.Extensions), MemberType = typeof(KnowledgeFiles))]
-    public async Task DeletingOneSide_AndTheOtherSideToo_TakesBothOutInOneStep(string extension)
+    [Fact]
+    public async Task DeletingOneSideMadeBeforeLinks_AndTheOtherSideToo_TakesBothOutInOneStep()
     {
         // Arrange.
-        await using var table = Open(extension);
-        (byte[] ours, byte[] theirs) = (table.Bytes(), await File.ReadAllBytesAsync(Provinces, TestContext.Current.CancellationToken));
-        await table.Edit(new TableGesture("addRelation", Values: ["Near"], Settings: Settings(("target", KnowledgeFiles.Related), ("counterpart", "Cities nearby"))));
-        var near = Property(table, "Near").Id;
-        await table.Edit(new TableGesture("setCell", RowId: "r1", ColumnId: near, Values: ["nh", "zh"]));
+        await using var table = OpenMadeBeforeLinks();
+        await table.Edit(new TableGesture("setCell", RowId: "r1", ColumnId: "nr", Values: ["nh", "zh"]));
         (byte[] oursWith, byte[] theirsWith) = (table.Bytes(), await File.ReadAllBytesAsync(Provinces, TestContext.Current.CancellationToken));
 
         // Act.
-        await table.Edit(new TableGesture("deleteColumn", ColumnId: near, Settings: Settings(("otherSide", "delete"))));
+        await table.Edit(new TableGesture("deleteColumn", ColumnId: "nr", Settings: Settings(("otherSide", "delete"))));
 
-        // Assert: both files as they were before the relation.
-        Assert.Equal(ours, table.Bytes());
-        Assert.Equal(theirs, await File.ReadAllBytesAsync(Provinces, TestContext.Current.CancellationToken));
+        // Assert: neither side is left.
+        Assert.DoesNotContain(table.OnDisk().Properties, property => property.Id == "nr");
+        Assert.DoesNotContain(KnowledgeDocumentStore.Read(Provinces).Body!.Table.Properties, property => property.Id == "cn");
 
         // Act: one undo.
         var undone = await table.History.UndoAsync(TestContext.Current.CancellationToken);
@@ -276,25 +414,22 @@ public sealed class KnowledgeRelationsTests : IDisposable
         Assert.Equal(theirsWith, await File.ReadAllBytesAsync(Provinces, TestContext.Current.CancellationToken));
     }
 
-    [Theory]
-    [MemberData(nameof(KnowledgeFiles.Extensions), MemberType = typeof(KnowledgeFiles))]
-    public async Task DeletingTheSideThatHoldsTheValues_AndKeepingTheOther_GivesTheOtherThoseValues(string extension)
+    [Fact]
+    public async Task DeletingTheSideThatHoldsTheValues_AndKeepingTheOther_GivesTheOtherThoseValues()
     {
         // Arrange: Amsterdam is near two provinces, Antwerp near one of them.
-        await using var table = Open(extension);
-        await table.Edit(new TableGesture("addRelation", Values: ["Near"], Settings: Settings(("target", KnowledgeFiles.Related), ("counterpart", "Cities nearby"))));
-        var near = Property(table, "Near").Id;
-        await table.Edit(new TableGesture("setCell", RowId: "r1", ColumnId: near, Values: ["nh", "zh"]));
-        await table.Edit(new TableGesture("setCell", RowId: "r2", ColumnId: near, Values: ["zh"]));
+        await using var table = OpenMadeBeforeLinks();
+        await table.Edit(new TableGesture("setCell", RowId: "r1", ColumnId: "nr", Values: ["nh", "zh"]));
+        await table.Edit(new TableGesture("setCell", RowId: "r2", ColumnId: "nr", Values: ["zh"]));
 
         // Act.
-        await table.Edit(new TableGesture("deleteColumn", ColumnId: near, Settings: Settings(("otherSide", "keep"))));
+        await table.Edit(new TableGesture("deleteColumn", ColumnId: "nr", Settings: Settings(("otherSide", "keep"))));
 
         // Assert: this side is gone; the other is a relation of its own, holding what it showed.
-        Assert.DoesNotContain(table.OnDisk().Properties, property => property.Id == near);
+        Assert.DoesNotContain(table.OnDisk().Properties, property => property.Id == "nr");
         var provinces = KnowledgeDocumentStore.Read(Provinces).Body!.Table;
         var nearby = provinces.Properties.Single(property => property.Name == "Cities nearby");
-        Assert.Equal(("", false, "relation", "cities" + extension), (nearby.Counterpart, nearby.IsComputed, nearby.ValueType, nearby.TargetFile));
+        Assert.Equal(("", false, "relation", "cities.yaml"), (nearby.Counterpart, nearby.IsComputed, nearby.ValueType, nearby.TargetFile));
         Assert.Equal(["r1"], provinces.ValuesOf("nh", nearby.Id));
         Assert.Equal(["r1", "r2"], provinces.ValuesOf("zh", nearby.Id));
         Assert.Null(provinces.ValuesOf("an", nearby.Id));
@@ -305,51 +440,47 @@ public sealed class KnowledgeRelationsTests : IDisposable
     {
         // Arrange: both tables open, and a value on the side that holds them.
         var documents = new KnowledgeDocuments();
-        await using var cities = Open(documents: documents);
-        await cities.Edit(new TableGesture("addRelation", Values: ["Near"], Settings: Settings(("target", KnowledgeFiles.Related), ("counterpart", "Cities nearby"))));
-        var near = Property(cities, "Near").Id;
-        await cities.Edit(new TableGesture("setCell", RowId: "r1", ColumnId: near, Values: ["nh"]));
+        await using var cities = OpenMadeBeforeLinks(documents);
+        await cities.Edit(new TableGesture("setCell", RowId: "r1", ColumnId: "nr", Values: ["nh"]));
         await using var provinces = new EditingTable(Provinces, documents: documents);
-        var nearby = provinces.Session.Baseline().Columns.Single(column => column.Name == "Cities nearby");
-        Assert.Equal("Near", nearby.Settings["otherSide"]);
+        Assert.Equal("Near", provinces.ColumnSettings("cn")["otherSide"]);
 
         // Act: the computed side is deleted from its own table.
-        await provinces.Edit(new TableGesture("deleteColumn", ColumnId: nearby.Id, Settings: Settings(("otherSide", "keep"))));
+        await provinces.Edit(new TableGesture("deleteColumn", ColumnId: "cn", Settings: Settings(("otherSide", "keep"))));
 
         // Assert: the side that holds the values is a one-way relation, with its values.
-        Assert.DoesNotContain(provinces.OnDisk().Properties, property => property.Id == nearby.Id);
+        Assert.DoesNotContain(provinces.OnDisk().Properties, property => property.Id == "cn");
         var kept = KnowledgeDocumentStore.Read(cities.Path).Body!.Table;
-        Assert.Equal(("", false), (kept.Properties.Single(property => property.Id == near).Counterpart, kept.Properties.Single(property => property.Id == near).IsComputed));
-        Assert.Equal(["nh"], kept.Rows.Single(row => row.Id == "r1").Cells.Single(cell => cell.PropertyId == near).Values);
+        Assert.Equal(("", false), (kept.Properties.Single(property => property.Id == "nr").Counterpart, kept.Properties.Single(property => property.Id == "nr").IsComputed));
+        Assert.Equal(["nh"], kept.Rows.Single(row => row.Id == "r1").Cells.Single(cell => cell.PropertyId == "nr").Values);
     }
 
     [Fact]
-    public async Task DeletingOneSideOfARelationToTheTableItself_KeepsTheOtherInTheSameFile()
+    public async Task ATwoWayRelationToTheTableItselfMadeBeforeLinks_IsConvertedIntoOneRelationAndItsBacklinkColumn()
     {
-        // Arrange.
-        await using var table = Open();
-        await table.Edit(new TableGesture("addRelation", Values: ["Rival of"], Settings: Settings(("target", KnowledgeRelations.Self), ("counterpart", "Rivalled by"))));
-        (string rival, string rivalled) = (Property(table, "Rival of").Id, Property(table, "Rivalled by").Id);
-        await table.Edit(new TableGesture("setCell", RowId: "r1", ColumnId: rival, Values: ["r2"]));
+        // Arrange: Amsterdam is the rival of Antwerp, through the two sides a file made before links holds.
+        var path = KnowledgeFiles.CopyPlainMadeBeforeLinks("cities.yaml", _root);
+        var text = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(path, text.Replace("  - id: p6\r\n", "  - id: rv\r\n    name: Rival of\r\n    type: relation\r\n    target: .\r\n    counterpart: rb\r\n  - id: rb\r\n    name: Rivalled by\r\n    type: relation\r\n    target: .\r\n    counterpart: rv\r\n    computed: true\r\n  - id: p6\r\n", StringComparison.Ordinal), TestContext.Current.CancellationToken);
+        await using var table = new EditingTable(path, newDocumentId: () => "c4t7y2ma");
 
         // Act.
-        await table.Edit(new TableGesture("deleteColumn", ColumnId: rival, Settings: Settings(("otherSide", "keep"))));
+        await table.Edit(new TableGesture("setCell", RowId: "r1", ColumnId: "rv", Values: ["r2"]));
 
-        // Assert: what the other side showed is now what it holds, and the table shows it as before.
-        var kept = table.OnDisk();
-        Assert.DoesNotContain(kept.Properties, property => property.Id == rival);
-        Assert.Equal(("", false), (kept.Properties.Single(property => property.Id == rivalled).Counterpart, kept.Properties.Single(property => property.Id == rivalled).IsComputed));
-        Assert.Equal(["r1"], kept.Rows.Single(row => row.Id == "r2").Cells.Single(cell => cell.PropertyId == rivalled).Values);
-        Assert.Equal(["Amsterdam"], Cell(table.Lines(), "r2", rivalled)?.Labels);
-        Assert.DoesNotContain("otherSide", table.Session.Baseline().Columns.Single(column => column.Id == rivalled).Settings.Keys);
+        // Assert: one relation to the file's own id, which holds the value under the counterpart's name as its backlink name; the counterpart is gone, and its column is the backlink column now.
+        var converted = table.OnDisk();
+        Assert.Equal(("$c4t7y2ma@cities.yaml", "", "Rivalled by"), (converted.Properties.Single(property => property.Id == "rv").TargetFile, converted.Properties.Single(property => property.Id == "rv").Counterpart, converted.Properties.Single(property => property.Id == "rv").BacklinkName));
+        Assert.DoesNotContain(converted.Properties, property => property.Id == "rb");
+        var rivalled = table.Session.Baseline().Columns.Single(column => column.Name == "Rivalled by");
+        Assert.Equal(["Amsterdam"], Cell(table.Lines(), "r2", rivalled.Id)?.Labels);
     }
 
     [Theory]
     [MemberData(nameof(KnowledgeFiles.Extensions), MemberType = typeof(KnowledgeFiles))]
     public async Task WhenTheTargetIsRenamed_TheRelationNamesItByItsNewName_AndByItsOldOneWhenThatIsUndone(string extension)
     {
-        // Arrange: the example relates to provinces.yaml beside it; a table elsewhere in the project relates to nothing.
-        var cities = KnowledgeFiles.CopyPlain("cities" + extension, _root);
+        // Arrange: the example as it was made before links relates to provinces.yaml beside it by its path.
+        var cities = KnowledgeFiles.CopyPlainMadeBeforeLinks("cities" + extension, _root);
         var before = await File.ReadAllBytesAsync(cities, TestContext.Current.CancellationToken);
         var regions = IoPath.Combine(_root, "regions.yaml");
         var follower = new KnowledgeTargetRename(new KnowledgeDocuments(), new FileWriter());
@@ -364,7 +495,7 @@ public sealed class KnowledgeRelationsTests : IDisposable
         await using (var open = new EditingTable(cities))
         {
             Assert.Equal(["Noord-Holland"], Cell(open.Lines(), "r1", "p5")?.Labels);
-            Assert.Empty(open.Session.Baseline().Findings);
+            Assert.All(open.Session.Baseline().Findings, finding => Assert.Equal(KnowledgeValidator.UnresolvedTarget, finding.Code));
         }
 
         // Act: the rename is undone, which is a rename back.
@@ -376,10 +507,30 @@ public sealed class KnowledgeRelationsTests : IDisposable
     }
 
     [Fact]
+    public async Task WhenALinkedTargetIsRenamedOrMoved_NothingIsWritten_AndTheRelationStillFindsIt()
+    {
+        // Arrange: the example links to its provinces by their document id.
+        var cities = KnowledgeFiles.CopyPlain("cities.yaml", _root);
+        var before = await File.ReadAllBytesAsync(cities, TestContext.Current.CancellationToken);
+        var moved = IoPath.Combine(_root, "reference", "regions.yaml");
+        Directory.CreateDirectory(IoPath.GetDirectoryName(moved)!);
+
+        // Act: renamed and moved, as the explorer does it.
+        File.Move(Provinces, moved);
+        await new KnowledgeTargetRename(new KnowledgeDocuments(), new FileWriter()).RenamedAsync(ProjectRoot.From(_root), Provinces, moved, TestContext.Current.CancellationToken);
+
+        // Assert: the file is as it was, and its relation finds the provinces by their id.
+        Assert.Equal(before, await File.ReadAllBytesAsync(cities, TestContext.Current.CancellationToken));
+        await using var open = new EditingTable(cities, rootPath: _root);
+        Assert.Equal(["Noord-Holland"], Cell(open.Lines(), "r1", "p5")?.Labels);
+        Assert.Empty(open.Session.Baseline().Findings);
+    }
+
+    [Fact]
     public async Task WhenAFolderIsRenamed_RelationsIntoItFollow_AndRelationsInsideItStay()
     {
-        // Arrange: cities relates to a table in a folder; a table in that folder relates to its neighbour there.
-        var cities = KnowledgeFiles.CopyPlain("cities.yaml", _root);
+        // Arrange: cities, made before links, relates to a table in a folder; a table in that folder relates to its neighbour there.
+        var cities = KnowledgeFiles.CopyPlainMadeBeforeLinks("cities.yaml", _root);
         (string old, string renamed) = (IoPath.Combine(_root, "data"), IoPath.Combine(_root, "reference"));
         Directory.CreateDirectory(old);
         File.Move(Provinces, IoPath.Combine(old, KnowledgeFiles.Related));
@@ -428,11 +579,11 @@ public sealed class KnowledgeRelationsTests : IDisposable
     [Fact]
     public async Task WhenTheOtherFileRefuses_NeitherFileIsWritten()
     {
-        // Arrange: the edit is accepted and shown, and waits to be written.
-        await using var table = Open();
+        // Arrange: the deletion of both sides of a relation made before links is accepted and shown, and waits to be written.
+        await using var table = OpenMadeBeforeLinks();
         var ours = table.Bytes();
         table.Hold();
-        (ShortGuid edit, string answer) = table.Begin(new TableGesture("addRelation", Values: ["Seat of"], Settings: Settings(("target", KnowledgeFiles.Related), ("counterpart", "Seats"))));
+        (ShortGuid edit, string answer) = table.Begin(new TableGesture("deleteColumn", ColumnId: "nr", Settings: Settings(("otherSide", "delete"))));
         Assert.Equal("", answer);
 
         // Act: before it is, the other file becomes one this application does not change.
@@ -447,7 +598,7 @@ public sealed class KnowledgeRelationsTests : IDisposable
         Assert.StartsWith(KnowledgeFiles.Related + " cannot be changed: ", settled.Error, StringComparison.Ordinal);
         Assert.Equal(ours, table.Bytes());
         Assert.Equal(theirs, await File.ReadAllBytesAsync(Provinces, TestContext.Current.CancellationToken));
-        Assert.DoesNotContain(table.Session.Baseline().Columns, column => column.Name == "Seat of");
+        Assert.Contains(table.Session.Baseline().Columns, column => column.Name == "Near");
     }
 
     [Theory]
@@ -468,14 +619,12 @@ public sealed class KnowledgeRelationsTests : IDisposable
         // Act: the table chosen, two-way with no name for the other side, left of the population.
         await table.Edit(new TableGesture("addRelation", TargetId: "p3", Values: ["Region"], Settings: Settings(("target", "provinces.yaml"), ("limit", "one"), ("twoWay", "true"), ("side", "left"))));
 
-        // Assert: the property is there under its name, where it was put; the other side is called after this table.
+        // Assert: the property is there under its name, where it was put; its backlink is called after this table, and the provinces are not written.
         var properties = table.OnDisk().Properties;
         var region = properties.Single(property => property.Name == "Region");
-        Assert.Equal(("relation", "provinces.yaml", "one", false), (region.ValueType, region.TargetFile, region.Limit, region.IsComputed));
+        Assert.Equal(("relation", KnowledgeFiles.RelatedLink, "one", false, "Cities"), (region.ValueType, region.TargetFile, region.Limit, region.IsComputed, region.BacklinkName));
         Assert.Equal("p3", properties[properties.ToList().IndexOf(region) + 1].Id);
-        var other = KnowledgeDocumentStore.Read(Provinces).Body!.Table.Properties.Single(property => property.Id == region.Counterpart);
-        Assert.Equal(("Cities", true, region.Id), (other.Name, other.IsComputed, other.Counterpart));
-        Assert.NotEqual(theirs, await File.ReadAllBytesAsync(Provinces, TestContext.Current.CancellationToken));
+        Assert.Equal(theirs, await File.ReadAllBytesAsync(Provinces, TestContext.Current.CancellationToken));
     }
 
     [Theory]
@@ -502,18 +651,16 @@ public sealed class KnowledgeRelationsTests : IDisposable
         // Act: shown in the provinces too, under a name.
         await table.Edit(new TableGesture("setRelationOtherSide", ColumnId: "p5", Settings: Settings(("twoWay", "true"), ("counterpart", "Towns"))));
 
-        // Assert: the other side is there, shows this side's values and holds none; this side names it.
-        var other = KnowledgeDocumentStore.Read(Provinces).Body!.Table.Properties.Single(property => property.Name == "Towns");
-        Assert.Equal((true, "p5", "relation"), (other.IsComputed, other.Counterpart, other.ValueType));
-        Assert.Equal(other.Id, table.OnDisk().Property("p5").Counterpart);
-        Assert.Equal("Towns", table.Session.Baseline().Columns.Single(column => column.Id == "p5").Settings["otherSide"]);
+        // Assert: this side names its backlink, and the provinces are not written.
+        Assert.Equal("Towns", table.OnDisk().Property("p5").BacklinkName);
+        Assert.Equal("Towns", table.Session.Baseline().Columns.Single(column => column.Id == "p5").Settings["backlinkName"]);
+        Assert.Equal(theirs, KnowledgeFiles.Describe(KnowledgeDocumentStore.Read(Provinces).Body!.Table));
 
         // Act: in this table only again.
         await table.Edit(new TableGesture("setRelationOtherSide", ColumnId: "p5", Settings: Settings(("twoWay", "false"))));
 
-        // Assert: the other side is gone, this side names none, and the provinces are what they were.
-        Assert.Equal("", table.OnDisk().Property("p5").Counterpart);
-        Assert.DoesNotContain(KnowledgeDocumentStore.Read(Provinces).Body!.Table.Properties, property => property.Name == "Towns");
+        // Assert: this side names no backlink, and the provinces are what they were.
+        Assert.Equal("", table.OnDisk().Property("p5").BacklinkName);
         Assert.Equal(theirs, KnowledgeFiles.Describe(KnowledgeDocumentStore.Read(Provinces).Body!.Table));
 
         // Through all of it no row changed.
@@ -552,21 +699,23 @@ public sealed class KnowledgeRelationsTests : IDisposable
     // ---- the table itself, and the parent relation ----------------------------------------------------------
 
     [Fact]
-    public async Task ATwoWayRelationToTheTableItself_HasBothSidesInTheOneFile()
+    public async Task ATwoWayRelationToTheTableItself_ShowsItsBacklinksInTheSameTable_FromOneProperty()
     {
         // Arrange.
         await using var table = Open();
 
         // Act.
         await table.Edit(new TableGesture("addRelation", Values: ["Rival of"], Settings: Settings(("target", KnowledgeRelations.Self), ("counterpart", "Rivalled by"))));
-        (KnowledgeProperty rival, KnowledgeProperty rivalled) = (Property(table, "Rival of"), Property(table, "Rivalled by"));
+        var rival = Property(table, "Rival of");
         await table.Edit(new TableGesture("setCell", RowId: "r1", ColumnId: rival.Id, Values: ["r2"]));
 
-        // Assert: one side holds the value, the other shows it from the other end.
-        Assert.Equal((KnowledgeRelations.Self, rivalled.Id), (rival.TargetFile, rival.Counterpart));
-        Assert.Equal((KnowledgeRelations.Self, rival.Id, true), (rivalled.TargetFile, rivalled.Counterpart, rivalled.IsComputed));
+        // Assert: one property, which holds the value; the backlink column shows it from the other end, and is in no file.
+        Assert.Equal((KnowledgeFiles.SelfLink(".yaml"), "", "Rivalled by"), (rival.TargetFile, rival.Counterpart, rival.BacklinkName));
+        Assert.DoesNotContain(table.OnDisk().Properties, property => property.Name == "Rivalled by");
+        var rivalled = table.Session.Baseline().Columns.Single(column => column.Name == "Rivalled by");
         var lines = table.Lines();
         Assert.Equal(["Antwerp"], Cell(lines, "r1", rival.Id)?.Labels);
+        Assert.Null(Cell(lines, "r2", rival.Id));
         Assert.Equal(["r1"], Cell(lines, "r2", rivalled.Id)?.Values);
         Assert.Equal(["Amsterdam"], Cell(lines, "r2", rivalled.Id)?.Labels);
     }

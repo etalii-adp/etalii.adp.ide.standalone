@@ -23,10 +23,19 @@ internal static class KnowledgeFiles
     /// </summary>
     public static string CopyGrouped(string name, string folder) => CopyInView(name, folder, "v1");
 
-    /// <summary>A copy of a shipped example, left in <paramref name="view"/> whichever view its file names.</summary>
-    private static string CopyInView(string name, string folder, string view)
+    /// <summary>
+    /// A copy of a shipped example as it was made before links, with the table it relates to, left in its second view: its
+    /// relations name their target by a path and their rows by their ids, and neither file has a document id.
+    /// </summary>
+    public static string CopyPlainMadeBeforeLinks(string name, string folder) => CopyInView(name, folder, "v2", MadeBeforeLinksFolder);
+
+    /// <summary>The shipped examples as they were made before links: what converting them is held to.</summary>
+    private static string MadeBeforeLinksFolder => RepositoryPaths.Under("src", "designers", "knowledge", "backend", "EtAlii.Adp.Designer.Knowledge.Tests", "Fixtures", "made-before-links");
+
+    /// <summary>A copy of a shipped example, or of one in <paramref name="from"/>, left in <paramref name="view"/> whichever view its file names.</summary>
+    private static string CopyInView(string name, string folder, string view, string? from = null)
     {
-        var path = CopyExample(name, folder);
+        var path = CopyExample(name, folder, from);
         var text = File.ReadAllText(path);
         var active = new System.Text.RegularExpressions.Regex("(activeView\"?[:=] ?\"?)v[0-9]+");
 
@@ -57,17 +66,23 @@ internal static class KnowledgeFiles
     /// <summary>The table the example's relation points at.</summary>
     public const string Related = "provinces.yaml";
 
+    /// <summary>How a relation names the example's related table: by a link to its document id (knowledge.md, section 9).</summary>
+    public const string RelatedLink = "$p7v3k9qd@provinces.yaml";
+
+    /// <summary>How a relation of the example in the format of <paramref name="extension"/> names the example itself.</summary>
+    public static string SelfLink(string extension) => "$" + (extension switch { ".json" => "c9j3s6on", ".xml" => "c2x8m5ld", _ => "c4t7y2ma" }) + "@cities" + extension;
+
     /// <summary>A copy of a shipped example in <paramref name="folder"/>, under its own name.</summary>
-    public static string CopyExample(string name, string folder)
+    public static string CopyExample(string name, string folder, string? from = null)
     {
         var path = IoPath.Combine(folder, name);
-        File.Copy(Example(name), path);
+        File.Copy(IoPath.Combine(from ?? ExamplesFolder, name), path);
 
         // The table the example's relation names goes with it, so the relation resolves as it does where the example ships.
         var related = IoPath.Combine(folder, Related);
         if (name != Related && !File.Exists(related))
         {
-            File.Copy(Example(Related), related);
+            File.Copy(IoPath.Combine(from ?? ExamplesFolder, Related), related);
         }
 
         return path;

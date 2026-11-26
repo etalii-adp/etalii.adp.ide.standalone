@@ -70,7 +70,7 @@ internal static class KnowledgeProject
     /// How many rows of the project's other knowledge files relate to any of the given rows of one
     /// file: what deleting those rows would leave pointing at nothing.
     /// </summary>
-    public static int RowsRelatingTo(ProjectRoot root, string bodyPath, IReadOnlyCollection<string> rowIds)
+    public static int RowsRelatingTo(ProjectRoot root, string bodyPath, IReadOnlyCollection<string> rowIds, string documentId = "")
     {
         var count = 0;
         var target = Path.GetFullPath(bodyPath);
@@ -83,8 +83,7 @@ internal static class KnowledgeProject
 
             // The side of a two-way relation that holds no values of its own names nothing.
             var naming = body.Table.Properties
-                .Where(property => property is { Type: KnowledgeRelationType, IsComputed: false, TargetFile: { Length: > 0 } and not KnowledgeRelations.Self }
-                                   && string.Equals(KnowledgeRelations.TargetPath(path, property.TargetFile), target, StringComparison.OrdinalIgnoreCase))
+                .Where(property => property is { Type: KnowledgeRelationType, IsComputed: false, TargetsItsOwnTable: false } && KnowledgeRelations.Names(path, property, target, documentId))
                 .Select(property => property.Id)
                 .ToHashSet(StringComparer.Ordinal);
             if (naming.Count > 0)
@@ -94,6 +93,33 @@ internal static class KnowledgeProject
         }
 
         return count;
+    }
+
+    /// <summary>
+    /// The relations that show their backlinks in the knowledge file at <paramref name="bodyPath"/>, whose table is
+    /// <paramref name="own"/>: its own relations to itself that have a backlink name, then those of the project's other
+    /// knowledge files that name it, in path order (knowledge.md, section 9).
+    /// </summary>
+    public static List<KnowledgeBacklinkSource> BacklinkSources(ProjectRoot root, string bodyPath, KnowledgeTable own)
+    {
+        var self = Path.GetFullPath(bodyPath);
+        List<KnowledgeBacklinkSource> sources = [.. own.Properties.Where(property => property is { Type: KnowledgeRelationType, IsComputed: false, TargetsItsOwnTable: true, BacklinkName.Length: > 0 }).Select(property => new KnowledgeBacklinkSource(self, property))];
+        if (root.FullPath.Length == 0)
+        {
+            return sources;
+        }
+
+        foreach (var path in Files(root.FullPath).Where(path => !string.Equals(Path.GetFullPath(path), self, StringComparison.OrdinalIgnoreCase)).Order(StringComparer.OrdinalIgnoreCase))
+        {
+            if (KnowledgeDocumentStore.Read(path).Body is { Unreadable.Length: 0 } body)
+            {
+                sources.AddRange(body.Table.Properties
+                    .Where(property => property is { Type: KnowledgeRelationType, IsComputed: false, TargetsItsOwnTable: false, BacklinkName.Length: > 0 } && KnowledgeRelations.Names(path, property, self, own.DocumentId))
+                    .Select(property => new KnowledgeBacklinkSource(Path.GetFullPath(path), property)));
+            }
+        }
+
+        return sources;
     }
 
     private static bool Says(string file)

@@ -72,7 +72,7 @@ internal static class KnowledgeEdits
         new("addRelation", RequiresView: false, request => KnowledgeColumnEdits.AddRelation(request.Table, request.View, request.Gesture, request.NewId, request.Files)),
         new("setColumnParent", RequiresView: false, request => KnowledgeColumnEdits.SetParent(request.Table, request.Gesture)),
         new("setRelationLimit", RequiresView: false, request => KnowledgeColumnEdits.SetLimit(request.Table, request.Gesture)),
-        new("setRelationOtherSide", RequiresView: false, request => KnowledgeColumnEdits.SetOtherSide(request.Table, request.Gesture, request.NewId, request.Files)),
+        new("setRelationOtherSide", RequiresView: false, request => KnowledgeColumnEdits.SetOtherSide(request.Table, request.Gesture, request.Files)),
         new("addOption", RequiresView: false, request => KnowledgeColumnEdits.AddOption(request.Table, request.Gesture, request.NewId)),
         new("renameOption", RequiresView: false, request => KnowledgeColumnEdits.RenameOption(request.Table, request.Gesture)),
         new("recolourOption", RequiresView: false, request => KnowledgeColumnEdits.RecolourOption(request.Table, request.Gesture)),

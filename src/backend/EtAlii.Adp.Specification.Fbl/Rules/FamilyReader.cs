@@ -266,6 +266,26 @@ internal abstract class FamilyReader(BodyText text, FblBinding binding, FblOptio
     /// <summary>Writes <paramref name="id"/> as the body's document id, in <paramref name="slot"/> (FBL 0.23 §17.2); refused by a family that keeps none.</summary>
     public virtual void WriteDocumentId(Plan plan, DocumentIdSlot slot, string id) => Plan.Refuse($"A {FamilyName} file keeps no document id.");
 
+    /// <summary>
+    /// The keys or attributes of the body's root that are its envelope (FBL 0.24 §17.2): the header's key, and each slot that a
+    /// rule reading the root itself binds read-only, as DED's version and designer type are. A document id written into a root
+    /// that holds none goes after the leading run of these, so that it joins the envelope rather than splitting it.
+    /// </summary>
+    protected IReadOnlySet<string> EnvelopeNames()
+    {
+        var names = new HashSet<string>(StringComparer.Ordinal);
+        if (Binding.Header?.Key is { } header) names.Add(header);
+        foreach (var rule in Binding.Elements.Where(rule => rule.At is { } at && at.LastIndexOf('/') == 0 && !at.Contains('{', StringComparison.Ordinal)))
+        {
+            foreach ((string _, AttributeBinding binding) in rule.Attributes)
+            {
+                if (binding is { ReadOnly: not null, Child: null, Kind: SlotKind.Key(var key) }) names.Add(key);
+                else if (binding is { ReadOnly: not null, Kind: SlotKind.XmlAttribute(var attribute) }) names.Add(attribute);
+            }
+        }
+        return names;
+    }
+
     /// <summary>Findings about entries no rule claimed, once reading is done.</summary>
     public virtual void AfterRead(Func<Entry, string?> claimedBy)
     {

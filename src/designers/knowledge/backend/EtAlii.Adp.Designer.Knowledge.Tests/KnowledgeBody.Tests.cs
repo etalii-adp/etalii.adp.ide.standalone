@@ -36,7 +36,7 @@ public class KnowledgeBodyTests
             table.Properties[1].Options.Select(option => $"{option.Id} {option.Name} {option.Colour}"));
         // A colour the file does not give is the default, in every format.
         Assert.Equal(["default", "red"], table.Properties[3].Options.Select(option => option.Colour));
-        Assert.Equal(("provinces.yaml", "one"), (table.Properties[4].TargetFile, table.Properties[4].Limit));
+        Assert.Equal((KnowledgeFiles.RelatedLink, "one"), (table.Properties[4].TargetFile, table.Properties[4].Limit));
 
         // At least one view, the one the file was left in among them.
         Assert.NotEmpty(table.Views);
@@ -84,7 +84,7 @@ public class KnowledgeBodyTests
     public void AFileOfAnotherVersion_IsNotRead_AndSaysWhy()
     {
         // Arrange: the example, saying it is of a version this application does not know.
-        var text = Encoding.UTF8.GetString(KnowledgeFiles.ExampleBytes("cities.yaml")).Replace("ded: \"0.1\"", "ded: \"9.0\"", StringComparison.Ordinal);
+        var text = Encoding.UTF8.GetString(KnowledgeFiles.ExampleBytes("cities.yaml")).Replace("ded: \"0.3\"", "ded: \"9.0\"", StringComparison.Ordinal);
 
         // Act.
         var body = KnowledgeBody.Read(Encoding.UTF8.GetBytes(text), "cities.yaml");

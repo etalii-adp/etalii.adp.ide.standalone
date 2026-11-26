@@ -146,7 +146,7 @@ internal static class EditPlanner
             }
             // FBL 0.15 §4.9: a value read from a further slot of the attribute's or is written as that slot writes.
             if (read.By is { } by) binding = by;
-            if (binding.Kind is SlotKind.Value or SlotKind.Parent || !read.Writable)
+            if (binding.Kind is SlotKind.Value or SlotKind.Parent || (!read.Writable && !Convertible(set, element, binding, read)))
             {
                 Planning.Plan.Refuse(read.Reason is { Length: > 0 } reason ? reason : $"The {attribute} of a {element.Rule.Type} cannot be changed in this file.");
             }
@@ -183,6 +183,13 @@ internal static class EditPlanner
         if (newKey is not null) RewriteReferences(plan, element, newKey);
         if (element.Rule.SnapshotUndo) plan.Snapshot = true;
     }
+
+    /// <summary>
+    /// Whether a conversion on load (<see cref="ModelChange.Set.Converting"/>) writes a slot that is read-only by its binding's
+    /// word alone: one that is there, of an entry whose rule and binding can be written.
+    /// </summary>
+    private static bool Convertible(ModelChange.Set set, ReadElement element, AttributeBinding binding, SlotRead read) =>
+        set.Converting && binding.ReadOnly is not null && element.Rule.ReadOnly is null && read is { Present: true, Span: not null } && read.Reason == binding.ReadOnly;
 
     /// <summary>The removal of an attribute's <c>secondary</c> slot, when the entry has it (FBL 0.10 §5.2); null otherwise.</summary>
     private static SlotChange? Secondary(BodyReading reading, ReadElement element, Rule rule, AttributeBinding binding)

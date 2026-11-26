@@ -117,7 +117,7 @@ internal sealed class KnowledgeBody
         return change switch
         {
             ModelChange.Add add => add with { Attributes = Values(add.Attributes), ParentId = add.ParentId is null ? null : Of(add.ParentId) },
-            ModelChange.Set set => new ModelChange.Set(Of(set.Id), Values(set.Attributes)),
+            ModelChange.Set set => set with { Id = Of(set.Id), Attributes = Values(set.Attributes) },
             ModelChange.Remove remove => new ModelChange.Remove(Of(remove.Id)),
             ModelChange.Move move => new ModelChange.Move(Of(move.Id), move.NewParentId is null ? null : Of(move.NewParentId), move.Index),
             _ => change,

@@ -51,6 +51,9 @@ const TITLE_STAYS = "The column that names a row is always there.";
 /** The setting a column names the other side of its two-way relation under, and a delete says what becomes of that side under. */
 export const OTHER_SIDE = "otherSide";
 
+/** The setting a relation's column names the column its target shows its backlinks in by; that column is in no file, so it goes with the relation. */
+export const BACKLINK_NAME = "backlinkName";
+
 /** The setting a column says under that its rows can be nested by it, and the one it says under that they are. */
 const NESTABLE = "nestable";
 const NESTS = "parent";

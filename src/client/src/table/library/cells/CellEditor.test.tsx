@@ -234,17 +234,48 @@ describe("the editors on a searchable list", () => {
     expect(commit).toHaveBeenCalledWith(["o1"], { newOption: "Harbour" });
   });
 
-  it("offers the related rows and never offers to create one", async () => {
+  it("offers the related rows, searched by title as typed", () => {
     // Arrange: a related row the list does not hold keeps the label the cell gave it.
-    const { commit } = open("rows", { column: column("relation", [{ id: "r1", name: "Netherlands" }]), held: cell(["r9"], ["Belgium"]) });
-    expect(screen.getAllByRole("option").map((option) => option.textContent)).toEqual(["Netherlands", "Belgium"]);
+    open("rows", { column: column("relation", [{ id: "r1", name: "Netherlands" }, { id: "r2", name: "Norway" }]), held: cell(["r9"], ["Belgium"]) });
+    expect(screen.getAllByRole("option").map((option) => option.textContent)).toEqual(["Netherlands", "Norway", "Belgium"]);
+
+    // Act.
+    fireEvent.change(field(), { target: { value: "nor" } });
+
+    // Assert: the row whose title holds what was typed, and the offer to make one of that title.
+    expect(screen.getAllByRole("option").map((option) => option.textContent)).toEqual(["Norway", "Create “nor”"]);
+  });
+
+  it("creates a row in the related table from a title nothing matches, and relates it", async () => {
+    // Arrange: a relation that holds any number, holding one.
+    const { commit } = open("rows", { held: cell(["r1"], ["Netherlands"]), column: { ...column("relation", [{ id: "r1", name: "Netherlands" }]), settings: { limit: "none" } } });
 
     // Act.
     fireEvent.change(field(), { target: { value: "Germany" } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("option", { name: "Create “Germany”" }));
+    });
+
+    // Assert: the rows it holds, and the title of the one to make beside them.
+    expect(commit).toHaveBeenCalledWith(["r1"], { newRow: "Germany" });
+  });
+
+  it("shows the related rows as chips, each taken away by its own button", async () => {
+    // Arrange.
+    const rows = [
+      { id: "jp", name: "Japan" },
+      { id: "be", name: "Belgium" },
+    ];
+    const { commit } = open("rows", { held: cell(["jp", "be"], ["Japan", "Belgium"]), column: { ...column("relation", rows), settings: { limit: "none" } } });
+    expect(screen.getAllByRole("listitem").map((chip) => chip.textContent)).toEqual(["Japan", "Belgium"]);
+
+    // Act.
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Remove Japan" }));
+    });
 
     // Assert.
-    expect(screen.queryAllByRole("option")).toEqual([]);
-    expect(commit).not.toHaveBeenCalled();
+    expect(commit).toHaveBeenCalledWith(["be"], undefined);
   });
 
   it("replaces the related row in a relation that holds one, and adds in one that holds any number", async () => {

@@ -66,7 +66,7 @@ public sealed class KnowledgeSessionTests : IDisposable
         var country = baseline.Columns.Single(column => column.Id == "p2");
         Assert.Equal(["Netherlands:blue", "Belgium:yellow", "Germany:default", "France:default", "Finland:default", "Italy:default"], country.Options.Select(option => $"{option.Name}:{option.Color}"));
         var province = baseline.Columns.Single(column => column.Id == "p5");
-        Assert.Equal(("provinces.yaml", "one"), (province.Settings["targetFile"], province.Settings["limit"]));
+        Assert.Equal((KnowledgeFiles.RelatedLink, "one"), (province.Settings["targetFile"], province.Settings["limit"]));
 
         // The views, and the settings of the one the file was left in.
         Assert.NotEmpty(baseline.Views);
@@ -367,7 +367,7 @@ public sealed class KnowledgeSessionTests : IDisposable
         // Arrange.
         var path = KnowledgeFiles.CopyExample("cities.yaml", _root);
         var text = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
-        await File.WriteAllTextAsync(path, text.Replace("ded: \"0.1\"", "ded: \"9.0\"", StringComparison.Ordinal), TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(path, text.Replace("ded: \"0.3\"", "ded: \"9.0\"", StringComparison.Ordinal), TestContext.Current.CancellationToken);
         var before = await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken);
         await using var session = new KnowledgeSession(path);
 

@@ -1,5 +1,6 @@
-ded: "0.1"
+ded: "0.3"
 designer: etalii/knowledge
+id: c8r2n5vw
 # Countries, written for ADP: a parent relation, the other side of a two-way relation, and each kind of grouping.
 name: Countries
 activeView: c-nested
@@ -39,15 +40,9 @@ properties:
   - id: c-part-of
     name: Part of
     type: relation
-    target: .
+    target: $c8r2n5vw@countries.yaml
     limit: one
     parent: true
-  - id: c-regions
-    name: Regions
-    type: relation
-    target: regions.yaml
-    counterpart: g-country
-    computed: true
 views:
   - id: c-nested
     name: Nested
@@ -102,7 +97,7 @@ rows:
         number: 17.9
       - property: c-part-of
         rows:
-          - row: benelux
+          - row: $c8r2n5vw@countries.yaml#benelux.Name=Benelux
   - id: be
     cells:
       - property: c-name
@@ -120,7 +115,7 @@ rows:
         number: 11.8
       - property: c-part-of
         rows:
-          - row: benelux
+          - row: $c8r2n5vw@countries.yaml#benelux.Name=Benelux
   - id: jp
     cells:
       - property: c-name
