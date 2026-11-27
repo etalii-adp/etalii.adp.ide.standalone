@@ -63,7 +63,14 @@ internal static class KnowledgeProject
             }
         }
 
-        return targets;
+        return Distinguished(targets);
+    }
+
+    /// <summary>The targets with each name that more than one of them has followed by its file, so that a user can tell them apart.</summary>
+    private static List<(string Target, string Name)> Distinguished(List<(string Target, string Name)> targets)
+    {
+        var shared = targets.GroupBy(target => target.Name, StringComparer.Ordinal).Where(group => group.Count() > 1).Select(group => group.Key).ToHashSet(StringComparer.Ordinal);
+        return [.. targets.Select(target => target.Target != KnowledgeRelations.Self && shared.Contains(target.Name) ? (target.Target, $"{target.Name} ({target.Target})") : target)];
     }
 
     /// <summary>
