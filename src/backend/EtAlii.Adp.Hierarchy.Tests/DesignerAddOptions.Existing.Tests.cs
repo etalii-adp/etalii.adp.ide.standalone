@@ -104,4 +104,36 @@ public class DesignerAddOptionsExistingTests : IDisposable
         Assert.True(undone.IsSuccess, undone.Error);
         Assert.Empty(Listing());
     }
+
+    [Fact]
+    public async Task AFileADesignerTypeClaimsByItsContent_IsNotOfferedAsADiagram_AndAnotherFileOfItsExtensionIs()
+    {
+        // Arrange: a diagram type that reads the same shared extension (found in the spec 093 host test, where a knowledge
+        // file in JSON was offered "Add as diagram…" although it already opens as a table).
+        var notes = new DiagramDefinition(new ToolOrigin("fixture", "notes"), "Fixture notes", Extension: ".md", SharedExtension: true);
+        var catalog = new DiagramDefinitionCatalog { All = [notes] };
+        _ = TestHistory.Create(_root, out var historyStacks, [RequirementsDesigner.Definition]);
+        var provider = new AddDiagramContextActionProvider(
+            historyStacks,
+            new DiagramDocumentFactories([]),
+            catalog,
+            new DiagramFileRouter(catalog),
+            new DesignerAddOptions(new DesignerDefinitionCatalog { All = [RequirementsDesigner.Definition] }, new DesignerDocumentTemplates([new RequirementsTemplate()])));
+        var claimed = IoPath.Combine(_root, "plan.md");
+        var other = IoPath.Combine(_root, "readme.md");
+        await File.WriteAllTextAsync(claimed, RequirementsDesigner.Body(), TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(other, "# Readme\r\n", TestContext.Current.CancellationToken);
+
+        // Act.
+        var onClaimed = await provider.DiscoverAsync(FileOf(claimed), TestContext.Current.CancellationToken);
+        var executed = await provider.ExecuteAsync(FileOf(claimed), AddDiagramContextActionProvider.AddActionId, TestContext.Current.CancellationToken);
+        var onOther = await provider.DiscoverAsync(FileOf(other), TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.Empty(onClaimed);
+        Assert.IsType<ContextExecutionFailed>(executed);
+        Assert.Single(Assert.Single(onOther).Actions);
+    }
+
+    private ContextTarget FileOf(string path) => new(ContextScope.Hierarchy, path, IsContainer: false, ShortGuid.NewShortGuid(), Root: ProjectRoot.From(_root));
 }

@@ -49,6 +49,17 @@ public sealed class DesignerAddOptions
     public bool Any => Offered.Any();
 
     /// <summary>
+    /// Whether an installed designer type claims the file at <paramref name="path"/> by its own content, so that it opens in
+    /// that type with no registration and is not to be offered as a diagram as well (spec 093).
+    /// </summary>
+    public bool ClaimsByContent(string path)
+    {
+        var name = IoPath.GetFileName(path);
+        var claims = _catalog.All.Select(definition => definition.Claim).OfType<DesignerClaim>().Where(claim => claim.Takes(name)).ToList();
+        return claims.Count > 0 && _heads.Read(path) is { Length: > 0 } head && claims.Any(claim => claim.Matches(name, head));
+    }
+
+    /// <summary>
     /// <paramref name="tree"/> with the designer types added under their vendors, each vendor's
     /// entries by label as the diagram types are.
     /// </summary>
