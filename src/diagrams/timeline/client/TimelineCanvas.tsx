@@ -89,24 +89,33 @@ export interface TimelineScale {
 /**
  * The scale the first fit would choose for this model - exported so tests can compute positions.
  * An empty timeline opens on the days around today, a week before it first: one that opened at
- * the epoch put a new user's first moment in 1969 (etalii.adp spec 092, host test T035).
+ * the epoch put a new user's first moment in 1969 (etalii.adp spec 092, host test T035). One whose
+ * elements all stand at one instant opens the same way around that instant: fitted to its one day,
+ * a new timeline's first moment zoomed it in to hours (etalii.adp spec 093, host test T012).
  */
 export function timelineScaleOf(model: TimelineModel, nowSeconds: number = Date.now() / 1000): TimelineScale {
   const elements = [...model.elements.values()];
   if (elements.length === 0) {
-    const today = Math.floor(nowSeconds / DAY) * DAY;
-    return { originSeconds: today - 7 * DAY, secondsPerUnit: DAY / 20, originY: -ROW_HEIGHT };
+    return daysAround(Math.floor(nowSeconds / DAY) * DAY, -ROW_HEIGHT);
   }
 
   const begins = elements.map((element) => element.x);
   const ends = elements.map((element) => endSecondsOf(element));
   const min = Math.min(...begins);
+  if (Math.max(...ends) === min) {
+    return daysAround(min, Math.min(...elements.map((element) => element.y)) - ROW_HEIGHT);
+  }
   const span = Math.max(Math.max(...ends) - min, DAY);
   return {
     originSeconds: min - span * 0.1,
     secondsPerUnit: (span * 1.2) / FALLBACK_WIDTH_PX,
     originY: Math.min(...elements.map((element) => element.y)) - ROW_HEIGHT,
   };
+}
+
+/** The days around an instant, a week before it first, at the zoom an empty timeline opens at. */
+function daysAround(seconds: number, originY: number): TimelineScale {
+  return { originSeconds: seconds - 7 * DAY, secondsPerUnit: DAY / 20, originY };
 }
 
 export function endSecondsOf(element: TimelineElement): number {
