@@ -106,14 +106,14 @@ public sealed class KnowledgeContextActionsTests : IDisposable
         // Act: a relation offered from the bare file, to the other bare file.
         var offered = await _provider.DiscoverAsync(Target(Cities), TestContext.Current.CancellationToken);
         var asked = await _provider.ExecuteAsync(Target(Cities), KnowledgeContextActionProvider.Relate, TestContext.Current.CancellationToken);
-        var made = await Related(Target(Cities), KnowledgeFiles.Related, KnowledgeContextActionProvider.Many, twoWay: false, "Region");
+        var made = await Related(Target(Cities), KnowledgeFiles.Related, KnowledgeContextActionProvider.Many, twoWay: false);
         var indexed = new KnowledgeLinkIndexer().Index(Provinces, await File.ReadAllBytesAsync(Provinces, TestContext.Current.CancellationToken));
 
         // Assert: offered, the other table among the targets, the relation made; and the target held by its id and rows.
         Assert.Equal([KnowledgeContextActionProvider.Relate], Leaves(offered).Select(action => action.Id));
         Assert.True(Assert.IsType<ContextExecutionRequiresFile>(asked).Request.Accepts(Provinces));
         Assert.True(made.Completed, made.Error);
-        Assert.Contains("name: Region", await File.ReadAllTextAsync(Cities, TestContext.Current.CancellationToken), StringComparison.Ordinal);
+        Assert.Equal(KnowledgeFiles.RelatedLink, KnowledgeDocumentStore.Read(Cities).Body!.Table.Properties.Single(property => property.Name == "Provinces").TargetFile);
         Assert.NotNull(indexed);
         Assert.Contains(indexed.Elements, element => element.Id == "nh");
         Assert.Empty(Directory.EnumerateFiles(_root, "*.adp"));

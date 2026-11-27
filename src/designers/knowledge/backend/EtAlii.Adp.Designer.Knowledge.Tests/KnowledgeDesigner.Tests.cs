@@ -229,7 +229,7 @@ public sealed class KnowledgeDesignerTests(HostFixture host) : IClassFixture<Hos
         var entryId = created.Change.Created.Entry.Id;
         var selection = new ContextSelection { Source = Documents.Wire.ContextSelectionSource.Explorer, Id = new Documents.Wire.ContextSource { EntryId = entryId }, Path = new Path() };
         var selected = await session.Context.SelectAsync(new SelectRequest { ProjectId = session.ProjectId, WatchId = session.WatchId, Selection = selection }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
-        var pushed = await context.ResponseStream.FirstAsync(message => message.MessageCase == ContextMessage.MessageOneofCase.Selection && message.Selection.Selection?.Id?.EntryId == entryId, cts.Token);
+        var pushed = await context.ResponseStream.FirstAsync(message => message.MessageCase == ContextMessage.MessageOneofCase.Selection && entryId.Equals(message.Selection.Selection?.Id?.EntryId), cts.Token);
 
         // Assert: the entry opens as a knowledge table, the type the client keys its panel on.
         Assert.Equal("", selected.Error);

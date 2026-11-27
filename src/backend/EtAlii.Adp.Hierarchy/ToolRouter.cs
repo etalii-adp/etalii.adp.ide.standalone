@@ -65,15 +65,17 @@ public sealed class ToolRouter
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
 
-        switch (_designers.RouteByEnvelope(path))
+        return _designers.RouteByEnvelope(path) switch
         {
-            case DesignerRouted enveloped:
-                return enveloped;
-            case DesignerUnreadable claimedTwice:
-                return new ToolUnreadable(claimedTwice.Path, claimedTwice.Reason);
-        }
+            DesignerRouted enveloped => enveloped,
+            DesignerUnreadable claimedTwice => new ToolUnreadable(claimedTwice.Path, claimedTwice.Reason),
+            _ => RouteFromDiagrams(path, root),
+        };
+    }
 
-        return Diagrams.Route(path, root) switch
+    /// <summary>What serves a path no designer type claims by its content: a diagram, else a designer by its registration, else an editor.</summary>
+    private ToolRouting RouteFromDiagrams(string path, string? root) =>
+        Diagrams.Route(path, root) switch
         {
             DiagramRouted { RegistrationPath: { } registration, BodyPath: { } body } when _designers.ClaimantsOf(body) is [var claimant, ..] =>
                 new ToolUnreadable(registration, ClaimedBody(body, claimant)),
@@ -81,7 +83,6 @@ public sealed class ToolRouter
             DiagramUnreadable unreadable => new ToolUnreadable(unreadable.Path, unreadable.Reason),
             _ => RouteBeyondDiagrams(path, root),
         };
-    }
 
     /// <summary>
     /// The designer type a file's envelope names when none of the installed types has it (spec 093 FR-006): the file opens as
