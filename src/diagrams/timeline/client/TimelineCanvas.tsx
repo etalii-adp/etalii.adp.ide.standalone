@@ -144,6 +144,12 @@ function formatSeconds(seconds: number, dateOnly: boolean): string {
   return dateOnly ? day : `${day}T${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}:${pad(date.getUTCSeconds())}`;
 }
 
+/** The days the view of a timeline is never narrower than when it opens or is fitted: those an empty timeline shows. */
+const MINIMUM_FIT_DAYS = 20;
+
+/** The height, in canvas units, the view of a timeline is never lower than when it opens or is fitted. */
+const MINIMUM_FIT_HEIGHT = 300;
+
 /** The placement id a gesture carries when it lands on empty canvas: `new:{seconds},{row}`. */
 function newPlacementId(seconds: number, row: number): string {
   return placementId(seconds, row);
@@ -236,8 +242,13 @@ export function TimelineCanvas({ projectId, entryId, path }: ShellCanvasProps) {
 
   // A background right-click names its placement in the backend's terms - seconds and a row - as
   // a drop does, so "Add element here" lands where the reader clicked.
+  // The least it opens on is the weeks an empty timeline shows: one moment, fitted alone, filled the pane with a day or so
+  // (etalii.adp spec 093, host test T012).
   const config = useMemo(
-    () => ({ definitionOverrides: { backgroundPlacement: (point: { x: number; y: number }) => ({ x: toSeconds(point.x), y: nearestRow(toModuleY(point.y)) }) } }),
+    () => ({
+      definitionOverrides: { backgroundPlacement: (point: { x: number; y: number }) => ({ x: toSeconds(point.x), y: nearestRow(toModuleY(point.y)) }) },
+      minimumFit: { width: (MINIMUM_FIT_DAYS * DAY) / scale.secondsPerUnit, height: MINIMUM_FIT_HEIGHT },
+    }),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- the scale is frozen; it is all the conversion reads.
     [scale],
   );

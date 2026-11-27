@@ -682,8 +682,8 @@ export function DiagramCanvasCore({
       // The space is definitional, not derived: fit shows exactly what the notation states.
       return { x: definition.extent.x, y: definition.extent.y, w: definition.extent.width, h: definition.extent.height };
     }
-    return fitBoxOf(elements, elementTypes);
-  }, [definition.extent, elements, elementTypes]);
+    return atLeast(fitBoxOf(elements, elementTypes), config?.minimumFit);
+  }, [definition.extent, elements, elementTypes, config?.minimumFit]);
   // The view is widened or heightened to the pane's own proportions before anything uses it.
   //
   // An svg with a viewBox scales uniformly and centres the slack (`preserveAspectRatio`'s
@@ -4635,6 +4635,16 @@ function drawsPerson(element: DiagramModelElement, type: ElementTypeDefinition |
   const source = sourceOf(element);
   const shape = shapeOf(type.shape, source);
   return shape === "person" || (shape === "styled-box" && resolveBound(type.boundStyle?.silhouette, source) === "Person");
+}
+
+/** <paramref name="box"/> grown about its centre to at least <paramref name="least"/>; as it is where no least is given. */
+function atLeast(box: ViewBox, least: { width: number; height: number } | undefined): ViewBox {
+  if (least === undefined) {
+    return box;
+  }
+  const w = Math.max(box.w, least.width);
+  const h = Math.max(box.h, least.height);
+  return { x: box.x - (w - box.w) / 2, y: box.y - (h - box.h) / 2, w, h };
 }
 
 /** The box that fits every element and its labels with a margin - what the canvas opens with and Fit returns to. */

@@ -24,6 +24,11 @@ export interface DiagramRuntimeConfig {
    * of a module can see the whole runtime surface in one place.
    */
   definitionOverrides?: Partial<DiagramDefinition>;
+  /**
+   * The least the canvas opens on and Fit returns to, in canvas units, centred on what it fits: a module whose units stand for
+   * something, as a timeline's stand for time, keeps one small element from being blown up to fill the pane.
+   */
+  minimumFit?: { width: number; height: number };
 }
 
 /**

@@ -173,6 +173,21 @@ describe("the scale of a new, empty timeline", () => {
   });
 });
 
+describe("the view a timeline of one moment opens on", () => {
+  it("shows the weeks around it, not one day blown up to fill the pane (spec 093 host test)", () => {
+    // Arrange: a new timeline's first moment, as Add from another document makes it.
+    const at = Date.UTC(2026, 10, 26) / 1000;
+    currentModel = { elements: new Map([["m", { ...period("m", "Antwerp", at, 0, 0), isPeriod: false, end: "" }]]), connections: new Map() };
+
+    // Act.
+    const { container } = renderCanvas();
+
+    // Assert: the view is at least as wide as twenty days.
+    const width = Number(surfaceOf(container).getAttribute("viewBox")!.split(" ")[2]);
+    expect(width * timelineScaleOf(currentModel).secondsPerUnit).toBeGreaterThanOrEqual(20 * 86400);
+  });
+});
+
 describe("the timeline canvas, on the library", () => {
   it("wears the shared canvas classes, so the central stylesheet is what dresses it", () => {
     const { container } = renderCanvas();

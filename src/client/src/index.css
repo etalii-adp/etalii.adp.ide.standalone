@@ -156,7 +156,7 @@
     --color-danger-bg: #3f1d1d;
     --color-success: #4ade80; /* lighter on the dark surface, still clearly not the limegreen accent */
     --color-warning: #fbbf24; /* brighter amber, so the caution still reads on the dark surface */
-    --color-diagram-potential: #3f9142; /* darker and duller than limegreen, still legible on the dark surface */
+    --color-diagram-potential: #4d7c55; /* a muted green, 2.29:1 from limegreen and 3.02:1 on the surface: #3f9142 read as the same green (explorerStateColours.test.ts) */
     /* THE SAME FIVE HUES, LIGHTNESS LOWERED UNTIL EACH REACHES 5.0:1 against this theme's
        --color-text (#f1f5f9) - 5.0275, 5.0112, 5.0462, 5.0613 and 5.0553 in this order.
        The lightest same-hue variants that merely reach 4.5 were measured and rejected: they sit at

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
 import { usePointerGesture } from "../../canvas/gesture/usePointerGesture";
-import { ContextMenu } from "../../shell/context/ContextMenu";
+import { ContextMenu, type ContextMenuGroup } from "../../shell/context/ContextMenu";
 import { CONFIRM_PREFIX, type TableEvents, type TableGesture } from "./api/tableEvents";
 import { cellText, type TableCell, type TableColumn, type TableModel, type TableRow } from "./api/tableModel";
 import { CellEditor, type AfterEdit } from "./cells/CellEditor";
@@ -30,6 +30,12 @@ export interface TableSurfaceProps extends TableEvents {
   selectedRow?: string;
   /** Told which rows are selected, whenever that changes: for what shows a selected row's properties. */
   onSelectRows?: (rowIds: readonly string[]) => void;
+  /**
+   * What else a row's right-click menu offers, beside deleting it: the actions the application has for that row once it is
+   * the selection, such as "Linked from". Right-clicking a row that is not selected selects it alone first. Left out, the menu
+   * is the table's own.
+   */
+  rowMenuGroups?: (rowId: string) => ContextMenuGroup[];
   /** How many edits are shown and not written yet, when the table comes from a stream that writes behind. */
   pendingEdits?: number;
   /**
@@ -68,7 +74,7 @@ const FALLBACK_VIEWPORT_HEIGHT = 660;
  * gesture the backend refuses changes nothing here - the reason is shown, and the cell is still
  * what the model says it is.
  */
-export function TableSurface({ model, definition, pendingEdits = 0, selectedRow, onSelectRows, onOpenValue, onWindow, onView, onGesture, fallbackViewportHeight = FALLBACK_VIEWPORT_HEIGHT }: TableSurfaceProps) {
+export function TableSurface({ model, definition, pendingEdits = 0, selectedRow, onSelectRows, rowMenuGroups, onOpenValue, onWindow, onView, onGesture, fallbackViewportHeight = FALLBACK_VIEWPORT_HEIGHT }: TableSurfaceProps) {
   const rowHeight = definition.rowHeight ?? DEFAULT_ROW_HEIGHT;
   const columns = useMemo(() => model.columns.filter((column) => column.visible), [model.columns]);
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -364,6 +370,31 @@ export function TableSurface({ model, definition, pendingEdits = 0, selectedRow,
   /** The rows a gesture on one row is about: all that are selected when it is one of them, else that row alone. */
   const rowsOf = (rowId: string) => (selectedRows.has(rowId) && selectedRows.size > 1 ? [...selectedRows] : [rowId]);
 
+  /** A row's right-click menu: the application's actions for it while it is the selection alone, then deleting it where the table offers that. */
+  const rowMenuEntries: ContextMenuGroup[] =
+    rowMenu === null
+      ? []
+      : [
+          ...(rowMenuGroups !== undefined && rowsOf(rowMenu.rowId).length === 1 ? rowMenuGroups(rowMenu.rowId) : []),
+          ...(rowMenuOffered
+            ? [
+                [
+                  {
+                    id: "delete",
+                    // Several selected rows go together when the menu is one of theirs.
+                    label: rowsOf(rowMenu.rowId).length > 1 ? `Delete ${rowsOf(rowMenu.rowId).length} rows` : "Delete row",
+                    icon: "mdi-trash-can-outline",
+                    onSelect: () => {
+                      const ids = rowsOf(rowMenu.rowId);
+                      raiseAsking(ids.length === 1 ? { kind: "deleteRows", rowId: rowMenu.rowId } : { kind: "deleteRows", values: ids });
+                      selectRows(new Set());
+                    },
+                  },
+                ],
+              ]
+            : []),
+        ];
+
   const toggleRow = (rowId: string) => {
     const next = new Set(selectedRows);
     if (!next.delete(rowId)) {
@@ -548,9 +579,13 @@ export function TableSurface({ model, definition, pendingEdits = 0, selectedRow,
             data-row-id={row.id}
             style={rowStyle}
             onContextMenu={
-              rowMenuOffered
+              rowMenuOffered || rowMenuGroups !== undefined
                 ? (event) => {
                     event.preventDefault();
+                    // The application's actions are a selection's: a row right-clicked outside the selection becomes it.
+                    if (rowMenuGroups !== undefined && !selectedRows.has(row.id)) {
+                      selectRows(new Set([row.id]));
+                    }
                     setRowMenu({ rowId: row.id, x: event.clientX, y: event.clientY });
                   }
                 : undefined
@@ -674,24 +709,7 @@ export function TableSurface({ model, definition, pendingEdits = 0, selectedRow,
       )}
       <ContextMenu
         open={rowMenu !== null}
-        groups={[
-          [
-            {
-              id: "delete",
-              // Several selected rows go together when the menu is one of theirs.
-              label: rowMenu !== null && rowsOf(rowMenu.rowId).length > 1 ? `Delete ${rowsOf(rowMenu.rowId).length} rows` : "Delete row",
-              icon: "mdi-trash-can-outline",
-              onSelect: () => {
-                if (rowMenu === null) {
-                  return;
-                }
-                const ids = rowsOf(rowMenu.rowId);
-                raiseAsking(ids.length === 1 ? { kind: "deleteRows", rowId: rowMenu.rowId } : { kind: "deleteRows", values: ids });
-                selectRows(new Set());
-              },
-            },
-          ],
-        ]}
+        groups={rowMenuEntries}
         position={rowMenu ?? { x: 0, y: 0 }}
         onClose={() => setRowMenu(null)}
       />
