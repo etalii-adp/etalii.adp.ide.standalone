@@ -65,34 +65,44 @@ public sealed class ToolRouter
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
 
-        if (_designers.RouteByEnvelope(path) is { } enveloped)
+        return _designers.RouteByEnvelope(path) switch
         {
-            return enveloped;
-        }
+            DesignerRouted enveloped => enveloped,
+            DesignerUnreadable claimedTwice => new ToolUnreadable(claimedTwice.Path, claimedTwice.Reason),
+            _ => RouteFromDiagrams(path, root),
+        };
+    }
 
-        return Diagrams.Route(path, root) switch
+    /// <summary>What serves a path no designer type claims by its content: a diagram, else a designer by its registration, else an editor.</summary>
+    private ToolRouting RouteFromDiagrams(string path, string? root) =>
+        Diagrams.Route(path, root) switch
         {
-            DiagramRouted { RegistrationPath: { } registration, BodyPath: { } body } when _designers.ClaimantOf(body) is { } claimant =>
+            DiagramRouted { RegistrationPath: { } registration, BodyPath: { } body } when _designers.ClaimantsOf(body) is [var claimant, ..] =>
                 new ToolUnreadable(registration, ClaimedBody(body, claimant)),
             DiagramRouted diagram => diagram,
             DiagramUnreadable unreadable => new ToolUnreadable(unreadable.Path, unreadable.Reason),
             _ => RouteBeyondDiagrams(path, root),
         };
-    }
+
+    /// <summary>
+    /// The designer type a file's envelope names when none of the installed types has it (spec 093 FR-006): the file opens as
+    /// text as before, and this is what a sentence about it names. Null for any other file.
+    /// </summary>
+    public string? UninstalledDesignerTypeOf(string path) => _designers.UninstalledTypeOf(path);
 
     /// <summary>What serves a path no diagram type routes: a designer, else an editor.</summary>
     private ToolRouting RouteBeyondDiagrams(string path, string? root) =>
         _designers.Route(path, root) switch
         {
             DesignerRouted { RegistrationPath: { } registration, BodyPath: { } body } designer
-                when _designers.ClaimantOf(body) is { } claimant && claimant != designer.Definition =>
+                when _designers.ClaimantsOf(body) is [var claimant, ..] claimants && !claimants.Contains(designer.Definition) =>
                 new ToolUnreadable(registration, ClaimedBody(body, claimant)),
             DesignerRouted designer => designer,
             DesignerUnreadable unreadable => new ToolUnreadable(unreadable.Path, unreadable.Reason),
             _ => Editors.Resolve(path) as EditorRouted ?? (ToolRouting)new NoTool(),
         };
 
-    /// <summary>Why a registration of one tool is not followed to a body that another's envelope claims.</summary>
+    /// <summary>Why a registration of one tool is not followed to a body that another's mark claims.</summary>
     private static string ClaimedBody(string body, DesignerDefinition claimant) =>
-        $"Its body, {IoPath.GetFileName(body)}, is a {claimant.Title} document by the envelope on its first line, and opens there; this registration is not followed.";
+        $"Its body, {IoPath.GetFileName(body)}, is a {claimant.Title} document by its own content, and opens there; this registration is not followed.";
 }

@@ -28,16 +28,22 @@ internal static class Router
         foreach (var binding in bindings)
         {
             var claims = binding.Claims;
-            if (claims.RegistrationOnly) continue;
-            var named = claims.Names.Any(glob => Glob.IsMatch(glob, name, Glob.PlatformIgnoresCase));
-            var extended = extension.Length > 0 && claims.Extensions.Any(e => string.Equals(e, extension, StringComparison.OrdinalIgnoreCase));
-            if (!named && !extended) continue;
+            if (!Takes(claims, name, extension)) continue;
             if (claims.Marker is { } marker && !MarkerEvaluator.Matches(marker, bytes)) continue;
             if (claims is { Shared: true, Marker: null }) continue;
             candidates.Add(binding);
         }
         return candidates;
     }
+
+    /// <summary>
+    /// Whether a claim takes a file by its name alone (FBL §12.1): a <c>names</c> glob matches it or its extension is among the
+    /// <c>extensions</c>, ignoring case, and the claim is not <c>registrationOnly</c>. The marker is not looked at.
+    /// </summary>
+    internal static bool Takes(Claims claims, string name, string extension) =>
+        !claims.RegistrationOnly &&
+        (claims.Names.Any(glob => Glob.IsMatch(glob, name, Glob.PlatformIgnoresCase)) ||
+         (extension.Length > 0 && claims.Extensions.Any(e => string.Equals(e, extension, StringComparison.OrdinalIgnoreCase))));
 
     /// <summary>
     /// The readings a binding offers for a body (FBL §9.4): each origin in <c>claims.origins</c> order,

@@ -1,7 +1,6 @@
 using System.Text;
 using EtAlii.Adp.Designer;
 using EtAlii.Adp.Specification.Fbl.Documents;
-using EtAlii.Adp.Specification.Fbl.Routing;
 using Xunit;
 
 namespace EtAlii.Adp.Hierarchy.Tests;
@@ -9,7 +8,7 @@ namespace EtAlii.Adp.Hierarchy.Tests;
 /// <summary>
 /// A designer type recognised by the envelope on its body's first line, as the Hierarchical Requirement Designer is
 /// (spec 029 R3, R4): a <c>.md</c> claimed as a shared extension through an FBL binding's line-1 marker, whose binding
-/// creates the registration with the first setting. Its claim is answered by the FBL library's own routing.
+/// creates the registration with the first setting. Its claim is made from that binding alone.
 /// </summary>
 internal static class RequirementsDesigner
 {
@@ -39,20 +38,30 @@ internal static class RequirementsDesigner
         }
         """;
 
-    private static FblBinding Binding { get; } = Load();
+    private static FblBinding Binding { get; } = Load(BindingJson);
 
     public static DesignerDefinition Definition { get; } = new(
         Origin,
         "Fixture requirements",
         Formats: [new DesignerFormat("Markdown", ".md")],
-        Claim: new DesignerClaim([".md"], (name, head) => BodyClaim.Claims(Binding, name, head), Envelope, BodyClaim.CreatesRegistration(Binding)));
+        Claim: new DesignerClaim([Binding]));
+
+    /// <summary>
+    /// A second designer type whose binding's marker takes the same envelope, as two installed types that both claim one file
+    /// would (spec 093 FR-005).
+    /// </summary>
+    public static DesignerDefinition Rival { get; } = new(
+        "fixture/rival",
+        "Fixture rival",
+        Formats: [new DesignerFormat("Markdown", ".md")],
+        Claim: new DesignerClaim([Load(BindingJson.Replace("\"origins\": [\"fixture/requirements\"]", "\"origins\": [\"fixture/rival\"]", StringComparison.Ordinal))]));
 
     /// <summary>A body that carries the envelope, CRLF, as the template writes one.</summary>
     public static string Body(string title = "Plan") => $"{Envelope}\r\n# {title}\r\n";
 
-    private static FblBinding Load()
+    private static FblBinding Load(string json)
     {
-        var diagnostics = FblDocumentLoader.Load(Encoding.UTF8.GetBytes(BindingJson), out var document);
+        var diagnostics = FblDocumentLoader.Load(Encoding.UTF8.GetBytes(json), out var document);
         Assert.True(document is not null, string.Join("; ", diagnostics));
         return document.Bindings["markdown"];
     }

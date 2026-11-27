@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text;
+using System.Text.Json;
 using EtAlii.Adp.Specification.Fbl.Documents;
 using EtAlii.Adp.Specification.Fbl.Routing;
 using Xunit;
@@ -37,6 +38,37 @@ public class RoutingTests
 
         // Act and assert.
         Assert.Equal(matches, MarkerEvaluator.Matches(marker, Encoding.UTF8.GetBytes(body)));
+    }
+
+    [Theory]
+    [InlineData("ded: \"0.1\"\ndesigner: etalii/knowledge\nrows:\n  - id: a\n    name: \"unterminated\n", true)]
+    [InlineData("{\n  \"ded\": \"0.1\",\n  \"designer\": \"etalii/knowledge\",\n  \"rows\": [\n    { \"id\": \"a\",\n", true)]
+    [InlineData("ded: \"0.1\"\nrows:\n  - id: a\n    name: \"unterminated\n", false)]
+    [InlineData("{\n  \"ded\": \"0.1\",\n  \"rows\": [\n    { \"id\": \"a\",\n", false)]
+    [InlineData("ded: \"0.1\"\ndesigner: etalii/timeline\nrows: [\n", false)]
+    [InlineData("ded: \"0.1\"\ndesigner: [etalii/knowledge\n", false)]
+    public void ARootKeyMarkerIsFoundBeforeTheCutOfAHeadThatIsCutOff(string head, bool matches)
+    {
+        // Arrange: the head of a large file, cut off at a line end in the middle of the document (FBL §12.2).
+        var marker = new Marker("designer", JsonSerializer.SerializeToElement("etalii/knowledge"), null, null, 0);
+
+        // Act and assert.
+        Assert.Equal(matches, MarkerEvaluator.Matches(marker, Encoding.UTF8.GetBytes(head)));
+    }
+
+    [Fact]
+    public void ALineMarkerLooksOnlyAtItsLines_SoBytesThatAreNoUtf8AfterThemDoNotHideIt()
+    {
+        // Arrange: the envelope on line 1, and a byte that is no UTF-8 on line 2, which the binding then reports when it reads the
+        // file (the not-utf8 fault of hierarchical-requirement-faults); a head of more than the first line carries both.
+        var pattern = new Marker(null, null, null, "^<!-- ded: 0.2 designer: fixture/requirements -->$", 1);
+        var prefix = new Marker(null, null, "<!-- ded:", null, 0);
+        var body = "<!-- ded: 0.2 designer: fixture/requirements -->\n# Caf"u8.ToArray().Concat(new byte[] { 0xE9, (byte)'\n' }).ToArray();
+
+        // Act and assert.
+        Assert.True(MarkerEvaluator.Matches(pattern, body));
+        Assert.True(MarkerEvaluator.Matches(prefix, body));
+        Assert.False(MarkerEvaluator.Matches(pattern, new byte[] { 0xE9, (byte)'\n' }));
     }
 
     [Fact]

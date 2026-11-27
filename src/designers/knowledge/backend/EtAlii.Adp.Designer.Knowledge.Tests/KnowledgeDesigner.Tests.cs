@@ -115,6 +115,127 @@ public sealed class KnowledgeDesignerTests(HostFixture host) : IClassFixture<Hos
         Assert.NotNull(host.Services.GetRequiredService<WorkspaceConnections>().Find((ShortGuid)session.WatchId, session.UserId));
     }
 
+    /// <summary>The example and the table it relates to in the project as they are copied in from elsewhere: no registration beside either.</summary>
+    private void SeedBare(string extension)
+    {
+        File.Copy(IoPath.Combine(RepositoryPaths.Under("src", "designers", "knowledge", "examples"), "cities" + extension), IoPath.Combine(_projectFolder, "cities" + extension));
+        File.Copy(IoPath.Combine(RepositoryPaths.Under("src", "designers", "knowledge", "examples"), "provinces.yaml"), IoPath.Combine(_projectFolder, "provinces.yaml"));
+    }
+
+    /// <summary>Every file of the project folder by name, with its bytes.</summary>
+    private Dictionary<string, byte[]> Snapshot() =>
+        Directory.EnumerateFiles(_projectFolder).ToDictionary(file => IoPath.GetFileName(file), File.ReadAllBytes, StringComparer.Ordinal);
+
+    [Theory]
+    [InlineData("cities.yaml")]
+    [InlineData("cities.json")]
+    [InlineData("cities.xml")]
+    [InlineData("provinces.yaml")]
+    public void AKnowledgeFileWithNoRegistration_IsTheKnowledgeDesignersDocument(string example)
+    {
+        // Arrange: the example alone, and ordinary files of the same extensions beside it (spec 093 US1, US3 scenario 2).
+        File.Copy(IoPath.Combine(RepositoryPaths.Under("src", "designers", "knowledge", "examples"), example), IoPath.Combine(_projectFolder, example));
+        File.WriteAllText(IoPath.Combine(_projectFolder, "settings.yaml"), "name: an ordinary file\r\ndesigner: someone\r\n");
+        File.WriteAllText(IoPath.Combine(_projectFolder, "package.json"), "{\r\n  \"name\": \"an-ordinary-file\"\r\n}\r\n");
+        File.WriteAllText(IoPath.Combine(_projectFolder, "pom.xml"), "<project>\r\n</project>\r\n");
+        var router = host.Services.GetRequiredService<ToolRouter>();
+
+        // Act.
+        var routed = router.Route(IoPath.Combine(_projectFolder, example), _projectFolder);
+
+        // Assert: the knowledge designer's, with no registration; the ordinary files are not.
+        var designer = Assert.IsType<DesignerRouted>(routed);
+        Assert.Equal(Designer.Origin, designer.Definition.Origin);
+        Assert.Null(designer.RegistrationPath);
+        Assert.IsNotType<DesignerRouted>(router.Route(IoPath.Combine(_projectFolder, "settings.yaml"), _projectFolder));
+        Assert.IsNotType<DesignerRouted>(router.Route(IoPath.Combine(_projectFolder, "package.json"), _projectFolder));
+        Assert.IsNotType<DesignerRouted>(router.Route(IoPath.Combine(_projectFolder, "pom.xml"), _projectFolder));
+    }
+
+    [Theory]
+    [InlineData(".yaml")]
+    [InlineData(".json")]
+    [InlineData(".xml")]
+    public async Task AKnowledgeFileWithNoRegistration_IsShown_Edited_AndUndone_AndOpeningItWritesNothing(string extension)
+    {
+        // Arrange (spec 093 US1, SC-001).
+        SeedBare(extension);
+        var body = IoPath.Combine(_projectFolder, "cities" + extension);
+        var before = Snapshot();
+        var session = await OpenSessionAsync();
+        using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
+        using var watch = Watch(session, TestContext.Current.CancellationToken);
+        await ReadAsync(watch.ResponseStream, cts.Token);
+
+        // Act: opened by its own name, looked at and closed.
+        Documents.Wire.ShortGuid looked = ShortGuid.NewShortGuid();
+        await session.Designer.OpenTableAsync(OpenRequest(session, looked, "cities" + extension), session.Headers, cancellationToken: TestContext.Current.CancellationToken);
+        var first = await ReadTableAsync(watch.ResponseStream, looked, cts.Token);
+        await session.Designer.CloseTableAsync(new Proto.CloseTableRequest { WatchId = session.WatchId, StreamId = looked }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
+
+        // Assert: the table as with a registration, the relation resolved against the other bare file, and the folder as it was.
+        Assert.Equal(Proto.TableStreamMessage.EventOneofCase.Baseline, first.EventCase);
+        Assert.Equal("Cities", first.Baseline.Title);
+        Assert.Equal("", first.Baseline.ReadOnlyReason);
+        Assert.Empty(first.Baseline.Findings);
+        var province = first.Baseline.Columns.Single(column => column.Name == "Province");
+        Assert.Equal(["Noord-Holland", "Zuid-Holland", "Antwerpen", "Limburg", "Overijssel"], province.Options.Select(option => option.Name));
+        Assert.Equal(before.Keys.Order(), Snapshot().Keys.Order());
+        Assert.All(before, file => Assert.Equal(file.Value, Snapshot()[file.Key]));
+
+        // Act: opened again, and a cell edited.
+        Documents.Wire.ShortGuid edited = ShortGuid.NewShortGuid();
+        await session.Designer.OpenTableAsync(OpenRequest(session, edited, "cities" + extension), session.Headers, cancellationToken: TestContext.Current.CancellationToken);
+        await ReadTableAsync(watch.ResponseStream, edited, cts.Token);
+        Documents.Wire.ShortGuid editId = ShortGuid.NewShortGuid();
+        var gesture = new Proto.TableGesture { Kind = "setCell", RowId = "r2", ColumnId = "p1" };
+        gesture.Values.Add("Antwerpen");
+        var accepted = await session.Designer.EditAsync(new Proto.TableEditRequest { WatchId = session.WatchId, StreamId = edited, EditId = editId, Gesture = gesture }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
+        var outcome = await ReadTableAsync(watch.ResponseStream, edited, message => message.Change?.Outcome is { } settled && settled.EditId.Equals(editId), cts.Token);
+
+        // Assert: written to the body, and no registration made for it.
+        Assert.Equal("", accepted.Error);
+        Assert.True(outcome.Change.Outcome.Written, outcome.Change.Outcome.Error);
+        Assert.Contains("Antwerpen", await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken), StringComparison.Ordinal);
+        Assert.Equal(before.Keys.Order(), Snapshot().Keys.Order());
+
+        // Act: undone.
+        var undone = await host.Services.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(_projectFolder)).UndoAsync(TestContext.Current.CancellationToken);
+
+        // Assert: byte for byte as it was.
+        Assert.True(undone.IsSuccess, undone.Error);
+        Assert.Equal(before[IoPath.GetFileName(body)], await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task AKnowledgeFileCopiedIntoARunningProject_IsShownAsAKnowledgeTable_WithoutARestart()
+    {
+        // Arrange: a project that is open and watched, its folder listed (spec 093 US1 scenario 5, SC-002).
+        var session = await OpenSessionAsync();
+        using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
+        await session.Hierarchy.ListEntriesAsync(new Hierarchy.Wire.ListEntriesRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
+        using var hierarchy = session.Hierarchy.WatchHierarchy(new Hierarchy.Wire.WatchHierarchyRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
+        await StreamProbe.WaitUntilHierarchyLiveAsync(hierarchy.ResponseStream, _projectFolder, cts.Token);
+        using var context = session.Context.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
+        await StreamProbe.WaitUntilContextLiveAsync(context.ResponseStream, cts.Token);
+
+        // Act: the file is copied in, with nothing beside it, and selected in the explorer when it appears.
+        File.Copy(IoPath.Combine(RepositoryPaths.Under("src", "designers", "knowledge", "examples"), "cities.yaml"), IoPath.Combine(_projectFolder, "cities.yaml"));
+        var created = await hierarchy.ResponseStream.FirstAsync(
+            message => message.MessageCase == Hierarchy.Wire.HierarchyMessage.MessageOneofCase.Change &&
+                       message.Change.ChangeCase == Hierarchy.Wire.HierarchyChange.ChangeOneofCase.Created &&
+                       message.Change.Created.Entry.Name == "cities.yaml",
+            cts.Token);
+        var entryId = created.Change.Created.Entry.Id;
+        var selection = new ContextSelection { Source = Documents.Wire.ContextSelectionSource.Explorer, Id = new Documents.Wire.ContextSource { EntryId = entryId }, Path = new Path() };
+        var selected = await session.Context.SelectAsync(new SelectRequest { ProjectId = session.ProjectId, WatchId = session.WatchId, Selection = selection }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
+        var pushed = await context.ResponseStream.FirstAsync(message => message.MessageCase == ContextMessage.MessageOneofCase.Selection && entryId.Equals(message.Selection.Selection?.Id?.EntryId), cts.Token);
+
+        // Assert: the entry opens as a knowledge table, the type the client keys its panel on.
+        Assert.Equal("", selected.Error);
+        Assert.Equal(Designer.Origin, Assert.Single(pushed.Selection.Levels).Entry.DiagramMimeType);
+    }
+
     [Fact]
     public async Task ATwoWayRelation_IsShownFromBothOfTwoOpenTables()
     {
