@@ -17,7 +17,7 @@ public sealed partial record DedEnvelope(string Version, string Designer)
 {
     /// <summary>
     /// The extensions DED states an envelope in (DED sections 2, 4 and 5): the shared extensions of the YAML, JSON, XML and
-    /// Markdown forms, and <c>.ded</c> for the JSON form. DED's own, the same for every designer type.
+    /// Markdown forms, and <c>.ded</c> for the JSON form. DED's own, not any one designer type's.
     /// </summary>
     public static IReadOnlyList<string> Extensions { get; } = [".yaml", ".yml", ".json", ".ded", ".xml", ".md"];
 
