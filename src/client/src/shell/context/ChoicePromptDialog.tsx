@@ -436,6 +436,11 @@ export function ChoicePromptDialog({ prompt, onPropose, onSubmit, onCancel }: Ch
               event.preventDefault();
               focusRow(rows[0]?.option.id);
             }
+            // Enter adds what the search chose, as Add would (spec 093 host test: a new user pressed Enter and nothing happened).
+            if (event.key === "Enter" && canSubmit) {
+              event.preventDefault();
+              void handleSubmit();
+            }
           }}
         />
       )}
