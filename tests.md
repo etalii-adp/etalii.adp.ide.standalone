@@ -4498,3 +4498,15 @@ lays out no text, so a fill, a centred Comment and a drag that writes a size are
     - Enter in the Add dialog's search does not add the one type it selected.
     - After *Add from another document…* the timeline zoomed to an axis of hours.
     - After following the link to the row, and after selecting a row, the ribbon kept the timeline moment's actions, greyed, rather than the table's.
+
+  Re-run on 2026-11-27, on the Mac mini, from `develop` at `af87c17d8` (#851 and #852 merged), backend 5280 and Vite 5274, the same folder made afresh. Steps 1 to 6 passed again: 34 s from the page loading to the first table, adding the project included; the three cities files opened as tables and the folder stayed byte-identical; the edit and its Undo left it byte-identical; `risks.yaml` opened as text with its type in Problems; the relation was written as `target: $c4t7y2ma@cities.yaml` and the cell linked Amsterdam; the moment was written as `link: $c4t7y2ma@cities.yaml#r2=Antwerp`. Each finding of the first run:
+  - The defect is gone: *Add relation…* is not offered on `risks.yaml`, and neither the column's target list nor the explorer's *Relate to* dialog lists it.
+  - The gap is gone: a row a moment links to offers *Linked from (1)…* in the ribbon, which lists *Antwerp (timeline.tml)* and opens the timeline with the moment selected. The row's own right-click menu still holds *Delete row* alone.
+  - The explorer marks the bare knowledge files as tool documents (`explorer-tree-icon-registered`) and `risks.yaml` as a potential one; the icons are still the extensions', and the two greens are close.
+  - The target list names the copies apart: *Cities (cities.json)*, *Cities (cities.xml)*, *Cities (cities.yaml)*, and *Related to Cities (cities.yaml)*.
+  - *Add as diagram…* is not offered on `cities.json`.
+  - Enter in the Add dialog's search adds the one type it found, for a knowledge table and for a timeline.
+  - After *Add from another document…* the timeline's axis is labelled in days (*Nov 19*); it is still zoomed in so far that the one day fills the view.
+  - Following the link to the row, and selecting it, gives the row's own ribbon (*Linked from (1)…*). Selecting a row nothing links to leaves the table's file actions (*Rename…*, *Delete*, *Add relation…*) in the ribbon, greyed.
+
+  Still met by a new user: the two shades of green that tell a tool document from text are hard to tell apart; the timeline zooms to a single day after *Add from another document…*; a row's right-click menu has no *Linked from*, which only the ribbon offers.
