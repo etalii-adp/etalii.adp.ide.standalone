@@ -240,7 +240,18 @@ public sealed class ProjectValidator
                 // The editors': no diagram or designer type serves it. What the diagram types
                 // still have to say about it - a registration of a type nothing deployed knows,
                 // an extension two of them claim - is reported; anything else is not ours to
-                // judge (Requirement 2.3).
+                // judge (Requirement 2.3). A file whose envelope names a designer type that is not
+                // installed opens as text, and is said to name it (spec 093 FR-006).
+                if (_tools.UninstalledDesignerTypeOf(path) is { } origin)
+                {
+                    if (collector.MarkConsidered(path))
+                    {
+                        collector.FilesConsidered++;
+                        collector.AddCore(path, $"It names the designer type '{origin}', which is not installed here, so it opens as text.", CoreRuleIds.UnknownType);
+                    }
+                    return;
+                }
+
                 ConsiderUnservedFile(_router.Route(path, collector.Root), collector);
                 return;
         }

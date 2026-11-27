@@ -49,7 +49,7 @@ A browser speaking grpc-web can open neither bidirectional nor client streaming,
 
 ## Where a diagram lives
 
-A diagram is **a text file in the user's workspace**, in whatever format already owns it — never a database row. Beside it may sit an `.adp` registration file, which is ADP's own; a body without one is routed by its extension, or a designer's by its envelope.
+A diagram is **a text file in the user's workspace**, in whatever format already owns it — never a database row. Beside it may sit an `.adp` registration file, which is ADP's own; a body without one is routed by its extension, or a designer's by its binding's marker.
 
 **Authored layout goes in the registration, not the body.** When a format carries no layout of its own but authored positions make sense, the positions live in the `.adp`. The body belongs to the tool that owns its format, and positions ADP invented must not appear in its diffs. A format with native layout keeps using it; a type whose layout is computed and never authored stores nothing.
 

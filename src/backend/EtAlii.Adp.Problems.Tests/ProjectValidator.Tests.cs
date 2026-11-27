@@ -2,6 +2,7 @@ using EtAlii.Adp.Designer;
 using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Editor;
 using EtAlii.Adp.Hierarchy;
+using EtAlii.Adp.Specification.Fbl.Documents;
 using Microsoft.Extensions.Time.Testing;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -588,6 +589,51 @@ public class ProjectValidatorTests : IDisposable
     {
         File.WriteAllText(IoPath.Combine(_root, baseName + ".adp"), "fixture/sheet\n");
         File.WriteAllText(IoPath.Combine(_root, baseName + ".yaml"), body);
+    }
+
+    /// <summary>A designer type of the sheet's origin that claims a bare <c>.yaml</c> by the DED envelope's root key, as the Knowledge designer does.</summary>
+    private static DesignerDefinition ClaimedSheet()
+    {
+        const string bindings = """
+            {
+              "fbl": "0.7",
+              "bindings": {
+                "yaml": {
+                  "claims": { "extensions": [".yaml"], "shared": true, "marker": { "rootKey": "designer", "value": "fixture/sheet" }, "origins": ["fixture/sheet"] },
+                  "body": { "kind": "file", "family": "yaml" },
+                  "reader": "declared",
+                  "elements": [{ "name": "sheet", "type": "Sheet", "at": "/", "attributes": { "name": { "key": "name" } } }],
+                  "registration": { "createOnFirstPlacement": false }
+                }
+              }
+            }
+            """;
+        var diagnostics = FblDocumentLoader.Load(System.Text.Encoding.UTF8.GetBytes(bindings), out var document);
+        Assert.True(document is not null, string.Join("; ", diagnostics));
+        return SheetDefinition with { Claim = new DesignerClaim([.. document.Bindings.Values]) };
+    }
+
+    [Fact]
+    public async Task ValidateAsync_AFileWhoseEnvelopeNamesADesignerTypeThatIsNotInstalled_IsSaidToNameIt()
+    {
+        // Arrange: one file of an installed type, one of a type that is not installed, and an ordinary one (spec 093 FR-006).
+        await File.WriteAllTextAsync(IoPath.Combine(_root, "cities.yaml"), "ded: \"0.1\"\ndesigner: fixture/sheet\nname: Cities\n", TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(IoPath.Combine(_root, "plans.yaml"), "ded: \"0.1\"\ndesigner: fixture/absent\nname: Plans\n", TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(IoPath.Combine(_root, "settings.yaml"), "designer: someone\nname: settings\n", TestContext.Current.CancellationToken);
+        var diagrams = new DiagramFileRouter(new TestDiagramDefinitionCatalog(MindmapDefinition));
+        var subject = new ProjectValidator(
+            diagrams,
+            new DiagramValidators([]),
+            tools: new ToolRouter(diagrams, new DesignerFileRouter(new DesignerDefinitionCatalog { All = [ClaimedSheet()] }), new EditorResolver(new EditorDefinitionCatalog { All = [] })));
+
+        // Act.
+        var outcome = await subject.ValidateAsync(new ProjectValidationScope(_root), TestContext.Current.CancellationToken);
+
+        // Assert: only the file of the missing type, said against itself with the type it names.
+        var stored = Assert.Single(outcome.Problems);
+        Assert.Equal("plans.yaml", stored.RelativePath);
+        Assert.Equal(CoreRuleIds.UnknownType, stored.Problem.RuleId);
+        Assert.Contains("'fixture/absent'", stored.Problem.Message, StringComparison.Ordinal);
     }
 
     [Fact]

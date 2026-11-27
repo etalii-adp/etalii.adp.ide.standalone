@@ -109,6 +109,59 @@ public class EnvelopeRoutingTests : IDisposable
     }
 
     [Fact]
+    public void ABodyThatTwoDesignerTypesClaim_IsOpenedInNeither_AndTheRefusalNamesBoth()
+    {
+        // Arrange: two installed designer types whose markers both take the file (spec 093 FR-005, FBL 12.3 step 3).
+        var router = new ToolRouter(
+            new DiagramFileRouter(new TestDiagramDefinitionCatalog(Behaviour)),
+            new DesignerFileRouter(new DesignerDefinitionCatalog { All = [RequirementsDesigner.Definition, RequirementsDesigner.Rival] }),
+            new EditorResolver(new EditorDefinitionCatalog { All = [Plain, Markdown] }));
+        var bare = Write("plan.md", RequirementsDesigner.Body());
+        var chosen = Write("chosen.md", RequirementsDesigner.Body());
+        Write("chosen.adp", "fixture/rival\r\nbody: chosen.md\r\n");
+
+        // Act.
+        var routing = router.Route(bare, Root);
+        var decided = router.Route(chosen, Root);
+
+        // Assert: neither is chosen silently, and the reason names both; a registration of one of them beside it decides.
+        var refused = Assert.IsType<ToolUnreadable>(routing);
+        Assert.Contains("Fixture requirements", refused.Reason, StringComparison.Ordinal);
+        Assert.Contains("Fixture rival", refused.Reason, StringComparison.Ordinal);
+        Assert.Equal(RequirementsDesigner.Rival, Assert.IsType<DesignerRouted>(decided).Definition);
+    }
+
+    [Theory]
+    [InlineData("plan.md", "<!-- ded: 0.2 designer: fixture/absent -->\r\n# Plan\r\n")]
+    [InlineData("table.yaml", "ded: \"0.1\"\r\ndesigner: fixture/absent\r\nname: Table\r\n")]
+    [InlineData("table.json", "{\r\n  \"ded\": \"0.1\",\r\n  \"designer\": \"fixture/absent\"\r\n}\r\n")]
+    [InlineData("table.xml", "<ded version=\"0.1\" designer=\"fixture/absent\">\r\n</ded>\r\n")]
+    public void ABodyWhoseEnvelopeNamesATypeThatIsNotInstalled_OpensAsText_AndTheTypeIsNamed(string name, string content)
+    {
+        // Arrange (spec 093 FR-006).
+        var path = Write(name, content);
+        var designers = new DesignerFileRouter(new DesignerDefinitionCatalog { All = [RequirementsDesigner.Definition] });
+
+        // Act and assert: not a designer's, and the type its envelope names is the one a sentence names.
+        Assert.IsNotType<DesignerRouted>(_router.Route(path, Root));
+        Assert.Equal("fixture/absent", designers.UninstalledTypeOf(path));
+    }
+
+    [Theory]
+    [InlineData("notes.md", "# Notes\r\n")]
+    [InlineData("settings.yaml", "designer: someone\r\nname: settings\r\n")]
+    [InlineData("plan.md", "<!-- ded: 0.2 designer: fixture/requirements -->\r\n# Plan\r\n")]
+    public void ABodyWithNoEnvelope_OrOneOfAnInstalledType_NamesNoMissingType(string name, string content)
+    {
+        // Arrange: an ordinary file, a root key that is no envelope without its version, and the installed type's own.
+        var path = Write(name, content);
+        var designers = new DesignerFileRouter(new DesignerDefinitionCatalog { All = [RequirementsDesigner.Definition] });
+
+        // Act and assert.
+        Assert.Null(designers.UninstalledTypeOf(path));
+    }
+
+    [Fact]
     public void TheHead_IsAShortFileWholeAndALongOneCutAtALineEndWithinTheLimit()
     {
         // Arrange: a short file, and a long one whose lines are 100 bytes each, so its limit falls inside a line.

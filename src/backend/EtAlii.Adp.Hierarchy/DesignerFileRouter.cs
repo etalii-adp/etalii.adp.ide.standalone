@@ -69,27 +69,49 @@ public sealed class DesignerFileRouter
     /// <summary>
     /// The document a body is by its own content (spec 029 R3, R4, spec 093 R1): the designer type whose
     /// <see cref="DesignerDefinition.Claim"/> takes the file by its mark, with the registration of that type that names it, or
-    /// none. Null when no type claims it so. Only the head of a file a claim takes by name is read (<see cref="HeadCache"/>), and
-    /// that once until the file changes.
+    /// none. Null when no type claims it so. A file several types claim is opened in none of them silently (FBL section 12.3,
+    /// step 3, spec 093 FR-005): a registration of one of them beside it decides, and without one it is refused with the
+    /// types named. Only the head of a file a claim takes by name is read (<see cref="HeadCache"/>), and that once until the
+    /// file changes.
     /// </summary>
     /// <param name="path">A file that may be a body.</param>
-    public DesignerRouted? RouteByEnvelope(string path)
+    public DesignerRouting? RouteByEnvelope(string path)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
 
-        return ClaimantOf(path) is { } definition
-            ? new DesignerRouted(definition, RegistrationOf(path, definition), path)
-            : null;
+        var claimants = ClaimantsOf(path);
+        if (claimants.Count == 0)
+        {
+            return null;
+        }
+
+        foreach (var definition in claimants)
+        {
+            if (RegistrationOf(path, definition) is { } registration)
+            {
+                return new DesignerRouted(definition, registration, path);
+            }
+        }
+
+        if (claimants.Count == 1)
+        {
+            return new DesignerRouted(claimants[0], null, path);
+        }
+
+        _logger.Warning("Not routing {Path}: its content is claimed by {Claimants}", path, claimants.Select(definition => definition.Origin));
+        return new DesignerUnreadable(
+            path,
+            $"It is a document of more than one installed designer type by its own content: {string.Join(" and ", claimants.Select(definition => definition.Title))}. A registration beside it that names one of them decides which it opens in.");
     }
 
-    /// <summary>The designer type whose mark the file at <paramref name="path"/> carries in its head, or null.</summary>
-    public DesignerDefinition? ClaimantOf(string path)
+    /// <summary>The designer types whose mark the file at <paramref name="path"/> carries in its head; empty for none.</summary>
+    public IReadOnlyList<DesignerDefinition> ClaimantsOf(string path)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
 
         if (DiagramFilePair.IsRegistrationFile(path))
         {
-            return null;
+            return [];
         }
 
         var name = IoPath.GetFileName(path);
@@ -98,11 +120,34 @@ public sealed class DesignerFileRouter
             .ToList();
         if (claimants.Count == 0)
         {
-            return null;
+            return [];
         }
 
         var head = _heads.Read(path);
-        return head.Length == 0 ? null : claimants.FirstOrDefault(definition => definition.Claim!.Matches(name, head));
+        return head.Length == 0 ? [] : claimants.Where(definition => definition.Claim!.Matches(name, head)).ToList();
+    }
+
+    /// <summary>
+    /// The designer type a file's envelope names when no installed type has that origin (DED section 2, spec 093 FR-006), for a
+    /// sentence to name it; null for a file with no envelope, one of an installed type, or one of an extension DED states no
+    /// envelope in and no installed type's claim takes. It names no designer type of its own: the envelope is DED's, the same
+    /// for every type.
+    /// </summary>
+    public string? UninstalledTypeOf(string path)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+
+        var name = IoPath.GetFileName(path);
+        if (DiagramFilePair.IsRegistrationFile(path) ||
+            (!DedEnvelope.Extensions.Contains(IoPath.GetExtension(name), StringComparer.OrdinalIgnoreCase) &&
+             !_catalog.All.Any(definition => definition.Claim is { } claim && claim.Takes(name))))
+        {
+            return null;
+        }
+
+        return DedEnvelope.Find(_heads.Read(path)) is { Designer: { } origin } && _catalog.All.All(definition => definition.Origin != origin)
+            ? origin
+            : null;
     }
 
     /// <summary>

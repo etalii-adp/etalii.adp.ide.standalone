@@ -38,7 +38,7 @@ internal static class RequirementsDesigner
         }
         """;
 
-    private static FblBinding Binding { get; } = Load();
+    private static FblBinding Binding { get; } = Load(BindingJson);
 
     public static DesignerDefinition Definition { get; } = new(
         Origin,
@@ -46,12 +46,22 @@ internal static class RequirementsDesigner
         Formats: [new DesignerFormat("Markdown", ".md")],
         Claim: new DesignerClaim([Binding]));
 
+    /// <summary>
+    /// A second designer type whose binding's marker takes the same envelope, as two installed types that both claim one file
+    /// would (spec 093 FR-005).
+    /// </summary>
+    public static DesignerDefinition Rival { get; } = new(
+        "fixture/rival",
+        "Fixture rival",
+        Formats: [new DesignerFormat("Markdown", ".md")],
+        Claim: new DesignerClaim([Load(BindingJson.Replace("\"origins\": [\"fixture/requirements\"]", "\"origins\": [\"fixture/rival\"]", StringComparison.Ordinal))]));
+
     /// <summary>A body that carries the envelope, CRLF, as the template writes one.</summary>
     public static string Body(string title = "Plan") => $"{Envelope}\r\n# {title}\r\n";
 
-    private static FblBinding Load()
+    private static FblBinding Load(string json)
     {
-        var diagnostics = FblDocumentLoader.Load(Encoding.UTF8.GetBytes(BindingJson), out var document);
+        var diagnostics = FblDocumentLoader.Load(Encoding.UTF8.GetBytes(json), out var document);
         Assert.True(document is not null, string.Join("; ", diagnostics));
         return document.Bindings["markdown"];
     }

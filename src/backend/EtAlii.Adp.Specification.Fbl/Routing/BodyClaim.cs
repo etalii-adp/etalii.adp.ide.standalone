@@ -27,6 +27,12 @@ public static class BodyClaim
     }
 
     /// <summary>
+    /// The scalar value of a root key of a yaml or json head (FBL section 12.2), read up to the first parse error as a root-key
+    /// marker is, so the head of a large file cut off at a line end still gives it; null where the key is not there before it.
+    /// </summary>
+    public static string? RootScalar(byte[] head, string key) => MarkerEvaluator.RootScalar(head, key);
+
+    /// <summary>
     /// The mark a file needs before <paramref name="binding"/> claims it (FBL section 12.2), as a person reads it: a root key
     /// with its value, or the text a first line begins with. Null for a binding without a marker, or with a pattern, which is
     /// an expression rather than text to copy.

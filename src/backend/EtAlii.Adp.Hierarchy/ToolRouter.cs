@@ -65,14 +65,17 @@ public sealed class ToolRouter
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
 
-        if (_designers.RouteByEnvelope(path) is { } enveloped)
+        switch (_designers.RouteByEnvelope(path))
         {
-            return enveloped;
+            case DesignerRouted enveloped:
+                return enveloped;
+            case DesignerUnreadable claimedTwice:
+                return new ToolUnreadable(claimedTwice.Path, claimedTwice.Reason);
         }
 
         return Diagrams.Route(path, root) switch
         {
-            DiagramRouted { RegistrationPath: { } registration, BodyPath: { } body } when _designers.ClaimantOf(body) is { } claimant =>
+            DiagramRouted { RegistrationPath: { } registration, BodyPath: { } body } when _designers.ClaimantsOf(body) is [var claimant, ..] =>
                 new ToolUnreadable(registration, ClaimedBody(body, claimant)),
             DiagramRouted diagram => diagram,
             DiagramUnreadable unreadable => new ToolUnreadable(unreadable.Path, unreadable.Reason),
@@ -80,12 +83,18 @@ public sealed class ToolRouter
         };
     }
 
+    /// <summary>
+    /// The designer type a file's envelope names when none of the installed types has it (spec 093 FR-006): the file opens as
+    /// text as before, and this is what a sentence about it names. Null for any other file.
+    /// </summary>
+    public string? UninstalledDesignerTypeOf(string path) => _designers.UninstalledTypeOf(path);
+
     /// <summary>What serves a path no diagram type routes: a designer, else an editor.</summary>
     private ToolRouting RouteBeyondDiagrams(string path, string? root) =>
         _designers.Route(path, root) switch
         {
             DesignerRouted { RegistrationPath: { } registration, BodyPath: { } body } designer
-                when _designers.ClaimantOf(body) is { } claimant && claimant != designer.Definition =>
+                when _designers.ClaimantsOf(body) is [var claimant, ..] claimants && !claimants.Contains(designer.Definition) =>
                 new ToolUnreadable(registration, ClaimedBody(body, claimant)),
             DesignerRouted designer => designer,
             DesignerUnreadable unreadable => new ToolUnreadable(unreadable.Path, unreadable.Reason),

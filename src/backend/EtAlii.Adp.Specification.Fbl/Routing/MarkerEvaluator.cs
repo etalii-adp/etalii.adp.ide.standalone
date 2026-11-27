@@ -68,11 +68,30 @@ internal static class MarkerEvaluator
     }
 
     /// <summary>
+    /// The scalar value of a root key of a yaml or json body, read up to the body's first parse error as a marker's root key is;
+    /// null when the key is not found before it or its value is no scalar.
+    /// </summary>
+    public static string? RootScalar(byte[] bytes, string key)
+    {
+        ArgumentNullException.ThrowIfNull(bytes);
+        ArgumentNullException.ThrowIfNull(key);
+        var text = new BodyText(bytes);
+        if (!text.IsValidUtf8) return null;
+        var body = Encoding.UTF8.GetString(text.Bytes, text.BomLength, text.Length - text.BomLength);
+        return RootEntry(body, key, out var scalar) ? scalar : null;
+    }
+
+    /// <summary>
     /// Walks the root mapping's keys event by event and stops at the key, at the mapping's end or at the first parse error. The
     /// key counts only once its whole value is read, so a value the error cuts short, such as an unclosed sequence, is no match.
     /// </summary>
-    private static bool RootKeyBeforeError(string body, string key, string? value)
+    private static bool RootKeyBeforeError(string body, string key, string? value) =>
+        RootEntry(body, key, out var scalar) && (value is null || scalar == value);
+
+    /// <summary>Whether the root mapping holds <paramref name="key"/> with its whole value before any parse error, and that value when it is a scalar.</summary>
+    private static bool RootEntry(string body, string key, out string? scalar)
     {
+        scalar = null;
         try
         {
             var parser = new Parser(new StringReader(body));
@@ -83,20 +102,21 @@ internal static class MarkerEvaluator
             parser.Consume<MappingStart>();
             while (!parser.Accept<MappingEnd>(out _))
             {
-                var found = parser.Accept<Scalar>(out var name) ? name.Value : null;
-                if (found is null) parser.SkipThisAndNestedEvents();
+                var named = parser.Accept<Scalar>(out var name) ? name.Value : null;
+                if (named is null) parser.SkipThisAndNestedEvents();
                 else parser.Consume<Scalar>();
-                if (found != key)
+                if (named != key)
                 {
                     parser.SkipThisAndNestedEvents();
                     continue;
                 }
-                if (value is null)
+                if (parser.Accept<Scalar>(out var value))
                 {
-                    parser.SkipThisAndNestedEvents();
+                    scalar = value.Value;
                     return true;
                 }
-                return parser.Accept<Scalar>(out var scalar) && scalar.Value == value;
+                parser.SkipThisAndNestedEvents();
+                return true;
             }
             return false;
         }
