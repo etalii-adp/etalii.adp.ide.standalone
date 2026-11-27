@@ -90,6 +90,9 @@ public sealed class ToolRouter
     /// </summary>
     public string? UninstalledDesignerTypeOf(string path) => _designers.UninstalledTypeOf(path);
 
+    /// <summary>Whether exactly one installed designer type claims the file at <paramref name="path"/> by its own content, so that it opens in that type with no registration (spec 093).</summary>
+    public bool ClaimedByDesigner(string path) => _designers.ClaimantsOf(path) is [_];
+
     /// <summary>What serves a path no diagram type routes: a designer, else an editor.</summary>
     private ToolRouting RouteBeyondDiagrams(string path, string? root) =>
         _designers.Route(path, root) switch

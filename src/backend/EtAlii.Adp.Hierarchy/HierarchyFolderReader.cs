@@ -19,7 +19,7 @@ internal sealed class HierarchyFolderReader
     {
         _rootPath = rootPath;
         _tools = tools;
-        _states = new DiagramStateDecorator(rootPath, tools.Diagrams, tools.Editors, ResolvedBodyNameOf);
+        _states = new DiagramStateDecorator(rootPath, tools.Diagrams, tools.Editors, ResolvedBodyNameOf, tools.ClaimedByDesigner);
     }
 
     /// <summary>

@@ -19,13 +19,16 @@ internal sealed class DiagramStateDecorator
     private readonly DiagramFileRouter _router;
     private readonly EditorResolver _editors;
     private readonly Func<string, string, string?> _bodyNameOf;
+    private readonly Func<string, bool>? _designerClaims;
 
     /// <param name="rootPath">The project root a <c>body:</c> header must stay inside.</param>
     /// <param name="router">Which extensions the diagram types claim, and which take a folder as their subject.</param>
     /// <param name="editors">Which extensions an editor claims.</param>
     /// <param name="bodyNameOf">The body file name a registration in a folder resolves inside that folder, or null.</param>
-    public DiagramStateDecorator(string rootPath, DiagramFileRouter router, EditorResolver editors, Func<string, string, string?> bodyNameOf)
+    /// <param name="designerClaims">Whether an installed designer type claims the file at a full path by its own content (spec 093).</param>
+    public DiagramStateDecorator(string rootPath, DiagramFileRouter router, EditorResolver editors, Func<string, string, string?> bodyNameOf, Func<string, bool>? designerClaims = null)
     {
+        _designerClaims = designerClaims;
         _rootPath = rootPath;
         _router = router;
         _editors = editors;
@@ -59,7 +62,7 @@ internal sealed class DiagramStateDecorator
         foreach ((string fileName, _) in contained.Where(entry => !entry.IsFolder))
         {
             decisions.Add(new Decision(fileName, EntryDiagramStates.Decide(
-                fileName, isFolder: false, names, BodyNameOf, _router.ClaimsExtensionOf, _editors.IsClaimed, DeclaresFolderSubject), IsTheFolder: false));
+                fileName, isFolder: false, names, BodyNameOf, _router.ClaimsExtensionOf, _editors.IsClaimed, DeclaresFolderSubject, ClaimedIn(folderPath)), IsTheFolder: false));
         }
 
         // The folder's own state comes from its contents, so it is decided here - in ITS scan -
@@ -102,6 +105,10 @@ internal sealed class DiagramStateDecorator
 
         string? BodyNameOf(string registration) => bodyByRegistration.GetValueOrDefault(registration);
     }
+
+    /// <summary>Whether a designer type claims a file of <paramref name="folderPath"/> by its name there; null where no claim is asked.</summary>
+    private Func<string, bool>? ClaimedIn(string folderPath) =>
+        _designerClaims is { } claims ? name => claims(IoPath.Combine(folderPath, name)) : null;
 
     // An unreadable registration routes to DiagramUnreadable, which simply is not a
     // folder-subject type: neutral, never an exception out of the scan. The catalog probe

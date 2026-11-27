@@ -30,6 +30,10 @@ public static class EntryDiagramStates
     /// <param name="declaresFolderSubject">
     /// Whether a registration among a folder's contents names a type with a folder subject.
     /// </param>
+    /// <param name="designerClaims">
+    /// Whether an installed designer type claims the file by its own content, so that it opens as that type's document with
+    /// no registration (spec 093); none when left out.
+    /// </param>
     public static EntryDiagramState Decide(
         string name,
         bool isFolder,
@@ -37,7 +41,8 @@ public static class EntryDiagramStates
         Func<string, string?> resolvedBodyNameOf,
         Func<string, bool> claimsExtension,
         Func<string, bool> editorClaims,
-        Func<string, bool> declaresFolderSubject)
+        Func<string, bool> declaresFolderSubject,
+        Func<string, bool>? designerClaims = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
         ArgumentNullException.ThrowIfNull(names);
@@ -71,6 +76,12 @@ public static class EntryDiagramStates
             {
                 return EntryDiagramState.Registered;
             }
+        }
+
+        // A file a designer type claims by its own content is that type's document, as a registered one is (spec 093).
+        if (designerClaims?.Invoke(name) == true)
+        {
+            return EntryDiagramState.Registered;
         }
 
         // Rules 3 and 4: registrable, or claimed by an editor - potential either way. Rule 5:
