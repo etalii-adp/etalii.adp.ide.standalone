@@ -22,7 +22,10 @@ internal static class MarkerEvaluator
     {
         ArgumentNullException.ThrowIfNull(marker);
         ArgumentNullException.ThrowIfNull(bytes);
-        var text = new BodyText(bytes);
+        // A line marker looks at its lines and nothing after them, so a byte that is no UTF-8 further on, which the binding
+        // reports when it reads the file, does not hide the mark.
+        var lines = marker.FirstLine is not null ? 1 : marker.Pattern is not null ? (marker.Lines > 0 ? marker.Lines : DefaultLines) : 0;
+        var text = new BodyText(lines > 0 ? FirstLines(bytes, lines) : bytes);
         if (!text.IsValidUtf8) return false;
         if (marker.RootKey is { } key) return RootKey(text, key, marker.RootValue is { } value ? BindingReader.ScalarText(value) : null);
         if (marker.FirstLine is { } prefix)
@@ -32,13 +35,24 @@ internal static class MarkerEvaluator
         if (marker.Pattern is { } pattern)
         {
             var regex = new BoundedRegex(pattern, false, regexTimeout ?? FblOptions.DefaultRegexTimeout);
-            var lines = marker.Lines > 0 ? marker.Lines : DefaultLines;
             foreach (var line in text.Lines.Take(lines))
             {
                 if (regex.IsMatch(text.Text(Math.Max(line.Start, text.BomLength), line.ContentEnd))) return true;
             }
         }
         return false;
+    }
+
+    /// <summary>The bytes of the first <paramref name="count"/> lines, their last line end included.</summary>
+    private static byte[] FirstLines(byte[] bytes, int count)
+    {
+        var end = -1;
+        for (var line = 0; line < count; line++)
+        {
+            end = Array.IndexOf(bytes, (byte)'\n', end + 1);
+            if (end < 0) return bytes;
+        }
+        return bytes[..(end + 1)];
     }
 
     /// <summary>

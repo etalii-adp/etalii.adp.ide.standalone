@@ -57,6 +57,21 @@ public class RoutingTests
     }
 
     [Fact]
+    public void ALineMarkerLooksOnlyAtItsLines_SoBytesThatAreNoUtf8AfterThemDoNotHideIt()
+    {
+        // Arrange: the envelope on line 1, and a byte that is no UTF-8 on line 2, which the binding then reports when it reads the
+        // file (the not-utf8 fault of hierarchical-requirement-faults); a head of more than the first line carries both.
+        var pattern = new Marker(null, null, null, "^<!-- ded: 0.2 designer: fixture/requirements -->$", 1);
+        var prefix = new Marker(null, null, "<!-- ded:", null, 0);
+        var body = "<!-- ded: 0.2 designer: fixture/requirements -->\n# Caf"u8.ToArray().Concat(new byte[] { 0xE9, (byte)'\n' }).ToArray();
+
+        // Act and assert.
+        Assert.True(MarkerEvaluator.Matches(pattern, body));
+        Assert.True(MarkerEvaluator.Matches(prefix, body));
+        Assert.False(MarkerEvaluator.Matches(pattern, new byte[] { 0xE9, (byte)'\n' }));
+    }
+
+    [Fact]
     public void AFirstLineMarkerIsMatchedAfterAByteOrderMark()
     {
         // Arrange.
