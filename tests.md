@@ -4510,3 +4510,10 @@ lays out no text, so a fill, a centred Comment and a drag that writes a size are
   - Following the link to the row, and selecting it, gives the row's own ribbon (*Linked from (1)…*). Selecting a row nothing links to leaves the table's file actions (*Rename…*, *Delete*, *Add relation…*) in the ribbon, greyed.
 
   Still met by a new user: the two shades of green that tell a tool document from text are hard to tell apart; the timeline zooms to a single day after *Add from another document…*; a row's right-click menu has no *Linked from*, which only the ribbon offers.
+
+  Result (third run), 2026-11-27, on the Mac mini, from `develop` at `548bb026d` (#854 merged), backend 5280 and Vite 5274, dark theme, the second run's folder with its timeline removed. All three hurdles the second run left are gone:
+  - In the explorer a tool document's icon is limegreen (`rgb(50, 205, 50)`) and `risks.yaml`'s, a potential one, is the muted `#4d7c55` (`rgb(77, 124, 85)`): the two read as different at a glance.
+  - A new, empty timeline given a moment with *Add from another document…* (Antwerp of `cities.yaml`, written as `link: $c4t7y2ma@cities.yaml#r2=Antwerp`) opens on about three weeks around it, its axis reading Nov 12, Nov 19 and Nov 26, not one day filling the view.
+  - Right-clicking the Antwerp row, which the moment links to, offers *Linked from (1)…* above *Delete row*; it lists *Antwerp (timeline.tml)*, and *Open* brings the timeline to the front with the moment selected. Right-clicking an unlinked row (Berlin) offers *Delete row* alone.
+
+  No hurdle was met in these three steps.
