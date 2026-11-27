@@ -257,7 +257,7 @@ internal sealed class KnowledgeContextActionProvider(IHistoryStackStore historie
     {
         try
         {
-            return DedEnvelope.Find(File.ReadAllBytes(path)) is { } envelope && envelope.Designer != Designer.Origin;
+            return DedEnvelope.Find(SharedDocumentReader.ReadAllBytes(path)) is { } envelope && envelope.Designer != Designer.Origin;
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
