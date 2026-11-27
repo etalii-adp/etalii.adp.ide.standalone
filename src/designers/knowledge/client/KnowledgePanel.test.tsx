@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { act, cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { elementSelectionOf } from "@client/canvas/selection";
 import { applyTableEvent, EMPTY_TABLE, type TableColumn, type TableModel } from "@client/table/library/api/tableModel";
 import type { TableGesture } from "@client/table/library/api/tableEvents";
 import { requestReveal, takeElementReveal } from "@client/shell/panels/revealRequests";
@@ -29,9 +30,14 @@ const surface = vi.hoisted(() => ({
   onOpenValue: undefined as ((column: TableColumn, value: string) => void) | undefined,
 }));
 
-const connection = vi.hoisted(() => ({ select: vi.fn(), revealPath: vi.fn() }));
+const connection = vi.hoisted(() => ({ select: vi.fn(), revealPath: vi.fn(), executeAction: vi.fn(() => Promise.resolve({})) }));
+const pushed = vi.hoisted(() => ({ selection: null as unknown, actions: [] as unknown[] }));
 
-vi.mock("@client/shell/context/ContextConnectionProvider", () => ({ useContextConnection: () => connection }));
+vi.mock("@client/shell/context/ContextConnectionProvider", async (original) => ({
+  ...(await original<typeof import("@client/shell/context/ContextConnectionProvider")>()),
+  useContextConnection: () => connection,
+  useContextSelection: () => pushed,
+}));
 
 vi.mock("@client/table/library/TableSurface", async (original) => {
   const actual = await original<typeof import("@client/table/library/TableSurface")>();
@@ -63,6 +69,12 @@ function cities(viewId: string): TableModel {
   return applyTableEvent(EMPTY_TABLE, { kind: "baseline", structure, findings: [] });
 }
 
+/** A table with rows of the given ids, as its stream holds them once they have arrived. */
+function rowsOf(model: TableModel, ids: readonly string[]): TableModel {
+  const rows = ids.map((id) => ({ id, depth: 0, cells: [{ columnId: "p1", values: [id], labels: [], pending: false }], isGroup: false, label: "", count: 0, collapsed: false, hasChildren: false, isNewRow: false }));
+  return applyTableEvent(model, { kind: "rows", first: 0, rows, rowCount: ids.length });
+}
+
 function streamOf(model: TableModel, extra: Record<string, unknown> = {}) {
   return { model, loading: false, failure: "", pendingEdits: 0, refusal: "", setWindow: vi.fn(), setView: vi.fn(), edit: vi.fn(() => Promise.resolve("")), ...extra };
 }
@@ -70,6 +82,8 @@ function streamOf(model: TableModel, extra: Record<string, unknown> = {}) {
 afterEach(() => {
   cleanup();
   stream.paths.length = 0;
+  pushed.selection = null;
+  pushed.actions = [];
 });
 
 describe("KnowledgePanel", () => {
@@ -126,6 +140,25 @@ describe("KnowledgePanel", () => {
     expect(selections[0].path.segments).toEqual(["tables", "cities.adp"]);
     expect(selections[0].detail.value.id.source.value.value).toBe("r1");
     expect(selections.slice(1)).toEqual([null, null]);
+  });
+
+  it("offers in a row's right-click menu what the application has for that row once it is the selection, and runs it", () => {
+    // Arrange: the row r1 is the application's selection, and "Linked from" is its action.
+    stream.current = streamOf(rowsOf(cities("v1"), ["r1", "r2"]));
+    pushed.selection = elementSelectionOf(ID, ["tables", "cities.adp"], "r1");
+    pushed.actions = [{ actions: [{ id: "knowledge.linked-from", label: "Linked from (1)…", icon: "", available: true, unavailableReason: "", items: [] }] }];
+    render(<KnowledgePanel projectId={ID} entryId={ID} path={["tables", "cities.adp"]} />);
+    const [first, second] = screen.getAllByRole("row").slice(1);
+
+    // Act.
+    fireEvent.contextMenu(second!, { clientX: 20, clientY: 40 });
+    const onAnotherRow = screen.queryByRole("menuitem", { name: "Linked from (1)…" });
+    fireEvent.contextMenu(first!, { clientX: 20, clientY: 40 });
+    fireEvent.click(screen.getByRole("menuitem", { name: "Linked from (1)…" }));
+
+    // Assert: another row's menu has not the selection's actions; the selected row's runs its action.
+    expect(onAnotherRow).toBeNull();
+    expect(connection.executeAction).toHaveBeenCalledWith("knowledge.linked-from");
   });
 
   it("opens a related row where it lives: the other table's file, or this table's own row", () => {

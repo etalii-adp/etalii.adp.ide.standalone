@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
-import { elementSelectionOf } from "@client/canvas/selection";
+import { elementIdOfKey, elementSelectionOf } from "@client/canvas/selection";
 import { useTableStream } from "@client/designers/useTableStream";
-import { useContextConnection } from "@client/shell/context/ContextConnectionProvider";
+import { innermostKey, useContextConnection, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
+import { toMenuGroups } from "@client/shell/context/toMenuGroups";
 import { classifyLink, openLink } from "@client/shell/links/openLink";
 import { leaveElementReveal, onElementRevealRequested, takeElementReveal } from "@client/shell/panels/revealRequests";
 import type { TableColumn } from "@client/table/library/api/tableModel";
@@ -40,8 +41,17 @@ export function KnowledgePanel({ path, entryId }: ToolContentProps) {
 
   // One selected row is the selection of the whole application, as an element of a diagram is: the
   // property grid then shows that row's values. Several rows, or none, are no selection of this kind.
-  const { select, revealPath } = useContextConnection();
+  const { select, revealPath, executeAction } = useContextConnection();
   const onSelectRows = useCallback((rowIds: readonly string[]) => select(rowIds.length === 1 ? elementSelectionOf(entryId, path, rowIds[0]!) : null), [select, entryId, path]);
+
+  // A row's right-click menu offers what the ribbon offers for it - "Linked from" - once the row is the selection the
+  // application holds; until then, and for any other selection, it offers the table's own entries alone.
+  const { selection, actions } = useContextSelection();
+  const selectedId = elementIdOfKey(innermostKey(selection));
+  const rowMenuGroups = useCallback(
+    (rowId: string) => (rowId === selectedId ? toMenuGroups(actions, (action) => void executeAction(action.id)) : []),
+    [selectedId, actions, executeAction],
+  );
 
   // A related row is opened where it lives: a row of this table becomes the selection, and a row of
   // another table opens that table's file, found from this one as the relation names it, or, for a relation
@@ -110,6 +120,7 @@ export function KnowledgePanel({ path, entryId }: ToolContentProps) {
       onGesture={onGesture}
       selectedRow={opened}
       onSelectRows={onSelectRows}
+      rowMenuGroups={rowMenuGroups}
       onOpenValue={onOpenValue}
     />
   );

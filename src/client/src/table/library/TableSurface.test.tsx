@@ -225,6 +225,48 @@ describe("TableSurface", () => {
     expect(screen.queryByRole("menuitem", { name: "Delete row" })).toBeNull();
   });
 
+  it("offers the application's actions for a row in its right-click menu, selecting a row that was not selected first", () => {
+    // Arrange: a row whose menu the application gives an action, beside deleting it.
+    const onSelectRows = vi.fn();
+    const linkedFrom = vi.fn();
+    const rowMenuGroups = (rowId: string) => [[{ id: "knowledge.linked-from", label: `Linked from ${rowId}…`, onSelect: linkedFrom }]];
+    render(
+      <TableSurface
+        model={tableOf(2, 0, [row("r1", { p1: "Amsterdam" }), row("r2", { p1: "Antwerp" })])}
+        definition={{ ...definition, rowActions: ["delete"] }}
+        onGesture={vi.fn(async () => "")}
+        onSelectRows={onSelectRows}
+        rowMenuGroups={rowMenuGroups}
+      />,
+    );
+
+    // Act.
+    fireEvent.contextMenu(bodyRows()[1]!, { clientX: 20, clientY: 40 });
+    fireEvent.click(screen.getByRole("menuitem", { name: "Linked from r2…" }));
+
+    // Assert: the row became the selection, its action ran, and deleting it was offered too.
+    expect(onSelectRows).toHaveBeenLastCalledWith(["r2"]);
+    expect(linkedFrom).toHaveBeenCalledTimes(1);
+    fireEvent.contextMenu(bodyRows()[1]!, { clientX: 20, clientY: 40 });
+    expect(screen.getByRole("menuitem", { name: "Delete row" })).toBeTruthy();
+  });
+
+  it("opens a row's menu with the application's actions alone where the table offers no row action, and none where there are none", () => {
+    // Arrange.
+    const rowMenuGroups = (rowId: string) => (rowId === "r1" ? [[{ id: "knowledge.linked-from", label: "Linked from (1)…", onSelect: vi.fn() }]] : []);
+    render(<TableSurface model={tableOf(2, 0, [row("r1", { p1: "Amsterdam" }), row("r2", { p1: "Antwerp" })])} definition={definition} onSelectRows={vi.fn()} rowMenuGroups={rowMenuGroups} />);
+
+    // Act.
+    fireEvent.contextMenu(bodyRows()[0]!, { clientX: 20, clientY: 40 });
+    const offered = screen.queryAllByRole("menuitem").map((item) => item.textContent);
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
+    fireEvent.contextMenu(bodyRows()[1]!, { clientX: 20, clientY: 40 });
+
+    // Assert.
+    expect(offered).toEqual(["Linked from (1)…"]);
+    expect(screen.queryAllByRole("menu")).toEqual([]);
+  });
+
   it("draws what it is told about a cell on that cell, as the most serious of it, and on no other", () => {
     // Arrange: two findings about one cell, one about the table as a whole.
     const model = applyTableEvent(tableOf(2, 0, [row("r1", { p1: "Amsterdam", p2: "many" }), row("r2", { p1: "Antwerp" })]), {
