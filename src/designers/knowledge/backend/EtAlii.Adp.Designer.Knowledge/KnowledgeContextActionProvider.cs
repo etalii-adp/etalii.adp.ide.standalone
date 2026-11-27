@@ -243,9 +243,27 @@ internal sealed class KnowledgeContextActionProvider(IHistoryStackStore historie
             : null;
     }
 
-    /// <summary>Whether a file is a knowledge file's data file: one of the three formats, and readable as a table.</summary>
+    /// <summary>
+    /// Whether a file is a knowledge file's data file: one of the three formats, readable as a table, and with no DED envelope
+    /// that names another designer type, whose documents can read as a table too (spec 093 host test).
+    /// </summary>
     private static bool IsKnowledgeFile(string path) =>
-        Extensions.Contains(Path.GetExtension(path).ToLowerInvariant()) && KnowledgeDocumentStore.Read(path).Body is { Unreadable.Length: 0 };
+        Extensions.Contains(Path.GetExtension(path).ToLowerInvariant())
+        && KnowledgeDocumentStore.Read(path).Body is { Unreadable.Length: 0 }
+        && !NamesAnotherDesignerType(path);
+
+    /// <summary>Whether the file's DED envelope names a designer type other than this one.</summary>
+    private static bool NamesAnotherDesignerType(string path)
+    {
+        try
+        {
+            return DedEnvelope.Find(SharedDocumentReader.ReadAllBytes(path)) is { } envelope && envelope.Designer != Designer.Origin;
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            return false;
+        }
+    }
 
     /// <summary>
     /// The data file an explorer entry stands for: the entry itself when it is one, or the file its

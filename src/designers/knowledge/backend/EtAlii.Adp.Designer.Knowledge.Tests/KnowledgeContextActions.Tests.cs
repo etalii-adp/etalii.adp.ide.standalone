@@ -139,6 +139,24 @@ public sealed class KnowledgeContextActionsTests : IDisposable
     }
 
     [Fact]
+    public async Task AFileWhoseEnvelopeNamesAnotherDesignerType_OffersNoRelation_AndIsNoTableToRelateTo()
+    {
+        // Arrange: a document of another designer type, which reads as a table too (found in the spec 093 host test).
+        var registration = Registered();
+        var risks = IoPath.Combine(_root, "risks.yaml");
+        await File.WriteAllTextAsync(risks, "ded: \"0.3\"\r\ndesigner: acme/risk-register\r\nid: r8k2w5zq\r\nname: Risks\r\n", TestContext.Current.CancellationToken);
+
+        // Act.
+        var offered = await _provider.DiscoverAsync(Target(risks), TestContext.Current.CancellationToken);
+        var asked = await _provider.ExecuteAsync(Target(registration), KnowledgeContextActionProvider.Relate, TestContext.Current.CancellationToken);
+
+        // Assert: nothing offered on it, and it is not among the tables to relate to.
+        Assert.Empty(offered);
+        Assert.False(Assert.IsType<ContextExecutionRequiresFile>(asked).Request.Accepts(risks));
+        Assert.False((await _provider.ValidateAsync(Target(registration), KnowledgeContextActionProvider.Relate, "risks.yaml", TestContext.Current.CancellationToken)).Valid);
+    }
+
+    [Fact]
     public async Task TheTableToRelateTo_IsAskedForInTheFileDialog_WhichTakesKnowledgeFilesOnly_ThisOneFirst()
     {
         // Arrange.
