@@ -109,35 +109,57 @@ public class EnvelopeRoutingTests : IDisposable
     }
 
     [Fact]
-    public void TheFirstLine_IsReadUpToItsLineBreakOrALimit()
+    public void TheHead_IsAShortFileWholeAndALongOneCutAtALineEndWithinTheLimit()
     {
-        // Arrange.
-        var cache = new FirstLineCache();
-        var shortLine = Write("short.md", RequirementsDesigner.Envelope + "\r\nmore\r\n");
-        var longLine = Write("long.md", new string('x', 3000) + "\n");
+        // Arrange: a short file, and a long one whose lines are 100 bytes each, so its limit falls inside a line.
+        var cache = new HeadCache();
+        var shortText = RequirementsDesigner.Envelope + "\r\nmore\r\n";
+        var shortFile = Write("short.md", shortText);
+        var line = new string('x', 98) + "\r\n";
+        var longFile = Write("long.md", string.Concat(Enumerable.Repeat(line, 2000)));
+        var oneLine = Write("one-line.md", new string('y', HeadCache.Limit + 10));
 
-        // Act and assert.
-        Assert.Equal(RequirementsDesigner.Envelope, System.Text.Encoding.UTF8.GetString(cache.Read(shortLine)));
-        Assert.Equal(FirstLineCache.Limit, cache.Read(longLine).Length);
+        // Act.
+        var shortHead = cache.Read(shortFile);
+        var longHead = cache.Read(longFile);
+        var oneLineHead = cache.Read(oneLine);
+
+        // Assert: the whole short file; the long one up to its last line end within the limit, that line end included; a
+        // first line longer than the limit up to the limit.
+        Assert.Equal(shortText, System.Text.Encoding.UTF8.GetString(shortHead));
+        Assert.Equal(HeadCache.Limit / line.Length * line.Length, longHead.Length);
+        Assert.Equal((byte)'\n', longHead[^1]);
+        Assert.Equal(HeadCache.Limit, oneLineHead.Length);
     }
 
     [Fact]
-    public void TheFirstLine_IsKeptUntilTheFileChanges()
+    public void TheHead_HoldsAKeyBeyondTheFirstLine()
+    {
+        // Arrange: the mark of a knowledge file is its second root key.
+        var cache = new HeadCache();
+        var path = Write("cities.yaml", "ded: \"0.1\"\r\ndesigner: etalii/knowledge\r\n");
+
+        // Act and assert.
+        Assert.Contains("designer: etalii/knowledge", System.Text.Encoding.UTF8.GetString(cache.Read(path)), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TheHead_IsKeptUntilTheFileChanges()
     {
         // Arrange: a first read, then other bytes of the same length written under the same time.
-        var cache = new FirstLineCache();
+        var cache = new HeadCache();
         var path = Write("plan.md", "AAAA\n");
         var written = File.GetLastWriteTimeUtc(path);
-        Assert.Equal("AAAA"u8.ToArray(), cache.Read(path));
+        Assert.Equal("AAAA\n"u8.ToArray(), cache.Read(path));
         File.WriteAllText(path, "BBBB\n");
         File.SetLastWriteTimeUtc(path, written);
 
-        // Act and assert: unchanged by length and time, the line is the one kept.
-        Assert.Equal("AAAA"u8.ToArray(), cache.Read(path));
+        // Act and assert: unchanged by length and time, the head is the one kept.
+        Assert.Equal("AAAA\n"u8.ToArray(), cache.Read(path));
 
         // Act and assert: a change of length is a change.
         File.WriteAllText(path, "CCCCC\n");
         File.SetLastWriteTimeUtc(path, written);
-        Assert.Equal("CCCCC"u8.ToArray(), cache.Read(path));
+        Assert.Equal("CCCCC\n"u8.ToArray(), cache.Read(path));
     }
 }

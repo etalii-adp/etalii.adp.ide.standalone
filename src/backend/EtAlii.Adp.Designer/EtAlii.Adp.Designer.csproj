@@ -1,10 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <!-- Core alone: the shared discovery scan (ToolDefinitionScan) and the assembly walk
+    <!-- Core: the shared discovery scan (ToolDefinitionScan) and the assembly walk
          (ApplicationAssemblies) live there, and the designer family's abstractions name no
-         other family's types. -->
+         other family's types. The FBL library is no family: a designer type's claim is made
+         from its bundled bindings, through the library's own routing (spec 093 R1). -->
     <ProjectReference Include="..\EtAlii.Adp\EtAlii.Adp.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Specification.Fbl\EtAlii.Adp.Specification.Fbl.csproj" />
   </ItemGroup>
 
   <ItemGroup>

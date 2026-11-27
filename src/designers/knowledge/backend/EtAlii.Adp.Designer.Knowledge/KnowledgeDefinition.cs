@@ -23,14 +23,12 @@ internal static class KnowledgeDefinition
 
     private static readonly Lazy<Dictionary<string, string>> _valueTypes = new(LoadValueTypes);
 
+    /// <summary>The bundled bindings, one per format a knowledge file is kept in, in the order the definition declares them.</summary>
+    public static IReadOnlyList<FblBinding> Bindings => [.. _bindings.Value.Values];
+
     /// <summary>The binding a body of this extension is read and written with, or null for an extension no binding has.</summary>
-    public static FblBinding? BindingFor(string extension) => extension.ToLowerInvariant() switch
-    {
-        ".yaml" or ".yml" => _bindings.Value["yaml"],
-        ".json" => _bindings.Value["json"],
-        ".xml" => _bindings.Value["xml"],
-        _ => null,
-    };
+    public static FblBinding? BindingFor(string extension) =>
+        _bindings.Value.Values.FirstOrDefault(binding => binding.Claims.Extensions.Contains(extension, StringComparer.OrdinalIgnoreCase));
 
     /// <summary>
     /// Whether a body of this extension gets a new entry after the last entry its own rule reads,

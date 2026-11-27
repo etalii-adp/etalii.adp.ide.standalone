@@ -92,7 +92,7 @@ public sealed class ToolRouter
             _ => Editors.Resolve(path) as EditorRouted ?? (ToolRouting)new NoTool(),
         };
 
-    /// <summary>Why a registration of one tool is not followed to a body that another's envelope claims.</summary>
+    /// <summary>Why a registration of one tool is not followed to a body that another's mark claims.</summary>
     private static string ClaimedBody(string body, DesignerDefinition claimant) =>
-        $"Its body, {IoPath.GetFileName(body)}, is a {claimant.Title} document by the envelope on its first line, and opens there; this registration is not followed.";
+        $"Its body, {IoPath.GetFileName(body)}, is a {claimant.Title} document by its own content, and opens there; this registration is not followed.";
 }

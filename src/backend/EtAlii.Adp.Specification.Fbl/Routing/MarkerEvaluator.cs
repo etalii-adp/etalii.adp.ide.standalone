@@ -2,6 +2,8 @@ using System.Text;
 using EtAlii.Adp.Specification.Cel;
 using EtAlii.Adp.Specification.Fbl.Documents;
 using EtAlii.Adp.Specification.Fbl.Text;
+using YamlDotNet.Core;
+using YamlDotNet.Core.Events;
 using YamlDotNet.RepresentationModel;
 
 namespace EtAlii.Adp.Specification.Fbl.Routing;
@@ -39,13 +41,18 @@ internal static class MarkerEvaluator
         return false;
     }
 
-    /// <summary>A root key of a yaml or json body (json is read as the yaml it also is), with its scalar value when one is asked.</summary>
+    /// <summary>
+    /// A root key of a yaml or json body (json is read as the yaml it also is), with its scalar value when one is asked. A body
+    /// that does not parse whole, such as the head of a large file cut off in the middle, is read up to its first error, so a
+    /// key whose value was read whole before it is still found (FBL §12.2: a marker is evaluated on a body's first bytes).
+    /// </summary>
     private static bool RootKey(BodyText text, string key, string? value)
     {
+        var body = Encoding.UTF8.GetString(text.Bytes, text.BomLength, text.Length - text.BomLength);
         try
         {
             var stream = new YamlStream();
-            stream.Load(new StringReader(Encoding.UTF8.GetString(text.Bytes, text.BomLength, text.Length - text.BomLength)));
+            stream.Load(new StringReader(body));
             if (stream.Documents.Count == 0 || stream.Documents[0].RootNode is not YamlMappingNode root) return false;
             foreach ((YamlNode name, YamlNode node) in root.Children)
             {
@@ -54,7 +61,46 @@ internal static class MarkerEvaluator
             }
             return false;
         }
-        catch (YamlDotNet.Core.YamlException)
+        catch (YamlException)
+        {
+            return RootKeyBeforeError(body, key, value);
+        }
+    }
+
+    /// <summary>
+    /// Walks the root mapping's keys event by event and stops at the key, at the mapping's end or at the first parse error. The
+    /// key counts only once its whole value is read, so a value the error cuts short, such as an unclosed sequence, is no match.
+    /// </summary>
+    private static bool RootKeyBeforeError(string body, string key, string? value)
+    {
+        try
+        {
+            var parser = new Parser(new StringReader(body));
+            parser.Consume<StreamStart>();
+            if (!parser.Accept<DocumentStart>(out _)) return false;
+            parser.Consume<DocumentStart>();
+            if (!parser.Accept<MappingStart>(out _)) return false;
+            parser.Consume<MappingStart>();
+            while (!parser.Accept<MappingEnd>(out _))
+            {
+                var found = parser.Accept<Scalar>(out var name) ? name.Value : null;
+                if (found is null) parser.SkipThisAndNestedEvents();
+                else parser.Consume<Scalar>();
+                if (found != key)
+                {
+                    parser.SkipThisAndNestedEvents();
+                    continue;
+                }
+                if (value is null)
+                {
+                    parser.SkipThisAndNestedEvents();
+                    return true;
+                }
+                return parser.Accept<Scalar>(out var scalar) && scalar.Value == value;
+            }
+            return false;
+        }
+        catch (YamlException)
         {
             return false;
         }

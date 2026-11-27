@@ -8,8 +8,8 @@ namespace EtAlii.Adp.Hierarchy;
 /// <summary>
 /// Decides which designer type a file on disk belongs to. A designer's document is a registration
 /// naming the type on its first line and the body beside it (knowledge-designer Requirements 2.1
-/// and 10.2), or a body whose own first line is the envelope of a type that claims it by that
-/// envelope (<see cref="DesignerDefinition.Claim"/>, spec 029 R3). A body is never claimed by its
+/// and 10.2), or a body whose own content carries the mark of a type that claims it by that
+/// mark (<see cref="DesignerDefinition.Claim"/>, spec 029 R3, spec 093 R1). A body is never claimed by its
 /// extension alone: a designer stores its documents in general formats, and a project is full of
 /// <c>.yaml</c>, <c>.json</c> and <c>.md</c> files that are nobody's document.
 /// </summary>
@@ -23,7 +23,7 @@ public sealed class DesignerFileRouter
     private static readonly ILogger _logger = Log.ForContext<DesignerFileRouter>();
 
     private readonly IDesignerDefinitionCatalog _catalog;
-    private readonly FirstLineCache _firstLines = new();
+    private readonly HeadCache _heads = new();
 
     public DesignerFileRouter(IDesignerDefinitionCatalog catalog)
     {
@@ -67,9 +67,10 @@ public sealed class DesignerFileRouter
     }
 
     /// <summary>
-    /// The document a body is by its envelope (spec 029 R3, R4): the designer type whose <see cref="DesignerDefinition.Claim"/>
-    /// takes the file by its first line, with the registration of that type that names it, or none. Null when no type
-    /// claims it so. Only the first line of a file of a claimed extension is read, and that once until the file changes.
+    /// The document a body is by its own content (spec 029 R3, R4, spec 093 R1): the designer type whose
+    /// <see cref="DesignerDefinition.Claim"/> takes the file by its mark, with the registration of that type that names it, or
+    /// none. Null when no type claims it so. Only the head of a file a claim takes by name is read (<see cref="HeadCache"/>), and
+    /// that once until the file changes.
     /// </summary>
     /// <param name="path">A file that may be a body.</param>
     public DesignerRouted? RouteByEnvelope(string path)
@@ -81,7 +82,7 @@ public sealed class DesignerFileRouter
             : null;
     }
 
-    /// <summary>The designer type whose envelope the file at <paramref name="path"/> carries on its first line, or null.</summary>
+    /// <summary>The designer type whose mark the file at <paramref name="path"/> carries in its head, or null.</summary>
     public DesignerDefinition? ClaimantOf(string path)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
@@ -91,17 +92,16 @@ public sealed class DesignerFileRouter
             return null;
         }
 
-        var extension = IoPath.GetExtension(path);
+        var name = IoPath.GetFileName(path);
         var claimants = _catalog.All
-            .Where(definition => definition.Claim is { } claim && claim.Extensions.Contains(extension, StringComparer.OrdinalIgnoreCase))
+            .Where(definition => definition.Claim is { } claim && claim.Takes(name))
             .ToList();
         if (claimants.Count == 0)
         {
             return null;
         }
 
-        var head = _firstLines.Read(path);
-        var name = IoPath.GetFileName(path);
+        var head = _heads.Read(path);
         return head.Length == 0 ? null : claimants.FirstOrDefault(definition => definition.Claim!.Matches(name, head));
     }
 

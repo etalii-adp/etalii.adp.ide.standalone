@@ -27,7 +27,7 @@ public sealed class DesignerAddOptions
 
     private readonly IDesignerDefinitionCatalog _catalog;
     private readonly DesignerDocumentTemplates _templates;
-    private readonly FirstLineCache _firstLines = new();
+    private readonly HeadCache _heads = new();
 
     public DesignerAddOptions(IDesignerDefinitionCatalog catalog, DesignerDocumentTemplates templates)
     {
@@ -98,9 +98,9 @@ public sealed class DesignerAddOptions
     /// <summary>
     /// What adding a document named <paramref name="baseName"/> in <paramref name="folder"/> comes
     /// down to: the body from the type's template for the format, and the registration beside it
-    /// holding the origin and nothing else; or, for a type recognised by its envelope, the body
-    /// alone, or the file of that name that carries the envelope already, opened as it is (spec 029
-    /// R5). Refused with a reason when it cannot be added.
+    /// holding the origin and nothing else; or, for a type recognised by its own content, the body
+    /// alone, or the file of that name that carries the type's mark already, opened as it is (spec 029
+    /// R5, spec 093 R1). Refused with a reason when it cannot be added.
     /// </summary>
     /// <remarks>
     /// The registration names its body in a <c>body:</c> line, always. The two files share a
@@ -116,14 +116,14 @@ public sealed class DesignerAddOptions
 
         var bodyName = baseName + format.Extension;
         var bodyPath = IoPath.Combine(folder, bodyName);
-        var claim = definition.Claim is { } candidate && candidate.Extensions.Contains(format.Extension, StringComparer.OrdinalIgnoreCase) ? candidate : null;
+        var claim = definition.Claim is { } candidate && candidate.Takes(bodyName) ? candidate : null;
         if (claim is not null && File.Exists(bodyPath))
         {
-            // The envelope decides: a file that carries it is the document already, and nothing is written; one that
-            // does not is refused with the line it needs, which no dialog offers to write (R5).
-            return claim.Matches(bodyName, _firstLines.Read(bodyPath))
+            // The mark decides: a file that carries it is the document already, and nothing is written; one that does not
+            // is refused with the mark it needs, which no dialog offers to write (R5).
+            return claim.Matches(bodyName, _heads.Read(bodyPath))
                 ? new DesignerAddPlan(null, bodyPath, "")
-                : DesignerAddPlan.Refused($"'{bodyName}' has no envelope on its first line, so it is not a {definition.Title} document. The first line it would need is: {claim.Envelope}");
+                : DesignerAddPlan.Refused(Unmarked(definition, format, claim, bodyName));
         }
 
         if (File.Exists(bodyPath) || Directory.Exists(bodyPath))
@@ -145,6 +145,23 @@ public sealed class DesignerAddOptions
 
         var command = new CreateDiagramFileCommand(folder, DiagramFileName.WithExtension(baseName), definition.Origin, bodyName, content, NamesBody: true);
         return new DesignerAddPlan(command, CreateDiagramFileCommandHandler.DestinationOf(command), "");
+    }
+
+    /// <summary>
+    /// Why an existing file is not the type's document: the mark its binding names, or, where the binding's marker is an
+    /// expression rather than text, the first line a new document of the type starts with.
+    /// </summary>
+    private string Unmarked(DesignerDefinition definition, DesignerFormat format, DesignerClaim claim, string bodyName)
+    {
+        if (claim.Mark(bodyName) is { } mark)
+        {
+            return $"'{bodyName}' does not carry {mark}, so it is not a {definition.Title} document.";
+        }
+
+        var firstLine = _templates.Find(definition.Origin)?.Create(format, bodyName)?.Split('\n')[0].TrimEnd('\r');
+        return firstLine is { Length: > 0 }
+            ? $"'{bodyName}' does not start with the first line of a {definition.Title} document, so it is not one. The first line it would need is: {firstLine}"
+            : $"'{bodyName}' does not carry the mark of a {definition.Title} document, so it is not one.";
     }
 
     /// <summary>

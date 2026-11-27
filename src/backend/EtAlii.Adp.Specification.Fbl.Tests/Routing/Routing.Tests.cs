@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text;
+using System.Text.Json;
 using EtAlii.Adp.Specification.Fbl.Documents;
 using EtAlii.Adp.Specification.Fbl.Routing;
 using Xunit;
@@ -37,6 +38,22 @@ public class RoutingTests
 
         // Act and assert.
         Assert.Equal(matches, MarkerEvaluator.Matches(marker, Encoding.UTF8.GetBytes(body)));
+    }
+
+    [Theory]
+    [InlineData("ded: \"0.1\"\ndesigner: etalii/knowledge\nrows:\n  - id: a\n    name: \"unterminated\n", true)]
+    [InlineData("{\n  \"ded\": \"0.1\",\n  \"designer\": \"etalii/knowledge\",\n  \"rows\": [\n    { \"id\": \"a\",\n", true)]
+    [InlineData("ded: \"0.1\"\nrows:\n  - id: a\n    name: \"unterminated\n", false)]
+    [InlineData("{\n  \"ded\": \"0.1\",\n  \"rows\": [\n    { \"id\": \"a\",\n", false)]
+    [InlineData("ded: \"0.1\"\ndesigner: etalii/timeline\nrows: [\n", false)]
+    [InlineData("ded: \"0.1\"\ndesigner: [etalii/knowledge\n", false)]
+    public void ARootKeyMarkerIsFoundBeforeTheCutOfAHeadThatIsCutOff(string head, bool matches)
+    {
+        // Arrange: the head of a large file, cut off at a line end in the middle of the document (FBL §12.2).
+        var marker = new Marker("designer", JsonSerializer.SerializeToElement("etalii/knowledge"), null, null, 0);
+
+        // Act and assert.
+        Assert.Equal(matches, MarkerEvaluator.Matches(marker, Encoding.UTF8.GetBytes(head)));
     }
 
     [Fact]

@@ -1,4 +1,3 @@
-using EtAlii.Adp.Specification.Fbl.Routing;
 using JetBrains.Annotations;
 
 namespace EtAlii.Adp.Designer.HierarchicalRequirement;
@@ -10,16 +9,13 @@ namespace EtAlii.Adp.Designer.HierarchicalRequirement;
 /// </summary>
 /// <remarks>
 /// A requirement document is recognised by the envelope on its first line, with or without a registration (spec 029 R3,
-/// R4): the claim is the binding's own marker, answered by the FBL library's routing.
+/// R4): the claim is made from the bundled binding alone, whose marker the FBL library's routing answers (spec 093 R1).
 /// </remarks>
 [UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
 public static class Designer
 {
     /// <summary>The designer type's origin, which its envelope names.</summary>
     public const string Origin = HierarchicalRequirementDefinition.Origin;
-
-    /// <summary>The line a requirement document carries on its first line, for a refusal to name.</summary>
-    private const string Envelope = "<!-- ded: 0.2 designer: " + Origin + " -->";
 
     public static DesignerDefinition[] Definitions { get; } =
     [
@@ -30,10 +26,6 @@ public static class Designer
             "mdi-file-tree-outline",
             [new DesignerFormat("Markdown", ".md")],
             builder => builder.Services.AddHierarchicalRequirement(),
-            new DesignerClaim(
-                [".md"],
-                (name, head) => BodyClaim.Claims(HierarchicalRequirementDefinition.Binding, name, head),
-                Envelope,
-                BodyClaim.CreatesRegistration(HierarchicalRequirementDefinition.Binding))),
+            new DesignerClaim([HierarchicalRequirementDefinition.Binding])),
     ];
 }

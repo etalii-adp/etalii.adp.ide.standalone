@@ -30,8 +30,8 @@ namespace EtAlii.Adp.Designer;
 /// Empty for a designer whose documents have one fixed format the module creates itself.
 /// </param>
 /// <param name="Claim">
-/// How the type recognises a body by its envelope, so that the body is its document with or without a registration;
-/// null for a type whose documents are recognised by their registration alone.
+/// How the type recognises a body by its own content, made from its bundled bindings, so that the body is its document with
+/// or without a registration; null for a type whose documents are recognised by their registration alone.
 /// </param>
 /// <param name="Build">
 /// Registers the module's own services into the host, exactly as a diagram or editor
