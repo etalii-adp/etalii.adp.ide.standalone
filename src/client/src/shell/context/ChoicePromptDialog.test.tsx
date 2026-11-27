@@ -672,6 +672,30 @@ describe("ChoicePromptDialog search", () => {
     expect(row("System Context").closest("[role=treeitem]")?.getAttribute("aria-selected")).toBe("true");
   });
 
+  it("adds the one type a search left on Enter in the search (spec 093 host test)", async () => {
+    const { onSubmit } = renderDialog(twoVendorPrompt());
+    const search = screen.getByRole("searchbox", { name: "Search Add diagram" });
+
+    // Act: a search that leaves one type, then Enter where the user is still typing.
+    fireEvent.change(search, { target: { value: "context" } });
+    await act(async () => {
+      fireEvent.keyDown(search, { key: "Enter" });
+    });
+
+    // Assert.
+    expect(onSubmit).toHaveBeenCalledWith("c4/context");
+  });
+
+  it("adds nothing on Enter in a search that leaves several types", async () => {
+    const { onSubmit } = renderDialog(twoVendorPrompt());
+    const search = screen.getByRole("searchbox", { name: "Search Add diagram" });
+    fireEvent.change(search, { target: { value: "c4" } });
+    await act(async () => {
+      fireEvent.keyDown(search, { key: "Enter" });
+    });
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
   it("offers no search when there is only one group", () => {
     renderDialog(oneVendorPrompt());
     expect(screen.queryByRole("searchbox")).toBeNull();

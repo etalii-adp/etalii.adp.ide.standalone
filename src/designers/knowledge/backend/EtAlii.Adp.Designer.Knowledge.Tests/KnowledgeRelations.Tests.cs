@@ -624,6 +624,20 @@ public sealed class KnowledgeRelationsTests : IDisposable
         Assert.Contains(table.Session.Baseline().Columns, column => column.Name == "Near");
     }
 
+    [Fact]
+    public async Task TablesOfTheSameName_AreToldApart_ByTheirFiles_WhenARelationAsksWhichToRelateTo()
+    {
+        // Arrange: two copies of the provinces under one name, as the spec 093 host test had three copies of the cities.
+        KnowledgeFiles.CopyExample(KnowledgeFiles.Related, Directory.CreateDirectory(IoPath.Combine(_root, "copy")).FullName);
+        await using var table = new EditingTable(KnowledgeFiles.CopyPlain("cities.yaml", _root), rootPath: _root);
+
+        // Act.
+        (_, string asked) = table.Begin(new TableGesture("addRelation", Values: ["Region"]));
+
+        // Assert: each named by its file as well, since its name alone does not say which it is.
+        Assert.Equal("""choose:[{"id":".","label":"This table"},{"id":"copy/provinces.yaml","label":"Provinces (copy/provinces.yaml)"},{"id":"provinces.yaml","label":"Provinces (provinces.yaml)"}]""", asked);
+    }
+
     [Theory]
     [MemberData(nameof(KnowledgeFiles.Extensions), MemberType = typeof(KnowledgeFiles))]
     public async Task ARelationIsAProperty_AskedForByName_WithItsTableChosenFromTheProjectsTables(string extension)

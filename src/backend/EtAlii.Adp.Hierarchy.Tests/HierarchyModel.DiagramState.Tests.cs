@@ -73,6 +73,23 @@ public class HierarchyModelDiagramStateTests : IDisposable
     }
 
     [Fact]
+    public void ListChildren_AFileADesignerTypeClaimsByItsContent_IsRegistered_AndAFileOfItsExtensionThatItDoesNotClaimIsNot()
+    {
+        // Arrange: found in the spec 093 host test, where a knowledge file with no registration showed the same icon as a
+        // file of a designer type that is not installed, so nothing told a table from text before it was opened.
+        Write("plan.md", RequirementsDesigner.Body());
+        Write("readme.md", "# Read me\n");
+
+        // Act.
+        var model = new HierarchyModel(_root, TestToolRouters.For(_catalog, designers: [RequirementsDesigner.Definition], editors: [Plain, Markdown]));
+        var byName = model.ListChildren(null).ToDictionary(entry => entry.Name);
+
+        // Assert.
+        Assert.Equal(EntryDiagramState.Registered, byName["plan.md"].DiagramState);
+        Assert.Equal(EntryDiagramState.Potential, byName["readme.md"].DiagramState);
+    }
+
+    [Fact]
     public void ListChildren_AFolderHoldingAFolderSubjectRegistration_IsRegistered_BeforeItIsEverExpanded()
     {
         // Arrange: the shipped shape - infrastructure/structure.adp registers its own folder.

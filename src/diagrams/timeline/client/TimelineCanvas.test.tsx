@@ -162,6 +162,15 @@ describe("the scale of a new, empty timeline", () => {
     const scale = timelineScaleOf({ elements: new Map(), connections: new Map() }, now);
     expect(scale.originSeconds).toBe(Date.UTC(2026, 10, 19) / 1000);
   });
+
+  it("keeps the days around its first moment when one moment is added, rather than zooming in to hours (spec 093 host test)", () => {
+    const now = Date.UTC(2026, 10, 26, 13, 30) / 1000;
+    const at = Date.UTC(2026, 10, 26) / 1000;
+    const empty = timelineScaleOf({ elements: new Map(), connections: new Map() }, now);
+    const one = timelineScaleOf({ elements: new Map([["m", { ...period("m", "Antwerp", at, 0, 0), isPeriod: false, end: "" }]]), connections: new Map() }, now);
+    expect(one.secondsPerUnit).toBe(empty.secondsPerUnit);
+    expect(one.originSeconds).toBe(at - 7 * 86400);
+  });
 });
 
 describe("the timeline canvas, on the library", () => {

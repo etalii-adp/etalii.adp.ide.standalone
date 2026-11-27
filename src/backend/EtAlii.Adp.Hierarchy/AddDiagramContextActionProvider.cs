@@ -74,6 +74,13 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
     /// <summary>Whether a folder has anything to add: a diagram type, or a designer type with a format.</summary>
     private bool HasTypes => _diagrams.Any || _designers is { Any: true };
 
+    /// <summary>
+    /// The diagram types a file could be registered as; none for a file a designer type already claims by its own content,
+    /// which opens as that type's document without a registration (spec 093).
+    /// </summary>
+    private IReadOnlyList<DiagramDefinition> RegistrableFor(ContextTarget target) =>
+        _designers?.ClaimsByContent(target.ResolvedFullPath) == true ? [] : _diagrams.RegistrableFor(target);
+
     public ContextScope Scope => ContextScope.Hierarchy;
 
     public ValueTask<IReadOnlyList<ContextActionGroupDefinition>> DiscoverAsync(ContextTarget target, CancellationToken cancellationToken)
@@ -88,7 +95,7 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
         // the .adp beside it (add-diagram-action Requirement 4.3, revised).
         (bool available, string label, string reason) = target.IsContainer
             ? (HasTypes, "Add…", NoDiagramTypes)
-            : (_diagrams.RegistrableFor(target).Count > 0, "Add as diagram…", NotRegistrable);
+            : (RegistrableFor(target).Count > 0, "Add as diagram…", NotRegistrable);
 
         if (!target.IsContainer && !available)
         {
@@ -126,7 +133,7 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
 
         if (!target.IsContainer)
         {
-            var registrable = _diagrams.RegistrableFor(target);
+            var registrable = RegistrableFor(target);
             if (registrable.Count == 0)
             {
                 return ValueTask.FromResult<ContextExecutionResult>(new ContextExecutionFailed(NotRegistrable));
@@ -195,7 +202,7 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
         }
 
         (CreateDiagramFileCommand? command, string error) = !target.IsContainer
-            ? _diagrams.PlanRegistration(target, value)
+            ? _designers?.ClaimsByContent(target.ResolvedFullPath) == true ? (null, NotRegistrable) : _diagrams.PlanRegistration(target, value)
             : _diagrams.PlanInFolder(target, value, text);
         if (command is null)
         {
