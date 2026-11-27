@@ -4467,3 +4467,34 @@ lays out no text, so a fill, a centred Comment and a drag that writes a size are
   - A relation to a diagram offers its limit as *1 element*, and *One element* or *Any number of elements* in the hierarchy's flow: `knowledge.md` words the limit for rows only ("one row or no limit"), so the panels word it for elements without changing the definition. Guard: `ColumnHeader.test.tsx`.
 
   Still open: a knowledge file copied in without a registration opens as text; it needs a feature of its own.
+
+## Designer files open without a registration in the standalone host (etalii.adp spec 093, T012)
+
+**Why this is a browser pass and not only tests:** the backend tests prove that a bare knowledge file is claimed, read and written without a `.adp`, but only the running app shows what a new user meets: which tab a double-click opens, what the explorer and the Problems panel say, and whether relations and links reach a file nothing registered.
+
+- **Preconditions**: a developer build from `develop` with standalone #849 merged (etalii.adp `specs/093-standalone-bare-designer-files/`, commit 05a29537), and a new scratch folder added as a project. The folder holds, with no `.adp` beside any of them, copies of the knowledge designer's `cities.yaml`, `cities.json`, `cities.xml` and `provinces.yaml` examples, and `risks.yaml`, a DED envelope naming the designer type `acme/risk-register`, which is not installed.
+- **Steps**:
+  1. Add the folder as a project and open it; time from the page loading to the first table on screen.
+  2. Double-click `cities.yaml`, `cities.json` and `cities.xml`; compare the folder's files with copies taken before.
+  3. Change a number in `cities.yaml`, then press Undo.
+  4. Double-click `risks.yaml`; read the Problems panel.
+  5. Make a new knowledge table with *New…*, add a relation from it to `cities.yaml`, and relate a row of it to a city.
+  6. Make a new timeline, and with *Add from another document…* link a moment to a row of `cities.yaml`; then follow the link back.
+  7. Note every hesitation, message or hurdle a new user would meet.
+- **Expected**: each knowledge file opens as a table, not as text, and no file is written by opening it. The edit writes `cities.yaml` alone, and Undo makes it byte-identical. `risks.yaml` opens as text, and Problems names `acme/risk-register`. The relation and the link name `cities.yaml` by its document id, and nothing is written to the bare files. Step 7 finds no hurdle.
+- **Result**: 2026-11-27, on the Mac mini, from `develop` at `eee524c39` (#849 merged; #846 and #848 merged too), backend 5280 and Vite 5274, the desktop app's built-in browser pane.
+  - Step 1 passed: 44 s from the page loading to the first table, adding the project included. On opening, Problems already showed one error for `risks.yaml`.
+  - Step 2 passed: all three files opened as knowledge tables in their own tabs, and the folder was byte-identical to its copy afterwards, with no `.adp` written.
+  - Step 3 passed: the edit wrote `number: 529247` into `cities.yaml` alone, and Undo made the folder byte-identical.
+  - Step 4 passed: `risks.yaml` opened in the text editor, and Problems said it names the designer type `acme/risk-register`, which is not installed here.
+  - Step 5 passed: the relation was written as `target: $c4t7y2ma@cities.yaml`, and the cell picker offered and linked Amsterdam. *New…* wrote `people.adp` beside the new table, as it registers what it creates.
+  - Step 6 passed: the lookup listed Antwerp in all three bare files, each named by its file; the moment was written as `link: $c4t7y2ma@cities.yaml#r2=Antwerp`; *Open linked element* opened `cities.yaml` with Antwerp selected. The bare files stayed byte-identical.
+  - A defect, not fixed here: the explorer's *Add relation…* is offered on `risks.yaml`, a file of the uninstalled `acme/risk-register` type, lists it among the tables to relate to, and, carried through, wrote a knowledge `properties:` block with a relation into it (Undo restored it). `KnowledgeContextActionProvider.IsKnowledgeFile` asks only whether the file reads as a knowledge body, not whether its envelope names `etalii/knowledge`.
+  - A gap, not fixed here: a knowledge row offers no *Linked from (N)*, neither in its row menu nor in the ribbon, which `knowledge.md` gives it; the timeline moment's own *Linked from* is unaffected.
+  - Hurdles a new user meets:
+    - The explorer shows a knowledge file by its extension's icon, the same as `risks.yaml`, so nothing tells a table from text before it is opened.
+    - The relation's target list shows *Cities* three times, for the three copies, with nothing to tell them apart; *Related to Cities* does not say which file either.
+    - The ribbon offers *Add as diagram…* on `cities.json` alone, and not on `cities.yaml` or `cities.xml`, although each already opens as a table.
+    - Enter in the Add dialog's search does not add the one type it selected.
+    - After *Add from another document…* the timeline zoomed to an axis of hours.
+    - After following the link to the row, and after selecting a row, the ribbon kept the timeline moment's actions, greyed, rather than the table's.
